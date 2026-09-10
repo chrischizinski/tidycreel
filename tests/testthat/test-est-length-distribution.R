@@ -851,3 +851,131 @@ test_that("EST-LD-29 (#310): an in-group bad interview is still refused", {
     class = "creel_error_na_rescale_total"
   )
 })
+
+test_that("EST-LD-30 (#317): the reported total derives per species-interview pair", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  # add_catch() documents the catch-type model per SPECIES-INTERVIEW pair: a
+  # "caught" row is that pair's total and is optional, and when absent the pair's
+  # catch is harvested + released (#318). The rescaling path decided that once
+  # per species instead, so one pair recording a caught row made every other pair
+  # for that species read as a catch of ZERO -- and the distribution was scaled
+  # onto the understated total with no warning.
+
+  # The fixture can only discriminate if BOTH kinds of pair exist for the same
+  # species. Asserted, not assumed: if example_catch ever records caught rows
+  # uniformly this test would pass against the old rule too (cf. #282, #318).
+  pairs <- split(example_catch, list(example_catch$interview_id, example_catch$species),
+                 drop = TRUE)
+  has_caught <- vapply(pairs, function(g) any(g$catch_type == "caught"), logical(1))
+  species_of <- vapply(pairs, function(g) as.character(g$species[1]), character(1))
+  expect_true(any(has_caught[species_of == "walleye"]))
+  expect_true(any(!has_caught[species_of == "walleye"]))
+
+  # `gear` must exist in BOTH tables: by= resolves against the lengths table,
+  # and the reported total can only be restricted by an interview attribute.
+  iv <- example_interviews
+  iv$gear <- iv$angler_type
+  lens <- merge(example_lengths, iv[, c("interview_id", "gear")],
+                by = "interview_id", all.x = TRUE)
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(suppressMessages(add_catch(
+    d, example_catch,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, lens,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  res <- suppressWarnings(suppressMessages(
+    est_length_distribution(d, type = "catch", by = c(species, gear), bin_width = 25)
+  ))
+  got <- stats::aggregate(
+    res$estimate,
+    by = list(species = as.character(res$species), gear = as.character(res$gear)),
+    FUN = sum
+  )
+  key <- paste(got$species, got$gear)
+  totals <- stats::setNames(round(got$x, 6), key)
+
+  # Reported catch per species x gear under the per-pair rule. The old
+  # per-table rule counted only the "caught" rows and returned
+  # panfish/bank 7, walleye/bank 18, bass/boat 5, walleye/boat 15 -- so these
+  # values fail against it, which is what makes the test discriminating.
+  expect_equal(totals[["panfish bank"]], 10)
+  expect_equal(totals[["walleye bank"]], 28)
+  expect_equal(totals[["bass boat"]], 18)
+  expect_equal(totals[["walleye boat"]], 27)
+
+  # And the gear parts still sum to the species whole (#319 pinned 55 / 25 / 13).
+  expect_equal(totals[["walleye bank"]] + totals[["walleye boat"]], 55)
+})
+
+test_that("EST-LD-31 (#317): refuses per group, not per species", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_lengths", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  # A group with measured fish but no reported rows of its OWN was scaled onto a
+  # total of zero, because the refusal asked whether the SPECIES had rows
+  # anywhere in the catch table. Walleye keeps its boat rows here, so a
+  # species-wide test cannot see the bank group as empty.
+  iv <- example_interviews
+  iv$gear <- iv$angler_type
+  bank_ids <- iv$interview_id[iv$gear == "bank"]
+  catch2 <- example_catch[!(example_catch$species == "walleye" &
+                              example_catch$interview_id %in% bank_ids), , drop = FALSE]
+  lens <- merge(example_lengths, iv[, c("interview_id", "gear")],
+                by = "interview_id", all.x = TRUE)
+
+  # The probe only reaches the branch if the empty group still has measured fish.
+  expect_true(any(lens$species == "walleye" & lens$gear == "bank"))
+  expect_true(any(catch2$species == "walleye"))
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(suppressMessages(add_catch(
+    d, catch2,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  )))
+  d <- suppressWarnings(add_lengths(
+    d, lens,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+
+  expect_error(
+    suppressWarnings(suppressMessages(
+      est_length_distribution(d, type = "catch", by = c(species, gear), bin_width = 25)
+    )),
+    class = "creel_error_no_rescale_total"
+  )
+  # The message names the group, not just the species: "no reported catch for
+  # walleye" would read as a claim about a fishery that reports 27 walleye.
+  expect_error(
+    suppressWarnings(suppressMessages(
+      est_length_distribution(d, type = "catch", by = c(species, gear), bin_width = 25)
+    )),
+    "gear = bank"
+  )
+})

@@ -468,3 +468,97 @@ test_that("AGD-25 (#313): n counts interviews with an aged fish, not fish", {
   n_interviews <- length(unique(ages_data[[d$ages_interview_uid_col]]))
   expect_identical(unique(result$n), n_interviews)
 })
+
+test_that("AGD-43 (#317): the age path derives the reported total per pair too", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_ages", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  # The length and age paths call ONE reported-total helper. This pins that the
+  # age caller inherits the per-species-interview-pair catch-type rule (#318)
+  # rather than carrying its own copy -- the failure mode the near-twin files in
+  # this package have produced before.
+  iv <- example_interviews
+  iv$gear <- iv$angler_type
+  ages <- merge(example_ages, iv[, c("interview_id", "gear")],
+                by = "interview_id", all.x = TRUE)
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(suppressMessages(add_catch(
+    d, example_catch,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  )))
+  d <- suppressWarnings(add_ages(
+    d, ages,
+    age_uid = interview_id, interview_uid = interview_id,
+    species = species, age = age, age_type = age_type
+  ))
+
+  res <- suppressWarnings(suppressMessages(
+    est_age_distribution(d, type = "catch", by = c(species, gear))
+  ))
+  got <- stats::aggregate(
+    res$estimate,
+    by = list(species = as.character(res$species), gear = as.character(res$gear)),
+    FUN = sum
+  )
+  totals <- stats::setNames(round(got$x, 6), paste(got$species, got$gear))
+
+  # Per-pair reported catch. The old per-table rule counted "caught" rows only
+  # and gave panfish/bank 7, walleye/bank 18, bass/boat 5, walleye/boat 15.
+  expect_equal(totals[["panfish bank"]], 10)
+  expect_equal(totals[["walleye bank"]], 28)
+  expect_equal(totals[["bass boat"]], 18)
+  expect_equal(totals[["walleye boat"]], 27)
+})
+
+test_that("AGD-44 (#317): the age path refuses per group, not per species", {
+  data("example_calendar", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  data("example_ages", package = "tidycreel")
+  data("example_catch", package = "tidycreel")
+
+  iv <- example_interviews
+  iv$gear <- iv$angler_type
+  bank_ids <- iv$interview_id[iv$gear == "bank"]
+  # Walleye keeps its boat rows, so a species-wide test cannot see the bank
+  # group as empty -- it used to be scaled onto a total of zero instead.
+  catch2 <- example_catch[!(example_catch$species == "walleye" &
+                              example_catch$interview_id %in% bank_ids), , drop = FALSE]
+  ages <- merge(example_ages, iv[, c("interview_id", "gear")],
+                by = "interview_id", all.x = TRUE)
+
+  expect_true(any(ages$species == "walleye" & ages$gear == "bank"))
+  expect_true(any(catch2$species == "walleye"))
+
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type))
+  d <- suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch_total, effort = hours_fished,
+    harvest = catch_kept, trip_status = trip_status
+  )))
+  d <- suppressWarnings(suppressMessages(add_catch(
+    d, catch2,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  )))
+  d <- suppressWarnings(add_ages(
+    d, ages,
+    age_uid = interview_id, interview_uid = interview_id,
+    species = species, age = age, age_type = age_type
+  ))
+
+  expect_error(
+    suppressWarnings(suppressMessages(
+      est_age_distribution(d, type = "catch", by = c(species, gear))
+    )),
+    class = "creel_error_no_rescale_total"
+  )
+})

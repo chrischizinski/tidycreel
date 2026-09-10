@@ -31,6 +31,13 @@
 #' Release is deliberately NOT read from `design$catch` for a non-species group;
 #' see the comment on that branch for why the identity requires a single source.
 #'
+#' The species branch applies the `add_catch()` catch-type model through
+#' `species_counts_per_interview()`, so the optional-`"caught"`-row fallback is
+#' decided per species-interview pair and in one place (GH #318). It refuses
+#' when none of THIS GROUP's own interviews records the species -- on the key,
+#' not the value -- rather than when the species is absent from the whole table
+#' (GH #317).
+#'
 #' @param design A creel_design object.
 #' @param type One of "catch", "harvest", "release".
 #' @param group_info One-row data frame of this group's by= values, or NULL.
@@ -105,6 +112,22 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
     }
   }
 
+  # Names the group in a refusal. "No reported catch for walleye" reads as a
+  # claim about the whole fishery, which is wrong when only one group of the
+  # walleye interviews is the empty one.
+  group_label <- if (length(other_vars) > 0L && !is.null(group_info)) { # nolint: object_usage_linter
+    paste0(
+      " in ",
+      paste0(
+        other_vars, " = ",
+        vapply(other_vars, function(v) as.character(group_info[[v]][1]), character(1)),
+        collapse = ", "
+      )
+    )
+  } else {
+    ""
+  }
+
   catch_type_for <- c(catch = "caught", harvest = "harvested", release = "released")
 
   base_total <- if (is_species_group) {
@@ -115,50 +138,54 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
     count_col <- design$catch_count_col
     type_col <- design$catch_type_col
 
-    # Filter to the species FIRST. Testing the whole table for "caught" rows
-    # before narrowing meant one species having them suppressed the fallback for
-    # every other species, which then scaled to a reported total of zero.
-    #
-    # Compared as character on both sides. The catch table and the length/age
+    # The add_catch() catch-type model is applied by the one helper that owns it,
+    # per SPECIES-INTERVIEW pair (GH #318). Deciding the "caught" fallback once
+    # per species instead -- "does a caught row exist anywhere for this species?"
+    # -- read every pair holding only harvested/released rows as a catch of zero
+    # as soon as any one pair recorded a caught row, and the distribution was
+    # then scaled onto that understated total.
+    species_val <- group_info[[frame_species_col]][1]
+    agg <- species_counts_per_interview(
+      catch_df, species_val, catch_type_for[[type]],
+      uid_col = uid_col, species_col = species_col,
+      type_col = type_col, count_col = count_col
+    )
+
+    # Matched as character on both sides. The catch table and the length/age
     # table are attached separately, so a caller can easily have factors with
     # different level sets in each -- and `Ops.factor` does not return NA there,
     # it errors outright with "level sets of factors are different".
-    rows <- catch_df[
-      as.character(catch_df[[species_col]]) ==
-        as.character(group_info[[frame_species_col]][1]), ,
-      drop = FALSE
-    ]
-    typed <- rows[rows[[type_col]] == catch_type_for[[type]], , drop = FALSE]
-    if (identical(type, "catch") && nrow(typed) == 0L) {
-      # add_catch() makes a "caught" row optional: absent, catch is
-      # harvested + released. Applied per species, not per table.
-      typed <- rows[rows[[type_col]] %in% c("harvested", "released"), , drop = FALSE]
-    }
-    if (nrow(typed) == 0L) {
-      # Refusing rather than returning zero. A species with measured fish but no
-      # reported rows is contradictory data, and scaling its measured fish by a
-      # total of 0 reports "no fish of this species" with the same confidence as
-      # a real estimate -- the silent-wrong-number failure this issue exists to
-      # remove.
+    row_map <- match(
+      as.character(interviews[[uid_col]]),
+      as.character(agg$uid)
+    )
+
+    # The refusal is judged on THIS GROUP's own interviews, and on the KEY --
+    # does any of them record this species at all -- not on the value. Testing
+    # the whole species instead let a group whose own interviews report nothing
+    # scale onto a total of zero, because some other group's interviews carried
+    # the species' rows. A recorded count that happens to be zero is data and is
+    # kept; no record at all is the contradiction.
+    if (!any(keep & !is.na(row_map))) {
+      # Refusing rather than returning zero. Measured fish with no reported rows
+      # is contradictory data, and scaling them by a total of 0 reports "no fish
+      # here" with the same confidence as a real estimate -- the
+      # silent-wrong-number failure this issue exists to remove.
       cli::cli_abort(
         c(
-          "No reported {type} is recorded for
-           {.val {group_info[[frame_species_col]][1]}}.",
+          "No reported {type} is recorded for {.val {species_val}}{group_label}.",
           "x" = "Its length or age records cannot be scaled onto a total that
                  does not exist.",
-          "i" = "Add the missing rows to {.fn add_catch}, or drop the species
-                 from the request."
+          "i" = "Add the missing rows to {.fn add_catch}, or drop the
+                 {.field {frame_species_col}} value from the request."
         ),
         class = "creel_error_no_rescale_total",
         call = error_call
       )
-    } else {
-      agg <- stats::aggregate(typed[[count_col]], by = list(uid = typed[[uid_col]]), FUN = sum)
-      names(agg) <- c("uid", "total")
-      out <- agg$total[match(interviews[[uid_col]], agg$uid)]
-      out[is.na(out)] <- 0
-      as.numeric(out)
     }
+    out <- agg$count[row_map]
+    out[is.na(out)] <- 0
+    as.numeric(out)
   } else if (identical(type, "release")) {
     # Release has no interview-level column, but the catch model says
     # caught = harvested + released. Deriving it from the interview columns --
