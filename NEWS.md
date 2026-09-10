@@ -34,6 +34,36 @@
   This is the eighth instance of the pattern tracked in #317 — a quantity that
   is unknown or absent behaving like a zero.
 
+* `est_length_distribution()` and `est_age_distribution()` now read the same
+  per-pair rule when they build the reported total they scale onto, and they
+  refuse per **group** rather than per species (#317).
+
+  Both distributions are rescaled onto a design-estimated reported total
+  (see #310 below). That total was built by a second, private copy of the
+  `add_catch()` catch-type model — the table-wide copy #318 removed everywhere
+  else. A species with a `"caught"` row on any one interview therefore had every
+  other interview's harvested/released rows read as a catch of zero, and the
+  distribution was scaled onto the understated total. On the package's own
+  example data, grouping a catch distribution by species and an interview
+  attribute returned totals built from the `"caught"` rows alone: 7 / 18 / 5 / 15
+  where the reported catch is 10 / 28 / 18 / 27.
+
+  The refusal moved with it. When no reported rows exist, these functions abort
+  rather than scale onto zero — but the test asked whether the *species* had rows
+  anywhere in the catch table. A group whose own interviews reported nothing
+  still passed, because some other group's interviews carried the species, and
+  its measured fish were scaled onto a total of **zero** with no warning. The
+  test is now whether any of the group's own interviews records the species —
+  on the key, not the value, so a recorded count of zero is still data.
+
+  **Grouped length and age distribution totals rise** wherever a catch table
+  mixes the two shapes, and a group that reports nothing of its own now raises
+  `creel_error_no_rescale_total` instead of returning zeros. Shares (`percent`)
+  are unaffected. The refusal message now names the group, not only the species.
+
+  This is #317's own finding 7 — the same “absent behaves like a zero”
+  pattern, in the rescaling path.
+
 * `est_length_distribution()` and `est_age_distribution()` now scale their
   totals onto the design-estimated **reported catch** instead of expanding the
   measured subsample (#310).

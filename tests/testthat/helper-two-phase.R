@@ -16,24 +16,35 @@ weighted_interview_total <- function(design, vec) {
 }
 
 # The per-interview reported count for one species and catch type, built from
-# the catch table by the same rule add_catch() documents: a "caught" row is
-# optional, and absent it means harvested + released.
+# the catch table by the same rule add_catch() documents: a "caught" row is that
+# SPECIES-INTERVIEW PAIR's total and is optional, and when the pair has none its
+# catch is harvested + released.
+#
+# Written per pair, in a loop over interviews, deliberately: the rule the
+# package got wrong twice (#318, #317) was applying that decision once per
+# species across the whole table, and a helper that repeated the shortcut could
+# not have failed against it. This stays a restatement of the DATA DEFINITION,
+# not of R/two-phase-rescale.R.
 species_reported_vector <- function(design, species, type) {
   ct <- design[["catch"]]
   wanted <- c(catch = "caught", harvest = "harvested", release = "released")[[type]]
-  rows <- ct[ct[[design$catch_species_col]] == species, , drop = FALSE]
-  typed <- rows[rows[[design$catch_type_col]] == wanted, , drop = FALSE]
-  if (identical(type, "catch") && nrow(typed) == 0L) {
-    typed <- rows[rows[[design$catch_type_col]] %in% c("harvested", "released"), , drop = FALSE]
-  }
   uid <- design$catch_interview_uid_col
-  out <- rep(0, nrow(design$interviews))
-  if (nrow(typed) > 0L) {
-    agg <- stats::aggregate(typed[[design$catch_count_col]], by = list(uid = typed[[uid]]), FUN = sum)
-    names(agg) <- c("uid", "total")
-    matched <- agg$total[match(design$interviews[[uid]], agg$uid)]
-    matched[is.na(matched)] <- 0
-    out <- as.numeric(matched)
-  }
-  out
+  rows <- ct[as.character(ct[[design$catch_species_col]]) == as.character(species), ,
+             drop = FALSE]
+
+  vapply(design$interviews[[uid]], function(id) {
+    pair <- rows[as.character(rows[[uid]]) == as.character(id), , drop = FALSE]
+    if (nrow(pair) == 0L) {
+      # An interview absent from the catch table caught none of this species.
+      return(0)
+    }
+    typed <- pair[pair[[design$catch_type_col]] == wanted, , drop = FALSE]
+    if (identical(type, "catch") && nrow(typed) == 0L) {
+      typed <- pair[
+        pair[[design$catch_type_col]] %in% c("harvested", "released"), ,
+        drop = FALSE
+      ]
+    }
+    sum(as.numeric(typed[[design$catch_count_col]]))
+  }, numeric(1))
 }
