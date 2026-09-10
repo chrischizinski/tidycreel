@@ -53,17 +53,37 @@ BASELINE="scripts/absent-zero-guard-baseline.tsv"
 #   rep(0, n)               a zero vector in a return position
 #
 # `rep(0` alone also matches `rep(0.5, 3)` in roxygen examples, so the digit is
-# anchored: `rep(0,`, `rep(0L`, `rep(0)`. Comment lines are dropped first --
-# including roxygen, which is where the false hits lived.
+# anchored: `rep(0,`, `rep(0L`, `rep(0)`. The zero itself may be `0` or `0L` --
+# leaving `0L` out made nine real conversions invisible to the first version of
+# this script. See current_hits() for how comments are handled.
 current_hits() {
-  grep -rnE '\[is\.na\(|rep\(0[,L)]' R/ 2>/dev/null |
-    grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' |
-    grep -E '<-[[:space:]]*0[[:space:]]*$|<-[[:space:]]*FALSE|rep\(0[,L)]' |
+  # Comments are stripped from every line BEFORE the shape is matched, not
+  # filtered out as whole lines. Ensemble review found both halves of that
+  # mattering, in opposite directions:
+  #
+  #   foo <- bar   # rep(0, n) is just an example    <- was a false hit
+  #   x[is.na(x)] <- 0  # why absence means zero     <- EVADED the guard,
+  #                                                     because the shape was
+  #                                                     anchored to end of line
+  #
+  # The second is the dangerous one: writing the very justification the rule
+  # asks for was enough to make the line invisible. `0L` evaded it too.
+  #
+  # A `#` inside a string literal truncates that line early, which can only
+  # cause a MISS, never a false alarm. Accepted: a conversion whose sole
+  # trigger sits after a `#` in a string is not a shape worth contorting the
+  # heuristic for.
+  #
+  # `|| true` on the head of the pipeline: grep exits 1 when nothing matches,
+  # and under `set -e` that aborted `--list` on a tree with no hits at all.
+  { grep -rnE '\[is\.na\(|rep\(0[,L)]' R/ 2>/dev/null || true; } |
+    sed -E 's/[[:space:]]*#.*$//' |
+    grep -E '<-[[:space:]]*0L?[[:space:]]*$|<-[[:space:]]*FALSE|rep\(0[,L)]' |
     # file <TAB> code, with the code's leading indent and trailing space
     # normalised so a re-indent is not a new finding.
     sed -E 's/^([^:]+):[0-9]+:[[:space:]]*/\1\t/' |
     sed -E 's/[[:space:]]+$//' |
-    sort
+    sort || true
 }
 
 if [ "${1:-}" = "--list" ]; then
