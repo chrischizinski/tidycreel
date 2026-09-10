@@ -194,7 +194,7 @@ design <- add_lengths(
 
 ld <- est_length_distribution(design, by = species, bin_width = 25)
 #> Warning: ! Length totals were rescaled onto the reported catch.
-#> ℹ Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.
+#> ℹ Measured fish (weighted): 37; reported: 93 -- a factor of 2.51.
 #> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
 #>   from the measured subsample. Shares (percent) are unaffected.
 

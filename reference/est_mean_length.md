@@ -104,12 +104,12 @@ design <- add_lengths(design, example_lengths,
 
 ld <- est_length_distribution(design, by = species, bin_width = 25)
 #> Warning: ! Length totals were rescaled onto the reported catch.
-#> ℹ Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.
+#> ℹ Measured fish (weighted): 37; reported: 93 -- a factor of 2.51.
 #> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_mean_length(ld)
 #>   species mean_length mean_length_se mean_length_ci_lower mean_length_ci_upper
-#> 1    bass    300.9615       13.58800             274.3296             327.5935
-#> 2 panfish    196.5909       16.22566             164.7892             228.3926
-#> 3 walleye    431.7308       11.40477             409.3778             454.0837
+#> 1    bass    300.9615      10.418732             280.5412             321.3819
+#> 2 panfish    196.5909      11.970257             173.1296             220.0522
+#> 3 walleye    431.7308       9.445832             413.2173             450.2443
 ```

@@ -115,14 +115,14 @@ design <- add_lengths(design, example_lengths,
 
 ld <- est_length_distribution(design, by = species, bin_width = 25)
 #> Warning: ! Length totals were rescaled onto the reported catch.
-#> ℹ Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.
+#> ℹ Measured fish (weighted): 37; reported: 93 -- a factor of 2.51.
 #> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_compliance(ld, min_length = 356)  # 14-inch limit in mm
 #>   species min_length n_legal_est n_total_est compliance_prop compliance_se
-#> 1    bass        356           0          10               0             0
-#> 2 panfish        356           0           7               0             0
-#> 3 walleye        356          33          33               1             0
+#> 1    bass        356           0          25               0             0
+#> 2 panfish        356           0          13               0             0
+#> 3 walleye        356          55          55               1             0
 #>   compliance_ci_lower compliance_ci_upper
 #> 1                   0                   0
 #> 2                   0                   0

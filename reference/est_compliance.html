@@ -183,14 +183,14 @@ that straddle the threshold.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">ld</span> <span class="op">&lt;-</span> <span class="fu"><a href="est_length_distribution.html">est_length_distribution</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span>, bin_width <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Length totals were rescaled onto the reported catch.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 37; reported: 50 -- a factor of 1.35.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 37; reported: 93 -- a factor of 2.51.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">estimate</span>, <span style="color: #00BB00;">se</span> and the confidence bounds describe the REPORTED catch, estimated</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   from the measured subsample. Shares (<span style="color: #00BB00;">percent</span>) are unaffected.</span>
 <span class="r-in"><span><span class="fu">est_compliance</span><span class="op">(</span><span class="va">ld</span>, min_length <span class="op">=</span> <span class="fl">356</span><span class="op">)</span>  <span class="co"># 14-inch limit in mm</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   species min_length n_legal_est n_total_est compliance_prop compliance_se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    bass        356           0          10               0             0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 panfish        356           0           7               0             0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 walleye        356          33          33               1             0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    bass        356           0          25               0             0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 panfish        356           0          13               0             0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 walleye        356          55          55               1             0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   compliance_ci_lower compliance_ci_upper</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1                   0                   0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2                   0                   0</span>

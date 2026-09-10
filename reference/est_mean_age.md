@@ -100,12 +100,12 @@ design <- add_ages(design, example_ages,
 
 ad <- est_age_distribution(design, by = species)
 #> Warning: ! Age totals were rescaled onto the reported catch.
-#> ℹ Measured fish (weighted): 18; reported: 50 -- a factor of 2.78.
+#> ℹ Measured fish (weighted): 18; reported: 93 -- a factor of 5.17.
 #> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_mean_age(ad)
 #>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper
-#> 1    bass 2.600000   0.2405993         2.1284341          3.071566
-#> 2 panfish 1.000000   0.4389856         0.1396041          1.860396
-#> 3 walleye 4.444444   0.3231505         3.8110811          5.077808
+#> 1    bass 2.600000   0.1456703         2.3144914          2.885509
+#> 2 panfish 1.000000   0.3400005         0.3336113          1.666389
+#> 3 walleye 4.444444   0.2706522         3.9139759          4.974913
 ```
