@@ -564,10 +564,16 @@ summarize_by_species_sought <- function(design) {
 
 #' Tabulate successful parties by angler type and species sought
 #'
-#' A party is "successful" if any row in the attached catch data has
-#' \code{catch_type == "caught"} and \code{count > 0} for the species the
-#' party was seeking (\code{species_sought}). Returns counts of successful
-#' and total parties for each angler type x species sought combination.
+#' A party is "successful" when its total catch of the species it was seeking
+#' (\code{species_sought}) is greater than zero. That total follows the model
+#' \code{\link{add_catch}} documents: the pair's \code{"caught"} row when it has
+#' one, and otherwise \code{harvested + released}, because a \code{"caught"} row
+#' is optional. Returns counts of successful and total parties for each angler
+#' type x species sought combination.
+#'
+#' A pair that records its own \code{"caught"} row keeps it even when that row
+#' is zero — a recorded catch of none is data, not an absence, and does not fall
+#' back to the dispositions.
 #'
 #' @details
 #' \strong{Interview-based summary, not pressure-weighted.} This function
@@ -655,21 +661,45 @@ summarize_successful_parties <- function(design) {
   ss_col <- design$species_sought_col
   iuid_col <- uid_col
 
-  sought_map <- interviews[, c(iuid_col, ss_col, at_col), drop = FALSE]
-  catch_merged <- merge(
-    catch_data,
-    sought_map,
-    by.x = uid_col,
-    by.y = iuid_col,
-    all.x = FALSE
+  # A party is successful when it caught some of the species it SOUGHT, so the
+  # quantity needed per interview is that pair's total catch of its own sought
+  # species. `add_catch()` documents how that total is formed: the pair's
+  # `caught` row when it has one, and otherwise `harvested + released`, because
+  # a `caught` row is optional.
+  #
+  # This function read the rule off a `caught` row alone, with no fallback, so a
+  # party that recorded only its dispositions was counted as UNSUCCESSFUL while
+  # its own harvest was positive. Dropping the optional `caught` rows from the
+  # shipped example data -- which the documentation says is legal, and which
+  # leaves every harvested and released row untouched -- took the successful
+  # party count from 6 to 0, every rate reading 0.0% (GH #329).
+  #
+  # `species_counts_per_interview()` is the package's one implementation of that
+  # rule, and it applies the fallback per species-interview PAIR rather than per
+  # species or per table, which is the grain GH #318 and GH #320 settled on.
+  # Called once per sought species, since the species differs by interview.
+  sought_vals <- unique(as.character(interviews[[ss_col]]))
+  sought_vals <- sought_vals[!is.na(sought_vals)]
+  successful_ids <- unlist(
+    lapply(sought_vals, function(sp) {
+      counts <- species_counts_per_interview( # nolint: object_usage_linter
+        catch_data, sp, "caught",
+        uid_col = uid_col, species_col = species_col,
+        type_col = type_col, count_col = count_col
+      )
+      # `> 0` as before: a pair whose total catch of its sought species is zero
+      # is a real record of catching none, not a success.
+      caught_any <- as.character(counts$uid[!is.na(counts$count) & counts$count > 0])
+      # Restricted to the interviews that actually sought this species -- the
+      # comparison the old `species == species_sought` filter made row by row.
+      sought_this <- as.character(interviews[[iuid_col]][
+        !is.na(interviews[[ss_col]]) & as.character(interviews[[ss_col]]) == sp
+      ])
+      intersect(caught_any, sought_this)
+    }),
+    use.names = FALSE
   )
-  caught_rows <- catch_merged[
-    catch_merged[[type_col]] == "caught" &
-      catch_merged[[count_col]] > 0 &
-      catch_merged[[species_col]] == catch_merged[[ss_col]],
-  ]
-  successful_ids <- unique(caught_rows[[uid_col]])
-  interviews$is_successful <- interviews[[iuid_col]] %in% successful_ids
+  interviews$is_successful <- as.character(interviews[[iuid_col]]) %in% successful_ids
 
   totals <- stats::aggregate(
     interviews[[iuid_col]],

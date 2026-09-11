@@ -1,3 +1,36 @@
+# tidycreel (development version)
+
+## Bug fixes
+
+* `summarize_successful_parties()` now reads `add_catch()`'s catch-type model,
+  so a party that recorded only `harvested`/`released` rows counts as successful
+  (#329).
+
+  `add_catch()` documents the `caught` row as **optional**: when a pair has
+  none, its total catch is `harvested + released`. This function held a private
+  copy of the rule with no such fallback — it asked whether a `caught` row
+  existed, full stop — so a party that recorded only its dispositions was
+  reported as **unsuccessful while its own harvest was positive**.
+
+  **This was live on the package's own example data.** Four species-interview
+  pairs in `example_catch` record dispositions and no `caught` row — interviews
+  11, 12 and 14 for walleye, and 13 for bass. All four demonstrably caught the
+  species they sought, and all four were counted as failures. The successful
+  party total on the shipped data was **6; it is 10**.
+
+  Dropping every `caught` row — which the documentation says is legal, and which
+  leaves each pair's harvested and released rows untouched — previously took the
+  total from 6 to **zero**, with every reported rate reading 0.0%. It now
+  changes nothing, which is the property that makes the rule real.
+
+  A recorded catch of zero still counts as unsuccessful: that is data, not an
+  absence. The fallback now comes from `species_counts_per_interview()`, the
+  package's one implementation of the catch-type rule, applied per
+  species-interview pair (#318, #320).
+
+  This was #317's ninth instance and the last one outstanding; that defect class
+  is now closed.
+
 # tidycreel 6.0.0 "Blue Catfish" (2026-09-11)
 
 A large release, and a breaking one. The theme running through most of it is a
