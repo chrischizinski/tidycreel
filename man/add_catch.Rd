@@ -51,6 +51,16 @@ must appear in \code{design$interviews[[interview_uid]]}. Interviews with no
 catch rows are valid (anglers who caught nothing need not appear in catch
 data).
 
+\strong{Counts must be known (CATCH-07):} \code{count} may not contain
+\code{NA}. A \emph{missing row} carries a definite meaning here — none of
+that disposition, or, for a \code{"caught"} row, derive the total from
+\code{harvested + released} — so a row that is present but carries an
+unknown count is silently read as that same definite thing rather than as an
+unknown. Fill the missing counts, or drop those rows; note that dropping
+states something, since a dropped \code{"caught"} row changes how the total
+is derived rather than setting it to zero. Aborts with class
+\code{creel_error_na_catch_count}.
+
 \strong{Immutability:} Returns a new \code{creel_design} — the input is not
 modified. Calling \code{add_catch()} on a design that already has
 \code{$catch} is an error.
