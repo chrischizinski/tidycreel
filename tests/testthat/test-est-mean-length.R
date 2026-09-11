@@ -143,7 +143,14 @@ test_that("est_mean_length() SE matches delta method (1/N) * sqrt(sum((L-mean)^2
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     n_total <- sum(rows$estimate)
     mean_l <- sum(l_mid * rows$estimate) / n_total
-    expected_se <- sqrt(sum((l_mid - mean_l)^2 * rows$se^2)) / n_total
+    # The quadratic form in the bins' FULL covariance. This pinned the
+    # independence form -- the same expression with every off-diagonal zeroed
+    # -- which is the defect GH #311 fixes.
+    sigma <- attr(ld, "bin_vcov")[[sp]][
+      as.character(rows$length_bin), as.character(rows$length_bin)
+    ]
+    w <- l_mid - mean_l
+    expected_se <- sqrt(as.numeric(t(w) %*% sigma %*% w)) / n_total
     actual_se <- result$mean_length_se[result$species == sp]
     expect_equal(
       actual_se,
@@ -243,9 +250,20 @@ test_that("EML-ZT-03 est_mean_length() warns NA only for zero-total group in gro
     se = c(1, 2, 0, 0),
     stringsAsFactors = FALSE
   )
+  bins <- c("[200,225)", "[225,250)")
+  ld$length_bin <- rep(bins, 2)
   class(ld) <- c("creel_length_distribution", "data.frame")
   attr(ld, "by_vars") <- "species"
   attr(ld, "conf_level") <- 0.95
+  # A stated diagonal per group. This test is about the zero-total branch, not
+  # the variance, and since GH #311 an absent covariance is a warning rather
+  # than a silent independence assumption.
+  attr(ld, "bin_vcov") <- lapply(c("walleye", "perch"), function(sp) {
+    v <- diag(ld$se[ld$species == sp]^2, nrow = 2L)
+    dimnames(v) <- list(bins, bins)
+    v
+  })
+  names(attr(ld, "bin_vcov")) <- c("walleye", "perch")
 
   expect_warning(result <- est_mean_length(ld), "zero")
   walleye_row <- result[result$species == "walleye", ]

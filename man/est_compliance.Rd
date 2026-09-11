@@ -33,9 +33,19 @@ bins straddling the limit are classified as illegal).
 A bin is legal when \code{bin_lower >= min_length}.  The compliance proportion
 and its variance use the ratio estimator:
 \deqn{P = \frac{\sum_h I_h \hat{N}_h}{\hat{N}}}
-\deqn{\widehat{\text{Var}}(P) \approx
-  \frac{1}{\hat{N}^2} \sum_h (I_h - P)^2 \, \widehat{\text{SE}}_h^2}
-where \eqn{I_h = \mathbf{1}(\text{bin\_lower}_h \geq \text{min\_length})}.
+\deqn{\widehat{\text{Var}}(P) =
+  \frac{1}{\hat{N}^2} w' \Sigma w, \quad w_h = I_h - P}
+where \eqn{I_h = \mathbf{1}(\text{bin\_lower}_h \geq \text{min\_length})}
+and \eqn{\Sigma} is the bins' full covariance matrix, carried from the
+single \code{svytotal()} that estimated them.
+
+Earlier versions used \eqn{\sum_h w_h^2 \widehat{\text{SE}}_h^2} — the same
+expression with every off-diagonal set to zero. The bins partition the same
+fish and are rescaled onto one reported total, so they are strongly
+dependent, and on the package's own example data that form reported a
+standard error \strong{32\% below} an independently computed
+\code{survey::svyratio()} reference. If \eqn{\Sigma} is unavailable the
+independence form is used and a warning says so.
 
 Confidence interval bounds are clamped to \eqn{[0, 1]}.
 

@@ -196,19 +196,35 @@ test_that("est_biomass() biomass_estimate matches manual W = a * L_mid^b * N_h s
   }
 })
 
-test_that("est_biomass() biomass_se matches delta method sqrt(sum(w^2 * se^2))", {
+test_that("est_biomass() biomass_se uses the bins' covariance, not just its diagonal", {
+  # This test used to pin sqrt(sum(w^2 * se^2)) -- the independence form, which
+  # is the quadratic form w' Sigma w with every off-diagonal set to zero. The
+  # bins are a partition of the same fish rescaled onto one reported total, so
+  # they are strongly dependent and that form was wrong (GH #311). It asserted
+  # against a number the package itself produced, so it could only ever confirm
+  # that the code still did what it did.
   ld <- make_ld_grouped()
   a <- 0.01
   b <- 3.0
   result <- est_biomass(ld, a = a, b = b)
+  mats <- attr(ld, "bin_vcov")
+  expect_false(is.null(mats))
 
   for (sp in unique(ld$species)) {
     rows <- ld[ld$species == sp, ]
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     w_h <- a * l_mid^b
-    expected_se <- sqrt(sum(w_h^2 * rows$se^2))
+
+    sigma <- mats[[sp]][as.character(rows$length_bin), as.character(rows$length_bin)]
+    expected_se <- sqrt(as.numeric(t(w_h) %*% sigma %*% w_h))
     actual_se <- result$biomass_se[result$species == sp]
     expect_equal(actual_se, expected_se, tolerance = 1e-9, label = paste("SE for species", sp))
+
+    # And the cross-bin terms actually move it: the old independence form is
+    # the same expression with the off-diagonals zeroed, so if the two agreed
+    # this test would pass against the defect it exists to catch.
+    independence_se <- sqrt(sum(w_h^2 * rows$se^2))
+    expect_gt(actual_se, independence_se)
   }
 })
 

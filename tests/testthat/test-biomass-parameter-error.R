@@ -7,7 +7,9 @@
 # that the term stays absent rather than zero when it is not supplied.
 
 biomass_ld <- function() {
+  bins <- c("[100,200)", "[200,300)", "[300,400)")
   ld <- data.frame(
+    length_bin = bins,
     bin_lower = c(100, 200, 300),
     bin_upper = c(200, 300, 400),
     estimate = c(1000, 500, 200),
@@ -16,6 +18,14 @@ biomass_ld <- function() {
   )
   class(ld) <- c("creel_length_distribution", "data.frame")
   attr(ld, "conf_level") <- 0.95
+  # A DIAGONAL covariance, stated rather than absent. These tests are about the
+  # length-weight PARAMETER term, so the count term must stay the simple
+  # sum(w^2 se^2) they were written against -- and since GH #311 that is a
+  # claim the object has to make, not a default it falls into. Without it
+  # est_biomass() correctly warns that the cross-bin covariance is unknown.
+  v <- diag(ld$se^2, nrow = 3L)
+  dimnames(v) <- list(bins, bins)
+  attr(ld, "bin_vcov") <- list(.all = v)
   ld
 }
 
@@ -152,9 +162,20 @@ test_that("grouped biomass carries one parameter component per group", {
     se = c(100, 60, 30, 40, 50, 20),
     stringsAsFactors = FALSE
   )
+  bins <- c("[100,200)", "[200,300)", "[300,400)")
+  ld$length_bin <- rep(bins, 2)
   class(ld) <- c("creel_length_distribution", "data.frame")
   attr(ld, "conf_level") <- 0.95
   attr(ld, "by_vars") <- "species"
+  # A stated diagonal per group, for the same reason as biomass_ld() above:
+  # this test is about the parameter term, so the count term must stay the
+  # simple sum(w^2 se^2) -- which since GH #311 is a claim, not a default.
+  attr(ld, "bin_vcov") <- lapply(c("bass", "walleye"), function(sp) {
+    v <- diag(ld$se[ld$species == sp]^2, nrow = 3L)
+    dimnames(v) <- list(bins, bins)
+    v
+  })
+  names(attr(ld, "bin_vcov")) <- c("bass", "walleye")
 
   result <- est_biomass(ld, a = 0.0088, b = 3.1, alpha_se = 0.05, b_se = 0.03, L0 = 250)
 
