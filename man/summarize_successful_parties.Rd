@@ -14,8 +14,9 @@ catch data attached via \code{\link{add_catch}}.}
 \value{
 A \code{data.frame} with class
 \code{c("creel_summary_successful_parties", "data.frame")} and columns:
-\code{angler_type}, \code{species_sought}, \code{N_successful} (integer),
-\code{N_total} (integer), \code{percent} (numeric, 1 decimal).
+\code{angler_type}, \code{species_sought}, \code{N_successful} (integer,
+\code{NA} where success is not determinable), \code{N_total} (integer),
+\code{percent} (numeric, 1 decimal, \code{NA} likewise).
 }
 \description{
 A party is "successful" when its total catch of the species it was seeking
@@ -35,6 +36,22 @@ tabulates raw interview records without applying survey weighting by sampling
 effort or effort stratum. For pressure-weighted extrapolated estimates, use
 \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 }
+\section{Unrecorded grouping values}{
+
+An interview whose \code{angler_type} or \code{species_sought} was not
+recorded is reported under \code{"Unknown"}, sorted last, rather than
+dropped, so \code{sum(N_total)} always equals the number of interviews
+attached to the design.
+
+The two are not equivalent. A party is successful when it caught some of the
+species it \emph{sought}, so where the sought species is unrecorded there is
+nothing to compare the catch against and success is \strong{not
+determinable}: those rows report \code{NA} for \code{N_successful} and
+\code{percent}, never \code{0}, which would assert that the parties failed.
+An unrecorded \emph{angler type} leaves success perfectly determinable --
+only the reporting group is unknown -- so those rows carry real counts.
+}
+
 \examples{
 data(example_calendar)
 data(example_interviews)

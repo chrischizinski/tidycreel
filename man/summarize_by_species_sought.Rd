@@ -27,6 +27,18 @@ tabulates raw interview records without applying survey weighting by sampling
 effort or effort stratum. For pressure-weighted extrapolated estimates, use
 \code{\link{estimate_catch_rate}} or \code{\link{estimate_harvest_rate}}.
 }
+\section{Unrecorded grouping values}{
+
+An interview whose grouping value was not recorded is reported under
+\code{"Unknown"}, sorted last, rather than dropped. The interview is real and
+its grouping value is missing, which is not the same as the interview not
+existing, so \code{sum(N)} always equals the number of interviews attached to
+the design. \code{"Unknown"} is a label for the absence, never a category
+anyone selected. This matches \code{\link{summarize_by_zip}} and
+\code{\link{summarize_by_county}}; the survey-weighted estimators use
+\code{<unknown>} instead.
+}
+
 \examples{
 data(example_calendar)
 data(example_interviews)

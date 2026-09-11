@@ -46,6 +46,17 @@ The catch filter ensures only species the angler was targeting are counted
 (i.e., rows in \code{design$catch} where \code{catch_type == "caught"} and
 \code{species == species_sought}).
 }
+\section{Unrecorded grouping values}{
+
+An interview whose value for a \code{by} column was not recorded is reported
+under \code{"Unknown"} rather than dropped. Dropping it removed the interview
+from the result entirely, so the remaining groups lost their own members and
+their rates were computed on the survivors -- on the shipped example data
+that moved one group's mean rate from 0.393 to 0.762 while the table still
+looked complete. The unknown group's own rate is determinable, coming from
+those interviews' catch and effort, so it is reported like any other.
+}
+
 \examples{
 data(example_calendar)
 data(example_interviews)
