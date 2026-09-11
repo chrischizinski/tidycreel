@@ -103,8 +103,9 @@ catch data attached via <code><a href="add_catch.html">add_catch</a></code>.</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>data.frame</code> with class
 <code>c("creel_summary_successful_parties", "data.frame")</code> and columns:
-<code>angler_type</code>, <code>species_sought</code>, <code>N_successful</code> (integer),
-<code>N_total</code> (integer), <code>percent</code> (numeric, 1 decimal).</p>
+<code>angler_type</code>, <code>species_sought</code>, <code>N_successful</code> (integer,
+<code>NA</code> where success is not determinable), <code>N_total</code> (integer),
+<code>percent</code> (numeric, 1 decimal, <code>NA</code> likewise).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -115,6 +116,24 @@ back to the dispositions.</p>
 tabulates raw interview records without applying survey weighting by sampling
 effort or effort stratum. For pressure-weighted extrapolated estimates, use
 <code><a href="estimate_catch_rate.html">estimate_catch_rate</a></code> or <code><a href="estimate_harvest_rate.html">estimate_harvest_rate</a></code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="unrecorded-grouping-values">Unrecorded grouping values<a class="anchor" aria-label="anchor" href="#unrecorded-grouping-values"></a></h2>
+
+
+<p>An interview whose <code>angler_type</code> or <code>species_sought</code> was not
+recorded is reported under <code>"Unknown"</code>, sorted last, rather than
+dropped, so <code>sum(N_total)</code> always equals the number of interviews
+attached to the design.</p>
+<p>The two are not equivalent. A party is successful when it caught some of the
+species it <em>sought</em>, so where the sought species is unrecorded there is
+nothing to compare the catch against and success is <strong>not
+determinable</strong>: those rows report <code>NA</code> for <code>N_successful</code> and
+<code>percent</code>, never <code>0</code>, which would assert that the parties failed.
+An unrecorded <em>angler type</em> leaves success perfectly determinable –
+only the reporting group is unknown – so those rows carry real counts. So
+does a sought species genuinely <em>recorded</em> as <code>"Unknown"</code>: that is
+a real answer, not a missing one, and it keeps its own counts.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -4,6 +4,92 @@
 
 ### Bug fixes
 
+- Six summary functions dropped an interview whose grouping value was
+  not recorded, out of its own row and out of the total
+  ([\#333](https://github.com/chrischizinski/tidycreel/issues/333)).
+
+  [`table()`](https://rdrr.io/r/base/table.html) and
+  `stats::aggregate(by = )` both discard every record whose grouping
+  value is `NA`.
+  [`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md),
+  [`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md),
+  [`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md),
+  [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md),
+  `summarize_cws_rates(by = )` and `summarize_hws_rates(by = )` all
+  grouped that way, so an interview with no recorded angler type, method
+  or sought species left the table entirely. `sum(N)` silently stopped
+  equalling the number of interviews attached to the design, and nothing
+  errored or warned.
+
+  Measured on the shipped example data, blanking 7 of 22 interviews:
+  every one of the six went from accounting for 22 interviews to 15, and
+  [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+  lost two whole rows. The groups that survived lost their own members,
+  so this was never only a missing row — in
+  `summarize_cws_rates(by = "angler_type")` the boat group’s mean rate
+  moved from **0.393 to 0.762**, because the interviews that vanished
+  were the ones holding it down.
+
+  An unrecorded grouping value is now reported under `"Unknown"`, sorted
+  last, matching
+  [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+  and
+  [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md),
+  which have always done this. `"Unknown"` labels the absence; it is
+  never a category anyone selected, and nothing is imputed. (The
+  survey-weighted estimators use `<unknown>` via `group_value_labels()`;
+  the two conventions still differ.)
+
+  This is the [`svyby()`](https://rdrr.io/pkg/survey/man/svyby.html)
+  sweep of
+  [\#321](https://github.com/chrischizinski/tidycreel/issues/321)
+  reaching the functions that sweep could not see: these group with base
+  R, not [`survey::svyby()`](https://rdrr.io/pkg/survey/man/svyby.html).
+
+- [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+  reports `NA`, not `0`, where success cannot be determined
+  ([\#333](https://github.com/chrischizinski/tidycreel/issues/333)).
+
+  A party is successful when it caught some of the species it *sought*.
+  Where the sought species was not recorded there is nothing to compare
+  the catch against, so `N_successful` and `percent` are now `NA` for
+  those rows rather than `0` and `0.0%`, which asserted that the parties
+  had failed. `N_total` still counts them: the interviews happened.
+
+  An unrecorded **angler type** is a different case and is not blanked —
+  the sought species is known, so whether it was caught is knowable, and
+  only the reporting group is unknown. Those rows carry real counts.
+
+- `summarize_cws_rates(by = )` and `summarize_hws_rates(by = )` report
+  `NA`, not `0`, for a group whose sought species was not recorded
+  ([\#333](https://github.com/chrischizinski/tidycreel/issues/333)).
+
+  The numerator counts fish of the species the party was targeting. With
+  no target recorded there is nothing to count, and the upstream fill
+  made that count `0` — so the group reported a mean rate of exactly
+  `0.000`, asserting that these parties caught none of their target.
+  Grouping by anything else leaves the rate determinable, because the
+  catch and effort are the interviews’ own, and those groups are
+  unaffected.
+
+- Missingness is tracked internally rather than inferred from the
+  `"Unknown"` label, so a category genuinely recorded as `"Unknown"`
+  keeps its own counts
+  ([\#333](https://github.com/chrischizinski/tidycreel/issues/333)). A
+  sought species the interviewer recorded as unknown is a real answer,
+  not a missing one. A column holding both unrecorded values and the
+  literal value `"Unknown"` now warns, because the two are pooled into
+  one row and cannot be told apart in the output.
+
+- [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+  no longer dies inside base R when a grouping column is entirely
+  unrecorded
+  ([\#333](https://github.com/chrischizinski/tidycreel/issues/333)).
+  [`aggregate()`](https://rdrr.io/r/stats/aggregate.html) returned a
+  zero-row frame and the failure surfaced as
+  `replacement has 1 row, data has 0`, naming nothing the caller had
+  set.
+
 - [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
   now reads
   [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)’s

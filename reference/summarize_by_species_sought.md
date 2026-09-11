@@ -33,6 +33,24 @@ estimates, use
 or
 [`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md).
 
+## Unrecorded grouping values
+
+An interview whose grouping value was not recorded is reported under
+`"Unknown"`, sorted last, rather than dropped. The interview is real and
+its grouping value is missing, which is not the same as the interview
+not existing, so `sum(N)` always equals the number of interviews
+attached to the design. `"Unknown"` is a label for the absence, never a
+category anyone selected. This matches
+[`summarize_by_zip`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+and
+[`summarize_by_county`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md);
+the survey-weighted estimators use `<unknown>` instead.
+
+A column holding both unrecorded values and the literal value
+`"Unknown"` warns: the two are pooled into one row and cannot be told
+apart in the output. Missingness is tracked internally, so a category
+genuinely named `"Unknown"` keeps its own counts.
+
 ## See also
 
 Other "Reporting & Diagnostics":

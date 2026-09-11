@@ -28,8 +28,9 @@ summarize_successful_parties(design)
 
 A `data.frame` with class
 `c("creel_summary_successful_parties", "data.frame")` and columns:
-`angler_type`, `species_sought`, `N_successful` (integer), `N_total`
-(integer), `percent` (numeric, 1 decimal).
+`angler_type`, `species_sought`, `N_successful` (integer, `NA` where
+success is not determinable), `N_total` (integer), `percent` (numeric, 1
+decimal, `NA` likewise).
 
 ## Details
 
@@ -44,6 +45,23 @@ estimates, use
 [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
 or
 [`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md).
+
+## Unrecorded grouping values
+
+An interview whose `angler_type` or `species_sought` was not recorded is
+reported under `"Unknown"`, sorted last, rather than dropped, so
+`sum(N_total)` always equals the number of interviews attached to the
+design.
+
+The two are not equivalent. A party is successful when it caught some of
+the species it *sought*, so where the sought species is unrecorded there
+is nothing to compare the catch against and success is **not
+determinable**: those rows report `NA` for `N_successful` and `percent`,
+never `0`, which would assert that the parties failed. An unrecorded
+*angler type* leaves success perfectly determinable – only the reporting
+group is unknown – so those rows carry real counts. So does a sought
+species genuinely *recorded* as `"Unknown"`: that is a real answer, not
+a missing one, and it keeps its own counts.
 
 ## See also
 

@@ -54,6 +54,28 @@ The catch filter ensures only species the angler was targeting are
 counted (i.e., rows in `design$catch` where `catch_type == "caught"` and
 `species == species_sought`).
 
+## Unrecorded grouping values
+
+An interview whose value for a `by` column was not recorded is reported
+under `"Unknown"`, sorted last, rather than dropped. Dropping it removed
+the interview from the result entirely, so the remaining groups lost
+their own members and their rates were computed on the survivors – on
+the shipped example data that moved one group's mean rate from 0.393 to
+0.762 while the table still looked complete.
+
+Whether that group's rate is knowable depends on which column is
+missing. Grouped by `angler_type` or method, the rate is determinable –
+the catch and effort are the interviews' own, and only the reporting
+group is unknown. Grouped by **sought species**, it is not: the
+numerator counts fish of the species the party was targeting, and with
+no target recorded there is nothing to count. Those rows report `NA` for
+`mean_rate`, `se` and the interval, never `0`, which would assert that
+the parties caught none of their target.
+
+A column holding both unrecorded values and the literal value
+`"Unknown"` warns: the two are pooled into one row and cannot be told
+apart in the output.
+
 ## See also
 
 [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md),
