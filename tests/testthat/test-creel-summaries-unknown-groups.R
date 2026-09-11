@@ -182,3 +182,114 @@ test_that("a design with no missing grouping value is unchanged (UNK-11)", {
   expect_equal(sum(types$N), ug_n_interviews())
   expect_false(any(types$angler_type == "Unknown"))
 })
+
+# --- the label must not be mistaken for data — UNK-12..16 ---------------------
+#
+# All five come from the pre-push ensemble review, and all five failed before
+# the sentinel was introduced.
+
+test_that("a real category named \"Unknown\" keeps its real counts (UNK-12)", {
+  # The label is a display string, and a dataset may legitimately contain a
+  # category literally called "Unknown" -- a sought species the interviewer
+  # recorded as unknown is a real answer, not a missing one. Deciding
+  # missingness by comparing against the label blanked those real rows to NA
+  # on data with no NA in it at all.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
+  iv <- example_interviews
+  iv$species_sought[iv$species_sought == "panfish"] <- "Unknown"
+  expect_false(anyNA(iv$species_sought))
+
+  d <- suppressWarnings(suppressMessages({
+    dd <- creel_design(example_calendar, date = date, strata = day_type)
+    dd <- add_interviews(dd, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type,
+      angler_method = angler_method, species_sought = species_sought
+    )
+    add_catch(dd, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    )
+  }))
+  result <- summarize_successful_parties(d)
+  unknown_rows <- result[result$species_sought == "Unknown", ]
+  expect_gt(nrow(unknown_rows), 0L)
+  expect_false(any(is.na(unknown_rows$N_successful)))
+  expect_equal(sum(result$N_total), nrow(iv))
+})
+
+test_that("summarize_cws_rates() sorts the unrecorded group last (UNK-13)", {
+  # Discriminating: "Unknown" sorts before "walleye", so plain alphabetical
+  # order puts it mid-table. The other four functions place it last and the
+  # documentation says so.
+  result <- summarize_cws_rates(ug_design("species_sought"), by = "species_sought")
+  expect_true("Unknown" %in% result$species_sought)
+  expect_equal(as.character(result$species_sought[nrow(result)]), "Unknown")
+})
+
+test_that("a complete grouping column keeps its type (UNK-14)", {
+  # `x[FALSE] <- "Unknown"` coerces the whole vector to character even though it
+  # selects nothing, so an integer or Date `by` column silently became text on
+  # data with nothing missing. The fix must be inert on complete data.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
+  iv <- example_interviews
+  iv$party_size <- as.integer(rep(1:3, length.out = nrow(iv)))
+  d <- suppressWarnings(suppressMessages({
+    dd <- creel_design(example_calendar, date = date, strata = day_type)
+    dd <- add_interviews(dd, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type,
+      species_sought = species_sought
+    )
+    add_catch(dd, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    )
+  }))
+  result <- summarize_cws_rates(d, by = "party_size")
+  expect_type(result$party_size, "integer")
+})
+
+test_that("a rate for an unrecorded SOUGHT SPECIES is NA, not zero (UNK-15)", {
+  # The numerator is the catch of "the species this party was targeting". With
+  # no target recorded there is nothing to count, and the upstream fill made
+  # that count 0 -- which reports a mean rate of exactly 0 and asserts these
+  # parties caught none of their target. Same 0-vs-NA distinction as UNK-08.
+  result <- summarize_cws_rates(ug_design("species_sought"), by = "species_sought")
+  unknown_row <- result[result$species_sought == "Unknown", ]
+  expect_equal(nrow(unknown_row), 1L)
+  expect_true(is.na(unknown_row$mean_rate))
+  expect_true(is.na(unknown_row$se))
+  # The interviews are still counted.
+  expect_gt(unknown_row$N, 0L)
+  expect_equal(sum(result$N), ug_n_interviews())
+})
+
+test_that("grouping by something else leaves the rate determinable (UNK-15b)", {
+  # The other half: an unrecorded ANGLER TYPE does not make the rate unknowable,
+  # because the catch and effort are the interviews' own.
+  result <- summarize_cws_rates(ug_design("angler_type"), by = "angler_type")
+  expect_false(any(is.na(result$mean_rate)))
+})
+
+test_that("a column holding both NA and a literal \"Unknown\" warns (UNK-16)", {
+  # The two cannot be told apart in the output once pooled. Saying so is the
+  # honest option; silently merging them is not.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  iv <- example_interviews
+  iv$angler_type[1:3] <- "Unknown"
+  iv$angler_type[4:6] <- NA
+  d <- suppressWarnings(suppressMessages({
+    dd <- creel_design(example_calendar, date = date, strata = day_type)
+    add_interviews(dd, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type
+    )
+  }))
+  expect_warning(summarize_by_angler_type(d), "contains both unrecorded values")
+})

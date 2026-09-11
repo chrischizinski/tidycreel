@@ -49,7 +49,9 @@ nothing to compare the catch against and success is \strong{not
 determinable}: those rows report \code{NA} for \code{N_successful} and
 \code{percent}, never \code{0}, which would assert that the parties failed.
 An unrecorded \emph{angler type} leaves success perfectly determinable --
-only the reporting group is unknown -- so those rows carry real counts.
+only the reporting group is unknown -- so those rows carry real counts. So
+does a sought species genuinely \emph{recorded} as \code{"Unknown"}: that is
+a real answer, not a missing one, and it keeps its own counts.
 }
 
 \examples{

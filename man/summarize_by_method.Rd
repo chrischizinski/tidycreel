@@ -37,6 +37,11 @@ the design. \code{"Unknown"} is a label for the absence, never a category
 anyone selected. This matches \code{\link{summarize_by_zip}} and
 \code{\link{summarize_by_county}}; the survey-weighted estimators use
 \code{<unknown>} instead.
+
+A column holding both unrecorded values and the literal value
+\code{"Unknown"} warns: the two are pooled into one row and cannot be told
+apart in the output. Missingness is tracked internally, so a category
+genuinely named \code{"Unknown"} keeps its own counts.
 }
 
 \examples{

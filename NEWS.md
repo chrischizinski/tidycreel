@@ -43,6 +43,23 @@
   sought species is known, so whether it was caught is knowable, and only the
   reporting group is unknown. Those rows carry real counts.
 
+* `summarize_cws_rates(by = )` and `summarize_hws_rates(by = )` report `NA`,
+  not `0`, for a group whose sought species was not recorded (#333).
+
+  The numerator counts fish of the species the party was targeting. With no
+  target recorded there is nothing to count, and the upstream fill made that
+  count `0` — so the group reported a mean rate of exactly `0.000`, asserting
+  that these parties caught none of their target. Grouping by anything else
+  leaves the rate determinable, because the catch and effort are the
+  interviews' own, and those groups are unaffected.
+
+* Missingness is tracked internally rather than inferred from the `"Unknown"`
+  label, so a category genuinely recorded as `"Unknown"` keeps its own counts
+  (#333). A sought species the interviewer recorded as unknown is a real answer,
+  not a missing one. A column holding both unrecorded values and the literal
+  value `"Unknown"` now warns, because the two are pooled into one row and
+  cannot be told apart in the output.
+
 * `summarize_successful_parties()` no longer dies inside base R when a grouping
   column is entirely unrecorded (#333). `aggregate()` returned a zero-row frame
   and the failure surfaced as `replacement has 1 row, data has 0`, naming

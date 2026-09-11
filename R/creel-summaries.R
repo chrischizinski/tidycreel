@@ -4,7 +4,7 @@
 # All percent values are rounded to 1 decimal; N columns are integer.
 # Base R only: table(), aggregate(), merge(), cut(), format(). No dplyr.
 
-# The label an unrecorded grouping value is reported under.
+# The label an unrecorded grouping value is REPORTED under.
 #
 # Matches summarize_by_zip() and summarize_by_county(), which have always named
 # the absence rather than dropping it. The survey-weighted estimators use
@@ -15,7 +15,24 @@ unknown_group_label <- function() {
   "Unknown"
 }
 
-# Name an unrecorded grouping value so the record keeps its place in the table.
+# The marker carried INTERNALLY for "this grouping value was not recorded".
+#
+# Deliberately not the display label. A dataset may legitimately contain a
+# category literally named "Unknown" -- a sought species recorded as unknown by
+# the interviewer is a real answer, not a missing one -- and code that decides
+# missingness by comparing against the display label treats those real records
+# as absent. On the shipped example data with `panfish` renamed to `Unknown` and
+# no NA anywhere, that blanked real success counts to NA.
+#
+# A leading 0x01 cannot occur in any creel vocabulary, species name or angler
+# type, so the marker never collides with data. It is replaced by the display
+# label just before the result is returned.
+#' @noRd
+unknown_group_sentinel <- function() {
+  "\u0001__unrecorded__"
+}
+
+# Mark an unrecorded grouping value so the record keeps its place in the table.
 #
 # `table()` (useNA = "no") and `stats::aggregate(by = )` both drop every record
 # whose grouping value is NA -- silently, with no row and no count. An interview
@@ -26,22 +43,118 @@ unknown_group_label <- function() {
 # accounted for to 15, removed two whole rows, and moved a reported rate from
 # 0.393 to 0.762 (GH #333).
 #
-# This is a LABEL, not a value. Nothing is imputed: the interview is real and
+# This MARKS an absence; it does not impute a value. The interview is real and
 # its grouping value is unknown, which is not the same as the interview not
 # existing. The group's count is a real count of records whose grouping value
 # was not recorded, and it must never be read as a category anyone selected.
+#
+# Complete data is returned untouched, type included: a `by` column that is a
+# factor, an integer or a Date keeps its class when nothing is missing, so this
+# cannot change an existing result.
 #' @noRd
-label_unknown_group <- function(x) {
+label_unknown_group <- function(x, column = NULL) {
+  if (!anyNA(x)) {
+    return(x)
+  }
+  if (any(as.character(x) == unknown_group_label(), na.rm = TRUE)) {
+    where <- if (is.null(column)) "A grouping column" else column # nolint: object_usage_linter
+    cli::cli_warn(c(
+      "{.field {where}} contains both unrecorded values \
+       and the literal value {.val {unknown_group_label()}}.",
+      "i" = "Both are reported in one {.val {unknown_group_label()}} row; the counts \
+             are pooled and cannot be told apart in the output.",
+      "i" = "Rename the recorded category if the two must stay separate."
+    ))
+  }
+  if (is.factor(x)) {
+    x <- factor(x, levels = c(levels(x), unknown_group_sentinel()))
+    x[is.na(x)] <- unknown_group_sentinel()
+    return(x)
+  }
   x <- as.character(x)
-  x[is.na(x)] <- unknown_group_label()
+  x[is.na(x)] <- unknown_group_sentinel()
   x
 }
 
+# Replace the internal marker with the reported label, preserving the column's
+# type. Call once, on the finished result.
+#' @noRd
+show_unknown_group <- function(x) {
+  if (is.factor(x)) {
+    if (!unknown_group_sentinel() %in% levels(x)) {
+      return(x)
+    }
+    levels(x)[levels(x) == unknown_group_sentinel()] <- unknown_group_label()
+    return(x)
+  }
+  hit <- !is.na(x) & as.character(x) == unknown_group_sentinel()
+  # Returned untouched when nothing is marked, because `x[FALSE] <- "Unknown"`
+  # coerces the whole vector to character even though it selects no elements --
+  # which silently turned an integer or Date `by` column into text on data that
+  # had nothing missing at all.
+  if (!any(hit)) {
+    return(x)
+  }
+  x <- as.character(x)
+  x[hit] <- unknown_group_label()
+  x
+}
+
+# TRUE where a value was not recorded. Tests the marker, never the display
+# label, so a real category named "Unknown" is not mistaken for an absence.
+#' @noRd
+is_unrecorded_group <- function(x) {
+  !is.na(x) & as.character(x) == unknown_group_sentinel()
+}
+
 # Sort key putting the unrecorded group last, whatever it sorts as
-# alphabetically. Pass to order() ahead of the group column itself.
+# alphabetically. Call after show_unknown_group(), on the reported label.
 #' @noRd
 unknown_last <- function(x) {
-  as.character(x) == unknown_group_label()
+  !is.na(x) & as.character(x) == unknown_group_label()
+}
+
+# Finish a CWS/HWS rate table: blank the rates that are not determinable, render
+# the marker as the reported label, and sort the unrecorded group last.
+#
+# Where the grouping is by SOUGHT SPECIES and the sought species was not
+# recorded, the rate is not determinable. Its numerator is the catch of "the
+# species this party was targeting", and with no target recorded there is
+# nothing to count -- the interview's target count was filled with 0 upstream,
+# which would report a mean rate of exactly 0 and assert that these parties
+# caught none of their target. That is a different and unsupported claim, so
+# those rows report NA (GH #333).
+#
+# Grouping by anything else -- angler type, method -- leaves the rate perfectly
+# determinable: only the reporting group is unknown, and the catch and effort
+# are the interviews' own.
+#' @noRd
+finish_unknown_groups <- function(result, by_vars, ss_col) {
+  if (length(by_vars) == 0L) {
+    return(result)
+  }
+  if (!is.null(ss_col) && ss_col %in% by_vars) {
+    undeterminable <- is_unrecorded_group(result[[ss_col]])
+    if (any(undeterminable)) {
+      for (col in intersect(c("mean_rate", "se", "ci_lower", "ci_upper"), names(result))) {
+        result[[col]][undeterminable] <- NA_real_
+      }
+    }
+  }
+  for (v in by_vars) {
+    result[[v]] <- show_unknown_group(result[[v]])
+  }
+  ord <- c(
+    lapply(by_vars, function(v) unknown_last(result[[v]])),
+    lapply(by_vars, function(v) result[[v]])
+  )
+  # Interleave so each by-var's "unknown last" key sits immediately before the
+  # value it orders, otherwise a second grouping column would outrank the first.
+  ord <- unlist(
+    lapply(seq_along(by_vars), function(i) list(ord[[i]], ord[[length(by_vars) + i]])),
+    recursive = FALSE
+  )
+  result[do.call(order, ord), , drop = FALSE]
 }
 
 #' Tabulate refused vs accepted interviews by month
@@ -334,6 +447,11 @@ summarize_by_day_type <- function(design, day_type_col = NULL) {
 #' \code{\link{summarize_by_county}}; the survey-weighted estimators use
 #' \code{<unknown>} instead.
 #'
+#' A column holding both unrecorded values and the literal value
+#' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
+#' apart in the output. Missingness is tracked internally, so a category
+#' genuinely named \code{"Unknown"} keeps its own counts.
+#'
 #' @return A \code{data.frame} with class \code{c("creel_summary_angler_type",
 #'   "data.frame")} and columns: \code{month}, \code{angler_type}, \code{N},
 #'   \code{percent}.
@@ -378,7 +496,9 @@ summarize_by_angler_type <- function(design) {
   }
 
   # Unrecorded angler type is reported as its own group rather than dropped.
-  angler_type_vals <- label_unknown_group(design$interviews[[design$angler_type_col]])
+  angler_type_vals <- label_unknown_group(
+    design$interviews[[design$angler_type_col]], design$angler_type_col
+  )
 
   dates <- design$interviews[[design$date_col]]
   month_chr <- format(dates, "%B")
@@ -407,6 +527,7 @@ summarize_by_angler_type <- function(design) {
   counts <- merge(counts, month_totals, by = "month")
   counts$percent <- round(100 * counts$N / counts$month_total, 1)
 
+  counts$angler_type <- show_unknown_group(counts$angler_type)
   counts <- counts[order(counts$sort, unknown_last(counts$angler_type), counts$angler_type), ]
   counts$sort <- NULL
   counts$month_total <- NULL
@@ -442,6 +563,11 @@ summarize_by_angler_type <- function(design) {
 #' anyone selected. This matches \code{\link{summarize_by_zip}} and
 #' \code{\link{summarize_by_county}}; the survey-weighted estimators use
 #' \code{<unknown>} instead.
+#'
+#' A column holding both unrecorded values and the literal value
+#' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
+#' apart in the output. Missingness is tracked internally, so a category
+#' genuinely named \code{"Unknown"} keeps its own counts.
 #'
 #' @return A \code{data.frame} with class \code{c("creel_summary_method",
 #'   "data.frame")} and columns: \code{month}, \code{method}, \code{N},
@@ -487,7 +613,9 @@ summarize_by_method <- function(design) {
   }
 
   # Unrecorded method is reported as its own group rather than dropped.
-  method_vals <- label_unknown_group(design$interviews[[design$angler_method_col]])
+  method_vals <- label_unknown_group(
+    design$interviews[[design$angler_method_col]], design$angler_method_col
+  )
 
   dates <- design$interviews[[design$date_col]]
   month_chr <- format(dates, "%B")
@@ -516,6 +644,7 @@ summarize_by_method <- function(design) {
   counts <- merge(counts, month_totals, by = "month")
   counts$percent <- round(100 * counts$N / counts$month_total, 1)
 
+  counts$method <- show_unknown_group(counts$method)
   counts <- counts[order(counts$sort, unknown_last(counts$method), counts$method), ]
   counts$sort <- NULL
   counts$month_total <- NULL
@@ -551,6 +680,11 @@ summarize_by_method <- function(design) {
 #' anyone selected. This matches \code{\link{summarize_by_zip}} and
 #' \code{\link{summarize_by_county}}; the survey-weighted estimators use
 #' \code{<unknown>} instead.
+#'
+#' A column holding both unrecorded values and the literal value
+#' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
+#' apart in the output. Missingness is tracked internally, so a category
+#' genuinely named \code{"Unknown"} keeps its own counts.
 #'
 #' @return A \code{data.frame} with class \code{c("creel_summary_species_sought",
 #'   "data.frame")} and columns: \code{month}, \code{species}, \code{N},
@@ -597,7 +731,9 @@ summarize_by_species_sought <- function(design) {
 
   # An unrecorded sought species is reported as its own group rather than
   # dropped: the interview happened, and what it was targeting is unknown.
-  species_vals <- label_unknown_group(design$interviews[[design$species_sought_col]])
+  species_vals <- label_unknown_group(
+    design$interviews[[design$species_sought_col]], design$species_sought_col
+  )
 
   dates <- design$interviews[[design$date_col]]
   month_chr <- format(dates, "%B")
@@ -626,6 +762,7 @@ summarize_by_species_sought <- function(design) {
   counts <- merge(counts, month_totals, by = "month")
   counts$percent <- round(100 * counts$N / counts$month_total, 1)
 
+  counts$species <- show_unknown_group(counts$species)
   counts <- counts[order(counts$sort, unknown_last(counts$species), counts$species), ]
   counts$sort <- NULL
   counts$month_total <- NULL
@@ -671,7 +808,9 @@ summarize_by_species_sought <- function(design) {
 #' determinable}: those rows report \code{NA} for \code{N_successful} and
 #' \code{percent}, never \code{0}, which would assert that the parties failed.
 #' An unrecorded \emph{angler type} leaves success perfectly determinable --
-#' only the reporting group is unknown -- so those rows carry real counts.
+#' only the reporting group is unknown -- so those rows carry real counts. So
+#' does a sought species genuinely \emph{recorded} as \code{"Unknown"}: that is
+#' a real answer, not a missing one, and it keeps its own counts.
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_successful_parties", "data.frame")} and columns:
@@ -795,8 +934,8 @@ summarize_successful_parties <- function(design) {
   # angler type or no recorded sought species left this table entirely -- out of
   # its own row AND out of `N_total`, which then stopped equalling the number of
   # interviews attached to the design (GH #333).
-  interviews[[at_col]] <- label_unknown_group(interviews[[at_col]])
-  interviews[[ss_col]] <- label_unknown_group(interviews[[ss_col]])
+  interviews[[at_col]] <- label_unknown_group(interviews[[at_col]], at_col)
+  interviews[[ss_col]] <- label_unknown_group(interviews[[ss_col]], ss_col)
 
   totals <- stats::aggregate(
     interviews[[iuid_col]],
@@ -838,9 +977,15 @@ summarize_successful_parties <- function(design) {
   # An unrecorded ANGLER TYPE is different and is NOT blanked here: success is
   # still determinable from the party's own catch, only the reporting group is
   # unknown.
-  undeterminable <- result$species_sought == unknown_group_label()
+  # Tested on the internal marker, never on the reported label: a sought species
+  # legitimately recorded as "Unknown" is a real answer, and blanking it would
+  # destroy counts that are perfectly determinable.
+  undeterminable <- is_unrecorded_group(result$species_sought)
   result$N_successful[undeterminable] <- NA_integer_
   result$percent[undeterminable] <- NA_real_
+
+  result$angler_type <- show_unknown_group(result$angler_type)
+  result$species_sought <- show_unknown_group(result$species_sought)
 
   result <- result[order(
     unknown_last(result$angler_type), result$angler_type,
@@ -966,12 +1111,24 @@ summarize_by_trip_length <- function(design) {
 #'   catch data attached via \code{\link{add_catch}}.
 #' @section Unrecorded grouping values:
 #' An interview whose value for a \code{by} column was not recorded is reported
-#' under \code{"Unknown"} rather than dropped. Dropping it removed the interview
-#' from the result entirely, so the remaining groups lost their own members and
-#' their rates were computed on the survivors -- on the shipped example data
-#' that moved one group's mean rate from 0.393 to 0.762 while the table still
-#' looked complete. The unknown group's own rate is determinable, coming from
-#' those interviews' catch and effort, so it is reported like any other.
+#' under \code{"Unknown"}, sorted last, rather than dropped. Dropping it removed
+#' the interview from the result entirely, so the remaining groups lost their
+#' own members and their rates were computed on the survivors -- on the shipped
+#' example data that moved one group's mean rate from 0.393 to 0.762 while the
+#' table still looked complete.
+#'
+#' Whether that group's rate is knowable depends on which column is missing.
+#' Grouped by \code{angler_type} or method, the rate is determinable -- the
+#' catch and effort are the interviews' own, and only the reporting group is
+#' unknown. Grouped by \strong{sought species}, it is not: the numerator counts
+#' fish of the species the party was targeting, and with no target recorded
+#' there is nothing to count. Those rows report \code{NA} for
+#' \code{mean_rate}, \code{se} and the interval, never \code{0}, which would
+#' assert that the parties caught none of their target.
+#'
+#' A column holding both unrecorded values and the literal value
+#' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
+#' apart in the output.
 #'
 #' @param by Optional tidy selector for grouping columns from
 #'   \code{design$interviews}. Common choices:
@@ -1149,7 +1306,7 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # itself determinable -- it comes from those interviews' own catch and effort
   # -- so the group is reported, not blanked.
   group_cols <- if (length(by_vars) > 0) {
-    lapply(by_vars, function(v) label_unknown_group(interview_base[[v]]))
+    lapply(by_vars, function(v) label_unknown_group(interview_base[[v]], v))
   } else {
     list(rep("all", nrow(interview_base)))
   }
@@ -1180,6 +1337,8 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   }
 
   result$N <- as.integer(result$N)
+
+  result <- finish_unknown_groups(result, by_vars, ss_col)
   row.names(result) <- NULL
 
   class(result) <- c("creel_summary_cws_rates", "data.frame")
@@ -1211,12 +1370,24 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #'   catch data attached via \code{\link{add_catch}}.
 #' @section Unrecorded grouping values:
 #' An interview whose value for a \code{by} column was not recorded is reported
-#' under \code{"Unknown"} rather than dropped. Dropping it removed the interview
-#' from the result entirely, so the remaining groups lost their own members and
-#' their rates were computed on the survivors -- on the shipped example data
-#' that moved one group's mean rate from 0.393 to 0.762 while the table still
-#' looked complete. The unknown group's own rate is determinable, coming from
-#' those interviews' catch and effort, so it is reported like any other.
+#' under \code{"Unknown"}, sorted last, rather than dropped. Dropping it removed
+#' the interview from the result entirely, so the remaining groups lost their
+#' own members and their rates were computed on the survivors -- on the shipped
+#' example data that moved one group's mean rate from 0.393 to 0.762 while the
+#' table still looked complete.
+#'
+#' Whether that group's rate is knowable depends on which column is missing.
+#' Grouped by \code{angler_type} or method, the rate is determinable -- the
+#' catch and effort are the interviews' own, and only the reporting group is
+#' unknown. Grouped by \strong{sought species}, it is not: the numerator counts
+#' fish of the species the party was targeting, and with no target recorded
+#' there is nothing to count. Those rows report \code{NA} for
+#' \code{mean_rate}, \code{se} and the interval, never \code{0}, which would
+#' assert that the parties caught none of their target.
+#'
+#' A column holding both unrecorded values and the literal value
+#' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
+#' apart in the output.
 #'
 #' @param by Optional tidy selector for grouping columns from
 #'   \code{design$interviews}. Common choices:
@@ -1394,7 +1565,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # itself determinable -- it comes from those interviews' own catch and effort
   # -- so the group is reported, not blanked.
   group_cols <- if (length(by_vars) > 0) {
-    lapply(by_vars, function(v) label_unknown_group(interview_base[[v]]))
+    lapply(by_vars, function(v) label_unknown_group(interview_base[[v]], v))
   } else {
     list(rep("all", nrow(interview_base)))
   }
@@ -1425,6 +1596,8 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   }
 
   result$N <- as.integer(result$N)
+
+  result <- finish_unknown_groups(result, by_vars, ss_col)
   row.names(result) <- NULL
 
   class(result) <- c("creel_summary_hws_rates", "data.frame")
