@@ -239,6 +239,7 @@ est_length_distribution <- function(
 
   ordered_labs <- bin_labels[bin_labels %in% as.character(unique(records$length_bin))]
   result_rows <- vector("list", 0)
+  vcov_by_group <- vector("list", 0)
   base_interviews <- design$interviews
   uid_col <- design$lengths_interview_uid_col
   measured_total <- 0
@@ -248,8 +249,15 @@ est_length_distribution <- function(
     group_indices <- list(seq_len(nrow(records)))
     group_values <- list(NULL)
   } else {
-    group_key <- do.call(paste, c(lapply(by_vars, function(v) records[[v]]), sep = "\x1f"))
-    split_idx <- split(seq_len(nrow(records)), group_key)
+    # group_key(), not a private paste(), and named `record_keys` so it does not
+    # shadow that function -- the attribute naming below calls it. R resolves a
+    # symbol in call position to the nearest FUNCTION, so the shadowing was not
+    # a bug, but a reader cannot tell that at a glance. Routing through the
+    # helper also stops a group labelled "NA" colliding with an unknown one,
+    # which here would hand one group another group's covariance matrix
+    # (GH #248, GH #321).
+    record_keys <- group_key(records, by_vars)
+    split_idx <- split(seq_len(nrow(records)), record_keys)
     group_indices <- unname(split_idx)
     group_values <- lapply(group_indices, function(idx) records[idx[1], by_vars, drop = FALSE])
   }
@@ -350,6 +358,12 @@ est_length_distribution <- function(
     rescaled <- two_phase_rescale(measured, reported, v_all) # nolint: object_usage_linter
     estimates <- rescaled$estimate
     ses <- rescaled$se
+    # Labelled by bin, not by position. Every consumer aligns its weight vector
+    # to this matrix by `length_bin`, so a caller who reorders or drops rows
+    # cannot silently pair a bin with another bin's variance (GH #311).
+    group_vcov <- rescaled$vcov
+    dimnames(group_vcov) <- list(bin_lookup$length_bin, bin_lookup$length_bin)
+    vcov_by_group[[length(vcov_by_group) + 1L]] <- group_vcov
 
     z_ci <- stats::qnorm((1 + conf_level) / 2)
     cis <- cbind(estimates - z_ci * ses, estimates + z_ci * ses)
@@ -427,6 +441,24 @@ est_length_distribution <- function(
   # function aborts above when no reported total is available.
   attr(result, "measured_total") <- measured_total
   attr(result, "reported_total") <- reported_total
+  # The bins' full covariance, one matrix per reported group, keyed by the same
+  # group key the consumers build. `svytotal()` estimates it and
+  # `two_phase_rescale()` propagates it; before GH #311 it died here, and every
+  # ratio consumer rebuilt a variance from the diagonal alone -- which made
+  # `est_compliance()` report a standard error 32% below an independently
+  # computed `survey::svyratio()` reference.
+  #
+  # An attribute rather than a column because it is one matrix per group, not
+  # one value per row. That carries the GH #124 hazard -- `[.data.frame` drops
+  # attributes -- so the consumers read it off the object they were HANDED,
+  # before any row subsetting of their own, and say so out loud when it is
+  # missing rather than falling back to independence in silence.
+  names(vcov_by_group) <- if (length(by_vars) > 0L) {
+    vapply(group_values, function(g) group_key(g, by_vars), character(1L))
+  } else {
+    ".all"
+  }
+  attr(result, "bin_vcov") <- vcov_by_group
   result
 }
 
@@ -526,9 +558,11 @@ build_length_distribution_records <- function(
 #' produced by [est_length_distribution()] into a total biomass estimate using
 #' the allometric length-weight equation \eqn{W = a \cdot L^b}.
 #'
-#' Variance is propagated via the delta method, treating estimated fish counts
-#' per length bin as uncorrelated and the length-weight parameters `a` and `b`
-#' as known without error (see Details).
+#' Variance is propagated via the delta method, carrying the **full covariance**
+#' among the estimated fish counts per length bin and treating the length-weight
+#' parameters `a` and `b` as known without error unless their standard errors
+#' are supplied (see Details). Before GH #311 the bin counts were treated as
+#' uncorrelated, which under-estimated the variance.
 #'
 #' Since GH #310 the counts supplied by [est_length_distribution()] describe the
 #' **reported catch** rather than the measured subsample, so `biomass_estimate`
@@ -560,11 +594,18 @@ build_length_distribution_records <- function(
 #' survey-weighted estimated fish count from [est_length_distribution()].
 #' Total biomass is \eqn{B = \sum_h B_h}.
 #'
-#' Variance is approximated as
-#' \eqn{\widehat{\text{Var}}(B) \approx \sum_h (a \cdot L_h^b)^2 \cdot
-#' \widehat{\text{SE}}_h^2}, which ignores cross-bin covariances.
-#' When positive covariances exist (likely in small surveys), this
-#' under-estimates the true variance.
+#' Variance is the quadratic form
+#' \eqn{\widehat{\text{Var}}(B) = w' \Sigma w} with \eqn{w_h = a \cdot L_h^b}
+#' and \eqn{\Sigma} the bins' full covariance matrix, carried from the single
+#' `svytotal()` that estimated them. Earlier versions used
+#' \eqn{\sum_h w_h^2 \widehat{\text{SE}}_h^2} — the same expression with every
+#' off-diagonal set to zero — which under-estimated the variance, since the bins
+#' partition the same fish and are rescaled onto one reported total.
+#'
+#' If \eqn{\Sigma} is unavailable — the object was produced by an older version,
+#' or was subsetted in a way that dropped the attribute carrying it — the
+#' independence form is used and a warning says so. An absent covariance is
+#' unknown, not zero.
 #'
 #' By default `a` and `b` are treated as known constants, so `biomass_se`
 #' carries no contribution from their estimation error. In practice they are
@@ -702,11 +743,16 @@ est_biomass <- function(ld, a, b, conf_level = NULL, alpha_se = NULL, b_se = NUL
 
   se_params <- if (is.null(params)) NULL else numeric(0)
 
-  compute_biomass <- function(rows) {
+  compute_biomass <- function(rows, key) {
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     w_h <- a * l_mid^b
     biomass <- sum(w_h * rows$estimate)
-    var_counts <- sum(w_h^2 * rows$se^2)
+    # Biomass is a weighted SUM of the bin totals rather than a ratio of them,
+    # but its variance is the same quadratic form in the same weights, and the
+    # cross-bin terms belong in it for the same reason (GH #311). This was the
+    # one consumer that documented the omission; it is now no longer an
+    # omission, and the documentation says so instead.
+    var_counts <- weighted_bin_var(w_h, rows, bin_vcov_for(ld, rows, key), "biomass_se")
 
     # Length-weight parameter error, on the pivot parameterisation
     # W = alpha * (L / L0)^b with alpha = a * L0^b. Both partials are taken at
@@ -735,15 +781,20 @@ est_biomass <- function(ld, a, b, conf_level = NULL, alpha_se = NULL, b_se = NUL
   }
 
   if (length(by_vars) == 0L) {
-    result <- compute_biomass(ld)
+    result <- compute_biomass(ld, ".all")
   } else {
-    group_key <- do.call(paste, c(lapply(by_vars, function(v) ld[[v]]), sep = "\x1f"))
-    groups <- unique(group_key)
+    # See est_compliance(): group_key(), not a private paste().
+    row_keys <- group_key(ld, by_vars)
+    groups <- unique(row_keys)
     result_rows <- vector("list", length(groups))
     for (i in seq_along(groups)) {
-      rows <- ld[group_key == groups[[i]], , drop = FALSE]
+      rows <- ld[row_keys == groups[[i]], , drop = FALSE]
       group_info <- rows[1L, by_vars, drop = FALSE]
-      result_rows[[i]] <- cbind(group_info, compute_biomass(rows), row.names = NULL)
+      result_rows[[i]] <- cbind(
+        group_info,
+        compute_biomass(rows, groups[[i]]),
+        row.names = NULL
+      )
     }
     result <- do.call(rbind, result_rows)
   }
@@ -864,10 +915,13 @@ validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::call
 #' count to total count:
 #' \deqn{\bar{L} = \frac{\sum_h L_h \hat{N}_h}{\hat{N}}}
 #'
-#' Variance is propagated via the delta method for a ratio estimator, treating
-#' cross-bin covariances as zero:
-#' \deqn{\widehat{\text{Var}}(\bar{L}) \approx
-#'   \frac{1}{\hat{N}^2} \sum_h (L_h - \bar{L})^2 \, \widehat{\text{SE}}_h^2}
+#' Variance is propagated via the delta method for a ratio estimator, using the
+#' bins' full covariance matrix \eqn{\Sigma}:
+#' \deqn{\widehat{\text{Var}}(\bar{L}) =
+#'   \frac{1}{\hat{N}^2} w' \Sigma w, \quad w_h = L_h - \bar{L}}
+#' Earlier versions treated the cross-bin covariances as zero, which
+#' under-estimated the standard error. If \eqn{\Sigma} is unavailable the
+#' independence form is used and a warning says so.
 #'
 #' @return A `data.frame` with class `c("creel_mean_length", "data.frame")` and
 #'   columns: grouping columns (if any), `mean_length`, `mean_length_se`,
@@ -942,7 +996,7 @@ est_mean_length <- function(ld, conf_level = NULL) {
   # of freedom to. See ?creel_confidence_intervals.
   z <- stats::qnorm((1 + conf_level) / 2)
 
-  compute_mean_length <- function(rows) {
+  compute_mean_length <- function(rows, key) {
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     n_total <- sum(rows$estimate)
     if (n_total <= 0) {
@@ -956,7 +1010,12 @@ est_mean_length <- function(ld, conf_level = NULL) {
       ))
     }
     mean_l <- sum(l_mid * rows$estimate) / n_total
-    se_l <- sqrt(sum((l_mid - mean_l)^2 * rows$se^2)) / n_total
+    # Same ratio delta method as est_compliance(), with the bin midpoint in
+    # place of the legality indicator, and taken against the bins' full
+    # covariance rather than its diagonal (GH #311).
+    w <- l_mid - mean_l
+    se_l <- sqrt(weighted_bin_var(w, rows, bin_vcov_for(ld, rows, key), "mean_length_se")) /
+      n_total
     data.frame(
       mean_length = mean_l,
       mean_length_se = se_l,
@@ -967,15 +1026,20 @@ est_mean_length <- function(ld, conf_level = NULL) {
   }
 
   if (length(by_vars) == 0L) {
-    result <- compute_mean_length(ld)
+    result <- compute_mean_length(ld, ".all")
   } else {
-    group_key <- do.call(paste, c(lapply(by_vars, function(v) ld[[v]]), sep = "\x1f"))
-    groups <- unique(group_key)
+    # See est_compliance(): group_key(), not a private paste().
+    row_keys <- group_key(ld, by_vars)
+    groups <- unique(row_keys)
     result_rows <- vector("list", length(groups))
     for (i in seq_along(groups)) {
-      rows <- ld[group_key == groups[[i]], , drop = FALSE]
+      rows <- ld[row_keys == groups[[i]], , drop = FALSE]
       group_info <- rows[1L, by_vars, drop = FALSE]
-      result_rows[[i]] <- cbind(group_info, compute_mean_length(rows), row.names = NULL)
+      result_rows[[i]] <- cbind(
+        group_info,
+        compute_mean_length(rows, groups[[i]]),
+        row.names = NULL
+      )
     }
     result <- do.call(rbind, result_rows)
   }
@@ -987,6 +1051,102 @@ est_mean_length <- function(ld, conf_level = NULL) {
   attr(result, "by_vars") <- if (length(by_vars) > 0L) by_vars else NULL
   result
 }
+
+# Cross-bin covariance for the ratio consumers (GH #311) ----
+
+#' The bins' covariance matrix for one reported group
+#'
+#' Internal. `est_length_distribution()` attaches the rescaled bins' full
+#' covariance as an attribute, one matrix per reported group. This reads the
+#' block for `rows` and aligns it to them BY BIN LABEL, so a caller who
+#' reordered or dropped rows cannot pair a bin with another bin's variance.
+#'
+#' Returns `NULL` rather than a substitute whenever the matrix cannot be
+#' produced for these exact rows -- the object predates the attribute, was
+#' subsetted with `[` (which drops attributes, GH #124), or carries a bin the
+#' matrix does not name. The caller says so out loud; an absent covariance is
+#' unknown, not zero, and the whole point of #311 is that assuming zero is the
+#' defect.
+#'
+#' @param ld The `creel_length_distribution` as HANDED to the consumer, before
+#'   any row subsetting of its own.
+#' @param rows The subset of rows the statistic is being computed over.
+#' @param key The group key for `rows`, or `".all"` when ungrouped.
+#'
+#' @return A square covariance matrix ordered like `rows`, or `NULL`.
+#'
+#' @keywords internal
+#' @noRd
+bin_vcov_for <- function(ld, rows, key) {
+  mats <- attr(ld, "bin_vcov")
+  if (is.null(mats) || is.null(mats[[key]])) {
+    return(NULL)
+  }
+  m <- mats[[key]]
+  labs <- as.character(rows$length_bin)
+  if (anyNA(labs) || !all(labs %in% rownames(m))) {
+    return(NULL)
+  }
+  m[labs, labs, drop = FALSE]
+}
+
+
+#' A weighted variance over the bins, using their covariance
+#'
+#' Internal. Every ratio the length path reports -- a compliance proportion, a
+#' mean length, a total biomass -- is a weighted sum of the bin totals, so its
+#' variance is the quadratic form \eqn{w' \Sigma w} in the same weights.
+#'
+#' Each consumer used \eqn{\sum_h w_h^2 \widehat{SE}_h^2} instead, which is
+#' that form with every off-diagonal set to zero. The bins are a partition of
+#' the same fish, rescaled onto a single reported total, so they are strongly
+#' dependent and those terms are not a rounding detail: on the package's own
+#' example data `est_compliance()` reported a standard error **32% below** an
+#' independently computed `survey::svyratio()` reference (GH #311).
+#'
+#' When the covariance is unavailable the independence form is used and a
+#' warning names it as an approximation rather than the estimator.
+#'
+#' @param w Numeric weight per row of `rows`.
+#' @param rows The bin rows the statistic covers.
+#' @param sigma Covariance matrix from [bin_vcov_for()], or `NULL`.
+#' @param what Character, the statistic being computed, for the warning.
+#'
+#' @return A single non-negative variance.
+#'
+#' @keywords internal
+#' @noRd
+weighted_bin_var <- function(w, rows, sigma, what) {
+  if (is.null(sigma)) {
+    cli::cli_warn(
+      c(
+        "Cross-bin covariance is unavailable; {.val {what}} assumes the bins
+         are independent.",
+        "x" = "The reported standard error is an approximation and is likely
+               too SMALL -- the bins partition the same fish.",
+        "i" = "This happens when the length distribution was subsetted with
+               {.code [} , which drops the attribute carrying the covariance,
+               or was built by an older version.",
+        "i" = "Pass the object returned by {.fn est_length_distribution}
+               directly, and use {.arg by} rather than subsetting it."
+      ),
+      class = "creel_warning_bin_vcov_unavailable"
+    )
+    return(sum(w^2 * rows$se^2))
+  }
+  v <- as.numeric(t(w) %*% sigma %*% w)
+  if (!is.finite(v)) {
+    return(NA_real_)
+  }
+  # Same clamp as two_phase_rescale(): a quadratic form in a PSD matrix is
+  # non-negative in exact arithmetic, so a small negative is rounding noise.
+  tol <- .Machine$double.eps^0.5 * max(1, abs(v))
+  if (v < -tol) {
+    return(NA_real_)
+  }
+  max(v, 0)
+}
+
 
 # Compliance estimation ----
 
@@ -1008,9 +1168,19 @@ est_mean_length <- function(ld, conf_level = NULL) {
 #' A bin is legal when `bin_lower >= min_length`.  The compliance proportion
 #' and its variance use the ratio estimator:
 #' \deqn{P = \frac{\sum_h I_h \hat{N}_h}{\hat{N}}}
-#' \deqn{\widehat{\text{Var}}(P) \approx
-#'   \frac{1}{\hat{N}^2} \sum_h (I_h - P)^2 \, \widehat{\text{SE}}_h^2}
-#' where \eqn{I_h = \mathbf{1}(\text{bin\_lower}_h \geq \text{min\_length})}.
+#' \deqn{\widehat{\text{Var}}(P) =
+#'   \frac{1}{\hat{N}^2} w' \Sigma w, \quad w_h = I_h - P}
+#' where \eqn{I_h = \mathbf{1}(\text{bin\_lower}_h \geq \text{min\_length})}
+#' and \eqn{\Sigma} is the bins' full covariance matrix, carried from the
+#' single `svytotal()` that estimated them.
+#'
+#' Earlier versions used \eqn{\sum_h w_h^2 \widehat{\text{SE}}_h^2} — the same
+#' expression with every off-diagonal set to zero. The bins partition the same
+#' fish and are rescaled onto one reported total, so they are strongly
+#' dependent, and on the package's own example data that form reported a
+#' standard error **32% below** an independently computed
+#' `survey::svyratio()` reference. If \eqn{\Sigma} is unavailable the
+#' independence form is used and a warning says so.
 #'
 #' Confidence interval bounds are clamped to \eqn{[0, 1]}.
 #'
@@ -1099,7 +1269,7 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
   # of freedom to. See ?creel_confidence_intervals.
   z <- stats::qnorm((1 + conf_level) / 2)
 
-  compute_compliance <- function(rows) {
+  compute_compliance <- function(rows, key) {
     legal <- rows$bin_lower >= min_length
     n_legal <- sum(rows$estimate[legal])
     n_total <- sum(rows$estimate)
@@ -1117,7 +1287,15 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
       ))
     }
     p <- n_legal / n_total
-    se_p <- sqrt(sum((as.numeric(legal) - p)^2 * rows$se^2)) / n_total
+    # The delta method for the ratio P = sum_h I_h N_h / sum_h N_h, whose
+    # gradient in N_h is (I_h - P) / N. Taken against the bins' FULL
+    # covariance: the independence form this replaces is the same expression
+    # with every off-diagonal zeroed, and the bins are a partition of the same
+    # fish rescaled onto one reported total, so they are anything but
+    # independent (GH #311).
+    w <- as.numeric(legal) - p
+    se_p <- sqrt(weighted_bin_var(w, rows, bin_vcov_for(ld, rows, key), "compliance_se")) /
+      n_total
     data.frame(
       min_length = min_length,
       n_legal_est = n_legal,
@@ -1131,15 +1309,23 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
   }
 
   if (length(by_vars) == 0L) {
-    result <- compute_compliance(ld)
+    result <- compute_compliance(ld, ".all")
   } else {
-    group_key <- do.call(paste, c(lapply(by_vars, function(v) ld[[v]]), sep = "\x1f"))
-    groups <- unique(group_key)
+    # group_key(), not a private paste(): a paste renders a missing value as the
+    # literal string "NA", so an unknown group and a group labelled "NA" would
+    # share a key -- and here that would also hand one group another group's
+    # covariance matrix (GH #248, GH #321).
+    row_keys <- group_key(ld, by_vars)
+    groups <- unique(row_keys)
     result_rows <- vector("list", length(groups))
     for (i in seq_along(groups)) {
-      rows <- ld[group_key == groups[[i]], , drop = FALSE]
+      rows <- ld[row_keys == groups[[i]], , drop = FALSE]
       group_info <- rows[1L, by_vars, drop = FALSE]
-      result_rows[[i]] <- cbind(group_info, compute_compliance(rows), row.names = NULL)
+      result_rows[[i]] <- cbind(
+        group_info,
+        compute_compliance(rows, groups[[i]]),
+        row.names = NULL
+      )
     }
     result <- do.call(rbind, result_rows)
   }

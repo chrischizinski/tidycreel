@@ -31,10 +31,13 @@ as representative lengths. Mean length is the ratio of total length-weighted
 count to total count:
 \deqn{\bar{L} = \frac{\sum_h L_h \hat{N}_h}{\hat{N}}}
 
-Variance is propagated via the delta method for a ratio estimator, treating
-cross-bin covariances as zero:
-\deqn{\widehat{\text{Var}}(\bar{L}) \approx
-  \frac{1}{\hat{N}^2} \sum_h (L_h - \bar{L})^2 \, \widehat{\text{SE}}_h^2}
+Variance is propagated via the delta method for a ratio estimator, using the
+bins' full covariance matrix \eqn{\Sigma}:
+\deqn{\widehat{\text{Var}}(\bar{L}) =
+  \frac{1}{\hat{N}^2} w' \Sigma w, \quad w_h = L_h - \bar{L}}
+Earlier versions treated the cross-bin covariances as zero, which
+under-estimated the standard error. If \eqn{\Sigma} is unavailable the
+independence form is used and a warning says so.
 }
 \examples{
 data(example_calendar)

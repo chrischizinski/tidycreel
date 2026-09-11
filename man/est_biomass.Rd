@@ -50,9 +50,11 @@ columns: grouping columns (if any), \code{biomass_estimate}, \code{biomass_se},
 produced by \code{\link[=est_length_distribution]{est_length_distribution()}} into a total biomass estimate using
 the allometric length-weight equation \eqn{W = a \cdot L^b}.
 
-Variance is propagated via the delta method, treating estimated fish counts
-per length bin as uncorrelated and the length-weight parameters \code{a} and \code{b}
-as known without error (see Details).
+Variance is propagated via the delta method, carrying the \strong{full covariance}
+among the estimated fish counts per length bin and treating the length-weight
+parameters \code{a} and \code{b} as known without error unless their standard errors
+are supplied (see Details). Before GH #311 the bin counts were treated as
+uncorrelated, which under-estimated the variance.
 
 Since GH #310 the counts supplied by \code{\link[=est_length_distribution]{est_length_distribution()}} describe the
 \strong{reported catch} rather than the measured subsample, so \code{biomass_estimate}
@@ -65,11 +67,18 @@ For each length bin h with midpoint \eqn{L_h = (\text{bin\_lower} +
 survey-weighted estimated fish count from \code{\link[=est_length_distribution]{est_length_distribution()}}.
 Total biomass is \eqn{B = \sum_h B_h}.
 
-Variance is approximated as
-\eqn{\widehat{\text{Var}}(B) \approx \sum_h (a \cdot L_h^b)^2 \cdot
-\widehat{\text{SE}}_h^2}, which ignores cross-bin covariances.
-When positive covariances exist (likely in small surveys), this
-under-estimates the true variance.
+Variance is the quadratic form
+\eqn{\widehat{\text{Var}}(B) = w' \Sigma w} with \eqn{w_h = a \cdot L_h^b}
+and \eqn{\Sigma} the bins' full covariance matrix, carried from the single
+\code{svytotal()} that estimated them. Earlier versions used
+\eqn{\sum_h w_h^2 \widehat{\text{SE}}_h^2} — the same expression with every
+off-diagonal set to zero — which under-estimated the variance, since the bins
+partition the same fish and are rescaled onto one reported total.
+
+If \eqn{\Sigma} is unavailable — the object was produced by an older version,
+or was subsetted in a way that dropped the attribute carrying it — the
+independence form is used and a warning says so. An absent covariance is
+unknown, not zero.
 
 By default \code{a} and \code{b} are treated as known constants, so \code{biomass_se}
 carries no contribution from their estimation error. In practice they are

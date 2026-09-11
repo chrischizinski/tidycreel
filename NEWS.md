@@ -46,6 +46,49 @@
 
   The sweep over the remaining grouped estimators followed in #321, below.
 
+* The length bins' **covariance now reaches the ratio consumers**, which were
+  reporting standard errors up to a third too small (#311).
+
+  `svytotal()` over the bin columns estimates a full covariance matrix, and
+  `two_phase_rescale()` propagates it. It then died at the
+  `est_length_distribution()` seam, and `est_compliance()`, `est_mean_length()`
+  and `est_biomass()` each rebuilt a variance from the **diagonal alone** — the
+  quadratic form \eqn{w' \Sigma w} with every off-diagonal set to zero.
+
+  The bins are a partition of the same fish, clustered within interviews and
+  rescaled onto a single reported total, so they are strongly dependent. On the
+  package's own example data the maximum off-diagonal correlation is **1.0**.
+  Against a `survey::svyratio()` reference built independently in base R:
+
+  | | proportion | SE |
+  |---|---|---|
+  | `est_compliance()`, before | 0.5714286 | **0.1422436** |
+  | `svyratio()` reference | 0.5714286 | 0.2093703 |
+  | `est_compliance()`, now | 0.5714286 | **0.2093703** |
+
+  The point estimates agreed all along — only the uncertainty was wrong, which
+  is why nothing looked wrong. The package standard error was **32% too small**,
+  on a proportion that gets compared against a legal size limit.
+
+  All three consumers now take the quadratic form against the full matrix, and
+  `est_compliance()` reproduces the independent reference exactly. The matrix
+  travels as an attribute keyed by reported group, with bin labels as dimnames,
+  so a consumer aligns to it **by bin** rather than by position — a caller who
+  keeps a subset of rows gets that subset's block rather than a misaligned one.
+
+  When the matrix is unavailable — an object from an older version, or one
+  subsetted in a way that dropped the attribute — the independence form is used
+  and a `creel_warning_bin_vcov_unavailable` warning says so. An absent
+  covariance is unknown, not zero; falling back in silence would restore the
+  defect by the back door.
+
+  `est_biomass()` was the one consumer that documented the omission. It is no
+  longer an omission, and its `@details` now says so, as do the other two.
+
+  Note for anyone pinning these numbers: **`compliance_se`, `mean_length_se` and
+  `biomass_se` all change**, and in the direction of being larger. The point
+  estimates do not move.
+
 * `add_catch()` now **refuses an unknown count**, which was indistinguishable
   from a genuine zero everywhere downstream (#324).
 

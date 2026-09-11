@@ -280,15 +280,28 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
 #'   dN_h/dN_j = -T N_h / S^2      (j != h)
 #'   dN_h/dT   = p_h
 #'
-#' and Var(N_h) = g' V g with V the full covariance from the same call. The
-#' cross-bin and bin-total covariances are therefore carried, not assumed zero
-#' -- unlike the ratio consumers, which still assume independence (GH #311).
+#' Stacking those gradients gives the Jacobian G, and the rescaled bins' full
+#' covariance is G V G' with V the covariance from the same `svytotal()` call.
+#' The cross-bin and bin-total covariances are therefore carried, not assumed
+#' zero.
+#'
+#' The whole matrix is returned, not only its diagonal. The bins partition the
+#' same fish and fish cluster within interviews, so the off-diagonal terms are
+#' large -- on the package's own example data the maximum off-diagonal
+#' correlation is 1.0 and the terms sum to +3.79. Any ratio of these bins, which
+#' is what every consumer forms, needs them: dropping them made
+#' `est_compliance()` report a standard error 32% below an independently
+#' computed `survey::svyratio()` reference (GH #311).
+#'
+#' `se` is `sqrt(diag(vcov))` by construction, so returning the matrix moves no
+#' number that was already being reported.
 #'
 #' @param meas Numeric vector of measured-fish bin totals.
 #' @param total Numeric scalar, the estimated reported total.
 #' @param v Covariance matrix of `c(meas, total)`, in that order.
 #'
-#' @return List with `estimate` and `se`, each length `length(meas)`.
+#' @return List with `estimate` and `se`, each length `length(meas)`, and
+#'   `vcov`, the `length(meas)` square covariance matrix of the rescaled bins.
 #'
 #' @keywords internal
 #' @noRd
@@ -296,17 +309,35 @@ two_phase_rescale <- function(meas, total, v) {
   h_n <- length(meas)
   s <- sum(meas)
   if (!is.finite(s) || s <= 0) {
-    return(list(estimate = rep(NA_real_, h_n), se = rep(NA_real_, h_n)))
+    return(list(
+      estimate = rep(NA_real_, h_n),
+      se = rep(NA_real_, h_n),
+      vcov = matrix(NA_real_, h_n, h_n)
+    ))
   }
   p <- meas / s
   est <- p * total
 
+  # The Jacobian, one row per bin. Built as a matrix rather than one gradient
+  # at a time so the off-diagonal terms survive: the per-bin loop it replaces
+  # could only ever produce a diagonal.
+  g_mat <- matrix(0, nrow = h_n, ncol = h_n + 1L)
+  for (h in seq_len(h_n)) {
+    g_mat[h, seq_len(h_n)] <- -total * meas[h] / s^2
+    g_mat[h, h] <- total * (s - meas[h]) / s^2
+    g_mat[h, h_n + 1L] <- p[h]
+  }
+  vcov_est <- g_mat %*% v %*% t(g_mat)
+  # Exactly symmetric. G V G' is symmetric in exact arithmetic, and a consumer
+  # forming w' Sigma w should not get a different answer for w and its mirror
+  # because of floating-point asymmetry in the last bits.
+  vcov_est <- (vcov_est + t(vcov_est)) / 2
+
+  # Unchanged from the per-bin form this replaces, and deliberately so: `se` is
+  # the diagonal of the same quadratic form, with the same clamp.
+  tol <- .Machine$double.eps^0.5 * max(1, abs(total)^2)
   se <- vapply(seq_len(h_n), function(h) {
-    g <- numeric(h_n + 1L)
-    g[seq_len(h_n)] <- -total * meas[h] / s^2
-    g[h] <- total * (s - meas[h]) / s^2
-    g[h_n + 1L] <- p[h]
-    var_h <- as.numeric(t(g) %*% v %*% g)
+    var_h <- vcov_est[h, h]
     if (!is.finite(var_h)) {
       return(NA_real_)
     }
@@ -314,14 +345,13 @@ two_phase_rescale <- function(meas, total, v) {
     # small negative is rounding noise and clamps to zero. Only a materially
     # negative value -- which would mean the covariance is not PSD -- becomes
     # NA, because that is a real problem and must not be reported as a zero SE.
-    tol <- .Machine$double.eps^0.5 * max(1, abs(total)^2)
     if (var_h < -tol) {
       return(NA_real_)
     }
     sqrt(max(var_h, 0))
   }, numeric(1))
 
-  list(estimate = est, se = se)
+  list(estimate = est, se = se, vcov = vcov_est)
 }
 
 #' Warn once that a distribution was rescaled onto the reported total
