@@ -18,12 +18,18 @@ A \code{data.frame} with class
 \code{N_total} (integer), \code{percent} (numeric, 1 decimal).
 }
 \description{
-A party is "successful" if any row in the attached catch data has
-\code{catch_type == "caught"} and \code{count > 0} for the species the
-party was seeking (\code{species_sought}). Returns counts of successful
-and total parties for each angler type x species sought combination.
+A party is "successful" when its total catch of the species it was seeking
+(\code{species_sought}) is greater than zero. That total follows the model
+\code{\link{add_catch}} documents: the pair's \code{"caught"} row when it has
+one, and otherwise \code{harvested + released}, because a \code{"caught"} row
+is optional. Returns counts of successful and total parties for each angler
+type x species sought combination.
 }
 \details{
+A pair that records its own \code{"caught"} row keeps it even when that row
+is zero — a recorded catch of none is data, not an absence, and does not fall
+back to the dispositions.
+
 \strong{Interview-based summary, not pressure-weighted.} This function
 tabulates raw interview records without applying survey weighting by sampling
 effort or effort stratum. For pressure-weighted extrapolated estimates, use

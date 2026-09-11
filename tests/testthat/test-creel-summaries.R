@@ -318,6 +318,118 @@ test_that("summarize_successful_parties() N_successful <= N_total for all rows",
   expect_true(all(result$N_successful <= result$N_total))
 })
 
+# A `caught` row is OPTIONAL (GH #329) ----
+#
+# `add_catch()` documents that when a pair records no `caught` row, its total
+# catch is `harvested + released`. This function read success off a `caught` row
+# alone, with no fallback, so a party recording only its dispositions counted as
+# unsuccessful while its own harvest was positive.
+
+catch_without <- function(drop_types = "caught", interview = NULL, species = NULL) {
+  data(example_catch, package = "tidycreel")
+  cd <- example_catch
+  hit <- cd$catch_type %in% drop_types
+  if (!is.null(interview)) hit <- hit & cd$interview_id == interview
+  if (!is.null(species)) hit <- hit & cd$species == species
+  cd[!hit, , drop = FALSE]
+}
+
+design_with <- function(cd) {
+  d <- make_design_with_extended_interviews()
+  suppressWarnings(suppressMessages(add_catch(
+    d, cd,
+    catch_uid = interview_id, # nolint: object_usage_linter
+    interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, # nolint: object_usage_linter
+    count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  )))
+}
+
+test_that("SSP-01 (#329): a party recording only dispositions counts as successful", {
+  # Four pairs in the SHIPPED example catch have no `caught` row and positive
+  # dispositions -- interviews 11, 12 and 14 (walleye) and 13 (bass) -- so this
+  # was not hypothetical: those parties demonstrably caught their sought
+  # species and were all reported unsuccessful. The total was 6; it is 10.
+  d <- design_with(example_catch)
+  result <- summarize_successful_parties(d)
+  expect_equal(sum(result$N_successful), 10L)
+})
+
+test_that("SSP-02 (#329): omitting the optional caught rows does not change the answer", {
+  # The invariance that makes the rule real. Dropping every `caught` row is
+  # legal by construction -- the documentation says so, and each pair's
+  # harvested and released rows are untouched, so the same parties caught the
+  # same fish. Before the fix this took the count from 6 to ZERO and every
+  # reported rate to 0.0%.
+  with_caught <- summarize_successful_parties(design_with(example_catch))
+  without <- summarize_successful_parties(design_with(catch_without()))
+
+  expect_equal(without$N_successful, with_caught$N_successful)
+  expect_equal(without$percent, with_caught$percent)
+  expect_gt(sum(without$N_successful), 0L)
+})
+
+test_that("SSP-03 (#329): dropping ONE pair's caught row does not change that pair", {
+  # The realistic case. Interview 1 recorded caught 5 / harvested 2 /
+  # released 3 walleye and sought walleye; with its caught row removed the
+  # derived total is the same 5. Before the fix bank/walleye fell from 60.0%
+  # to 40.0%.
+  base <- summarize_successful_parties(design_with(example_catch))
+  one <- summarize_successful_parties(
+    design_with(catch_without(interview = 1L, species = "walleye"))
+  )
+  expect_equal(one$N_successful, base$N_successful)
+})
+
+test_that("SSP-04 (#329): a pair that caught none of its sought species is not successful", {
+  # The mirror, so the fix cannot be "count any row". A recorded catch of zero
+  # is data, not an absence, and must stay unsuccessful.
+  data(example_catch, package = "tidycreel")
+  cd <- example_catch
+  keep <- !(cd$interview_id == 1L & cd$species == "walleye")
+  zeroed <- data.frame(
+    interview_id = 1L,
+    species = "walleye",
+    count = 0L,
+    catch_type = "caught",
+    stringsAsFactors = FALSE
+  )
+  cd2 <- rbind(cd[keep, names(zeroed), drop = FALSE], zeroed)
+
+  base <- summarize_successful_parties(design_with(example_catch))
+  res <- summarize_successful_parties(design_with(cd2))
+  bw <- res$N_successful[res$angler_type == "bank" & res$species_sought == "walleye"]
+  bw0 <- base$N_successful[base$angler_type == "bank" & base$species_sought == "walleye"]
+  expect_equal(bw, bw0 - 1L)
+})
+
+test_that("SSP-05 (#329): a zero caught row does NOT fall back to its dispositions", {
+  # The case SSP-04 above cannot reach. A pair recording `caught = 0` ALONGSIDE
+  # positive harvested/released rows violates CATCH-04 (caught >= harvested +
+  # released), so `add_catch()` refuses to build it and the public path cannot
+  # construct the fixture. The rule is therefore pinned on the helper directly.
+  #
+  # Without this, a regression that read a zero `caught` row as ABSENT and fell
+  # back to harvested + released would go uncaught: SSP-04's party has no
+  # dispositions left, so it would report zero either way.
+  cd <- data.frame(
+    interview_id = c(1L, 1L, 1L),
+    species = "walleye",
+    count = c(0L, 3L, 2L),
+    catch_type = c("caught", "harvested", "released"),
+    stringsAsFactors = FALSE
+  )
+  got <- tidycreel:::species_counts_per_interview(
+    cd, "walleye", "caught",
+    uid_col = "interview_id", species_col = "species",
+    type_col = "catch_type", count_col = "count"
+  )
+  expect_equal(nrow(got), 1L)
+  # 0, not 5: the pair has its own caught row and keeps it.
+  expect_equal(got$count, 0)
+})
+
 test_that("summarize_successful_parties() errors when catch is not attached", {
   d <- make_design_with_extended_interviews()
   expect_error(summarize_successful_parties(d), regexp = "catch")
