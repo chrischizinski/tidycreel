@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "tidycreel: Tidy Interface for Creel Survey Design and Analysis"
-version: 5.2.0
-date-released: 2026-08-28
+version: 6.0.0
+date-released: 2026-09-11
 url: "https://github.com/chrischizinski/tidycreel"
 repository-code: "https://github.com/chrischizinski/tidycreel"
 authors:
