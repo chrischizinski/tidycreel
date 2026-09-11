@@ -179,7 +179,11 @@ creel_connect_api <- function(
   if (!is.null(auth)) {
     .validate_api_auth(auth)
   }
-  resolved_pagination <- if (is.null(pagination)) NULL else .validate_api_pagination(pagination)
+  resolved_pagination <- if (is.null(pagination)) {
+    NULL
+  } else {
+    .validate_api_pagination(pagination, uid_param)
+  }
 
   # Schema col-mappings configure CSV/SQL column names, not API JSON field
   # names; the API backend reads api_field_map instead.
@@ -378,7 +382,7 @@ creel_connect_api <- function(
 
 # Validate a pagination declaration and fill in its defaults.
 #' @noRd
-.validate_api_pagination <- function(pagination) {
+.validate_api_pagination <- function(pagination, uid_param = NULL) {
   styles <- .api_pagination_styles()
   if (!is.list(pagination) || is.null(pagination$style)) {
     cli::cli_abort(c(
@@ -434,11 +438,15 @@ creel_connect_api <- function(
     if (is.null(val)) {
       return(default)
     }
-    if (!is.numeric(val) || length(val) != 1L || is.na(val) ||
-          val != trunc(val) || val < min_value) {
-      cli::cli_abort(
-        "{.field pagination${name}} must be a single whole number >= {min_value}."
-      )
+    # is.finite() and the upper bound are not pedantry: Inf and 1e12 both pass
+    # a trunc() test and then become NA at as.integer(), and the stored NA only
+    # surfaces mid-fetch as base R's "missing value where TRUE/FALSE needed".
+    if (!is.numeric(val) || length(val) != 1L || !is.finite(val) ||
+          val != trunc(val) || val < min_value || val > .Machine$integer.max) {
+      cli::cli_abort(c(
+        "{.field pagination${name}} must be a single whole number >= {min_value}.",
+        "i" = "It must also be finite and within R's integer range."
+      ))
     }
     as.integer(val)
   }
@@ -467,6 +475,33 @@ creel_connect_api <- function(
     out$start_offset  <- .pag_count("start_offset", 0L, 0L)
   }
   out$max_pages <- .pag_count("max_pages", 1000L, 1L)
+
+  # Two settings naming the same query parameter do not combine: req_url_query()
+  # replaces, so `uid_param = "page"` alongside `page_param = "page"` turns
+  # `?page=<uid>` into `?page=1` and the survey filter is gone. An API that
+  # reads a missing filter as "every survey" then returns other surveys' rows,
+  # which is a wrong dataset carrying no sign that it is wrong.
+  param_names <- unlist(out[c("page_param", "offset_param", "page_size_param")], use.names = TRUE)
+  param_names <- param_names[!is.na(param_names)]
+  if (!is.null(uid_param)) {
+    clash <- names(param_names)[param_names == uid_param]
+    if (length(clash) > 0L) {
+      cli::cli_abort(c(
+        "{.field pagination${clash}} names the same query parameter as \
+         {.arg uid_param}: {.val {uid_param}}.",
+        "x" = "The paging value would replace the survey filter rather than join it.",
+        "i" = "Give the paging parameter the name your API actually uses for it."
+      ))
+    }
+  }
+  if (anyDuplicated(param_names) > 0L) {
+    dup <- param_names[duplicated(param_names)][1L] # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "Two {.field pagination} settings name the same query parameter: {.val {dup}}.",
+      "x" = "One would replace the other rather than both being sent.",
+      "i" = "Settings given: {.field {names(param_names)}} = {.val {param_names}}"
+    ))
+  }
   out
 }
 
@@ -545,20 +580,30 @@ creel_connect_api <- function(
     # count would drop a final page whose length happened to look full.
     if (!is.null(pag[["page_size"]]) && nrow(df) < pag[["page_size"]]) break
 
+    # The same rows twice means the request did not advance. Binding them would
+    # duplicate every record and inflate every total, so stop and say which
+    # setting did not take effect rather than return the result. Checked for
+    # every style: a `Link` chain that points back at the page it came from
+    # repeats just as silently as a paging parameter the API ignores, and if
+    # such a chain then ends, the duplicates are bound with nothing said.
+    if (page_no > 1L && identical(df, pages[[page_no - 1L]])) {
+      cause <- if (style == "link") {
+        cli::format_inline("Its {.field Link} header points back at the same page.")
+      } else {
+        param <- if (style == "page") pag[["page_param"]] else pag[["offset_param"]] # nolint: object_usage_linter, line_length_linter
+        cli::format_inline("It appears to ignore the {.field {param}} parameter.")
+      }
+      cli::cli_abort(c(
+        "The API returned identical rows for two consecutive pages of {.val {endpoint_key}}.",
+        "x" = cause,
+        "i" = "Check the setting against your API, or set \\
+               {.code pagination = list(style = \"none\")} if it does not paginate."
+      ))
+    }
+
     if (style == "link") {
       next_url <- .api_next_link(resp)
       if (is.null(next_url)) break
-    } else if (page_no > 1L && identical(df, pages[[page_no - 1L]])) {
-      # The same rows twice means the API ignored the paging parameter. Binding
-      # them would duplicate every record and inflate every total, so stop and
-      # name the parameter rather than return the result.
-      param <- if (style == "page") pag[["page_param"]] else pag[["offset_param"]] # nolint: object_usage_linter, line_length_linter
-      cli::cli_abort(c(
-        "The API returned identical rows for two consecutive pages of {.val {endpoint_key}}.",
-        "x" = "It appears to ignore the {.field {param}} parameter.",
-        "i" = "Check the parameter name against your API, or set \\
-               {.code pagination = list(style = \"none\")} if it does not paginate."
-      ))
     }
 
     page_no <- page_no + 1L

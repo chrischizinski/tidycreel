@@ -351,3 +351,57 @@ test_that("a YAML profile's pagination block reaches the connection (PAG-19)", {
   expect_equal(conn$con$pagination$page_size, 250L)
   expect_equal(conn$con$pagination$max_pages, 1000L)
 })
+
+# --- settings that would silently disagree with each other — PAG-20..22 -------
+
+test_that("a paging parameter named like uid_param is refused (PAG-20)", {
+  # httr2's req_url_query() replaces rather than appends, so the paging value
+  # would overwrite the survey filter: `?survey_id=<uid>` becomes `?survey_id=1`.
+  # An API reading a missing filter as "every survey" then returns other
+  # surveys' rows -- a wrong dataset carrying no sign that it is wrong.
+  expect_error(
+    make_api_conn(pagination = list(style = "page", page_param = "survey_id")),
+    "names the same query parameter as"
+  )
+})
+
+test_that("two paging settings naming the same parameter are refused (PAG-20b)", {
+  expect_error(
+    make_api_conn(pagination = list(
+      style = "page", page_param = "p", page_size = 50, page_size_param = "p"
+    )),
+    "name the same query parameter"
+  )
+})
+
+test_that("a non-finite or out-of-range count is refused, not stored as NA (PAG-21)", {
+  # Inf and 1e12 both pass a trunc() test and then become NA at as.integer().
+  # A stored NA does not surface until mid-fetch, as base R's "missing value
+  # where TRUE/FALSE needed" -- an error naming nothing the caller set.
+  expect_error(
+    make_api_conn(pagination = list(style = "link", max_pages = Inf)),
+    "must be a single whole number"
+  )
+  expect_error(
+    make_api_conn(pagination = list(style = "link", max_pages = 1e12)),
+    "must be a single whole number"
+  )
+})
+
+test_that("a Link chain that repeats a page aborts instead of binding it twice (PAG-22)", {
+  # A next link pointing back at the page it came from repeats as silently as a
+  # paging parameter the API ignores. If such a chain then ends, the duplicated
+  # rows would be bound with nothing said and every total inflated.
+  n <- 0L
+  httr2::local_mocked_responses(function(req) {
+    n <<- n + 1L
+    hdr <- if (n < 3L) {
+      'Link: <http://test.example.com/api/v2/interviews?page=1>; rel="next"'
+    } else {
+      character()
+    }
+    test_api_page(c("A1", "A2"), hdr)
+  })
+  conn <- make_api_conn(pagination = list(style = "link"))
+  expect_error(fetch_interviews(conn), "identical rows for two consecutive pages")
+})

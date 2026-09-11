@@ -35,6 +35,12 @@
   returned, because a partial dataset understates every total without saying
   so).
 
+  Two settings that would silently disagree are also refused at connection
+  time: a paging parameter named the same as `uid_param` (httr2 replaces rather
+  than appends, so the paging value would overwrite the survey filter and an
+  API reading a missing filter as "every survey" would return other surveys'
+  rows), and two paging settings naming the same parameter.
+
   A cursor style is deliberately not supported: a cursor arrives in a response
   envelope, which this backend does not read. It is refused by name rather than
   accepted and silently reduced to page 1.
