@@ -1,6 +1,54 @@
 # Changelog
 
-## tidycreel (development version)
+## tidycreel 6.0.0 “Blue Catfish” (2026-09-11)
+
+A large release, and a breaking one. The theme running through most of
+it is a single defect class: a quantity that was **unknown** or
+**absent** was allowed to behave like a **zero** or like nothing at all.
+Every instance produced a plausible number, no error and no warning.
+
+### Highlights
+
+**Numbers that move, and why:**
+
+- **Grouped estimates gain rows.**
+  [`survey::svyby()`](https://rdrr.io/pkg/survey/man/svyby.html) drops
+  rows whose `by=` value is `NA`, so any grouping column with a missing
+  value silently lost those records. `estimate_total_catch(by = zone)`
+  reported 565.2 fish against an ungrouped 784.6 — **28% of the catch
+  missing** from a table that read as complete. Every grouped estimator
+  now reports the unknown group, so the parts sum back to the whole
+  ([\#317](https://github.com/chrischizinski/tidycreel/issues/317),
+  [\#321](https://github.com/chrischizinski/tidycreel/issues/321)).
+
+- **Length-based standard errors get larger.** The bins’ covariance
+  matrix was discarded, and
+  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
+  [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+  and
+  [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+  each rebuilt a variance assuming the bins were independent.
+  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+  reported a standard error **32% below** an independently computed
+  [`survey::svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
+  reference; it now reproduces that reference exactly. `compliance_se`,
+  `mean_length_se` and `biomass_se` all change. **Point estimates do not
+  move**
+  ([\#311](https://github.com/chrischizinski/tidycreel/issues/311)).
+
+- **[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+  refuses an unknown count.** `count = NA` was accepted and read as a
+  genuine zero everywhere downstream — the unknown and the zero produced
+  byte-identical output. Now an error
+  ([\#324](https://github.com/chrischizinski/tidycreel/issues/324)).
+
+- **Length and age totals are on a catch basis.** They previously
+  expanded the measured subsample as if it were a census. Ratios were
+  right; totals were not
+  ([\#310](https://github.com/chrischizinski/tidycreel/issues/310)).
+
+If you pin any standard error from the length or age path, or read any
+grouped table, re-run before comparing to earlier output.
 
 ### Breaking changes
 
@@ -411,73 +459,6 @@
   Every call that rescales warns, naming the measured total, the
   reported total and the factor between them.
 
-### New features
-
-- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
-  gains `harvest_lengths_table` and `release_lengths_table`, for a
-  source that keeps harvest and release lengths in separate tables
-  ([\#185](https://github.com/chrischizinski/tidycreel/issues/185)).
-  Both fall back to `lengths_table`, so a single-table source needs
-  neither and nothing changes for an existing schema.
-
-  tidycreel.connect’s YAML loader has offered both keys since
-  [\#176](https://github.com/chrischizinski/tidycreel/issues/176) and
-  passed them straight to this constructor, where they arrived as unused
-  arguments: a profile setting either aborted with a base error naming
-  no cause. The connect DBI backend reads the two lengths tables through
-  them.
-
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
-  and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
-  gain a `targeted` argument, matching
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
-  ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
-
-  `targeted = FALSE` restricts the domain to the interviews that
-  recorded some of the species being estimated, so the result is the
-  harvest or release rate among trips that took that species rather than
-  the fishery-wide rate. It is read by the mean-of-ratios forms and
-  ignored by `ratio-of-means`, exactly as for the catch rate, and the
-  per-species exclusion is now shared by all three rate functions
-  through one internal helper rather than copied.
-
-  `targeted = FALSE` **requires `by = species`** on these two functions
-  and raises `creel_error_targeted_needs_species` otherwise. Without a
-  species there is no per-species count to test, and the only available
-  test would be “recorded nothing at all” — a different estimand, and
-  one the package has never estimated for harvest or release. Refusing
-  is deliberate: an argument that silently does nothing is the defect
-  [\#304](https://github.com/chrischizinski/tidycreel/issues/304) fixed,
-  and this avoids repeating it. The check runs above the section
-  dispatch, so it reaches sectioned designs too.
-
-  No estimate produced with default arguments changes. The per-species
-  “\>70% recorded none of this species” diagnostic warning is new on
-  these two functions and fires only under the mean-of-ratios estimator.
-
-### Documentation
-
-- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
-  and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
-  now document why they have no `targeted` argument
-  ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
-
-  A targeted rate is conditional on having recorded the species; total
-  effort is not. Multiplying them applies a conditional rate to an
-  unconditional base: on the package’s example data one species’ rate is
-  0.48 fish/hr over all 50 trips and 2.00 fish/hr over the 12 that
-  caught it, so expanding the targeted rate by total effort returns
-  roughly 223 fish where 30 were actually caught. The domain-consistent
-  product needs the season-wide effort of species-catching trips, which
-  no creel design observes. A targeted rate is therefore available and a
-  targeted total is not, as a property of the estimand rather than a gap
-  in the implementation.
-
-### Breaking changes
-
 - `targeted = FALSE` on a `by = species` request now tests that species’
   own catch, not the total catch, under the mean-of-ratios estimator
   ([\#304](https://github.com/chrischizinski/tidycreel/issues/304)).
@@ -750,706 +731,6 @@
   of” rather than
   [`match.arg()`](https://rdrr.io/r/base/match.arg.html)’s “should be
   one of”.
-
-### Bug fixes
-
-- `estimator = "regression"` now runs the regression on a `by = species`
-  request, instead of silently returning ratio-of-means
-  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
-
-  The species dispatch sits above the regression route, so a species
-  request reached `estimate_cpue_species()`, whose only branches were
-  ratio-of-means and mean-of-ratios. `"regression"` fell through to
-  ratio-of-means. No error, no warning, and a believable number under an
-  estimator the caller did not ask for. It affected flat designs as well
-  as sectioned ones, which is what separated it from
-  [\#285](https://github.com/chrischizinski/tidycreel/issues/285).
-
-  ``` r
-
-  reg <- estimate_catch_rate(design, by = species, estimator = "regression")
-  rom <- estimate_catch_rate(design, by = species, estimator = "ratio-of-means")
-  # before: identical estimates, method "ratio-of-means-cpue-species"
-  # after:  method "regression-cpue-species", and the estimates differ
-  ```
-
-  The species form is CPUE₃ restricted to one species: the slope of that
-  species’ catch on the same angler effort, forced through the origin,
-  with the same leave-one-out jackknife SE. That is Petrere et
-  al. (2010) eq. 3, `sum(C_i f_i) / sum(f_i^2)`, computed on the trip
-  set the call already uses. Both the flat and the sectioned species
-  paths route through it, so a sectioned request reports
-  `"regression-cpue-sections"` with per-section rows.
-
-  **Zero-catch interviews are kept by default.** An interview that
-  caught none of the target species contributes a `0` at positive
-  effort, and it is a real observation: Petrere et al. evaluated all
-  three estimators with zeros present, using a delta distribution with a
-  10% probability of zero precisely because “zero catches are fairly
-  common”. Dropping them would change the estimand from the catch rate
-  of that species per angler-hour to the rate among anglers who caught
-  it.
-
-  `targeted = FALSE` still makes that second choice available, and **on
-  the regression species path only** the exclusion is applied per
-  species: a trip that caught none of the species being estimated is
-  dropped, whichever other species it caught, and the warning names the
-  species and the percentage excluded.
-
-  It is confined to the regression form on purpose. `targeted` has
-  always been read inside the mean-of-ratios branch, which tests the
-  design’s *total* catch column and is therefore usually inert on a
-  species request — on the release fixture no interview has zero total
-  catch while 20 of 22 have zero bass. Widening the per-species test to
-  the other estimators would move numbers existing ratio-of-means
-  callers already get, so it is filed as
-  [\#304](https://github.com/chrischizinski/tidycreel/issues/304) rather
-  than changed here.
-
-  This replaces the refusal added alongside
-  [\#285](https://github.com/chrischizinski/tidycreel/issues/285), which
-  was a deliberate placeholder while the modelling question was open.
-
-- Corrected the Petrere et al. (2010) reference in two more places
-  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
-
-  [\#233](https://github.com/chrischizinski/tidycreel/issues/233) fixed
-  this citation in one block of
-  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
-  and missed two others — a second block in the same file, and the
-  [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md)
-  documentation. All three gave `Fish. Res. 106: 325-333`; the paper is
-  *Braz. J. Biol.* 70: 483-491,
-  [10.1590/S1519-69842010005000010](https://doi.org/10.1590/S1519-69842010005000010).
-  A grep for the journal name, rather than for the sentence, would have
-  caught all three at once.
-
-- `@param targeted` said zero-**effort** trips were excluded; the code
-  excludes zero-**catch** trips
-  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
-
-- A species-level regression request was held to the ratio-estimation
-  `n >= 10` floor
-  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
-  That floor is a ratio rule; the regression slope has its own “fewer
-  than 3 interviews” rule, and the ungrouped regression path was never
-  held to the ratio one. The species path therefore refused a defined
-  estimator with a message about a different one — reachable via
-  `use_trips = "all"`, where the ungrouped regression ran at `n = 5`
-  while the species form aborted. The floor still applies to the
-  estimators it belongs to.
-
-- A species-level regression result reported `variance_method` as the
-  caller’s `variance` argument rather than `"jackknife"`
-  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)). The
-  slope’s SE is a leave-one-out jackknife computed inside the regression
-  internals, which never consult `variance`; the ungrouped and sectioned
-  regression paths already reported it correctly, so only the species
-  path named a variance that had not run — the same class of mislabel as
-  [\#284](https://github.com/chrischizinski/tidycreel/issues/284).
-
-- `by =` no longer accepts the interview id or an internal `.`-prefixed
-  column as a grouping variable
-  ([\#293](https://github.com/chrischizinski/tidycreel/issues/293)).
-
-  On a design carrying catch data, `estimate_total_*(by = everything())`
-  selected the species column, routed to the species branch, and grouped
-  by **every** interview column — including `interview_id`, which is
-  unique per row. Nothing refused it. On a 22-interview fixture the call
-  did not return within 900 seconds.
-
-  The statistical stake is not the runtime. A key column as a grouping
-  variable puts one interview in each group, so every group’s rate has
-  `n = 1` and no within-group variance is estimable. Had the call
-  returned, it would have produced a table of per-interview “totals”
-  each carrying an uncertainty that could not have been computed — the
-  failure mode this package treats as the dangerous one, since the
-  number looks fine.
-
-  Two refusals now sit in the shared `by =` resolver, so every estimator
-  that groups by interview columns gets them:
-
-  ``` r
-
-  estimate_total_release(design, by = everything())
-  #> Error: `by` names the interview key `interview_id`.
-  #> x It holds one value per interview, so every group would be a single
-  #>   interview and no within-group variance could be estimated.
-
-  estimate_total_release(design, by = .angler_effort)
-  #> Error: `by` names a column the package derived: `.angler_effort`.
-  #> x It is computed by `add_interviews()`, not data you supplied.
-  ```
-
-  **Both tests are structural** — they ask what the design registered,
-  never what a name looks like or what values happen to hold.
-
-  The key comes from whichever of
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
-  or
-  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)
-  registered the interview id. Testing for distinct values instead would
-  be wrong: on a short survey a real grouping column such as `date` can
-  be unique per row without being a key.
-
-  The derived set is read from the design one field at a time, because a
-  leading `.` is not the test either. A user column literally named
-  `.se_expansion` is a supported grouping variable
-  ([\#259](https://github.com/chrischizinski/tidycreel/issues/259)). And
-  a design now records **whether** it computed the trip duration, rather
-  than the check inferring it from the column being called
-  `.trip_duration_hrs`: a caller may supply a column of their own by
-  that name, and it stays groupable. A column of your own is never
-  treated as derived, whatever it is called.
-
-  Derived columns are treated by how they were selected: a wildcard such
-  as `everything()` means every column the user brought, so they are
-  dropped silently, while asking for one specifically is an error rather
-  than a silent substitution. The two are told apart by re-resolving the
-  selector with the derived columns removed — if that leaves nothing to
-  select, the selector was asking for them. One consequence is
-  deliberate and worth knowing: `starts_with(".")` is a refusal on a
-  design whose only dot-named column is derived, and a silent drop on
-  one that also has a user column such as `.se_expansion`.
-
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
-  is unaffected: it resolves `by =` against the counts, which carry
-  neither an interview key nor these derived columns.
-
-  Two limits worth stating. A design with no catch, lengths or ages
-  attached registers no id column, so an id there is still accepted —
-  nothing in the design says it is a key. And the sparse-group warning
-  still only warns at `n < 3`; whether `n = 1` should be refused
-  generally is a wider question this did not settle.
-
-- [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
-  no longer warns that a stratum is below a Feltz and Middaugh (2025)
-  camera-day minimum
-  ([\#234](https://github.com/chrischizinski/tidycreel/issues/234)). The
-  12 weekday and 7 weekend days that check used are the study’s
-  **per-month** well-performing schedule, while `n_h` allocates over the
-  whole period named in `N_h`, so the comparison ran across scales and
-  under-fired by roughly the number of months surveyed. On the
-  function’s own documented example – about three months – the cited
-  schedule is near 36 weekday and 21 weekend camera-days, but the check
-  fired only below 12 and 7 and passed a plan of 27 and 12 in silence.
-
-  Scaling the benchmark would have fixed only that one gap. Three others
-  remain and the function cannot close any of them: the 12/7 scenario is
-  specifically at 1 count/day and nothing here knows the counts per day;
-  its error band is fixed by the study rather than taken from
-  `cv_target`, so a caller asking for a tight CV was judged against the
-  loose row; and the simulations measured boat-trailer counts on six
-  Arkansas reservoirs, whereas `ybar_h` and `s2_h` are whatever the
-  caller piloted. The benchmark is now stated in
-  [`?creel_n_camera`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
-  in the study’s own units, with those conditions, as design context
-  rather than a threshold.
-
-  Which benchmark applied was also chosen by matching `"weekday"` or
-  `"weekend"` as a substring of a caller-supplied stratum name, so
-  `weekday_holiday` took 12, `weekend_evening` took 7 by luck, and
-  `Sat/Sun` took neither and drew a permanent “unclassified stratum”
-  advisory instead. No stratum name now changes the result.
-
-  **No sample size changes.** The check only ever emitted a warning;
-  `n_h`, `total` and `allocated` were always returned as computed.
-
-- The error raised when a `by` variable is missing from the interview
-  data now carries the condition class
-  `creel_error_by_missing_in_interviews` and is attributed to the
-  `estimate_total_*()` call that produced it, rather than to an internal
-  helper
-  ([\#254](https://github.com/chrischizinski/tidycreel/issues/254)).
-  Grouped totals require each `by` variable in both the count and the
-  interview data; the count-side half already raised a classed,
-  catchable condition and this half raised an unclassed one, so only one
-  of the two could be handled programmatically. The message is
-  unchanged.
-
-- `estimator = "regression"` now runs on a sectioned design instead of
-  being silently discarded
-  ([\#285](https://github.com/chrischizinski/tidycreel/issues/285)).
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
-  dispatches on sections before it dispatches on the estimator, so a
-  sectioned regression request fell through to `estimate_cpue_total()`,
-  whose estimator test names only the mean-of-ratios variants – and
-  `"regression"` landed in the ratio-of-means branch. No error, no
-  warning, and a believable number.
-
-  The visible symptom was in
-  [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-  whose purpose is making estimator divergence visible: on every
-  sectioned design it reported the regression row as numerically
-  identical to the ratio-of-means row, carrying a jackknife standard
-  error because that function requests one for regression. A
-  ratio-of-means point estimate with a jackknife SE under the
-  `regression` label corresponds to no estimator in the literature.
-
-  A sectioned regression now fits one regression per section, on that
-  section’s interviews, and reports
-  `method = "regression-cpue-sections"` with
-  `variance_method = "jackknife"` – the variance that actually ran,
-  rather than the caller’s Taylor default. `force_origin` reaches the
-  sectioned path, which previously had no such argument at all. The
-  section-level jackknife SE rests on that section’s interviews rather
-  than the whole sample and is correspondingly less stable; this is
-  documented on
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
-
-- `species` in `by` combined with `estimator = "regression"` is now
-  refused rather than answered with a different estimator
-  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)). The
-  species dispatch also sits above the regression route, so this
-  affected **flat designs too**, not only sectioned ones: the call
-  returned ratio-of-means numbers labelled
-  `"ratio-of-means-cpue-species"` while the caller had asked for
-  regression.
-
-  Refused rather than implemented, because a per-species regression is a
-  modelling decision and not a correction: a species that was not caught
-  on a trip contributes a zero at positive effort, and whether those
-  rows belong in the slope changes the estimate. That question is open
-  in [\#290](https://github.com/chrischizinski/tidycreel/issues/290).
-
-- The mean-of-ratios diagnostic banner now describes the trips the
-  estimate was actually built from, and every metric that takes the
-  estimator prints one
-  ([\#276](https://github.com/chrischizinski/tidycreel/issues/276)). Two
-  problems, both exposed by mean-of-ratios spreading beyond the catch
-  rate.
-
-  HPUE got no banner at all. `estimate_cpue_total()` and
-  `estimate_cpue_grouped()` returned a mean-of-ratios object; the
-  harvest internals computed the same truncation metadata and then
-  discarded it, returning a plain result. The same `estimator = "mor"`
-  request therefore produced a caveat and a truncation report for CPUE
-  and RPUE and silence for HPUE. Harvest now returns the same object its
-  twins do, ungrouped and grouped.
-
-  The banner also said “This estimate uses incomplete trip interviews (n
-  of N total)” whatever trips had been used. That wording dates from
-  when mean-of-ratios *was* the incomplete-trip estimator; since the
-  roving auto-route
-  ([\#268](https://github.com/chrischizinski/tidycreel/issues/268) for
-  catch, [\#271](https://github.com/chrischizinski/tidycreel/issues/271)
-  for harvest and release) the default mean-of-ratios path uses **all**
-  trips, so a roving default rate announced an incomplete-trip caveat
-  while using every trip it had, and `use_trips = "complete"` announced
-  one while using none. The banner now names the trip set – “All Trips”,
-  “Complete Trips” or “DIAGNOSTIC: … (Incomplete Trips)” – and the
-  length-of-stay caveat and the
-  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
-  pointer appear only for the incomplete set, which is what
-  `mor_estimation_warning()` already did at run time. The truncation
-  report appears on every path, because truncation is part of the
-  estimator rather than a diagnostic detail. The “n of N” denominator is
-  gone: trip filtering happens upstream, so `N` had become the filtered
-  count and the incomplete path printed a literal “24 of 24 total”.
-
-  The counts the banner reports are taken from the trips that survived
-  truncation, not the set that entered it. Reported from before
-  truncation they contradicted the truncation line printed directly
-  beneath them – “over all 48 interviews” above “Truncation: 12 trips
-  excluded”, when 36 ratios had been averaged. This affected all three
-  metrics, in both the shared truncation helper and the catch rate’s own
-  filtering block.
-
-  Interviews the rate internals discard are no longer counted as used.
-  Those internals drop missing effort, zero effort and missing catch or
-  harvest after the design-level counts are stamped, so a design with
-  six unusable interviews printed “over 48 interviews” beside an
-  estimate whose own `n` was 42, on all three metrics and on the grouped
-  paths.
-
-  Two things found while making the above change and fixed with it. A
-  mean-of-ratios rate reported no unit – the constructor had no `unit`
-  argument, so every MOR rate read `NA` while the ratio-of-means rate
-  beside it read `"fish/angler-hour"`; routing harvest through that
-  constructor would have taken harvest’s unit away. And the
-  incomplete-trip count on a design with no trip status column is now
-  `NA` rather than `0`, because that count was never measured; the
-  banner omits the clause instead of reporting an absence as a zero. No
-  estimate values change.
-
-- Estimates now record which estimator produced them, in a new
-  `estimator` component on the returned object
-  ([\#275](https://github.com/chrischizinski/tidycreel/issues/275)). A
-  total’s `method` names the product form – `"product-total-catch"`
-  whichever rate estimator built it – so ratio-of-means, mean-of-ratios
-  and truncated mean-of-ratios were the same string, and the design slot
-  carries the *normalised* estimator, where a `"mortr"` request is
-  indistinguishable from `"mor"` at the default threshold. The field
-  records the estimator as you asked for it: `"mortr"` stays `"mortr"`.
-  It is `NULL` on paths that take no estimator argument, such as effort
-  totals, which is deliberately distinct from recording a default that
-  was never chosen.
-
-  The sectioned rates gained the matching `method` labels
-  (`"mean-of-ratios-truncated-{cpue,hpue,rpue}-sections"`), and
-  `"mean-of-ratios-truncated-cpue"` gained the display label its HPUE
-  and RPUE counterparts already had in
-  [`print()`](https://rdrr.io/r/base/print.html),
-  [`format()`](https://rdrr.io/r/base/format.html) and
-  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html).
-  No estimate changes.
-
-  The roving auto-route still resolves to `"mor"` rather than `"mortr"`
-  and still reports itself untruncated: truncation runs at the 0.5
-  default there, but the caller did not ask for it to be mandatory.
-
-- Naming the section column in `by=` on a sectioned design is now
-  refused on every rate estimator, instead of failing inside tibble
-  ([\#265](https://github.com/chrischizinski/tidycreel/issues/265)). A
-  sectioned result is already one row per section, so
-  `estimate_catch_rate(d, by = section)` asks for a split that has
-  happened; all three rate estimators answered with “Column name
-  `section` must not be duplicated”, raised by
-  [`tibble::add_column()`](https://tibble.tidyverse.org/reference/add_column.html)
-  and naming neither the design nor what to do instead. The refusal and
-  its wording already existed – `refuse_section_in_by()`, error class
-  `creel_error_section_in_by` – and were wired into the three totals
-  only
-  ([\#255](https://github.com/chrischizinski/tidycreel/issues/255)). All
-  three rate paths now use it, at the same point in the call. Grouping
-  within sections by anything else is unaffected, and no estimate that
-  returned a number before returns a different one.
-
-- Two degenerate MOR truncation inputs now abort with tidycreel wording
-  rather than falling through to base R or to the survey package
-  ([\#279](https://github.com/chrischizinski/tidycreel/issues/279)).
-  `truncate_at = NA` passed the validator’s numeric and length checks
-  and reduced it to `NA <= 0`, so `if (NA)` aborted with “missing value
-  where TRUE/FALSE needed”; all three validators – the catch-rate one,
-  the totals resolver’s, and the bus-route one – carried the same gap. A
-  threshold that truncates away every interview left an empty sample to
-  reach
-  [`rowSums()`](https://rdrr.io/pkg/Matrix/man/colSums-methods.html),
-  which aborts with “all arguments must have the same length”, a message
-  about matrix conformability for a condition entirely about the chosen
-  threshold; the refusal now names `truncate_at` and the duration
-  column, as the bus-route incomplete-trip path already did. Both are
-  pre-existing, and no estimate that returned a number before returns a
-  different one.
-
-- The MOR truncation message now reports a percentage of the interviews
-  it actually truncated. It divided by the incomplete-trip count
-  regardless of which trip set was being estimated, so
-  `use_trips = "complete"` with `estimator = "mor"` divided by zero and
-  reported `Inf%` – always taking the “high truncation rate may indicate
-  data quality issues” branch – and `use_trips = "all"` reported the
-  share of the incomplete trips rather than of all of them, roughly
-  doubling it on a half-incomplete sample. Both the rate and the total
-  paths were affected. The denominator also excludes interviews with no
-  recorded trip duration, which are reported separately: a trip with no
-  duration was never eligible to be judged short, and counting it
-  diluted the short-trip rate enough to hide it below the 10% threshold
-  that triggers the data-quality warning. No estimate changes; the
-  message is what a caller reads to judge whether the threshold is
-  discarding too much data.
-
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
-  no longer aborts when an interview has no recorded trip duration and
-  MOR truncation is in effect
-  ([\#272](https://github.com/chrischizinski/tidycreel/issues/272)). The
-  truncation filter compared duration against the threshold without
-  guarding for `NA`, and `NA >= truncate_at` is `NA`: a logical index
-  carrying `NA` subsets a data frame to an all-`NA` row rather than
-  dropping it. That phantom row reached
-  [`svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html) as a
-  missing stratum and aborted inside the survey package with
-  `missing values in 'strata'`, a message naming neither trip duration
-  nor tidycreel.
-
-  Trips with no recorded duration are now dropped, because a trip whose
-  duration is unknown cannot be shown to clear the threshold, and they
-  are counted and warned about separately from the short trips excluded
-  by truncation — a missing-duration loss is a data-quality fact, not an
-  estimator decision, and a caller needs to tell a threshold that
-  excluded six short trips from a duration column that is half empty.
-  `mor_n_truncated` now counts only short trips.
-
-  Affects every truncating path in
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md):
-  `use_trips = "incomplete"`, `use_trips = "all"` including the roving
-  auto-route, and `estimator = "mortr"`. This is the guard
-  `truncate_interviews_for_mor()`
-  ([\#268](https://github.com/chrischizinski/tidycreel/issues/268))
-  already applied on the totals and `br_incomplete_harvest_rate()`
-  already applied on the bus-route path; the standard rate path was the
-  one site left without it. Designs with a complete duration column are
-  unaffected.
-
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
-  no longer aborts on a bus-route or ice design built with
-  `add_interviews(interview_type = "roving")`
-  ([\#270](https://github.com/chrischizinski/tidycreel/issues/270)). The
-  roving auto-route fired before the bus-route/ice dispatch and was then
-  undone inside it, but the undo read a flag the route itself had to
-  clear, so `use_trips` reached the bus-route validator as `"all"` —
-  which it refuses. Such a design could not produce a catch rate at all
-  unless the caller passed `use_trips` explicitly.
-
-  The route is now excluded at the point of resolution for these
-  designs, as `resolve_total_rate_spec()` already excluded it and as the
-  harvest and release rates get structurally by returning first.
-  Bus-route and ice results are unchanged, and a roving one now matches
-  the access-point one, as it should: these designs estimate a
-  completed-trip Horvitz-Thompson total, for which `use_trips = "all"`
-  names no estimator that exists. Standard designs are unaffected.
-
-### Documentation
-
-- [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
-  no longer attributes either of its imputation models to a paper that
-  does not contain it
-  ([\#297](https://github.com/chrischizinski/tidycreel/issues/297)).
-
-  Both citations named the wrong work. The negative binomial GLMM was
-  credited to a real Afrifa-Yamoah et al. (2020) paper — but the group’s
-  *climate* time-series paper, which imputes weather data with
-  expectation maximisation and LSTM neural networks, and which the
-  relevant paper itself cites for that purpose. The relevant one is
-
-  > Afrifa-Yamoah, E., Taylor, S.M., Fisher, A. & Mueller, U. (2020).
-  > Imputation of missing data from time-lapse cameras used in
-  > recreational fishing surveys. *ICES Journal of Marine Science*
-  > 77(7-8): 2984-2994.
-
-  and swapping it in unqualified would have repeated the defect at a
-  finer grain: that paper evaluates nine models in a fully conditional
-  specification multiple-imputation framework and concludes that
-  **zero-inflated Poisson** models “were generally ranked best”,
-  reporting the negative binomial fits as slow and cumbersome to
-  converge. Its fixed effects are climatic covariates and its random
-  intercepts are temporal classes; neither appears here. It is now cited
-  for what it does support — the multiple-imputation framing behind
-  `m > 1` and
-  [`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md).
-
-  The Poisson GLM default was attributed in-text to “Hartill 2016”, with
-  no matching reference entry to follow. Hartill et al. (2016) do impute
-  camera outages with a GLM, but a cross-site one: the outage ramp’s
-  daily count is predicted from the counts at *two other ramps* the same
-  day, square-root transformed as third-order polynomials, given fishing
-  year, season and day-type. The word “Poisson” does not appear in the
-  paper, and their stated reason for a cross-site model is that
-  same-ramp neighbouring days were “not considered to be sufficiently
-  representative” — an argument away from, not towards, a local mean.
-  Both papers now carry full reference entries saying what each does and
-  does not support, and a new “Where these imputation models come from”
-  section states plainly that the two models offered are the package’s
-  own choices.
-
-  Also corrected in passing: the high-missingness warning told the user
-  that results “may be unreliable (Afrifa-Yamoah 2020)”, where that
-  paper reports “no clear systematic trend in the performance of the
-  models with respect to … the proportion of missing data” and
-  successfully imputed months of complete outage. The warning is kept —
-  over half a stratum being model predictions is worth saying — but it
-  no longer claims a source that says the opposite. A code comment
-  describing the GLMM’s `(1 | site_col)` term as a random slope now
-  calls it a random intercept, matching the formula and the `site_col`
-  documentation. The description also no longer calls `strata_col` the
-  model’s “sole predictor”: it partitions the data, and a separate
-  intercept-only model is fitted within each level.
-
-  Documentation only; no estimate, imputed value or model changes.
-
-- Corrected two bad references in
-  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
-  ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)) —
-  one fabricated, one mis-cited.
-
-  The reference read “Greene, B.T. (1995). The ANGLER simulation
-  model. N. Am. J. Fish. Manage. 15: 743-750.” **No paper by that title
-  exists**, and every field of the citation was wrong. The work the
-  simulator actually draws on is
-
-  > Greene, C.J., Hoenig, J.M., Barrowman, N.J. & Pollock, K.H. (1995).
-  > Programs to simulate catch rate estimation in a roving creel survey
-  > of anglers. DFO Atlantic Fisheries Research Document 95/99.
-
-  — a Department of Fisheries and Oceans technical report describing two
-  S-PLUS functions that build an angler population and simulate a roving
-  clerk, not a journal article, which is why no Crossref search for it
-  returns anything. The author is Colin J. **Greene** with three
-  coauthors, not a solo “B.T. Greene”, and it never appeared in *North
-  American Journal of Fisheries Management*.
-
-  Found while verifying that one, and a different kind of error: the
-  Petrere reference is a real paper, cited with the right title, authors
-  and year, but given the wrong journal, volume and pages — “Fish. Res.
-  106: 325-333” for a paper published in *Brazilian Journal of Biology*
-  **70**: 483-491. Corrected, with its DOI added.
-
-  Su & Clapp (2013) was checked at the same time and is correct as
-  cited.
-
-  The `@details` sentence claimed the generative model “follows Su &
-  Clapp
-
-  2013. and Greene (1995)” without saying which part came from which.
-        Greene et al.’s simulated anglers are deterministic — evenly
-        spaced around the shoreline, all starting one hour into an
-        eight-hour day, trip lengths alternating between 3 and 6 hours —
-        so the three distributional levels are not from that paper. Only
-        the roving-clerk step is: length-biased interception, with catch
-        recorded up to the interview time. The docs now say so.
-
-  **No computation changes.** Documentation only.
-
-- Corrected the attribution of the camera calibration ratio, which cited
-  Hartill et al. (2020) for an estimator that paper does not contain
-  ([\#236](https://github.com/chrischizinski/tidycreel/issues/236)).
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
-  estimates `rho`, the hours of effort per camera count, as a ratio of
-  sums over the days carrying both a count and interviews, and applies
-  it to the stratum’s full count total.
-
-  Hartill et al. (2020) is a **review** of digital camera monitoring. It
-  presents no estimator and no variance, and where it discusses
-  combining cameras with creel data it cites others. The earlier sweep
-  in [\#235](https://github.com/chrischizinski/tidycreel/issues/235)
-  replaced a fabricated Hartill reference with the real one and verified
-  that the DOI resolved; it did not ask whether the resolved work
-  supports the formula attached to it, which is a separate question that
-  metadata cannot answer.
-
-  The citation is now split by what each source actually carries. The
-  estimator and its variance are **Cochran (1977)**: the counts are the
-  first phase of a double sample and the interview days the second,
-  which is the structure of Chapter 12 (Section 12.9, p. 343), and the
-  ratio’s variance is eq. 2.46 with the finite-population correction
-  omitted. The **practice** of calibrating camera counts against paired
-  creel observations is credited to Hartill et al. (2016), van Poorten
-  et al. (2015) and Eckelbecker et al. (2022) — each of which uses a
-  different estimator: a per-day classification proportion, a
-  hierarchical Bayesian model, and a fitted linear correction
-  respectively.
-
-  [`?est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
-  now states plainly that the ratio-of-totals form is this package’s own
-  application of standard double-sampling ratio estimation, not a
-  reproduction of a published fisheries estimator. In particular it is
-  not Hartill et al.’s (2016) `rho`, which is a dimensionless proportion
-  of observed boats that were fishing, estimated per day from interviews
-  that are a subsample of the camera’s own frame, with a bootstrap
-  variance.
-
-  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
-  also carried the Hartill et al. (2020) reference, for a function that
-  imputes camera outages by a per-stratum Poisson GLM or a negative
-  binomial GLMM. The review supports neither, and the entry is removed.
-
-  **No computation changes.** This release alters documentation,
-  comments and the camera vignette only.
-
-- Corrected the framing of
-  [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
-  which described *access* and *roving* as though they were count
-  methods
-  ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)).
-
-  They are not. In the creel literature access and roving describe how
-  anglers are **interviewed** – access interviews intercept completed
-  trips as anglers leave, roving interviews intercept incomplete trips
-  while anglers are still fishing, and the two require different
-  catch-rate estimators (Pollock et al. 1994). A survey mixing them is a
-  *hybrid interview* design. Counts are described by their own methods:
-  instantaneous, progressive, bus-route, camera or aerial – the values
-  [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
-  accepts for `survey_type`, none of which is “access” or “roving”.
-  tidycreel already carries the interview axis on
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
-  via `interview_type`.
-
-  The help page previously stated that `component` “names a survey
-  method”, and the glossary defined a hybrid design as “fixed
-  access-point counts plus roving-route counts”. Both are now corrected:
-  the two components are two disjoint **count frames**, in practice
-  angler-type domains such as boat and bank anglers, and the
-  `access`/`roving` argument names are inherited from the interview
-  vocabulary and flagged as under review. No behaviour changed.
-
-- Corrected five references that named papers which do not exist, or
-  whose DOI resolved to an unrelated paper. Found by checking every DOI
-  in the package against Crossref after the camera citation turned out
-  to be wrong.
-
-  - **Hartill et al. 2020**, cited by
-    [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
-    `estimate_effort_camera()` and
-    [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
-    gave a title, an author list and a journal that belong to no paper,
-    and a DOI (`10.1016/j.fishres.2020.105706`) that resolves to a study
-    of age determination in sawsharks. The real reference is Hartill,
-    Taylor, Keller and Weltersbach 2020, *Digital camera monitoring of
-    recreational fishing effort: applications and challenges*, Fish and
-    Fisheries 21:204-215, .
-  - **De Lury 1958**, cited by
-    [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
-    and the mark-recapture vignette, used `10.1139/f58-002`, which is
-    *The Abundance and Distribution of the Northern Sea Lion*. The
-    correct DOI is `10.1139/f58-003`; it is one article later in the
-    same issue.
-  - **Askey et al. 2018**, cited by
-    [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-    `example_aerial_glmm_counts` and the aerial GLMM vignette, had the
-    right DOI but an invented title and the wrong pages, and the
-    vignette named four authors none of whom wrote it. It is *Angler
-    effort estimates from instantaneous aerial counts*, NAFM 38:194-209.
-  - **Su and Clapp**, cited by
-    [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md),
-    is in Transactions of the American Fisheries Society 142:234-246
-    under the title *Evaluation of sample design and estimation methods
-    for Great Lakes angler surveys*, not in NAFM 33:895-909 under the
-    title given.
-  - **Feltz and Middaugh 2025**, cited by
-    [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
-    was recorded as in press under a title the paper does not carry. It
-    is published as *Improving efficiency of estimating angler effort
-    using low-frequency time-lapse camera data*, NAFM 45:322-332.
-
-  No estimator changed. What changed is that following a reference now
-  reaches the work it claims to. Two related questions are tracked
-  separately: the provenance of the
-  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
-  camera-day minimums, which were attributed to the Feltz and Middaugh
-  title that does not exist
-  ([\#234](https://github.com/chrischizinski/tidycreel/issues/234)), and
-  the unverified Greene 1995 citation in
-  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
-  ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)).
-
-### Internal
-
-- [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
-  and
-  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
-  now share one internal implementation instead of holding two copies of
-  the same 37 lines
-  ([\#295](https://github.com/chrischizinski/tidycreel/issues/295)).
-
-  The two are the same stratified allocation reached through two
-  vocabularies — sampling days for angler contact, camera-days for a
-  camera deployment — and after
-  [\#234](https://github.com/chrischizinski/tidycreel/issues/234)
-  removed the camera-only warning their bodies were byte-identical. Two
-  copies of one computation is how a fix lands in one twin and not the
-  other, which this package has hit repeatedly with the three near-twin
-  `creel-estimates-total-*.R` files.
-
-  **No user-visible change.** Both functions keep their exports, their
-  separate help pages and their own vocabulary; validation moved into
-  the shared internal but the checkmate assertions name the same
-  arguments, so error messages are unchanged. Verified over 2,000 random
-  inputs against the previous implementation: zero differences. A test
-  now pins the two entry points as identical, so a future re-copy that
-  edits one of them fails.
-
-### Breaking changes
 
 - [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
   and
@@ -1991,7 +1272,498 @@
   pointing at classifying the domain in the counts as what removes the
   assumption.
 
+### New features
+
+- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+  gains `harvest_lengths_table` and `release_lengths_table`, for a
+  source that keeps harvest and release lengths in separate tables
+  ([\#185](https://github.com/chrischizinski/tidycreel/issues/185)).
+  Both fall back to `lengths_table`, so a single-table source needs
+  neither and nothing changes for an existing schema.
+
+  tidycreel.connect’s YAML loader has offered both keys since
+  [\#176](https://github.com/chrischizinski/tidycreel/issues/176) and
+  passed them straight to this constructor, where they arrived as unused
+  arguments: a profile setting either aborted with a base error naming
+  no cause. The connect DBI backend reads the two lengths tables through
+  them.
+
+- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  and
+  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  gain a `targeted` argument, matching
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
+
+  `targeted = FALSE` restricts the domain to the interviews that
+  recorded some of the species being estimated, so the result is the
+  harvest or release rate among trips that took that species rather than
+  the fishery-wide rate. It is read by the mean-of-ratios forms and
+  ignored by `ratio-of-means`, exactly as for the catch rate, and the
+  per-species exclusion is now shared by all three rate functions
+  through one internal helper rather than copied.
+
+  `targeted = FALSE` **requires `by = species`** on these two functions
+  and raises `creel_error_targeted_needs_species` otherwise. Without a
+  species there is no per-species count to test, and the only available
+  test would be “recorded nothing at all” — a different estimand, and
+  one the package has never estimated for harvest or release. Refusing
+  is deliberate: an argument that silently does nothing is the defect
+  [\#304](https://github.com/chrischizinski/tidycreel/issues/304) fixed,
+  and this avoids repeating it. The check runs above the section
+  dispatch, so it reaches sectioned designs too.
+
+  No estimate produced with default arguments changes. The per-species
+  “\>70% recorded none of this species” diagnostic warning is new on
+  these two functions and fires only under the mean-of-ratios estimator.
+
 ### Bug fixes
+
+- `estimator = "regression"` now runs the regression on a `by = species`
+  request, instead of silently returning ratio-of-means
+  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
+
+  The species dispatch sits above the regression route, so a species
+  request reached `estimate_cpue_species()`, whose only branches were
+  ratio-of-means and mean-of-ratios. `"regression"` fell through to
+  ratio-of-means. No error, no warning, and a believable number under an
+  estimator the caller did not ask for. It affected flat designs as well
+  as sectioned ones, which is what separated it from
+  [\#285](https://github.com/chrischizinski/tidycreel/issues/285).
+
+  ``` r
+
+  reg <- estimate_catch_rate(design, by = species, estimator = "regression")
+  rom <- estimate_catch_rate(design, by = species, estimator = "ratio-of-means")
+  # before: identical estimates, method "ratio-of-means-cpue-species"
+  # after:  method "regression-cpue-species", and the estimates differ
+  ```
+
+  The species form is CPUE₃ restricted to one species: the slope of that
+  species’ catch on the same angler effort, forced through the origin,
+  with the same leave-one-out jackknife SE. That is Petrere et
+  al. (2010) eq. 3, `sum(C_i f_i) / sum(f_i^2)`, computed on the trip
+  set the call already uses. Both the flat and the sectioned species
+  paths route through it, so a sectioned request reports
+  `"regression-cpue-sections"` with per-section rows.
+
+  **Zero-catch interviews are kept by default.** An interview that
+  caught none of the target species contributes a `0` at positive
+  effort, and it is a real observation: Petrere et al. evaluated all
+  three estimators with zeros present, using a delta distribution with a
+  10% probability of zero precisely because “zero catches are fairly
+  common”. Dropping them would change the estimand from the catch rate
+  of that species per angler-hour to the rate among anglers who caught
+  it.
+
+  `targeted = FALSE` still makes that second choice available, and **on
+  the regression species path only** the exclusion is applied per
+  species: a trip that caught none of the species being estimated is
+  dropped, whichever other species it caught, and the warning names the
+  species and the percentage excluded.
+
+  It is confined to the regression form on purpose. `targeted` has
+  always been read inside the mean-of-ratios branch, which tests the
+  design’s *total* catch column and is therefore usually inert on a
+  species request — on the release fixture no interview has zero total
+  catch while 20 of 22 have zero bass. Widening the per-species test to
+  the other estimators would move numbers existing ratio-of-means
+  callers already get, so it is filed as
+  [\#304](https://github.com/chrischizinski/tidycreel/issues/304) rather
+  than changed here.
+
+  This replaces the refusal added alongside
+  [\#285](https://github.com/chrischizinski/tidycreel/issues/285), which
+  was a deliberate placeholder while the modelling question was open.
+
+- Corrected the Petrere et al. (2010) reference in two more places
+  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
+
+  [\#233](https://github.com/chrischizinski/tidycreel/issues/233) fixed
+  this citation in one block of
+  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  and missed two others — a second block in the same file, and the
+  [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md)
+  documentation. All three gave `Fish. Res. 106: 325-333`; the paper is
+  *Braz. J. Biol.* 70: 483-491,
+  [10.1590/S1519-69842010005000010](https://doi.org/10.1590/S1519-69842010005000010).
+  A grep for the journal name, rather than for the sentence, would have
+  caught all three at once.
+
+- `@param targeted` said zero-**effort** trips were excluded; the code
+  excludes zero-**catch** trips
+  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
+
+- A species-level regression request was held to the ratio-estimation
+  `n >= 10` floor
+  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)).
+  That floor is a ratio rule; the regression slope has its own “fewer
+  than 3 interviews” rule, and the ungrouped regression path was never
+  held to the ratio one. The species path therefore refused a defined
+  estimator with a message about a different one — reachable via
+  `use_trips = "all"`, where the ungrouped regression ran at `n = 5`
+  while the species form aborted. The floor still applies to the
+  estimators it belongs to.
+
+- A species-level regression result reported `variance_method` as the
+  caller’s `variance` argument rather than `"jackknife"`
+  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)). The
+  slope’s SE is a leave-one-out jackknife computed inside the regression
+  internals, which never consult `variance`; the ungrouped and sectioned
+  regression paths already reported it correctly, so only the species
+  path named a variance that had not run — the same class of mislabel as
+  [\#284](https://github.com/chrischizinski/tidycreel/issues/284).
+
+- `by =` no longer accepts the interview id or an internal `.`-prefixed
+  column as a grouping variable
+  ([\#293](https://github.com/chrischizinski/tidycreel/issues/293)).
+
+  On a design carrying catch data, `estimate_total_*(by = everything())`
+  selected the species column, routed to the species branch, and grouped
+  by **every** interview column — including `interview_id`, which is
+  unique per row. Nothing refused it. On a 22-interview fixture the call
+  did not return within 900 seconds.
+
+  The statistical stake is not the runtime. A key column as a grouping
+  variable puts one interview in each group, so every group’s rate has
+  `n = 1` and no within-group variance is estimable. Had the call
+  returned, it would have produced a table of per-interview “totals”
+  each carrying an uncertainty that could not have been computed — the
+  failure mode this package treats as the dangerous one, since the
+  number looks fine.
+
+  Two refusals now sit in the shared `by =` resolver, so every estimator
+  that groups by interview columns gets them:
+
+  ``` r
+
+  estimate_total_release(design, by = everything())
+  #> Error: `by` names the interview key `interview_id`.
+  #> x It holds one value per interview, so every group would be a single
+  #>   interview and no within-group variance could be estimated.
+
+  estimate_total_release(design, by = .angler_effort)
+  #> Error: `by` names a column the package derived: `.angler_effort`.
+  #> x It is computed by `add_interviews()`, not data you supplied.
+  ```
+
+  **Both tests are structural** — they ask what the design registered,
+  never what a name looks like or what values happen to hold.
+
+  The key comes from whichever of
+  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  or
+  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)
+  registered the interview id. Testing for distinct values instead would
+  be wrong: on a short survey a real grouping column such as `date` can
+  be unique per row without being a key.
+
+  The derived set is read from the design one field at a time, because a
+  leading `.` is not the test either. A user column literally named
+  `.se_expansion` is a supported grouping variable
+  ([\#259](https://github.com/chrischizinski/tidycreel/issues/259)). And
+  a design now records **whether** it computed the trip duration, rather
+  than the check inferring it from the column being called
+  `.trip_duration_hrs`: a caller may supply a column of their own by
+  that name, and it stays groupable. A column of your own is never
+  treated as derived, whatever it is called.
+
+  Derived columns are treated by how they were selected: a wildcard such
+  as `everything()` means every column the user brought, so they are
+  dropped silently, while asking for one specifically is an error rather
+  than a silent substitution. The two are told apart by re-resolving the
+  selector with the derived columns removed — if that leaves nothing to
+  select, the selector was asking for them. One consequence is
+  deliberate and worth knowing: `starts_with(".")` is a refusal on a
+  design whose only dot-named column is derived, and a silent drop on
+  one that also has a user column such as `.se_expansion`.
+
+  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  is unaffected: it resolves `by =` against the counts, which carry
+  neither an interview key nor these derived columns.
+
+  Two limits worth stating. A design with no catch, lengths or ages
+  attached registers no id column, so an id there is still accepted —
+  nothing in the design says it is a key. And the sparse-group warning
+  still only warns at `n < 3`; whether `n = 1` should be refused
+  generally is a wider question this did not settle.
+
+- [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  no longer warns that a stratum is below a Feltz and Middaugh (2025)
+  camera-day minimum
+  ([\#234](https://github.com/chrischizinski/tidycreel/issues/234)). The
+  12 weekday and 7 weekend days that check used are the study’s
+  **per-month** well-performing schedule, while `n_h` allocates over the
+  whole period named in `N_h`, so the comparison ran across scales and
+  under-fired by roughly the number of months surveyed. On the
+  function’s own documented example – about three months – the cited
+  schedule is near 36 weekday and 21 weekend camera-days, but the check
+  fired only below 12 and 7 and passed a plan of 27 and 12 in silence.
+
+  Scaling the benchmark would have fixed only that one gap. Three others
+  remain and the function cannot close any of them: the 12/7 scenario is
+  specifically at 1 count/day and nothing here knows the counts per day;
+  its error band is fixed by the study rather than taken from
+  `cv_target`, so a caller asking for a tight CV was judged against the
+  loose row; and the simulations measured boat-trailer counts on six
+  Arkansas reservoirs, whereas `ybar_h` and `s2_h` are whatever the
+  caller piloted. The benchmark is now stated in
+  [`?creel_n_camera`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  in the study’s own units, with those conditions, as design context
+  rather than a threshold.
+
+  Which benchmark applied was also chosen by matching `"weekday"` or
+  `"weekend"` as a substring of a caller-supplied stratum name, so
+  `weekday_holiday` took 12, `weekend_evening` took 7 by luck, and
+  `Sat/Sun` took neither and drew a permanent “unclassified stratum”
+  advisory instead. No stratum name now changes the result.
+
+  **No sample size changes.** The check only ever emitted a warning;
+  `n_h`, `total` and `allocated` were always returned as computed.
+
+- The error raised when a `by` variable is missing from the interview
+  data now carries the condition class
+  `creel_error_by_missing_in_interviews` and is attributed to the
+  `estimate_total_*()` call that produced it, rather than to an internal
+  helper
+  ([\#254](https://github.com/chrischizinski/tidycreel/issues/254)).
+  Grouped totals require each `by` variable in both the count and the
+  interview data; the count-side half already raised a classed,
+  catchable condition and this half raised an unclassed one, so only one
+  of the two could be handled programmatically. The message is
+  unchanged.
+
+- `estimator = "regression"` now runs on a sectioned design instead of
+  being silently discarded
+  ([\#285](https://github.com/chrischizinski/tidycreel/issues/285)).
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  dispatches on sections before it dispatches on the estimator, so a
+  sectioned regression request fell through to `estimate_cpue_total()`,
+  whose estimator test names only the mean-of-ratios variants – and
+  `"regression"` landed in the ratio-of-means branch. No error, no
+  warning, and a believable number.
+
+  The visible symptom was in
+  [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
+  whose purpose is making estimator divergence visible: on every
+  sectioned design it reported the regression row as numerically
+  identical to the ratio-of-means row, carrying a jackknife standard
+  error because that function requests one for regression. A
+  ratio-of-means point estimate with a jackknife SE under the
+  `regression` label corresponds to no estimator in the literature.
+
+  A sectioned regression now fits one regression per section, on that
+  section’s interviews, and reports
+  `method = "regression-cpue-sections"` with
+  `variance_method = "jackknife"` – the variance that actually ran,
+  rather than the caller’s Taylor default. `force_origin` reaches the
+  sectioned path, which previously had no such argument at all. The
+  section-level jackknife SE rests on that section’s interviews rather
+  than the whole sample and is correspondingly less stable; this is
+  documented on
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+
+- `species` in `by` combined with `estimator = "regression"` is now
+  refused rather than answered with a different estimator
+  ([\#290](https://github.com/chrischizinski/tidycreel/issues/290)). The
+  species dispatch also sits above the regression route, so this
+  affected **flat designs too**, not only sectioned ones: the call
+  returned ratio-of-means numbers labelled
+  `"ratio-of-means-cpue-species"` while the caller had asked for
+  regression.
+
+  Refused rather than implemented, because a per-species regression is a
+  modelling decision and not a correction: a species that was not caught
+  on a trip contributes a zero at positive effort, and whether those
+  rows belong in the slope changes the estimate. That question is open
+  in [\#290](https://github.com/chrischizinski/tidycreel/issues/290).
+
+- The mean-of-ratios diagnostic banner now describes the trips the
+  estimate was actually built from, and every metric that takes the
+  estimator prints one
+  ([\#276](https://github.com/chrischizinski/tidycreel/issues/276)). Two
+  problems, both exposed by mean-of-ratios spreading beyond the catch
+  rate.
+
+  HPUE got no banner at all. `estimate_cpue_total()` and
+  `estimate_cpue_grouped()` returned a mean-of-ratios object; the
+  harvest internals computed the same truncation metadata and then
+  discarded it, returning a plain result. The same `estimator = "mor"`
+  request therefore produced a caveat and a truncation report for CPUE
+  and RPUE and silence for HPUE. Harvest now returns the same object its
+  twins do, ungrouped and grouped.
+
+  The banner also said “This estimate uses incomplete trip interviews (n
+  of N total)” whatever trips had been used. That wording dates from
+  when mean-of-ratios *was* the incomplete-trip estimator; since the
+  roving auto-route
+  ([\#268](https://github.com/chrischizinski/tidycreel/issues/268) for
+  catch, [\#271](https://github.com/chrischizinski/tidycreel/issues/271)
+  for harvest and release) the default mean-of-ratios path uses **all**
+  trips, so a roving default rate announced an incomplete-trip caveat
+  while using every trip it had, and `use_trips = "complete"` announced
+  one while using none. The banner now names the trip set – “All Trips”,
+  “Complete Trips” or “DIAGNOSTIC: … (Incomplete Trips)” – and the
+  length-of-stay caveat and the
+  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  pointer appear only for the incomplete set, which is what
+  `mor_estimation_warning()` already did at run time. The truncation
+  report appears on every path, because truncation is part of the
+  estimator rather than a diagnostic detail. The “n of N” denominator is
+  gone: trip filtering happens upstream, so `N` had become the filtered
+  count and the incomplete path printed a literal “24 of 24 total”.
+
+  The counts the banner reports are taken from the trips that survived
+  truncation, not the set that entered it. Reported from before
+  truncation they contradicted the truncation line printed directly
+  beneath them – “over all 48 interviews” above “Truncation: 12 trips
+  excluded”, when 36 ratios had been averaged. This affected all three
+  metrics, in both the shared truncation helper and the catch rate’s own
+  filtering block.
+
+  Interviews the rate internals discard are no longer counted as used.
+  Those internals drop missing effort, zero effort and missing catch or
+  harvest after the design-level counts are stamped, so a design with
+  six unusable interviews printed “over 48 interviews” beside an
+  estimate whose own `n` was 42, on all three metrics and on the grouped
+  paths.
+
+  Two things found while making the above change and fixed with it. A
+  mean-of-ratios rate reported no unit – the constructor had no `unit`
+  argument, so every MOR rate read `NA` while the ratio-of-means rate
+  beside it read `"fish/angler-hour"`; routing harvest through that
+  constructor would have taken harvest’s unit away. And the
+  incomplete-trip count on a design with no trip status column is now
+  `NA` rather than `0`, because that count was never measured; the
+  banner omits the clause instead of reporting an absence as a zero. No
+  estimate values change.
+
+- Estimates now record which estimator produced them, in a new
+  `estimator` component on the returned object
+  ([\#275](https://github.com/chrischizinski/tidycreel/issues/275)). A
+  total’s `method` names the product form – `"product-total-catch"`
+  whichever rate estimator built it – so ratio-of-means, mean-of-ratios
+  and truncated mean-of-ratios were the same string, and the design slot
+  carries the *normalised* estimator, where a `"mortr"` request is
+  indistinguishable from `"mor"` at the default threshold. The field
+  records the estimator as you asked for it: `"mortr"` stays `"mortr"`.
+  It is `NULL` on paths that take no estimator argument, such as effort
+  totals, which is deliberately distinct from recording a default that
+  was never chosen.
+
+  The sectioned rates gained the matching `method` labels
+  (`"mean-of-ratios-truncated-{cpue,hpue,rpue}-sections"`), and
+  `"mean-of-ratios-truncated-cpue"` gained the display label its HPUE
+  and RPUE counterparts already had in
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`format()`](https://rdrr.io/r/base/format.html) and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html).
+  No estimate changes.
+
+  The roving auto-route still resolves to `"mor"` rather than `"mortr"`
+  and still reports itself untruncated: truncation runs at the 0.5
+  default there, but the caller did not ask for it to be mandatory.
+
+- Naming the section column in `by=` on a sectioned design is now
+  refused on every rate estimator, instead of failing inside tibble
+  ([\#265](https://github.com/chrischizinski/tidycreel/issues/265)). A
+  sectioned result is already one row per section, so
+  `estimate_catch_rate(d, by = section)` asks for a split that has
+  happened; all three rate estimators answered with “Column name
+  `section` must not be duplicated”, raised by
+  [`tibble::add_column()`](https://tibble.tidyverse.org/reference/add_column.html)
+  and naming neither the design nor what to do instead. The refusal and
+  its wording already existed – `refuse_section_in_by()`, error class
+  `creel_error_section_in_by` – and were wired into the three totals
+  only
+  ([\#255](https://github.com/chrischizinski/tidycreel/issues/255)). All
+  three rate paths now use it, at the same point in the call. Grouping
+  within sections by anything else is unaffected, and no estimate that
+  returned a number before returns a different one.
+
+- Two degenerate MOR truncation inputs now abort with tidycreel wording
+  rather than falling through to base R or to the survey package
+  ([\#279](https://github.com/chrischizinski/tidycreel/issues/279)).
+  `truncate_at = NA` passed the validator’s numeric and length checks
+  and reduced it to `NA <= 0`, so `if (NA)` aborted with “missing value
+  where TRUE/FALSE needed”; all three validators – the catch-rate one,
+  the totals resolver’s, and the bus-route one – carried the same gap. A
+  threshold that truncates away every interview left an empty sample to
+  reach
+  [`rowSums()`](https://rdrr.io/pkg/Matrix/man/colSums-methods.html),
+  which aborts with “all arguments must have the same length”, a message
+  about matrix conformability for a condition entirely about the chosen
+  threshold; the refusal now names `truncate_at` and the duration
+  column, as the bus-route incomplete-trip path already did. Both are
+  pre-existing, and no estimate that returned a number before returns a
+  different one.
+
+- The MOR truncation message now reports a percentage of the interviews
+  it actually truncated. It divided by the incomplete-trip count
+  regardless of which trip set was being estimated, so
+  `use_trips = "complete"` with `estimator = "mor"` divided by zero and
+  reported `Inf%` – always taking the “high truncation rate may indicate
+  data quality issues” branch – and `use_trips = "all"` reported the
+  share of the incomplete trips rather than of all of them, roughly
+  doubling it on a half-incomplete sample. Both the rate and the total
+  paths were affected. The denominator also excludes interviews with no
+  recorded trip duration, which are reported separately: a trip with no
+  duration was never eligible to be judged short, and counting it
+  diluted the short-trip rate enough to hide it below the 10% threshold
+  that triggers the data-quality warning. No estimate changes; the
+  message is what a caller reads to judge whether the threshold is
+  discarding too much data.
+
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  no longer aborts when an interview has no recorded trip duration and
+  MOR truncation is in effect
+  ([\#272](https://github.com/chrischizinski/tidycreel/issues/272)). The
+  truncation filter compared duration against the threshold without
+  guarding for `NA`, and `NA >= truncate_at` is `NA`: a logical index
+  carrying `NA` subsets a data frame to an all-`NA` row rather than
+  dropping it. That phantom row reached
+  [`svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html) as a
+  missing stratum and aborted inside the survey package with
+  `missing values in 'strata'`, a message naming neither trip duration
+  nor tidycreel.
+
+  Trips with no recorded duration are now dropped, because a trip whose
+  duration is unknown cannot be shown to clear the threshold, and they
+  are counted and warned about separately from the short trips excluded
+  by truncation — a missing-duration loss is a data-quality fact, not an
+  estimator decision, and a caller needs to tell a threshold that
+  excluded six short trips from a duration column that is half empty.
+  `mor_n_truncated` now counts only short trips.
+
+  Affects every truncating path in
+  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md):
+  `use_trips = "incomplete"`, `use_trips = "all"` including the roving
+  auto-route, and `estimator = "mortr"`. This is the guard
+  `truncate_interviews_for_mor()`
+  ([\#268](https://github.com/chrischizinski/tidycreel/issues/268))
+  already applied on the totals and `br_incomplete_harvest_rate()`
+  already applied on the bus-route path; the standard rate path was the
+  one site left without it. Designs with a complete duration column are
+  unaffected.
+
+- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  no longer aborts on a bus-route or ice design built with
+  `add_interviews(interview_type = "roving")`
+  ([\#270](https://github.com/chrischizinski/tidycreel/issues/270)). The
+  roving auto-route fired before the bus-route/ice dispatch and was then
+  undone inside it, but the undo read a flag the route itself had to
+  clear, so `use_trips` reached the bus-route validator as `"all"` —
+  which it refuses. Such a design could not produce a catch rate at all
+  unless the caller passed `use_trips` explicitly.
+
+  The route is now excluded at the point of resolution for these
+  designs, as `resolve_total_rate_spec()` already excluded it and as the
+  harvest and release rates get structurally by returning first.
+  Bus-route and ice results are unchanged, and a roving one now matches
+  the access-point one, as it should: these designs estimate a
+  completed-trip Horvitz-Thompson total, for which `use_trips = "all"`
+  names no estimator that exists. Standard designs are unaffected.
 
 - [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
   and
@@ -2155,6 +1927,274 @@
   absent section reports `NA` for both, since it has no share to report.
 
   Found by the sectioned/hybrid seam audit.
+
+### Documentation
+
+- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  now document why they have no `targeted` argument
+  ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
+
+  A targeted rate is conditional on having recorded the species; total
+  effort is not. Multiplying them applies a conditional rate to an
+  unconditional base: on the package’s example data one species’ rate is
+  0.48 fish/hr over all 50 trips and 2.00 fish/hr over the 12 that
+  caught it, so expanding the targeted rate by total effort returns
+  roughly 223 fish where 30 were actually caught. The domain-consistent
+  product needs the season-wide effort of species-catching trips, which
+  no creel design observes. A targeted rate is therefore available and a
+  targeted total is not, as a property of the estimand rather than a gap
+  in the implementation.
+
+- [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  no longer attributes either of its imputation models to a paper that
+  does not contain it
+  ([\#297](https://github.com/chrischizinski/tidycreel/issues/297)).
+
+  Both citations named the wrong work. The negative binomial GLMM was
+  credited to a real Afrifa-Yamoah et al. (2020) paper — but the group’s
+  *climate* time-series paper, which imputes weather data with
+  expectation maximisation and LSTM neural networks, and which the
+  relevant paper itself cites for that purpose. The relevant one is
+
+  > Afrifa-Yamoah, E., Taylor, S.M., Fisher, A. & Mueller, U. (2020).
+  > Imputation of missing data from time-lapse cameras used in
+  > recreational fishing surveys. *ICES Journal of Marine Science*
+  > 77(7-8): 2984-2994.
+
+  and swapping it in unqualified would have repeated the defect at a
+  finer grain: that paper evaluates nine models in a fully conditional
+  specification multiple-imputation framework and concludes that
+  **zero-inflated Poisson** models “were generally ranked best”,
+  reporting the negative binomial fits as slow and cumbersome to
+  converge. Its fixed effects are climatic covariates and its random
+  intercepts are temporal classes; neither appears here. It is now cited
+  for what it does support — the multiple-imputation framing behind
+  `m > 1` and
+  [`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md).
+
+  The Poisson GLM default was attributed in-text to “Hartill 2016”, with
+  no matching reference entry to follow. Hartill et al. (2016) do impute
+  camera outages with a GLM, but a cross-site one: the outage ramp’s
+  daily count is predicted from the counts at *two other ramps* the same
+  day, square-root transformed as third-order polynomials, given fishing
+  year, season and day-type. The word “Poisson” does not appear in the
+  paper, and their stated reason for a cross-site model is that
+  same-ramp neighbouring days were “not considered to be sufficiently
+  representative” — an argument away from, not towards, a local mean.
+  Both papers now carry full reference entries saying what each does and
+  does not support, and a new “Where these imputation models come from”
+  section states plainly that the two models offered are the package’s
+  own choices.
+
+  Also corrected in passing: the high-missingness warning told the user
+  that results “may be unreliable (Afrifa-Yamoah 2020)”, where that
+  paper reports “no clear systematic trend in the performance of the
+  models with respect to … the proportion of missing data” and
+  successfully imputed months of complete outage. The warning is kept —
+  over half a stratum being model predictions is worth saying — but it
+  no longer claims a source that says the opposite. A code comment
+  describing the GLMM’s `(1 | site_col)` term as a random slope now
+  calls it a random intercept, matching the formula and the `site_col`
+  documentation. The description also no longer calls `strata_col` the
+  model’s “sole predictor”: it partitions the data, and a separate
+  intercept-only model is fitted within each level.
+
+  Documentation only; no estimate, imputed value or model changes.
+
+- Corrected two bad references in
+  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)) —
+  one fabricated, one mis-cited.
+
+  The reference read “Greene, B.T. (1995). The ANGLER simulation
+  model. N. Am. J. Fish. Manage. 15: 743-750.” **No paper by that title
+  exists**, and every field of the citation was wrong. The work the
+  simulator actually draws on is
+
+  > Greene, C.J., Hoenig, J.M., Barrowman, N.J. & Pollock, K.H. (1995).
+  > Programs to simulate catch rate estimation in a roving creel survey
+  > of anglers. DFO Atlantic Fisheries Research Document 95/99.
+
+  — a Department of Fisheries and Oceans technical report describing two
+  S-PLUS functions that build an angler population and simulate a roving
+  clerk, not a journal article, which is why no Crossref search for it
+  returns anything. The author is Colin J. **Greene** with three
+  coauthors, not a solo “B.T. Greene”, and it never appeared in *North
+  American Journal of Fisheries Management*.
+
+  Found while verifying that one, and a different kind of error: the
+  Petrere reference is a real paper, cited with the right title, authors
+  and year, but given the wrong journal, volume and pages — “Fish. Res.
+  106: 325-333” for a paper published in *Brazilian Journal of Biology*
+  **70**: 483-491. Corrected, with its DOI added.
+
+  Su & Clapp (2013) was checked at the same time and is correct as
+  cited.
+
+  The `@details` sentence claimed the generative model “follows Su &
+  Clapp
+
+  2013. and Greene (1995)” without saying which part came from which.
+        Greene et al.’s simulated anglers are deterministic — evenly
+        spaced around the shoreline, all starting one hour into an
+        eight-hour day, trip lengths alternating between 3 and 6 hours —
+        so the three distributional levels are not from that paper. Only
+        the roving-clerk step is: length-biased interception, with catch
+        recorded up to the interview time. The docs now say so.
+
+  **No computation changes.** Documentation only.
+
+- Corrected the attribution of the camera calibration ratio, which cited
+  Hartill et al. (2020) for an estimator that paper does not contain
+  ([\#236](https://github.com/chrischizinski/tidycreel/issues/236)).
+  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  estimates `rho`, the hours of effort per camera count, as a ratio of
+  sums over the days carrying both a count and interviews, and applies
+  it to the stratum’s full count total.
+
+  Hartill et al. (2020) is a **review** of digital camera monitoring. It
+  presents no estimator and no variance, and where it discusses
+  combining cameras with creel data it cites others. The earlier sweep
+  in [\#235](https://github.com/chrischizinski/tidycreel/issues/235)
+  replaced a fabricated Hartill reference with the real one and verified
+  that the DOI resolved; it did not ask whether the resolved work
+  supports the formula attached to it, which is a separate question that
+  metadata cannot answer.
+
+  The citation is now split by what each source actually carries. The
+  estimator and its variance are **Cochran (1977)**: the counts are the
+  first phase of a double sample and the interview days the second,
+  which is the structure of Chapter 12 (Section 12.9, p. 343), and the
+  ratio’s variance is eq. 2.46 with the finite-population correction
+  omitted. The **practice** of calibrating camera counts against paired
+  creel observations is credited to Hartill et al. (2016), van Poorten
+  et al. (2015) and Eckelbecker et al. (2022) — each of which uses a
+  different estimator: a per-day classification proportion, a
+  hierarchical Bayesian model, and a fitted linear correction
+  respectively.
+
+  [`?est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  now states plainly that the ratio-of-totals form is this package’s own
+  application of standard double-sampling ratio estimation, not a
+  reproduction of a published fisheries estimator. In particular it is
+  not Hartill et al.’s (2016) `rho`, which is a dimensionless proportion
+  of observed boats that were fishing, estimated per day from interviews
+  that are a subsample of the camera’s own frame, with a bootstrap
+  variance.
+
+  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  also carried the Hartill et al. (2020) reference, for a function that
+  imputes camera outages by a per-stratum Poisson GLM or a negative
+  binomial GLMM. The review supports neither, and the entry is removed.
+
+  **No computation changes.** This release alters documentation,
+  comments and the camera vignette only.
+
+- Corrected the framing of
+  [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
+  which described *access* and *roving* as though they were count
+  methods
+  ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)).
+
+  They are not. In the creel literature access and roving describe how
+  anglers are **interviewed** – access interviews intercept completed
+  trips as anglers leave, roving interviews intercept incomplete trips
+  while anglers are still fishing, and the two require different
+  catch-rate estimators (Pollock et al. 1994). A survey mixing them is a
+  *hybrid interview* design. Counts are described by their own methods:
+  instantaneous, progressive, bus-route, camera or aerial – the values
+  [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+  accepts for `survey_type`, none of which is “access” or “roving”.
+  tidycreel already carries the interview axis on
+  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  via `interview_type`.
+
+  The help page previously stated that `component` “names a survey
+  method”, and the glossary defined a hybrid design as “fixed
+  access-point counts plus roving-route counts”. Both are now corrected:
+  the two components are two disjoint **count frames**, in practice
+  angler-type domains such as boat and bank anglers, and the
+  `access`/`roving` argument names are inherited from the interview
+  vocabulary and flagged as under review. No behaviour changed.
+
+- Corrected five references that named papers which do not exist, or
+  whose DOI resolved to an unrelated paper. Found by checking every DOI
+  in the package against Crossref after the camera citation turned out
+  to be wrong.
+
+  - **Hartill et al. 2020**, cited by
+    [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+    `estimate_effort_camera()` and
+    [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
+    gave a title, an author list and a journal that belong to no paper,
+    and a DOI (`10.1016/j.fishres.2020.105706`) that resolves to a study
+    of age determination in sawsharks. The real reference is Hartill,
+    Taylor, Keller and Weltersbach 2020, *Digital camera monitoring of
+    recreational fishing effort: applications and challenges*, Fish and
+    Fisheries 21:204-215, .
+  - **De Lury 1958**, cited by
+    [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+    and the mark-recapture vignette, used `10.1139/f58-002`, which is
+    *The Abundance and Distribution of the Northern Sea Lion*. The
+    correct DOI is `10.1139/f58-003`; it is one article later in the
+    same issue.
+  - **Askey et al. 2018**, cited by
+    [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
+    `example_aerial_glmm_counts` and the aerial GLMM vignette, had the
+    right DOI but an invented title and the wrong pages, and the
+    vignette named four authors none of whom wrote it. It is *Angler
+    effort estimates from instantaneous aerial counts*, NAFM 38:194-209.
+  - **Su and Clapp**, cited by
+    [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md),
+    is in Transactions of the American Fisheries Society 142:234-246
+    under the title *Evaluation of sample design and estimation methods
+    for Great Lakes angler surveys*, not in NAFM 33:895-909 under the
+    title given.
+  - **Feltz and Middaugh 2025**, cited by
+    [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
+    was recorded as in press under a title the paper does not carry. It
+    is published as *Improving efficiency of estimating angler effort
+    using low-frequency time-lapse camera data*, NAFM 45:322-332.
+
+  No estimator changed. What changed is that following a reference now
+  reaches the work it claims to. Two related questions are tracked
+  separately: the provenance of the
+  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  camera-day minimums, which were attributed to the Feltz and Middaugh
+  title that does not exist
+  ([\#234](https://github.com/chrischizinski/tidycreel/issues/234)), and
+  the unverified Greene 1995 citation in
+  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)).
+
+### Internal
+
+- [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+  and
+  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  now share one internal implementation instead of holding two copies of
+  the same 37 lines
+  ([\#295](https://github.com/chrischizinski/tidycreel/issues/295)).
+
+  The two are the same stratified allocation reached through two
+  vocabularies — sampling days for angler contact, camera-days for a
+  camera deployment — and after
+  [\#234](https://github.com/chrischizinski/tidycreel/issues/234)
+  removed the camera-only warning their bodies were byte-identical. Two
+  copies of one computation is how a fix lands in one twin and not the
+  other, which this package has hit repeatedly with the three near-twin
+  `creel-estimates-total-*.R` files.
+
+  **No user-visible change.** Both functions keep their exports, their
+  separate help pages and their own vocabulary; validation moved into
+  the shared internal but the checkmate assertions name the same
+  arguments, so error messages are unchanged. Verified over 2,000 random
+  inputs against the previous implementation: zero differences. A test
+  now pins the two entry points as identical, so a future re-copy that
+  edits one of them fails.
 
 ## tidycreel 5.2.0 “River Carpsucker” (2026-08-28)
 
