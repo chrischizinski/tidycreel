@@ -282,7 +282,7 @@ print(effort_by_shelter)
 #> 
 #> # A tibble: 2 × 8
 #>   shelter_mode estimate    se ci_lower ci_upper proportion     n
-#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <dbl>
+#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <int>
 #> 1 dark_house      1250.  56.7    1139.    1361.      0.520    36
 #> 2 open            1156.  23.6    1109.    1202.      0.480    36
 #> # ℹ 1 more variable: total_effort_hr_on_ice <dbl>

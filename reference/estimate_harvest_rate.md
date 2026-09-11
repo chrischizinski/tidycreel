@@ -319,7 +319,7 @@ print(result_grouped)
 #> 
 #> # A tibble: 1 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <dbl>
+#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
 #> 1 weekday     0.917 0.202    0.521     1.31    20
 
 # Custom confidence level
