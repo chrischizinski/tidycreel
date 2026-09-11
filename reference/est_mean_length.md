@@ -39,10 +39,13 @@ serve as representative lengths. Mean length is the ratio of total
 length-weighted count to total count: \$\$\bar{L} = \frac{\sum_h L_h
 \hat{N}\_h}{\hat{N}}\$\$
 
-Variance is propagated via the delta method for a ratio estimator,
-treating cross-bin covariances as zero:
-\$\$\widehat{\text{Var}}(\bar{L}) \approx \frac{1}{\hat{N}^2} \sum_h
-(L_h - \bar{L})^2 \\ \widehat{\text{SE}}\_h^2\$\$
+Variance is propagated via the delta method for a ratio estimator, using
+the bins' full covariance matrix \\\Sigma\\:
+\$\$\widehat{\text{Var}}(\bar{L}) = \frac{1}{\hat{N}^2} w' \Sigma w,
+\quad w_h = L_h - \bar{L}\$\$ Earlier versions treated the cross-bin
+covariances as zero, which under-estimated the standard error. If
+\\\Sigma\\ is unavailable the independence form is used and a warning
+says so.
 
 ## See also
 
@@ -109,7 +112,7 @@ ld <- est_length_distribution(design, by = species, bin_width = 25)
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_mean_length(ld)
 #>   species mean_length mean_length_se mean_length_ci_lower mean_length_ci_upper
-#> 1    bass    300.9615      10.418732             280.5412             321.3819
-#> 2 panfish    196.5909      11.970257             173.1296             220.0522
-#> 3 walleye    431.7308       9.445832             413.2173             450.2443
+#> 1    bass    300.9615       11.97037             277.5000             324.4230
+#> 2 panfish    196.5909        9.12372             178.7087             214.4731
+#> 3 walleye    431.7308       14.13632             404.0241             459.4374
 ```

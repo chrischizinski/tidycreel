@@ -79,6 +79,31 @@
 <p>The sweep over the remaining grouped estimators followed in <a href="https://github.com/chrischizinski/tidycreel/issues/321" class="external-link">#321</a>, below.</p>
 </li>
 <li>
+<p>The length bins’ <strong>covariance now reaches the ratio consumers</strong>, which were reporting standard errors up to a third too small (<a href="https://github.com/chrischizinski/tidycreel/issues/311" class="external-link">#311</a>).</p>
+<p><code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> over the bin columns estimates a full covariance matrix, and <code>two_phase_rescale()</code> propagates it. It then died at the <code><a href="../reference/est_length_distribution.html">est_length_distribution()</a></code> seam, and <code><a href="../reference/est_compliance.html">est_compliance()</a></code>, <code><a href="../reference/est_mean_length.html">est_mean_length()</a></code> and <code><a href="../reference/est_biomass.html">est_biomass()</a></code> each rebuilt a variance from the <strong>diagonal alone</strong> — the quadratic form  with every off-diagonal set to zero.</p>
+<p>The bins are a partition of the same fish, clustered within interviews and rescaled onto a single reported total, so they are strongly dependent. On the package’s own example data the maximum off-diagonal correlation is <strong>1.0</strong>. Against a <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> reference built independently in base R:</p>
+<table class="table"><thead><tr><th></th>
+<th>proportion</th>
+<th>SE</th>
+</tr></thead><tbody><tr><td>
+<code><a href="../reference/est_compliance.html">est_compliance()</a></code>, before</td>
+<td>0.5714286</td>
+<td><strong>0.1422436</strong></td>
+</tr><tr><td>
+<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code> reference</td>
+<td>0.5714286</td>
+<td>0.2093703</td>
+</tr><tr><td>
+<code><a href="../reference/est_compliance.html">est_compliance()</a></code>, now</td>
+<td>0.5714286</td>
+<td><strong>0.2093703</strong></td>
+</tr></tbody></table><p>The point estimates agreed all along — only the uncertainty was wrong, which is why nothing looked wrong. The package standard error was <strong>32% too small</strong>, on a proportion that gets compared against a legal size limit.</p>
+<p>All three consumers now take the quadratic form against the full matrix, and <code><a href="../reference/est_compliance.html">est_compliance()</a></code> reproduces the independent reference exactly. The matrix travels as an attribute keyed by reported group, with bin labels as dimnames, so a consumer aligns to it <strong>by bin</strong> rather than by position — a caller who keeps a subset of rows gets that subset’s block rather than a misaligned one.</p>
+<p>When the matrix is unavailable — an object from an older version, or one subsetted in a way that dropped the attribute — the independence form is used and a <code>creel_warning_bin_vcov_unavailable</code> warning says so. An absent covariance is unknown, not zero; falling back in silence would restore the defect by the back door.</p>
+<p><code><a href="../reference/est_biomass.html">est_biomass()</a></code> was the one consumer that documented the omission. It is no longer an omission, and its <code>@details</code> now says so, as do the other two.</p>
+<p>Note for anyone pinning these numbers: <strong><code>compliance_se</code>, <code>mean_length_se</code> and <code>biomass_se</code> all change</strong>, and in the direction of being larger. The point estimates do not move.</p>
+</li>
+<li>
 <p><code><a href="../reference/add_catch.html">add_catch()</a></code> now <strong>refuses an unknown count</strong>, which was indistinguishable from a genuine zero everywhere downstream (<a href="https://github.com/chrischizinski/tidycreel/issues/324" class="external-link">#324</a>).</p>
 <p><code><a href="../reference/add_catch.html">add_catch()</a></code> documents that an angler who caught none of a species need not appear in the catch table at all. Every consumer therefore reads a <em>missing row</em> as a catch of none. That reading is right for an absent row and wrong for a row that is present but carries <code>NA</code>, and nothing could tell the two apart: the summaries left-join the catch table onto the interviews and fill the join miss with zero, which swallowed the <code>NA</code> along with it.</p>
 <p>Changing a single harvested count on the package’s own example data:</p>

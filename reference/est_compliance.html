@@ -115,9 +115,18 @@ with a warning.</p>
     <p>A bin is legal when <code>bin_lower &gt;= min_length</code>.  The compliance proportion
 and its variance use the ratio estimator:
 $$P = \frac{\sum_h I_h \hat{N}_h}{\hat{N}}$$
-$$\widehat{\text{Var}}(P) \approx
-  \frac{1}{\hat{N}^2} \sum_h (I_h - P)^2 \, \widehat{\text{SE}}_h^2$$
-where \(I_h = \mathbf{1}(\text{bin\_lower}_h \geq \text{min\_length})\).</p>
+$$\widehat{\text{Var}}(P) =
+  \frac{1}{\hat{N}^2} w' \Sigma w, \quad w_h = I_h - P$$
+where \(I_h = \mathbf{1}(\text{bin\_lower}_h \geq \text{min\_length})\)
+and \(\Sigma\) is the bins' full covariance matrix, carried from the
+single <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> that estimated them.</p>
+<p>Earlier versions used \(\sum_h w_h^2 \widehat{\text{SE}}_h^2\) — the same
+expression with every off-diagonal set to zero. The bins partition the same
+fish and are rescaled onto one reported total, so they are strongly
+dependent, and on the package's own example data that form reported a
+standard error <strong>32% below</strong> an independently computed
+<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> reference. If \(\Sigma\) is unavailable the
+independence form is used and a warning says so.</p>
 <p>Confidence interval bounds are clamped to \([0, 1]\).</p>
 <p>Choose <code>bin_width</code> in <code><a href="est_length_distribution.html">est_length_distribution()</a></code> smaller than the typical
 variation near the legal limit to minimise classification error for bins

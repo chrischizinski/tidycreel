@@ -6,9 +6,12 @@ distribution produced by
 into a total biomass estimate using the allometric length-weight
 equation \\W = a \cdot L^b\\.
 
-Variance is propagated via the delta method, treating estimated fish
-counts per length bin as uncorrelated and the length-weight parameters
-`a` and `b` as known without error (see Details).
+Variance is propagated via the delta method, carrying the **full
+covariance** among the estimated fish counts per length bin and treating
+the length-weight parameters `a` and `b` as known without error unless
+their standard errors are supplied (see Details). Before GH \#311 the
+bin counts were treated as uncorrelated, which under-estimated the
+variance.
 
 Since GH \#310 the counts supplied by
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
@@ -87,10 +90,19 @@ count from
 [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md).
 Total biomass is \\B = \sum_h B_h\\.
 
-Variance is approximated as \\\widehat{\text{Var}}(B) \approx \sum_h (a
-\cdot L_h^b)^2 \cdot \widehat{\text{SE}}\_h^2\\, which ignores cross-bin
-covariances. When positive covariances exist (likely in small surveys),
-this under-estimates the true variance.
+Variance is the quadratic form \\\widehat{\text{Var}}(B) = w' \Sigma w\\
+with \\w_h = a \cdot L_h^b\\ and \\\Sigma\\ the bins' full covariance
+matrix, carried from the single
+[`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) that
+estimated them. Earlier versions used \\\sum_h w_h^2
+\widehat{\text{SE}}\_h^2\\ — the same expression with every off-diagonal
+set to zero — which under-estimated the variance, since the bins
+partition the same fish and are rescaled onto one reported total.
+
+If \\\Sigma\\ is unavailable — the object was produced by an older
+version, or was subsetted in a way that dropped the attribute carrying
+it — the independence form is used and a warning says so. An absent
+covariance is unknown, not zero.
 
 By default `a` and `b` are treated as known constants, so `biomass_se`
 carries no contribution from their estimation error. In practice they
@@ -207,7 +219,7 @@ ld <- est_length_distribution(design, by = species, bin_width = 25)
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_biomass(ld, a = 0.0088, b = 3.1)
 #>   species biomass_estimate biomass_se biomass_ci_lower biomass_ci_upper
-#> 1    bass         10998601  3724536.8        3698642.9         18298559
-#> 2 panfish          1564991   552266.9         482567.3          2647414
-#> 3 walleye         73939205 20043900.7       34653881.1        113224528
+#> 1    bass         10998601  4518118.7        2143251.0         19853951
+#> 2 panfish          1564991   854445.1        -109691.1          3239672
+#> 3 walleye         73939205 22890156.6       29075322.1        118803087
 ```
