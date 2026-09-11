@@ -4013,6 +4013,16 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #' catch rows are valid (anglers who caught nothing need not appear in catch
 #' data).
 #'
+#' \strong{Counts must be known (CATCH-07):} \code{count} may not contain
+#' \code{NA}. A \emph{missing row} carries a definite meaning here — none of
+#' that disposition, or, for a \code{"caught"} row, derive the total from
+#' \code{harvested + released} — so a row that is present but carries an
+#' unknown count is silently read as that same definite thing rather than as an
+#' unknown. Fill the missing counts, or drop those rows; note that dropping
+#' states something, since a dropped \code{"caught"} row changes how the total
+#' is derived rather than setting it to zero. Aborts with class
+#' \code{creel_error_na_catch_count}.
+#'
 #' \strong{Immutability:} Returns a new \code{creel_design} — the input is not
 #' modified. Calling \code{add_catch()} on a design that already has
 #' \code{$catch} is an error.
@@ -4109,6 +4119,52 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
       "Invalid {.field catch_type} value{?s}: {.val {bad_types}}",
       "i" = "Accepted values: {.val {valid_types}}"
     ))
+  }
+
+  # Refuse an unknown count (CATCH-07, GH #324).
+  #
+  # `add_catch()` documents that an angler who caught none of a species need not
+  # appear in the table at all, so a MISSING ROW carries a definite meaning:
+  # none of that disposition, or -- for a `caught` row -- derive the total from
+  # harvested + released. Either way the meaning is definite, so a row PRESENT
+  # with an unknown count is silently read as that same definite thing, and
+  # nothing downstream could tell the two apart: the
+  # summaries left-join the catch table onto the interviews and fill the join
+  # miss with zero, which swallowed the NA with it. Changing one harvested count
+  # from 5 to NA moved `summarize_hws_rates()` from 0.2332 to 0.16829 -- the
+  # same number a genuine zero produces, byte for byte, with no error and no
+  # warning.
+  #
+  # Refused here rather than repaired downstream, for the same reason #322
+  # refuses an NA `within_day_var`: the consumers' reading of a join miss is
+  # correct exactly when the table carries no unknowns, so this is the one place
+  # that can make it true. It also removes two accidents in CATCH-04 below --
+  # an unknown harvested count was zeroed by the `sub_total` fill and so passed
+  # the check, while an unknown caught count made `caught_total < sub_total`
+  # evaluate to NA, and `combined[NA, ]` yields a PHANTOM all-NA row that
+  # aborted naming the pair {.val NA/NA}.
+  bad_counts <- which(is.na(data[[count_col]]))
+  if (length(bad_counts) > 0L) {
+    bad_pairs <- unique(paste0( # nolint: object_usage_linter
+      data[[catch_uid_col]][bad_counts], "/", data[[species_col]][bad_counts]
+    ))
+    cli::cli_abort(
+      c(
+        "{.field {count_col}} has missing values.",
+        "x" = "{.val {NA}} in {length(bad_counts)} catch row{?s}
+               ({cli::qty(length(bad_pairs))}pair{?s} {.val {bad_pairs}}).",
+        "i" = "An unknown count is not a zero one. An ABSENT row carries a
+               definite meaning here, so a row PRESENT with an unknown count
+               is silently read as that same definite meaning.",
+        "i" = "Fill the missing counts, or drop those rows -- but note that
+               dropping states something. A dropped {.val harvested} or
+               {.val released} row means none of that disposition; a dropped
+               {.val caught} row makes total catch derive from harvested +
+               released instead."
+      ),
+      class = "creel_error_na_catch_count",
+      call = rlang::caller_env()
+    )
   }
 
   # Validate interview ID join (CATCH-02)

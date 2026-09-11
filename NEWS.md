@@ -46,6 +46,51 @@
 
   The sweep over the remaining grouped estimators followed in #321, below.
 
+* `add_catch()` now **refuses an unknown count**, which was indistinguishable
+  from a genuine zero everywhere downstream (#324).
+
+  `add_catch()` documents that an angler who caught none of a species need not
+  appear in the catch table at all. Every consumer therefore reads a *missing
+  row* as a catch of none. That reading is right for an absent row and wrong for
+  a row that is present but carries `NA`, and nothing could tell the two apart:
+  the summaries left-join the catch table onto the interviews and fill the join
+  miss with zero, which swallowed the `NA` along with it.
+
+  Changing a single harvested count on the package's own example data:
+
+  | that pair's count | `summarize_hws_rates()` | `se` |
+  |---|---|---|
+  | `5` (known) | 0.2332251 | 0.07883204 |
+  | `NA` (**unknown**) | **0.1682900** | **0.05512425** |
+  | `0` (genuine zero) | **0.1682900** | **0.05512425** |
+
+  The unknown and the zero produced **byte-identical output** — the rate
+  understated and the confidence interval narrowed, with no error and no
+  warning.
+
+  `count` may no longer contain `NA` (CATCH-07, class
+  `creel_error_na_catch_count`). Refused at entry rather than repaired
+  downstream, for the same reason #322 refuses an `NA` `within_day_var`: the
+  consumers' reading of a join miss is correct exactly when the table carries no
+  unknowns, so this is the one place that can make it true.
+
+  It also removes two accidents in the `caught >= harvested + released` check
+  (CATCH-04). An unknown **harvested** count was zeroed by that check's own
+  `sub_total` fill and so passed in silence. An unknown **caught** count made
+  the comparison evaluate to `NA`, and indexing a data frame with `NA` yields a
+  *phantom* all-`NA` row — so it did abort, but for the wrong reason, naming the
+  offending pair as `"NA/NA"` and telling the user nothing about which row to
+  fix. Both are now unreachable, and the refusal names the real pair.
+
+  The distinction this protects is pinned in both directions: an interview
+  absent from the catch table still reads as a zero, exactly as documented.
+
+  Note that *dropping* a row states something rather than nothing. A dropped
+  `"harvested"` or `"released"` row means none of that disposition; a dropped
+  `"caught"` row makes total catch derive from `harvested + released` instead.
+  The error message says which, so the remediation it suggests is not itself a
+  silent change of claim.
+
 * Every remaining grouped estimator now reports the **unknown group** too, and
   the ratio-estimation sample-size floor is applied to it (#321).
 
