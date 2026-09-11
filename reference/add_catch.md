@@ -70,6 +70,16 @@ appear in `design$interviews[[interview_uid]]`. Interviews with no catch
 rows are valid (anglers who caught nothing need not appear in catch
 data).
 
+**Counts must be known (CATCH-07):** `count` may not contain `NA`. A
+*missing row* carries a definite meaning here — none of that
+disposition, or, for a `"caught"` row, derive the total from
+`harvested + released` — so a row that is present but carries an unknown
+count is silently read as that same definite thing rather than as an
+unknown. Fill the missing counts, or drop those rows; note that dropping
+states something, since a dropped `"caught"` row changes how the total
+is derived rather than setting it to zero. Aborts with class
+`creel_error_na_catch_count`.
+
 **Immutability:** Returns a new `creel_design` — the input is not
 modified. Calling `add_catch()` on a design that already has `$catch` is
 an error.

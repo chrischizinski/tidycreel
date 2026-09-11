@@ -79,6 +79,31 @@
 <p>The sweep over the remaining grouped estimators followed in <a href="https://github.com/chrischizinski/tidycreel/issues/321" class="external-link">#321</a>, below.</p>
 </li>
 <li>
+<p><code><a href="../reference/add_catch.html">add_catch()</a></code> now <strong>refuses an unknown count</strong>, which was indistinguishable from a genuine zero everywhere downstream (<a href="https://github.com/chrischizinski/tidycreel/issues/324" class="external-link">#324</a>).</p>
+<p><code><a href="../reference/add_catch.html">add_catch()</a></code> documents that an angler who caught none of a species need not appear in the catch table at all. Every consumer therefore reads a <em>missing row</em> as a catch of none. That reading is right for an absent row and wrong for a row that is present but carries <code>NA</code>, and nothing could tell the two apart: the summaries left-join the catch table onto the interviews and fill the join miss with zero, which swallowed the <code>NA</code> along with it.</p>
+<p>Changing a single harvested count on the package’s own example data:</p>
+<table class="table"><thead><tr><th>that pair’s count</th>
+<th><code><a href="../reference/summarize_hws_rates.html">summarize_hws_rates()</a></code></th>
+<th><code>se</code></th>
+</tr></thead><tbody><tr><td>
+<code>5</code> (known)</td>
+<td>0.2332251</td>
+<td>0.07883204</td>
+</tr><tr><td>
+<code>NA</code> (<strong>unknown</strong>)</td>
+<td><strong>0.1682900</strong></td>
+<td><strong>0.05512425</strong></td>
+</tr><tr><td>
+<code>0</code> (genuine zero)</td>
+<td><strong>0.1682900</strong></td>
+<td><strong>0.05512425</strong></td>
+</tr></tbody></table><p>The unknown and the zero produced <strong>byte-identical output</strong> — the rate understated and the confidence interval narrowed, with no error and no warning.</p>
+<p><code>count</code> may no longer contain <code>NA</code> (CATCH-07, class <code>creel_error_na_catch_count</code>). Refused at entry rather than repaired downstream, for the same reason <a href="https://github.com/chrischizinski/tidycreel/issues/322" class="external-link">#322</a> refuses an <code>NA</code> <code>within_day_var</code>: the consumers’ reading of a join miss is correct exactly when the table carries no unknowns, so this is the one place that can make it true.</p>
+<p>It also removes two accidents in the <code>caught &gt;= harvested + released</code> check (CATCH-04). An unknown <strong>harvested</strong> count was zeroed by that check’s own <code>sub_total</code> fill and so passed in silence. An unknown <strong>caught</strong> count made the comparison evaluate to <code>NA</code>, and indexing a data frame with <code>NA</code> yields a <em>phantom</em> all-<code>NA</code> row — so it did abort, but for the wrong reason, naming the offending pair as <code>"NA/NA"</code> and telling the user nothing about which row to fix. Both are now unreachable, and the refusal names the real pair.</p>
+<p>The distinction this protects is pinned in both directions: an interview absent from the catch table still reads as a zero, exactly as documented.</p>
+<p>Note that <em>dropping</em> a row states something rather than nothing. A dropped <code>"harvested"</code> or <code>"released"</code> row means none of that disposition; a dropped <code>"caught"</code> row makes total catch derive from <code>harvested + released</code> instead. The error message says which, so the remediation it suggests is not itself a silent change of claim.</p>
+</li>
+<li>
 <p>Every remaining grouped estimator now reports the <strong>unknown group</strong> too, and the ratio-estimation sample-size floor is applied to it (<a href="https://github.com/chrischizinski/tidycreel/issues/321" class="external-link">#321</a>).</p>
 <p><a href="https://github.com/chrischizinski/tidycreel/issues/317" class="external-link">#317</a> fixed grouped effort. <code><a href="https://rdrr.io/pkg/survey/man/svyby.html" class="external-link">survey::svyby()</a></code> drops rows whose <code>by=</code> value is <code>NA</code> with no warning and no row, and the other grouped estimators reached it through their own paths, so each one went on dropping the group silently. The parts stopped summing to the whole in three different places:</p>
 <ul><li>
