@@ -194,12 +194,12 @@ recorded in catch data), broken down by angler type and species sought.
 
 summarize_successful_parties(design)
 #>   angler_type species_sought N_total N_successful percent
-#> 1        bank           bass       5            0     0.0
+#> 1        bank           bass       5            1    20.0
 #> 2        bank        panfish       3            1    33.3
-#> 3        bank        walleye       5            3    60.0
+#> 3        bank        walleye       5            4    80.0
 #> 4        boat           bass       1            1   100.0
 #> 5        boat        panfish       2            0     0.0
-#> 6        boat        walleye       6            1    16.7
+#> 6        boat        walleye       6            3    50.0
 ```
 
 ### Trip Length Distribution

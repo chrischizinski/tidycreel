@@ -65,6 +65,20 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/summarize_successful_parties.html">summarize_successful_parties()</a></code> now reads <code><a href="../reference/add_catch.html">add_catch()</a></code>’s catch-type model, so a party that recorded only <code>harvested</code>/<code>released</code> rows counts as successful (<a href="https://github.com/chrischizinski/tidycreel/issues/329" class="external-link">#329</a>).</p>
+<p><code><a href="../reference/add_catch.html">add_catch()</a></code> documents the <code>caught</code> row as <strong>optional</strong>: when a pair has none, its total catch is <code>harvested + released</code>. This function held a private copy of the rule with no such fallback — it asked whether a <code>caught</code> row existed, full stop — so a party that recorded only its dispositions was reported as <strong>unsuccessful while its own harvest was positive</strong>.</p>
+<p><strong>This was live on the package’s own example data.</strong> Four species-interview pairs in <code>example_catch</code> record dispositions and no <code>caught</code> row — interviews 11, 12 and 14 for walleye, and 13 for bass. All four demonstrably caught the species they sought, and all four were counted as failures. The successful party total on the shipped data was <strong>6; it is 10</strong>.</p>
+<p>Dropping every <code>caught</code> row — which the documentation says is legal, and which leaves each pair’s harvested and released rows untouched — previously took the total from 6 to <strong>zero</strong>, with every reported rate reading 0.0%. It now changes nothing, which is the property that makes the rule real.</p>
+<p>A recorded catch of zero still counts as unsuccessful: that is data, not an absence. The fallback now comes from <code>species_counts_per_interview()</code>, the package’s one implementation of the catch-type rule, applied per species-interview pair (<a href="https://github.com/chrischizinski/tidycreel/issues/318" class="external-link">#318</a>, <a href="https://github.com/chrischizinski/tidycreel/issues/320" class="external-link">#320</a>).</p>
+<p>This was <a href="https://github.com/chrischizinski/tidycreel/issues/317" class="external-link">#317</a>’s ninth instance and the last one outstanding; that defect class is now closed.</p>
+</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="6.0.0" id="tidycreel-600-blue-catfish-2026-09-11">tidycreel 6.0.0 “Blue Catfish” (2026-09-11)<a class="anchor" aria-label="anchor" href="#tidycreel-600-blue-catfish-2026-09-11"></a></h2>
 <p>A large release, and a breaking one. The theme running through most of it is a single defect class: a quantity that was <strong>unknown</strong> or <strong>absent</strong> was allowed to behave like a <strong>zero</strong> or like nothing at all. Every instance produced a plausible number, no error and no warning.</p>
 <div class="section level3">

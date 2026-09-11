@@ -1,9 +1,13 @@
 # Tabulate successful parties by angler type and species sought
 
-A party is "successful" if any row in the attached catch data has
-`catch_type == "caught"` and `count > 0` for the species the party was
-seeking (`species_sought`). Returns counts of successful and total
-parties for each angler type x species sought combination.
+A party is "successful" when its total catch of the species it was
+seeking (`species_sought`) is greater than zero. That total follows the
+model
+[`add_catch`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+documents: the pair's `"caught"` row when it has one, and otherwise
+`harvested + released`, because a `"caught"` row is optional. Returns
+counts of successful and total parties for each angler type x species
+sought combination.
 
 ## Usage
 
@@ -28,6 +32,10 @@ A `data.frame` with class
 (integer), `percent` (numeric, 1 decimal).
 
 ## Details
+
+A pair that records its own `"caught"` row keeps it even when that row
+is zero — a recorded catch of none is data, not an absence, and does not
+fall back to the dispositions.
 
 **Interview-based summary, not pressure-weighted.** This function
 tabulates raw interview records without applying survey weighting by
@@ -91,10 +99,10 @@ d <- add_catch(d, example_catch,
 )
 summarize_successful_parties(d)
 #>   angler_type species_sought N_total N_successful percent
-#> 1        bank           bass       5            0     0.0
+#> 1        bank           bass       5            1    20.0
 #> 2        bank        panfish       3            1    33.3
-#> 3        bank        walleye       5            3    60.0
+#> 3        bank        walleye       5            4    80.0
 #> 4        boat           bass       1            1   100.0
 #> 5        boat        panfish       2            0     0.0
-#> 6        boat        walleye       6            1    16.7
+#> 6        boat        walleye       6            3    50.0
 ```
