@@ -37,7 +37,7 @@ test_api_field_map <- function() {
       interview_uid = "InterviewID",
       species       = "SpeciesCode",
       catch_count   = "FishCount",
-      catch_type    = "CatchType"
+      catch_type    = "CatchCategory"
     ),
     harvest_lengths = list(
       interview_uid = "InterviewID",
