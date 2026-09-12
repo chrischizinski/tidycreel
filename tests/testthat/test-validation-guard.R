@@ -28,9 +28,12 @@ validation_pkg_root <- function() {
   if (!file.exists(file.path(root, "DESCRIPTION"))) {
     skip("Cannot locate package root with DESCRIPTION in this context")
   }
-  fixtures <- file.path(root, "inst", "extdata", "calamus-2016", "reference-outputs.csv")
+  fixtures <- file.path(root, "inst", "calamus-2016", "reference-outputs.csv")
   if (!file.exists(fixtures)) {
-    skip("calamus-2016 fixtures are .Rbuildignore'd, so the script cannot run from an installed copy")
+    # Reachable only from a context with no package root at all. The fixture
+    # used to live under inst/extdata/, which is .Rbuildignore'd, so this test
+    # skipped on every run including CI (GH #337 follow-up).
+    skip("Cannot locate the calamus-2016 fixtures from this context")
   }
   root
 }
