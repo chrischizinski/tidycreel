@@ -28,6 +28,8 @@ grouping columns (if any), \code{N} (integer, interviews per group that
 produced a rate), \code{n_unknown_target} (integer, interviews excluded
 because their sought species was not recorded), \code{n_unknown_effort}
 (integer, interviews excluded because their effort was not recorded),
+\code{n_nonpositive_effort} (integer, interviews excluded because their
+effort was zero or negative),
 \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
 \code{ci_upper}.
@@ -93,9 +95,22 @@ and one unrecorded effort used to turn the whole group's mean into
 \code{NA} while \code{N} went on counting it. The two counts are mutually
 exclusive, target first, so an interview missing both is counted once.
 
-\code{N} therefore counts the interviews that produced a rate.
-\code{N + n_unknown_target + n_unknown_effort} is the number of interviews
-in the group, less any excluded for zero effort.
+An effort that is not \strong{positive} cannot produce a rate either, and
+those interviews are counted in \code{n_nonpositive_effort}. A zero is a
+real record -- a party interviewed before it started fishing -- and a
+negative one is a data error that \code{\link{add_interviews}} already warns
+about; neither yields a rate. They used to be dropped with no trace at all,
+so a table could report 20 of 22 interviews with nothing in it to say the
+other two existed.
+
+\code{N} therefore counts the interviews that produced a rate, and the
+accounting closes:
+
+\preformatted{N + n_unknown_target + n_unknown_effort + n_nonpositive_effort
+  == interviews in the group}
+
+The three exclusion counts are mutually exclusive, in that precedence, so an
+interview missing more than one thing is counted once.
 
 A column holding both unrecorded values and the literal value
 \code{"Unknown"} warns: the two are pooled into one row and cannot be told

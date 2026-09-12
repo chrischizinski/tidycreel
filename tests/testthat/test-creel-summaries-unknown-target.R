@@ -74,7 +74,10 @@ test_that("an unrecorded target is excluded from the rate, not scored zero (TGT-
 test_that("every interview is accounted for across N and n_unknown_target (TGT-03)", {
   # The invariant that encodes the intent. Exclusion is only defensible while
   # the excluded are still counted somewhere the reader can see.
-  accounted <- function(r) sum(r$N) + sum(r$n_unknown_target) + sum(r$n_unknown_effort)
+  accounted <- function(r) {
+    sum(r$N) + sum(r$n_unknown_target) + sum(r$n_unknown_effort) +
+      sum(r$n_nonpositive_effort)
+  }
 
   grouped_by_type <- summarize_cws_rates(ut_design(blank_sought = TRUE), by = "angler_type")
   expect_equal(accounted(grouped_by_type), ut_n())
@@ -200,7 +203,10 @@ test_that("an unrecorded effort is excluded and counted, not left to blank the g
   expect_equal(boat$N, 7L)
   # Two unrecorded efforts must not erase seven perfectly good interviews.
   expect_false(is.na(boat$mean_rate))
-  expect_equal(sum(result$N) + sum(result$n_unknown_effort), ut_n())
+  expect_equal(
+    sum(result$N) + sum(result$n_unknown_effort) + sum(result$n_nonpositive_effort),
+    ut_n()
+  )
 })
 
 test_that("an interview missing BOTH target and effort is counted once (TGT-08b)", {
@@ -210,7 +216,120 @@ test_that("an interview missing BOTH target and effort is counted once (TGT-08b)
   expect_equal(sum(result$n_unknown_target), 2L)
   expect_equal(sum(result$n_unknown_effort), 0L)
   expect_equal(
-    sum(result$N) + sum(result$n_unknown_target) + sum(result$n_unknown_effort),
+    sum(result$N) + sum(result$n_unknown_target) + sum(result$n_unknown_effort) +
+      sum(result$n_nonpositive_effort),
     ut_n()
+  )
+})
+
+# --- non-positive effort — TGT-09 (GH #339) ----------------------------------
+
+ut_design_effort <- function(value, rows = c(2, 5)) {
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
+  iv <- example_interviews
+  iv$hours_fished[rows] <- value
+  suppressWarnings(suppressMessages({
+    d <- creel_design(example_calendar, date = date, strata = day_type)
+    d <- add_interviews(d, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type,
+      species_sought = species_sought
+    )
+    add_catch(d, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    )
+  }))
+}
+
+test_that("a zero-effort interview is counted, not dropped without trace (TGT-09)", {
+  # A party interviewed before it started fishing is a real record. It cannot
+  # produce a rate -- there is no time to divide by -- so excluding it is right,
+  # but it used to be removed with nothing anywhere to say it existed: the table
+  # reported 20 of 22 interviews and looked complete.
+  result <- summarize_cws_rates(ut_design_effort(0), by = "angler_type")
+  boat <- result[result$angler_type == "boat", ]
+  expect_equal(boat$n_nonpositive_effort, 2L)
+  expect_equal(boat$N, 7L)
+  expect_false(is.na(boat$mean_rate))
+})
+
+test_that("a negative-effort interview is counted in the same column (TGT-09b)", {
+  # add_interviews() warns about negative effort and does not block it, exactly
+  # as it does for negative catch -- that policy is deliberate and tested
+  # elsewhere. What matters here is that such an interview stops vanishing from
+  # the rate table; it has no rate either way.
+  result <- summarize_cws_rates(ut_design_effort(-3), by = "angler_type")
+  boat <- result[result$angler_type == "boat", ]
+  expect_equal(boat$n_nonpositive_effort, 2L)
+  expect_equal(boat$N, 7L)
+})
+
+test_that("add_interviews() still only warns about negative effort (TGT-09c)", {
+  # Pins the policy this change deliberately did NOT overturn. Refusing negative
+  # effort here would make it inconsistent with negative catch, which warns.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  iv <- example_interviews
+  iv$hours_fished[2] <- -3
+  d <- suppressWarnings(suppressMessages(
+    creel_design(example_calendar, date = date, strata = day_type)
+  ))
+
+  # Every warning is collected rather than matched one at a time: the call also
+  # warns about short trips, and expect_warning() would let that one through to
+  # the reporter as noise while proving nothing about it.
+  seen <- character()
+  result <- withCallingHandlers(
+    suppressMessages(add_interviews(d, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type, n_anglers = 1
+    )),
+    warning = function(w) {
+      seen <<- c(seen, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl("negative effort", seen)))
+  # The point of the policy: it warned and still returned a design.
+  expect_s3_class(result, "creel_design")
+  expect_equal(nrow(result$interviews), nrow(iv))
+})
+
+test_that("all four accounting categories close together (TGT-09d)", {
+  # The identity the whole design rests on, exercised with every category
+  # populated at once rather than one at a time.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
+  iv <- example_interviews
+  iv$hours_fished[c(2, 5)] <- 0
+  iv$hours_fished[c(7, 9)] <- NA
+  iv$species_sought[c(11, 13, 15)] <- NA
+  d <- suppressWarnings(suppressMessages({
+    dd <- creel_design(example_calendar, date = date, strata = day_type)
+    dd <- add_interviews(dd, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type,
+      species_sought = species_sought
+    )
+    add_catch(dd, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    )
+  }))
+  result <- summarize_cws_rates(d, by = "angler_type")
+
+  # Every category is actually populated -- otherwise the identity below could
+  # close while testing almost nothing.
+  expect_equal(sum(result$n_unknown_target), 3L)
+  expect_equal(sum(result$n_unknown_effort), 2L)
+  expect_equal(sum(result$n_nonpositive_effort), 2L)
+  expect_equal(
+    sum(result$N) + sum(result$n_unknown_target) + sum(result$n_unknown_effort) +
+      sum(result$n_nonpositive_effort),
+    nrow(iv)
   )
 })
