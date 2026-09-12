@@ -35,13 +35,33 @@ summarize_boat_composition(design, schema, day_type_col = NULL)
 
 A `data.frame` with class
 `c("creel_summary_boat_composition", "data.frame")` and columns: `month`
-(full month name), `day_type`, `n_events` (integer), `pct_angler_boats`
-(numeric, 1 decimal).
+(full month name), `day_type`, `n_events` (integer, count events that
+yielded a share), `n_unknown_boats` (integer, events excluded because a
+boat count was not recorded), `n_nonpositive_boats` (integer, events
+excluded because the boat total was zero or negative),
+`pct_angler_boats` (numeric, 1 decimal, `NA` when `n_events` is 0).
 
 ## Details
 
 Count-based summary, not interview-weighted. Rows where
 `angler_boats + non_ang_boats == 0` are excluded from ratio computation.
+
+## Count events that yield no share
+
+A count event contributes an angler-boat share only when the boats were
+counted and the total is positive. Both exclusions are real – an
+unrecorded count has no share to give, and a total of zero makes the
+ratio undefined while a negative one is a data error – and both used to
+happen with no trace that the event had occurred.
+
+They are now counted in `n_unknown_boats` and `n_nonpositive_boats`, and
+the accounting closes:
+
+    n_events + n_unknown_boats + n_nonpositive_boats
+      == count events in that month and day type
+
+A month and day type whose every event was excluded keeps its row,
+reporting `NA` for `pct_angler_boats` rather than disappearing.
 
 ## See also
 
@@ -100,9 +120,9 @@ s <- creel_schema(
   non_ang_boats_col = "non_ang_boats"
 )
 summarize_boat_composition(d, s)
-#>   month day_type n_events pct_angler_boats
-#> 1   May  weekday        1               75
-#> 2   May  weekend        1               50
-#> 3  June  weekday        1               80
-#> 4  June  weekend        1               25
+#>   month day_type n_events n_unknown_boats n_nonpositive_boats pct_angler_boats
+#> 1   May  weekday        1               0                   0               75
+#> 2   May  weekend        1               0                   0               50
+#> 3  June  weekday        1               0                   0               80
+#> 4  June  weekend        1               0                   0               25
 ```

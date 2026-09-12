@@ -112,7 +112,8 @@ in the same units as the length data (typically mm). Default <code>1</code>.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>data.frame</code> with class
+    <p>A <code>data.frame</code> with class</p>
+<p>A <code>data.frame</code> with class
 <code>c("creel_summary_length_freq", "data.frame")</code> and columns:
 grouping columns (if any), <code>length_bin</code> (ordered factor),
 <code>N</code> (integer, fish count per bin), <code>percent</code> (numeric,
@@ -133,6 +134,20 @@ extrapolated estimates use <code><a href="estimate_catch_rate.html">estimate_cat
 label into a numeric midpoint and expands by count before applying
 <code>bin_width</code> binning. This allows a consistent <code>bin_width</code> to be
 applied to both individual and pre-binned data.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="unrecorded-grouping-values">Unrecorded grouping values<a class="anchor" aria-label="anchor" href="#unrecorded-grouping-values"></a></h2>
+
+
+<p>A length record whose value for a <code>by</code> column was not recorded is
+reported under <code>"Unknown"</code>, sorted last, rather than dropped. Dropping
+it removed the record from the distribution entirely, taking its weight with
+it – and a binned release row carries a <em>count</em> rather than one fish,
+so six dropped rows cost eleven fish on the shipped example data. The
+ungrouped total was never affected, which is what kept this invisible.</p>
+<p><code>"Unknown"</code> labels the absence; nothing is imputed and it is never a
+category anyone recorded. <code>sum(N)</code> equals the number of fish the
+lengths frame describes, grouped or not.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -4,6 +4,45 @@
 
 ### Breaking changes
 
+- [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+  counts the events it excludes
+  ([\#337](https://github.com/chrischizinski/tidycreel/issues/337)).
+
+  A count event yields an angler-boat share only when the boats were
+  counted and some were present. Both exclusions are real; both happened
+  with no trace that the event had occurred.
+
+  `keep <- (ab + nb) > 0` is `NA` when either count is `NA`, and an `NA`
+  subscript does not drop a row — it selects a **phantom all-`NA` one**.
+  The event survived the subset with an `NA` month and day type, and
+  `aggregate(by = )` then dropped it for having an `NA` grouping value.
+  Two mechanisms chained, neither visible: on a 12-day fixture, three
+  unrecorded boat counts took the event total to **9** and moved a
+  reported share from **73.4% to 76.7%**.
+
+  Two new integer columns, `n_unknown_boats` and `n_nonpositive_boats`,
+  close the accounting:
+
+      n_events + n_unknown_boats + n_nonpositive_boats
+        == count events in that month and day type
+
+  A month and day type whose every event was excluded now keeps its row,
+  reporting `NA` for `pct_angler_boats` rather than disappearing.
+
+- An unrecorded grouping value is now genuinely pooled with a category
+  the data already records as `"Unknown"`, rather than forming a second
+  group that merely prints under the same label
+  ([\#337](https://github.com/chrischizinski/tidycreel/issues/337)).
+
+  [\#333](https://github.com/chrischizinski/tidycreel/issues/333) tracks
+  missingness on an internal sentinel so a real `"Unknown"` keeps its
+  own counts. Where a column holds *both*, that kept them separate
+  through aggregation and then rendered both as `"Unknown"` — so one
+  recorded and one unrecorded fish in the same length bin came out as
+  two rows reading `N = 1` and 50% each, instead of one reading `N = 2`
+  and 100%. The warning already emitted for this case says the counts
+  are pooled; now they are.
+
 - [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md)
   and
   [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md)
@@ -74,6 +113,28 @@
   for `mean_rate`, `se` and the interval.
 
 ### Bug fixes
+
+- `summarize_length_freq(by = )` keeps every fish
+  ([\#337](https://github.com/chrischizinski/tidycreel/issues/337)).
+
+  `stats::aggregate(by = )` drops every row whose grouping value is
+  `NA`, so a length record with no recorded value for a `by` column left
+  the distribution entirely — taking its weight with it. Measured on the
+  shipped example data, blanking `species` on 6 of 20 length rows took
+  the total from **37 fish to 26**: more than six, because a binned
+  release row carries a *count* rather than one fish.
+
+  The ungrouped total was never affected, which is what kept this
+  invisible — and is why the existing tests could not fail on it.
+
+  An unrecorded grouping value is now reported under `"Unknown"`, sorted
+  last, as it is in the six functions
+  [\#333](https://github.com/chrischizinski/tidycreel/issues/333) swept.
+  This is the last of that class:
+  [\#333](https://github.com/chrischizinski/tidycreel/issues/333) could
+  not reach this function because its `by` selects columns of the
+  lengths frame, and no fixture built from the shipped data got that
+  far.
 
 - [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md)
   and

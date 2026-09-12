@@ -114,12 +114,34 @@ strata as described above.</p></dd>
     <p>A <code>data.frame</code> with class
 <code>c("creel_summary_boat_composition", "data.frame")</code> and columns:
 <code>month</code> (full month name), <code>day_type</code>, <code>n_events</code>
-(integer), <code>pct_angler_boats</code> (numeric, 1 decimal).</p>
+(integer, count events that yielded a share), <code>n_unknown_boats</code>
+(integer, events excluded because a boat count was not recorded),
+<code>n_nonpositive_boats</code> (integer, events excluded because the boat
+total was zero or negative), <code>pct_angler_boats</code> (numeric, 1 decimal, <code>NA</code> when
+<code>n_events</code> is 0).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Count-based summary, not interview-weighted. Rows where
 <code>angler_boats + non_ang_boats == 0</code> are excluded from ratio computation.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="count-events-that-yield-no-share">Count events that yield no share<a class="anchor" aria-label="anchor" href="#count-events-that-yield-no-share"></a></h2>
+
+
+<p>A count event contributes an angler-boat share only when the boats were
+counted and the total is positive. Both exclusions are real – an unrecorded
+count has no share to give, and a total of zero makes the ratio undefined
+while a negative one is a data error – and both used to happen with no trace
+that the event had occurred.</p>
+<p>They are now counted in <code>n_unknown_boats</code> and
+<code>n_nonpositive_boats</code>, and
+the accounting closes:</p>
+<div class="sourceCode"><pre><code>n_events + n_unknown_boats + n_nonpositive_boats
+  == count events in that month and day type</code></pre></div>
+
+<p>A month and day type whose every event was excluded keeps its row, reporting
+<code>NA</code> for <code>pct_angler_boats</code> rather than disappearing.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -178,11 +200,11 @@ strata as described above.</p></dd>
 <span class="r-in"><span>  non_ang_boats_col <span class="op">=</span> <span class="st">"non_ang_boats"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">summarize_boat_composition</span><span class="op">(</span><span class="va">d</span>, <span class="va">s</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   month day_type n_events pct_angler_boats</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   May  weekday        1               75</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   May  weekend        1               50</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  June  weekday        1               80</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  June  weekend        1               25</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   month day_type n_events n_unknown_boats n_nonpositive_boats pct_angler_boats</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   May  weekday        1               0                   0               75</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   May  weekend        1               0                   0               50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  June  weekday        1               0                   0               80</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  June  weekend        1               0                   0               25</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

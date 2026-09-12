@@ -38,6 +38,8 @@ summarize_length_freq(design, type = "catch", by = NULL, bin_width = 1)
 
 ## Value
 
+A `data.frame` with class
+
 A `data.frame` with class `c("creel_summary_length_freq", "data.frame")`
 and columns: grouping columns (if any), `length_bin` (ordered factor),
 `N` (integer, fish count per bin), `percent` (numeric, percent of group
@@ -60,6 +62,20 @@ or
 label into a numeric midpoint and expands by count before applying
 `bin_width` binning. This allows a consistent `bin_width` to be applied
 to both individual and pre-binned data.
+
+## Unrecorded grouping values
+
+A length record whose value for a `by` column was not recorded is
+reported under `"Unknown"`, sorted last, rather than dropped. Dropping
+it removed the record from the distribution entirely, taking its weight
+with it – and a binned release row carries a *count* rather than one
+fish, so six dropped rows cost eleven fish on the shipped example data.
+The ungrouped total was never affected, which is what kept this
+invisible.
+
+`"Unknown"` labels the absence; nothing is imputed and it is never a
+category anyone recorded. `sum(N)` equals the number of fish the lengths
+frame describes, grouped or not.
 
 ## See also
 
