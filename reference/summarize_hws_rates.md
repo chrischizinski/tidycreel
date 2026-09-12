@@ -42,8 +42,10 @@ and columns: grouping columns (if any), `N` (integer, interviews per
 group that produced a rate), `n_unknown_target` (integer, interviews
 excluded because their sought species was not recorded),
 `n_unknown_effort` (integer, interviews excluded because their effort
-was not recorded), `mean_rate` (numeric, mean fish/angler-hour, `NA`
-when `N` is 0), `se` (numeric, standard error), `ci_lower`, `ci_upper`.
+was not recorded), `n_nonpositive_effort` (integer, interviews excluded
+because their effort was zero or negative), `mean_rate` (numeric, mean
+fish/angler-hour, `NA` when `N` is 0), `se` (numeric, standard error),
+`ci_lower`, `ci_upper`.
 
 ## Details
 
@@ -99,9 +101,23 @@ and one unrecorded effort used to turn the whole group's mean into `NA`
 while `N` went on counting it. The two counts are mutually exclusive,
 target first, so an interview missing both is counted once.
 
-`N` therefore counts the interviews that produced a rate.
-`N + n_unknown_target + n_unknown_effort` is the number of interviews in
-the group, less any excluded for zero effort.
+An effort that is not **positive** cannot produce a rate either, and
+those interviews are counted in `n_nonpositive_effort`. A zero is a real
+record – a party interviewed before it started fishing – and a negative
+one is a data error that
+[`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+already warns about; neither yields a rate. They used to be dropped with
+no trace at all, so a table could report 20 of 22 interviews with
+nothing in it to say the other two existed.
+
+`N` therefore counts the interviews that produced a rate, and the
+accounting closes:
+
+    N + n_unknown_target + n_unknown_effort + n_nonpositive_effort
+      == interviews in the group
+
+The three exclusion counts are mutually exclusive, in that precedence,
+so an interview missing more than one thing is counted once.
 
 A column holding both unrecorded values and the literal value
 `"Unknown"` warns: the two are pooled into one row and cannot be told
@@ -162,12 +178,12 @@ d <- add_catch(d, example_catch,
   species = species, count = count, catch_type = catch_type
 )
 summarize_hws_rates(d, by = species_sought)
-#>   species_sought  N n_unknown_target n_unknown_effort mean_rate        se
-#> 1           bass  6                0                0 0.1250000 0.1250000
-#> 2        panfish  5                0                0 0.2666667 0.2666667
-#> 3        walleye 11                0                0 0.7943723 0.1979076
-#>     ci_lower  ci_upper
-#> 1 -0.1963227 0.4463227
-#> 2 -0.4737187 1.0070520
-#> 3  0.3534067 1.2353379
+#>   species_sought  N n_unknown_target n_unknown_effort n_nonpositive_effort
+#> 1           bass  6                0                0                    0
+#> 2        panfish  5                0                0                    0
+#> 3        walleye 11                0                0                    0
+#>   mean_rate        se   ci_lower  ci_upper
+#> 1 0.1250000 0.1250000 -0.1963227 0.4463227
+#> 2 0.2666667 0.2666667 -0.4737187 1.0070520
+#> 3 0.7943723 0.1979076  0.3534067 1.2353379
 ```

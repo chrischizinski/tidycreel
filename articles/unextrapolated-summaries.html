@@ -326,36 +326,38 @@ composition, not fishing pressure across the survey period.</p>
 </h3>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/summarize_cws_rates.html">summarize_cws_rates</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species_sought</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   species_sought  N n_unknown_target n_unknown_effort  mean_rate         se</span></span>
-<span><span class="co">#&gt; 1           bass  6                0                0 0.05208333 0.05208333</span></span>
-<span><span class="co">#&gt; 2        panfish  5                0                0 0.23333333 0.23333333</span></span>
-<span><span class="co">#&gt; 3        walleye 11                0                0 0.46158009 0.23247889</span></span>
-<span><span class="co">#&gt;      ci_lower  ci_upper</span></span>
-<span><span class="co">#&gt; 1 -0.08180114 0.1859678</span></span>
-<span><span class="co">#&gt; 2 -0.41450386 0.8811705</span></span>
-<span><span class="co">#&gt; 3 -0.05641517 0.9795753</span></span></code></pre></div>
+<span><span class="co">#&gt;   species_sought  N n_unknown_target n_unknown_effort n_nonpositive_effort</span></span>
+<span><span class="co">#&gt; 1           bass  6                0                0                    0</span></span>
+<span><span class="co">#&gt; 2        panfish  5                0                0                    0</span></span>
+<span><span class="co">#&gt; 3        walleye 11                0                0                    0</span></span>
+<span><span class="co">#&gt;    mean_rate         se    ci_lower  ci_upper</span></span>
+<span><span class="co">#&gt; 1 0.05208333 0.05208333 -0.08180114 0.1859678</span></span>
+<span><span class="co">#&gt; 2 0.23333333 0.23333333 -0.41450386 0.8811705</span></span>
+<span><span class="co">#&gt; 3 0.46158009 0.23247889 -0.05641517 0.9795753</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="cws-rates-collapsed-across-all-groupings">CWS Rates Collapsed Across All Groupings<a class="anchor" aria-label="anchor" href="#cws-rates-collapsed-across-all-groupings"></a>
 </h3>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/summarize_cws_rates.html">summarize_cws_rates</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    N n_unknown_target n_unknown_effort mean_rate        se   ci_lower  ci_upper</span></span>
-<span><span class="co">#&gt; 1 22                0                0 0.2980249 0.1298807 0.02792314 0.5681266</span></span></code></pre></div>
+<span><span class="co">#&gt;    N n_unknown_target n_unknown_effort n_nonpositive_effort mean_rate        se</span></span>
+<span><span class="co">#&gt; 1 22                0                0                    0 0.2980249 0.1298807</span></span>
+<span><span class="co">#&gt;     ci_lower  ci_upper</span></span>
+<span><span class="co">#&gt; 1 0.02792314 0.5681266</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="hws-rates">HWS Rates<a class="anchor" aria-label="anchor" href="#hws-rates"></a>
 </h3>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/summarize_hws_rates.html">summarize_hws_rates</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species_sought</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   species_sought  N n_unknown_target n_unknown_effort mean_rate        se</span></span>
-<span><span class="co">#&gt; 1           bass  6                0                0 0.0312500 0.0312500</span></span>
-<span><span class="co">#&gt; 2        panfish  5                0                0 0.1333333 0.1333333</span></span>
-<span><span class="co">#&gt; 3        walleye 11                0                0 0.3887987 0.1322997</span></span>
-<span><span class="co">#&gt;      ci_lower  ci_upper</span></span>
-<span><span class="co">#&gt; 1 -0.04908068 0.1115807</span></span>
-<span><span class="co">#&gt; 2 -0.23685935 0.5035260</span></span>
-<span><span class="co">#&gt; 3  0.09401668 0.6835807</span></span></code></pre></div>
+<span><span class="co">#&gt;   species_sought  N n_unknown_target n_unknown_effort n_nonpositive_effort</span></span>
+<span><span class="co">#&gt; 1           bass  6                0                0                    0</span></span>
+<span><span class="co">#&gt; 2        panfish  5                0                0                    0</span></span>
+<span><span class="co">#&gt; 3        walleye 11                0                0                    0</span></span>
+<span><span class="co">#&gt;   mean_rate        se    ci_lower  ci_upper</span></span>
+<span><span class="co">#&gt; 1 0.0312500 0.0312500 -0.04908068 0.1115807</span></span>
+<span><span class="co">#&gt; 2 0.1333333 0.1333333 -0.23685935 0.5035260</span></span>
+<span><span class="co">#&gt; 3 0.3887987 0.1322997  0.09401668 0.6835807</span></span></code></pre></div>
 <p><strong>Interpretation guidance:</strong> CWS and HWS rates &gt; 1.0
 are possible when anglers catch multiple fish of the target species in a
 single interview. A CWS rate of 0.6 means 60% of interviews targeting

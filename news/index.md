@@ -33,15 +33,33 @@
   excluded and counted in `n_unknown_effort`, and the group keeps a real
   rate from the rest.
 
-  Three changes to the returned table:
+  Interviews whose effort is **not positive** are counted too, in
+  `n_nonpositive_effort`
+  ([\#339](https://github.com/chrischizinski/tidycreel/issues/339)). A
+  zero is a real record — a party interviewed before it started fishing
+  — and a negative one is a data error that
+  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  already warns about; neither yields a rate, and both used to be
+  dropped with no trace at all. A table could report 20 of 22 interviews
+  with nothing in it to say the other two existed.
+
+  Four changes to the returned table:
 
   - a new integer column **`n_unknown_target`**;
+
   - a new integer column **`n_unknown_effort`**;
+
+  - a new integer column **`n_nonpositive_effort`**;
+
   - **`N` now counts the interviews that produced a rate**, not every
-    interview in the group. `N + n_unknown_target + n_unknown_effort` is
-    the group’s interview count, less any excluded for zero effort. The
-    two exclusion counts are mutually exclusive, target first, so an
-    interview missing both is counted once.
+    interview in the group. The accounting closes exactly:
+
+        N + n_unknown_target + n_unknown_effort + n_nonpositive_effort
+          == interviews in the group
+
+    The three exclusion counts are mutually exclusive, in that
+    precedence, so an interview missing more than one thing is counted
+    once.
 
   The estimand is now *the rate among parties with a known target*. That
   equals the rate among all parties only if the target went unrecorded

@@ -121,6 +121,8 @@ grouping columns (if any), <code>N</code> (integer, interviews per group that
 produced a rate), <code>n_unknown_target</code> (integer, interviews excluded
 because their sought species was not recorded), <code>n_unknown_effort</code>
 (integer, interviews excluded because their effort was not recorded),
+<code>n_nonpositive_effort</code> (integer, interviews excluded because their
+effort was zero or negative),
 <code>mean_rate</code> (numeric, mean fish/angler-hour, <code>NA</code> when
 <code>N</code> is 0), <code>se</code> (numeric, standard error), <code>ci_lower</code>,
 <code>ci_upper</code>.</p>
@@ -176,9 +178,20 @@ and counted in <code>n_unknown_effort</code>. A rate needs an effort to divide b
 and one unrecorded effort used to turn the whole group's mean into
 <code>NA</code> while <code>N</code> went on counting it. The two counts are mutually
 exclusive, target first, so an interview missing both is counted once.</p>
-<p><code>N</code> therefore counts the interviews that produced a rate.
-<code>N + n_unknown_target + n_unknown_effort</code> is the number of interviews
-in the group, less any excluded for zero effort.</p>
+<p>An effort that is not <strong>positive</strong> cannot produce a rate either, and
+those interviews are counted in <code>n_nonpositive_effort</code>. A zero is a
+real record – a party interviewed before it started fishing – and a
+negative one is a data error that <code><a href="add_interviews.html">add_interviews</a></code> already warns
+about; neither yields a rate. They used to be dropped with no trace at all,
+so a table could report 20 of 22 interviews with nothing in it to say the
+other two existed.</p>
+<p><code>N</code> therefore counts the interviews that produced a rate, and the
+accounting closes:</p>
+<div class="sourceCode"><pre><code>N + n_unknown_target + n_unknown_effort + n_nonpositive_effort
+  == interviews in the group</code></pre></div>
+
+<p>The three exclusion counts are mutually exclusive, in that precedence, so an
+interview missing more than one thing is counted once.</p>
 <p>A column holding both unrecorded values and the literal value
 <code>"Unknown"</code> warns: the two are pooled into one row and cannot be told
 apart in the output.</p>
@@ -236,14 +249,14 @@ apart in the output.</p>
 <span class="r-in"><span>  species <span class="op">=</span> <span class="va">species</span>, count <span class="op">=</span> <span class="va">count</span>, catch_type <span class="op">=</span> <span class="va">catch_type</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">summarize_cws_rates</span><span class="op">(</span><span class="va">d</span>, by <span class="op">=</span> <span class="va">species_sought</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   species_sought  N n_unknown_target n_unknown_effort mean_rate        se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1           bass  6                0                0 0.2083333 0.2083333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2        panfish  5                0                0 0.4666667 0.4666667</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3        walleye 11                0                0 0.7835498 0.3359583</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      ci_lower  ci_upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.32720455 0.7438712</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -0.82900772 1.7623410</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.03498793 1.5321116</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   species_sought  N n_unknown_target n_unknown_effort n_nonpositive_effort</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1           bass  6                0                0                    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        panfish  5                0                0                    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        walleye 11                0                0                    0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   mean_rate        se    ci_lower  ci_upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.2083333 0.2083333 -0.32720455 0.7438712</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.4666667 0.4666667 -0.82900772 1.7623410</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.7835498 0.3359583  0.03498793 1.5321116</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
