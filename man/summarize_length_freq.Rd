@@ -24,6 +24,8 @@ in the same units as the length data (typically mm). Default \code{1}.}
 }
 \value{
 A \code{data.frame} with class
+
+A \code{data.frame} with class
 \code{c("creel_summary_length_freq", "data.frame")} and columns:
 grouping columns (if any), \code{length_bin} (ordered factor),
 \code{N} (integer, fish count per bin), \code{percent} (numeric,
@@ -51,6 +53,20 @@ label into a numeric midpoint and expands by count before applying
 \code{bin_width} binning. This allows a consistent \code{bin_width} to be
 applied to both individual and pre-binned data.
 }
+\section{Unrecorded grouping values}{
+
+A length record whose value for a \code{by} column was not recorded is
+reported under \code{"Unknown"}, sorted last, rather than dropped. Dropping
+it removed the record from the distribution entirely, taking its weight with
+it -- and a binned release row carries a \emph{count} rather than one fish,
+so six dropped rows cost eleven fish on the shipped example data. The
+ungrouped total was never affected, which is what kept this invisible.
+
+\code{"Unknown"} labels the absence; nothing is imputed and it is never a
+category anyone recorded. \code{sum(N)} equals the number of fish the
+lengths frame describes, grouped or not.
+}
+
 \examples{
 data(example_calendar)
 data(example_interviews)
