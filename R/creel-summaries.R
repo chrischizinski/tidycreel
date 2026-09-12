@@ -1132,9 +1132,15 @@ summarize_by_trip_length <- function(design) {
 #' none of a \emph{recorded} target is a real zero and still counts, per
 #' \code{\link{add_catch}}.
 #'
+#' An interview whose \strong{effort} was not recorded is treated the same way
+#' and counted in \code{n_unknown_effort}. A rate needs an effort to divide by,
+#' and one unrecorded effort used to turn the whole group's mean into
+#' \code{NA} while \code{N} went on counting it. The two counts are mutually
+#' exclusive, target first, so an interview missing both is counted once.
+#'
 #' \code{N} therefore counts the interviews that produced a rate.
-#' \code{N + n_unknown_target} is the number of interviews in the group, less
-#' any excluded for zero effort.
+#' \code{N + n_unknown_target + n_unknown_effort} is the number of interviews
+#' in the group, less any excluded for zero effort.
 #'
 #' A column holding both unrecorded values and the literal value
 #' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
@@ -1153,7 +1159,8 @@ summarize_by_trip_length <- function(design) {
 #'   \code{c("creel_summary_cws_rates", "data.frame")} and columns:
 #'   grouping columns (if any), \code{N} (integer, interviews per group that
 #'   produced a rate), \code{n_unknown_target} (integer, interviews excluded
-#'   because their sought species was not recorded),
+#'   because their sought species was not recorded), \code{n_unknown_effort}
+#'   (integer, interviews excluded because their effort was not recorded),
 #'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 #'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
 #'   \code{ci_upper}.
@@ -1384,11 +1391,24 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
   names(group_cols) <- if (length(by_vars) > 0) by_vars else ".group"
   merge_by <- if (length(by_vars) > 0) by_vars else ".group"
 
-  used <- !unknown_target
+  # An interview cannot produce a rate without an effort to divide by, and
+  # add_interviews() permits effort to be unrecorded. A single such interview
+  # used to turn the WHOLE group's mean into NA -- mean() of anything including
+  # an NA rate is NA -- while N went on counting it. Same treatment as an
+  # unrecorded target: excluded from the rate, counted where it can be seen.
+  #
+  # The two categories are kept mutually exclusive, target first, so the three
+  # counts add back up to the group's interviews.
+  unknown_effort <- is.na(interview_base[[ae_col]]) & !unknown_target
+  used <- !unknown_target & !unknown_effort
 
   # Counts over every interview, usable or not, so no group can disappear.
   count_agg <- stats::aggregate(
-    data.frame(N = used, n_unknown_target = unknown_target),
+    data.frame(
+      N                 = used,
+      n_unknown_target  = unknown_target,
+      n_unknown_effort  = unknown_effort
+    ),
     by  = group_cols,
     FUN = sum
   )
@@ -1432,6 +1452,7 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
 
   result$N <- as.integer(result$N)
   result$n_unknown_target <- as.integer(result$n_unknown_target)
+  result$n_unknown_effort <- as.integer(result$n_unknown_effort)
 
   result <- finish_unknown_groups(result, by_vars)
   row.names(result) <- NULL
@@ -1495,9 +1516,15 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
 #' none of a \emph{recorded} target is a real zero and still counts, per
 #' \code{\link{add_catch}}.
 #'
+#' An interview whose \strong{effort} was not recorded is treated the same way
+#' and counted in \code{n_unknown_effort}. A rate needs an effort to divide by,
+#' and one unrecorded effort used to turn the whole group's mean into
+#' \code{NA} while \code{N} went on counting it. The two counts are mutually
+#' exclusive, target first, so an interview missing both is counted once.
+#'
 #' \code{N} therefore counts the interviews that produced a rate.
-#' \code{N + n_unknown_target} is the number of interviews in the group, less
-#' any excluded for zero effort.
+#' \code{N + n_unknown_target + n_unknown_effort} is the number of interviews
+#' in the group, less any excluded for zero effort.
 #'
 #' A column holding both unrecorded values and the literal value
 #' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
@@ -1516,7 +1543,8 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
 #'   \code{c("creel_summary_hws_rates", "data.frame")} and columns:
 #'   grouping columns (if any), \code{N} (integer, interviews per group that
 #'   produced a rate), \code{n_unknown_target} (integer, interviews excluded
-#'   because their sought species was not recorded),
+#'   because their sought species was not recorded), \code{n_unknown_effort}
+#'   (integer, interviews excluded because their effort was not recorded),
 #'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 #'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
 #'   \code{ci_upper}.

@@ -26,7 +26,8 @@ A \code{data.frame} with class
 \code{c("creel_summary_cws_rates", "data.frame")} and columns:
 grouping columns (if any), \code{N} (integer, interviews per group that
 produced a rate), \code{n_unknown_target} (integer, interviews excluded
-because their sought species was not recorded),
+because their sought species was not recorded), \code{n_unknown_effort}
+(integer, interviews excluded because their effort was not recorded),
 \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
 \code{ci_upper}.
@@ -86,9 +87,15 @@ beside every rate and a reader can judge it. A party that genuinely caught
 none of a \emph{recorded} target is a real zero and still counts, per
 \code{\link{add_catch}}.
 
+An interview whose \strong{effort} was not recorded is treated the same way
+and counted in \code{n_unknown_effort}. A rate needs an effort to divide by,
+and one unrecorded effort used to turn the whole group's mean into
+\code{NA} while \code{N} went on counting it. The two counts are mutually
+exclusive, target first, so an interview missing both is counted once.
+
 \code{N} therefore counts the interviews that produced a rate.
-\code{N + n_unknown_target} is the number of interviews in the group, less
-any excluded for zero effort.
+\code{N + n_unknown_target + n_unknown_effort} is the number of interviews
+in the group, less any excluded for zero effort.
 
 A column holding both unrecorded values and the literal value
 \code{"Unknown"} warns: the two are pooled into one row and cannot be told

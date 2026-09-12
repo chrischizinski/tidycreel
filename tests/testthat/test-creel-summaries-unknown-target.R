@@ -74,13 +74,16 @@ test_that("an unrecorded target is excluded from the rate, not scored zero (TGT-
 test_that("every interview is accounted for across N and n_unknown_target (TGT-03)", {
   # The invariant that encodes the intent. Exclusion is only defensible while
   # the excluded are still counted somewhere the reader can see.
+  accounted <- function(r) sum(r$N) + sum(r$n_unknown_target) + sum(r$n_unknown_effort)
+
   grouped_by_type <- summarize_cws_rates(ut_design(blank_sought = TRUE), by = "angler_type")
-  expect_equal(sum(grouped_by_type$N) + sum(grouped_by_type$n_unknown_target), ut_n())
+  expect_equal(accounted(grouped_by_type), ut_n())
 
   grouped_by_sought <- summarize_cws_rates(ut_design(blank_sought = TRUE), by = "species_sought")
-  expect_equal(sum(grouped_by_sought$N) + sum(grouped_by_sought$n_unknown_target), ut_n())
+  expect_equal(accounted(grouped_by_sought), ut_n())
+
   ungrouped <- summarize_cws_rates(ut_design(blank_sought = TRUE))
-  expect_equal(ungrouped$N + ungrouped$n_unknown_target, ut_n())
+  expect_equal(accounted(ungrouped), ut_n())
 })
 
 # --- exclusion must not make a group disappear — TGT-04 ----------------------
@@ -151,4 +154,63 @@ test_that("every target unrecorded returns a table instead of crashing (TGT-07)"
   expect_equal(result$N, c(0L, 0L))
   expect_equal(sum(result$n_unknown_target), ut_n())
   expect_true(all(is.na(result$mean_rate)))
+})
+
+# --- unrecorded effort — TGT-08 ----------------------------------------------
+
+ut_design_na <- function(blank_sought_too = FALSE) {
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
+  iv <- example_interviews
+  iv$hours_fished[c(2, 5)] <- NA
+  if (blank_sought_too) {
+    iv$species_sought[c(2, 5)] <- NA
+  }
+  d <- suppressWarnings(suppressMessages({
+    dd <- creel_design(example_calendar, date = date, strata = day_type)
+    dd <- add_interviews(dd, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type,
+      species_sought = species_sought
+    )
+    add_catch(dd, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    )
+  }))
+  d
+}
+
+test_that("an unrecorded effort is excluded and counted, not left to blank the group (TGT-08)", {
+  # From the pre-push ensemble review, found independently by two models.
+  #
+  # A rate needs an effort to divide by, and add_interviews() permits effort to
+  # be unrecorded. A single such interview turned the WHOLE group's mean into NA
+  # -- mean() of anything containing an NA is NA -- while N went on counting it.
+  # That behaviour predates this branch; what made it a contradiction is the new
+  # contract that N counts the interviews which produced a rate.
+  #
+  # Same treatment as an unrecorded target: excluded from the rate, counted in
+  # `n_unknown_effort`, and the group keeps a real rate from the rest.
+  result <- summarize_cws_rates(ut_design_na(), by = "angler_type")
+  boat <- result[result$angler_type == "boat", ]
+
+  expect_equal(boat$n_unknown_effort, 2L)
+  expect_equal(boat$N, 7L)
+  # Two unrecorded efforts must not erase seven perfectly good interviews.
+  expect_false(is.na(boat$mean_rate))
+  expect_equal(sum(result$N) + sum(result$n_unknown_effort), ut_n())
+})
+
+test_that("an interview missing BOTH target and effort is counted once (TGT-08b)", {
+  # The two counts are mutually exclusive, target first, so the three columns
+  # add back up to the group's interviews instead of double-counting.
+  result <- summarize_cws_rates(ut_design_na(blank_sought_too = TRUE), by = "angler_type")
+  expect_equal(sum(result$n_unknown_target), 2L)
+  expect_equal(sum(result$n_unknown_effort), 0L)
+  expect_equal(
+    sum(result$N) + sum(result$n_unknown_target) + sum(result$n_unknown_effort),
+    ut_n()
+  )
 })

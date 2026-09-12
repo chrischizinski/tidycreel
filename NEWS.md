@@ -18,12 +18,22 @@
   and nothing warned — which made it harder to see than #333, where at least
   something disappeared.
 
-  Two changes to the returned table:
+  An interview whose **effort** was not recorded is treated the same way, for
+  the same reason: a rate needs an effort to divide by. One unrecorded effort
+  used to turn the whole group's mean into `NA` — `mean()` of anything
+  containing an `NA` is `NA` — while `N` went on counting it. Those interviews
+  are now excluded and counted in `n_unknown_effort`, and the group keeps a real
+  rate from the rest.
+
+  Three changes to the returned table:
 
   - a new integer column **`n_unknown_target`**;
+  - a new integer column **`n_unknown_effort`**;
   - **`N` now counts the interviews that produced a rate**, not every interview
-    in the group. `N + n_unknown_target` is the group's interview count, less
-    any excluded for zero effort.
+    in the group. `N + n_unknown_target + n_unknown_effort` is the group's
+    interview count, less any excluded for zero effort. The two exclusion counts
+    are mutually exclusive, target first, so an interview missing both is
+    counted once.
 
   The estimand is now *the rate among parties with a known target*. That equals
   the rate among all parties only if the target went unrecorded independently of
