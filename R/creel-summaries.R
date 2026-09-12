@@ -65,6 +65,19 @@ label_unknown_group <- function(x, column = NULL) {
              are pooled and cannot be told apart in the output.",
       "i" = "Rename the recorded category if the two must stay separate."
     ))
+    # Pooled for real, not just in the label. Marking the absences with the
+    # sentinel would keep them a separate group that merely PRINTS as
+    # "Unknown", so one recorded and one unrecorded fish in the same bin came
+    # out as two rows reading N = 1 and 50% each instead of one reading N = 2
+    # and 100%. Two rows carrying the same group label and different numbers is
+    # not a table anyone can read, and the warning above promises pooling.
+    if (is.factor(x)) {
+      x[is.na(x)] <- unknown_group_label()
+      return(droplevels(x))
+    }
+    x <- as.character(x)
+    x[is.na(x)] <- unknown_group_label()
+    return(x)
   }
   if (is.factor(x)) {
     x <- factor(x, levels = c(levels(x), unknown_group_sentinel()))
@@ -2173,14 +2186,16 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #'
 #' @section Count events that yield no share:
 #' A count event contributes an angler-boat share only when the boats were
-#' counted and some were present. Both exclusions are real -- an unrecorded
-#' count has no share to give, and no boats at all makes the ratio undefined --
-#' and both used to happen with no trace that the event had occurred.
+#' counted and the total is positive. Both exclusions are real -- an unrecorded
+#' count has no share to give, and a total of zero makes the ratio undefined
+#' while a negative one is a data error -- and both used to happen with no trace
+#' that the event had occurred.
 #'
-#' They are now counted in \code{n_unknown_boats} and \code{n_zero_boats}, and
+#' They are now counted in \code{n_unknown_boats} and
+#' \code{n_nonpositive_boats}, and
 #' the accounting closes:
 #'
-#' \preformatted{n_events + n_unknown_boats + n_zero_boats
+#' \preformatted{n_events + n_unknown_boats + n_nonpositive_boats
 #'   == count events in that month and day type}
 #'
 #' A month and day type whose every event was excluded keeps its row, reporting
@@ -2191,8 +2206,8 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #'   \code{month} (full month name), \code{day_type}, \code{n_events}
 #'   (integer, count events that yielded a share), \code{n_unknown_boats}
 #'   (integer, events excluded because a boat count was not recorded),
-#'   \code{n_zero_boats} (integer, events excluded because no boats were
-#'   present), \code{pct_angler_boats} (numeric, 1 decimal, \code{NA} when
+#'   \code{n_nonpositive_boats} (integer, events excluded because the boat
+#'   total was zero or negative), \code{pct_angler_boats} (numeric, 1 decimal, \code{NA} when
 #'   \code{n_events} is 0).
 #'
 #' @examples
@@ -2296,9 +2311,14 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
   # Nothing is subset away now. The counts are taken over every event and the
   # share only over the usable ones, so no month or day type can disappear with
   # the events it happened to contain.
+  # `total_boats <= 0`, not `== 0`. A negative count is a data error, and with
+  # `ab = -2, nb = 1` the total is -1 -- non-zero, so an equality test calls it
+  # usable and it yields a share of 200%. The old `keep <- (ab + nb) > 0`
+  # excluded it; restoring that test is what keeps an impossible percentage out
+  # of the table.
   unknown_boats <- is.na(total_boats)
-  zero_boats <- !unknown_boats & total_boats == 0
-  usable <- !unknown_boats & !zero_boats
+  nonpositive_boats <- !unknown_boats & total_boats <= 0
+  usable <- !unknown_boats & !nonpositive_boats
 
   working <- data.frame(
     month = month_chr,
@@ -2307,7 +2327,7 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
     ratio = ifelse(usable, ab / total_boats, NA_real_),
     usable = usable,
     unknown_boats = unknown_boats,
-    zero_boats = zero_boats,
+    nonpositive_boats = nonpositive_boats,
     stringsAsFactors = FALSE
   )
 
@@ -2318,7 +2338,7 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
     data.frame(
       n_events        = working$usable,
       n_unknown_boats = working$unknown_boats,
-      n_zero_boats    = working$zero_boats
+      n_nonpositive_boats = working$nonpositive_boats
     ),
     by  = group_by,
     FUN = sum
@@ -2343,7 +2363,7 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
   result$pct_angler_boats <- round(result$mean_ratio * 100, 1)
   result$n_events <- as.integer(result$n_events)
   result$n_unknown_boats <- as.integer(result$n_unknown_boats)
-  result$n_zero_boats <- as.integer(result$n_zero_boats)
+  result$n_nonpositive_boats <- as.integer(result$n_nonpositive_boats)
   result$mean_ratio <- NULL
 
   # Merge sort key and order by month then day_type

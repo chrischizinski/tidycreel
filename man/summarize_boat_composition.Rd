@@ -23,8 +23,8 @@ A \code{data.frame} with class
 \code{month} (full month name), \code{day_type}, \code{n_events}
 (integer, count events that yielded a share), \code{n_unknown_boats}
 (integer, events excluded because a boat count was not recorded),
-\code{n_zero_boats} (integer, events excluded because no boats were
-present), \code{pct_angler_boats} (numeric, 1 decimal, \code{NA} when
+\code{n_nonpositive_boats} (integer, events excluded because the boat
+total was zero or negative), \code{pct_angler_boats} (numeric, 1 decimal, \code{NA} when
 \code{n_events} is 0).
 }
 \description{
@@ -42,14 +42,16 @@ Count-based summary, not interview-weighted. Rows where
 \section{Count events that yield no share}{
 
 A count event contributes an angler-boat share only when the boats were
-counted and some were present. Both exclusions are real -- an unrecorded
-count has no share to give, and no boats at all makes the ratio undefined --
-and both used to happen with no trace that the event had occurred.
+counted and the total is positive. Both exclusions are real -- an unrecorded
+count has no share to give, and a total of zero makes the ratio undefined
+while a negative one is a data error -- and both used to happen with no trace
+that the event had occurred.
 
-They are now counted in \code{n_unknown_boats} and \code{n_zero_boats}, and
+They are now counted in \code{n_unknown_boats} and
+\code{n_nonpositive_boats}, and
 the accounting closes:
 
-\preformatted{n_events + n_unknown_boats + n_zero_boats
+\preformatted{n_events + n_unknown_boats + n_nonpositive_boats
   == count events in that month and day type}
 
 A month and day type whose every event was excluded keeps its row, reporting

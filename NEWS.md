@@ -16,16 +16,27 @@
   boat counts took the event total to **9** and moved a reported share from
   **73.4% to 76.7%**.
 
-  Two new integer columns, `n_unknown_boats` and `n_zero_boats`, close the
-  accounting:
+  Two new integer columns, `n_unknown_boats` and `n_nonpositive_boats`, close
+  the accounting:
 
   ```
-  n_events + n_unknown_boats + n_zero_boats
+  n_events + n_unknown_boats + n_nonpositive_boats
     == count events in that month and day type
   ```
 
   A month and day type whose every event was excluded now keeps its row,
   reporting `NA` for `pct_angler_boats` rather than disappearing.
+
+* An unrecorded grouping value is now genuinely pooled with a category the data
+  already records as `"Unknown"`, rather than forming a second group that merely
+  prints under the same label (#337).
+
+  #333 tracks missingness on an internal sentinel so a real `"Unknown"` keeps
+  its own counts. Where a column holds *both*, that kept them separate through
+  aggregation and then rendered both as `"Unknown"` — so one recorded and one
+  unrecorded fish in the same length bin came out as two rows reading `N = 1`
+  and 50% each, instead of one reading `N = 2` and 100%. The warning already
+  emitted for this case says the counts are pooled; now they are.
 
 * `summarize_cws_rates()` and `summarize_hws_rates()` exclude interviews whose
   sought species was not recorded, and report how many (#336).

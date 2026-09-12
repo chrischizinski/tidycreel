@@ -144,7 +144,7 @@ test_that("an unrecorded boat count is counted, not dropped twice over (BC-01)",
     schema = usg_boat_schema()
   )
   expect_equal(sum(result$n_unknown_boats), 3L)
-  expect_equal(sum(result$n_events) + sum(result$n_unknown_boats) + sum(result$n_zero_boats), 12L)
+  expect_equal(sum(result$n_events) + sum(result$n_unknown_boats) + sum(result$n_nonpositive_boats), 12L)
 })
 
 test_that("a zero-boat event is counted rather than silently excluded (BC-02)", {
@@ -158,9 +158,9 @@ test_that("a zero-boat event is counted rather than silently excluded (BC-02)", 
     }),
     schema = usg_boat_schema()
   )
-  expect_equal(sum(result$n_zero_boats), 3L)
+  expect_equal(sum(result$n_nonpositive_boats), 3L)
   expect_equal(sum(result$n_unknown_boats), 0L)
-  expect_equal(sum(result$n_events) + sum(result$n_zero_boats), 12L)
+  expect_equal(sum(result$n_events) + sum(result$n_nonpositive_boats), 12L)
 })
 
 test_that("a group whose every event is excluded keeps its row (BC-03)", {
@@ -185,7 +185,7 @@ test_that("a design with every boat count recorded is unchanged (BC-04)", {
   result <- summarize_boat_composition(usg_boat_design(), schema = usg_boat_schema())
   expect_equal(sum(result$n_events), 12L)
   expect_equal(sum(result$n_unknown_boats), 0L)
-  expect_equal(sum(result$n_zero_boats), 0L)
+  expect_equal(sum(result$n_nonpositive_boats), 0L)
   expect_equal(result$pct_angler_boats, c(73.4, 75.4))
 })
 
@@ -201,4 +201,96 @@ test_that("an unrecorded day_type never reaches this function (BC-05)", {
     }),
     "[Ss]trata column"
   )
+})
+
+# --- from the pre-push ensemble review — BC-06, LFQ-06 ------------------------
+
+test_that("a negative boat total cannot produce a share (BC-06)", {
+  # Regression introduced on this branch and caught by codex. Replacing
+  # `keep <- (ab + nb) > 0` with a test for `== 0` let a NEGATIVE total through
+  # as "usable": with ab = -2 and nb = 1 the total is -1, non-zero, and the
+  # event contributed a ratio of 2. It pulled a reported share to 100%.
+  #
+  # main excluded it silently; the fix excludes it AND counts it.
+  result <- summarize_boat_composition(
+    usg_boat_design(function(x) {
+      x$angler_boats[1] <- -2
+      x$non_ang_boats[1] <- 1
+      x
+    }),
+    schema = usg_boat_schema()
+  )
+  expect_equal(sum(result$n_nonpositive_boats), 1L)
+  expect_equal(sum(result$n_events), 11L)
+  expect_true(all(result$pct_angler_boats <= 100, na.rm = TRUE))
+  expect_true(all(result$pct_angler_boats >= 0, na.rm = TRUE))
+})
+
+test_that("a literal \"Unknown\" and an absence pool into ONE row (LFQ-06)", {
+  # Also from codex. Missingness rides an internal sentinel so a real "Unknown"
+  # category keeps its own counts (GH #333). Where a column holds BOTH, that
+  # kept them separate through aggregation and then rendered both as "Unknown",
+  # so one recorded and one unrecorded fish in the same bin came out as two rows
+  # reading N = 1 and 50% each. Two rows with the same group label and different
+  # numbers is not a readable table, and the warning already emitted for this
+  # case promises the counts are pooled.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  data(example_catch, package = "tidycreel")
+  data(example_lengths, package = "tidycreel")
+  lg <- example_lengths[example_lengths$length_type == "harvest", ]
+  # Two harvest fish of the same length, so they must share a bin: one recorded
+  # as "Unknown", one not recorded at all.
+  lg$length[1] <- "400"
+  lg$species[1] <- "Unknown"
+  lg$length[2] <- "400"
+  lg$species[2] <- NA
+
+  d <- suppressWarnings(suppressMessages({
+    dd <- creel_design(example_calendar, date = date, strata = day_type)
+    dd <- add_interviews(dd, example_interviews,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type,
+      species_sought = species_sought
+    )
+    dd <- add_catch(dd, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    )
+    add_lengths(dd, lg,
+      length_uid = interview_id, interview_uid = interview_id,
+      species = species, length = length, length_type = length_type,
+      count = count
+    )
+  }))
+  result <- suppressWarnings(summarize_length_freq(d, type = "harvest", by = "species"))
+  unknown <- result[as.character(result$species) == "Unknown", ]
+
+  expect_equal(nrow(unknown), 1L)
+  expect_equal(unknown$N, 2)
+  expect_equal(unknown$percent, 100)
+  expect_false(any(duplicated(as.character(unknown$length_bin))))
+})
+
+test_that("the pooling warning fires and says what happened (LFQ-06b)", {
+  # The user is told, because once pooled the two genuinely cannot be told apart
+  # in the output.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  iv <- example_interviews
+  iv$angler_type[1:3] <- "Unknown"
+  iv$angler_type[4:6] <- NA
+  d <- suppressWarnings(suppressMessages({
+    dd <- creel_design(example_calendar, date = date, strata = day_type)
+    add_interviews(dd, iv,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept,
+      trip_status = trip_status, angler_type = angler_type
+    )
+  }))
+  expect_warning(summarize_by_angler_type(d), "contains both unrecorded values")
+  result <- suppressWarnings(summarize_by_angler_type(d))
+  unknown <- result[result$angler_type == "Unknown", ]
+  # Pooled means ONE row per month, holding both kinds.
+  expect_false(any(duplicated(unknown$month)))
+  expect_equal(sum(result$N), nrow(iv))
 })
