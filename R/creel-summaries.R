@@ -1138,9 +1138,22 @@ summarize_by_trip_length <- function(design) {
 #' \code{NA} while \code{N} went on counting it. The two counts are mutually
 #' exclusive, target first, so an interview missing both is counted once.
 #'
-#' \code{N} therefore counts the interviews that produced a rate.
-#' \code{N + n_unknown_target + n_unknown_effort} is the number of interviews
-#' in the group, less any excluded for zero effort.
+#' An effort that is not \strong{positive} cannot produce a rate either, and
+#' those interviews are counted in \code{n_nonpositive_effort}. A zero is a
+#' real record -- a party interviewed before it started fishing -- and a
+#' negative one is a data error that \code{\link{add_interviews}} already warns
+#' about; neither yields a rate. They used to be dropped with no trace at all,
+#' so a table could report 20 of 22 interviews with nothing in it to say the
+#' other two existed.
+#'
+#' \code{N} therefore counts the interviews that produced a rate, and the
+#' accounting closes:
+#'
+#' \preformatted{N + n_unknown_target + n_unknown_effort + n_nonpositive_effort
+#'   == interviews in the group}
+#'
+#' The three exclusion counts are mutually exclusive, in that precedence, so an
+#' interview missing more than one thing is counted once.
 #'
 #' A column holding both unrecorded values and the literal value
 #' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
@@ -1161,6 +1174,8 @@ summarize_by_trip_length <- function(design) {
 #'   produced a rate), \code{n_unknown_target} (integer, interviews excluded
 #'   because their sought species was not recorded), \code{n_unknown_effort}
 #'   (integer, interviews excluded because their effort was not recorded),
+#'   \code{n_nonpositive_effort} (integer, interviews excluded because their
+#'   effort was zero or negative),
 #'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 #'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
 #'   \code{ci_upper}.
@@ -1364,12 +1379,18 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
   # above, which is why that mask is taken first (GH #317, GH #336).
   interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
 
-  # Step 4: Exclude zero-effort interviews
-  zero_eff <- !is.na(interview_base[[ae_col]]) & interview_base[[ae_col]] <= 0
-  if (any(zero_eff)) {
-    interview_base <- interview_base[!zero_eff, , drop = FALSE]
-    unknown_target <- unknown_target[!zero_eff]
-  }
+  # Step 4: an effort that is not positive cannot produce a rate.
+  #
+  # Zero is a real record -- a party interviewed before it started fishing --
+  # and a negative one is a data error that add_interviews() already warns
+  # about, as it does for negative catch. Either way there is no rate to be had,
+  # so both are excluded and COUNTED rather than dropped without trace. Until
+  # GH #339 these interviews vanished: a table could report 20 of 22 interviews
+  # with nothing in it to say the other two existed.
+  #
+  # Kept in `interview_base` rather than subset away, so the counts below can
+  # see them and the group they belong to cannot disappear with them.
+  nonpositive_effort <- !is.na(interview_base[[ae_col]]) & interview_base[[ae_col]] <= 0
 
   # Step 5: Compute per-interview rate
   interview_base$.rate <- interview_base$.target_count / interview_base[[ae_col]]
@@ -1397,17 +1418,21 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
   # an NA rate is NA -- while N went on counting it. Same treatment as an
   # unrecorded target: excluded from the rate, counted where it can be seen.
   #
-  # The two categories are kept mutually exclusive, target first, so the three
-  # counts add back up to the group's interviews.
+  # The exclusion categories are kept mutually exclusive, in a fixed precedence
+  # -- unknown target, then unknown effort, then non-positive effort -- so the
+  # four counts add back up to the group's interviews and an interview missing
+  # more than one thing is counted once.
   unknown_effort <- is.na(interview_base[[ae_col]]) & !unknown_target
-  used <- !unknown_target & !unknown_effort
+  nonpositive_effort <- nonpositive_effort & !unknown_target & !unknown_effort
+  used <- !unknown_target & !unknown_effort & !nonpositive_effort
 
   # Counts over every interview, usable or not, so no group can disappear.
   count_agg <- stats::aggregate(
     data.frame(
-      N                 = used,
-      n_unknown_target  = unknown_target,
-      n_unknown_effort  = unknown_effort
+      N                     = used,
+      n_unknown_target      = unknown_target,
+      n_unknown_effort      = unknown_effort,
+      n_nonpositive_effort  = nonpositive_effort
     ),
     by  = group_cols,
     FUN = sum
@@ -1453,6 +1478,7 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
   result$N <- as.integer(result$N)
   result$n_unknown_target <- as.integer(result$n_unknown_target)
   result$n_unknown_effort <- as.integer(result$n_unknown_effort)
+  result$n_nonpositive_effort <- as.integer(result$n_nonpositive_effort)
 
   result <- finish_unknown_groups(result, by_vars)
   row.names(result) <- NULL
@@ -1522,9 +1548,22 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
 #' \code{NA} while \code{N} went on counting it. The two counts are mutually
 #' exclusive, target first, so an interview missing both is counted once.
 #'
-#' \code{N} therefore counts the interviews that produced a rate.
-#' \code{N + n_unknown_target + n_unknown_effort} is the number of interviews
-#' in the group, less any excluded for zero effort.
+#' An effort that is not \strong{positive} cannot produce a rate either, and
+#' those interviews are counted in \code{n_nonpositive_effort}. A zero is a
+#' real record -- a party interviewed before it started fishing -- and a
+#' negative one is a data error that \code{\link{add_interviews}} already warns
+#' about; neither yields a rate. They used to be dropped with no trace at all,
+#' so a table could report 20 of 22 interviews with nothing in it to say the
+#' other two existed.
+#'
+#' \code{N} therefore counts the interviews that produced a rate, and the
+#' accounting closes:
+#'
+#' \preformatted{N + n_unknown_target + n_unknown_effort + n_nonpositive_effort
+#'   == interviews in the group}
+#'
+#' The three exclusion counts are mutually exclusive, in that precedence, so an
+#' interview missing more than one thing is counted once.
 #'
 #' A column holding both unrecorded values and the literal value
 #' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
@@ -1545,6 +1584,8 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
 #'   produced a rate), \code{n_unknown_target} (integer, interviews excluded
 #'   because their sought species was not recorded), \code{n_unknown_effort}
 #'   (integer, interviews excluded because their effort was not recorded),
+#'   \code{n_nonpositive_effort} (integer, interviews excluded because their
+#'   effort was zero or negative),
 #'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 #'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
 #'   \code{ci_upper}.
