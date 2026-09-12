@@ -1,6 +1,65 @@
 # tidycreel (development version)
 
+## Breaking changes
+
+* `summarize_cws_rates()` and `summarize_hws_rates()` exclude interviews whose
+  sought species was not recorded, and report how many (#336).
+
+  The numerator counts fish of the species the party was targeting. With no
+  target recorded nothing in the catch table can match, so such an interview
+  fell through the join exactly as a party that caught none of its target does
+  — and was scored the same way, as a **zero**. That asserted these parties
+  caught none of something nobody recorded, and it dragged down every group they
+  belonged to.
+
+  Measured on the shipped example data, blanking the sought species on 7 of 22
+  interviews: the boat group's `mean_rate` went from **0.393 to 0.254**, a 35%
+  drop, with **`N` unchanged at 9**. No row was dropped, no group was missing
+  and nothing warned — which made it harder to see than #333, where at least
+  something disappeared.
+
+  An interview whose **effort** was not recorded is treated the same way, for
+  the same reason: a rate needs an effort to divide by. One unrecorded effort
+  used to turn the whole group's mean into `NA` — `mean()` of anything
+  containing an `NA` is `NA` — while `N` went on counting it. Those interviews
+  are now excluded and counted in `n_unknown_effort`, and the group keeps a real
+  rate from the rest.
+
+  Three changes to the returned table:
+
+  - a new integer column **`n_unknown_target`**;
+  - a new integer column **`n_unknown_effort`**;
+  - **`N` now counts the interviews that produced a rate**, not every interview
+    in the group. `N + n_unknown_target + n_unknown_effort` is the group's
+    interview count, less any excluded for zero effort. The two exclusion counts
+    are mutually exclusive, target first, so an interview missing both is
+    counted once.
+
+  The estimand is now *the rate among parties with a known target*. That equals
+  the rate among all parties only if the target went unrecorded independently of
+  what was caught — an assumption about the data, not the code, which is why the
+  count is reported beside every rate instead of the exclusion being silent.
+
+  A party that genuinely caught none of a **recorded** target is a real zero and
+  still counts, per `add_catch()`. A group with no interview left to rate keeps
+  its row, reporting `NA` for `mean_rate`, `se` and the interval.
+
 ## Bug fixes
+
+* `summarize_cws_rates()` and `summarize_hws_rates()` no longer fail with
+  `non-numeric argument to binary operator` when every sought species is
+  unrecorded (#336).
+
+  Comparing anything with `NA` yields `NA`, and an `NA` subscript selects a
+  phantom all-`NA` row rather than nothing (#324's shape). Those phantoms made
+  the filtered frame look non-empty, so the aggregate returned zero rows with a
+  logical key and the join produced a non-numeric target count that failed
+  later, naming nothing the caller had set. The comparison now tests the sought
+  species for `NA` explicitly.
+
+* The two rate functions share one implementation of their grouping, rate and
+  interval steps (#336). Those steps were byte-identical copies in both, which
+  is how a seam fixed in one twin comes to survive in the other.
 
 * Six summary functions dropped an interview whose grouping value was not
   recorded, out of its own row and out of the total (#333).
