@@ -67,6 +67,15 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
 <div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<p>The Calamus 2016 validation fixture ships again, so the tests that depend on it can run (<a href="https://github.com/chrischizinski/tidycreel/issues/337" class="external-link">#337</a> follow-up).</p>
+<p>It lived under <code>inst/extdata/</code>, which <code>.Rbuildignore</code> excludes — a correct exclusion when that directory held 17 MB of real waterbody data and a <code>pdfs/</code> directory of published journal articles. Those are long gone; <code>inst/extdata/</code> was down to the 32 KB fixture alone, so the exclusion had stopped protecting anything and was only withholding the one file it should have shipped.</p>
+<p>The consequence was invisible. <code>tidycreel.connect</code>’s <code>test-composition-calamus.R</code> resolves the fixture through <code><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file()</a></code>, so all eight of its tests skipped on every run, in CI included — and they are that package’s only end-to-end assertions against real reference numbers. Connect now reports <strong>461 passing and 1 skip</strong>, where it reported 437 and 9.</p>
+<p>The fixture moved to <code>inst/calamus-2016/</code> rather than un-ignoring <code>inst/extdata/</code>, so the directory-level guard stays in place: anything dropped in there later still cannot reach a build.</p>
+</li>
+</ul></div>
+<div class="section level3">
 <h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
 <ul><li>
 <p><code><a href="../reference/summarize_boat_composition.html">summarize_boat_composition()</a></code> counts the events it excludes (<a href="https://github.com/chrischizinski/tidycreel/issues/337" class="external-link">#337</a>).</p>
@@ -102,7 +111,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-development-version-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version-1"></a></h3>
 <ul><li>
 <p><code>summarize_length_freq(by = )</code> keeps every fish (<a href="https://github.com/chrischizinski/tidycreel/issues/337" class="external-link">#337</a>).</p>
 <p><code>stats::aggregate(by = )</code> drops every row whose grouping value is <code>NA</code>, so a length record with no recorded value for a <code>by</code> column left the distribution entirely — taking its weight with it. Measured on the shipped example data, blanking <code>species</code> on 6 of 20 length rows took the total from <strong>37 fish to 26</strong>: more than six, because a binned release row carries a <em>count</em> rather than one fish.</p>
