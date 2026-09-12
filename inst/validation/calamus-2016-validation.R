@@ -8,7 +8,7 @@
 # **MUST be run from the package root directory (where DESCRIPTION lives).**
 # Use Rscript from that directory; do not source() from subdirectories.
 #
-# Offline: reads only static CSV files in inst/extdata/calamus-2016/
+# Offline: reads only static CSV files in inst/calamus-2016/
 # Fully self-contained — no external service calls are made.
 
 if (!file.exists("DESCRIPTION")) {
@@ -31,12 +31,12 @@ if (!isNamespaceLoaded("tidycreel")) {
 # resolves in a devtools session and nowhere else. The script was therefore
 # unrunnable under R CMD check, which is part of why its failure went unnoticed
 # for so long -- the test that sources it accepted any error (GH #130).
-fixture_dir <- file.path("inst", "extdata", "calamus-2016")
+fixture_dir <- file.path("inst", "calamus-2016")
 if (!file.exists(file.path(fixture_dir, "reference-outputs.csv"))) {
-  fixture_dir <- system.file("extdata", "calamus-2016", package = "tidycreel")
+  fixture_dir <- system.file("calamus-2016", package = "tidycreel")
 }
 if (!file.exists(file.path(fixture_dir, "reference-outputs.csv"))) {
-  stop("Cannot locate the calamus-2016 fixtures in either inst/extdata or the installed package.")
+  stop("Cannot locate the calamus-2016 fixtures in either inst/ or the installed package.")
 }
 
 # ---- 1. Load fixture data ----
