@@ -1,5 +1,32 @@
 # tidycreel (development version)
 
+## Breaking changes
+
+* Identifier columns are normalised to character at every join
+  (`add_catch()`, `add_lengths()`, `add_ages()`).
+
+  A uid is a label, not a quantity: nothing is summed or ordered by magnitude on
+  it, and what it must do is join. The CSV reader infers a bare integer id
+  column as numeric while a JSON API serves the same ids as strings, so the same
+  survey reached a design with a numeric uid from one backend and a character
+  uid from the other.
+
+  Base R hid this — `merge()` and `%in%` coerce — but `dplyr::left_join()`
+  refuses outright with *"Can't join `x$interview_uid` with `y$interview_uid`
+  due to incompatible types"*, and `identical()` is silently `FALSE`. Anyone
+  joining a fetched interviews frame to a fetched catch frame across backends
+  hit it.
+
+  `design$interviews`, `design$catch`, `design$lengths` and `design$ages` now
+  carry character ids whatever the source gave.
+
+  The coercion is deliberately **not** `as.character()`: R renders a numeric
+  `100000` as `"1e+05"`, so a naive conversion silently rewrites every id at or
+  above 1e5 — in the join key, the one column where a corrupted value cannot be
+  noticed by looking at a total. Whole numbers go through `sprintf("%.0f", ...)`,
+  which is exact for every value R can hold; a non-whole value is left alone
+  rather than truncated into a collision.
+
 ## Bug fixes
 
 * The Calamus 2016 validation fixture ships again, so the tests that depend on

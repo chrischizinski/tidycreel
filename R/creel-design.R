@@ -1110,6 +1110,46 @@ validate_creel_design <- function(x) {
 #'
 #' @keywords internal
 #' @noRd
+# Normalise an identifier column to character.
+#
+# An interview, catch or length uid is a LABEL, not a quantity: nothing is ever
+# summed, averaged or compared by magnitude on it. What it must do is join, and
+# a join key whose type depends on where the data came from does not reliably
+# join. The CSV reader infers a bare integer column as numeric while a JSON API
+# serves the same ids as strings, so the same survey reached the design with a
+# numeric uid from one backend and a character uid from the other (GH #345).
+#
+# NOT `as.character()`. R renders a numeric 100000 as "1e+05", so a naive
+# coercion silently rewrites every id at or above 1e5 -- in the join key, which
+# is the one column where a corrupted value cannot be noticed by looking at a
+# total. `format(scientific = FALSE)` is no better: it appends ".0" to whole
+# numbers. `sprintf("%.0f", ...)` is exact for every whole value R can hold.
+#
+# A non-whole numeric is left to `as.character()`: it is not an id anyone
+# intended, and silently truncating the fractional part would invent a match.
+#' @noRd
+as_uid_character <- function(x) {
+  if (is.character(x)) {
+    return(x)
+  }
+  if (is.factor(x)) {
+    return(as.character(x))
+  }
+  if (is.numeric(x)) {
+    finite <- !is.na(x) & is.finite(x)
+    if (all(x[finite] == trunc(x[finite]))) {
+      out <- rep(NA_character_, length(x))
+      out[finite] <- sprintf("%.0f", x[finite])
+      # A non-finite numeric is not an id; keep whatever it renders as rather
+      # than turning it into NA and inventing a missing key.
+      odd <- !is.na(x) & !finite
+      if (any(odd)) out[odd] <- as.character(x[odd])
+      return(out)
+    }
+  }
+  as.character(x)
+}
+
 resolve_single_col <- function(expr, data, arg_name, error_call = rlang::caller_env()) {
   loc <- tidyselect::eval_select(
     expr,
@@ -4167,6 +4207,14 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     )
   }
 
+
+  # Both sides of the join are normalised to character before anything compares
+  # them. A uid is a label, and a join key whose type depends on the backend it
+  # came from does not reliably join -- see as_uid_character() (GH #345).
+  data[[catch_uid_col]] <- as_uid_character(data[[catch_uid_col]])
+  design$interviews[[interview_uid_col]] <-
+    as_uid_character(design$interviews[[interview_uid_col]])
+
   # Validate interview ID join (CATCH-02)
   catch_ids <- unique(data[[catch_uid_col]])
   interview_ids <- design$interviews[[interview_uid_col]]
@@ -4487,6 +4535,14 @@ add_lengths <- function(
     ))
   }
 
+
+  # Both sides of the join are normalised to character before anything compares
+  # them. A uid is a label, and a join key whose type depends on the backend it
+  # came from does not reliably join -- see as_uid_character() (GH #345).
+  data[[length_uid_col]] <- as_uid_character(data[[length_uid_col]])
+  design$interviews[[interview_uid_col]] <-
+    as_uid_character(design$interviews[[interview_uid_col]])
+
   # Validate interview ID join (LEN-03)
   length_ids <- unique(data[[length_uid_col]])
   interview_ids <- design$interviews[[interview_uid_col]]
@@ -4684,6 +4740,14 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
       "i" = "Accepted values: {.val {valid_types}}"
     ))
   }
+
+
+  # Both sides of the join are normalised to character before anything compares
+  # them. A uid is a label, and a join key whose type depends on the backend it
+  # came from does not reliably join -- see as_uid_character() (GH #345).
+  data[[age_uid_col]] <- as_uid_character(data[[age_uid_col]])
+  design$interviews[[interview_uid_col]] <-
+    as_uid_character(design$interviews[[interview_uid_col]])
 
   age_ids <- unique(data[[age_uid_col]])
   interview_ids <- design$interviews[[interview_uid_col]]
