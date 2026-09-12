@@ -24,9 +24,12 @@ Default 0.95.}
 \value{
 A \code{data.frame} with class
 \code{c("creel_summary_hws_rates", "data.frame")} and columns:
-grouping columns (if any), \code{N} (integer, interviews per group),
-\code{mean_rate} (numeric, mean fish/angler-hour),
-\code{se} (numeric, standard error), \code{ci_lower}, \code{ci_upper}.
+grouping columns (if any), \code{N} (integer, interviews per group that
+produced a rate), \code{n_unknown_target} (integer, interviews excluded
+because their sought species was not recorded),
+\code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
+\code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
+\code{ci_upper}.
 }
 \description{
 Computes mean harvested-while-sought rates (fish per angler-hour) for
@@ -55,14 +58,37 @@ own members and their rates were computed on the survivors -- on the shipped
 example data that moved one group's mean rate from 0.393 to 0.762 while the
 table still looked complete.
 
-Whether that group's rate is knowable depends on which column is missing.
-Grouped by \code{angler_type} or method, the rate is determinable -- the
-catch and effort are the interviews' own, and only the reporting group is
-unknown. Grouped by \strong{sought species}, it is not: the numerator counts
-fish of the species the party was targeting, and with no target recorded
-there is nothing to count. Those rows report \code{NA} for
-\code{mean_rate}, \code{se} and the interval, never \code{0}, which would
-assert that the parties caught none of their target.
+A group with no interview left to rate -- which happens when every one of its
+members had an unrecorded target, see below -- reports \code{NA} for
+\code{mean_rate}, \code{se} and the interval, and keeps its row rather than
+disappearing.
+}
+
+\section{Interviews with an unrecorded sought species}{
+
+These are \strong{excluded} from the rate and counted in
+\code{n_unknown_target}.
+
+The numerator counts fish of the species the party was targeting. With no
+target recorded nothing in the catch table can match, so such an interview
+falls through the join exactly as a party that caught none of its target
+does, and it used to be scored the same way -- as a zero. That asserted these
+parties caught none of something nobody recorded, and it dragged down every
+group they belonged to: on the shipped example data, blanking the sought
+species on 7 of 22 interviews took the boat group's mean rate from
+\code{0.393} to \code{0.254} with \code{N} unchanged at 9.
+
+Excluding them makes the estimand \strong{the rate among parties with a
+known target}. That equals the rate among all parties only if the target went
+unrecorded independently of what was caught, which is an assumption about the
+data rather than about the code -- so \code{n_unknown_target} is reported
+beside every rate and a reader can judge it. A party that genuinely caught
+none of a \emph{recorded} target is a real zero and still counts, per
+\code{\link{add_catch}}.
+
+\code{N} therefore counts the interviews that produced a rate.
+\code{N + n_unknown_target} is the number of interviews in the group, less
+any excluded for zero effort.
 
 A column holding both unrecorded values and the literal value
 \code{"Unknown"} warns: the two are pooled into one row and cannot be told

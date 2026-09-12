@@ -264,9 +264,15 @@ test_that("a rate for an unrecorded SOUGHT SPECIES is NA, not zero (UNK-15)", {
   expect_equal(nrow(unknown_row), 1L)
   expect_true(is.na(unknown_row$mean_rate))
   expect_true(is.na(unknown_row$se))
-  # The interviews are still counted.
-  expect_gt(unknown_row$N, 0L)
-  expect_equal(sum(result$N), ug_n_interviews())
+
+  # `N` counts the interviews that produced a rate, and GH #336 excluded the
+  # unrecorded-target ones from that, so this group's N is 0 and its members are
+  # counted in `n_unknown_target` instead. The row must still exist -- a group
+  # that disappears is the defect GH #333 fixed -- and every interview must
+  # still be accounted for across the two columns.
+  expect_equal(unknown_row$N, 0L)
+  expect_gt(unknown_row$n_unknown_target, 0L)
+  expect_equal(sum(result$N) + sum(result$n_unknown_target), ug_n_interviews())
 })
 
 test_that("grouping by something else leaves the rate determinable (UNK-15b)", {

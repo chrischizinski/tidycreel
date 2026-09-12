@@ -114,32 +114,21 @@ unknown_last <- function(x) {
   !is.na(x) & as.character(x) == unknown_group_label()
 }
 
-# Finish a CWS/HWS rate table: blank the rates that are not determinable, render
-# the marker as the reported label, and sort the unrecorded group last.
+# Finish a CWS/HWS rate table: render the internal marker as the reported label
+# and sort the unrecorded group last.
 #
-# Where the grouping is by SOUGHT SPECIES and the sought species was not
-# recorded, the rate is not determinable. Its numerator is the catch of "the
-# species this party was targeting", and with no target recorded there is
-# nothing to count -- the interview's target count was filled with 0 upstream,
-# which would report a mean rate of exactly 0 and assert that these parties
-# caught none of their target. That is a different and unsupported claim, so
-# those rows report NA (GH #333).
-#
-# Grouping by anything else -- angler type, method -- leaves the rate perfectly
-# determinable: only the reporting group is unknown, and the catch and effort
-# are the interviews' own.
+# It no longer blanks anything. GH #333 blanked the by-sought-species case here,
+# because a group whose target was unrecorded was reporting a mean rate of
+# exactly 0 from the upstream zero-fill. GH #336 removed the cause instead:
+# those interviews are excluded from the rate and counted in
+# `n_unknown_target`, so such a group arrives with N = 0 and is blanked by the
+# general empty-group rule, whatever it is grouped by. A second blanking keyed
+# to one particular column would now be a private copy of a rule that holds
+# everywhere.
 #' @noRd
-finish_unknown_groups <- function(result, by_vars, ss_col) {
+finish_unknown_groups <- function(result, by_vars) {
   if (length(by_vars) == 0L) {
     return(result)
-  }
-  if (!is.null(ss_col) && ss_col %in% by_vars) {
-    undeterminable <- is_unrecorded_group(result[[ss_col]])
-    if (any(undeterminable)) {
-      for (col in intersect(c("mean_rate", "se", "ci_lower", "ci_upper"), names(result))) {
-        result[[col]][undeterminable] <- NA_real_
-      }
-    }
   }
   for (v in by_vars) {
     result[[v]] <- show_unknown_group(result[[v]])
@@ -1117,14 +1106,35 @@ summarize_by_trip_length <- function(design) {
 #' example data that moved one group's mean rate from 0.393 to 0.762 while the
 #' table still looked complete.
 #'
-#' Whether that group's rate is knowable depends on which column is missing.
-#' Grouped by \code{angler_type} or method, the rate is determinable -- the
-#' catch and effort are the interviews' own, and only the reporting group is
-#' unknown. Grouped by \strong{sought species}, it is not: the numerator counts
-#' fish of the species the party was targeting, and with no target recorded
-#' there is nothing to count. Those rows report \code{NA} for
-#' \code{mean_rate}, \code{se} and the interval, never \code{0}, which would
-#' assert that the parties caught none of their target.
+#' A group with no interview left to rate -- which happens when every one of its
+#' members had an unrecorded target, see below -- reports \code{NA} for
+#' \code{mean_rate}, \code{se} and the interval, and keeps its row rather than
+#' disappearing.
+#'
+#' @section Interviews with an unrecorded sought species:
+#' These are \strong{excluded} from the rate and counted in
+#' \code{n_unknown_target}.
+#'
+#' The numerator counts fish of the species the party was targeting. With no
+#' target recorded nothing in the catch table can match, so such an interview
+#' falls through the join exactly as a party that caught none of its target
+#' does, and it used to be scored the same way -- as a zero. That asserted these
+#' parties caught none of something nobody recorded, and it dragged down every
+#' group they belonged to: on the shipped example data, blanking the sought
+#' species on 7 of 22 interviews took the boat group's mean rate from
+#' \code{0.393} to \code{0.254} with \code{N} unchanged at 9.
+#'
+#' Excluding them makes the estimand \strong{the rate among parties with a
+#' known target}. That equals the rate among all parties only if the target went
+#' unrecorded independently of what was caught, which is an assumption about the
+#' data rather than about the code -- so \code{n_unknown_target} is reported
+#' beside every rate and a reader can judge it. A party that genuinely caught
+#' none of a \emph{recorded} target is a real zero and still counts, per
+#' \code{\link{add_catch}}.
+#'
+#' \code{N} therefore counts the interviews that produced a rate.
+#' \code{N + n_unknown_target} is the number of interviews in the group, less
+#' any excluded for zero effort.
 #'
 #' A column holding both unrecorded values and the literal value
 #' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
@@ -1141,9 +1151,12 @@ summarize_by_trip_length <- function(design) {
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_cws_rates", "data.frame")} and columns:
-#'   grouping columns (if any), \code{N} (integer, interviews per group),
-#'   \code{mean_rate} (numeric, mean fish/angler-hour),
-#'   \code{se} (numeric, standard error), \code{ci_lower}, \code{ci_upper}.
+#'   grouping columns (if any), \code{N} (integer, interviews per group that
+#'   produced a rate), \code{n_unknown_target} (integer, interviews excluded
+#'   because their sought species was not recorded),
+#'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
+#'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
+#'   \code{ci_upper}.
 #'
 #' @seealso [summarize_hws_rates()], [estimate_catch_rate()]
 #'
@@ -1252,13 +1265,19 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
     all.x = FALSE
   )
 
-  # Filter to rows where catch species == species_sought
-  target_rows <- catch_merged[
-    !is.na(catch_merged[[species_col]]) &
-      catch_merged[[species_col]] == catch_merged[[ss_col]],
-    ,
-    drop = FALSE
-  ]
+  # Filter to rows where catch species == species_sought.
+  #
+  # The sought species is tested for NA explicitly, and the result indexed
+  # through which(): comparing anything with NA yields NA, and an NA subscript
+  # selects a PHANTOM all-NA row rather than nothing (GH #324's shape). With
+  # every target unrecorded, those phantoms made the frame look non-empty, the
+  # aggregate below returned zero rows with a logical key, and the join produced
+  # a non-numeric target count that failed later as base R's "non-numeric
+  # argument to binary operator" -- naming nothing the caller had set.
+  keep <- !is.na(catch_merged[[species_col]]) &
+    !is.na(catch_merged[[ss_col]]) &
+    catch_merged[[species_col]] == catch_merged[[ss_col]]
+  target_rows <- catch_merged[which(keep), , drop = FALSE]
 
   # Aggregate: sum catch per interview UID
   if (nrow(target_rows) > 0) {
@@ -1272,6 +1291,54 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
     agg <- data.frame(.uid = character(0), .target_count = numeric(0))
   }
 
+  # Steps 3-7 are identical for CWS and HWS -- the only difference between the
+  # two is which catch type Step 2 filtered to -- so they live in one place. The
+  # two used to hold byte-identical copies of this block, which is how a seam
+  # fixed in one twin comes to survive in the other.
+  result <- summarize_rate_by_group(
+    interviews   = interviews,
+    agg          = agg,
+    uid_col      = uid_col,
+    ss_col       = ss_col,
+    ae_col       = ae_col,
+    by_vars      = by_vars,
+    conf_level   = conf_level
+  )
+
+  class(result) <- c("creel_summary_cws_rates", "data.frame")
+  result
+}
+
+
+# Turn per-interview target counts into a grouped rate table. Shared by
+# summarize_cws_rates() and summarize_hws_rates(), which differ only in which
+# catch type their caller filtered to.
+#
+# An interview whose SOUGHT SPECIES was never recorded is excluded from the rate
+# and counted in `n_unknown_target` instead of being scored as a zero.
+#
+# Why it cannot stay a zero: the numerator counts fish of the species the party
+# was targeting. With no target recorded, nothing in the catch table can match,
+# so the interview falls through the join exactly as a party that caught none of
+# its target does -- and the fill downstream turned both into 0. That asserted
+# these parties caught none of something nobody recorded. Measured on the
+# shipped example data, blanking the sought species on 7 of 22 interviews took
+# the boat group's mean rate from 0.393 to 0.254 with N unchanged at 9: no row
+# dropped, no group missing, no warning (GH #336).
+#
+# Why excluding is not automatically right either: the estimand becomes "rate
+# among parties with a known target", which equals the rate among all parties
+# only if the target went unrecorded independently of what was caught. That is
+# an assumption about the data, not about the code, so `n_unknown_target` is
+# reported beside every rate and the reader is left able to judge it.
+#
+# Counts come from EVERY interview and the rate only from the usable ones, so a
+# group made entirely of unknown-target interviews still gets a row -- with
+# N = 0 and an NA rate -- rather than vanishing, which is the failure GH #333
+# had just finished fixing.
+#' @noRd
+summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
+                                    by_vars, conf_level) {
   # Step 3: Join back to ALL interviews to preserve zeros
   interview_base <- interviews[, unique(c(uid_col, ss_col, ae_col, by_vars)), drop = FALSE]
   interview_base <- merge(
@@ -1281,16 +1348,20 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
     by.y = ".uid",
     all.x = TRUE
   )
+  # Recorded BEFORE the fill below, which cannot tell the two join misses apart.
+  unknown_target <- is.na(interview_base[[ss_col]])
+
   # An interview absent from the catch table caught none of the target: that is
   # what add_catch() documents, so the join miss is a real zero and not an
-  # unknown. Stated because the conversion cannot be told from the dangerous
-  # kind by looking at it (GH #317).
+  # unknown. True only when the target IS recorded -- see `unknown_target`
+  # above, which is why that mask is taken first (GH #317, GH #336).
   interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
 
   # Step 4: Exclude zero-effort interviews
   zero_eff <- !is.na(interview_base[[ae_col]]) & interview_base[[ae_col]] <= 0
   if (any(zero_eff)) {
     interview_base <- interview_base[!zero_eff, , drop = FALSE]
+    unknown_target <- unknown_target[!zero_eff]
   }
 
   # Step 5: Compute per-interview rate
@@ -1302,7 +1373,7 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   # groups that remained lost their own members and their rates were computed on
   # the survivors. Measured on the shipped example data, blanking 7 of 22
   # angler types moved the boat group's mean rate from 0.393 to 0.762 while the
-  # table still looked complete (GH #333). The rate for an unrecorded group is
+  # table still looked complete (GH #333). The rate for an unrecorded GROUP is
   # itself determinable -- it comes from those interviews' own catch and effort
   # -- so the group is reported, not blanked.
   group_cols <- if (length(by_vars) > 0) {
@@ -1311,18 +1382,32 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
     list(rep("all", nrow(interview_base)))
   }
   names(group_cols) <- if (length(by_vars) > 0) by_vars else ".group"
-
-  n_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = length)
-  mean_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = mean)
-  sd_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = stats::sd)
-
-  names(n_agg)[ncol(n_agg)] <- "N"
-  names(mean_agg)[ncol(mean_agg)] <- "mean_rate"
-  names(sd_agg)[ncol(sd_agg)] <- "sd_rate"
-
   merge_by <- if (length(by_vars) > 0) by_vars else ".group"
-  result <- merge(n_agg, mean_agg, by = merge_by)
-  result <- merge(result, sd_agg, by = merge_by)
+
+  used <- !unknown_target
+
+  # Counts over every interview, usable or not, so no group can disappear.
+  count_agg <- stats::aggregate(
+    data.frame(N = used, n_unknown_target = unknown_target),
+    by  = group_cols,
+    FUN = sum
+  )
+
+  if (any(used)) {
+    used_groups <- lapply(group_cols, function(g) g[used])
+    names(used_groups) <- names(group_cols)
+    mean_agg <- stats::aggregate(interview_base$.rate[used], by = used_groups, FUN = mean)
+    sd_agg   <- stats::aggregate(interview_base$.rate[used], by = used_groups, FUN = stats::sd)
+    names(mean_agg)[ncol(mean_agg)] <- "mean_rate"
+    names(sd_agg)[ncol(sd_agg)] <- "sd_rate"
+    # all.x so a group with nothing usable keeps its row and reports NA.
+    result <- merge(count_agg, mean_agg, by = merge_by, all.x = TRUE)
+    result <- merge(result, sd_agg, by = merge_by, all.x = TRUE)
+  } else {
+    result <- count_agg
+    result$mean_rate <- NA_real_
+    result$sd_rate <- NA_real_
+  }
 
   # Step 7: SE and CI via t-distribution
   result$se <- result$sd_rate / sqrt(result$N)
@@ -1331,17 +1416,25 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   result$ci_upper <- result$mean_rate + t_crit * result$se
   result$sd_rate <- NULL
 
+  # A group with no usable interview has no rate of any kind. Blanked together
+  # so an N of 0 cannot leave an se or an interval behind it.
+  empty <- result$N == 0L
+  if (any(empty)) {
+    for (col in c("mean_rate", "se", "ci_lower", "ci_upper")) {
+      result[[col]][empty] <- NA_real_
+    }
+  }
+
   # Drop .group column when no by variables
   if (length(by_vars) == 0) {
     result$.group <- NULL
   }
 
   result$N <- as.integer(result$N)
+  result$n_unknown_target <- as.integer(result$n_unknown_target)
 
-  result <- finish_unknown_groups(result, by_vars, ss_col)
+  result <- finish_unknown_groups(result, by_vars)
   row.names(result) <- NULL
-
-  class(result) <- c("creel_summary_cws_rates", "data.frame")
   result
 }
 
@@ -1376,14 +1469,35 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #' example data that moved one group's mean rate from 0.393 to 0.762 while the
 #' table still looked complete.
 #'
-#' Whether that group's rate is knowable depends on which column is missing.
-#' Grouped by \code{angler_type} or method, the rate is determinable -- the
-#' catch and effort are the interviews' own, and only the reporting group is
-#' unknown. Grouped by \strong{sought species}, it is not: the numerator counts
-#' fish of the species the party was targeting, and with no target recorded
-#' there is nothing to count. Those rows report \code{NA} for
-#' \code{mean_rate}, \code{se} and the interval, never \code{0}, which would
-#' assert that the parties caught none of their target.
+#' A group with no interview left to rate -- which happens when every one of its
+#' members had an unrecorded target, see below -- reports \code{NA} for
+#' \code{mean_rate}, \code{se} and the interval, and keeps its row rather than
+#' disappearing.
+#'
+#' @section Interviews with an unrecorded sought species:
+#' These are \strong{excluded} from the rate and counted in
+#' \code{n_unknown_target}.
+#'
+#' The numerator counts fish of the species the party was targeting. With no
+#' target recorded nothing in the catch table can match, so such an interview
+#' falls through the join exactly as a party that caught none of its target
+#' does, and it used to be scored the same way -- as a zero. That asserted these
+#' parties caught none of something nobody recorded, and it dragged down every
+#' group they belonged to: on the shipped example data, blanking the sought
+#' species on 7 of 22 interviews took the boat group's mean rate from
+#' \code{0.393} to \code{0.254} with \code{N} unchanged at 9.
+#'
+#' Excluding them makes the estimand \strong{the rate among parties with a
+#' known target}. That equals the rate among all parties only if the target went
+#' unrecorded independently of what was caught, which is an assumption about the
+#' data rather than about the code -- so \code{n_unknown_target} is reported
+#' beside every rate and a reader can judge it. A party that genuinely caught
+#' none of a \emph{recorded} target is a real zero and still counts, per
+#' \code{\link{add_catch}}.
+#'
+#' \code{N} therefore counts the interviews that produced a rate.
+#' \code{N + n_unknown_target} is the number of interviews in the group, less
+#' any excluded for zero effort.
 #'
 #' A column holding both unrecorded values and the literal value
 #' \code{"Unknown"} warns: the two are pooled into one row and cannot be told
@@ -1400,9 +1514,12 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_hws_rates", "data.frame")} and columns:
-#'   grouping columns (if any), \code{N} (integer, interviews per group),
-#'   \code{mean_rate} (numeric, mean fish/angler-hour),
-#'   \code{se} (numeric, standard error), \code{ci_lower}, \code{ci_upper}.
+#'   grouping columns (if any), \code{N} (integer, interviews per group that
+#'   produced a rate), \code{n_unknown_target} (integer, interviews excluded
+#'   because their sought species was not recorded),
+#'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
+#'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
+#'   \code{ci_upper}.
 #'
 #' @seealso [summarize_cws_rates()], [estimate_harvest_rate()]
 #'
@@ -1511,13 +1628,19 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
     all.x = FALSE
   )
 
-  # Filter to rows where catch species == species_sought
-  target_rows <- catch_merged[
-    !is.na(catch_merged[[species_col]]) &
-      catch_merged[[species_col]] == catch_merged[[ss_col]],
-    ,
-    drop = FALSE
-  ]
+  # Filter to rows where catch species == species_sought.
+  #
+  # The sought species is tested for NA explicitly, and the result indexed
+  # through which(): comparing anything with NA yields NA, and an NA subscript
+  # selects a PHANTOM all-NA row rather than nothing (GH #324's shape). With
+  # every target unrecorded, those phantoms made the frame look non-empty, the
+  # aggregate below returned zero rows with a logical key, and the join produced
+  # a non-numeric target count that failed later as base R's "non-numeric
+  # argument to binary operator" -- naming nothing the caller had set.
+  keep <- !is.na(catch_merged[[species_col]]) &
+    !is.na(catch_merged[[ss_col]]) &
+    catch_merged[[species_col]] == catch_merged[[ss_col]]
+  target_rows <- catch_merged[which(keep), , drop = FALSE]
 
   # Aggregate: sum catch per interview UID
   if (nrow(target_rows) > 0) {
@@ -1531,74 +1654,19 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
     agg <- data.frame(.uid = character(0), .target_count = numeric(0))
   }
 
-  # Step 3: Join back to ALL interviews to preserve zeros
-  interview_base <- interviews[, unique(c(uid_col, ss_col, ae_col, by_vars)), drop = FALSE]
-  interview_base <- merge(
-    interview_base,
-    agg,
-    by.x = uid_col,
-    by.y = ".uid",
-    all.x = TRUE
+  # Steps 3-7 are identical for CWS and HWS -- the only difference between the
+  # two is which catch type Step 2 filtered to -- so they live in one place. The
+  # two used to hold byte-identical copies of this block, which is how a seam
+  # fixed in one twin comes to survive in the other.
+  result <- summarize_rate_by_group(
+    interviews   = interviews,
+    agg          = agg,
+    uid_col      = uid_col,
+    ss_col       = ss_col,
+    ae_col       = ae_col,
+    by_vars      = by_vars,
+    conf_level   = conf_level
   )
-  # An interview absent from the catch table caught none of the target: that is
-  # what add_catch() documents, so the join miss is a real zero and not an
-  # unknown. Stated because the conversion cannot be told from the dangerous
-  # kind by looking at it (GH #317).
-  interview_base$.target_count[is.na(interview_base$.target_count)] <- 0
-
-  # Step 4: Exclude zero-effort interviews
-  zero_eff <- !is.na(interview_base[[ae_col]]) & interview_base[[ae_col]] <= 0
-  if (any(zero_eff)) {
-    interview_base <- interview_base[!zero_eff, , drop = FALSE]
-  }
-
-  # Step 5: Compute per-interview rate
-  interview_base$.rate <- interview_base$.target_count / interview_base[[ae_col]]
-
-  # Step 6: Group and compute summary statistics
-  # `aggregate(by = )` drops a row whose grouping value is NA, so an interview
-  # with no recorded value for a `by` column left the result entirely: the
-  # groups that remained lost their own members and their rates were computed on
-  # the survivors. Measured on the shipped example data, blanking 7 of 22
-  # angler types moved the boat group's mean rate from 0.393 to 0.762 while the
-  # table still looked complete (GH #333). The rate for an unrecorded group is
-  # itself determinable -- it comes from those interviews' own catch and effort
-  # -- so the group is reported, not blanked.
-  group_cols <- if (length(by_vars) > 0) {
-    lapply(by_vars, function(v) label_unknown_group(interview_base[[v]], v))
-  } else {
-    list(rep("all", nrow(interview_base)))
-  }
-  names(group_cols) <- if (length(by_vars) > 0) by_vars else ".group"
-
-  n_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = length)
-  mean_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = mean)
-  sd_agg <- stats::aggregate(interview_base$.rate, by = group_cols, FUN = stats::sd)
-
-  names(n_agg)[ncol(n_agg)] <- "N"
-  names(mean_agg)[ncol(mean_agg)] <- "mean_rate"
-  names(sd_agg)[ncol(sd_agg)] <- "sd_rate"
-
-  merge_by <- if (length(by_vars) > 0) by_vars else ".group"
-  result <- merge(n_agg, mean_agg, by = merge_by)
-  result <- merge(result, sd_agg, by = merge_by)
-
-  # Step 7: SE and CI via t-distribution
-  result$se <- result$sd_rate / sqrt(result$N)
-  t_crit <- stats::qt((1 + conf_level) / 2, df = pmax(result$N - 1, 1))
-  result$ci_lower <- result$mean_rate - t_crit * result$se
-  result$ci_upper <- result$mean_rate + t_crit * result$se
-  result$sd_rate <- NULL
-
-  # Drop .group column when no by variables
-  if (length(by_vars) == 0) {
-    result$.group <- NULL
-  }
-
-  result$N <- as.integer(result$N)
-
-  result <- finish_unknown_groups(result, by_vars, ss_col)
-  row.names(result) <- NULL
 
   class(result) <- c("creel_summary_hws_rates", "data.frame")
   result
