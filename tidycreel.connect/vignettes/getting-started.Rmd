@@ -98,7 +98,7 @@ schema <- creel_schema(
   catch_uid_col     = "CatchUID",
   species_col       = "SpeciesCode",
   catch_count_col   = "CatchCount",
-  catch_type_col    = "CatchType",
+  catch_type_col    = "CatchCategory",
   length_uid_col    = "LengthUID",
   length_mm_col     = "LengthMM",
   length_type_col   = "LengthType"
@@ -163,7 +163,7 @@ default:
     catch_uid_col:     CatchUID
     species_col:       SpeciesCode
     catch_count_col:   CatchCount
-    catch_type_col:    CatchType
+    catch_type_col:    CatchCategory
     length_uid_col:    LengthUID
     length_mm_col:     LengthMM
     length_type_col:   LengthType
@@ -300,7 +300,7 @@ readr::write_csv(
     InterviewID = c(1L, 1L, 2L),
     SpeciesCode = c("WAE", "WAE", "LMB"),
     CatchCount  = c(2L, 1L, 3L),
-    CatchType   = "harvest"
+    CatchCategory   = "harvest"
   ),
   catch_csv
 )

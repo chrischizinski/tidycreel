@@ -59,7 +59,7 @@ default:
       catch_uid: "CatchUID"
       species: "SpeciesCode"
       catch_count: "CatchCount"
-      catch_type: "CatchType"
+      catch_type: "CatchCategory"
       # Lengths
       length_uid: "LengthUID"
       length_mm: "LengthMM"

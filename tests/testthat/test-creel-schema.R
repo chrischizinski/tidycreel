@@ -215,11 +215,11 @@ test_that("length_bin_col and length_count_col are carried on the schema", {
   # unit on a group label.
   s <- creel_schema(
     survey_type      = "instantaneous",
-    length_bin_col   = "LengthGroup",
+    length_bin_col   = "LengthBand",
     length_count_col = "GroupCount"
   )
 
-  expect_equal(s$length_bin_col, "LengthGroup")
+  expect_equal(s$length_bin_col, "LengthBand")
   expect_equal(s$length_count_col, "GroupCount")
 })
 
@@ -237,7 +237,7 @@ test_that("the binned pair is optional, so a measured schema still validates", {
     interview_uid_col = "InterviewID",
     species_col       = "Species",
     catch_count_col   = "FishCount",
-    catch_type_col    = "CatchType",
+    catch_type_col    = "CatchCategory",
     length_uid_col    = "LengthID",
     length_mm_col     = "LengthMM",
     length_type_col   = "LengthType"
@@ -252,13 +252,13 @@ test_that("the binned pair prints under lengths", {
   s <- creel_schema(
     survey_type      = "instantaneous",
     length_mm_col    = "LengthMM",
-    length_bin_col   = "LengthGroup",
+    length_bin_col   = "LengthBand",
     length_count_col = "GroupCount"
   )
   out <- capture.output(print(s))
 
   lengths_at <- grep("lengths:", out)
-  bin_at     <- grep("length_bin -> LengthGroup", out, fixed = TRUE)
+  bin_at     <- grep("length_bin -> LengthBand", out, fixed = TRUE)
   count_at   <- grep("length_count -> GroupCount", out, fixed = TRUE)
 
   expect_length(bin_at, 1L)
@@ -384,7 +384,7 @@ test_that("count_time_col is optional, so an existing schema still validates", {
     interview_uid_col = "InterviewID",
     species_col       = "Species",
     catch_count_col   = "FishCount",
-    catch_type_col    = "CatchType",
+    catch_type_col    = "CatchCategory",
     length_uid_col    = "LengthID",
     length_mm_col     = "LengthMM",
     length_type_col   = "LengthType"

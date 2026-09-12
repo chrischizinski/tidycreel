@@ -51,7 +51,7 @@ make_binned_csv <- function(release = NULL) {
       length_uid    = 1L:2L,
       interview_uid = c(1L, 1L),
       species       = c("walleye", "walleye"),
-      LengthGroup   = c("300-350", "350-400"),
+      LengthBand   = c("300-350", "350-400"),
       GroupCount    = c(1L, 5L),
       length_type   = rep("release", 2L),
       stringsAsFactors = FALSE
@@ -85,7 +85,7 @@ make_binned_schema <- function(...) {
     species_col       = "species",
     length_uid_col    = "length_uid",
     length_mm_col     = "LengthMM",
-    length_bin_col    = "LengthGroup",
+    length_bin_col    = "LengthBand",
     length_count_col  = "GroupCount",
     length_type_col   = "length_type"
   )
@@ -235,8 +235,8 @@ test_that("the API path takes the binned pair from api_field_map (GH #127)", {
       200,
       headers = "Content-Type: application/json",
       body = charToRaw(paste0(
-        '[{"InterviewID":1,"SpeciesCode":"walleye","LengthGroup":"300-350","GroupCount":1},',
-        '{"InterviewID":1,"SpeciesCode":"walleye","LengthGroup":"350-400","GroupCount":5}]'
+        '[{"InterviewID":1,"SpeciesCode":"walleye","LengthBand":"300-350","GroupCount":1},',
+        '{"InterviewID":1,"SpeciesCode":"walleye","LengthBand":"350-400","GroupCount":5}]'
       ))
     )
   })
@@ -245,7 +245,7 @@ test_that("the API path takes the binned pair from api_field_map (GH #127)", {
   fm$release_lengths <- list(
     interview_uid = "InterviewID",
     species       = "SpeciesCode",
-    length_bin    = "LengthGroup",
+    length_bin    = "LengthBand",
     count         = "GroupCount"
   )
   conn <- make_api_conn(
@@ -273,7 +273,7 @@ test_that("an empty API response keeps the binned columns when the source has th
   fm$release_lengths <- list(
     interview_uid = "InterviewID",
     species       = "SpeciesCode",
-    length_bin    = "LengthGroup",
+    length_bin    = "LengthBand",
     count         = "GroupCount"
   )
   conn <- make_api_conn(

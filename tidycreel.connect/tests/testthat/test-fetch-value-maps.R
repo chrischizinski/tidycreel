@@ -19,7 +19,7 @@ make_coded_csv <- function(trip_types = c("1", "2", "1", "1")) {
     date          = as.Date("2024-06-01") + 0:3,
     catch_count   = c(3L, 0L, 4L, 1L),
     effort_hours  = c(2.5, 1.0, 3.0, 2.0),
-    TripType      = trip_types,
+    TripKind      = trip_types,
     stringsAsFactors = FALSE
   )
   counts <- data.frame(
@@ -32,7 +32,7 @@ make_coded_csv <- function(trip_types = c("1", "2", "1", "1")) {
     interview_uid = c(1L, 1L),
     species       = "walleye",
     catch_count   = c(2L, 1L),
-    CatchType     = c("H", "R"),
+    CatchCategory     = c("H", "R"),
     stringsAsFactors = FALSE
   )
   lengths <- data.frame(
@@ -66,12 +66,12 @@ make_coded_schema <- function(value_maps = NULL) {
     date_col          = "date",
     catch_col         = "catch_count",
     effort_col        = "effort_hours",
-    trip_status_col   = "TripType",
+    trip_status_col   = "TripKind",
     bank_anglers_col  = "bank_anglers",
     catch_uid_col     = "catch_uid",
     species_col       = "species",
     catch_count_col   = "catch_count",
-    catch_type_col    = "CatchType",
+    catch_type_col    = "CatchCategory",
     length_uid_col    = "length_uid",
     length_mm_col     = "length_mm",
     length_type_col   = "LengthType",

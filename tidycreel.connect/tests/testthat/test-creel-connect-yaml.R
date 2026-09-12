@@ -340,7 +340,7 @@ agency_columns_block <- c(
   "      catch_uid: CatchUID",
   "      species: SpeciesCode",
   "      catch_count: CatchCount",
-  "      catch_type: CatchType",
+  "      catch_type: CatchCategory",
   "      length_uid: LengthUID",
   "      length_mm: LengthMM",
   "      length_type: LengthType"

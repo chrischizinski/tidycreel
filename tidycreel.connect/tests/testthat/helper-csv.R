@@ -233,7 +233,7 @@ make_agency_csv <- function() {
     InterviewID = c(1L, 1L),
     SpeciesCode = c("walleye", "walleye"),
     CatchCount = c(2L, 1L),
-    CatchType = c("harvest", "release"),
+    CatchCategory = c("harvest", "release"),
     stringsAsFactors = FALSE
   )
   harvest_lengths <- data.frame(
