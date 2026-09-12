@@ -65,6 +65,19 @@ label_unknown_group <- function(x, column = NULL) {
              are pooled and cannot be told apart in the output.",
       "i" = "Rename the recorded category if the two must stay separate."
     ))
+    # Pooled for real, not just in the label. Marking the absences with the
+    # sentinel would keep them a separate group that merely PRINTS as
+    # "Unknown", so one recorded and one unrecorded fish in the same bin came
+    # out as two rows reading N = 1 and 50% each instead of one reading N = 2
+    # and 100%. Two rows carrying the same group label and different numbers is
+    # not a table anyone can read, and the warning above promises pooling.
+    if (is.factor(x)) {
+      x[is.na(x)] <- unknown_group_label()
+      return(droplevels(x))
+    }
+    x <- as.character(x)
+    x[is.na(x)] <- unknown_group_label()
+    return(x)
   }
   if (is.factor(x)) {
     x <- factor(x, levels = c(levels(x), unknown_group_sentinel()))
@@ -1777,6 +1790,19 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
 #'   in the same units as the length data (typically mm). Default \code{1}.
 #'
 #' @return A \code{data.frame} with class
+#' @section Unrecorded grouping values:
+#' A length record whose value for a \code{by} column was not recorded is
+#' reported under \code{"Unknown"}, sorted last, rather than dropped. Dropping
+#' it removed the record from the distribution entirely, taking its weight with
+#' it -- and a binned release row carries a \emph{count} rather than one fish,
+#' so six dropped rows cost eleven fish on the shipped example data. The
+#' ungrouped total was never affected, which is what kept this invisible.
+#'
+#' \code{"Unknown"} labels the absence; nothing is imputed and it is never a
+#' category anyone recorded. \code{sum(N)} equals the number of fish the
+#' lengths frame describes, grouped or not.
+#'
+#' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_length_freq", "data.frame")} and columns:
 #'   grouping columns (if any), \code{length_bin} (ordered factor),
 #'   \code{N} (integer, fish count per bin), \code{percent} (numeric,
@@ -1970,7 +1996,14 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
     stringsAsFactors = FALSE
   )
   for (v in by_vars) {
-    records_df[[v]] <- group_lists[[v]]
+    # `aggregate(by = )` drops every row whose grouping value is NA, so a length
+    # record with no recorded value for a `by` column left the distribution
+    # entirely -- taking its weight with it. Measured on the shipped example
+    # data, blanking `species` on 6 of 20 length rows took the total from 37
+    # fish to 26: more than six, because a binned release row carries a COUNT
+    # rather than one fish. The ungrouped total was unaffected, which is what
+    # kept this invisible (GH #337).
+    records_df[[v]] <- label_unknown_group(group_lists[[v]], v)
   }
 
   # Aggregate: N = sum(weight) per (by_vars + .length_bin)
@@ -1981,9 +2014,24 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
   n_agg <- stats::aggregate(records_df$.weight, by = agg_groups, FUN = sum)
   names(n_agg)[ncol(n_agg)] <- "N"
 
-  # Sort ascending within each group: by lower bound then by-vars
-  sort_cols <- c(by_vars, ".lower")
-  n_agg <- n_agg[do.call(order, lapply(sort_cols, function(v) n_agg[[v]])), , drop = FALSE]
+  # Sort ascending within each group: by lower bound then by-vars, with the
+  # unrecorded group last rather than wherever "Unknown" happens to sort.
+  for (v in by_vars) {
+    n_agg[[v]] <- show_unknown_group(n_agg[[v]])
+  }
+  sort_keys <- c(
+    lapply(by_vars, function(v) unknown_last(n_agg[[v]])),
+    lapply(by_vars, function(v) n_agg[[v]]),
+    list(n_agg$.lower)
+  )
+  # Interleave each by-var's "unknown last" key with the value it orders, then
+  # the bin's lower bound, so a second grouping column cannot outrank the first.
+  ord <- unlist(
+    lapply(seq_along(by_vars), function(i) list(sort_keys[[i]], sort_keys[[length(by_vars) + i]])),
+    recursive = FALSE
+  )
+  ord <- c(ord, list(n_agg$.lower))
+  n_agg <- n_agg[do.call(order, ord), , drop = FALSE]
 
   # Keep only non-zero bins
   n_agg <- n_agg[n_agg$N > 0, , drop = FALSE]
@@ -2136,10 +2184,31 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #'   string. When \code{NULL} (the default) it is resolved from the design's
 #'   strata as described above.
 #'
+#' @section Count events that yield no share:
+#' A count event contributes an angler-boat share only when the boats were
+#' counted and the total is positive. Both exclusions are real -- an unrecorded
+#' count has no share to give, and a total of zero makes the ratio undefined
+#' while a negative one is a data error -- and both used to happen with no trace
+#' that the event had occurred.
+#'
+#' They are now counted in \code{n_unknown_boats} and
+#' \code{n_nonpositive_boats}, and
+#' the accounting closes:
+#'
+#' \preformatted{n_events + n_unknown_boats + n_nonpositive_boats
+#'   == count events in that month and day type}
+#'
+#' A month and day type whose every event was excluded keeps its row, reporting
+#' \code{NA} for \code{pct_angler_boats} rather than disappearing.
+#'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_boat_composition", "data.frame")} and columns:
 #'   \code{month} (full month name), \code{day_type}, \code{n_events}
-#'   (integer), \code{pct_angler_boats} (numeric, 1 decimal).
+#'   (integer, count events that yielded a share), \code{n_unknown_boats}
+#'   (integer, events excluded because a boat count was not recorded),
+#'   \code{n_nonpositive_boats} (integer, events excluded because the boat
+#'   total was zero or negative), \code{pct_angler_boats} (numeric, 1 decimal, \code{NA} when
+#'   \code{n_events} is 0).
 #'
 #' @examples
 #' counts_df <- data.frame(
@@ -2225,45 +2294,76 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
 
   ab <- counts[[ab_col]]
   nb <- counts[[nb_col]]
+  total_boats <- ab + nb
 
-  # Exclude rows where total boats == 0 (undefined ratio)
-  keep <- (ab + nb) > 0
-  ab <- ab[keep]
-  nb <- nb[keep]
-  month_chr <- month_chr[keep]
-  month_num <- month_num[keep]
-  day_type <- day_type[keep]
-
-  ratio <- ab / (ab + nb)
+  # A count event yields an angler-boat share only when the boats were counted
+  # and some were present. Both exclusions are real, and both used to happen
+  # invisibly.
+  #
+  # `keep <- (ab + nb) > 0` was the whole of it, and an NA in either column made
+  # that comparison NA. An NA subscript does not drop a row -- it selects a
+  # PHANTOM all-NA one (GH #324's shape) -- so the event survived the subset
+  # with an NA month and an NA day type, and `aggregate(by = )` then dropped it
+  # for having an NA grouping value. Two mechanisms chained, neither of them
+  # visible: on a 12-day fixture, three unrecorded boat counts took the event
+  # total to 9 and moved a reported share from 73.4% to 76.7% (GH #337).
+  #
+  # Nothing is subset away now. The counts are taken over every event and the
+  # share only over the usable ones, so no month or day type can disappear with
+  # the events it happened to contain.
+  # `total_boats <= 0`, not `== 0`. A negative count is a data error, and with
+  # `ab = -2, nb = 1` the total is -1 -- non-zero, so an equality test calls it
+  # usable and it yields a share of 200%. The old `keep <- (ab + nb) > 0`
+  # excluded it; restoring that test is what keeps an impossible percentage out
+  # of the table.
+  unknown_boats <- is.na(total_boats)
+  nonpositive_boats <- !unknown_boats & total_boats <= 0
+  usable <- !unknown_boats & !nonpositive_boats
 
   working <- data.frame(
     month = month_chr,
     month_num = month_num,
     day_type = day_type,
-    ratio = ratio,
+    ratio = ifelse(usable, ab / total_boats, NA_real_),
+    usable = usable,
+    unknown_boats = unknown_boats,
+    nonpositive_boats = nonpositive_boats,
     stringsAsFactors = FALSE
   )
 
-  # Aggregate: mean ratio and count of events per month x day_type
-  agg_mean <- stats::aggregate(
-    working$ratio,
-    by = list(month = working$month, day_type = working$day_type),
-    FUN = mean
-  )
-  names(agg_mean)[names(agg_mean) == "x"] <- "mean_ratio"
+  group_by <- list(month = working$month, day_type = working$day_type)
 
+  # Counts over every event, usable or not, so no group can disappear.
   agg_n <- stats::aggregate(
-    working$ratio,
-    by = list(month = working$month, day_type = working$day_type),
-    FUN = length
+    data.frame(
+      n_events        = working$usable,
+      n_unknown_boats = working$unknown_boats,
+      n_nonpositive_boats = working$nonpositive_boats
+    ),
+    by  = group_by,
+    FUN = sum
   )
-  names(agg_n)[names(agg_n) == "x"] <- "n_events"
 
-  result <- merge(agg_mean, agg_n, by = c("month", "day_type"))
+  usable_rows <- working[working$usable, , drop = FALSE]
+  if (nrow(usable_rows) > 0L) {
+    agg_mean <- stats::aggregate(
+      usable_rows$ratio,
+      by = list(month = usable_rows$month, day_type = usable_rows$day_type),
+      FUN = mean
+    )
+    names(agg_mean)[names(agg_mean) == "x"] <- "mean_ratio"
+    # all.x so a month/day-type whose every event was excluded keeps its row.
+    result <- merge(agg_n, agg_mean, by = c("month", "day_type"), all.x = TRUE)
+  } else {
+    result <- agg_n
+    result$mean_ratio <- NA_real_
+  }
 
   # Convert to percent, round to 1 decimal
   result$pct_angler_boats <- round(result$mean_ratio * 100, 1)
   result$n_events <- as.integer(result$n_events)
+  result$n_unknown_boats <- as.integer(result$n_unknown_boats)
+  result$n_nonpositive_boats <- as.integer(result$n_nonpositive_boats)
   result$mean_ratio <- NULL
 
   # Merge sort key and order by month then day_type

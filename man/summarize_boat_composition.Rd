@@ -21,7 +21,11 @@ strata as described above.}
 A \code{data.frame} with class
 \code{c("creel_summary_boat_composition", "data.frame")} and columns:
 \code{month} (full month name), \code{day_type}, \code{n_events}
-(integer), \code{pct_angler_boats} (numeric, 1 decimal).
+(integer, count events that yielded a share), \code{n_unknown_boats}
+(integer, events excluded because a boat count was not recorded),
+\code{n_nonpositive_boats} (integer, events excluded because the boat
+total was zero or negative), \code{pct_angler_boats} (numeric, 1 decimal, \code{NA} when
+\code{n_events} is 0).
 }
 \description{
 Computes the percentage of boats that are angler boats from raw count data,
@@ -35,6 +39,25 @@ column, which warns when the design declares more than one.
 Count-based summary, not interview-weighted. Rows where
 \code{angler_boats + non_ang_boats == 0} are excluded from ratio computation.
 }
+\section{Count events that yield no share}{
+
+A count event contributes an angler-boat share only when the boats were
+counted and the total is positive. Both exclusions are real -- an unrecorded
+count has no share to give, and a total of zero makes the ratio undefined
+while a negative one is a data error -- and both used to happen with no trace
+that the event had occurred.
+
+They are now counted in \code{n_unknown_boats} and
+\code{n_nonpositive_boats}, and
+the accounting closes:
+
+\preformatted{n_events + n_unknown_boats + n_nonpositive_boats
+  == count events in that month and day type}
+
+A month and day type whose every event was excluded keeps its row, reporting
+\code{NA} for \code{pct_angler_boats} rather than disappearing.
+}
+
 \examples{
 counts_df <- data.frame(
   date         = as.Date(c("2024-05-01", "2024-05-04",
