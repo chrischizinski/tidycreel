@@ -117,9 +117,13 @@ Default 0.95.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>data.frame</code> with class
 <code>c("creel_summary_cws_rates", "data.frame")</code> and columns:
-grouping columns (if any), <code>N</code> (integer, interviews per group),
-<code>mean_rate</code> (numeric, mean fish/angler-hour),
-<code>se</code> (numeric, standard error), <code>ci_lower</code>, <code>ci_upper</code>.</p>
+grouping columns (if any), <code>N</code> (integer, interviews per group that
+produced a rate), <code>n_unknown_target</code> (integer, interviews excluded
+because their sought species was not recorded), <code>n_unknown_effort</code>
+(integer, interviews excluded because their effort was not recorded),
+<code>mean_rate</code> (numeric, mean fish/angler-hour, <code>NA</code> when
+<code>N</code> is 0), <code>se</code> (numeric, standard error), <code>ci_lower</code>,
+<code>ci_upper</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -141,14 +145,40 @@ the interview from the result entirely, so the remaining groups lost their
 own members and their rates were computed on the survivors – on the shipped
 example data that moved one group's mean rate from 0.393 to 0.762 while the
 table still looked complete.</p>
-<p>Whether that group's rate is knowable depends on which column is missing.
-Grouped by <code>angler_type</code> or method, the rate is determinable – the
-catch and effort are the interviews' own, and only the reporting group is
-unknown. Grouped by <strong>sought species</strong>, it is not: the numerator counts
-fish of the species the party was targeting, and with no target recorded
-there is nothing to count. Those rows report <code>NA</code> for
-<code>mean_rate</code>, <code>se</code> and the interval, never <code>0</code>, which would
-assert that the parties caught none of their target.</p>
+<p>A group with no interview left to rate – which happens when every one of its
+members had an unrecorded target, see below – reports <code>NA</code> for
+<code>mean_rate</code>, <code>se</code> and the interval, and keeps its row rather than
+disappearing.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="interviews-with-an-unrecorded-sought-species">Interviews with an unrecorded sought species<a class="anchor" aria-label="anchor" href="#interviews-with-an-unrecorded-sought-species"></a></h2>
+
+
+<p>These are <strong>excluded</strong> from the rate and counted in
+<code>n_unknown_target</code>.</p>
+<p>The numerator counts fish of the species the party was targeting. With no
+target recorded nothing in the catch table can match, so such an interview
+falls through the join exactly as a party that caught none of its target
+does, and it used to be scored the same way – as a zero. That asserted these
+parties caught none of something nobody recorded, and it dragged down every
+group they belonged to: on the shipped example data, blanking the sought
+species on 7 of 22 interviews took the boat group's mean rate from
+<code>0.393</code> to <code>0.254</code> with <code>N</code> unchanged at 9.</p>
+<p>Excluding them makes the estimand <strong>the rate among parties with a
+known target</strong>. That equals the rate among all parties only if the target went
+unrecorded independently of what was caught, which is an assumption about the
+data rather than about the code – so <code>n_unknown_target</code> is reported
+beside every rate and a reader can judge it. A party that genuinely caught
+none of a <em>recorded</em> target is a real zero and still counts, per
+<code><a href="add_catch.html">add_catch</a></code>.</p>
+<p>An interview whose <strong>effort</strong> was not recorded is treated the same way
+and counted in <code>n_unknown_effort</code>. A rate needs an effort to divide by,
+and one unrecorded effort used to turn the whole group's mean into
+<code>NA</code> while <code>N</code> went on counting it. The two counts are mutually
+exclusive, target first, so an interview missing both is counted once.</p>
+<p><code>N</code> therefore counts the interviews that produced a rate.
+<code>N + n_unknown_target + n_unknown_effort</code> is the number of interviews
+in the group, less any excluded for zero effort.</p>
 <p>A column holding both unrecorded values and the literal value
 <code>"Unknown"</code> warns: the two are pooled into one row and cannot be told
 apart in the output.</p>
@@ -206,10 +236,14 @@ apart in the output.</p>
 <span class="r-in"><span>  species <span class="op">=</span> <span class="va">species</span>, count <span class="op">=</span> <span class="va">count</span>, catch_type <span class="op">=</span> <span class="va">catch_type</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">summarize_cws_rates</span><span class="op">(</span><span class="va">d</span>, by <span class="op">=</span> <span class="va">species_sought</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   species_sought  N mean_rate        se    ci_lower  ci_upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1           bass  6 0.2083333 0.2083333 -0.32720455 0.7438712</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2        panfish  5 0.4666667 0.4666667 -0.82900772 1.7623410</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3        walleye 11 0.7835498 0.3359583  0.03498793 1.5321116</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   species_sought  N n_unknown_target n_unknown_effort mean_rate        se</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1           bass  6                0                0 0.2083333 0.2083333</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        panfish  5                0                0 0.4666667 0.4666667</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        walleye 11                0                0 0.7835498 0.3359583</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      ci_lower  ci_upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.32720455 0.7438712</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 -0.82900772 1.7623410</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.03498793 1.5321116</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

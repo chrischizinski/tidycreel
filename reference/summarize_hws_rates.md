@@ -39,8 +39,11 @@ summarize_hws_rates(design, by = NULL, conf_level = 0.95)
 
 A `data.frame` with class `c("creel_summary_hws_rates", "data.frame")`
 and columns: grouping columns (if any), `N` (integer, interviews per
-group), `mean_rate` (numeric, mean fish/angler-hour), `se` (numeric,
-standard error), `ci_lower`, `ci_upper`.
+group that produced a rate), `n_unknown_target` (integer, interviews
+excluded because their sought species was not recorded),
+`n_unknown_effort` (integer, interviews excluded because their effort
+was not recorded), `mean_rate` (numeric, mean fish/angler-hour, `NA`
+when `N` is 0), `se` (numeric, standard error), `ci_lower`, `ci_upper`.
 
 ## Details
 
@@ -63,14 +66,42 @@ their own members and their rates were computed on the survivors – on
 the shipped example data that moved one group's mean rate from 0.393 to
 0.762 while the table still looked complete.
 
-Whether that group's rate is knowable depends on which column is
-missing. Grouped by `angler_type` or method, the rate is determinable –
-the catch and effort are the interviews' own, and only the reporting
-group is unknown. Grouped by **sought species**, it is not: the
-numerator counts fish of the species the party was targeting, and with
-no target recorded there is nothing to count. Those rows report `NA` for
-`mean_rate`, `se` and the interval, never `0`, which would assert that
-the parties caught none of their target.
+A group with no interview left to rate – which happens when every one of
+its members had an unrecorded target, see below – reports `NA` for
+`mean_rate`, `se` and the interval, and keeps its row rather than
+disappearing.
+
+## Interviews with an unrecorded sought species
+
+These are **excluded** from the rate and counted in `n_unknown_target`.
+
+The numerator counts fish of the species the party was targeting. With
+no target recorded nothing in the catch table can match, so such an
+interview falls through the join exactly as a party that caught none of
+its target does, and it used to be scored the same way – as a zero. That
+asserted these parties caught none of something nobody recorded, and it
+dragged down every group they belonged to: on the shipped example data,
+blanking the sought species on 7 of 22 interviews took the boat group's
+mean rate from `0.393` to `0.254` with `N` unchanged at 9.
+
+Excluding them makes the estimand **the rate among parties with a known
+target**. That equals the rate among all parties only if the target went
+unrecorded independently of what was caught, which is an assumption
+about the data rather than about the code – so `n_unknown_target` is
+reported beside every rate and a reader can judge it. A party that
+genuinely caught none of a *recorded* target is a real zero and still
+counts, per
+[`add_catch`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md).
+
+An interview whose **effort** was not recorded is treated the same way
+and counted in `n_unknown_effort`. A rate needs an effort to divide by,
+and one unrecorded effort used to turn the whole group's mean into `NA`
+while `N` went on counting it. The two counts are mutually exclusive,
+target first, so an interview missing both is counted once.
+
+`N` therefore counts the interviews that produced a rate.
+`N + n_unknown_target + n_unknown_effort` is the number of interviews in
+the group, less any excluded for zero effort.
 
 A column holding both unrecorded values and the literal value
 `"Unknown"` warns: the two are pooled into one row and cannot be told
@@ -131,8 +162,12 @@ d <- add_catch(d, example_catch,
   species = species, count = count, catch_type = catch_type
 )
 summarize_hws_rates(d, by = species_sought)
-#>   species_sought  N mean_rate        se   ci_lower  ci_upper
-#> 1           bass  6 0.1250000 0.1250000 -0.1963227 0.4463227
-#> 2        panfish  5 0.2666667 0.2666667 -0.4737187 1.0070520
-#> 3        walleye 11 0.7943723 0.1979076  0.3534067 1.2353379
+#>   species_sought  N n_unknown_target n_unknown_effort mean_rate        se
+#> 1           bass  6                0                0 0.1250000 0.1250000
+#> 2        panfish  5                0                0 0.2666667 0.2666667
+#> 3        walleye 11                0                0 0.7943723 0.1979076
+#>     ci_lower  ci_upper
+#> 1 -0.1963227 0.4463227
+#> 2 -0.4737187 1.0070520
+#> 3  0.3534067 1.2353379
 ```

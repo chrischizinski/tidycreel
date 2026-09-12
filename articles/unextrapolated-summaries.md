@@ -238,10 +238,14 @@ fishing pressure across the survey period.
 ``` r
 
 summarize_cws_rates(design, by = species_sought)
-#>   species_sought  N  mean_rate         se    ci_lower  ci_upper
-#> 1           bass  6 0.05208333 0.05208333 -0.08180114 0.1859678
-#> 2        panfish  5 0.23333333 0.23333333 -0.41450386 0.8811705
-#> 3        walleye 11 0.46158009 0.23247889 -0.05641517 0.9795753
+#>   species_sought  N n_unknown_target n_unknown_effort  mean_rate         se
+#> 1           bass  6                0                0 0.05208333 0.05208333
+#> 2        panfish  5                0                0 0.23333333 0.23333333
+#> 3        walleye 11                0                0 0.46158009 0.23247889
+#>      ci_lower  ci_upper
+#> 1 -0.08180114 0.1859678
+#> 2 -0.41450386 0.8811705
+#> 3 -0.05641517 0.9795753
 ```
 
 ### CWS Rates Collapsed Across All Groupings
@@ -249,8 +253,8 @@ summarize_cws_rates(design, by = species_sought)
 ``` r
 
 summarize_cws_rates(design, by = NULL)
-#>    N mean_rate        se   ci_lower  ci_upper
-#> 1 22 0.2980249 0.1298807 0.02792314 0.5681266
+#>    N n_unknown_target n_unknown_effort mean_rate        se   ci_lower  ci_upper
+#> 1 22                0                0 0.2980249 0.1298807 0.02792314 0.5681266
 ```
 
 ### HWS Rates
@@ -258,10 +262,14 @@ summarize_cws_rates(design, by = NULL)
 ``` r
 
 summarize_hws_rates(design, by = species_sought)
-#>   species_sought  N mean_rate        se    ci_lower  ci_upper
-#> 1           bass  6 0.0312500 0.0312500 -0.04908068 0.1115807
-#> 2        panfish  5 0.1333333 0.1333333 -0.23685935 0.5035260
-#> 3        walleye 11 0.3887987 0.1322997  0.09401668 0.6835807
+#>   species_sought  N n_unknown_target n_unknown_effort mean_rate        se
+#> 1           bass  6                0                0 0.0312500 0.0312500
+#> 2        panfish  5                0                0 0.1333333 0.1333333
+#> 3        walleye 11                0                0 0.3887987 0.1322997
+#>      ci_lower  ci_upper
+#> 1 -0.04908068 0.1115807
+#> 2 -0.23685935 0.5035260
+#> 3  0.09401668 0.6835807
 ```
 
 **Interpretation guidance:** CWS and HWS rates \> 1.0 are possible when
