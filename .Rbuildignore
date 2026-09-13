@@ -128,3 +128,4 @@
 ^AUDIT-.*\.md$
 ^TODO-.*\.md$
 ^cheatsheet$
+^cran-comments\.md$

@@ -4616,7 +4616,7 @@ Nebraska or the Great Plains. v2.1.0 is named for the Sauger
 # tidycreel 1.0.0 (2026-03-31)
 
 * Launched the pkgdown documentation site at
-  https://chrischizinski.github.io/tidycreel with a custom Bootstrap 5 theme,
+  https://chrischizinski.com/tidycreel with a custom Bootstrap 5 theme,
   full function reference index (46 exports + 15 datasets), and a
   workflow-driven navbar.
 

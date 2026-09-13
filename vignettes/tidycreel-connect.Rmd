@@ -37,15 +37,20 @@ deliberately leaves out of scope:
 
 ## Installation
 
-tidycreel.connect is available from GitHub:
+tidycreel.connect lives in a subdirectory of the tidycreel repository rather
+than a repository of its own, so both installers need to be told where to look:
 
 ```{r install}
 # Using remotes
-remotes::install_github("chrischizinski/tidycreel.connect")
+remotes::install_github("chrischizinski/tidycreel", subdir = "tidycreel.connect")
 
 # Or using pak
-pak::pak("chrischizinski/tidycreel.connect")
+pak::pak("chrischizinski/tidycreel/tidycreel.connect")
 ```
+
+It is not on CRAN, and it requires tidycreel 7.0.0 or newer: identifier columns
+are normalised to character on both sides of the boundary, so an older tidycreel
+would hand the design numeric ids for the same survey.
 
 ## How tidycreel.connect relates to tidycreel
 
@@ -150,7 +155,8 @@ interviews <- fetch_interviews(con)
 
 ## More information
 
-- Source and documentation: `chrischizinski/tidycreel.connect` on GitHub
+- Source and documentation: `chrischizinski/tidycreel`, under `tidycreel.connect/`
 - Main package: <https://github.com/chrischizinski/tidycreel>
-- Bug reports and feature requests: open an issue on the tidycreel.connect
-  repository.
+- Bug reports and feature requests: both packages share one issue tracker,
+  <https://github.com/chrischizinski/tidycreel/issues> — there is no separate
+  tidycreel.connect repository to open an issue on.
