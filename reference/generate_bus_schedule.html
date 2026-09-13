@@ -161,6 +161,30 @@ designs; currently unused as the function is deterministic).</p></dd>
 <code><a href="write_schedule.html">write_schedule()</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">sched</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  start_date    <span class="op">=</span> <span class="st">"2024-06-01"</span>,</span></span>
+<span class="r-in"><span>  end_date      <span class="op">=</span> <span class="st">"2024-06-14"</span>,</span></span>
+<span class="r-in"><span>  n_periods     <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>  sampling_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.3</span>, weekend <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  seed          <span class="op">=</span> <span class="fl">42</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">frame</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  site   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  p_site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">generate_bus_schedule</span><span class="op">(</span><span class="va">sched</span>, <span class="va">frame</span>, site <span class="op">=</span> <span class="va">site</span>, p_site <span class="op">=</span> <span class="va">p_site</span>, crew <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 4</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   site  p_site p_period inclusion_prob</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> A        0.4        2            0.8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> B        0.3        2            0.6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> C        0.3        2            0.6</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

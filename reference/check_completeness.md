@@ -78,3 +78,42 @@ Other "Reporting & Diagnostics":
 [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md),
 [`validation_report()`](https://chrischizinski.com/tidycreel/reference/validation_report.md),
 [`write_estimates()`](https://chrischizinski.com/tidycreel/reference/write_estimates.md)
+
+## Examples
+
+``` r
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+check_completeness(design)
+#> 
+#> ── Completeness Report ─────────────────────────────────────────────────────────
+#> Survey type: instantaneous | n_min threshold: 10
+#> ✖ Completeness issues found
+#> 
+#> 
+#> ── Missing Days ──
+#> 
+#> ✔ No missing sampling days
+#> 
+#> ── Low-n Strata (threshold: 10) ──
+#> 
+#> ! 1 stratum/strata below n_min=10
+#> 
+#> ── Refusal Rates ──
+#> 
+#> (not recorded or not applicable)
+```

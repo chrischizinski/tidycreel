@@ -92,7 +92,8 @@ head(example_aerial_glmm_counts)
 #> 5 2024-06-06  weekday         5              7
 #> 6 2024-06-06  weekday        15             10
 
-if (FALSE) { # \dontrun{
+# The workflow below fits a GLMM, so it needs lme4 (a Suggests).
+if (rlang::is_installed("lme4")) {
 # Build an aerial design and estimate effort with GLMM correction
 aerial_cal <- data.frame(
   date = unique(example_aerial_glmm_counts$date),
@@ -112,5 +113,26 @@ design <- creel_design(
 design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
-} # }
+}
+#> Warning: `counts` has 36 repeated sampling units, with no count time to tell them apart.
+#> ℹ The repeated rows are keyed on date and day_type.
+#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
+#>   are repeat counts, or `unit_cols` if they are distinct units.
+#> Warning: No weights or probabilities supplied, assuming equal probability
+#> Warning: iteration limit reached
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: aerial_glmm_total
+#> Variance: delta
+#> Confidence level: 95%
+#> model: 32.98 (known, but se is `NA`)
+#> visibility: NA (unknown, so se is `NA`)
+#> angler_ratio: 0 (known, but se is `NA`)
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1     379.    NA         NA        NA       NA       NA    48
 ```

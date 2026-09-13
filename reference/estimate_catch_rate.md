@@ -317,9 +317,9 @@ print(result)
 #> Unit: fish/party-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     1.06 0.171    0.722     1.39    20
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1    0.610 0.0734    0.466    0.754    20
 
 # Grouped by day_type
 result_grouped <- estimate_catch_rate(design_with_interviews, by = day_type)
@@ -342,9 +342,9 @@ print(result_grouped)
 #> Unit: fish/party-hour
 #> 
 #> # A tibble: 1 × 6
-#>   day_type estimate    se ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday      1.06 0.171    0.722     1.39    20
+#>   day_type estimate     se ci_lower ci_upper     n
+#>   <chr>       <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1 weekday     0.610 0.0734    0.466    0.754    20
 
 # Custom confidence level
 result_90 <- estimate_catch_rate(design_with_interviews, conf_level = 0.90)

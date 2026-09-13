@@ -6,8 +6,8 @@ confidence interval is shown. For grouped estimates (when `by` was
 supplied to the estimation function) each group level gets its own
 point, colour-coded and positioned along the x-axis.
 
-Requires the **ggplot2** package (listed in `Suggests`). Install it with
-`install.packages("ggplot2")` if needed.
+Returns a **ggplot2** object, which the package imports, so nothing
+extra needs installing.
 
 ## Usage
 
@@ -30,9 +30,13 @@ autoplot(object, title = NULL, theme = c("default", "creel"), ...)
 - theme:
 
   Character string selecting the plot theme. Use `"default"` (default)
-  to preserve the current ggplot styling or `"creel"` to apply
+  for
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html),
+  or `"creel"` for
   [`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
-  and package-standard colours.
+  and package-standard colours. Neither inherits a theme set with
+  [`ggplot2::theme_set()`](https://ggplot2.tidyverse.org/reference/get_theme.html);
+  add your own with `+` if you need it.
 
 - ...:
 
@@ -58,11 +62,37 @@ Other "Visualisation":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+
 est <- estimate_effort(design)
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> This warning is displayed once per session.
 ggplot2::autoplot(est)
+
 
 est_grp <- estimate_effort(design, by = day_type)
 ggplot2::autoplot(est_grp)
-} # }
+
 ```

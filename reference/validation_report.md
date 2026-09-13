@@ -120,7 +120,6 @@ Other "Reporting & Diagnostics":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 counts <- data.frame(
   date     = as.Date(c("2024-06-01", "2024-06-02")),
   day_type = c("weekday", "weekend"),
@@ -133,5 +132,31 @@ interviews <- data.frame(
 )
 rpt <- validation_report(counts, interviews, species_col = "species")
 print(rpt)
-} # }
+#> 
+#> ── Creel Validation Report ─────────────────────────────────────────────────────
+#> Overall: FAIL
+#> 
+#> 
+#> ── Table: counts ──
+#> 
+#> ✔ type: all ok (3p / 0w / 0f)
+#> ⚠ na_rate: count (2p / 1w / 0f)
+#> ✔ date_range: all ok (1p / 0w / 0f)
+#> ✔ empty_strings: all ok (1p / 0w / 0f)
+#> ✔ negative_values: all ok (1p / 0w / 0f)
+#> 
+#> 
+#> ── Table: interviews ──
+#> 
+#> ✔ type: all ok (3p / 0w / 0f)
+#> ✔ na_rate: all ok (3p / 0w / 0f)
+#> ✔ date_range: all ok (1p / 0w / 0f)
+#> ⚠ empty_strings: species (0p / 1w / 0f)
+#> ✖ negative_values: fish_kept (0p / 0w / 1f)
+#> 
+#> 
+#> ── Table: species ──
+#> 
+#> ⚠ species_coverage: 1 / 2 matched (50.0%) (0p / 1w / 0f)
+#> 
 ```

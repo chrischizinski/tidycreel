@@ -71,9 +71,41 @@ Other "Reporting & Diagnostics":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-result <- season_summary(list(effort = my_effort, cpue = my_cpue))
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+
+result <- season_summary(list(
+  effort     = estimate_effort(design),
+  catch_rate = estimate_catch_rate(design)
+))
+#> ℹ Using complete trips for CPUE estimation
+#>   (n=17, 77.3% of 22 interviews) [default]
+#> Warning: Small sample size for CPUE estimation.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
 result$table
-write_schedule(result$table, "season_2024.csv")
-} # }
+#> # A tibble: 1 × 12
+#>   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower
+#>             <dbl>     <dbl>             <dbl>            <dbl>           <dbl>
+#> 1            372.      13.2              13.2                0            344.
+#> # ℹ 7 more variables: effort_ci_upper <dbl>, effort_n <int>,
+#> #   catch_rate_estimate <dbl>, catch_rate_se <dbl>, catch_rate_ci_lower <dbl>,
+#> #   catch_rate_ci_upper <dbl>, catch_rate_n <int>
+result$n_estimates
+#> [1] 2
 ```

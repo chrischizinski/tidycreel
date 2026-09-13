@@ -86,3 +86,36 @@ using the delta method. *Journal of Wildlife Management*, 71(3),
 
 [`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
 [`estimate_exploitation_rate`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
+
+## Examples
+
+``` r
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status, trip_duration = trip_duration
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+effort <- estimate_effort(design)
+estimate_angler_trips(effort, design)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: angler-trips
+#> Variance: delta
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 5
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1     161.  16.9     126.     197.    22
+```

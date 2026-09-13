@@ -181,8 +181,7 @@ exported with <code><a href="write_estimates.html">write_estimates()</a></code>.
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10L</span>, <span class="cn">NA_integer_</span><span class="op">)</span></span></span>
@@ -194,7 +193,33 @@ exported with <code><a href="write_estimates.html">write_estimates()</a></code>.
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">rpt</span> <span class="op">&lt;-</span> <span class="fu">validation_report</span><span class="op">(</span><span class="va">counts</span>, <span class="va">interviews</span>, species_col <span class="op">=</span> <span class="st">"species"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rpt</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Validation Report</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Overall: <span style="font-weight: bold;">FAIL</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Table: counts</span> ──</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ type: all ok (3p / 0w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ⚠ na_rate: count (2p / 1w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ date_range: all ok (1p / 0w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ empty_strings: all ok (1p / 0w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ negative_values: all ok (1p / 0w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Table: interviews</span> ──</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ type: all ok (3p / 0w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ na_rate: all ok (3p / 0w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ date_range: all ok (1p / 0w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ⚠ empty_strings: species (0p / 1w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✖ negative_values: fish_kept (0p / 0w / 1f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Table: species</span> ──</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ⚠ species_coverage: 1 / 2 matched (50.0%) (0p / 1w / 0f)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

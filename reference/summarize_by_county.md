@@ -69,23 +69,31 @@ Other "Reporting & Diagnostics":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Requires zipcodeR — install with: install.packages("zipcodeR")
-interviews_df <- data.frame(
-  interview_id     = 1:5,
-  zip_code         = c("68502", "68502", NA, "68508", NA),
-  stringsAsFactors = FALSE
+data(example_calendar)
+data(example_interviews)
+
+# The shipped interviews carry no zip code, so add one to demonstrate the
+# mapping. Two NAs are left in on purpose: an unmappable zip is reported as
+# "Unknown" rather than dropped.
+interviews_zip <- example_interviews
+interviews_zip$zip_code <- rep(
+  c("68502", "68508", NA), length.out = nrow(interviews_zip)
 )
-cal <- data.frame(
-  date     = as.Date(c("2024-05-01", "2024-05-02")),
-  day_type = c("weekday", "weekend")
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_interviews(design, interviews_zip,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
 )
-d <- suppressWarnings(
-  creel_design(cal, date = date, strata = day_type)
-)
-d <- suppressWarnings(
-  add_interviews(d, interviews_df)
-)
-summarize_by_county(d)
-} # }
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+
+summarize_by_county(design)
+#>             county  n  pct
+#> 1 Lancaster County 15 68.2
+#> 2          Unknown  7 31.8
 ```

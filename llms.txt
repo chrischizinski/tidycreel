@@ -14,7 +14,12 @@ without managing survey-package internals directly.
 
 ## Installation
 
-Install the development version from GitHub:
+``` r
+
+install.packages("tidycreel")
+```
+
+Or the development version from GitHub:
 
 ``` r
 

@@ -104,8 +104,10 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Install the development version from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidycreel"</span><span class="op">)</span></span></code></pre></div>
+<p>Or the development version from GitHub:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span><span class="op">)</span></span>
 <span></span>
@@ -228,7 +230,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <div class="section level3">
 <h3 id="instantaneous-count-survey">Instantaneous Count Survey<a class="anchor" aria-label="anchor" href="#instantaneous-count-survey"></a>
 </h3>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. Define survey structure with tidy selectors</span></span>
@@ -243,7 +245,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <div class="section level3">
 <h3 id="bus-route-survey">Bus-Route Survey<a class="anchor" aria-label="anchor" href="#bus-route-survey"></a>
 </h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Probability-proportional-to-size site selection</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
 <span>  <span class="va">example_calendar</span>,</span>
@@ -603,7 +605,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <p><strong>Writing a reproducible example</strong></p>
 <p>The single most useful thing you can include is a short, self-contained R snippet that demonstrates the problem without needing your real data. Use the package’s built-in example datasets (<code>example_calendar</code>, <code>example_counts</code>, <code>example_interviews</code>, etc.) wherever possible, or create a small data frame that triggers the issue.</p>
 <p>A good example looks like this:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
@@ -662,7 +664,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Christopher Chizinski <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0001-9294-2588" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>Christopher Chizinski <br><small class="roles"> Author, maintainer, copyright holder </small> <a href="https://orcid.org/0000-0001-9294-2588" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 </ul>
 </div>
 

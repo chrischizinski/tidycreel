@@ -31,7 +31,6 @@ object containing raw markdown.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 sched <- generate_schedule(
   start_date = "2024-06-01",
   end_date = "2024-07-31",
@@ -41,5 +40,23 @@ sched <- generate_schedule(
 )
 # In an R Markdown chunk, just print the object:
 sched
-} # }
+#> # A creel_schedule: 24 rows x 3 cols (24 days, 1 periods)
+#> June 2024
+#> | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |
+#> |----------|----------|----------|----------|----------|----------|----------|
+#> |          |          |          |          |          |          | WEEKE    |
+#> | WEEKE    | 03       | WEEKD    | WEEKD    | 06       | WEEKD    | 08       |
+#> | WEEKE    | 10       | 11       | 12       | 13       | 14       | WEEKE    |
+#> | 16       | 17       | 18       | 19       | 20       | 21       | WEEKE    |
+#> | WEEKE    | 24       | 25       | 26       | 27       | WEEKD    | WEEKE    |
+#> | WEEKE    |          |          |          |          |          |          |
+#> 
+#> July 2024
+#> | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |
+#> |----------|----------|----------|----------|----------|----------|----------|
+#> |          | 01       | 02       | 03       | 04       | WEEKD    | 06       |
+#> | 07       | WEEKD    | WEEKD    | WEEKD    | 11       | 12       | 13       |
+#> | WEEKE    | WEEKD    | 16       | 17       | 18       | 19       | 20       |
+#> | WEEKE    | WEEKD    | WEEKD    | 24       | 25       | WEEKD    | WEEKE    |
+#> | 28       | 29       | WEEKD    | 31       |          |          |          |
 ```

@@ -86,10 +86,36 @@ Other "Planning & Sample Size":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Compare instantaneous vs bus-route effort estimates from two designs
-est1 <- estimate_effort(design_a)
-est2 <- estimate_effort(design_b)
-compare_designs(list(instantaneous = est1, bus_route = est2))
-} # }
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+
+# Two estimates from the same design: overall, and split by stratum. In
+# practice these would come from designs built on different survey types.
+est_all <- estimate_effort(design)
+est_grp <- estimate_effort(design, by = day_type)
+
+compare_designs(list(overall = est_all, by_day_type = est_grp))
+#> 
+#> ── Survey Design Comparison ────────────────────────────────────────────────────
+#> 3 row(s), 2 design(s)
+#> 
+#>        design estimate    se    rse ci_lower ci_upper ci_width  n day_type
+#> 1     overall      372 13.18 0.0354      344      401     57.4 14       NA
+#> 2 by_day_type      171  9.67 0.0567      150      192     42.2 10  weekday
+#> 3 by_day_type      202  8.95 0.0443      182      221     39.0  4  weekend
 ```

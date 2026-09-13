@@ -79,3 +79,27 @@ Other "Scheduling":
 [`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md),
 [`validate_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schedule.md),
 [`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
+
+## Examples
+
+``` r
+sched <- generate_schedule(
+  start_date    = "2024-06-01",
+  end_date      = "2024-06-14",
+  n_periods     = 1,
+  sampling_rate = c(weekday = 0.3, weekend = 0.6),
+  seed          = 42
+)
+frame <- data.frame(
+  site   = c("A", "B", "C"),
+  p_site = c(0.4, 0.3, 0.3),
+  stringsAsFactors = FALSE
+)
+generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 2)
+#> # A tibble: 3 × 4
+#>   site  p_site p_period inclusion_prob
+#>   <chr>  <dbl>    <dbl>          <dbl>
+#> 1 A        0.4        2            0.8
+#> 2 B        0.3        2            0.6
+#> 3 C        0.3        2            0.6
+```

@@ -254,8 +254,7 @@ one; it is not the source of the per-stratum model used here.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_camera_counts</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Impute missing counts using the default Poisson GLM</span></span></span>
@@ -267,6 +266,8 @@ one; it is not the source of the per-stratum model used here.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Inspect imputed rows</span></span></span>
 <span class="r-in"><span><span class="va">imputed</span><span class="op">[</span><span class="va">imputed</span><span class="op">$</span><span class="va">.imputed</span>, <span class="op">]</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type ingress_count   camera_status .imputed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2024-06-11  weekday            51 battery_failure     TRUE</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Pass imputed data directly into a camera design</span></span></span>
 <span class="r-in"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
@@ -278,7 +279,7 @@ one; it is not the source of the per-stratum model used here.</p>
 <span class="r-in"><span>  survey_type <span class="op">=</span> <span class="st">"camera"</span>, camera_mode <span class="op">=</span> <span class="st">"counter"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">imputed</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No weights or probabilities supplied, assuming equal probability</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

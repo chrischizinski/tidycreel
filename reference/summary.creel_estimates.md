@@ -89,9 +89,30 @@ Other "Reporting & Diagnostics":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+
 est <- estimate_effort(design)
 summary(est)
+#> -- Creel Survey Summary (Total | Taylor linearization | 95%) --
+#>  Estimate    SE CI Lower CI Upper  N
+#>     372.5 13.18    343.8    401.2 14
 as.data.frame(summary(est))
-} # }
+#>   Estimate    SE CI Lower CI Upper  N
+#> 1    372.5 13.18    343.8    401.2 14
 ```

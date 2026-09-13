@@ -254,7 +254,6 @@ Other "Survey Design":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 library(tidycreel)
 data(example_camera_counts)
 data(example_camera_interviews)
@@ -273,12 +272,31 @@ ops <- example_camera_counts[
   example_camera_counts$camera_status == "operational",
 ]
 design <- add_counts(design, ops)
+#> Warning: No weights or probabilities supplied, assuming equal probability
 
 # Ratio calibration using interview hours. `example_camera_interviews` has no
 # party-size column, so this warns and reports an unknown unit: the estimate
 # is in whatever unit `hours_fished` holds, which the package cannot tell.
 est <- est_effort_camera(design, interviews = example_camera_interviews)
+#> Warning: Camera ratio calibration cannot tell angler-hours from party-hours.
+#> ✖ hours_fished is a caller-supplied column and nothing on this path normalises
+#>   it by party size.
+#> ℹ Pass `n_anglers` -- a column in `interviews`, or a constant party size -- to
+#>   make the unit derivable.
+#> ℹ The estimate is returned with an unknown unit until then.
 print(est)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: camera_ratio
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Count-sampling SE: 4.277 (included in se)
+#> Calibration SE: 11.71 (included in se)
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1     111.  12.5       12.5         0     81.4     140.     9
 
 # With party sizes the function does the normalisation itself, so the result
 # is angler-hours and is labelled as such.
@@ -286,5 +304,17 @@ ints <- example_camera_interviews
 ints$party_size <- 2
 est_ah <- est_effort_camera(design, interviews = ints, n_anglers = "party_size")
 print(est_ah)
-} # }
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: camera_ratio
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Unit: angler-hours
+#> Count-sampling SE: 8.555 (included in se)
+#> Calibration SE: 23.41 (included in se)
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1     222.  24.9       24.9         0     163.     281.     9
 ```

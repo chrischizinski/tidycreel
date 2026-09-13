@@ -65,3 +65,13 @@ Other "Survey Design":
 [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
 [`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
 [`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+parties <- data.frame(effort = c(2.0, 3.0), n_anglers = c(2L, 3L))
+compute_angler_effort(parties, effort, n_anglers)
+#>   effort n_anglers .angler_effort
+#> 1      2         2              4
+#> 2      3         3              9
+```

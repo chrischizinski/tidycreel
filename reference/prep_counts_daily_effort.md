@@ -131,3 +131,23 @@ Other "Survey Design":
 [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
 [`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
 [`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+raw_counts <- data.frame(
+  sample_date  = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+  day_type     = c("weekday", "weekday", "weekend", "weekend"),
+  effort_kind  = c("bank", "bank", "bank", "bank"),
+  effort_value = c(15, 23, 45, 52)
+)
+prep_counts_daily_effort(raw_counts, date = sample_date, strata = day_type,
+                         effort_type = effort_kind, daily_effort = effort_value)
+#> # A tibble: 4 × 6
+#>   date       day_type effort_type daily_effort psu        correction_factor
+#>   <date>     <chr>    <chr>              <dbl> <date>                 <dbl>
+#> 1 2024-06-01 weekday  bank                  15 2024-06-01                 1
+#> 2 2024-06-02 weekday  bank                  23 2024-06-02                 1
+#> 3 2024-06-08 weekend  bank                  45 2024-06-08                 1
+#> 4 2024-06-09 weekend  bank                  52 2024-06-09                 1
+```

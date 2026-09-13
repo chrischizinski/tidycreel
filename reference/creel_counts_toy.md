@@ -63,7 +63,29 @@ Other "Example Datasets":
 
 ``` r
 data(creel_counts_toy)
-if (FALSE) { # \dontrun{
 validate_creel_data(counts = creel_counts_toy)
-} # }
+#> 
+#> ── Creel Data Validation ───────────────────────────────────────────────────────
+#> 11 pass | 1 warn | 0 fail
+#> 
+#> 
+#> ── Table: counts ──
+#> 
+#> ✔ date
+#> ✔ type: class: Date
+#> ✔ na_rate: 0 / 6 NA (0%)
+#> ✔ date_range: all within 1970-01-01 - 2100-12-31
+#> ✔ day_type
+#> ✔ type: class: character
+#> ✔ na_rate: 0 / 6 NA (0%)
+#> ✔ empty_strings: none
+#> ✔ section
+#> ✔ type: class: character
+#> ✔ na_rate: 0 / 6 NA (0%)
+#> ✔ empty_strings: none
+#> ! count
+#> ✔ type: class: integer
+#> ⚠ na_rate: 1 / 6 NA (17%)
+#> ✔ negative_values: none
+#> 
 ```

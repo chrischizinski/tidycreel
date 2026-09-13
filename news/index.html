@@ -67,6 +67,15 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
 <div class="section level3">
+<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<ul><li>
+<p>Every exported function now has a runnable example, and nothing is wrapped in <code>\dontrun{}</code>.</p>
+<p>Seventeen exported functions had no example at all, and fourteen help pages wrapped theirs in <code>\dontrun{}</code>. Most of those wrappers were not protecting anything: six ran as written once unwrapped, and the rest referenced objects that were never defined — <code>design_a</code>, <code>my_effort</code>, <code>counts_df</code> — so the block was a sketch rather than an example. One demonstrated writing a CSV into the user’s working directory.</p>
+<p>Examples that genuinely need a suggested package are guarded with <code>@examplesIf rlang::is_installed(...)</code> rather than hidden: <code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> needs lme4 and <code><a href="../reference/summarize_by_county.html">summarize_by_county()</a></code> needs zipcodeR. All 125 example topics run, each in under five seconds.</p>
+</li>
+<li><p><code>DESCRIPTION</code> cites the methods the estimators implement — Hoenig, Jones, Pollock, Robson and Wade (1997) <a href="doi:10.2307/2533116" class="uri">doi:10.2307/2533116</a> for roving catch rates and Kinloch, McGlennon, Nicoll and Pike (1997) <a href="doi:10.1016/s0165-7836(97)00068-4" class="uri">doi:10.1016/s0165-7836(97)00068-4</a> for bus-route designs — and records the maintainer as copyright holder. The README shows <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>.</p></li>
+</ul></div>
+<div class="section level3">
 <h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
 <ul><li>
 <p><code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> and <code><a href="../reference/simulate_creel_catch.html">simulate_creel_catch()</a></code> no longer leave the caller’s random number stream reset.</p>

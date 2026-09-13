@@ -2,7 +2,7 @@
 
 ## Authors
 
-- **Christopher Chizinski**. Author, maintainer.
+- **Christopher Chizinski**. Author, maintainer, copyright holder.
   [](https://orcid.org/0000-0001-9294-2588)
 
 ## Citation

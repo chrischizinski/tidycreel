@@ -123,6 +123,29 @@ that date).</p>
     <p>Preprocess camera ingress-egress timestamps to daily effort hours</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Camera timestamps: one row per angler arrival/departure pair.</span></span></span>
+<span class="r-in"><span><span class="va">ts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  survey_date  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span><span class="op">)</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  ingress_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01 06:00:00"</span>, <span class="st">"2024-06-01 09:00:00"</span>,</span></span>
+<span class="r-in"><span>      <span class="st">"2024-06-02 07:00:00"</span>, <span class="st">"2024-06-02 10:30:00"</span><span class="op">)</span>, tz <span class="op">=</span> <span class="st">"UTC"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  egress_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01 08:00:00"</span>, <span class="st">"2024-06-01 11:00:00"</span>,</span></span>
+<span class="r-in"><span>      <span class="st">"2024-06-02 09:00:00"</span>, <span class="st">"2024-06-02 13:00:00"</span><span class="op">)</span>, tz <span class="op">=</span> <span class="st">"UTC"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">preprocess_camera_timestamps</span><span class="op">(</span><span class="va">ts</span>, date_col <span class="op">=</span> <span class="st">"survey_date"</span>,</span></span>
+<span class="r-in"><span>                             ingress_col <span class="op">=</span> <span class="st">"ingress_time"</span>,</span></span>
+<span class="r-in"><span>                             egress_col <span class="op">=</span> <span class="st">"egress_time"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         date daily_effort_hours</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2024-06-01                4.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2024-06-02                4.5</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

@@ -97,8 +97,9 @@ estimated fish type (<code>catch</code>, <code>harvest</code>, or <code>release<
 
 <dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
 <dd><p>Character string selecting the plot theme. Use <code>"default"</code>
-(default) to preserve the current ggplot styling or <code>"creel"</code> to apply
-<code><a href="theme_creel.html">theme_creel()</a></code> and package-standard colours.</p></dd>
+(default) for <code><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">ggplot2::theme_bw()</a></code>, or <code>"creel"</code> for <code><a href="theme_creel.html">theme_creel()</a></code> and
+package-standard colours. Neither inherits a theme set with
+<code><a href="https://ggplot2.tidyverse.org/reference/get_theme.html" class="external-link">ggplot2::theme_set()</a></code>; add your own with <code>+</code> if you need it.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -122,10 +123,41 @@ estimated fish type (<code>catch</code>, <code>harvest</code>, or <code>release<
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_catch</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_lengths</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span></span>
+<span class="r-in"><span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>, harvest <span class="op">=</span> <span class="va">catch_kept</span>,</span></span>
+<span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
+<span class="r-in"><span><span class="co"># Species catch is required to group by species: length totals are scaled</span></span></span>
+<span class="r-in"><span><span class="co"># onto the reported catch, and only this table records it per species.</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_catch.html">add_catch</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_catch</span>,</span></span>
+<span class="r-in"><span>  catch_uid <span class="op">=</span> <span class="va">interview_id</span>, interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  species <span class="op">=</span> <span class="va">species</span>, count <span class="op">=</span> <span class="va">count</span>, catch_type <span class="op">=</span> <span class="va">catch_type</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_lengths.html">add_lengths</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_lengths</span>,</span></span>
+<span class="r-in"><span>  length_uid <span class="op">=</span> <span class="va">interview_id</span>, interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span></span>
+<span class="r-in"><span>  species <span class="op">=</span> <span class="va">species</span>, length <span class="op">=</span> <span class="va">length</span>, length_type <span class="op">=</span> <span class="va">length_type</span>,</span></span>
+<span class="r-in"><span>  count <span class="op">=</span> <span class="va">count</span>, release_format <span class="op">=</span> <span class="st">"binned"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">ld</span> <span class="op">&lt;-</span> <span class="fu"><a href="est_length_distribution.html">est_length_distribution</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span>, bin_width <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Length totals were rescaled onto the reported catch.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Measured fish (weighted): 37; reported: 93 -- a factor of 2.51.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> <span style="color: #00BB00;">estimate</span>, <span style="color: #00BB00;">se</span> and the confidence bounds describe the REPORTED catch, estimated</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   from the measured subsample. Shares (<span style="color: #00BB00;">percent</span>) are unaffected.</span>
 <span class="r-in"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">ld</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-plt img"><img src="autoplot.creel_length_distribution-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

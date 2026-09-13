@@ -106,3 +106,22 @@ Other "Reporting & Diagnostics":
 [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md),
 [`validation_report()`](https://chrischizinski.com/tidycreel/reference/validation_report.md),
 [`write_estimates()`](https://chrischizinski.com/tidycreel/reference/write_estimates.md)
+
+## Examples
+
+``` r
+validate_design(
+  N_h        = c(weekday = 65L, weekend = 28L),
+  ybar_h     = c(weekday = 50, weekend = 60),
+  s2_h       = c(weekday = 400, weekend = 500),
+  n_proposed = c(weekday = 20L, weekend = 12L),
+  cv_target  = 0.15
+)
+#> 
+#> ── Design Validation Report ────────────────────────────────────────────────────
+#> Type: effort
+#> ✔ All strata PASSED
+#> 
+#> ✔ weekday: n=20 >= 5 required (CV 0.089 vs target 0.15)
+#> ✔ weekend: n=12 >= 3 required (CV 0.108 vs target 0.15)
+```

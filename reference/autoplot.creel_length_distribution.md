@@ -27,9 +27,13 @@ autoplot(object, title = NULL, theme = c("default", "creel"), ...)
 - theme:
 
   Character string selecting the plot theme. Use `"default"` (default)
-  to preserve the current ggplot styling or `"creel"` to apply
+  for
+  [`ggplot2::theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html),
+  or `"creel"` for
   [`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
-  and package-standard colours.
+  and package-standard colours. Neither inherits a theme set with
+  [`ggplot2::theme_set()`](https://ggplot2.tidyverse.org/reference/get_theme.html);
+  add your own with `+` if you need it.
 
 - ...:
 
@@ -53,8 +57,39 @@ Other "Visualisation":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+data(example_calendar)
+data(example_interviews)
+data(example_catch)
+data(example_lengths)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+# Species catch is required to group by species: length totals are scaled
+# onto the reported catch, and only this table records it per species.
+design <- add_catch(design, example_catch,
+  catch_uid = interview_id, interview_uid = interview_id,
+  species = species, count = count, catch_type = catch_type
+)
+design <- add_lengths(design, example_lengths,
+  length_uid = interview_id, interview_uid = interview_id,
+  species = species, length = length, length_type = length_type,
+  count = count, release_format = "binned"
+)
+
 ld <- est_length_distribution(design, by = species, bin_width = 25)
+#> Warning: ! Length totals were rescaled onto the reported catch.
+#> ℹ Measured fish (weighted): 37; reported: 93 -- a factor of 2.51.
+#> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
+#>   from the measured subsample. Shares (percent) are unaffected.
 ggplot2::autoplot(ld)
-} # }
+
 ```

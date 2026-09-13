@@ -189,6 +189,50 @@ fishing surveys. ICES Journal of Marine Science 77(7-8):2984-2994.</p>
 <code><a href="estimate_total_release.html">estimate_total_release()</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_camera_counts</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_camera_interviews</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_camera_counts</span><span class="op">$</span><span class="va">date</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_camera_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span><span class="op">[[</span><span class="st">"day_type"</span><span class="op">]</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>,</span></span>
+<span class="r-in"><span>  survey_type <span class="op">=</span> <span class="st">"camera"</span>, camera_mode <span class="op">=</span> <span class="st">"counter"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># No add_counts() here: each imputation supplies its own completed count</span></span></span>
+<span class="r-in"><span><span class="co"># series, so attaching one of them first would fix the very thing being</span></span></span>
+<span class="r-in"><span><span class="co"># varied.</span></span></span>
+<span class="r-in"><span><span class="co"># Outage days are refilled several times over, so the uncertainty about what</span></span></span>
+<span class="r-in"><span><span class="co"># the camera missed enters the standard error instead of being assumed away.</span></span></span>
+<span class="r-in"><span><span class="va">imps</span> <span class="op">&lt;-</span> <span class="fu"><a href="impute_camera_counts.html">impute_camera_counts</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">example_camera_counts</span>,</span></span>
+<span class="r-in"><span>  count_col  <span class="op">=</span> <span class="st">"ingress_count"</span>,</span></span>
+<span class="r-in"><span>  strata_col <span class="op">=</span> <span class="st">"day_type"</span>,</span></span>
+<span class="r-in"><span>  m          <span class="op">=</span> <span class="fl">5L</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">ints</span> <span class="op">&lt;-</span> <span class="va">example_camera_interviews</span></span></span>
+<span class="r-in"><span><span class="va">ints</span><span class="op">$</span><span class="va">party_size</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></span>
+<span class="r-in"><span><span class="fu">est_effort_camera_mi</span><span class="op">(</span><span class="va">design</span>, <span class="va">imps</span>, interviews <span class="op">=</span> <span class="va">ints</span>, n_anglers <span class="op">=</span> <span class="st">"party_size"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Method: camera_mi</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variance: rubin</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Unit: angler-hours</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> within_imputation: 23.6 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> between_imputation: 2.632 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     247.  23.7       23.7        <span style="color: #BB0000;">NA</span>     201.     294.    10</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

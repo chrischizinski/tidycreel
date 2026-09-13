@@ -143,12 +143,38 @@ point estimates with confidence intervals.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># Compare instantaneous vs bus-route effort estimates from two designs</span></span></span>
-<span class="r-in"><span><span class="va">est1</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_a</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">est2</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_b</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">compare_designs</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>instantaneous <span class="op">=</span> <span class="va">est1</span>, bus_route <span class="op">=</span> <span class="va">est2</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No weights or probabilities supplied, assuming equal probability</span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span></span>
+<span class="r-in"><span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>, harvest <span class="op">=</span> <span class="va">catch_kept</span>,</span></span>
+<span class="r-in"><span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   normalization.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Two estimates from the same design: overall, and split by stratum. In</span></span></span>
+<span class="r-in"><span><span class="co"># practice these would come from designs built on different survey types.</span></span></span>
+<span class="r-in"><span><span class="va">est_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">est_grp</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">compare_designs</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>overall <span class="op">=</span> <span class="va">est_all</span>, by_day_type <span class="op">=</span> <span class="va">est_grp</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Survey Design Comparison</span> <span style="color: #00BBBB;">────────────────────────────────────────────────────</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 3 row(s), 2 design(s)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        design estimate    se    rse ci_lower ci_upper ci_width  n day_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     overall      372 13.18 0.0354      344      401     57.4 14       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 by_day_type      171  9.67 0.0567      150      192     42.2 10  weekday</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 by_day_type      202  8.95 0.0443      182      221     39.0  4  weekend</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

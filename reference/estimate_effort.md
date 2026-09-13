@@ -215,14 +215,6 @@ counts <- data.frame(
 design_with_counts <- add_counts(design, counts)
 #> Warning: No weights or probabilities supplied, assuming equal probability
 result <- estimate_effort(design_with_counts)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
 #> Warning: 2 strata have fewer than 3 observations:
 #> • Stratum weekday: 2 observations
 #> • Stratum weekend: 2 observations
@@ -297,7 +289,7 @@ print(result_boot)
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1      135  9.86       9.86         0     92.6     177.     4
+#> 1      135  9.94       9.94         0     92.2     178.     4
 
 # Jackknife variance estimation
 result_jk <- estimate_effort(design_with_counts, variance = "jackknife")

@@ -69,3 +69,16 @@ Other "Survey Design":
 [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
 [`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
 [`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+trips <- data.frame(
+  trip_start     = as.POSIXct(c("2024-06-01 08:00:00", "2024-06-01 09:15:00")),
+  interview_time = as.POSIXct(c("2024-06-01 10:30:00", "2024-06-01 12:00:00"))
+)
+compute_effort(trips, trip_start, interview_time)
+#>            trip_start      interview_time .effort
+#> 1 2024-06-01 08:00:00 2024-06-01 10:30:00    2.50
+#> 2 2024-06-01 09:15:00 2024-06-01 12:00:00    2.75
+```

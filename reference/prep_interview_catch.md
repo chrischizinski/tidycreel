@@ -70,3 +70,22 @@ Other "Survey Design":
 [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
 [`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
 [`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+raw <- data.frame(
+  iid  = c("i1", "i1", "i2"),
+  sp   = c("walleye", "walleye", "bass"),
+  n    = c(5, 2, 1),
+  fate = c("Caught", "HARVESTED", "released")
+)
+prep_interview_catch(raw, interview_uid = iid, species = sp,
+                     count = n, catch_type = fate)
+#> # A tibble: 3 × 4
+#>   interview_uid species count catch_type
+#>   <chr>         <chr>   <dbl> <chr>     
+#> 1 i1            walleye     5 caught    
+#> 2 i1            walleye     2 harvested 
+#> 3 i2            bass        1 released  
+```

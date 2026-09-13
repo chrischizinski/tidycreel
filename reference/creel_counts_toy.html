@@ -127,9 +127,31 @@ an intentional <code>NA</code> in the <code>count</code> column to trigger the N
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">creel_counts_toy</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="validate_creel_data.html">validate_creel_data</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">creel_counts_toy</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Data Validation</span> <span style="color: #00BBBB;">───────────────────────────────────────────────────────</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="font-weight: bold;">11</span> pass | <span style="font-weight: bold;">1</span> warn | <span style="font-weight: bold;">0</span> fail</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Table: counts</span> ──</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> <span style="color: #00BB00;">date</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ type: class: Date</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ na_rate: 0 / 6 NA (0%)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ date_range: all within 1970-01-01 - 2100-12-31</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> <span style="color: #00BB00;">day_type</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ type: class: character</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ na_rate: 0 / 6 NA (0%)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ empty_strings: none</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> <span style="color: #00BB00;">section</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ type: class: character</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ na_rate: 0 / 6 NA (0%)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ empty_strings: none</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> <span style="color: #00BB00;">count</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ type: class: integer</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ⚠ na_rate: 1 / 6 NA (17%)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ✔ negative_values: none</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

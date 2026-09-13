@@ -31,3 +31,15 @@ Other "Scheduling":
 [`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md),
 [`validate_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schedule.md),
 [`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
+
+## Examples
+
+``` r
+sched <- new_creel_schedule(data.frame(
+  date      = as.Date(c("2024-06-01", "2024-06-08")),
+  day_type  = c("weekend", "weekend"),
+  sampled   = c(TRUE, TRUE)
+))
+class(sched)
+#> [1] "creel_schedule" "data.frame"    
+```

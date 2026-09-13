@@ -142,3 +142,25 @@ Other "Survey Design":
 [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
 [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
 [`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+raw <- data.frame(
+  survey_date = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type    = c("weekend", "weekend"),
+  iid         = c("i1", "i2"),
+  hours       = c(2.5, 3.0),
+  status      = c("Complete", "incomplete"),
+  duration    = c(2.5, 3.0)
+)
+prep_interviews_trips(raw, date = survey_date, interview_uid = iid,
+                      effort_hours = hours, trip_status = status,
+                      trip_duration = duration)
+#> # A tibble: 2 × 7
+#>   date       interview_uid effort_hours trip_status trip_duration n_anglers
+#>   <date>     <chr>                <dbl> <chr>               <dbl>     <int>
+#> 1 2024-06-01 i1                     2.5 complete              2.5         1
+#> 2 2024-06-02 i2                     3   incomplete            3           1
+#> # ℹ 1 more variable: refused <lgl>
+```

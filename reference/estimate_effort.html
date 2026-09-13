@@ -273,14 +273,6 @@ which build their own effort by this route.</p>
 <span class="r-in"><span><span class="va">design_with_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No weights or probabilities supplied, assuming equal probability</span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort</span><span class="op">(</span><span class="va">design_with_counts</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   angler-days, not angler-hours.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   counts, period_length_col = &lt;col&gt;)`.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #555555;">This warning is displayed once per session.</span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 strata have fewer than 3 observations:</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekday: 2 observations</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekend: 2 observations</span>
@@ -355,7 +347,7 @@ which build their own effort by this route.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  9.86       9.86         0     92.6     177.     4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  9.94       9.94         0     92.2     178.     4</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Jackknife variance estimation</span></span></span>
 <span class="r-in"><span><span class="va">result_jk</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort</span><span class="op">(</span><span class="va">design_with_counts</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span></span>

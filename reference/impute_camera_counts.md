@@ -184,7 +184,6 @@ Other "Survey Design":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 library(tidycreel)
 data(example_camera_counts)
 
@@ -197,6 +196,8 @@ imputed <- impute_camera_counts(
 
 # Inspect imputed rows
 imputed[imputed$.imputed, ]
+#>         date day_type ingress_count   camera_status .imputed
+#> 5 2024-06-11  weekday            51 battery_failure     TRUE
 
 # Pass imputed data directly into a camera design
 cal <- data.frame(
@@ -208,5 +209,5 @@ design <- creel_design(cal,
   survey_type = "camera", camera_mode = "counter"
 )
 design <- add_counts(design, imputed)
-} # }
+#> Warning: No weights or probabilities supplied, assuming equal probability
 ```

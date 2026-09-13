@@ -36,3 +36,16 @@ Other "Scheduling":
 [`new_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/new_creel_schedule.md),
 [`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md),
 [`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
+
+## Examples
+
+``` r
+sched <- generate_schedule(
+  start_date    = "2024-06-01",
+  end_date      = "2024-06-14",
+  n_periods     = 1,
+  sampling_rate = c(weekday = 0.3, weekend = 0.6),
+  seed          = 42
+)
+validate_creel_schedule(sched)
+```

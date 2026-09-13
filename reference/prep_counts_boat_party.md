@@ -156,3 +156,22 @@ Other "Survey Design":
 [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
 [`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
 [`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+raw <- data.frame(
+  sample_date = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type    = c("weekend", "weekend"),
+  boats       = c(10, 12),
+  mean_party  = c(2.5, 2.0)
+)
+prep_counts_boat_party(raw, date = sample_date, strata = day_type,
+                       boat_count = boats, mean_party_size = mean_party)
+#> # A tibble: 2 × 7
+#>   date       day_type effort_type daily_effort psu        correction_factor
+#>   <date>     <chr>    <chr>              <dbl> <date>                 <dbl>
+#> 1 2024-06-01 weekend  boat                  25 2024-06-01                 1
+#> 2 2024-06-02 weekend  boat                  24 2024-06-02                 1
+#> # ℹ 1 more variable: source_method <chr>
+```

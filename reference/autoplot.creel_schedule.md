@@ -4,8 +4,8 @@
 sampled dates coloured by day type (weekday / weekend) and unsampled
 dates in grey. Multiple months are shown as faceted panels.
 
-Requires the **ggplot2** package (listed in `Suggests`). Install it with
-`install.packages("ggplot2")` if needed.
+Returns a **ggplot2** object, which the package imports, so nothing
+extra needs installing.
 
 ## Usage
 
@@ -52,7 +52,6 @@ Other "Visualisation":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 sched <- generate_schedule(
   start_date = "2024-06-01", end_date = "2024-07-31",
   n_periods = 1,
@@ -60,5 +59,5 @@ sched <- generate_schedule(
   seed = 42
 )
 ggplot2::autoplot(sched)
-} # }
+
 ```

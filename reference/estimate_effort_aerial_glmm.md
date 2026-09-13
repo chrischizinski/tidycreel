@@ -132,7 +132,6 @@ Other "Estimation":
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 data(example_aerial_glmm_counts)
 
 aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
@@ -148,10 +147,31 @@ design <- creel_design(
   h_open = 14
 )
 design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
+#> Warning: `counts` has 36 repeated sampling units, with no count time to tell them apart.
+#> ℹ The repeated rows are keyed on date and day_type.
+#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
+#>   are repeat counts, or `unit_cols` if they are distinct units.
+#> Warning: No weights or probabilities supplied, assuming equal probability
 
 # Default Askey quadratic model with delta-method SE
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
+#> Warning: iteration limit reached
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 print(result)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: aerial_glmm_total
+#> Variance: delta
+#> Confidence level: 95%
+#> model: 32.98 (known, but se is `NA`)
+#> visibility: NA (unknown, so se is `NA`)
+#> angler_ratio: 0 (known, but se is `NA`)
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1     379.    NA         NA        NA       NA       NA    48
 
 # Bootstrap CIs (slower)
 result_boot <- estimate_effort_aerial_glmm(
@@ -160,6 +180,23 @@ result_boot <- estimate_effort_aerial_glmm(
   boot = TRUE,
   nboot = 100L
 )
+#> Warning: iteration limit reached
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
+#> Running 100 bootstrap replicates via lme4::bootMer...
+#> Warning: ! Bootstrap SE ignores design strata ("day_type").
+#> ℹ The default GLMM formula has no stratum term; bootstrap resamples from a
+#>   single pooled model. Include strata in `formula` for stratified inference.
 print(result_boot)
-} # }
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: aerial_glmm_total
+#> Variance: Bootstrap
+#> Confidence level: 95%
+#> model: NA (unknown, so se is `NA`)
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1     379.    NA         NA        NA     303.     442.    48
 ```

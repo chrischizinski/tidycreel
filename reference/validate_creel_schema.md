@@ -44,3 +44,49 @@ Other "Survey Design":
 [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
 [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
 [`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md)
+
+## Examples
+
+``` r
+# A schema names the source columns for each table its survey type needs.
+schema <- creel_schema(
+  survey_type      = "instantaneous",
+  interview_uid_col = "interview_id",
+  date_col          = "date",
+  trip_status_col   = "trip_status",
+  effort_col        = "hours_fished",
+  catch_col         = "catch_total",
+  catch_uid_col     = "catch_id",
+  species_col       = "species",
+  catch_count_col   = "count",
+  catch_type_col    = "catch_type",
+  length_uid_col    = "length_id",
+  length_mm_col     = "length",
+  length_type_col   = "length_type",
+  count_time_col    = "count_time",
+  bank_anglers_col  = "bank_anglers",
+  count_col         = "angler_count"
+)
+validate_creel_schema(schema)
+
+# An incomplete schema is refused here rather than failing later at a join.
+try(validate_creel_schema(creel_schema(survey_type = "instantaneous")))
+#> Error in validate_creel_schema(creel_schema(survey_type = "instantaneous")) : 
+#>   creel_schema validation failed for survey_type "instantaneous":
+#> ✖ date (interviews table) is missing
+#> ✖ catch (interviews table) is missing
+#> ✖ effort (interviews table) is missing
+#> ✖ trip_status (interviews table) is missing
+#> ✖ date (counts table) is missing
+#> ✖ count (counts table) is missing
+#> ✖ catch_uid (catch table) is missing
+#> ✖ interview_uid (catch table) is missing
+#> ✖ species (catch table) is missing
+#> ✖ catch_count (catch table) is missing
+#> ✖ catch_type (catch table) is missing
+#> ✖ length_uid (lengths table) is missing
+#> ✖ interview_uid (lengths table) is missing
+#> ✖ species (lengths table) is missing
+#> ✖ length_mm (lengths table) is missing
+#> ✖ length_type (lengths table) is missing
+```
