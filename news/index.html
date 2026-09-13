@@ -65,6 +65,18 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> and <code><a href="../reference/simulate_creel_catch.html">simulate_creel_catch()</a></code> no longer leave the caller’s random number stream reset.</p>
+<p>Both called <code>set.seed(seed)</code> and never put back what was there. <code>seed</code> is a convenience for reproducing one simulation, not a licence to take over the session — but a script that seeded its own analysis and then called either function part-way through silently continued from <em>our</em> seed. Every draw after that point was determined by an argument passed for one function’s benefit, with nothing to say so.</p>
+<p>Measured: after <code>set.seed(999)</code>, the next <code>runif(1)</code> was <code>0.389071</code> on its own and <code>0.685170</code> with a <code>simulate_creel_catch(seed = 42)</code> call in between. Both now give <code>0.389071</code>.</p>
+<p>The stream is captured before <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> and restored on exit. A session that had never drawn at all is left without a <code>.Random.seed</code> again, rather than inheriting ours. Reproducibility is unchanged: the same seed still produces the same data, and omitting <code>seed</code> still consumes randomness normally.</p>
+</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="7.0.0" id="tidycreel-700-goldeye">tidycreel 7.0.0 “Goldeye”<a class="anchor" aria-label="anchor" href="#tidycreel-700-goldeye"></a></h2>
 <div class="section level3">
 <h3 id="breaking-changes-7-0-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-7-0-0"></a></h3>
