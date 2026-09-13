@@ -253,6 +253,18 @@ api_shapes_app <- function() {
       send(charToRaw('{"error":"invalid survey_id","code":4001}'))
   })
 
+  # A successful ENVELOPE with an informational note beside the records. The
+  # mapped fields are inside `results`, so nothing the field map names appears
+  # at the top level -- which is what made this look like an error document.
+  app$get("/env-message", function(req, res) {
+    res$
+      set_header("Content-Type", "application/json")$
+      send(charToRaw(sprintf(
+        '{"results":[%s],"message":"partial day"}',
+        paste(res$app$locals$rows, collapse = ",")
+      )))
+  })
+
   # The false-positive guard: a real record that happens to carry a `message`
   # field, alongside the fields the profile actually asked for.
   app$get("/ok-message", function(req, res) {

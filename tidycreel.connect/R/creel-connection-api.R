@@ -873,8 +873,29 @@ creel_connect_api <- function(
 # present. A response containing an error and none of what you asked for is not
 # a record by any reading.
 #' @noRd
-.api_assert_not_error_doc <- function(body, endpoint_key, expected_fields) {
+.api_path_exists <- function(body, path) {
+  node <- body
+  for (key in path) {
+    if (!is.list(node) || is.null(names(node)) || !key %in% names(node)) {
+      return(FALSE)
+    }
+    node <- node[[key]]
+  }
+  TRUE
+}
+
+#' @noRd
+.api_assert_not_error_doc <- function(body, endpoint_key, expected_fields,
+                                      records_path = NULL) {
   if (!is.list(body) || is.data.frame(body) || is.null(names(body))) {
+    return(invisible(NULL))
+  }
+  # An envelope whose records member is present is carrying records, whatever
+  # else sits beside them. `{"results": [...], "message": "partial day"}` is a
+  # successful response with a note attached, and the mapped fields are INSIDE
+  # `results` -- so looking for them at the top level would find none and
+  # condemn every enveloped API that annotates its payload.
+  if (!is.null(records_path) && .api_path_exists(body, records_path)) {
     return(invisible(NULL))
   }
   if (length(intersect(expected_fields, names(body))) > 0L) {
@@ -1034,8 +1055,10 @@ creel_connect_api <- function(
   body <- httr2::resp_body_json(resp, simplifyVector = TRUE)
 
   # Before anything tries to read this as a table: it may not be one, and the
-  # body may already say why.
-  .api_assert_not_error_doc(body, endpoint_key, expected_fields)
+  # body may already say why. Runs ahead of the records extraction so that an
+  # enveloped API reporting an error gets its own words quoted, rather than
+  # "no results member".
+  .api_assert_not_error_doc(body, endpoint_key, expected_fields, records_path)
 
   if (is.null(records_path)) {
     .api_assert_not_envelope(body, endpoint_key)

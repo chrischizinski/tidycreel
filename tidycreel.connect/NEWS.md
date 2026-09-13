@@ -43,6 +43,18 @@
   carries a conventionally-named error member with something in it, and **not
   one** of the raw fields configured for that endpoint is present.
 
+  A fourth condition came out of the pre-push review, which caught the first
+  version refusing a perfectly good enveloped response. With `records_path` set
+  the mapped fields live *inside* the envelope, so none of them appears at the
+  top level and `{"results": [...], "message": "partial day"}` looked like an
+  error — which would have broken exactly the enveloped and cursor APIs the
+  previous two entries added. A records member that resolves is now proof the
+  body carries records, whatever sits beside them.
+
+  `Retry-After` needed no work: **httr2 already honours it.** #349 recorded it
+  as unhandled and that was wrong — timed at 4.08s for two 2s waits against a
+  real server. A test pins it so the claim is not inherited again.
+
 * `pagination` gains `style = "cursor"`, now that there is an envelope to read
   it from.
 

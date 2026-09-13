@@ -653,3 +653,38 @@ test_that("a real record carrying a message field is not an error document (STAT
   expect_equal(nrow(got), 1L)
   expect_equal(got$bank_anglers, 4)
 })
+
+test_that("an envelope annotated with a message is not an error document (STATUS-06)", {
+  # Found by the pre-push review, and a regression I introduced: with
+  # `records_path` set, the mapped fields live INSIDE the envelope, so looking
+  # for them at the top level finds none. `{"results": [...], "message": "..."}`
+  # -- a successful response with a note attached -- was refused, which would
+  # have broken exactly the enveloped and cursor APIs #347 and #348 added.
+  #
+  # A records member that resolves is proof the body carries records, whatever
+  # sits beside it.
+  skip_if_no_shapes_server()
+  srv <- api_shapes_server()
+
+  conn <- api_shapes_conn(srv$url("/"), "env-message", records_path = "results")
+  got  <- suppressMessages(fetch_counts(conn))
+  expect_equal(nrow(got), 3L)
+  expect_equal(got$bank_anglers, c(4, 0, 7))
+})
+
+test_that("an enveloped API reporting an error is quoted, not 'no member' (STATUS-07)", {
+  # The other side of STATUS-06, and why the error check still runs before the
+  # extraction. When `records_path` does NOT resolve and the body carries an
+  # error, the useful message is the API's own -- not "the response has no
+  # results member", which describes the symptom and hides the cause.
+  skip_if_no_shapes_server()
+  srv <- api_shapes_server()
+
+  conn <- api_shapes_conn(srv$url("/"), "ok-error", records_path = "results")
+  expect_error(suppressMessages(fetch_counts(conn)), "invalid survey_id")
+  msg <- tryCatch(
+    suppressMessages(fetch_counts(conn)),
+    error = function(e) conditionMessage(e)
+  )
+  expect_false(grepl("has no", msg, fixed = TRUE))
+})
