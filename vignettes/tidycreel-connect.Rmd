@@ -157,5 +157,6 @@ interviews <- fetch_interviews(con)
 
 - Source and documentation: `chrischizinski/tidycreel`, under `tidycreel.connect/`
 - Main package: <https://github.com/chrischizinski/tidycreel>
-- Bug reports and feature requests: open an issue on the tidycreel.connect
-  repository.
+- Bug reports and feature requests: both packages share one issue tracker,
+  <https://github.com/chrischizinski/tidycreel/issues> — there is no separate
+  tidycreel.connect repository to open an issue on.
