@@ -14,7 +14,7 @@ Provides a tidy, pipe-friendly interface for creel survey design, data managemen
 Useful links:
 \itemize{
   \item \url{https://github.com/chrischizinski/tidycreel}
-  \item \url{https://chrischizinski.github.io/tidycreel/}
+  \item \url{https://chrischizinski.com/tidycreel/}
   \item Report bugs at \url{https://github.com/chrischizinski/tidycreel/issues}
 }
 
