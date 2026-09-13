@@ -107,6 +107,17 @@
   is the measurement worth keeping: the shapes that already worked are the ones
   that still work.
 
+  Five more shapes were added after the pre-push review, which found three real
+  defects in the first version of this work -- two of them independently, by
+  two different models. A body total arriving quoted (`{"count": "9"}`) was
+  ignored rather than acted on, so the new truncation guard did nothing for an
+  API that types its counts as strings. A `total_path` that resolved to nothing
+  was swallowed, leaving a profile that looked guarded and was not. And the
+  envelope check first asked only whether a member held a container, which is
+  true of an ordinary metadata object -- so a single record returned as
+  `{"SurveyDate": ..., "Audit": {...}}` was refused as a wrapper, a shape that
+  reads correctly on the previous release.
+
 ## Bug fixes
 
 * A relative `Link` target is resolved against the request URL before being

@@ -758,22 +758,42 @@ creel_connect_api <- function(
   c("count", "total", "total_count", "totalCount", "totalResults", "recordCount")
 }
 
-# Members of a parsed body that could be the record array.
+# Could this member be a record array, or something around one?
 #
-# After simplifyVector = TRUE an array of flat objects arrives as a data.frame
-# and an array of anything else as a bare list; a scalar member is neither. So
-# "is this member a container?" is the whole test, and it is a statement about
-# the parsed body rather than a guess about the API's vocabulary.
+# After simplifyVector = TRUE, a JSON array of flat objects arrives as a
+# data.frame and any other JSON array as an UNNAMED list. A JSON object arrives
+# as a NAMED list, and that distinction is what separates an envelope from an
+# ordinary record: `{"SurveyDate": ..., "Audit": {"by": "jd"}}` is one record
+# carrying a metadata object, not a wrapper around a table.
+#
+# A named list still counts when it holds a container itself, because that is a
+# nested envelope -- `{"data": {"items": [...]}}` -- and refusing to look one
+# level down would let exactly the shape `records_path` exists for slip past.
+#' @noRd
+.api_is_record_container <- function(m, depth = 2L) {
+  if (is.data.frame(m)) {
+    return(TRUE)
+  }
+  if (!is.list(m)) {
+    return(FALSE)
+  }
+  if (is.null(names(m))) {
+    # An unnamed list is a JSON array, including the empty one.
+    return(TRUE)
+  }
+  if (depth <= 0L) {
+    return(FALSE)
+  }
+  any(vapply(m, .api_is_record_container, logical(1L), depth = depth - 1L))
+}
+
+# Members of a parsed body that could hold the records.
 #' @noRd
 .api_envelope_candidates <- function(body) {
   if (!is.list(body) || is.data.frame(body) || is.null(names(body))) {
     return(character(0))
   }
-  is_container <- vapply(
-    body,
-    function(m) is.data.frame(m) || (is.list(m) && !is.data.frame(m)),
-    logical(1L)
-  )
+  is_container <- vapply(body, .api_is_record_container, logical(1L))
   keys <- names(body)[is_container]
   if (length(keys) == 0L) {
     return(character(0))
@@ -810,14 +830,14 @@ creel_connect_api <- function(
 
 # Walk `path` into the parsed body and return the member it names.
 #' @noRd
-.api_extract_records <- function(body, path, endpoint_key) {
+.api_extract_records <- function(body, path, endpoint_key, arg = "records_path") {
   node <- body
   for (i in seq_along(path)) {
     key <- path[[i]]
     walked <- if (i == 1L) "the response body" else paste(path[seq_len(i - 1L)], collapse = " > ") # nolint: line_length_linter
     if (!is.list(node) || is.null(names(node))) {
       cli::cli_abort(c(
-        "{.arg records_path} looks past the end of the {.val {endpoint_key}} response.",
+        "{.arg {arg}} looks past the end of the {.val {endpoint_key}} response.",
         "x" = "{walked} is not a JSON object, so it has no {.field {key}} member.",
         "i" = "Path given: {.field {path}}"
       ))
@@ -933,29 +953,62 @@ creel_connect_api <- function(
   if (is.null(body)) {
     return(NULL)
   }
-  raw <- if (!is.null(total_path)) {
-    tryCatch(.api_extract_records(body, total_path, "total"), error = function(e) NULL)
-  } else {
-    # Siblings of the records member, one level up from the array itself.
-    parent <- if (length(records_path) == 1L) {
-      body
-    } else {
-      tryCatch(
-        .api_extract_records(body, records_path[-length(records_path)], "total"),
-        error = function(e) NULL
-      )
+  if (!is.null(total_path)) {
+    # A DECLARED path is not allowed to quietly resolve to nothing. The caller
+    # configured the truncation check; a typo that silently switched it off
+    # would leave a profile that looks guarded and is not -- the same reason
+    # .validate_api_pagination() refuses an unknown setting rather than
+    # ignoring it.
+    raw <- .api_extract_records(body, total_path, endpoint_key = "total", arg = "total_path")
+    total <- .api_scalar_number(raw)
+    if (is.null(total)) {
+      cli::cli_abort(c(
+        "{.arg total_path} does not name a number.",
+        "x" = "{.field {paste(total_path, collapse = ' > ')}} holds \\
+               {.obj_type_friendly {raw}}.",
+        "i" = "It should name the record count for the whole query, e.g. the \\
+               {.field count} in {.code {{\"count\": 42, \"results\": [...]}}}."
+      ))
     }
-    if (!is.list(parent) || is.null(names(parent))) {
-      NULL
-    } else {
-      hit <- intersect(.api_total_key_candidates(), names(parent))
-      if (length(hit) == 0L) NULL else parent[[hit[[1L]]]]
-    }
+    return(total)
   }
-  if (is.null(raw) || length(raw) != 1L || !is.numeric(raw) || is.na(raw)) {
+  # Siblings of the records member, one level up from the array itself.
+  parent <- if (length(records_path) == 1L) {
+    body
+  } else {
+    tryCatch(
+      .api_extract_records(body, records_path[-length(records_path)], "total"),
+      error = function(e) NULL
+    )
+  }
+  if (!is.list(parent) || is.null(names(parent))) {
     return(NULL)
   }
-  as.numeric(raw)
+  hit <- intersect(.api_total_key_candidates(), names(parent))
+  if (length(hit) == 0L) {
+    return(NULL)
+  }
+  # A guessed key is allowed to be something other than a count -- that is what
+  # guessing means -- so an unreadable value here is simply not a total.
+  .api_scalar_number(raw = parent[[hit[[1L]]]])
+}
+
+# A single number, from a JSON value that may have arrived quoted.
+#
+# `{"count": "9"}` is legal JSON and common from an API whose counts come back
+# as strings. The X-Total-Count twin already coerced its header text, so
+# refusing the body's quoted total would have made the guard depend on how the
+# API happened to type a number.
+#' @noRd
+.api_scalar_number <- function(raw) {
+  if (is.null(raw) || length(raw) != 1L || is.list(raw)) {
+    return(NULL)
+  }
+  if (!is.numeric(raw) && !is.character(raw)) {
+    return(NULL)
+  }
+  n <- suppressWarnings(as.numeric(raw))
+  if (is.na(n)) NULL else n
 }
 
 # Refuse a response that can be PROVEN to be one page of several.

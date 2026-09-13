@@ -91,6 +91,13 @@ api_shapes_bodies <- function() {
       '"Audit":{"by":"jd","at":"2016-05-14T09:00:00Z"}}',
       ']'
     ),
+    # One record as an object, carrying a metadata object the field map never
+    # asks for. The array form of this is "nested-unmapped" above; the bare
+    # object form is the one an envelope check can mistake for an envelope.
+    "single-nested"    = paste0(
+      '{"SurveyDate":"2016-05-14","ShoreAnglers":4,"FishingBoats":2,"OtherBoats":0,',
+      '"Audit":{"by":"jd","at":"2016-05-14T09:00:00Z"}}'
+    ),
     "empty-array"      = '[]',
     "empty-envelope"   = '{"count":0,"results":[]}',
 
@@ -110,7 +117,10 @@ api_shapes_bodies <- function() {
     "trunc-declared"   = sprintf('{"recordTotal":9,"results":%s}', recs),
     # The same truncation under a conventionally-named key the profile did not
     # declare.
-    "trunc-guessed"    = sprintf('{"count":9,"results":%s}', recs)
+    "trunc-guessed"    = sprintf('{"count":9,"results":%s}', recs),
+    # The same truncation with the total QUOTED. Legal JSON, and the header
+    # twin has always coerced its text, so the body must too.
+    "trunc-string"     = sprintf('{"count":"9","results":%s}', recs)
   )
   # nolint end
 }

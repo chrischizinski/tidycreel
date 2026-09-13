@@ -293,3 +293,79 @@ test_that("a YAML profile can declare the response shape (SHAPE-20)", {
   got  <- suppressMessages(fetch_counts(conn))
   expect_equal(as.data.frame(got[, names(api_shapes_expected())]), api_shapes_expected())
 })
+
+# --- found by the pre-push ensemble review ------------------------------------
+
+test_that("a single record carrying a metadata object is not an envelope (SHAPE-21)", {
+  # Two models independently caught this in review. The envelope check first
+  # asked only "does a member hold a container", which is true of `Audit` on an
+  # ordinary record -- so `{"SurveyDate": ..., "Audit": {...}}` was refused as a
+  # wrapper, naming Audit as the records. It reads correctly on the previous
+  # release, so this is a regression guard rather than a new capability.
+  #
+  # The array form of the same payload (SHAPE-08) never hit it: jsonlite
+  # simplifies `[{...}]` to a data.frame, which short-circuits the check.
+  skip_if_no_shapes_server()
+  srv <- api_shapes_server()
+
+  got <- suppressMessages(fetch_counts(api_shapes_conn(srv$url("/"), "single-nested")))
+  expect_equal(nrow(got), 1L)
+  expect_equal(got$bank_anglers, 4)
+  expect_false("Audit" %in% names(got))
+})
+
+test_that("a nested envelope is still caught one level down (SHAPE-22)", {
+  # The control for SHAPE-21. Distinguishing a record's metadata object from a
+  # wrapper must not go so far that `{"data": {"items": [...]}}` stops being
+  # recognised -- that is the shape records_path exists for.
+  skip_if_no_shapes_server()
+  srv <- api_shapes_server()
+
+  expect_error(
+    suppressMessages(fetch_counts(api_shapes_conn(srv$url("/"), "env-nested"))),
+    "no .*records_path.* is configured"
+  )
+})
+
+test_that("a quoted body total still aborts (SHAPE-23)", {
+  # `{"count": "9", ...}`. The X-Total-Count guard has always run as.numeric()
+  # over its header text, so reading only R-numeric body totals would have made
+  # the refusal depend on how the API happened to type a number -- and the
+  # failure mode of that is the silent truncation the guard exists to stop.
+  skip_if_no_shapes_server()
+  srv <- api_shapes_server()
+
+  conn <- api_shapes_conn(srv$url("/"), "trunc-string", records_path = "results")
+  expect_error(
+    suppressMessages(fetch_counts(conn)),
+    "total of 9 records but returned 3"
+  )
+})
+
+test_that("a total_path that resolves to nothing aborts (SHAPE-24)", {
+  # A declared setting that quietly does nothing is worse than one that is
+  # missing: the profile looks guarded. Same stance as pagination, which
+  # refuses an unknown setting rather than ignoring it.
+  skip_if_no_shapes_server()
+  srv <- api_shapes_server()
+
+  conn <- api_shapes_conn(
+    srv$url("/"), "trunc-guessed",
+    records_path = "results", total_path = "totl"
+  )
+  expect_error(suppressMessages(fetch_counts(conn)), "no .*totl.* member")
+})
+
+test_that("a total_path naming something that is not a number aborts (SHAPE-25)", {
+  skip_if_no_shapes_server()
+  srv <- api_shapes_server()
+
+  conn <- api_shapes_conn(
+    srv$url("/"), "env-results",
+    records_path = "results", total_path = "results"
+  )
+  expect_error(
+    suppressMessages(fetch_counts(conn)),
+    "total_path.* does not name a number"
+  )
+})
