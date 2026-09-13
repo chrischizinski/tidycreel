@@ -21,7 +21,6 @@ pandoc pipe-table per calendar month. Bus-route schedule cells use HTML
 \verb{<br>} to separate the day-type abbreviation from the circuit assignment.
 }
 \examples{
-\dontrun{
 sched <- generate_schedule(
   start_date = "2024-06-01",
   end_date = "2024-07-31",
@@ -31,7 +30,6 @@ sched <- generate_schedule(
 )
 # In an R Markdown chunk, just print the object:
 sched
-}
 
 }
 \keyword{internal}

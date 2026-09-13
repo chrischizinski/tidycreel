@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Provides a tidy, pipe-friendly interface for creel survey design, data management, estimation, visualisation, and reporting. Built on the 'survey' package for robust design-based inference with support for instantaneous, bus-route, ice, camera, and aerial survey workflows.
+Provides a tidy, pipe-friendly interface for creel survey design, data management, estimation, visualisation, and reporting. A creel survey interviews anglers on site to estimate fishing effort, catch, and harvest for a water body. Built on the 'survey' package for design-based inference, with support for instantaneous, bus-route, ice, camera, and aerial designs. Catch-rate estimators follow Hoenig, Jones, Pollock, Robson and Wade (1997) \doi{10.2307/2533116}; bus-route designs follow Kinloch, McGlennon, Nicoll and Pike (1997) \doi{10.1016/s0165-7836(97)00068-4}.
 }
 \seealso{
 Useful links:
@@ -20,7 +20,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Christopher Chizinski \email{cchizinski2@unl.edu} (\href{https://orcid.org/0000-0001-9294-2588}{ORCID})
+\strong{Maintainer}: Christopher Chizinski \email{cchizinski2@unl.edu} (\href{https://orcid.org/0000-0001-9294-2588}{ORCID}) [copyright holder]
 
 }
 \keyword{internal}

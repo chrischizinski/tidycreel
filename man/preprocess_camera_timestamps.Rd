@@ -32,4 +32,22 @@ egress precedes ingress (negative duration) are flagged with
 \details{
 Preprocess camera ingress-egress timestamps to daily effort hours
 }
+\examples{
+# Camera timestamps: one row per angler arrival/departure pair.
+ts <- data.frame(
+  survey_date  = rep(as.Date(c("2024-06-01", "2024-06-02")), each = 2L),
+  ingress_time = as.POSIXct(
+    c("2024-06-01 06:00:00", "2024-06-01 09:00:00",
+      "2024-06-02 07:00:00", "2024-06-02 10:30:00"), tz = "UTC"
+  ),
+  egress_time = as.POSIXct(
+    c("2024-06-01 08:00:00", "2024-06-01 11:00:00",
+      "2024-06-02 09:00:00", "2024-06-02 13:00:00"), tz = "UTC"
+  )
+)
+preprocess_camera_timestamps(ts, date_col = "survey_date",
+                             ingress_col = "ingress_time",
+                             egress_col = "egress_time")
+
+}
 \concept{"Camera Survey"}

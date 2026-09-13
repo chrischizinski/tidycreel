@@ -83,6 +83,20 @@ The returned table always contains canonical columns:
 \code{harvest_total}, \code{angler_type}, \code{angler_method}, \code{species_sought}, and any
 selected strata are appended when supplied.
 }
+\examples{
+raw <- data.frame(
+  survey_date = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type    = c("weekend", "weekend"),
+  iid         = c("i1", "i2"),
+  hours       = c(2.5, 3.0),
+  status      = c("Complete", "incomplete"),
+  duration    = c(2.5, 3.0)
+)
+prep_interviews_trips(raw, date = survey_date, interview_uid = iid,
+                      effort_hours = hours, trip_status = status,
+                      trip_duration = duration)
+
+}
 \seealso{
 \code{\link[=compute_effort]{compute_effort()}}, \code{\link[=add_interviews]{add_interviews()}}
 

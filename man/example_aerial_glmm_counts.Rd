@@ -35,7 +35,8 @@ variability and a day random intercept.
 data(example_aerial_glmm_counts)
 head(example_aerial_glmm_counts)
 
-\dontrun{
+# The workflow below fits a GLMM, so it needs lme4 (a Suggests).
+if (rlang::is_installed("lme4")) {
 # Build an aerial design and estimate effort with GLMM correction
 aerial_cal <- data.frame(
   date = unique(example_aerial_glmm_counts$date),

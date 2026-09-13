@@ -32,20 +32,29 @@ Requires the \strong{ggplot2} package (listed in \code{Suggests}). Install it wi
 \code{install.packages("ggplot2")} if needed.
 }
 \examples{
-\dontrun{
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+
 est <- estimate_effort(design)
 ggplot2::autoplot(est)
 
 est_grp <- estimate_effort(design, by = day_type)
 ggplot2::autoplot(est_grp)
-}
 
 }
 \seealso{
 \code{\link[=estimate_effort]{estimate_effort()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}},
 \code{\link[=summary.creel_estimates]{summary.creel_estimates()}}
 
-Other "Visualisation": 
+Other "Visualisation":
 \code{\link{autoplot.creel_length_distribution}()},
 \code{\link{autoplot.creel_schedule}()},
 \code{\link{creel_palette}()},

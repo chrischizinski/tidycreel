@@ -17,6 +17,32 @@ Checks that all columns required for the schema's \code{survey_type} are mapped
 (non-NULL). Aborts with an informative \code{cli_abort()} listing each missing
 column and its table.
 }
+\examples{
+# A schema names the source columns for each table its survey type needs.
+schema <- creel_schema(
+  survey_type      = "instantaneous",
+  interview_uid_col = "interview_id",
+  date_col          = "date",
+  trip_status_col   = "trip_status",
+  effort_col        = "hours_fished",
+  catch_col         = "catch_total",
+  catch_uid_col     = "catch_id",
+  species_col       = "species",
+  catch_count_col   = "count",
+  catch_type_col    = "catch_type",
+  length_uid_col    = "length_id",
+  length_mm_col     = "length",
+  length_type_col   = "length_type",
+  count_time_col    = "count_time",
+  bank_anglers_col  = "bank_anglers",
+  count_col         = "angler_count"
+)
+validate_creel_schema(schema)
+
+# An incomplete schema is refused here rather than failing later at a join.
+try(validate_creel_schema(creel_schema(survey_type = "instantaneous")))
+
+}
 \seealso{
 Other "Survey Design":
 \code{\link{add_catch}()},

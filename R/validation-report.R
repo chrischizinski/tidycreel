@@ -36,7 +36,6 @@
 #' @seealso [write_estimates()]
 #'
 #' @examples
-#' \dontrun{
 #' counts <- data.frame(
 #'   date     = as.Date(c("2024-06-01", "2024-06-02")),
 #'   day_type = c("weekday", "weekend"),
@@ -49,7 +48,6 @@
 #' )
 #' rpt <- validation_report(counts, interviews, species_col = "species")
 #' print(rpt)
-#' }
 #'
 #' @family "Reporting & Diagnostics"
 #' @export

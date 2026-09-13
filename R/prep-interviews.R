@@ -43,6 +43,19 @@
 #' @return A tibble with canonical trip/interview columns ready for
 #'   `add_interviews()`.
 #'
+#' @examples
+#' raw <- data.frame(
+#'   survey_date = as.Date(c("2024-06-01", "2024-06-02")),
+#'   day_type    = c("weekend", "weekend"),
+#'   iid         = c("i1", "i2"),
+#'   hours       = c(2.5, 3.0),
+#'   status      = c("Complete", "incomplete"),
+#'   duration    = c(2.5, 3.0)
+#' )
+#' prep_interviews_trips(raw, date = survey_date, interview_uid = iid,
+#'                       effort_hours = hours, trip_status = status,
+#'                       trip_duration = duration)
+#'
 #' @seealso [compute_effort()], [add_interviews()]
 #' @family "Survey Design"
 #' @export
@@ -250,6 +263,16 @@ prep_interviews_trips <- function(
 #'
 #' @return A tibble with canonical columns `interview_uid`, `species`, `count`,
 #'   and `catch_type`.
+#'
+#' @examples
+#' raw <- data.frame(
+#'   iid  = c("i1", "i1", "i2"),
+#'   sp   = c("walleye", "walleye", "bass"),
+#'   n    = c(5, 2, 1),
+#'   fate = c("Caught", "HARVESTED", "released")
+#' )
+#' prep_interview_catch(raw, interview_uid = iid, species = sp,
+#'                      count = n, catch_type = fate)
 #'
 #' @seealso [add_catch()]
 #' @family "Survey Design"

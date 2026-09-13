@@ -58,6 +58,16 @@ validate_calendar_schema <- function(data) {
 #' @return Invisibly returns the input data frame on success. Aborts with an
 #'   informative error message on validation failure.
 #'
+#' @examples
+#' sched <- generate_schedule(
+#'   start_date    = "2024-06-01",
+#'   end_date      = "2024-06-14",
+#'   n_periods     = 1,
+#'   sampling_rate = c(weekday = 0.3, weekend = 0.6),
+#'   seed          = 42
+#' )
+#' validate_creel_schedule(sched)
+#'
 #' @family "Scheduling"
 #' @export
 validate_creel_schedule <- function(data) {

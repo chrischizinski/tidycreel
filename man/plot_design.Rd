@@ -30,27 +30,22 @@ distribution of count values per stratum.
 Both variants colour bars/points by stratum for easy differentiation.
 }
 \examples{
-\dontrun{
+data(example_calendar)
+data(example_counts)
+
 # Without counts — stratum sample sizes
-cal <- data.frame(
-  date = as.Date(c(
-    "2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09"
-  )),
-  day_type = c("weekday", "weekday", "weekend", "weekend")
-)
-design <- creel_design(cal, date = date, strata = day_type)
+design <- creel_design(example_calendar, date = date, strata = day_type)
 plot_design(design)
 
 # With counts — count distribution per stratum
-design_with_counts <- add_counts(design, counts_df)
+design_with_counts <- add_counts(design, example_counts)
 plot_design(design_with_counts)
-}
 
 }
 \seealso{
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=autoplot.creel_schedule]{autoplot.creel_schedule()}}
 
-Other "Visualisation": 
+Other "Visualisation":
 \code{\link{autoplot.creel_estimates}()},
 \code{\link{autoplot.creel_length_distribution}()},
 \code{\link{autoplot.creel_schedule}()},

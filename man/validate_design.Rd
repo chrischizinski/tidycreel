@@ -48,6 +48,16 @@ n_required, cv_actual, cv_target, message}
 Pre-season design check: runs creel_n_effort() and creel_n_cpue() per
 stratum and returns a pass/warn/fail status report.
 }
+\examples{
+validate_design(
+  N_h        = c(weekday = 65L, weekend = 28L),
+  ybar_h     = c(weekday = 50, weekend = 60),
+  s2_h       = c(weekday = 400, weekend = 500),
+  n_proposed = c(weekday = 20L, weekend = 12L),
+  cv_target  = 0.15
+)
+
+}
 \seealso{
 Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},

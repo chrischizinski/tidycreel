@@ -24,7 +24,11 @@ tidycreel provides a pipe-friendly interface for creel survey design, data manag
 
 ## Installation
 
-Install the development version from GitHub:
+```r
+install.packages("tidycreel")
+```
+
+Or the development version from GitHub:
 
 ```r
 # install.packages("pak")

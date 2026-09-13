@@ -172,7 +172,6 @@
 #'   \doi{10.1111/faf.12413}
 #'
 #' @examples
-#' \dontrun{
 #' library(tidycreel)
 #' data(example_camera_counts)
 #' data(example_camera_interviews)
@@ -204,7 +203,6 @@
 #' ints$party_size <- 2
 #' est_ah <- est_effort_camera(design, interviews = ints, n_anglers = "party_size")
 #' print(est_ah)
-#' }
 #'
 #' @family "Survey Design"
 #' @export

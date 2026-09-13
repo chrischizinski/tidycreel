@@ -21,6 +21,13 @@
 #' @return The input data frame with an added \code{.effort} column (numeric,
 #'   hours). Existing columns are preserved.
 #'
+#' @examples
+#' trips <- data.frame(
+#'   trip_start     = as.POSIXct(c("2024-06-01 08:00:00", "2024-06-01 09:15:00")),
+#'   interview_time = as.POSIXct(c("2024-06-01 10:30:00", "2024-06-01 12:00:00"))
+#' )
+#' compute_effort(trips, trip_start, interview_time)
+#'
 #' @seealso [compute_angler_effort()], [add_interviews()]
 #' @family "Survey Design"
 #' @export
@@ -67,6 +74,10 @@ compute_effort <- function(data, trip_start, interview_time, time_fished = NULL)
 #'
 #' @return The input data frame with an added \code{.angler_effort} column
 #'   (numeric, angler-hours). Existing columns are preserved.
+#'
+#' @examples
+#' parties <- data.frame(effort = c(2.0, 3.0), n_anglers = c(2L, 3L))
+#' compute_angler_effort(parties, effort, n_anglers)
 #'
 #' @seealso [compute_effort()], [add_interviews()]
 #' @family "Survey Design"
@@ -4666,20 +4677,23 @@ add_lengths <- function(
 #'   and associated column-name slots.
 #'
 #' @examples
-#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_ages)
+#'
 #' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' design <- add_interviews(design, example_interviews,
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status
 #' )
-#' design <- add_ages(design, my_ages,
+#' design <- add_ages(design, example_ages,
 #'   age_uid       = interview_id,
 #'   interview_uid = interview_id,
 #'   species       = species,
-#'   age           = estimated_age,
-#'   age_type      = fish_fate
+#'   age           = age,
+#'   age_type      = age_type
 #' )
-#' }
+#' head(design$ages)
 #'
 #' @seealso [add_lengths()]
 #' @export
@@ -4808,6 +4822,23 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
 #' @return A data frame with columns \code{date} and \code{daily_effort_hours}
 #'   (one row per unique date, effort hours summed across all valid pairs for
 #'   that date).
+#'
+#' @examples
+#' # Camera timestamps: one row per angler arrival/departure pair.
+#' ts <- data.frame(
+#'   survey_date  = rep(as.Date(c("2024-06-01", "2024-06-02")), each = 2L),
+#'   ingress_time = as.POSIXct(
+#'     c("2024-06-01 06:00:00", "2024-06-01 09:00:00",
+#'       "2024-06-02 07:00:00", "2024-06-02 10:30:00"), tz = "UTC"
+#'   ),
+#'   egress_time = as.POSIXct(
+#'     c("2024-06-01 08:00:00", "2024-06-01 11:00:00",
+#'       "2024-06-02 09:00:00", "2024-06-02 13:00:00"), tz = "UTC"
+#'   )
+#' )
+#' preprocess_camera_timestamps(ts, date_col = "survey_date",
+#'                              ingress_col = "ingress_time",
+#'                              egress_col = "egress_time")
 #'
 #' @family "Camera Survey"
 #' @export

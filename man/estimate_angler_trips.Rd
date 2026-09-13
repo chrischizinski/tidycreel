@@ -49,6 +49,20 @@ party trips. The returned \code{unit} field records which, and is \code{NA}
 when the effort's own unit was unknown. The method string is
 \code{"angler-trips"} in every case and so is not a guide to the actor.
 }
+\examples{
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status, trip_duration = trip_duration
+)
+effort <- estimate_effort(design)
+estimate_angler_trips(effort, design)
+
+}
 \references{
 Powell, L. A. (2007). Approximating variance of demographic
 parameters using the delta method. \emph{Journal of Wildlife Management},

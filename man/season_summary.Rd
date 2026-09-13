@@ -31,11 +31,23 @@ prefixed columns.
 statistical computations must be done before calling this function.
 }
 \examples{
-\dontrun{
-result <- season_summary(list(effort = my_effort, cpue = my_cpue))
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+
+result <- season_summary(list(
+  effort     = estimate_effort(design),
+  catch_rate = estimate_catch_rate(design)
+))
 result$table
-write_schedule(result$table, "season_2024.csv")
-}
+result$n_estimates
 
 }
 \seealso{

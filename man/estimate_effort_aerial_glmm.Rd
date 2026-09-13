@@ -71,7 +71,7 @@ parametric bootstrap (\code{\link[lme4:bootMer]{lme4::bootMer()}}).
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 }
 \examples{
-\dontrun{
+\dontshow{if (rlang::is_installed("lme4")) withAutoprint(\{ # examplesIf}
 data(example_aerial_glmm_counts)
 
 aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
@@ -100,8 +100,7 @@ result_boot <- estimate_effort_aerial_glmm(
   nboot = 100L
 )
 print(result_boot)
-}
-
+\dontshow{\}) # examplesIf}
 }
 \references{
 Askey, P.J., Ward, H., Godin, T., Boucher, M., and Northrup, S. (2018).

@@ -31,13 +31,22 @@ NULL
 #'   [tidycreel::summary.creel_estimates()]
 #'
 #' @examples
-#' \dontrun{
+#' data(example_calendar)
+#' data(example_counts)
+#' data(example_interviews)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, example_counts)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#'
 #' est <- estimate_effort(design)
 #' ggplot2::autoplot(est)
 #'
 #' est_grp <- estimate_effort(design, by = day_type)
 #' ggplot2::autoplot(est_grp)
-#' }
 #'
 #' @family "Visualisation"
 #' @export
@@ -203,10 +212,30 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
 #' @seealso [est_length_distribution()]
 #'
 #' @examples
-#' \dontrun{
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_catch)
+#' data(example_lengths)
+#'
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#' # Species catch is required to group by species: length totals are scaled
+#' # onto the reported catch, and only this table records it per species.
+#' design <- add_catch(design, example_catch,
+#'   catch_uid = interview_id, interview_uid = interview_id,
+#'   species = species, count = count, catch_type = catch_type
+#' )
+#' design <- add_lengths(design, example_lengths,
+#'   length_uid = interview_id, interview_uid = interview_id,
+#'   species = species, length = length, length_type = length_type,
+#'   count = count, release_format = "binned"
+#' )
+#'
 #' ld <- est_length_distribution(design, by = species, bin_width = 25)
 #' ggplot2::autoplot(ld)
-#' }
 #'
 #' @family "Visualisation"
 #' @export
@@ -328,7 +357,6 @@ autoplot.creel_length_distribution <- function(
 #'   [write_schedule()]
 #'
 #' @examples
-#' \dontrun{
 #' sched <- generate_schedule(
 #'   start_date = "2024-06-01", end_date = "2024-07-31",
 #'   n_periods = 1,
@@ -336,7 +364,6 @@ autoplot.creel_length_distribution <- function(
 #'   seed = 42
 #' )
 #' ggplot2::autoplot(sched)
-#' }
 #'
 #' @family "Visualisation"
 #' @export
@@ -505,21 +532,16 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
 #' @seealso [creel_design()], [autoplot.creel_schedule()]
 #'
 #' @examples
-#' \dontrun{
+#' data(example_calendar)
+#' data(example_counts)
+#'
 #' # Without counts — stratum sample sizes
-#' cal <- data.frame(
-#'   date = as.Date(c(
-#'     "2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09"
-#'   )),
-#'   day_type = c("weekday", "weekday", "weekend", "weekend")
-#' )
-#' design <- creel_design(cal, date = date, strata = day_type)
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
 #' plot_design(design)
 #'
 #' # With counts — count distribution per stratum
-#' design_with_counts <- add_counts(design, counts_df)
+#' design_with_counts <- add_counts(design, example_counts)
 #' plot_design(design_with_counts)
-#' }
 #'
 #' @family "Visualisation"
 #' @export

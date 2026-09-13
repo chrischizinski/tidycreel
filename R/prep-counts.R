@@ -51,6 +51,16 @@
 #'   are `date`, selected strata columns (if any), `effort_type`, `daily_effort`,
 #'   `psu`, and `correction_factor`. Optional columns are appended when supplied.
 #'
+#' @examples
+#' raw_counts <- data.frame(
+#'   sample_date  = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+#'   day_type     = c("weekday", "weekday", "weekend", "weekend"),
+#'   effort_kind  = c("bank", "bank", "bank", "bank"),
+#'   effort_value = c(15, 23, 45, 52)
+#' )
+#' prep_counts_daily_effort(raw_counts, date = sample_date, strata = day_type,
+#'                          effort_type = effort_kind, daily_effort = effort_value)
+#'
 #' @seealso [add_counts()]
 #' @family "Survey Design"
 #' @export
@@ -302,6 +312,16 @@ prep_counts_daily_effort <- function(
 #' @return A tibble with canonical sampled-day effort columns. Required columns
 #'   are `date`, selected strata columns (if any), `effort_type`, `daily_effort`,
 #'   `psu`, and `correction_factor`. Optional columns are appended when supplied.
+#'
+#' @examples
+#' raw <- data.frame(
+#'   sample_date = as.Date(c("2024-06-01", "2024-06-02")),
+#'   day_type    = c("weekend", "weekend"),
+#'   boats       = c(10, 12),
+#'   mean_party  = c(2.5, 2.0)
+#' )
+#' prep_counts_boat_party(raw, date = sample_date, strata = day_type,
+#'                        boat_count = boats, mean_party_size = mean_party)
 #'
 #' @seealso [prep_counts_daily_effort()], [add_counts()]
 #' @family "Survey Design"

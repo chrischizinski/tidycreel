@@ -26,6 +26,11 @@ An earlier run of this check also reported redirecting URLs
 package website to a custom domain. Every affected reference has been updated
 to the destination URL and re-verified as returning 200.
 
+`urlchecker::url_check()` additionally reports 403/502 on four publisher DOI
+links in vignettes and NEWS. Those are anti-bot responses from the publishers
+rather than broken links; `R CMD check --as-cran` does not flag them, and the
+DOIs resolve in a browser.
+
 ## Notes for the reviewer
 
 - The repository contains a companion package, `tidycreel.connect`, in a
@@ -40,5 +45,9 @@ to the destination URL and re-verified as returning 200.
   completed 2016 creel survey, used as the package's end-to-end validation
   fixture. It is the basis of the numbers asserted in the test suite.
 
-- Some examples are wrapped in `\dontrun{}` where they would require a database
-  connection or a network endpoint that is not available on a check machine.
+- Every exported function has a runnable example. Nothing is wrapped in
+  `\dontrun{}`. Examples that need a suggested package are guarded with
+  `@examplesIf rlang::is_installed(...)` (`estimate_effort_aerial_glmm()` needs
+  lme4; `summarize_by_county()` needs zipcodeR), and one dataset help page
+  guards a GLMM workflow the same way. All 125 example topics run in under five
+  seconds each.

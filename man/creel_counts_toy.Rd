@@ -26,9 +26,7 @@ an intentional \code{NA} in the \code{count} column to trigger the NA-rate check
 }
 \examples{
 data(creel_counts_toy)
-\dontrun{
 validate_creel_data(counts = creel_counts_toy)
-}
 
 }
 \seealso{

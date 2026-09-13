@@ -24,4 +24,14 @@ nothing about masking. The new name also matches the sibling
 \code{\link[=as_hybrid_svydesign]{as_hybrid_svydesign()}} and is more accurate -- the function extracts the
 internal \code{survey} object rather than constructing a design.
 }
+\examples{
+data(example_calendar)
+data(example_counts)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+# Deprecated: as_creel_svydesign() is the current name.
+svy <- suppressWarnings(as_survey_design(design))
+class(svy)
+
+}
 \keyword{internal}

@@ -53,6 +53,22 @@ where \code{p_period = crew / n_circuits}.
 (or 1 when \code{circuit} is \code{NULL}). \code{crew} is the number of field crews
 deployed simultaneously.
 }
+\examples{
+sched <- generate_schedule(
+  start_date    = "2024-06-01",
+  end_date      = "2024-06-14",
+  n_periods     = 1,
+  sampling_rate = c(weekday = 0.3, weekend = 0.6),
+  seed          = 42
+)
+frame <- data.frame(
+  site   = c("A", "B", "C"),
+  p_site = c(0.4, 0.3, 0.3),
+  stringsAsFactors = FALSE
+)
+generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 2)
+
+}
 \seealso{
 Other "Scheduling":
 \code{\link{attach_count_times}()},

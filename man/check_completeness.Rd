@@ -27,6 +27,19 @@ A creel_completeness_report object (S3 list) with:
 Dispatches by survey_type to avoid false-positive warnings on aerial and
 camera designs that do not collect interview data.
 }
+\examples{
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+check_completeness(design)
+
+}
 \seealso{
 Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},

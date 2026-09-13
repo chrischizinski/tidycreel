@@ -27,7 +27,6 @@ Requires the \strong{ggplot2} package (listed in \code{Suggests}). Install it wi
 \code{install.packages("ggplot2")} if needed.
 }
 \examples{
-\dontrun{
 sched <- generate_schedule(
   start_date = "2024-06-01", end_date = "2024-07-31",
   n_periods = 1,
@@ -35,14 +34,13 @@ sched <- generate_schedule(
   seed = 42
 )
 ggplot2::autoplot(sched)
-}
 
 }
 \seealso{
 \code{\link[=generate_schedule]{generate_schedule()}}, \code{\link[=print.creel_schedule]{print.creel_schedule()}},
 \code{\link[=write_schedule]{write_schedule()}}
 
-Other "Visualisation": 
+Other "Visualisation":
 \code{\link{autoplot.creel_estimates}()},
 \code{\link{autoplot.creel_length_distribution}()},
 \code{\link{creel_palette}()},

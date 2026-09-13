@@ -32,6 +32,17 @@ keeping the data in long form.
 The returned table always contains canonical columns:
 \code{interview_uid}, \code{species}, \code{count}, and \code{catch_type}.
 }
+\examples{
+raw <- data.frame(
+  iid  = c("i1", "i1", "i2"),
+  sp   = c("walleye", "walleye", "bass"),
+  n    = c(5, 2, 1),
+  fate = c("Caught", "HARVESTED", "released")
+)
+prep_interview_catch(raw, interview_uid = iid, species = sp,
+                     count = n, catch_type = fate)
+
+}
 \seealso{
 \code{\link[=add_catch]{add_catch()}}
 

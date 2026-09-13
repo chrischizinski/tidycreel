@@ -19,6 +19,17 @@ Checks that a \code{creel_schedule} (or plain data frame intended for use with
 values. Called by \code{\link[=read_schedule]{read_schedule()}} after coercion and available for users
 to validate hand-constructed schedules.
 }
+\examples{
+sched <- generate_schedule(
+  start_date    = "2024-06-01",
+  end_date      = "2024-06-14",
+  n_periods     = 1,
+  sampling_rate = c(weekday = 0.3, weekend = 0.6),
+  seed          = 42
+)
+validate_creel_schedule(sched)
+
+}
 \seealso{
 Other "Scheduling":
 \code{\link{attach_count_times}()},

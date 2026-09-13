@@ -38,12 +38,23 @@ a tidy comparison tibble.  An \code{autoplot()} method renders a forest plot of
 point estimates with confidence intervals.
 }
 \examples{
-\dontrun{
-# Compare instantaneous vs bus-route effort estimates from two designs
-est1 <- estimate_effort(design_a)
-est2 <- estimate_effort(design_b)
-compare_designs(list(instantaneous = est1, bus_route = est2))
-}
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+
+# Two estimates from the same design: overall, and split by stratum. In
+# practice these would come from designs built on different survey types.
+est_all <- estimate_effort(design)
+est_grp <- estimate_effort(design, by = day_type)
+
+compare_designs(list(overall = est_all, by_day_type = est_grp))
 
 }
 \seealso{

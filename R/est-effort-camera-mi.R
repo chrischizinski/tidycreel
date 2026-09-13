@@ -67,6 +67,34 @@
 #'
 #'   Rubin, D.B. 1987. Multiple Imputation for Nonresponse in Surveys. Wiley.
 #'
+#' @examples
+#' data(example_camera_counts)
+#' data(example_camera_interviews)
+#'
+#' cal <- data.frame(
+#'   date     = unique(example_camera_counts$date),
+#'   day_type = unique(example_camera_counts[, c("date", "day_type")])[["day_type"]]
+#' )
+#' design <- creel_design(cal,
+#'   date = date, strata = day_type,
+#'   survey_type = "camera", camera_mode = "counter"
+#' )
+#' # No add_counts() here: each imputation supplies its own completed count
+#' # series, so attaching one of them first would fix the very thing being
+#' # varied.
+#' # Outage days are refilled several times over, so the uncertainty about what
+#' # the camera missed enters the standard error instead of being assumed away.
+#' imps <- impute_camera_counts(
+#'   example_camera_counts,
+#'   count_col  = "ingress_count",
+#'   strata_col = "day_type",
+#'   m          = 5L
+#' )
+#'
+#' ints <- example_camera_interviews
+#' ints$party_size <- 2
+#' est_effort_camera_mi(design, imps, interviews = ints, n_anglers = "party_size")
+#'
 #' @family "Estimation"
 #' @export
 est_effort_camera_mi <- function(design, imputations, ..., conf_level = 0.95) {

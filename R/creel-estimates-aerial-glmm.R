@@ -52,8 +52,7 @@
 #'   North American Journal of Fisheries Management, 38, 194-209.
 #'   \doi{10.1002/nafm.10010}
 #'
-#' @examples
-#' \dontrun{
+#' @examplesIf rlang::is_installed("lme4")
 #' data(example_aerial_glmm_counts)
 #'
 #' aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
@@ -82,7 +81,6 @@
 #'   nboot = 100L
 #' )
 #' print(result_boot)
-#' }
 #'
 #' @family "Estimation"
 #' @export
