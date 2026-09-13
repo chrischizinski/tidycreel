@@ -98,7 +98,7 @@ only be scaled by that species' own total, which lives in the table attached
 by \code{\link[=add_catch]{add_catch()}}; grouping by species without it is refused rather than
 scaled by the all-species total. Any other grouping uses the interview-level
 column (\code{catch} or \code{harvest} from \code{\link[=add_interviews]{add_interviews()}}), with release implied
-as caught − harvested so that harvest and release sum back to catch.
+as caught - harvested so that harvest and release sum back to catch.
 }
 
 \examples{
