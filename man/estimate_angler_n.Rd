@@ -194,7 +194,7 @@ scenarios". The package already defaults to the analogous \eqn{+1} correction
 at two occasions (\code{method = "chapman"}), and Schnabel reduces exactly to
 Lincoln-Petersen at \eqn{K = 2}, so leaving Schnabel unadjusted made bias
 handling depend on how many occasions were sampled. The relative shift is
-\eqn{-1/(\sum m_k + 1)}: −33\\% at \eqn{\sum m_k = 2}, −1.9\\% at 52, −0.2\\% at
+\eqn{-1/(\sum m_k + 1)}: -33\\% at \eqn{\sum m_k = 2}, -1.9\\% at 52, -0.2\\% at
 500. Pass \code{bias_adjust = FALSE} for the previous form.
 }
 \examples{

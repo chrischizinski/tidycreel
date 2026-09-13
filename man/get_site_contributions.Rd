@@ -19,7 +19,7 @@ A tibble with columns:
 \item{e_i_over_pi_i}{Site contribution to Horvitz-Thompson estimate}
 }
 \description{
-Returns the per-site calculation table (eᵢ, πᵢ, eᵢ/πᵢ) stored as an
+Returns the per-site calculation table (\eqn{e_i}, \eqn{\pi_i}, \eqn{e_i/\pi_i}) stored as an
 attribute on effort estimate objects returned by \code{\link[=estimate_effort]{estimate_effort()}} for
 bus-route survey designs. This table enables traceability of the
 Horvitz-Thompson estimator (Jones & Pollock 2012, Eq. 19.4) and supports
@@ -41,7 +41,7 @@ American Fisheries Society.
 \code{\link[=estimate_effort]{estimate_effort()}}, \code{\link[=get_sampling_frame]{get_sampling_frame()}}, \code{\link[=get_inclusion_probs]{get_inclusion_probs()}},
 \code{\link[=get_enumeration_counts]{get_enumeration_counts()}}
 
-Other "Bus-Route Helpers": 
+Other "Bus-Route Helpers":
 \code{\link{get_enumeration_counts}()},
 \code{\link{get_inclusion_probs}()},
 \code{\link{get_sampling_frame}()}

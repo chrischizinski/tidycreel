@@ -92,14 +92,19 @@ design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
 
-# Bootstrap CIs (slower)
+# Bootstrap CIs. `nboot` is held low here so the example stays fast on a
+# check machine; use at least 1000 replicates for real inference. The block
+# is wrapped in \donttest{} for runtime alone -- it needs no resource the
+# example cannot reach.
+\donttest{
 result_boot <- estimate_effort_aerial_glmm(
   design,
   time_col = time_of_flight,
   boot = TRUE,
-  nboot = 100L
+  nboot = 25L
 )
 print(result_boot)
+}
 \dontshow{\}) # examplesIf}
 }
 \references{

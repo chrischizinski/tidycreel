@@ -110,7 +110,7 @@
 #' by [add_catch()]; grouping by species without it is refused rather than
 #' scaled by the all-species total. Any other grouping uses the interview-level
 #' column (`catch` or `harvest` from [add_interviews()]), with release implied
-#' as caught − harvested so that harvest and release sum back to catch.
+#' as caught - harvested so that harvest and release sum back to catch.
 #'
 #' @family "Estimation"
 #' @export

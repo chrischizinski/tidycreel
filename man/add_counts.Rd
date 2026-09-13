@@ -55,10 +55,11 @@ CNT-06 warning.}
 \code{"instantaneous"} (default) or \code{"progressive"}. When \code{"progressive"},
 \code{circuit_time} and \code{period_length_col} are required.}
 
-\item{circuit_time}{Numeric. Circuit duration τ in hours — the time required
-to complete one roving count circuit of the water body. Required when
-\code{count_type = "progressive"} (CNT-05). Used to compute
-κ = T_d / τ and Ê_d = C × τ × κ. Ignored (with a warning) when
+\item{circuit_time}{Numeric. Circuit duration \eqn{\tau} in hours — the time
+required to complete one roving count circuit of the water body. Required
+when \code{count_type = "progressive"} (CNT-05). Used to compute
+\eqn{\kappa = T_d / \tau} and \eqn{\hat{E}_d = C \times \tau \times \kappa}.
+Ignored (with a warning) when
 \code{count_type = "instantaneous"}.}
 
 \item{period_length_col}{Tidy selector for the column containing T_d — the
@@ -87,7 +88,8 @@ and names the column rather than silently taking its first value.
 For instantaneous counts, supplying this is what makes the estimate
 angler-hours. A count is a snapshot of how many anglers were present at one
 moment; effort is that count times the period it was randomised within,
-Ê_d = C̄_d × T_d (Hoenig et al. 1993). Without it, \code{estimate_effort()}
+\eqn{\hat{E}_d = \bar{C}_d \times T_d} (Hoenig et al. 1993). Without it,
+\code{estimate_effort()}
 expands the counts to the season and returns them unmultiplied, and warns
 once per session that it has done so.
 
@@ -101,7 +103,8 @@ access hours, or field practice. It is not astronomical daylight.
 substitute for the period actually surveyed.
 
 The multiplication happens per PSU, before aggregation. Converting after
-the fact computes C̄ × T̄ where the target is the mean of C × T; the two
+the fact computes \eqn{\bar{C} \times \bar{T}} where the target is the mean
+of \eqn{C \times T}; the two
 differ by Cov(C, T), which is positive in practice because anglers fish
 more on long days, so the collapsed form biases low.}
 

@@ -46,7 +46,7 @@ devtools::install_github("chrischizinski/tidycreel")
 <div class="tc-card-type" aria-hidden="true">Survey Type</div>
 <h3>Instantaneous Count</h3>
 <p class="small">Stratified effort estimation from periodic angler counts.</p>
-<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.com/tidycreel/articles/tidycreel.html">Getting Started <span aria-hidden="true">→</span></a></p>
+<p class="mb-0"><code>vignette("tidycreel")</code></p>
 </div>
 </div>
 <div class="col-sm-6 col-lg-4 mb-3">
@@ -54,7 +54,7 @@ devtools::install_github("chrischizinski/tidycreel")
 <div class="tc-card-type" aria-hidden="true">Survey Type</div>
 <h3>Bus-Route</h3>
 <p class="small">PPS site selection with Horvitz-Thompson estimators and enumeration expansion.</p>
-<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.com/tidycreel/articles/bus-route-surveys.html">Bus-Route vignette <span aria-hidden="true">→</span></a></p>
+<p class="mb-0"><code>vignette("bus-route-surveys")</code></p>
 </div>
 </div>
 <div class="col-sm-6 col-lg-4 mb-3">
@@ -62,7 +62,7 @@ devtools::install_github("chrischizinski/tidycreel")
 <div class="tc-card-type" aria-hidden="true">Survey Type</div>
 <h3>Ice Fishing</h3>
 <p class="small">Degenerate bus-route design with certainty site sampling.</p>
-<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.com/tidycreel/articles/ice-fishing.html">Ice Fishing vignette <span aria-hidden="true">→</span></a></p>
+<p class="mb-0"><code>vignette("ice-fishing")</code></p>
 </div>
 </div>
 <div class="col-sm-6 col-lg-4 mb-3">
@@ -70,7 +70,7 @@ devtools::install_github("chrischizinski/tidycreel")
 <div class="tc-card-type" aria-hidden="true">Survey Type</div>
 <h3>Camera-Monitored</h3>
 <p class="small">Counter and ingress-egress preprocessing, NB GLMM count imputation, and camera effort indexing.</p>
-<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.com/tidycreel/articles/camera-surveys.html">Camera Survey vignette <span aria-hidden="true">→</span></a></p>
+<p class="mb-0"><code>vignette("camera-surveys")</code></p>
 </div>
 </div>
 <div class="col-sm-6 col-lg-4 mb-3">
@@ -78,7 +78,7 @@ devtools::install_github("chrischizinski/tidycreel")
 <div class="tc-card-type" aria-hidden="true">Survey Type</div>
 <h3>Aerial Survey</h3>
 <p class="small">Single-overflight effort estimation with calibrated open-hours scaling.</p>
-<p class="mb-0"><a class="tc-card-link" href="https://chrischizinski.com/tidycreel/articles/aerial-surveys.html">Aerial vignette <span aria-hidden="true">→</span></a> | <a class="tc-card-link" href="https://chrischizinski.com/tidycreel/articles/aerial-glmm.html">GLMM variant <span aria-hidden="true">→</span></a></p>
+<p class="mb-0"><code>vignette("aerial-surveys")</code> | <code>vignette("aerial-glmm")</code></p>
 </div>
 </div>
 </div>
@@ -138,11 +138,11 @@ estimate_catch_rate(design)
 
 | If you want to… | Start here |
 |---|---|
-| Learn the package vocabulary | [Glossary](https://chrischizinski.com/tidycreel/articles/glossary.html) |
-| See the main end-to-end workflow | [Getting Started](https://chrischizinski.com/tidycreel/articles/tidycreel.html) |
-| Plan a season before sampling starts | [Survey Design Toolbox](https://chrischizinski.com/tidycreel/articles/survey-design-toolbox.html) |
-| Estimate angler population or exploitation rate from tag data | [Mark-Recapture and Exploitation Rate](https://chrischizinski.com/tidycreel/articles/mark-recapture.html) |
-| Understand plotting and output styling | [Visualisation](https://chrischizinski.com/tidycreel/articles/visualisation.html) and `theme_creel()` |
+| Learn the package vocabulary | Glossary (`vignette("glossary")`) |
+| See the main end-to-end workflow | Getting Started (`vignette("tidycreel")`) |
+| Plan a season before sampling starts | Survey Design Toolbox (`vignette("survey-design-toolbox")`) |
+| Estimate angler population or exploitation rate from tag data | Mark-Recapture and Exploitation Rate (`vignette("mark-recapture")`) |
+| Understand plotting and output styling | Visualisation (`vignette("visualisation")`) and `theme_creel()` |
 | Build a report/dashboard | Use the bundled Quarto Creel Report starter template, or open **R Markdown > From Template > Creel Dashboard** for the legacy scaffold |
 
 ## Functions at a Glance
@@ -173,59 +173,63 @@ estimate_catch_rate(design)
 
 ## Vignettes
 
+All vignettes ship with the package — open one with
+`vignette("<name>", package = "tidycreel")`. They are also published at
+<https://chrischizinski.com/tidycreel/articles/>.
+
 ### Get Started
 
 | Vignette | Description |
 |---|---|
-| [Getting Started](https://chrischizinski.com/tidycreel/articles/tidycreel.html) | Core workflow: design → counts → effort estimation |
-| [Glossary](https://chrischizinski.com/tidycreel/articles/glossary.html) | Plain-language guide to tidycreel terms and concepts |
+| Getting Started (`vignette("tidycreel")`) | Core workflow: design → counts → effort estimation |
+| Glossary (`vignette("glossary")`) | Plain-language guide to tidycreel terms and concepts |
 
 ### Survey Types
 
 | Vignette | Description |
 |---|---|
-| [Bus-Route Surveys](https://chrischizinski.com/tidycreel/articles/bus-route-surveys.html) | PPS site selection with Horvitz-Thompson estimators |
-| [Ice Fishing](https://chrischizinski.com/tidycreel/articles/ice-fishing.html) | Certainty-site (degenerate bus-route) design |
-| [Camera Surveys](https://chrischizinski.com/tidycreel/articles/camera-surveys.html) | Counter and ingress-egress preprocessing, count imputation, camera effort |
-| [Aerial Surveys](https://chrischizinski.com/tidycreel/articles/aerial-surveys.html) | Single-overflight effort with calibrated open-hours scaling |
-| [Aerial GLMM](https://chrischizinski.com/tidycreel/articles/aerial-glmm.html) | Negative-binomial GLMM aerial effort (Askey 2018) |
+| Bus-Route Surveys (`vignette("bus-route-surveys")`) | PPS site selection with Horvitz-Thompson estimators |
+| Ice Fishing (`vignette("ice-fishing")`) | Certainty-site (degenerate bus-route) design |
+| Camera Surveys (`vignette("camera-surveys")`) | Counter and ingress-egress preprocessing, count imputation, camera effort |
+| Aerial Surveys (`vignette("aerial-surveys")`) | Single-overflight effort with calibrated open-hours scaling |
+| Aerial GLMM (`vignette("aerial-glmm")`) | Negative-binomial GLMM aerial effort (Askey 2018) |
 
 ### Estimation
 
 | Vignette | Description |
 |---|---|
-| [Survey Integration](https://chrischizinski.com/tidycreel/articles/survey-tidycreel.html) | Using tidycreel alongside the `survey` package directly |
-| [Interview Estimation](https://chrischizinski.com/tidycreel/articles/interview-estimation.html) | CPUE, catch, and harvest from interview data |
-| [Mark-Recapture and Exploitation Rate](https://chrischizinski.com/tidycreel/articles/mark-recapture.html) | Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns |
-| [Incomplete Trips](https://chrischizinski.com/tidycreel/articles/incomplete-trips.html) | When and how to use mean-of-ratios and TOST validation |
-| [Flexible Count Estimation](https://chrischizinski.com/tidycreel/articles/flexible-count-estimation.html) | Non-standard count configurations and custom time windows |
-| [Progressive Count Surveys](https://chrischizinski.com/tidycreel/articles/progressive-count-surveys.html) | Rolling and progressive count workflows |
-| [Section Estimation](https://chrischizinski.com/tidycreel/articles/section-estimation.html) | Spatial section-level effort and catch estimation |
-| [Temporal Extrapolation](https://chrischizinski.com/tidycreel/articles/temporal-extrapolation.html) | Extrapolating partial-season data to full-season estimates |
+| Survey Integration (`vignette("survey-tidycreel")`) | Using tidycreel alongside the `survey` package directly |
+| Interview Estimation (`vignette("interview-estimation")`) | CPUE, catch, and harvest from interview data |
+| Mark-Recapture and Exploitation Rate (`vignette("mark-recapture")`) | Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns |
+| Incomplete Trips (`vignette("incomplete-trips")`) | When and how to use mean-of-ratios and TOST validation |
+| Flexible Count Estimation (`vignette("flexible-count-estimation")`) | Non-standard count configurations and custom time windows |
+| Progressive Count Surveys (`vignette("progressive-count-surveys")`) | Rolling and progressive count workflows |
+| Section Estimation (`vignette("section-estimation")`) | Spatial section-level effort and catch estimation |
+| Temporal Extrapolation (`vignette("temporal-extrapolation")`) | Extrapolating partial-season data to full-season estimates |
 
 ### Reporting & Planning
 
 | Vignette | Description |
 |---|---|
-| [Unextrapolated Summaries](https://chrischizinski.com/tidycreel/articles/unextrapolated-summaries.html) | Raw interview summaries without season-level expansion |
-| [Survey Design Toolbox](https://chrischizinski.com/tidycreel/articles/survey-design-toolbox.html) | Sample-size, power, scheduling, and pre-season planning tools |
-| [Survey Scheduling](https://chrischizinski.com/tidycreel/articles/survey-scheduling.html) | Count windows, schedules, validation, and completeness checks |
-| [Visualisation](https://chrischizinski.com/tidycreel/articles/visualisation.html) | Plotting patterns and output styling with `theme_creel()` |
+| Unextrapolated Summaries (`vignette("unextrapolated-summaries")`) | Raw interview summaries without season-level expansion |
+| Survey Design Toolbox (`vignette("survey-design-toolbox")`) | Sample-size, power, scheduling, and pre-season planning tools |
+| Survey Scheduling (`vignette("survey-scheduling")`) | Count windows, schedules, validation, and completeness checks |
+| Visualisation (`vignette("visualisation")`) | Plotting patterns and output styling with `theme_creel()` |
 
 ### Statistical Methods
 
 | Vignette | Description |
 |---|---|
-| [Effort Pipeline](https://chrischizinski.com/tidycreel/articles/effort-pipeline.html) | Statistical mechanics of the effort estimation pipeline |
-| [Catch Pipeline](https://chrischizinski.com/tidycreel/articles/catch-pipeline.html) | Statistical mechanics of the catch estimation pipeline |
-| [Replicate Designs](https://chrischizinski.com/tidycreel/articles/replicate-designs.html) | Variance workflows and replicate-design reasoning |
-| [Bus-Route Equations](https://chrischizinski.com/tidycreel/articles/bus-route-equations.html) | Technical equation derivations for bus-route estimators |
+| Effort Pipeline (`vignette("effort-pipeline")`) | Statistical mechanics of the effort estimation pipeline |
+| Catch Pipeline (`vignette("catch-pipeline")`) | Statistical mechanics of the catch estimation pipeline |
+| Replicate Designs (`vignette("replicate-designs")`) | Variance workflows and replicate-design reasoning |
+| Bus-Route Equations (`vignette("bus-route-equations")`) | Technical equation derivations for bus-route estimators |
 
 ### Ecosystem
 
 | Vignette | Description |
 |---|---|
-| [tidycreel.connect](https://chrischizinski.com/tidycreel/articles/tidycreel-connect.html) | Database integration and reproducible data pipelines |
+| tidycreel.connect (`vignette("tidycreel-connect")`) | Database integration and reproducible data pipelines |
 
 ## Getting Help and Reporting Bugs
 
@@ -304,7 +308,7 @@ development workflow, see
 
 ## License
 
-MIT License — see [LICENSE.md](LICENSE.md) for details.
+MIT License — see [LICENSE.md](https://github.com/chrischizinski/tidycreel/blob/main/LICENSE.md) for details.
 
 ## AI Use Acknowledgement
 
