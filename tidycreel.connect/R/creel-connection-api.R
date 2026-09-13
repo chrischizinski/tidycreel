@@ -467,17 +467,19 @@ creel_connect_api <- function(
 #' @noRd
 .validate_api_credential <- function(value, arg, type) {
   if (is.function(value)) {
-    if (length(formals(value)) > 0L && !"..." %in% names(formals(value))) {
-      required <- names(formals(value))[!vapply(
-        formals(value), function(d) !identical(d, quote(expr = )), logical(1L)
-      )]
-      if (length(required) > 0L) {
-        cli::cli_abort(c(
-          "{.field {arg}} is a function that requires {cli::qty(required)}\\
-           argument{?s}: {.arg {required}}",
-          "i" = "It is called with none, so every argument needs a default."
-        ))
-      }
+    # `...` absorbs nothing: `function(scope, ...)` is still called as `value()`
+    # and still fails on the missing `scope`. Checking the named formals rather
+    # than bailing out at the sight of a dots is the difference between
+    # refusing here and failing on the first fetch.
+    fm       <- formals(value)
+    fm       <- fm[names(fm) != "..."]
+    required <- names(fm)[vapply(fm, function(d) identical(d, quote(expr = )), logical(1L))]
+    if (length(required) > 0L) {
+      cli::cli_abort(c(
+        "{.field {arg}} is a function that requires {cli::qty(required)}\\
+         argument{?s}: {.arg {required}}",
+        "i" = "It is called with none, so every argument needs a default."
+      ))
     }
     return(invisible(value))
   }
@@ -502,10 +504,17 @@ creel_connect_api <- function(
     return(value)
   }
   out <- tryCatch(value(), error = function(e) {
+    # The message is deliberately NOT forwarded. It comes from the caller's own
+    # credential code -- an OAuth client, a CLI, a vault -- and such errors
+    # routinely quote the request or the response that failed, which is exactly
+    # where a token lives. AGENTS.md: never print raw secrets. The caller can
+    # reproduce it by calling their function directly, where no log is involved.
     cli::cli_abort(c(
       "{.field {arg}} raised an error when called for a credential.",
-      "x" = conditionMessage(e),
-      "i" = "It is called before every request, so it has to succeed every time."
+      "i" = "Its message is not shown here: credential code tends to quote the \\
+             request or response that failed, and a token can be inside either.",
+      "i" = "Call the function yourself to see why it failed.",
+      "i" = "It runs before every request, so it has to succeed every time."
     ))
   })
   if (!is.character(out) || length(out) != 1L || is.na(out) || !nzchar(out)) {
@@ -524,7 +533,21 @@ creel_connect_api <- function(
   if (is.null(auth)) {
     return(FALSE)
   }
-  is.function(auth$token) || is.function(auth$key)
+  # The ACTIVE credential only. `list(type = "bearer", token = "fixed", key =
+  # function() ...)` passes validation, because bearer auth never looks at
+  # `key` -- and reading either field would re-send the identical fixed bearer
+  # token after a 401 while reporting that a credential function had been
+  # retried. Both halves of that are wrong.
+  is.function(.api_auth_credential(auth))
+}
+
+# The field this auth type actually sends, or NULL.
+#' @noRd
+.api_auth_credential <- function(auth) {
+  if (is.null(auth) || is.null(auth$type)) {
+    return(NULL)
+  }
+  switch(auth$type, bearer = auth$token, api_key = auth$key, NULL)
 }
 
 # The pagination styles this backend can follow.
@@ -990,22 +1013,32 @@ creel_connect_api <- function(
 # configured. Never includes the credential itself.
 #' @noRd
 .api_auth_advice <- function(auth) {
+  # No `\\` line continuations below. cli_abort() strips them; format_inline()
+  # does NOT, and emits the backslash and the following indentation literally.
+  # The first version of this read "cannot be renewed. \\\n     Supply ...".
   if (is.null(auth)) {
     return(cli::format_inline(
-      "No credentials are configured for this connection. If the API needs \\
-       them, set {.arg auth} in {.fn creel_connect_api}."
+      paste0(
+        "No credentials are configured for this connection. ",
+        "If the API needs them, set {.arg auth} in {.fn creel_connect_api}."
+      )
     ))
   }
   if (.api_auth_is_callable(auth)) {
     return(cli::format_inline(
-      "The credential function was called again and the API still refused the \\
-       result, so this is not a stale token."
+      paste0(
+        "The credential function was called again and the API still refused ",
+        "the result, so this is not a stale token."
+      )
     ))
   }
+  field <- if (identical(auth$type, "bearer")) "auth$token" else "auth$key" # nolint: object_usage_linter, line_length_linter
   cli::format_inline(
-    "The credential is a fixed string, so an expired one cannot be renewed. \\
-     Supply {.field auth${.field {if (auth$type == \"bearer\") \"token\" else \"key\"}}} \\
-     as a function to have it fetched again on each request."
+    paste0(
+      "The credential is a fixed string, so an expired one cannot be renewed. ",
+      "Supply {.field {field}} as a function to have it fetched again on ",
+      "each request."
+    )
   )
 }
 

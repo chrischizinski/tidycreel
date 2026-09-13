@@ -49,11 +49,18 @@
   credentials at all, a fixed string that cannot be renewed, or a function whose
   result the API still refused — and what to change.
 
-  Separately, any failure part-way through a paginated fetch now reports how
-  many pages and rows had already been collected and are being thrown away.
+  Separately, an **HTTP failure** part-way through a paginated fetch now reports
+  how many pages and rows had already been collected and are being thrown away.
   Returning them is not an option, because a partial dataset understates every
   total without saying so; but neither is letting the reader think one request
   failed when several succeeded.
+
+  That note is carried on the HTTP status path only. A mid-loop abort from
+  somewhere else — an unreadable body, an error document on page two — still
+  discards the earlier pages without mentioning them. Narrowed deliberately
+  after review pointed out that the first wording claimed more than the code
+  does; widening it means threading page context through the parse path, which
+  belongs with that code rather than with this change.
 
 * HTTP status handling covers more than the 429/503 pair (#349).
 
