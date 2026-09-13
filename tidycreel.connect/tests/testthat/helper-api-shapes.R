@@ -161,10 +161,21 @@ api_shapes_app <- function() {
     rows <- res$app$locals$rows
     p <- req$query[["p"]]
     p <- if (is.null(p)) 1L else as.integer(p)
-    nxt <- if (p < length(rows)) sprintf('"/cur-url?p=%d"', p + 1L) else "null"
+    # Relative AND carrying the caller's filter, which is what a real API emits:
+    # the next URL is requested verbatim, so whatever the API leaves out of it is
+    # left out of the request. A server that dropped its own filter here would
+    # hand back other surveys' rows, and no code on this side could tell.
+    sid <- req$query[["survey_id"]]
+    nxt <- if (p < length(rows)) {
+      sprintf('"/cur-url?survey_id=%s&p=%d"', if (is.null(sid)) "" else sid, p + 1L)
+    } else {
+      "null"
+    }
+    row <- sub("\\}$", sprintf(',"SawFilter":%s}', if (is.null(sid)) "false" else "true"),
+               rows[[p]])
     res$
       set_header("Content-Type", "application/json")$
-      send(charToRaw(sprintf('{"results":[%s],"next":%s}', rows[[p]], nxt)))
+      send(charToRaw(sprintf('{"results":[%s],"next":%s}', row, nxt)))
   })
 
   # The pointer is an opaque token, sent back as ?after=. The uid filter has to
@@ -175,11 +186,16 @@ api_shapes_app <- function() {
     p <- if (is.null(after)) 1L else as.integer(sub("^t", "", after))
     nxt <- if (p < length(rows)) sprintf('"t%d"', p + 1L) else "null"
     saw <- if (is.null(req$query[["survey_id"]])) "false" else "true"
+    # Reported per row so a declared page_size that never reaches the wire is
+    # visible in the RESULT. Row count alone cannot see it: a size that is
+    # dropped and a size that is sent but does not stop the loop both return
+    # every record.
+    lim <- if (is.null(req$query[["limit"]])) "false" else "true"
     # Spliced INTO the record, not left as a sibling of it: records_path strips
     # every sibling before the frame is built, so a flag reported beside the
     # records would arrive as NULL and `all(NULL)` is TRUE -- an assertion that
     # cannot fail. See the vacuous-assertion trap.
-    row <- sub("\\}$", sprintf(',"SawFilter":%s}', saw), rows[[p]])
+    row <- sub("\\}$", sprintf(',"SawFilter":%s,"SawLimit":%s}', saw, lim), rows[[p]])
     res$
       set_header("Content-Type", "application/json")$
       send(charToRaw(sprintf('{"results":[%s],"next":%s}', row, nxt)))

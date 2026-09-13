@@ -517,7 +517,7 @@ creel_connect_api <- function(
   }
 
   out <- list(style = style)
-  if (style %in% c("page", "offset")) {
+  if (style %in% c("page", "offset", "cursor")) {
     # Held as locals, not read back off `out`: `$` partial-matches, so
     # `out$page_size` would return `page_size_param`'s value whenever the size
     # itself is absent -- which is exactly the case being checked for.
@@ -663,7 +663,12 @@ creel_connect_api <- function(
     # A page shorter than the declared size is the last one. Without a declared
     # size the only safe stop is an empty page -- guessing from a round row
     # count would drop a final page whose length happened to look full.
-    if (!is.null(pag[["page_size"]]) && nrow(df) < pag[["page_size"]]) break
+    #
+    # Not for `cursor`, where the pointer is authoritative: an API is free to
+    # return a short page and still offer a next one, and stopping on the length
+    # would discard the rest while the response was still saying there is more.
+    if (style != "cursor" &&
+          !is.null(pag[["page_size"]]) && nrow(df) < pag[["page_size"]]) break
 
     # The same rows twice means the request did not advance. Binding them would
     # duplicate every record and inflate every total, so stop and say which
@@ -674,6 +679,11 @@ creel_connect_api <- function(
     if (page_no > 1L && identical(df, pages[[page_no - 1L]])) {
       cause <- if (style == "link") {
         cli::format_inline("Its {.field Link} header points back at the same page.")
+      } else if (style == "cursor") {
+        ptr <- paste(pag[["next_path"]], collapse = " > ") # nolint: object_usage_linter
+        cli::format_inline(
+          "Its {.field {ptr}} pointer leads back to the page it came from."
+        )
       } else {
         param <- if (style == "page") pag[["page_param"]] else pag[["offset_param"]] # nolint: object_usage_linter, line_length_linter
         cli::format_inline("It appears to ignore the {.field {param}} parameter.")

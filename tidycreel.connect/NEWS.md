@@ -47,6 +47,13 @@
   review caught in `total_path`. On later pages an absent member just ends the
   loop, since plenty of APIs stop sending the key rather than sending null.
 
+  `page_size` / `page_size_param` work for a cursor too — found by the pre-push
+  review, which caught them being accepted by the validator and then dropped,
+  the exact "silently ignored setting" this validator refuses everywhere else.
+  The short-page **stop rule** is deliberately not applied to a cursor: the
+  pointer is authoritative, and an API may return a short page while still
+  offering a next one.
+
 * `creel_connect_api()` gains `records_path` and `total_path`, for an API that
   wraps its records in an envelope (#330 item 2, schema half).
 
