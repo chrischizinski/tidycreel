@@ -74,6 +74,10 @@ test_that("boot = TRUE returns valid CIs when the correction's uncertainty is kn
   # expected result. A bootstrap interval is only reportable when every
   # multiplier's uncertainty is known, so that is what this now exercises.
   design <- make_aerial_glmm_design(visibility_correction = 1, visibility_se = 0)
+  # Seeded: the bracket assertions below read 2.5%/97.5% quantiles of only ten
+  # replicates, which are effectively the min and max. Unseeded, a run where all
+  # ten land on one side of the estimate fails a correct estimator.
+  set.seed(42)
   result <- suppressMessages(
     estimate_effort_aerial_glmm(
       design,
