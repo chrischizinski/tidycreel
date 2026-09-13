@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">6.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">7.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,9 +65,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="7.0.0" id="tidycreel-700-goldeye">tidycreel 7.0.0 “Goldeye”<a class="anchor" aria-label="anchor" href="#tidycreel-700-goldeye"></a></h2>
 <div class="section level3">
-<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<h3 id="breaking-changes-7-0-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-7-0-0"></a></h3>
 <ul><li>
 <p>Identifier columns are normalised to character at every join (<code><a href="../reference/add_catch.html">add_catch()</a></code>, <code><a href="../reference/add_lengths.html">add_lengths()</a></code>, <code><a href="../reference/add_ages.html">add_ages()</a></code>).</p>
 <p>A uid is a label, not a quantity: nothing is summed or ordered by magnitude on it, and what it must do is join. The CSV reader infers a bare integer id column as numeric while a JSON API serves the same ids as strings, so the same survey reached a design with a numeric uid from one backend and a character uid from the other.</p>
@@ -75,19 +75,7 @@
 <p><code>design$interviews</code>, <code>design$catch</code>, <code>design$lengths</code> and <code>design$ages</code> now carry character ids whatever the source gave.</p>
 <p>The coercion is deliberately <strong>not</strong> <code><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character()</a></code>: R renders a numeric <code>100000</code> as <code>"1e+05"</code>, so a naive conversion silently rewrites every id at or above 1e5 — in the join key, the one column where a corrupted value cannot be noticed by looking at a total. Whole numbers go through <code>sprintf("%.0f", ...)</code>, which is exact for every value R can hold; a non-whole value is left alone rather than truncated into a collision.</p>
 </li>
-</ul></div>
-<div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
-<ul><li>
-<p>The Calamus 2016 validation fixture ships again, so the tests that depend on it can run (<a href="https://github.com/chrischizinski/tidycreel/issues/337" class="external-link">#337</a> follow-up).</p>
-<p>It lived under <code>inst/extdata/</code>, which <code>.Rbuildignore</code> excludes — a correct exclusion when that directory held 17 MB of real waterbody data and a <code>pdfs/</code> directory of published journal articles. Those are long gone; <code>inst/extdata/</code> was down to the 32 KB fixture alone, so the exclusion had stopped protecting anything and was only withholding the one file it should have shipped.</p>
-<p>The consequence was invisible. <code>tidycreel.connect</code>’s <code>test-composition-calamus.R</code> resolves the fixture through <code><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file()</a></code>, so all eight of its tests skipped on every run, in CI included — and they are that package’s only end-to-end assertions against real reference numbers. Connect now reports <strong>461 passing and 1 skip</strong>, where it reported 437 and 9.</p>
-<p>The fixture moved to <code>inst/calamus-2016/</code> rather than un-ignoring <code>inst/extdata/</code>, so the directory-level guard stays in place: anything dropped in there later still cannot reach a build.</p>
-</li>
-</ul></div>
-<div class="section level3">
-<h3 id="breaking-changes-development-version-1">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version-1"></a></h3>
-<ul><li>
+<li>
 <p><code><a href="../reference/summarize_boat_composition.html">summarize_boat_composition()</a></code> counts the events it excludes (<a href="https://github.com/chrischizinski/tidycreel/issues/337" class="external-link">#337</a>).</p>
 <p>A count event yields an angler-boat share only when the boats were counted and some were present. Both exclusions are real; both happened with no trace that the event had occurred.</p>
 <p><code>keep &lt;- (ab + nb) &gt; 0</code> is <code>NA</code> when either count is <code>NA</code>, and an <code>NA</code> subscript does not drop a row — it selects a <strong>phantom all-<code>NA</code> one</strong>. The event survived the subset with an <code>NA</code> month and day type, and <code>aggregate(by = )</code> then dropped it for having an <code>NA</code> grouping value. Two mechanisms chained, neither visible: on a 12-day fixture, three unrecorded boat counts took the event total to <strong>9</strong> and moved a reported share from <strong>73.4% to 76.7%</strong>.</p>
@@ -121,8 +109,14 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version-1"></a></h3>
+<h3 id="bug-fixes-7-0-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-7-0-0"></a></h3>
 <ul><li>
+<p>The Calamus 2016 validation fixture ships again, so the tests that depend on it can run (<a href="https://github.com/chrischizinski/tidycreel/issues/337" class="external-link">#337</a> follow-up).</p>
+<p>It lived under <code>inst/extdata/</code>, which <code>.Rbuildignore</code> excludes — a correct exclusion when that directory held 17 MB of real waterbody data and a <code>pdfs/</code> directory of published journal articles. Those are long gone; <code>inst/extdata/</code> was down to the 32 KB fixture alone, so the exclusion had stopped protecting anything and was only withholding the one file it should have shipped.</p>
+<p>The consequence was invisible. <code>tidycreel.connect</code>’s <code>test-composition-calamus.R</code> resolves the fixture through <code><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file()</a></code>, so all eight of its tests skipped on every run, in CI included — and they are that package’s only end-to-end assertions against real reference numbers. That took connect from <strong>437 passing with 9 skips</strong> to <strong>461 with 1</strong>. (Stated as the delta rather than a running total: a current count written into a release note is wrong by the next release.)</p>
+<p>The fixture moved to <code>inst/calamus-2016/</code> rather than un-ignoring <code>inst/extdata/</code>, so the directory-level guard stays in place: anything dropped in there later still cannot reach a build.</p>
+</li>
+<li>
 <p><code>summarize_length_freq(by = )</code> keeps every fish (<a href="https://github.com/chrischizinski/tidycreel/issues/337" class="external-link">#337</a>).</p>
 <p><code>stats::aggregate(by = )</code> drops every row whose grouping value is <code>NA</code>, so a length record with no recorded value for a <code>by</code> column left the distribution entirely — taking its weight with it. Measured on the shipped example data, blanking <code>species</code> on 6 of 20 length rows took the total from <strong>37 fish to 26</strong>: more than six, because a binned release row carries a <em>count</em> rather than one fish.</p>
 <p>The ungrouped total was never affected, which is what kept this invisible — and is why the existing tests could not fail on it.</p>

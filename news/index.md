@@ -1,6 +1,6 @@
 # Changelog
 
-## tidycreel (development version)
+## tidycreel 7.0.0 “Goldeye”
 
 ### Breaking changes
 
@@ -35,34 +35,6 @@
   go through `sprintf("%.0f", ...)`, which is exact for every value R
   can hold; a non-whole value is left alone rather than truncated into a
   collision.
-
-### Bug fixes
-
-- The Calamus 2016 validation fixture ships again, so the tests that
-  depend on it can run
-  ([\#337](https://github.com/chrischizinski/tidycreel/issues/337)
-  follow-up).
-
-  It lived under `inst/extdata/`, which `.Rbuildignore` excludes — a
-  correct exclusion when that directory held 17 MB of real waterbody
-  data and a `pdfs/` directory of published journal articles. Those are
-  long gone; `inst/extdata/` was down to the 32 KB fixture alone, so the
-  exclusion had stopped protecting anything and was only withholding the
-  one file it should have shipped.
-
-  The consequence was invisible. `tidycreel.connect`’s
-  `test-composition-calamus.R` resolves the fixture through
-  [`system.file()`](https://rdrr.io/r/base/system.file.html), so all
-  eight of its tests skipped on every run, in CI included — and they are
-  that package’s only end-to-end assertions against real reference
-  numbers. Connect now reports **461 passing and 1 skip**, where it
-  reported 437 and 9.
-
-  The fixture moved to `inst/calamus-2016/` rather than un-ignoring
-  `inst/extdata/`, so the directory-level guard stays in place: anything
-  dropped in there later still cannot reach a build.
-
-### Breaking changes
 
 - [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
   counts the events it excludes
@@ -173,6 +145,31 @@
   for `mean_rate`, `se` and the interval.
 
 ### Bug fixes
+
+- The Calamus 2016 validation fixture ships again, so the tests that
+  depend on it can run
+  ([\#337](https://github.com/chrischizinski/tidycreel/issues/337)
+  follow-up).
+
+  It lived under `inst/extdata/`, which `.Rbuildignore` excludes — a
+  correct exclusion when that directory held 17 MB of real waterbody
+  data and a `pdfs/` directory of published journal articles. Those are
+  long gone; `inst/extdata/` was down to the 32 KB fixture alone, so the
+  exclusion had stopped protecting anything and was only withholding the
+  one file it should have shipped.
+
+  The consequence was invisible. `tidycreel.connect`’s
+  `test-composition-calamus.R` resolves the fixture through
+  [`system.file()`](https://rdrr.io/r/base/system.file.html), so all
+  eight of its tests skipped on every run, in CI included — and they are
+  that package’s only end-to-end assertions against real reference
+  numbers. That took connect from **437 passing with 9 skips** to **461
+  with 1**. (Stated as the delta rather than a running total: a current
+  count written into a release note is wrong by the next release.)
+
+  The fixture moved to `inst/calamus-2016/` rather than un-ignoring
+  `inst/extdata/`, so the directory-level guard stays in place: anything
+  dropped in there later still cannot reach a build.
 
 - `summarize_length_freq(by = )` keeps every fish
   ([\#337](https://github.com/chrischizinski/tidycreel/issues/337)).
