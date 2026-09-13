@@ -32,6 +32,14 @@ This function can be called standalone on raw data before entering the
 \code{\link{add_interviews}} workflow, or used to preprocess a column that
 will be passed as the \code{effort} argument to \code{add_interviews()}.
 }
+\examples{
+trips <- data.frame(
+  trip_start     = as.POSIXct(c("2024-06-01 08:00:00", "2024-06-01 09:15:00")),
+  interview_time = as.POSIXct(c("2024-06-01 10:30:00", "2024-06-01 12:00:00"))
+)
+compute_effort(trips, trip_start, interview_time)
+
+}
 \seealso{
 \code{\link[=compute_angler_effort]{compute_angler_effort()}}, \code{\link[=add_interviews]{add_interviews()}}
 

@@ -8,6 +8,14 @@
 #'
 #' @return A data frame with class `c("creel_schedule", "data.frame")`.
 #'
+#' @examples
+#' sched <- new_creel_schedule(data.frame(
+#'   date      = as.Date(c("2024-06-01", "2024-06-08")),
+#'   day_type  = c("weekend", "weekend"),
+#'   sampled   = c(TRUE, TRUE)
+#' ))
+#' class(sched)
+#'
 #' @family "Scheduling"
 #' @export
 new_creel_schedule <- function(data) {
@@ -1039,6 +1047,21 @@ generate_progressive_start <- function(
 #'
 #' @return A tibble: `sampling_frame` columns plus `p_period` and
 #'   `inclusion_prob`. `inclusion_prob = p_site * p_period`.
+#'
+#' @examples
+#' sched <- generate_schedule(
+#'   start_date    = "2024-06-01",
+#'   end_date      = "2024-06-14",
+#'   n_periods     = 1,
+#'   sampling_rate = c(weekday = 0.3, weekend = 0.6),
+#'   seed          = 42
+#' )
+#' frame <- data.frame(
+#'   site   = c("A", "B", "C"),
+#'   p_site = c(0.4, 0.3, 0.3),
+#'   stringsAsFactors = FALSE
+#' )
+#' generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 2)
 #'
 #' @family "Scheduling"
 #' @export

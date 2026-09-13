@@ -13,8 +13,9 @@
 a human-readable description of the estimation method.}
 
 \item{theme}{Character string selecting the plot theme. Use \code{"default"}
-(default) to preserve the current ggplot styling or \code{"creel"} to apply
-\code{\link[=theme_creel]{theme_creel()}} and package-standard colours.}
+(default) for \code{\link[ggplot2:ggtheme]{ggplot2::theme_bw()}}, or \code{"creel"} for \code{\link[=theme_creel]{theme_creel()}} and
+package-standard colours. Neither inherits a theme set with
+\code{\link[ggplot2:get_theme]{ggplot2::theme_set()}}; add your own with \code{+} if you need it.}
 
 \item{...}{Additional arguments (currently unused).}
 }
@@ -28,24 +29,33 @@ confidence interval is shown. For grouped estimates (when \code{by} was
 supplied to the estimation function) each group level gets its own point,
 colour-coded and positioned along the x-axis.
 
-Requires the \strong{ggplot2} package (listed in \code{Suggests}). Install it with
-\code{install.packages("ggplot2")} if needed.
+Returns a \strong{ggplot2} object, which the package imports, so nothing extra
+needs installing.
 }
 \examples{
-\dontrun{
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+
 est <- estimate_effort(design)
 ggplot2::autoplot(est)
 
 est_grp <- estimate_effort(design, by = day_type)
 ggplot2::autoplot(est_grp)
-}
 
 }
 \seealso{
 \code{\link[=estimate_effort]{estimate_effort()}}, \code{\link[=estimate_catch_rate]{estimate_catch_rate()}},
 \code{\link[=summary.creel_estimates]{summary.creel_estimates()}}
 
-Other "Visualisation": 
+Other "Visualisation":
 \code{\link{autoplot.creel_length_distribution}()},
 \code{\link{autoplot.creel_schedule}()},
 \code{\link{creel_palette}()},

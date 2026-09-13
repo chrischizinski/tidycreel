@@ -112,7 +112,6 @@ carry the uncertainty of having imputed at all. See \code{m} below and
 }
 
 \examples{
-\dontrun{
 library(tidycreel)
 data(example_camera_counts)
 
@@ -136,7 +135,6 @@ design <- creel_design(cal,
   survey_type = "camera", camera_mode = "counter"
 )
 design <- add_counts(design, imputed)
-}
 
 }
 \references{

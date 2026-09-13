@@ -17,6 +17,15 @@ Constructor for the \code{creel_schedule} S3 class. Wraps a data frame with the
 \code{creel_schedule} class attribute following the tibble-subclass pattern used
 throughout the package.
 }
+\examples{
+sched <- new_creel_schedule(data.frame(
+  date      = as.Date(c("2024-06-01", "2024-06-08")),
+  day_type  = c("weekend", "weekend"),
+  sampled   = c(TRUE, TRUE)
+))
+class(sched)
+
+}
 \seealso{
 Other "Scheduling":
 \code{\link{attach_count_times}()},

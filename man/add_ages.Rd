@@ -36,20 +36,23 @@ data are linked to interviews via a shared identifier, analogous to
 \code{\link[=add_lengths]{add_lengths()}}.
 }
 \examples{
-\dontrun{
+data(example_calendar)
+data(example_interviews)
+data(example_ages)
+
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status
 )
-design <- add_ages(design, my_ages,
+design <- add_ages(design, example_ages,
   age_uid       = interview_id,
   interview_uid = interview_id,
   species       = species,
-  age           = estimated_age,
-  age_type      = fish_fate
+  age           = age,
+  age_type      = age_type
 )
-}
+head(design$ages)
 
 }
 \seealso{

@@ -1,5 +1,28 @@
 # tidycreel (development version)
 
+## Documentation
+
+* Every exported function now has a runnable example, and nothing is wrapped in
+  `\dontrun{}`.
+
+  Seventeen exported functions had no example at all, and fourteen help pages
+  wrapped theirs in `\dontrun{}`. Most of those wrappers were not protecting
+  anything: six ran as written once unwrapped, and the rest referenced objects
+  that were never defined — `design_a`, `my_effort`, `counts_df` — so the block
+  was a sketch rather than an example. One demonstrated writing a CSV into the
+  user's working directory.
+
+  Examples that genuinely need a suggested package are guarded with
+  `@examplesIf rlang::is_installed(...)` rather than hidden:
+  `estimate_effort_aerial_glmm()` needs lme4 and `summarize_by_county()` needs
+  zipcodeR. All 125 example topics run, each in under five seconds.
+
+* `DESCRIPTION` cites the methods the estimators implement — Hoenig, Jones,
+  Pollock, Robson and Wade (1997) <doi:10.2307/2533116> for roving catch rates
+  and Kinloch, McGlennon, Nicoll and Pike (1997)
+  <doi:10.1016/s0165-7836(97)00068-4> for bus-route designs — and records the
+  maintainer as copyright holder. The README shows `install.packages()`.
+
 ## Bug fixes
 
 * `simulate_creel_data()` and `simulate_creel_catch()` no longer leave the

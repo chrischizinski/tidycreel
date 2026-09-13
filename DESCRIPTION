@@ -2,13 +2,18 @@ Package: tidycreel
 Title: Tidy Interface for Creel Survey Design and Analysis
 Version: 7.0.0
 Authors@R:
-    person(given = "Christopher", family = "Chizinski", role = c("aut", "cre"),
+    person(given = "Christopher", family = "Chizinski", role = c("aut", "cre", "cph"),
            email = "cchizinski2@unl.edu",
            comment = c(ORCID = "0000-0001-9294-2588"))
 Description: Provides a tidy, pipe-friendly interface for creel survey
-    design, data management, estimation, visualisation, and reporting. Built
-    on the 'survey' package for robust design-based inference with support for
-    instantaneous, bus-route, ice, camera, and aerial survey workflows.
+    design, data management, estimation, visualisation, and reporting. A creel
+    survey interviews anglers on site to estimate fishing effort, catch, and
+    harvest for a water body. Built on the 'survey' package for design-based
+    inference, with support for instantaneous, bus-route, ice, camera, and
+    aerial designs. Catch-rate estimators follow Hoenig, Jones, Pollock,
+    Robson and Wade (1997) <doi:10.2307/2533116>; bus-route designs follow
+    Kinloch, McGlennon, Nicoll and Pike (1997)
+    <doi:10.1016/s0165-7836(97)00068-4>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

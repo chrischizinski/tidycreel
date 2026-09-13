@@ -39,6 +39,21 @@ when the effort's unit was unknown.
 This is a composable estimator: the effort object must be pre-computed via
 \code{\link{estimate_effort}} before calling this function.
 }
+\examples{
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status
+)
+effort <- estimate_effort(design)
+# Surface area of the water body, in acres.
+estimate_effort_per_acre(effort, acres = 120)
+
+}
 \seealso{
 \code{\link{estimate_effort}}, \code{\link{estimate_angler_trips}}
 }

@@ -30,6 +30,11 @@ computations.
 This function can be called standalone on a raw data frame or is called
 internally by \code{\link{add_interviews}} when constructing the design object.
 }
+\examples{
+parties <- data.frame(effort = c(2.0, 3.0), n_anglers = c(2L, 3L))
+compute_angler_effort(parties, effort, n_anglers)
+
+}
 \seealso{
 \code{\link[=compute_effort]{compute_effort()}}, \code{\link[=add_interviews]{add_interviews()}}
 

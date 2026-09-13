@@ -98,6 +98,17 @@ The returned table always contains canonical columns:
 and \code{correction_factor}. Optional columns \code{n_counts}, \code{within_day_var}, and
 \code{source_method} are included when supplied.
 }
+\examples{
+raw <- data.frame(
+  sample_date = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type    = c("weekend", "weekend"),
+  boats       = c(10, 12),
+  mean_party  = c(2.5, 2.0)
+)
+prep_counts_boat_party(raw, date = sample_date, strata = day_type,
+                       boat_count = boats, mean_party_size = mean_party)
+
+}
 \seealso{
 \code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}}, \code{\link[=add_counts]{add_counts()}}
 

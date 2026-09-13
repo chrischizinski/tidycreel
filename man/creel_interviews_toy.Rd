@@ -29,10 +29,8 @@ missing \code{trip_hours} value.
 }
 \examples{
 data(creel_interviews_toy)
-\dontrun{
 validate_creel_data(interviews = creel_interviews_toy)
 standardize_species(creel_interviews_toy, species_col = "species")
-}
 
 }
 \seealso{

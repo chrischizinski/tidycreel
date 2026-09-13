@@ -79,6 +79,17 @@ The returned table always contains canonical columns:
 and \code{correction_factor}. Optional columns \code{n_counts}, \code{within_day_var}, and
 \code{source_method} are included when supplied.
 }
+\examples{
+raw_counts <- data.frame(
+  sample_date  = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+  day_type     = c("weekday", "weekday", "weekend", "weekend"),
+  effort_kind  = c("bank", "bank", "bank", "bank"),
+  effort_value = c(15, 23, 45, 52)
+)
+prep_counts_daily_effort(raw_counts, date = sample_date, strata = day_type,
+                         effort_type = effort_kind, daily_effort = effort_value)
+
+}
 \seealso{
 \code{\link[=add_counts]{add_counts()}}
 

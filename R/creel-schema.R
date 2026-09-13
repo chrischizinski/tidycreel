@@ -524,6 +524,31 @@ creel_schema <- function(
 #' @param schema A `creel_schema` object created by [creel_schema()].
 #'
 #' @return `invisible(schema)` if all required columns are mapped.
+#' @examples
+#' # A schema names the source columns for each table its survey type needs.
+#' schema <- creel_schema(
+#'   survey_type      = "instantaneous",
+#'   interview_uid_col = "interview_id",
+#'   date_col          = "date",
+#'   trip_status_col   = "trip_status",
+#'   effort_col        = "hours_fished",
+#'   catch_col         = "catch_total",
+#'   catch_uid_col     = "catch_id",
+#'   species_col       = "species",
+#'   catch_count_col   = "count",
+#'   catch_type_col    = "catch_type",
+#'   length_uid_col    = "length_id",
+#'   length_mm_col     = "length",
+#'   length_type_col   = "length_type",
+#'   count_time_col    = "count_time",
+#'   bank_anglers_col  = "bank_anglers",
+#'   count_col         = "angler_count"
+#' )
+#' validate_creel_schema(schema)
+#'
+#' # An incomplete schema is refused here rather than failing later at a join.
+#' try(validate_creel_schema(creel_schema(survey_type = "instantaneous")))
+#'
 #' @family "Survey Design"
 #' @export
 validate_creel_schema <- function(schema) {

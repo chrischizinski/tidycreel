@@ -38,6 +38,15 @@ new_creel_design_report <- function(results, passed, survey_type) {
 #'     \item{$survey_type}{character}
 #'   }
 #'
+#' @examples
+#' validate_design(
+#'   N_h        = c(weekday = 65L, weekend = 28L),
+#'   ybar_h     = c(weekday = 50, weekend = 60),
+#'   s2_h       = c(weekday = 400, weekend = 500),
+#'   n_proposed = c(weekday = 20L, weekend = 12L),
+#'   cv_target  = 0.15
+#' )
+#'
 #' @family "Reporting & Diagnostics"
 #' @export
 validate_design <- function(
@@ -283,6 +292,18 @@ find_low_n_strata <- function(design, n_min) {
 #'     \item{$survey_type}{character}
 #'     \item{$passed}{logical -- TRUE if no missing days and no low-n strata}
 #'   }
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_counts)
+#' data(example_interviews)
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, example_counts)
+#' design <- add_interviews(design, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status
+#' )
+#' check_completeness(design)
 #'
 #' @family "Reporting & Diagnostics"
 #' @export

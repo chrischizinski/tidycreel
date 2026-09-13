@@ -789,7 +789,8 @@
 #' data(example_aerial_glmm_counts)
 #' head(example_aerial_glmm_counts)
 #'
-#' \dontrun{
+#' # The workflow below fits a GLMM, so it needs lme4 (a Suggests).
+#' if (rlang::is_installed("lme4")) {
 #' # Build an aerial design and estimate effort with GLMM correction
 #' aerial_cal <- data.frame(
 #'   date = unique(example_aerial_glmm_counts$date),
@@ -835,9 +836,7 @@
 #'
 #' @examples
 #' data(creel_counts_toy)
-#' \dontrun{
 #' validate_creel_data(counts = creel_counts_toy)
-#' }
 #'
 #' @seealso [creel_interviews_toy]
 #' @family "Example Datasets"
@@ -864,10 +863,8 @@
 #'
 #' @examples
 #' data(creel_interviews_toy)
-#' \dontrun{
 #' validate_creel_data(interviews = creel_interviews_toy)
 #' standardize_species(creel_interviews_toy, species_col = "species")
-#' }
 #'
 #' @seealso [creel_counts_toy]
 #' @family "Example Datasets"

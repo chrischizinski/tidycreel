@@ -341,7 +341,6 @@ print.creel_schedule <- function(x, ...) {
 #' @keywords internal
 #'
 #' @examples
-#' \dontrun{
 #' sched <- generate_schedule(
 #'   start_date = "2024-06-01",
 #'   end_date = "2024-07-31",
@@ -351,7 +350,6 @@ print.creel_schedule <- function(x, ...) {
 #' )
 #' # In an R Markdown chunk, just print the object:
 #' sched
-#' }
 #'
 #' @rawNamespace S3method(knitr::knit_print, creel_schedule)
 knit_print.creel_schedule <- function(x, ...) {

@@ -105,7 +105,6 @@
 #'   one; it is not the source of the per-stratum model used here.
 #'
 #' @examples
-#' \dontrun{
 #' library(tidycreel)
 #' data(example_camera_counts)
 #'
@@ -129,7 +128,6 @@
 #'   survey_type = "camera", camera_mode = "counter"
 #' )
 #' design <- add_counts(design, imputed)
-#' }
 #'
 #' @family "Survey Design"
 #' @seealso [est_effort_camera()], [add_counts()]
