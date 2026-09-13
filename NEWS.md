@@ -135,7 +135,9 @@
   `test-composition-calamus.R` resolves the fixture through `system.file()`,
   so all eight of its tests skipped on every run, in CI included — and they are
   that package's only end-to-end assertions against real reference numbers.
-  Connect now reports **461 passing and 1 skip**, where it reported 437 and 9.
+  That took connect from **437 passing with 9 skips** to **461 with 1**.
+  (Stated as the delta rather than a running total: a current count written
+  into a release note is wrong by the next release.)
 
   The fixture moved to `inst/calamus-2016/` rather than un-ignoring
   `inst/extdata/`, so the directory-level guard stays in place: anything

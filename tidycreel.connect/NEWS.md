@@ -319,7 +319,9 @@
   `add_interviews()` to the estimators, compared against Calamus 2016. The most
   valuable tests here were the ones silently not executing.
 
-  The suite now reports **461 passing and 1 skip**, where it reported 437 and 9.
+  That change took the suite from **437 passing with 9 skips** to **461 with 1**.
+  (Stated as the delta rather than a running total: a current count written
+  into a release note is wrong by the next release.)
   Nothing in this package changed to achieve it beyond the fixture path; the
   code under those tests was correct the whole time.
 
