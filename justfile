@@ -5,15 +5,23 @@ snapshot:
 test:
     Rscript -e 'devtools::test()'
 
+# Builds the PDF reference manual on purpose. `--no-manual` was here until
+# GH #358, and it is exactly why Win-Builder found a manual that would not
+# compile (1 ERROR) against a local gate reporting 0/0/1. A check that skips the
+# manual cannot tell you the package is submittable. Needs pdflatex.
 check:
-    Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), env = c("_R_CHECK_FORCE_SUGGESTS_" = "false"), error_on = "warning")'
+    Rscript -e 'rcmdcheck::rcmdcheck(args = "--as-cran", env = c("_R_CHECK_FORCE_SUGGESTS_" = "false"), error_on = "warning")'
 
 lint:
     Rscript -e 'lintr::lint_package()'
 
+# README.md is a HAND-MAINTAINED mirror of README.Rmd, not a knit artifact --
+# both carry the same `output: github_document` front matter. build_readme() was
+# called here until GH #358: it rewrites vignette("x") with curly quotes,
+# producing R code in the docs that does not parse, and shatters the
+# survey-type card markup. Edit README.Rmd and README.md with the same change.
 docs:
     Rscript -e 'devtools::document()'
-    Rscript -e 'devtools::build_readme()'
 
 site:
     Rscript -e 'pkgdown::build_site()'
