@@ -371,3 +371,78 @@ test_that("simulate_creel_catch validates p_zero in [0, 1)", {
   expect_error(simulate_creel_catch(n = 10L, family = "delta", p_zero = 1.0))
   expect_error(simulate_creel_catch(n = 10L, family = "delta", p_zero = -0.1))
 })
+
+# --- the seed argument must not outlive the call (SEED-01..04) ---------------
+
+test_that("a supplied seed does not reset the caller's RNG stream (SEED-01)", {
+  # `seed` is a convenience for reproducing one simulation, not a licence to
+  # take over the session. Before this, a script that seeded its own analysis
+  # and then called a simulate function part-way through silently continued
+  # from OUR seed -- every subsequent draw determined by an argument passed for
+  # one function's benefit, with nothing to say so.
+  #
+  # Measured on the previous tip: after set.seed(999), the next runif(1) was
+  # 0.389071 without the call and 0.685170 with it.
+  set.seed(999)
+  want <- runif(1)
+
+  set.seed(999)
+  invisible(suppressMessages(simulate_creel_catch(n = 5, seed = 42)))
+  expect_identical(runif(1), want)
+
+  set.seed(999)
+  invisible(suppressMessages(simulate_creel_data(
+    params         = test_params,
+    season_days    = 20,
+    n_sampled_days = 5,
+    seed           = 42
+  )))
+  expect_identical(runif(1), want)
+})
+
+test_that("seed still reproduces, which is the point of it (SEED-02)", {
+  # The control for SEED-01. Restoring the stream must not cost the feature the
+  # argument exists for: the same seed has to give the same data, and different
+  # seeds still have to differ.
+  a <- suppressMessages(simulate_creel_catch(n = 6, seed = 42))
+  b <- suppressMessages(simulate_creel_catch(n = 6, seed = 42))
+  expect_identical(a, b)
+  expect_false(identical(a, suppressMessages(simulate_creel_catch(n = 6, seed = 43))))
+
+  d1 <- suppressMessages(simulate_creel_data(
+    params = test_params, season_days = 20, n_sampled_days = 5, seed = 7
+  ))
+  d2 <- suppressMessages(simulate_creel_data(
+    params = test_params, season_days = 20, n_sampled_days = 5, seed = 7
+  ))
+  expect_identical(d1, d2)
+})
+
+test_that("omitting seed still advances the stream (SEED-03)", {
+  # The other control, and the one that stops SEED-01 being satisfied by simply
+  # never drawing. Without a seed these functions must consume randomness like
+  # any other RNG user; only the borrowed-and-returned case is special.
+  set.seed(999)
+  first <- runif(1)
+
+  set.seed(999)
+  invisible(suppressMessages(simulate_creel_catch(n = 5)))
+  expect_false(identical(runif(1), first))
+})
+
+test_that("a session that never drew is left without a seed (SEED-04)", {
+  # set.seed() CREATES .Random.seed when nothing had initialised the stream, so
+  # faithfully restoring "no state" means removing it again rather than leaving
+  # ours behind. Easy to miss: every interactive session has already drawn
+  # something, so only a fresh one reaches this path.
+  if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+    saved <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+    on.exit(assign(".Random.seed", saved, envir = globalenv()), add = TRUE)
+    rm(".Random.seed", envir = globalenv())
+  }
+  expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+
+  invisible(suppressMessages(simulate_creel_catch(n = 3, seed = 5)))
+
+  expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+})

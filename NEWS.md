@@ -1,3 +1,27 @@
+# tidycreel (development version)
+
+## Bug fixes
+
+* `simulate_creel_data()` and `simulate_creel_catch()` no longer leave the
+  caller's random number stream reset.
+
+  Both called `set.seed(seed)` and never put back what was there. `seed` is a
+  convenience for reproducing one simulation, not a licence to take over the
+  session — but a script that seeded its own analysis and then called either
+  function part-way through silently continued from *our* seed. Every draw
+  after that point was determined by an argument passed for one function's
+  benefit, with nothing to say so.
+
+  Measured: after `set.seed(999)`, the next `runif(1)` was `0.389071` on its
+  own and `0.685170` with a `simulate_creel_catch(seed = 42)` call in between.
+  Both now give `0.389071`.
+
+  The stream is captured before `set.seed()` and restored on exit. A session
+  that had never drawn at all is left without a `.Random.seed` again, rather
+  than inheriting ours. Reproducibility is unchanged: the same seed still
+  produces the same data, and omitting `seed` still consumes randomness
+  normally.
+
 # tidycreel 7.0.0 "Goldeye"
 
 ## Breaking changes

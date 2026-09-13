@@ -1,5 +1,42 @@
 # Creel Data Simulator ----
 
+# Borrowing the RNG for the duration of a call -------------------------------
+#
+# `seed` is a convenience for reproducing one simulation, not a licence to
+# reset the caller's random stream. Calling set.seed() and leaving it set means
+# a script that seeds its own analysis, then calls a simulate function in the
+# middle, silently continues from OUR seed -- every draw after that point is
+# determined by an argument the user passed for one function's benefit, and
+# nothing says so.
+#
+# `.Random.seed` genuinely lives in the global environment: that is where R
+# keeps it and where set.seed() writes it, so restoring it there is putting
+# back what was taken rather than reaching into user space. When no stream had
+# been initialised at all, set.seed() creates `.Random.seed`, and the faithful
+# restoration is to remove it again.
+#
+# Paired: capture with .rng_state(), hand the result to .restore_rng() from an
+# on.exit() registered before set.seed() runs.
+#' @noRd
+.rng_state <- function() {
+  if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+    get(".Random.seed", envir = globalenv(), inherits = FALSE)
+  } else {
+    NULL
+  }
+}
+
+#' @noRd
+.restore_rng <- function(state) {
+  if (is.null(state)) {
+    suppressWarnings(rm(".Random.seed", envir = globalenv()))
+  } else {
+    # nolint next: object_name_linter. `.Random.seed` is base R's name, not ours.
+    assign(".Random.seed", state, envir = globalenv())
+  }
+  invisible(NULL)
+}
+
 #' Simulate a complete creel survey dataset
 #'
 #' @description
@@ -240,6 +277,9 @@ simulate_creel_data <- function(
   daylight_fun <- resolve_daylight_hours(daylight_hours, lat)
 
   if (!is.null(seed)) {
+    # Restore whatever the caller had, once this function returns.
+    .rng_old <- .rng_state()
+    on.exit(.restore_rng(.rng_old), add = TRUE)
     set.seed(seed)
   }
 
@@ -560,6 +600,9 @@ simulate_creel_catch <- function(
   }
 
   if (!is.null(seed)) {
+    # Restore whatever the caller had, once this function returns.
+    .rng_old <- .rng_state()
+    on.exit(.restore_rng(.rng_old), add = TRUE)
     set.seed(seed)
   }
 
