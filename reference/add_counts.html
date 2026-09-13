@@ -180,10 +180,11 @@ CNT-06 warning.</p></dd>
 
 
 <dt id="arg-circuit-time">circuit_time<a class="anchor" aria-label="anchor" href="#arg-circuit-time"></a></dt>
-<dd><p>Numeric. Circuit duration τ in hours — the time required
-to complete one roving count circuit of the water body. Required when
-<code>count_type = "progressive"</code> (CNT-05). Used to compute
-κ = T_d / τ and Ê_d = C × τ × κ. Ignored (with a warning) when
+<dd><p>Numeric. Circuit duration \(\tau\) in hours — the time
+required to complete one roving count circuit of the water body. Required
+when <code>count_type = "progressive"</code> (CNT-05). Used to compute
+\(\kappa = T_d / \tau\) and \(\hat{E}_d = C \times \tau \times \kappa\).
+Ignored (with a warning) when
 <code>count_type = "instantaneous"</code>.</p></dd>
 
 
@@ -213,7 +214,8 @@ and names the column rather than silently taking its first value.</p>
 <p>For instantaneous counts, supplying this is what makes the estimate
 angler-hours. A count is a snapshot of how many anglers were present at one
 moment; effort is that count times the period it was randomised within,
-Ê_d = C̄_d × T_d (Hoenig et al. 1993). Without it, <code><a href="estimate_effort.html">estimate_effort()</a></code>
+\(\hat{E}_d = \bar{C}_d \times T_d\) (Hoenig et al. 1993). Without it,
+<code><a href="estimate_effort.html">estimate_effort()</a></code>
 expands the counts to the season and returns them unmultiplied, and warns
 once per session that it has done so.</p>
 <p>Not accepted on aerial designs, which carry their period length as
@@ -224,7 +226,8 @@ access hours, or field practice. It is not astronomical daylight.
 <code><a href="day_length.html">day_length()</a></code> is for simulation and planning; do not feed it here as a
 substitute for the period actually surveyed.</p>
 <p>The multiplication happens per PSU, before aggregation. Converting after
-the fact computes C̄ × T̄ where the target is the mean of C × T; the two
+the fact computes \(\bar{C} \times \bar{T}\) where the target is the mean
+of \(C \times T\); the two
 differ by Cov(C, T), which is positive in practice because anglers fish
 more on long days, so the collapsed form biases low.</p></dd>
 

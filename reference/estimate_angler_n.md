@@ -216,7 +216,7 @@ of the originals in all scenarios". The package already defaults to the
 analogous \\+1\\ correction at two occasions (`method = "chapman"`), and
 Schnabel reduces exactly to Lincoln-Petersen at \\K = 2\\, so leaving
 Schnabel unadjusted made bias handling depend on how many occasions were
-sampled. The relative shift is \\-1/(\sum m_k + 1)\\: −33\\ 500. Pass
+sampled. The relative shift is \\-1/(\sum m_k + 1)\\: -33\\ 500. Pass
 `bias_adjust = FALSE` for the previous form.
 
 ## References

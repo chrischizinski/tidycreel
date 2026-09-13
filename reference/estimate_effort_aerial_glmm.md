@@ -173,17 +173,21 @@ print(result)
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
 #> 1     379.    NA         NA        NA       NA       NA    48
 
-# Bootstrap CIs (slower)
+# Bootstrap CIs. `nboot` is held low here so the example stays fast on a
+# check machine; use at least 1000 replicates for real inference. The block
+# is wrapped in \donttest{} for runtime alone -- it needs no resource the
+# example cannot reach.
+# \donttest{
 result_boot <- estimate_effort_aerial_glmm(
   design,
   time_col = time_of_flight,
   boot = TRUE,
-  nboot = 100L
+  nboot = 25L
 )
 #> Warning: iteration limit reached
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
-#> Running 100 bootstrap replicates via lme4::bootMer...
+#> Running 25 bootstrap replicates via lme4::bootMer...
 #> Warning: ! Bootstrap SE ignores design strata ("day_type").
 #> ℹ The default GLMM formula has no stratum term; bootstrap resamples from a
 #>   single pooled model. Include strata in `formula` for stratified inference.
@@ -198,5 +202,6 @@ print(result_boot)
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     379.    NA         NA        NA     303.     442.    48
+#> 1     379.    NA         NA        NA     310.     439.    48
+# }
 ```

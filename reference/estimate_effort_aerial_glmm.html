@@ -241,17 +241,21 @@ North American Journal of Fisheries Management, 38, 194-209.
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     379.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Bootstrap CIs (slower)</span></span></span>
+<span class="r-in"><span><span class="co"># Bootstrap CIs. `nboot` is held low here so the example stays fast on a</span></span></span>
+<span class="r-in"><span><span class="co"># check machine; use at least 1000 replicates for real inference. The block</span></span></span>
+<span class="r-in"><span><span class="co"># is wrapped in \donttest{} for runtime alone -- it needs no resource the</span></span></span>
+<span class="r-in"><span><span class="co"># example cannot reach.</span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="va">result_boot</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort_aerial_glmm</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">design</span>,</span></span>
 <span class="r-in"><span>  time_col <span class="op">=</span> <span class="va">time_of_flight</span>,</span></span>
 <span class="r-in"><span>  boot <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>  nboot <span class="op">=</span> <span class="fl">100L</span></span></span>
+<span class="r-in"><span>  nboot <span class="op">=</span> <span class="fl">25L</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>iteration limit reached</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Running 100 bootstrap replicates via lme4::bootMer...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Running 25 bootstrap replicates via lme4::bootMer...</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Bootstrap SE ignores design strata (<span style="color: #0000BB;">"day_type"</span>).</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The default GLMM formula has no stratum term; bootstrap resamples from a</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   single pooled model. Include strata in `formula` for stratified inference.</span>
@@ -266,7 +270,8 @@ North American Journal of Fisheries Management, 38, 194-209.
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     379.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     303.     442.    48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     379.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     310.     439.    48</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

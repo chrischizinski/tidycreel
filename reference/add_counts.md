@@ -95,11 +95,11 @@ add_counts(
 
 - circuit_time:
 
-  Numeric. Circuit duration τ in hours — the time required to complete
-  one roving count circuit of the water body. Required when
-  `count_type = "progressive"` (CNT-05). Used to compute κ = T_d / τ and
-  Ê_d = C × τ × κ. Ignored (with a warning) when
-  `count_type = "instantaneous"`.
+  Numeric. Circuit duration \\\tau\\ in hours — the time required to
+  complete one roving count circuit of the water body. Required when
+  `count_type = "progressive"` (CNT-05). Used to compute \\\kappa = T_d
+  / \tau\\ and \\\hat{E}\_d = C \times \tau \times \kappa\\. Ignored
+  (with a warning) when `count_type = "instantaneous"`.
 
 - period_length_col:
 
@@ -134,7 +134,8 @@ add_counts(
   For instantaneous counts, supplying this is what makes the estimate
   angler-hours. A count is a snapshot of how many anglers were present
   at one moment; effort is that count times the period it was randomised
-  within, Ê_d = C̄\_d × T_d (Hoenig et al. 1993). Without it,
+  within, \\\hat{E}\_d = \bar{C}\_d \times T_d\\ (Hoenig et al. 1993).
+  Without it,
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   expands the counts to the season and returns them unmultiplied, and
   warns once per session that it has done so.
@@ -152,9 +153,10 @@ add_counts(
   for the period actually surveyed.
 
   The multiplication happens per PSU, before aggregation. Converting
-  after the fact computes C̄ × T̄ where the target is the mean of C × T;
-  the two differ by Cov(C, T), which is positive in practice because
-  anglers fish more on long days, so the collapsed form biases low.
+  after the fact computes \\\bar{C} \times \bar{T}\\ where the target is
+  the mean of \\C \times T\\; the two differ by Cov(C, T), which is
+  positive in practice because anglers fish more on long days, so the
+  collapsed form biases low.
 
 - allow_invalid:
 

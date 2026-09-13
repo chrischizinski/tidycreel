@@ -1,7 +1,8 @@
 # Extract per-site effort contributions from a bus-route estimate
 
-Returns the per-site calculation table (eᵢ, πᵢ, eᵢ/πᵢ) stored as an
-attribute on effort estimate objects returned by
+Returns the per-site calculation table (\\e_i\\, \\\pi_i\\,
+\\e_i/\pi_i\\) stored as an attribute on effort estimate objects
+returned by
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 for bus-route survey designs. This table enables traceability of the
 Horvitz-Thompson estimator (Jones & Pollock 2012, Eq. 19.4) and supports
