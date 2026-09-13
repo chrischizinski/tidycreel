@@ -19,9 +19,9 @@ The package handles this in one of two ways, in this order of
 preference:
 
 1.  **Transform**, where a principled transform for the quantity exists.
-    [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+    [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
     builds its interval on the logit scale;
-    [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+    [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
     uses Sadinle's (2009) 0.5 transformed logit interval for Chapman and
     Petersen \\\hat{N}\\; the product-total paths accept
     `ci_type = "log"`. A transformed interval is right-skewed and cannot
@@ -45,9 +45,9 @@ upper limit that the package knows.
 
 Two quantities are bounded below by something other than zero and are
 therefore left alone:
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md)
 and
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md)
 are bounded by the smallest occupied bin, so a clamp at zero would be
 the wrong repair.
 
@@ -61,14 +61,14 @@ minus one; mark-recapture uses the number of occasions.
 
 Six estimators use
 [`stats::qnorm()`](https://rdrr.io/r/stats/Normal.html) instead —
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
 and since \#310
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
 and
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
 themselves. This is deliberate, not an oversight.
 
 The first four form a linear combination of the rows of a length or age
@@ -99,7 +99,7 @@ upstream standard errors, and the large-sample argument is made there.
 These four estimators inherit that uncertainty rather than sampling
 afresh, so the normal quantile is the consistent choice at this level.
 
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md)
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md)
 is asymptotic by construction and has no finite df to appeal to. The
 normal quantile inside Sadinle's logit interval is part of the method,
 not a quantile choice.
@@ -112,10 +112,10 @@ Statistics - Simulation and Computation*, 38(9), 1909-1924.
 
 ## See also
 
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md),
-[`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md),
+[`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md)

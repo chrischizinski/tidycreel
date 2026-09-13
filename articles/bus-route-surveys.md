@@ -102,7 +102,7 @@ heterogeneity of site probabilities.
 
 tidycreel computes $`\pi_i = p\_site \times p\_period`$ directly from
 the sampling frame you supply to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
 This matches the primary source definition in Jones & Pollock (2012,
 p. 912) and the worked example in Malvestuto (1996, Box 20.6). The
 implementation is validated against that published example in the
@@ -315,7 +315,7 @@ print(design)
 #> D [circ1]: counted=4, interviewed=4, expansion=1
 ```
 
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
 joins πᵢ from the sampling frame to each interview row (stored as
 `.pi_i`) and computes the enumeration expansion factor
 (`.expansion = n_counted / n_interviewed`). These are used internally by
@@ -323,7 +323,7 @@ the estimation functions.
 
 ### Step 3: Estimate Effort
 
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 dispatches to the bus-route estimator and computes
 $`\hat{E} = \sum(e_i / \pi_i)`$.
 
@@ -384,7 +384,7 @@ Example 1 exactly.
 
 ### Step 4: Estimate Harvest
 
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
 applies the same Horvitz-Thompson logic to fish kept.
 
 ``` r

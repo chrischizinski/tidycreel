@@ -40,7 +40,7 @@ camera-days required per stratum; element `"total"` gives Cochran's
 overall sample size *before* proportional allocation, and `"allocated"`
 the sum of the per-stratum values actually returned. Budget against
 `"allocated"`; see
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 for why the two differ.
 
 ## Details
@@ -93,20 +93,20 @@ Journal of Fisheries Management 45:322-332.
 
 ## See also
 
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 for the equivalent function for angler-contact sampling days.
 
 Other "Planning & Sample Size":
-[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
-[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
-[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
-[`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md),
-[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md),
-[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md),
-[`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
+[`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md),
+[`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md),
+[`cv_from_n()`](https://chrischizinski.com/tidycreel/reference/cv_from_n.md),
+[`optimal_n()`](https://chrischizinski.com/tidycreel/reference/optimal_n.md),
+[`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md),
+[`reallocate_strata()`](https://chrischizinski.com/tidycreel/reference/reallocate_strata.md),
+[`simulate_strata_collapse()`](https://chrischizinski.com/tidycreel/reference/simulate_strata_collapse.md)
 
 ## Examples
 

@@ -47,7 +47,7 @@ print(design)
 ```
 
 The
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 function uses tidy selectors, so you can specify columns by name without
 quotes. The design object captures the survey structure: 14 days with
 weekday/weekend stratification.
@@ -57,7 +57,7 @@ weekday/weekend stratification.
 Next, we attach the daily effort observations to the design. The
 `effort_hours` column holds angler-hours already accumulated over each
 day, not the raw angler count seen at a single moment —
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 expands whatever column it is given without converting units, so this
 design reports angler-hours:
 
@@ -97,7 +97,7 @@ print(design)
 ```
 
 The
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 function validates that the count data matches the design structure,
 then constructs the internal survey design object. Notice that the
 design now shows count data attached with 14 observations.
@@ -177,7 +177,7 @@ columns or use tidyselect helpers like `starts_with()`.
 ## Variance Methods
 
 By default,
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 uses Taylor linearization for variance estimation. The package also
 supports bootstrap and jackknife methods:
 
@@ -294,18 +294,18 @@ opaquely.
 This vignette covers the core tidycreel workflow for instantaneous count
 surveys. For more details on specific functions, see their help pages:
 
-- [`?creel_design`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md) -
+- [`?creel_design`](https://chrischizinski.com/tidycreel/reference/creel_design.md) -
   Define survey calendar and stratification
-- [`?add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md) -
+- [`?add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md) -
   Attach count data to a design
-- [`?estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md) -
+- [`?estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md) -
   Compute effort estimates with variance
-- [`?as_creel_svydesign`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md) -
+- [`?as_creel_svydesign`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md) -
   Extract internal survey object for advanced use
 
 For information on the example datasets:
 
-- [`?example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md) -
+- [`?example_calendar`](https://chrischizinski.com/tidycreel/reference/example_calendar.md) -
   Example survey calendar
-- [`?example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md) -
+- [`?example_counts`](https://chrischizinski.com/tidycreel/reference/example_counts.md) -
   Example count observations

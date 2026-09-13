@@ -29,10 +29,10 @@ Ice fishing surveys collect two distinct effort measures:
   pressure more precisely but requires more careful interviewing.
 
 The `effort_type` argument to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 controls which measure the design tracks, and adds a matching column to
 the
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 output: `total_effort_hr_on_ice` for `"time_on_ice"` and
 `total_effort_hr_active` for `"active_fishing_time"`. Both are aliases
 of `estimate`, which is present on every design and is what generic code
@@ -43,7 +43,7 @@ should read.
 Ice anglers fish from open-air setups or enclosed dark-house shelters.
 Catch rates and effort patterns differ between these groups — dark-house
 anglers often target specific species and fish longer hours. The
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 function accepts a `by` argument to produce separate estimates for each
 shelter type.
 
@@ -95,7 +95,7 @@ for each angler party.
 ## Design Construction
 
 Build an ice fishing design using
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 with `survey_type = "ice"`. The `effort_type` argument is required and
 determines the column label in downstream output. We use
 `p_period = 0.5` as a scalar (uniform period sampling probability across
@@ -149,7 +149,7 @@ creel_design(
 ## Attaching Interview Data
 
 Use
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
 to attach the survey data to the design. For ice surveys, `n_counted`
 and `n_interviewed` are required — they record how many parties were
 counted at the access point versus how many were actually interviewed
@@ -179,7 +179,7 @@ design <- add_interviews(
 
 ## Effort Estimation
 
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 dispatches through the bus-route Horvitz-Thompson estimator and returns
 the total angler-hours with a standard error and confidence interval.
 The effort column is returned twice: as `estimate`, the name every
@@ -262,7 +262,7 @@ reflects the non-fishing portion of each trip.
 ## Shelter Mode Stratification
 
 Pass `by = shelter_mode` to
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 to produce separate effort estimates for open-air anglers and dark-house
 anglers. This uses the same Horvitz-Thompson framework with the
 interview data split by the grouping variable.
@@ -295,10 +295,10 @@ of party counts alone would suggest.
 
 ## Catch Rate Estimation
 
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 computes the ratio-of-means CPUE (fish per angler-hour) using the catch
 and effort columns specified in
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md).
 By default, only complete trips are used to avoid the well-known
 incomplete-trip bias in effort-based catch rates.
 
@@ -326,7 +326,7 @@ complete interviews used in the ratio.
 ## Total Catch Estimation
 
 On instantaneous designs
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 multiplies a catch rate by a total effort estimate, but ice designs take
 the bus-route dispatch instead and form no such product. The total is a
 direct Horvitz-Thompson sum over the interviewed parties, each party’s

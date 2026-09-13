@@ -4,7 +4,7 @@ Angler interview data for an aerial creel survey at a Nebraska
 reservoir. Contains 48 interviews across 16 sampling days in June-July
 2024, with 3 interviews per sampling day. Anglers target walleye and
 bass. All interviews are complete trips. Dates match
-[`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md).
+[`example_aerial_counts`](https://chrischizinski.com/tidycreel/reference/example_aerial_counts.md).
 
 ## Usage
 
@@ -32,7 +32,7 @@ A data frame with 48 rows and 8 variables:
 
   Numeric trip duration in hours (range 1.0-5.0). This column feeds the
   mean trip duration (\\\bar{L}\\) used in
-  [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  [`estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
 
 - walleye_catch:
 
@@ -56,32 +56,32 @@ Simulated for package documentation.
 
 ## See also
 
-[example_aerial_counts](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md)
+[example_aerial_counts](https://chrischizinski.com/tidycreel/reference/example_aerial_counts.md)
 for matching count data,
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 
 Other "Example Datasets":
-[`creel_counts_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_counts_toy.md),
-[`creel_interviews_toy`](https://chrischizinski.github.io/tidycreel/reference/creel_interviews_toy.md),
-[`example_aerial_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_counts.md),
-[`example_aerial_glmm_counts`](https://chrischizinski.github.io/tidycreel/reference/example_aerial_glmm_counts.md),
-[`example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md),
-[`example_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_calendar.md),
-[`example_camera_counts`](https://chrischizinski.github.io/tidycreel/reference/example_camera_counts.md),
-[`example_camera_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_camera_interviews.md),
-[`example_camera_timestamps`](https://chrischizinski.github.io/tidycreel/reference/example_camera_timestamps.md),
-[`example_catch`](https://chrischizinski.github.io/tidycreel/reference/example_catch.md),
-[`example_counts`](https://chrischizinski.github.io/tidycreel/reference/example_counts.md),
-[`example_ice_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_ice_interviews.md),
-[`example_ice_sampling_frame`](https://chrischizinski.github.io/tidycreel/reference/example_ice_sampling_frame.md),
-[`example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md),
-[`example_lengths`](https://chrischizinski.github.io/tidycreel/reference/example_lengths.md),
-[`example_sections_calendar`](https://chrischizinski.github.io/tidycreel/reference/example_sections_calendar.md),
-[`example_sections_counts`](https://chrischizinski.github.io/tidycreel/reference/example_sections_counts.md),
-[`example_sections_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_sections_interviews.md)
+[`creel_counts_toy`](https://chrischizinski.com/tidycreel/reference/creel_counts_toy.md),
+[`creel_interviews_toy`](https://chrischizinski.com/tidycreel/reference/creel_interviews_toy.md),
+[`example_aerial_counts`](https://chrischizinski.com/tidycreel/reference/example_aerial_counts.md),
+[`example_aerial_glmm_counts`](https://chrischizinski.com/tidycreel/reference/example_aerial_glmm_counts.md),
+[`example_ages`](https://chrischizinski.com/tidycreel/reference/example_ages.md),
+[`example_calendar`](https://chrischizinski.com/tidycreel/reference/example_calendar.md),
+[`example_camera_counts`](https://chrischizinski.com/tidycreel/reference/example_camera_counts.md),
+[`example_camera_interviews`](https://chrischizinski.com/tidycreel/reference/example_camera_interviews.md),
+[`example_camera_timestamps`](https://chrischizinski.com/tidycreel/reference/example_camera_timestamps.md),
+[`example_catch`](https://chrischizinski.com/tidycreel/reference/example_catch.md),
+[`example_counts`](https://chrischizinski.com/tidycreel/reference/example_counts.md),
+[`example_ice_interviews`](https://chrischizinski.com/tidycreel/reference/example_ice_interviews.md),
+[`example_ice_sampling_frame`](https://chrischizinski.com/tidycreel/reference/example_ice_sampling_frame.md),
+[`example_interviews`](https://chrischizinski.com/tidycreel/reference/example_interviews.md),
+[`example_lengths`](https://chrischizinski.com/tidycreel/reference/example_lengths.md),
+[`example_sections_calendar`](https://chrischizinski.com/tidycreel/reference/example_sections_calendar.md),
+[`example_sections_counts`](https://chrischizinski.com/tidycreel/reference/example_sections_counts.md),
+[`example_sections_interviews`](https://chrischizinski.com/tidycreel/reference/example_sections_interviews.md)
 
 ## Examples
 

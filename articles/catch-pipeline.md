@@ -136,7 +136,7 @@ cat("MOR:", round(mor, 3), "fish/hr\n")
 These match the by-hand calculations above.
 
 Now confirm the ROM result with
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 from tidycreel:
 
 ``` r
@@ -408,7 +408,7 @@ instantaneous-count surveys with complete trip interviews.
 
 For the full API walkthrough using real survey data, see
 [Interview-Based
-Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.md).
+Estimation](https://chrischizinski.com/tidycreel/articles/interview-estimation.md).
 
 ## References
 

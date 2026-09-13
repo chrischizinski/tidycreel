@@ -69,7 +69,7 @@ impute_camera_counts(
 
   `m > 1` performs **multiple imputation** and returns a
   `camera_imputations` object for
-  [`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md)
+  [`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md)
   to pool. Afrifa-Yamoah et al. (2020) use `m = 5` as "an appropriate
   balance of the bias-variance trade-off".
 
@@ -94,7 +94,7 @@ logical column `.imputed` appended as the last column. Outage rows are
 filled in `count_col` with model-predicted counts (rounded to integer).
 The `count_col` storage mode is set to `"integer"` for schema
 compatibility with
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 Row count equals `nrow(data)`.
 
 ## Details
@@ -135,7 +135,7 @@ convergence check beyond the error.
 What this function does take from Afrifa-Yamoah et al. (2020) is the
 multiple-imputation framing itself: that a single completed data set
 cannot carry the uncertainty of having imputed at all. See `m` below and
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md).
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md).
 
 ## References
 
@@ -156,30 +156,30 @@ one; it is not the source of the per-stratum model used here.
 
 ## See also
 
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 
 Other "Survey Design":
-[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
-[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
-[`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md),
-[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
-[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
-[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
-[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
-[`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md),
-[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
-[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
-[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
-[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
-[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
 
 ## Examples
 

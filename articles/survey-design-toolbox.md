@@ -3,11 +3,11 @@
 This vignette collects three M014 tools into one practitioner-facing
 workflow:
 
-1.  [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+1.  [`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md)
     for pre-season sample-size and power planning
-2.  [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
+2.  [`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md)
     for side-by-side comparison of completed survey estimates
-3.  [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+3.  [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
     for combining disjoint count frames in a single survey design
 
 ``` r
@@ -20,7 +20,7 @@ library(tidycreel)
 Pre-season planning usually starts with pilot information: expected
 effort by stratum, variability in daily counts, and rough
 interview-level CV values for catch and effort.
-[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+[`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md)
 provides one interface for three planning questions.
 
 ### Required sampling days for total effort precision
@@ -105,7 +105,7 @@ can deliver.
 ## 2 Comparing finished designs with `compare_designs()`
 
 Once a survey has been completed,
-[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
+[`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md)
 helps compare multiple `creel_estimates` objects on a common scale. In
 this example we estimate total effort twice from the same dataset,
 changing only the variance method.
@@ -177,7 +177,7 @@ by hand.
 Some programs count disjoint parts of a fishery separately — most often
 boat anglers and bank anglers, which are reached by different field
 methods and enumerated at different rates.
-[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
 combines those count series into a single `survey` design object,
 treating each as its own stratum with its own within-day sampling
 fraction, and clustering observations on the date so the date is the
@@ -190,7 +190,7 @@ trips while they fish — and a survey mixing the two is a *hybrid
 interview* design. Counts are not described that way; they are
 instantaneous, progressive, bus-route, camera or aerial. tidycreel
 carries the interview axis on
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)’s
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)’s
 `interview_type` argument. What this function takes is a **count
 frame**: a disjoint part of the fishery with its own count, typically an
 angler-type domain such as boat or bank anglers. You name the column
@@ -264,7 +264,7 @@ hybrid_design
 
 The returned object is a `survey` design rather than a `creel_design`,
 so
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 does not accept it; estimate from it with `survey` directly.
 
 ``` r
@@ -289,12 +289,12 @@ addable.
 
 The survey-design toolbox supports the full planning-to-reporting arc:
 
-- [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+- [`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md)
   helps set realistic pre-season sample sizes and power targets
-- [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
+- [`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md)
   turns alternative estimator outputs into a tidy, directly comparable
   object with a plotting method
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   bridges programs that count two disjoint parts of a fishery separately
   into one survey design for downstream analysis
 

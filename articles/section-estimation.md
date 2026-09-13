@@ -8,7 +8,7 @@ managed as a separate reporting unit. Each section has its own observed
 count data and its own set of angler interviews, so effort levels and
 catch rates can differ materially between sections.
 
-[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
+[`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md)
 is the right tool when the survey design *explicitly* stratifies by
 section: when different field crews patrol different areas, when
 section-level estimates are required in the final report, or when the
@@ -16,9 +16,9 @@ lake is large enough that assuming uniform effort across the full water
 body would be misleading. If you are simply curious about spatial
 patterns but did not design the survey with sections in mind, use the
 standard
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 workflow without
-[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md).
+[`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md).
 
 ------------------------------------------------------------------------
 
@@ -84,7 +84,7 @@ per-section output.
 
 ## Per-Section Effort Estimation
 
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 detects the registered sections and returns one row per section plus a
 `.lake_total` row that aggregates across sections. The lake-total
 standard error accounts for cross-section covariance (described in the
@@ -132,7 +132,7 @@ structural, not estimated.
 Catch rate (CPUE, fish per angler-hour) is a ratio estimator. Ratios are
 not additive across sections: you cannot average North’s rate and
 South’s rate to produce a valid lake-wide CPUE. For this reason,
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 on a sectioned design returns one row per section with **no
 `.lake_total` row**.
 
@@ -154,7 +154,7 @@ print(cpue_est$estimates)
 estimator and ratios are not additive — South’s high catch rate cannot
 simply be averaged with North’s low rate to produce a valid lake-wide
 CPUE. To estimate the lake-wide catch rate, call
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 on a design without section registration.
 
 ``` r
@@ -293,7 +293,7 @@ estimate_effort(design, method = "independent")$estimates
 ## Missing Section Warning
 
 If a registered section has no count data on any survey day,
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 produces an NA row with `data_available = FALSE` and emits a warning.
 This prevents silent omission of sections that should have been
 observed.

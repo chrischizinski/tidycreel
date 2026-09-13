@@ -279,8 +279,8 @@ Canada*, 15(1), 19–25.
 ## See also
 
 Other Estimation:
-[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md),
-[`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+[`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md),
+[`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
 
 ## Examples
 

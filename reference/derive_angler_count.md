@@ -1,7 +1,7 @@
 # Derive an angler count from its components
 
 Builds the single angler-count column that
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 needs from the columns a creel clerk actually records. Counts are
 commonly split across bank anglers and boats, and the estimators need
 one number per count.
@@ -56,7 +56,7 @@ derive_angler_count(
   Mean anglers per boat party, used to expand `boat_count`. One of: a
   single number; a tidy selector for a numeric column of `counts`; or a
   data frame of the kind
-  [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
   returns with `by`, which is joined onto `counts` by its non-numeric
   columns.
 
@@ -64,7 +64,7 @@ derive_angler_count(
 
   Optional standard error of `party_size`, in the same three shapes.
   Defaults to the `"se"` attribute of `party_size` when it has one, so
-  [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
   output propagates on its own. There is deliberately no zero default;
   see the section above.
 
@@ -79,7 +79,7 @@ build it (`bank`, `boat_anglers`, `boat_count`) removed — they are
 superseded by the derived count and, where applicable, by
 `expansion_basis`. Leaving them in produced a table that varied between
 sub-counts of one sampling unit, which
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 cannot distinguish from an undeclared structural dimension (GH \#162).
 The destination column is never dropped, even when it is also one of the
 inputs.
@@ -90,15 +90,15 @@ which is what the multiplier acts on), `expansion_se`, `expansion_group`
 (which rows share one estimated multiplier, and so carry perfectly
 correlated error), and `expansion_of` (the column the basis is the
 derivative of).
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 recognises all four and excludes them from count-column detection.
 
 They must travel together and must reach
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 alongside the column named in `expansion_of`. Transforming that column
 in between – multiplying a count by a shift length, say – scales the
 count but not its derivative, and
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 refuses rather than propagate a component that is understated by exactly
 the scale factor. Pass the per-day count and let `period_length_col` do
 the multiplication instead.
@@ -138,7 +138,7 @@ effort standard error is too small; the estimate itself is unaffected.
 
 Supply `party_size_se` to carry that term through to the effort standard
 error.
-[`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
 returns it as a `"se"` attribute, which is picked up automatically when
 its output is passed as `party_size`, so the usual pipeline propagates
 the term without any extra argument.
@@ -152,31 +152,31 @@ that case, and `attr(<estimates>, "se_expansion")` is `NULL` rather than
 
 ## See also
 
-[`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md),
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
-[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md)
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md)
 
 Other "Survey Design":
-[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
-[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
-[`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md),
-[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
-[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
-[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
-[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
-[`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
-[`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md),
-[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
-[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
-[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
-[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
-[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/reference/creel_vocabulary.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
 
 ## Examples
 

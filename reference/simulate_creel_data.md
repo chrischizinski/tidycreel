@@ -122,7 +122,7 @@ simulate_creel_data(
 
   Numeric latitude in decimal degrees, positive north. When given, the
   daily fishing period \\T\\ is computed per date with
-  [`day_length`](https://chrischizinski.github.io/tidycreel/reference/day_length.md)
+  [`day_length`](https://chrischizinski.com/tidycreel/reference/day_length.md)
   and the counts table gains `daylight_hours` and `angler_hours`
   columns. Default `NULL`. Mutually exclusive with `daylight_hours`.
 
@@ -152,7 +152,7 @@ A named list with four data frames:
 
   Full-season calendar, one row per day. Columns: `date`, `day_type`,
   `sampled` (logical). Pass directly to
-  [`creel_design`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  [`creel_design`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
   as the `calendar` argument. Unsampled days have day_type assigned
   proportionally from `day_types`.
 
@@ -171,7 +171,7 @@ A named list with four data frames:
   plus `daylight_hours` (\\T\\ for that day) and `angler_hours`
   (`total_anglers * daylight_hours`) when `lat` or `daylight_hours` was
   supplied. Pass `count_time_col = count_time` to
-  [`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   when `n_counts_per_day > 1`.
 
 - `catch`:
@@ -180,16 +180,16 @@ A named list with four data frames:
   `catch_type` (`"caught"`, `"harvested"`, `"released"`).
 
 **Pass `angler_hours`, not `total_anglers`, to
-[`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).**
+[`add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md).**
 An instantaneous count estimates the mean number of anglers present, not
 effort; effort is that count multiplied by the length of the period the
 count was randomised within (Hoenig et al. 1993).
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 expands whatever numeric column it is given and cannot tell the two
 apart, so handing it `total_anglers` yields angler-days silently
 mislabelled as angler-hours. When `lat` or `daylight_hours` is supplied
 the counts table carries three numeric columns and
-[`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 will not guess between them: name the one you mean with
 `add_counts(design, sim$counts, count_col = angler_hours)`.
 
@@ -197,24 +197,24 @@ When `n_counts_per_day > 1` you must also **drop the measures you are
 not using** before attaching. `total_anglers` differs between the counts
 taken within one day, so aggregation has no single value to carry
 forward and would otherwise keep whichever came first.
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 aborts rather than do that (GH \#162); select the columns you need, as
 the second example below does. `daylight_hours` is constant within a day
 and can stay.
 
 Note that
-[`day_length`](https://chrischizinski.github.io/tidycreel/reference/day_length.md)
+[`day_length`](https://chrischizinski.com/tidycreel/reference/day_length.md)
 gives astronomical daylight. Where the fishing day is fixed by
 regulation or access hours instead, pass that period as
 `daylight_hours`.
 
 The `schedule` output can be passed directly to
-[`creel_design`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 as the `calendar` argument. The `interviews` and `counts` outputs are
 then passed to
-[`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+[`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
 and
-[`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 
 ## References
 
@@ -235,11 +235,11 @@ Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70:
 
 ## See also
 
-[`simulate_creel_catch`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_catch.md)
+[`simulate_creel_catch`](https://chrischizinski.com/tidycreel/reference/simulate_creel_catch.md)
 
 Other "Simulation":
-[`day_length()`](https://chrischizinski.github.io/tidycreel/reference/day_length.md),
-[`simulate_creel_catch()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_catch.md)
+[`day_length()`](https://chrischizinski.com/tidycreel/reference/day_length.md),
+[`simulate_creel_catch()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_catch.md)
 
 ## Examples
 

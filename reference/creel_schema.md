@@ -7,7 +7,7 @@ data source. The schema is the full connection contract consumed by
 companion package.
 
 Construction is permissive — all column arguments default to `NULL`. Use
-[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
 to check that required columns for the given survey type are mapped.
 
 ## Usage
@@ -96,11 +96,11 @@ creel_schema(
   `c(day_type = "DayType")`. An unnamed entry, `c("day_type")`, means
   the source already uses the design's name. Unlike every other field
   here, a stratum has no canonical tidycreel name:
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   matches `design$strata_cols` — the caller's own calendar column names
   — against the names of the counts frame, so the mapping has to be
   two-sided. Without it a fetched counts frame reaches
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   with no stratum label and any design built with `strata =` aborts (GH
   \#171).
 
@@ -142,7 +142,7 @@ creel_schema(
   Column name for the time of a count observation, such as `"16:30"` or
   `"am"`. Optional. Map it whenever the source records more than one
   count per sampled day: the fetched `count_time` column is what
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)'s
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)'s
   `count_time_col` argument groups on, and without it those rows reach
   the design as separate sampled days rather than as repeat looks at
   one, which sums the day's effort instead of averaging it and leaves
@@ -185,7 +185,7 @@ creel_schema(
   Column name for a length-bin label, such as `"300-350"`. Optional, and
   mutually exclusive with `length_mm_col` on any given row: a fish is
   either measured or binned. Pass the fetched `length_bin` column as
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)'s
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)'s
   `length` argument together with `release_format = "binned"` (GH
   \#127).
 
@@ -193,7 +193,7 @@ creel_schema(
 
   Column name for the number of fish a binned length row represents.
   Optional, but required by
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
   whenever binned release rows are present: a binned row is
   frequency-weighted, so dropping the count weights the length
   distribution by row multiplicity instead of by fish (GH \#127). `NA`
@@ -252,7 +252,7 @@ creel_schema(
 
   Column name for the site an interview was taken at. Bus-route designs
   need it to join the site inclusion probability; without it
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   cannot build the \\\pi_i\\ term (GH \#126).
 
 - circuit_col:
@@ -290,26 +290,26 @@ A `creel_schema` S3 object.
 ## See also
 
 Other "Survey Design":
-[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
-[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
-[`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md),
-[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
-[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
-[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
-[`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
-[`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md),
-[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
-[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
-[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
-[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
-[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
 
 ## Examples
 

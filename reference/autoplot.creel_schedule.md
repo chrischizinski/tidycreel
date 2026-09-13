@@ -19,9 +19,9 @@ autoplot(object, title = "Creel Schedule", ...)
 - object:
 
   A `creel_schedule` object from
-  [`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md)
   or
-  [`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md).
+  [`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_bus_schedule.md).
 
 - title:
 
@@ -38,16 +38,16 @@ A `ggplot` object.
 
 ## See also
 
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md),
-[`print.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_schedule.md),
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md),
+[`print.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/print.creel_schedule.md),
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 
 Other "Visualisation":
-[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
-[`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md),
-[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
-[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md),
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`autoplot.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_length_distribution()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_length_distribution.md),
+[`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md),
+[`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md),
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 
 ## Examples
 

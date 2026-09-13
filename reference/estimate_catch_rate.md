@@ -27,7 +27,7 @@ estimate_catch_rate(
 - design:
 
   A creel_design object with interviews attached via
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md).
   The design must have an interview survey object constructed with catch
   and effort columns.
 
@@ -41,10 +41,10 @@ estimate_catch_rate(
 
   Two kinds of column are not groupings and are refused: the interview
   id, as registered by
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
   or
-  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md),
+  [`add_ages()`](https://chrischizinski.com/tidycreel/reference/add_ages.md),
   which holds one value per interview and so leaves no within-group
   variance to estimate; and columns the package derived rather than the
   user supplying, such as `.angler_effort`. A wildcard selector drops
@@ -221,7 +221,7 @@ When called on a sectioned design, no `.lake_total` row is produced.
 Catch rates (fish per angler-hour) are not additive across sections.
 Lake-wide catch rate requires a separate unsectioned call on the full
 design. See
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 for lake-wide total catch estimation.
 
 `estimator = "regression"` on a sectioned design fits one regression per
@@ -254,21 +254,21 @@ validation when complete trip samples are insufficient.
 ## See also
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

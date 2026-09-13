@@ -26,7 +26,7 @@ correction** adjusts the count upward. If observers detect only 85% of
 anglers present, the corrected effort estimate is scaled by
 $`1 / 0.85 \approx 1.18`$, yielding a higher and more accurate total.
 The `visibility_correction` argument to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 carries $`v`$, and is required for an aerial design: pass `"none"` to
 state explicitly that no correction applies.
 
@@ -113,7 +113,7 @@ catch by species.
 ## Design Construction
 
 Build an aerial survey design with
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
 The `h_open` argument is required for aerial surveys — it specifies the
 number of hours the fishery is open each day, which sets the expansion
 factor for the instantaneous count.
@@ -164,7 +164,7 @@ sampling days in each stratum.
 ## Adding Count Data and Estimating Effort
 
 Attach the aerial count data with
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 The `n_anglers` column is auto-detected as the count variable.
 
 ``` r
@@ -176,11 +176,11 @@ design <- add_counts(design, example_aerial_counts)
 
 Aerial effort estimation requires interview data to be attached before
 calling
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
 because the estimator uses the mean trip duration ($`\bar{L}`$) from
 ground interviews to confirm the expansion factor. Attach the interview
 data with
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
 then estimate total effort.
 
 ``` r
@@ -226,7 +226,7 @@ give the 95% confidence interval.
 
 When aerial observers cannot detect all anglers on the water, the raw
 count underestimates true effort. Supply a `visibility_correction` to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 to account for this. A value of 0.85 means observers detected 85% of the
 anglers actually present; the effort estimate is scaled up by
 $`1 / 0.85`$.
@@ -321,7 +321,7 @@ print(catch_rate)
 #> 1    0.413 0.0601    0.295    0.531    48
 ```
 
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 multiplies the CPUE estimate by the total effort estimate to project
 total walleye catch over the survey period.
 
@@ -359,9 +359,9 @@ steps:
     data from each overflight.
 3.  `add_interviews(design, interviews, catch = ..., effort = hours_fished, ...)`
     — attach ground interview data for catch rate estimation.
-4.  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-    [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-    [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+4.  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+    [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+    [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
     — run the estimators.
 
 All estimators return `creel_estimates` objects with point estimates,

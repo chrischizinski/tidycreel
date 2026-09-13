@@ -3,7 +3,7 @@
 `add_ages()` attaches a data frame of individual fish age records (from
 scale, fin ray, or otolith samples) to a `creel_design` object. The age
 data are linked to interviews via a shared identifier, analogous to
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md).
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md).
 
 ## Usage
 
@@ -26,7 +26,7 @@ add_ages(design, data, age_uid, interview_uid, species, age, age_type)
   Unquoted column in `data` — the column that holds the interview
   identifier, linking each age record to its interview (the foreign key;
   analogous to `length_uid` in
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)).
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)).
 
 - interview_uid:
 
@@ -53,7 +53,7 @@ associated column-name slots.
 
 ## See also
 
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
 
 ## Examples
 

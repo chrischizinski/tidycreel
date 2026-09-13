@@ -22,16 +22,22 @@ itself deliberately leaves out of scope:
 
 ## Installation
 
-tidycreel.connect is available from GitHub:
+tidycreel.connect lives in a subdirectory of the tidycreel repository
+rather than a repository of its own, so both installers need to be told
+where to look:
 
 ``` r
 
 # Using remotes
-remotes::install_github("chrischizinski/tidycreel.connect")
+remotes::install_github("chrischizinski/tidycreel", subdir = "tidycreel.connect")
 
 # Or using pak
-pak::pak("chrischizinski/tidycreel.connect")
+pak::pak("chrischizinski/tidycreel/tidycreel.connect")
 ```
+
+It is not on CRAN, and it requires tidycreel 7.0.0 or newer: identifier
+columns are normalised to character on both sides of the boundary, so an
+older tidycreel would hand the design numeric ids for the same survey.
 
 ## How tidycreel.connect relates to tidycreel
 
@@ -101,7 +107,7 @@ column names and coerces data types at import time.
 
 - `fetch_counts(conn, ...)` — loads survey count records (bank anglers,
   angler boats, non-angler boats) into a data frame ready for
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
 - `fetch_interviews(conn, ...)` — loads interview records including IDs,
   dates, catch counts, effort, and trip status.
 - `fetch_catch(conn, ...)` — loads catch detail records associated with
@@ -142,7 +148,9 @@ interviews <- fetch_interviews(con)
 
 ## More information
 
-- Source and documentation: `chrischizinski/tidycreel.connect` on GitHub
+- Source and documentation: `chrischizinski/tidycreel`, under
+  `tidycreel.connect/`
 - Main package: <https://github.com/chrischizinski/tidycreel>
-- Bug reports and feature requests: open an issue on the
-  tidycreel.connect repository.
+- Bug reports and feature requests: both packages share one issue
+  tracker, <https://github.com/chrischizinski/tidycreel/issues> — there
+  is no separate tidycreel.connect repository to open an issue on.

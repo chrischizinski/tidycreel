@@ -10,7 +10,7 @@ but only after validation.
 
 Use complete trips by default. Before relying on incomplete trips, run
 the required statistical validation with
-[`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md).
+[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md).
 Never pool complete and incomplete trips: their sampling probabilities
 differ.
 
@@ -91,7 +91,7 @@ Before considering incomplete trips, confirm that you have:
   al. 1994)
 - Adequate incomplete sample size (n ≥ 30 for stable estimates)
 - Statistical validation using
-  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
 - Understanding of survey-specific fish behavior
 
 ### Mean-of-Ratios vs. Ratio-of-Means
@@ -117,7 +117,7 @@ inappropriate. The mean-of-ratios has higher variance but can be
 unbiased under stationarity assumptions.
 
 For details on variance estimation, see
-[`?estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+[`?estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
 
 ## Recommended field protocol
 
@@ -284,7 +284,7 @@ print(validation)
 ```
 
 The
-[`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
 function performs Two One-Sided Tests (TOST) to statistically test
 whether complete and incomplete trip CPUE estimates are equivalent
 within a threshold.
@@ -662,7 +662,7 @@ print(cpue_diagnostic)
 - No p-values or equivalence assessment
 - No pass/fail recommendation
 - Use
-  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
   for decision-making
 
 ### Interpretation Guidance
@@ -675,7 +675,7 @@ difference” (established in Phase 17):
   further
 
 This is a heuristic, not a statistical test. For formal validation, use
-[`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md).
+[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md).
 
 ## Advanced: Grouped Validation
 
@@ -755,7 +755,7 @@ estimate).
 - At least one p ≥ 0.05 → equivalence not confirmed (FAILED)
 
 For mathematical details and variance formulas, see
-[`?validate_incomplete_trips`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md).
+[`?validate_incomplete_trips`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md).
 
 ### Equivalence Threshold Configuration
 
@@ -827,7 +827,7 @@ The MOR print method shows truncation details:
     Warning: 7% of incomplete trips truncated (>5% threshold)
 
 For details on truncation methodology, see
-[`?estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`?estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 and Phase 16 documentation.
 
 ### Mean-of-Ratios Variance
@@ -855,7 +855,7 @@ accounting for catch-effort covariance.
     - NO → Sample size too small, stick with complete trips
     - YES → Continue
 3.  **Have you run
-    [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)?**
+    [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)?**
     - NO → Run validation before proceeding
     - YES → Continue
 4.  **Did validation PASS?**
@@ -881,7 +881,7 @@ accounting for catch-effort covariance.
 **When considering incomplete trips:**
 
 - Validate using
-  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
   FIRST
 - Document validation results (passed/failed, p-values, threshold)
 - Revalidate if survey protocol or location changes
@@ -898,13 +898,13 @@ accounting for catch-effort covariance.
 
 For detailed documentation, see:
 
-- [`?validate_incomplete_trips`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+- [`?validate_incomplete_trips`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
   — TOST equivalence testing
-- [`?estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+- [`?estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   — CPUE estimation with use_trips parameter
-- [`?add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+- [`?add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   — Attach interview data with trip_status
-- [`?example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md)
+- [`?example_interviews`](https://chrischizinski.com/tidycreel/reference/example_interviews.md)
   — Example data with complete/incomplete trips
 
 For complete trip estimation workflow, see the “Interview-Based Catch

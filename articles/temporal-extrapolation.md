@@ -5,9 +5,9 @@
 Creel surveys sample a fraction of days in a season. Design-based
 estimators in tidycreel automatically account for unsampled days through
 survey weights — so when you call
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 or
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
 the result is already a season-total estimate, not just a sample-day
 sum.
 
@@ -17,12 +17,12 @@ The examples show how to:
 2.  Break the season into monthly totals using separate monthly designs
 3.  Combine monthly estimates to a season or annual total
 4.  Assemble multi-estimate reports with
-    [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
+    [`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md)
 
 ## How Design-Based Extrapolation Works
 
 When you create a design with
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
 the survey object assigns a **weight** to each sampled day. A day
 sampled at rate $`f`$ receives weight $`1/f`$, so its observed
 angler-hours represent $`1/f`$ days of that stratum type. The estimator
@@ -46,7 +46,7 @@ holiday days into a final analysis stratum,
 `target = "period_total"` expand within those declared strata exactly as
 they do for the usual weekday/weekend case. The important constraint is
 that the calendar passed to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 must use the resolved final analysis stratum rather than the old
 baseline label. Sparse special strata still trigger the usual variance
 diagnostics: warnings for unstable small strata and explicit single-PSU
@@ -102,9 +102,9 @@ nrow(sampled_calendar) # Number of sampled days
 ## Season-Total Effort
 
 Pass the sampled calendar to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
 attach the counts, and call
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md).
 The result is the estimated total angler-hours for the entire
 May–September season.
 
@@ -311,11 +311,11 @@ season_catch
 
 ## Assembling a Summary Report
 
-[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
+[`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md)
 assembles multiple `creel_estimates` objects into a single wide tibble
 for reporting. For a monthly summary, build a list with named entries
 and pass it to
-[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md).
+[`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md).
 
 ``` r
 
@@ -426,7 +426,7 @@ season_summary(year_effort)$table
 
 ## Exporting Results
 
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 accepts any data frame, so you can export the assembled summary table
 directly:
 
@@ -440,10 +440,10 @@ write_schedule(effort_summary$table, "effort_by_month_2024.xlsx")
 
 | Goal | Approach |
 |----|----|
-| Season total | Single design covering full season; call [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md) once |
+| Season total | Single design covering full season; call [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md) once |
 | Monthly totals | Separate monthly designs; loop over months |
 | Season total from months | Sum monthly estimates; sum monthly variances |
-| Annual comparison | Separate annual designs; use [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md) |
+| Annual comparison | Separate annual designs; use [`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md) |
 | Report table | `season_summary(named_list_of_estimates)$table` |
 
 ## References

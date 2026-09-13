@@ -3,7 +3,7 @@
 Returns the enumeration count data (observed and interviewed angler
 counts, and the expansion factor) for each interview record in a
 bus-route `creel_design` with interviews attached via
-[`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+[`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md).
 
 The expansion factor \\n\\counted / n\\interviewed\\ accounts for
 anglers present at a site who were not interviewed. It is used during
@@ -22,7 +22,7 @@ get_enumeration_counts(design)
 
   A `creel_design` object with `design_type = "bus_route"` and interview
   data attached via
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md).
 
 ## Value
 
@@ -41,15 +41,15 @@ American Fisheries Society. Enumeration expansion factor used in Eq.
 
 ## See also
 
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`get_sampling_frame()`](https://chrischizinski.github.io/tidycreel/reference/get_sampling_frame.md),
-[`get_inclusion_probs()`](https://chrischizinski.github.io/tidycreel/reference/get_inclusion_probs.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
+[`get_sampling_frame()`](https://chrischizinski.com/tidycreel/reference/get_sampling_frame.md),
+[`get_inclusion_probs()`](https://chrischizinski.com/tidycreel/reference/get_inclusion_probs.md)
 
 Other "Bus-Route Helpers":
-[`get_inclusion_probs()`](https://chrischizinski.github.io/tidycreel/reference/get_inclusion_probs.md),
-[`get_sampling_frame()`](https://chrischizinski.github.io/tidycreel/reference/get_sampling_frame.md),
-[`get_site_contributions()`](https://chrischizinski.github.io/tidycreel/reference/get_site_contributions.md)
+[`get_inclusion_probs()`](https://chrischizinski.com/tidycreel/reference/get_inclusion_probs.md),
+[`get_sampling_frame()`](https://chrischizinski.com/tidycreel/reference/get_sampling_frame.md),
+[`get_site_contributions()`](https://chrischizinski.com/tidycreel/reference/get_site_contributions.md)
 
 ## Examples
 

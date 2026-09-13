@@ -2,7 +2,7 @@
 
 `est_biomass()` converts a pressure-weighted length-frequency
 distribution produced by
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
 into a total biomass estimate using the allometric length-weight
 equation \\W = a \cdot L^b\\.
 
@@ -14,7 +14,7 @@ bin counts were treated as uncorrelated, which under-estimated the
 variance.
 
 Since GH \#310 the counts supplied by
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
 describe the **reported catch** rather than the measured subsample, so
 `biomass_estimate` is a catch biomass. It previously described only the
 fish that were measured.
@@ -38,7 +38,7 @@ est_biomass(
 - ld:
 
   A `creel_length_distribution` object from
-  [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md).
+  [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md).
 
 - a:
 
@@ -87,7 +87,7 @@ For each length bin h with midpoint \\L_h = (\text{bin\\lower} +
 \text{bin\\upper}) / 2\\, per-bin biomass is \\B_h = a \cdot L_h^b \cdot
 \hat{N}\_h\\, where \\\hat{N}\_h\\ is the survey-weighted estimated fish
 count from
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md).
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md).
 Total biomass is \\B = \sum_h B_h\\.
 
 Variance is the quadratic form \\\widehat{\text{Var}}(B) = w' \Sigma w\\
@@ -157,21 +157,21 @@ corresponding unit (e.g., grams).
 ## See also
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

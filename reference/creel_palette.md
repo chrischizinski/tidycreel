@@ -3,7 +3,7 @@
 `creel_palette()` returns a small set of package-standard colours
 derived from the tidycreel site palette. Use these colours directly in
 custom plots or pair them with
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 for a consistent visual style.
 
 ## Usage
@@ -28,11 +28,11 @@ needed.
 ## See also
 
 Other "Visualisation":
-[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
-[`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md),
-[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md),
-[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md),
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`autoplot.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_length_distribution()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_length_distribution.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_schedule.md),
+[`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md),
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 
 ## Examples
 

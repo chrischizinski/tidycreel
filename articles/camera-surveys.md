@@ -13,7 +13,7 @@ access points that would otherwise require continuous staffing. The
 - **Ingress-egress mode** — the camera records individual arrival and
   departure timestamps for each angler or party. The raw data are paired
   POSIXct timestamps that are preprocessed with
-  [`preprocess_camera_timestamps()`](https://chrischizinski.github.io/tidycreel/reference/preprocess_camera_timestamps.md)
+  [`preprocess_camera_timestamps()`](https://chrischizinski.com/tidycreel/reference/preprocess_camera_timestamps.md)
   before entering the standard effort estimation workflow.
 
 In both modes, use the `camera_status` column to identify failures.
@@ -21,7 +21,7 @@ Unlike random missed observations (modeled via `missing_sections`), a
 camera failure leaves an **informative gap**: the number of anglers that
 passed during the outage is unknown and cannot be estimated from nearby
 observations. Remove these rows before calling
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 
 ## Example Data
 
@@ -114,7 +114,7 @@ head(cam_calendar)
 ### Design Construction
 
 Build a camera design using
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 with `survey_type = "camera"`. The `camera_mode` argument is required.
 Omitting it produces an informative error:
 
@@ -164,7 +164,7 @@ print(design_counter)
 The battery failure row on 2024-06-11 has `ingress_count = NA`. This is
 not a random unsampled day — the camera was physically unable to record.
 Including it in
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 would silently propagate a missing value into the Horvitz-Thompson
 estimator.
 
@@ -177,7 +177,7 @@ subset(example_camera_counts, camera_status != "operational")
 ```
 
 The correct approach is to **filter to operational rows** before calling
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 This is fundamentally different from `missing_sections`, which models
 probabilistic non-coverage within a sampled period. A camera failure
 means no data exist — the effort during that period is unknown.
@@ -193,9 +193,9 @@ nrow(counts_clean) # 9 operational rows
 ### Effort Estimation
 
 Camera effort is estimated by
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
 not by the generic
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md).
 The distinction matters and is not cosmetic: a camera count is a daily
 total of **arrivals**, not an instantaneous count of anglers present, so
 summing it over days gives arrivals rather than effort. The generic
@@ -219,7 +219,7 @@ estimate_effort(design_counter)
 #>   assumption of one angler-hour per count per hour open is unmeasured.
 ```
 
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
 converts counts to effort by calibrating them against interview data:
 for each stratum it estimates `rho`, the hours of effort per camera
 count, from the days that carry both a count and interviews, then
@@ -233,7 +233,7 @@ al. (2016), van Poorten et al. (2015), Eckelbecker et al. (2022) – but
 each of those uses a different estimator, and this ratio-of-totals form
 is the package’s own application rather than a reproduction of any of
 them. See
-[`?est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+[`?est_effort_camera`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
 for the full note.
 
 `example_camera_interviews` records one row per angler, so
@@ -289,9 +289,9 @@ than more camera days would.
 ## Ingress-Egress Mode
 
 When the camera records individual arrival and departure timestamps, use
-[`preprocess_camera_timestamps()`](https://chrischizinski.github.io/tidycreel/reference/preprocess_camera_timestamps.md)
+[`preprocess_camera_timestamps()`](https://chrischizinski.com/tidycreel/reference/preprocess_camera_timestamps.md)
 to aggregate the raw pairs into daily effort hours before calling
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 
 ### Preprocess Timestamps
 
@@ -311,14 +311,14 @@ print(daily_effort)
 #> 4 2024-06-09              12.75
 ```
 
-[`preprocess_camera_timestamps()`](https://chrischizinski.github.io/tidycreel/reference/preprocess_camera_timestamps.md)
+[`preprocess_camera_timestamps()`](https://chrischizinski.com/tidycreel/reference/preprocess_camera_timestamps.md)
 sums all valid trip durations within each day and returns a data frame
 with `date` and `daily_effort_hours`. A warning is issued for any rows
 where `egress_time < ingress_time` (negative durations); those rows are
 set to `NA` and excluded from the daily sum.
 
 Because
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 requires all design strata columns, merge the day type back in from the
 raw timestamps:
 
@@ -401,7 +401,7 @@ standard error.
 ## Catch Estimation
 
 Camera designs estimate **effort only**.
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 still works — a catch rate comes from the interviews and does not
 involve the camera at all:
 
@@ -435,7 +435,7 @@ print(catch_rate)
 ```
 
 A **total** catch is a different matter, and
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 refuses a camera design:
 
 ``` r
@@ -459,16 +459,16 @@ and report the product as fish. The number looked entirely plausible,
 which is why this is refused rather than warned about.
 
 There is no camera catch estimator to reach for instead.
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
 gives calibrated angler-hours, and multiplying those by the catch rate
 above is arithmetic a reader can do deliberately — but the package will
 not do it silently, because the standard error of that product needs the
 calibration variance and the rate variance combined, and nothing here
 does that yet.
 
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
 and
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 refuse camera designs for the same reason.
 
 ## Summary
@@ -486,15 +486,15 @@ The table below contrasts the two camera sub-modes:
 Comparison of camera survey sub-modes in tidycreel {.table}
 
 Both sub-modes are estimated by the same function,
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
 so no changes to downstream code are required when switching between
 them. Neither sub-mode goes through
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
 which refuses camera designs, nor through
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
 or
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md),
 which refuse them for the same reason.
 
 ## References

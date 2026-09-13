@@ -7,8 +7,8 @@ development standards and workflow for pull requests.
 ## Code of Conduct
 
 Please note that this project is released with a [Contributor Code of
-Conduct](https://chrischizinski.github.io/tidycreel/CODE_OF_CONDUCT.md).
-By participating in this project you agree to abide by its terms.
+Conduct](https://chrischizinski.com/tidycreel/CODE_OF_CONDUCT.md). By
+participating in this project you agree to abide by its terms.
 
 ## Getting Help
 

@@ -57,7 +57,7 @@ grouping columns and a `mean_party_size` column.
 Either way the return carries a `"se"` attribute holding the standard
 error of the mean (`sd / sqrt(n)` over parties), one value per group for
 the `by` form.
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
 reads it, so the sampling error of the multiplier reaches the effort
 standard error without being passed by hand.
 
@@ -67,7 +67,7 @@ form keeps exactly one numeric column and remains valid as a
 `party_size` lookup.
 
 For the `by` form the attribute is **named by the group key**, and
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
 addresses it by name. Attributes do not follow the rows they describe
 through a `dplyr` reordering, so a positional attribute would go stale
 the moment the lookup were sorted — attributing each stratum's standard
@@ -92,30 +92,30 @@ strata.
 
 ## See also
 
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
-[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md)
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md)
 
 Other "Survey Design":
-[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
-[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
-[`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md),
-[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
-[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
-[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
-[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
-[`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
-[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
-[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
-[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
-[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
-[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
 
 ## Examples
 

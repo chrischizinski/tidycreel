@@ -18,7 +18,7 @@ summary(object, ...)
 - ...:
 
   Additional arguments passed to
-  [`print.creel_design()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_design.md)
+  [`print.creel_design()`](https://chrischizinski.com/tidycreel/reference/print.creel_design.md)
 
 ## Value
 

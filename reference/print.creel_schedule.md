@@ -20,7 +20,7 @@ print(x, ...)
 - ...:
 
   Additional arguments passed to
-  [`format.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/format.creel_schedule.md).
+  [`format.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/format.creel_schedule.md).
 
 ## Value
 

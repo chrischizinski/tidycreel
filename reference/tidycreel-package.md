@@ -11,7 +11,7 @@ Useful links:
 
 - <https://github.com/chrischizinski/tidycreel>
 
-- <https://chrischizinski.github.io/tidycreel/>
+- <https://chrischizinski.com/tidycreel/>
 
 - Report bugs at <https://github.com/chrischizinski/tidycreel/issues>
 

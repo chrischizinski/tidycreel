@@ -51,7 +51,7 @@ regulation, access hours, or the field protocol. It is often close to
 daylight and it is not the same quantity. Use `day_length()` to build
 simulated or planned surveys, and pass the period your protocol actually
 used to
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 
 Above the Arctic and Antarctic circles the sun may not rise or set at
 all. In those cases the result saturates at `0` or `24` rather than
@@ -71,12 +71,12 @@ Management 13:723-736.
 
 ## See also
 
-[`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md),
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 
 Other "Simulation":
-[`simulate_creel_catch()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_catch.md),
-[`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+[`simulate_creel_catch()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_catch.md),
+[`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
 
 ## Examples
 

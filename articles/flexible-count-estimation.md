@@ -9,7 +9,7 @@ collected in the field can take two forms:
 - **Instantaneous counts** (Hoenig et al. 1993): At a random time within
   the survey period, an observer records the number of anglers visible
   on a section.
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   expands the counts to the season and returns **angler-days** — the
   counts themselves, summed over days. It does not multiply by open
   hours, so converting the result to angler-hours is a step you take
@@ -88,7 +88,7 @@ The estimate above is 135, which is the sum of the four counts (all four
 calendar days were sampled, so the season expansion factor is 1). It is
 **angler-days**, not angler-hours: an instantaneous count is a snapshot
 of how many anglers were present at one moment, and
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 never multiplies it by the length of the fishing day. On a 10-hour day
 the corresponding effort is `135 * 10 = 1350` angler-hours, and that
 multiplication is yours to do.
@@ -96,7 +96,7 @@ multiplication is yours to do.
 The progressive path below is the one that carries hours, via
 `period_length_col`. If you need angler-hours from instantaneous counts,
 either scale the result yourself or supply pre-expanded daily effort to
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 — a column already in angler-hours — rather than raw counts.
 
 ## Multiple Counts per Day

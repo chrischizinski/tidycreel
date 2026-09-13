@@ -5,11 +5,11 @@ main inspection points in a creel survey workflow:
 
 | Function | When to use |
 |----|----|
-| [`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md) | Inspect stratum sample sizes and count distributions |
+| [`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md) | Inspect stratum sample sizes and count distributions |
 | `autoplot(schedule)` | Review the survey calendar tile-by-tile |
 | `autoplot(estimates)` | Visualise effort or CPUE estimates with CIs |
 | `autoplot(length_dist)` | Visualise weighted length-frequency distributions |
-| [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) / [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md) | Apply consistent package-wide styling |
+| [`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md) / [`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md) | Apply consistent package-wide styling |
 
 ``` r
 
@@ -24,7 +24,7 @@ library(ggplot2)
 ### Before attaching counts
 
 Once you have built a `creel_design` object from a calendar,
-[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md)
+[`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md)
 shows the number of sampled days per stratum.
 
 ``` r
@@ -46,7 +46,7 @@ that estimates for the weekend stratum will carry higher uncertainty.
 ### After attaching counts
 
 Once counts are attached,
-[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md)
+[`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md)
 switches to a jitter + crossbar display showing the raw count
 distribution per stratum.
 
@@ -68,10 +68,10 @@ days.
 
 ## 2 Review the survey calendar with `autoplot()`
 
-[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md)
+[`autoplot.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_schedule.md)
 renders a monthly tile calendar from a `creel_schedule` object — the
 same object produced by
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md).
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md).
 
 ``` r
 
@@ -156,7 +156,7 @@ autoplot(cpue, title = "Walleye CPUE (catch per angler-hour)")
 
 ### Weighted Length Distributions
 
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
 produces weighted estimates of the population length frequency.
 [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
 renders this as a histogram-style bar chart.
@@ -233,7 +233,7 @@ The
 [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
 methods for estimates and schedules include a `theme` argument. Setting
 this to `"creel"` applies
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 and uses the package’s primary colors automatically.
 
 ``` r
@@ -246,11 +246,11 @@ autoplot(cpue, theme = "creel", title = "CPUE with theme = 'creel'")
 ### Manual Customisation
 
 You can also apply
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 manually to any ggplot object, including those returned by
-[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md).
+[`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md).
 The
-[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md)
+[`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md)
 function provides access to the individual hex codes.
 
 ``` r
@@ -279,8 +279,8 @@ ggplot(example_counts, aes(x = day_type, y = effort_hours)) +
 | `autoplot(schedule)` | `creel_schedule` | monthly tile calendar |
 | `autoplot(estimates)` | `creel_estimates` | point-and-errorbar plot |
 | `autoplot(length_dist)` | `creel_length_distribution` | histogram-style bar chart |
-| [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md) | N/A | ggplot2 theme object |
-| [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md) | N/A | named character vector of hex colors |
+| [`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md) | N/A | ggplot2 theme object |
+| [`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md) | N/A | named character vector of hex colors |
 
 All plots accept a `title =` argument and return a `ggplot` object for
 further customisation with standard ggplot2 `+` syntax.

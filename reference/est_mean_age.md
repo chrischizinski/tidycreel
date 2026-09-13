@@ -1,7 +1,7 @@
 # Estimate design-weighted mean age from a creel age distribution
 
 `est_mean_age()` computes the pressure-weighted mean fish age from a
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
 object using the ratio estimator \\\bar{A} = \sum_a a \hat{N}\_a /
 \sum_a \hat{N}\_a\\, with delta-method standard error.
 
@@ -16,7 +16,7 @@ est_mean_age(ad, conf_level = NULL)
 - ad:
 
   A `creel_age_distribution` object from
-  [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md).
+  [`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md).
 
 - conf_level:
 
@@ -45,21 +45,21 @@ treating cross-class covariances as zero:
 ## See also
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

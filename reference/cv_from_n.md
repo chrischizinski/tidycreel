@@ -2,9 +2,9 @@
 
 Calculates the coefficient of variation attainable given a fixed sample
 size, acting as the algebraic inverse of
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 (when `type = "effort"`) or
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md)
 (when `type = "cpue"`).
 
 ## Usage
@@ -61,18 +61,18 @@ s_h^2 / n}}{\sum_h N_h \bar{y}\_h}\$\$ where \\N = \sum_h N_h\\.
 
 This is the inverse of the Cochran (1977) stratified sample-size formula
 implemented in
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md).
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md).
 
 **CPUE branch** (`type = "cpue"`): \$\$CV = \sqrt{(CV\_{catch}^2 +
 CV\_{effort}^2 - 2\rho \cdot CV\_{catch} \cdot CV\_{effort}) / n}\$\$
 
 This is the inverse of the ratio-estimator formula implemented in
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md).
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md).
 
 Because
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 and
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md)
 apply [`ceiling()`](https://rdrr.io/r/base/Round.html), the round-trip
 property is `cv_from_n(type, n = creel_n_*(cv, ...), ...) <= cv` (the
 recovered CV is at or below the target).
@@ -83,20 +83,20 @@ Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 
 ## See also
 
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md)
 
 Other "Planning & Sample Size":
-[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
-[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
-[`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
-[`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md),
-[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md),
-[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md),
-[`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
+[`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md),
+[`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md),
+[`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md),
+[`optimal_n()`](https://chrischizinski.com/tidycreel/reference/optimal_n.md),
+[`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md),
+[`reallocate_strata()`](https://chrischizinski.com/tidycreel/reference/reallocate_strata.md),
+[`simulate_strata_collapse()`](https://chrischizinski.com/tidycreel/reference/simulate_strata_collapse.md)
 
 ## Examples
 

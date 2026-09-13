@@ -20,8 +20,8 @@ All unextrapolated functions are *interview-weighted*, not
 *pressure-weighted*. A day with many anglers and few interviews has the
 same weight as a day with few anglers and many interviews. For
 pressure-weighted, design-correct estimates, use
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
 and related functions described in the “Interview-Based Catch
 Estimation” vignette.
 
@@ -122,7 +122,7 @@ data layers: calendar, counts, interviews, catch, and lengths.
 ## Interview Participation
 
 Use
-[`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md)
+[`summarize_refusals()`](https://chrischizinski.com/tidycreel/reference/summarize_refusals.md)
 to understand how many potential interviewees declined to participate.
 High refusal rates can bias estimates if refusers differ systematically
 from participants.
@@ -186,7 +186,7 @@ summarize_by_species_sought(design)
 
 ### Successful Parties
 
-[`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+[`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md)
 counts parties that caught at least one fish of their target species (as
 recorded in catch data), broken down by angler type and species sought.
 
@@ -282,7 +282,7 @@ resulted in at least one catch.
 ## Length Frequency Distributions
 
 Length data attached via
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
 can be summarized by catch type and species.
 
 ### Harvest Lengths
@@ -304,7 +304,7 @@ summarize_length_freq(design, type = "harvest", by = species, bin_width = 25)
 ### Release Lengths
 
 Release lengths in `example_lengths` are stored in pre-binned format.
-[`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md)
+[`summarize_length_freq()`](https://chrischizinski.com/tidycreel/reference/summarize_length_freq.md)
 handles this automatically:
 
 ``` r
@@ -473,20 +473,20 @@ estimate_total_release(design, by = species)
 
 For grouped estimates combining calendar strata with species, use
 `by = c(day_type, species)`. See
-[`vignette("interview-estimation")`](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.md)
+[`vignette("interview-estimation")`](https://chrischizinski.com/tidycreel/articles/interview-estimation.md)
 for the complete extrapolated estimation workflow.
 
 ## Summary
 
 | Function | Data required | Output |
 |----|----|----|
-| [`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md) | refused field | month × participation × N × % |
-| [`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md) | strata | month × day_type × N × % |
-| [`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md) | angler_type | month × angler_type × N × % |
-| [`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md) | angler_method | month × method × N × % |
-| [`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md) | species_sought | month × species × N × % |
-| [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md) | catch + angler_type + species_sought | angler_type × species × success rate |
-| [`summarize_by_trip_length()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.md) | trip_duration | bin × N × % |
-| [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md) | catch + species_sought | CWS rate ± SE by grouping |
-| [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md) | catch + species_sought | HWS rate ± SE by grouping |
-| [`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md) | lengths | bin × N × % × cumulative % |
+| [`summarize_refusals()`](https://chrischizinski.com/tidycreel/reference/summarize_refusals.md) | refused field | month × participation × N × % |
+| [`summarize_by_day_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_day_type.md) | strata | month × day_type × N × % |
+| [`summarize_by_angler_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_angler_type.md) | angler_type | month × angler_type × N × % |
+| [`summarize_by_method()`](https://chrischizinski.com/tidycreel/reference/summarize_by_method.md) | angler_method | month × method × N × % |
+| [`summarize_by_species_sought()`](https://chrischizinski.com/tidycreel/reference/summarize_by_species_sought.md) | species_sought | month × species × N × % |
+| [`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md) | catch + angler_type + species_sought | angler_type × species × success rate |
+| [`summarize_by_trip_length()`](https://chrischizinski.com/tidycreel/reference/summarize_by_trip_length.md) | trip_duration | bin × N × % |
+| [`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_cws_rates.md) | catch + species_sought | CWS rate ± SE by grouping |
+| [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_hws_rates.md) | catch + species_sought | HWS rate ± SE by grouping |
+| [`summarize_length_freq()`](https://chrischizinski.com/tidycreel/reference/summarize_length_freq.md) | lengths | bin × N × % × cumulative % |

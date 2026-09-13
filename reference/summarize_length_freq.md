@@ -2,7 +2,7 @@
 
 Computes length frequency distributions (count, percent, cumulative
 percent) from fish length data attached via
-[`add_lengths`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md).
+[`add_lengths`](https://chrischizinski.com/tidycreel/reference/add_lengths.md).
 Supports all fish (`type = "catch"`), harvested fish
 (`type = "harvest"`), and released fish (`type = "release"`).
 
@@ -17,7 +17,7 @@ summarize_length_freq(design, type = "catch", by = NULL, bin_width = 1)
 - design:
 
   A `creel_design` object with length data attached via
-  [`add_lengths`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md).
+  [`add_lengths`](https://chrischizinski.com/tidycreel/reference/add_lengths.md).
 
 - type:
 
@@ -52,9 +52,9 @@ total), `cumulative_percent` (numeric, within group). Only bins with N
 tabulates raw length measurements from sampled interviews without
 applying survey weighting by sampling effort or effort stratum. For
 pressure-weighted extrapolated estimates use
-[`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 or
-[`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md).
+[`estimate_harvest_rate`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md).
 
 **Pre-binned release format:** When length data was attached with
 `release_format = "binned"`, release rows have character bin labels
@@ -79,37 +79,37 @@ frame describes, grouped or not.
 
 ## See also
 
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
-[`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md),
-[`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md)
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md),
+[`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_cws_rates.md),
+[`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_hws_rates.md)
 
 Other "Reporting & Diagnostics":
-[`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md),
-[`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md),
-[`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md),
-[`flag_outliers()`](https://chrischizinski.github.io/tidycreel/reference/flag_outliers.md),
-[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md),
-[`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md),
-[`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md),
-[`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md),
-[`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md),
-[`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md),
-[`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md),
-[`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md),
-[`summarize_by_trip_length()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.md),
-[`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md),
-[`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md),
-[`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md),
-[`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md),
-[`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md),
-[`summarize_trips()`](https://chrischizinski.github.io/tidycreel/reference/summarize_trips.md),
-[`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md),
-[`tidy.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/tidy.creel_estimates.md),
-[`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md),
-[`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md),
-[`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md),
-[`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md),
-[`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)
+[`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/reference/adjust_nonresponse.md),
+[`check_completeness()`](https://chrischizinski.com/tidycreel/reference/check_completeness.md),
+[`compare_variance()`](https://chrischizinski.com/tidycreel/reference/compare_variance.md),
+[`flag_outliers()`](https://chrischizinski.com/tidycreel/reference/flag_outliers.md),
+[`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md),
+[`standardize_species()`](https://chrischizinski.com/tidycreel/reference/standardize_species.md),
+[`summarize_boat_composition()`](https://chrischizinski.com/tidycreel/reference/summarize_boat_composition.md),
+[`summarize_by_angler_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_angler_type.md),
+[`summarize_by_county()`](https://chrischizinski.com/tidycreel/reference/summarize_by_county.md),
+[`summarize_by_day_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_day_type.md),
+[`summarize_by_method()`](https://chrischizinski.com/tidycreel/reference/summarize_by_method.md),
+[`summarize_by_species_sought()`](https://chrischizinski.com/tidycreel/reference/summarize_by_species_sought.md),
+[`summarize_by_trip_length()`](https://chrischizinski.com/tidycreel/reference/summarize_by_trip_length.md),
+[`summarize_by_zip()`](https://chrischizinski.com/tidycreel/reference/summarize_by_zip.md),
+[`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_cws_rates.md),
+[`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_hws_rates.md),
+[`summarize_refusals()`](https://chrischizinski.com/tidycreel/reference/summarize_refusals.md),
+[`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md),
+[`summarize_trips()`](https://chrischizinski.com/tidycreel/reference/summarize_trips.md),
+[`summary.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/summary.creel_estimates.md),
+[`tidy.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/tidy.creel_estimates.md),
+[`validate_creel_data()`](https://chrischizinski.com/tidycreel/reference/validate_creel_data.md),
+[`validate_design()`](https://chrischizinski.com/tidycreel/reference/validate_design.md),
+[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md),
+[`validation_report()`](https://chrischizinski.com/tidycreel/reference/validation_report.md),
+[`write_estimates()`](https://chrischizinski.com/tidycreel/reference/write_estimates.md)
 
 ## Examples
 

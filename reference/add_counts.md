@@ -3,7 +3,7 @@
 Attaches count-side effort data to a creel_design object and constructs
 the internal survey design object eagerly. The preferred workflow is to
 standardize raw count-process data into sampled-day effort rows with
-[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md)
 (or another `prep_counts_*()` helper) before calling `add_counts()`.
 This keeps survey-specific count reconstruction logic out of the core
 estimator path.
@@ -43,7 +43,7 @@ add_counts(
 - design:
 
   A creel_design object (created with
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md))
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md))
 
 - counts:
 
@@ -52,7 +52,7 @@ add_counts(
   design's date_col, all strata columns from the design's strata_cols,
   at least one numeric effort column, and a PSU column (specified via
   `psu`, defaults to date_col). Use
-  [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md)
   to build this form from raw source data.
 
   Compatibility input paths remain available for raw-ish count workflows
@@ -109,7 +109,7 @@ add_counts(
   recommended when `count_type = "instantaneous"`. Values must be
   positive and finite. The column is dropped from `design$counts` after
   Ê_d is computed (it must not be passed to
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   as a count variable).
 
 - unit_cols:
@@ -120,7 +120,7 @@ add_counts(
 
   Supply it when the counts table carries a dimension the design does
   not declare. The commonest case is `effort_type`, which
-  [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md)
   emits: bank and boat counts on the same day are two units, not one day
   counted twice. Inference cannot see such a column, so it would treat
   those rows as repeats — warning about them without `count_time_col`,
@@ -135,7 +135,7 @@ add_counts(
   angler-hours. A count is a snapshot of how many anglers were present
   at one moment; effort is that count times the period it was randomised
   within, Ê_d = C̄\_d × T_d (Hoenig et al. 1993). Without it,
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   expands the counts to the season and returns them unmultiplied, and
   warns once per session that it has done so.
 
@@ -147,7 +147,7 @@ add_counts(
   T_d is a property of the survey protocol — the period set by
   regulation, access hours, or field practice. It is not astronomical
   daylight.
-  [`day_length()`](https://chrischizinski.github.io/tidycreel/reference/day_length.md)
+  [`day_length()`](https://chrischizinski.com/tidycreel/reference/day_length.md)
   is for simulation and planning; do not feed it here as a substitute
   for the period actually surveyed.
 
@@ -225,7 +225,7 @@ add_counts() performs Tier 1 validation:
 
 ## Party-size expansion carriers
 
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
 attaches `expansion_basis`, `expansion_se`, `expansion_group`, and
 `expansion_of` to the counts table so the party-size sampling error can
 reach the effort standard error. The four are written together and must
@@ -237,7 +237,7 @@ visible in the data.
 `add_counts()` also aborts when `count_col` is not the column named in
 `expansion_of`. The basis is d(count)/d(party_size), so a count
 transformed after
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
 no longer matches the basis carried beside it, and the variance
 component would come out understated by exactly the scale factor while
 still reading as propagated. Supply the untransformed count and
@@ -257,26 +257,26 @@ with different PSU structures.
 ## See also
 
 Other "Survey Design":
-[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
-[`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
-[`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md),
-[`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
-[`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md),
-[`compute_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_effort.md),
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md),
-[`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md),
-[`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
-[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
-[`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
-[`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md),
-[`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md),
-[`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md),
-[`prep_interview_catch()`](https://chrischizinski.github.io/tidycreel/reference/prep_interview_catch.md),
-[`prep_interviews_trips()`](https://chrischizinski.github.io/tidycreel/reference/prep_interviews_trips.md),
-[`validate_creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schema.md)
+[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schema.md)
 
 ## Examples
 

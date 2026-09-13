@@ -14,7 +14,7 @@ simulate_strata_collapse(audit, merge_strata)
 - audit:
 
   A `creel_strata_audit` object returned by
-  [`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md).
+  [`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md).
 
 - merge_strata:
 
@@ -41,7 +41,7 @@ Merged strata are pooled using population-weighted means:
 
 RSE and DEFF for the merged stratum are computed using the same
 FPC-corrected formulas as
-[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md).
+[`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md).
 Unmerged strata appear identically in both `"before"` and `"after"`
 rows.
 
@@ -52,16 +52,16 @@ Cochran, W.G. 1977. Sampling Techniques, 3rd ed. Wiley, New York.
 ## See also
 
 Other "Planning & Sample Size":
-[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
-[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
-[`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
-[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
-[`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md),
-[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md),
-[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md)
+[`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md),
+[`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md),
+[`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md),
+[`cv_from_n()`](https://chrischizinski.com/tidycreel/reference/cv_from_n.md),
+[`optimal_n()`](https://chrischizinski.com/tidycreel/reference/optimal_n.md),
+[`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md),
+[`reallocate_strata()`](https://chrischizinski.com/tidycreel/reference/reallocate_strata.md)
 
 ## Examples
 

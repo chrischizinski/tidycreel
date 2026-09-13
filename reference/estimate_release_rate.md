@@ -27,9 +27,9 @@ estimate_release_rate(
 - design:
 
   A creel_design object with interviews (via
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md))
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md))
   and catch data (via
-  [`add_catch`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md))
+  [`add_catch`](https://chrischizinski.com/tidycreel/reference/add_catch.md))
   attached. The catch data must include records with
   `catch_type = "released"`.
 
@@ -42,10 +42,10 @@ estimate_release_rate(
 
   Two kinds of column are not groupings and are refused: the interview
   id, as registered by
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
   or
-  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md),
+  [`add_ages()`](https://chrischizinski.com/tidycreel/reference/add_ages.md),
   which holds one value per interview and so leaves no within-group
   variance to estimate; and columns the package derived rather than the
   user supplying, such as `.angler_effort`. A wildcard selector drops
@@ -72,10 +72,10 @@ estimate_release_rate(
   interview (Hansen & Van Kirk 2010). `"all"` remains available for
   analyses that prefer the larger interview set. When `trip_status` was
   not provided to
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
   this argument has no effect. For bus-route designs: `"complete"`
   (default), `"incomplete"`, or `"diagnostic"`, matching
-  [`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md);
+  [`estimate_harvest_rate`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md);
   `"all"` is not an estimator there, and unrecognised values are an
   error rather than a silent fall-through to the complete-trip path.
 
@@ -110,7 +110,7 @@ estimate_release_rate(
   to disable; the bus-route path warns when it is disabled there, the
   standard mean-of-ratios path treats it as a documented opt-out and is
   silent, matching
-  [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  [`estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
   Ignored under `"ratio-of-means"`. An interview whose duration is
   missing cannot be shown to meet the threshold, so it is excluded and
   reported separately from the trips excluded as too short.
@@ -138,7 +138,7 @@ estimate_release_rate(
   `by = species` is an error rather than a silent no-op (GH \#307).
 
   Ignored for the `ratio-of-means` estimator, as for
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
   Note that the `estimate_total_*()` functions deliberately do not
   accept it — see their documentation for why a targeted rate has no
   matching total.
@@ -156,7 +156,7 @@ string.
 
 RPUE is estimated as the ratio of total released fish to total effort
 (ratio-of-means). Release data comes from
-[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
 records with `catch_type = "released"`. Interviews with no releases
 contribute 0 to the numerator (zero-fill), ensuring the effort
 denominator is correct.
@@ -164,7 +164,7 @@ denominator is correct.
 ## Note
 
 Bus-route designs use a different estimator for each trip type, matching
-[`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md).
+[`estimate_harvest_rate`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md).
 `use_trips = "complete"` returns the ratio of the two Horvitz-Thompson
 totals (Jones & Pollock 2012, Eq. 19.5 / Eq. 19.4) and reports
 `method = "ratio-of-means-rpue"`; `use_trips = "incomplete"` returns the
@@ -186,26 +186,26 @@ to include incomplete-trip interviews.
 
 ## See also
 
-[`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+[`estimate_harvest_rate`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
 for harvest rate,
-[`add_catch`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+[`add_catch`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

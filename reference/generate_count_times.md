@@ -81,7 +81,7 @@ A `creel_schedule` data frame with columns:
 ## Details
 
 Output is a `creel_schedule` data frame compatible with
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md).
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md).
 
 **Random strategy:** Each of the `n_windows` strata of equal length
 `k = total_span / n_windows` receives one window with a uniformly random
@@ -99,14 +99,14 @@ by start time. Overlapping windows trigger an error.
 ## See also
 
 Other "Scheduling":
-[`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md),
-[`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md),
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md),
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md),
-[`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md),
-[`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md),
-[`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md),
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`attach_count_times()`](https://chrischizinski.com/tidycreel/reference/attach_count_times.md),
+[`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_bus_schedule.md),
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md),
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md),
+[`new_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/new_creel_schedule.md),
+[`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md),
+[`validate_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schedule.md),
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 
 ## Examples
 

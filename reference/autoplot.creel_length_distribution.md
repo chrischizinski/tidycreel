@@ -17,7 +17,7 @@ autoplot(object, title = NULL, theme = c("default", "creel"), ...)
 - object:
 
   A `creel_length_distribution` object returned by
-  [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md).
+  [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md).
 
 - title:
 
@@ -28,7 +28,7 @@ autoplot(object, title = NULL, theme = c("default", "creel"), ...)
 
   Character string selecting the plot theme. Use `"default"` (default)
   to preserve the current ggplot styling or `"creel"` to apply
-  [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+  [`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
   and package-standard colours.
 
 - ...:
@@ -41,14 +41,14 @@ A `ggplot` object.
 
 ## See also
 
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
 
 Other "Visualisation":
-[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
-[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md),
-[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
-[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md),
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`autoplot.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_schedule.md),
+[`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md),
+[`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md),
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 
 ## Examples
 

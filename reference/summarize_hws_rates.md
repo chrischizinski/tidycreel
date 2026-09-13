@@ -6,7 +6,7 @@ anglers targeting each species. For each interview, the rate is:
 number of fish harvested (kept) of the species the angler was seeking,
 and `angler_effort` is angler-hours (effort x n_anglers, standardized at
 design time by
-[`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)).
+[`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)).
 
 ## Usage
 
@@ -19,9 +19,9 @@ summarize_hws_rates(design, by = NULL, conf_level = 0.95)
 - design:
 
   A `creel_design` object with interviews attached via
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   (with `species_sought`) and species catch data attached via
-  [`add_catch`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md).
+  [`add_catch`](https://chrischizinski.com/tidycreel/reference/add_catch.md).
 
 - by:
 
@@ -53,7 +53,7 @@ fish/angler-hour, `NA` when `N` is 0), `se` (numeric, standard error),
 computes a simple arithmetic mean over sampled interviews. It does NOT
 apply survey weighting by sampling effort or effort stratum. For
 pressure-weighted extrapolated estimates use
-[`estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md).
+[`estimate_harvest_rate`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md).
 
 The catch filter ensures only species the angler was targeting are
 counted (i.e., rows in `design$catch` where `catch_type == "harvested"`
@@ -93,7 +93,7 @@ about the data rather than about the code – so `n_unknown_target` is
 reported beside every rate and a reader can judge it. A party that
 genuinely caught none of a *recorded* target is a real zero and still
 counts, per
-[`add_catch`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md).
+[`add_catch`](https://chrischizinski.com/tidycreel/reference/add_catch.md).
 
 An interview whose **effort** was not recorded is treated the same way
 and counted in `n_unknown_effort`. A rate needs an effort to divide by,
@@ -105,7 +105,7 @@ An effort that is not **positive** cannot produce a rate either, and
 those interviews are counted in `n_nonpositive_effort`. A zero is a real
 record – a party interviewed before it started fishing – and a negative
 one is a data error that
-[`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+[`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
 already warns about; neither yields a rate. They used to be dropped with
 no trace at all, so a table could report 20 of 22 interviews with
 nothing in it to say the other two existed.
@@ -125,36 +125,36 @@ apart in the output.
 
 ## See also
 
-[`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+[`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_cws_rates.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
 
 Other "Reporting & Diagnostics":
-[`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md),
-[`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md),
-[`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md),
-[`flag_outliers()`](https://chrischizinski.github.io/tidycreel/reference/flag_outliers.md),
-[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md),
-[`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md),
-[`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md),
-[`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md),
-[`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md),
-[`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md),
-[`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md),
-[`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md),
-[`summarize_by_trip_length()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_trip_length.md),
-[`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md),
-[`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md),
-[`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md),
-[`summarize_refusals()`](https://chrischizinski.github.io/tidycreel/reference/summarize_refusals.md),
-[`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md),
-[`summarize_trips()`](https://chrischizinski.github.io/tidycreel/reference/summarize_trips.md),
-[`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md),
-[`tidy.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/tidy.creel_estimates.md),
-[`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md),
-[`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md),
-[`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md),
-[`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md),
-[`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)
+[`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/reference/adjust_nonresponse.md),
+[`check_completeness()`](https://chrischizinski.com/tidycreel/reference/check_completeness.md),
+[`compare_variance()`](https://chrischizinski.com/tidycreel/reference/compare_variance.md),
+[`flag_outliers()`](https://chrischizinski.com/tidycreel/reference/flag_outliers.md),
+[`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md),
+[`standardize_species()`](https://chrischizinski.com/tidycreel/reference/standardize_species.md),
+[`summarize_boat_composition()`](https://chrischizinski.com/tidycreel/reference/summarize_boat_composition.md),
+[`summarize_by_angler_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_angler_type.md),
+[`summarize_by_county()`](https://chrischizinski.com/tidycreel/reference/summarize_by_county.md),
+[`summarize_by_day_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_day_type.md),
+[`summarize_by_method()`](https://chrischizinski.com/tidycreel/reference/summarize_by_method.md),
+[`summarize_by_species_sought()`](https://chrischizinski.com/tidycreel/reference/summarize_by_species_sought.md),
+[`summarize_by_trip_length()`](https://chrischizinski.com/tidycreel/reference/summarize_by_trip_length.md),
+[`summarize_by_zip()`](https://chrischizinski.com/tidycreel/reference/summarize_by_zip.md),
+[`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_cws_rates.md),
+[`summarize_length_freq()`](https://chrischizinski.com/tidycreel/reference/summarize_length_freq.md),
+[`summarize_refusals()`](https://chrischizinski.com/tidycreel/reference/summarize_refusals.md),
+[`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md),
+[`summarize_trips()`](https://chrischizinski.com/tidycreel/reference/summarize_trips.md),
+[`summary.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/summary.creel_estimates.md),
+[`tidy.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/tidy.creel_estimates.md),
+[`validate_creel_data()`](https://chrischizinski.com/tidycreel/reference/validate_creel_data.md),
+[`validate_design()`](https://chrischizinski.com/tidycreel/reference/validate_design.md),
+[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md),
+[`validation_report()`](https://chrischizinski.com/tidycreel/reference/validation_report.md),
+[`write_estimates()`](https://chrischizinski.com/tidycreel/reference/write_estimates.md)
 
 ## Examples
 

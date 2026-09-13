@@ -131,13 +131,19 @@ creel surveys on API-backed connections before pulling data.</li>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>tidycreel.connect is available from GitHub:</p>
+<p>tidycreel.connect lives in a subdirectory of the tidycreel repository
+rather than a repository of its own, so both installers need to be told
+where to look:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Using remotes</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"chrischizinski/tidycreel.connect"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span>, subdir <span class="op">=</span> <span class="st">"tidycreel.connect"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or using pak</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel.connect"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel/tidycreel.connect"</span><span class="op">)</span></span></code></pre></div>
+<p>It is not on CRAN, and it requires tidycreel 7.0.0 or newer:
+identifier columns are normalised to character on both sides of the
+boundary, so an older tidycreel would hand the design numeric ids for
+the same survey.</p>
 </div>
 <div class="section level2">
 <h2 id="how-tidycreel-connect-relates-to-tidycreel">How tidycreel.connect relates to tidycreel<a class="anchor" aria-label="anchor" href="#how-tidycreel-connect-relates-to-tidycreel"></a>
@@ -269,12 +275,15 @@ list of file paths to <code>creel_connect()</code>:</p>
 <h2 id="more-information">More information<a class="anchor" aria-label="anchor" href="#more-information"></a>
 </h2>
 <ul>
-<li>Source and documentation:
-<code>chrischizinski/tidycreel.connect</code> on GitHub</li>
+<li>Source and documentation: <code>chrischizinski/tidycreel</code>,
+under <code>tidycreel.connect/</code>
+</li>
 <li>Main package: <a href="https://github.com/chrischizinski/tidycreel" class="external-link uri">https://github.com/chrischizinski/tidycreel</a>
 </li>
-<li>Bug reports and feature requests: open an issue on the
-tidycreel.connect repository.</li>
+<li>Bug reports and feature requests: both packages share one issue
+tracker, <a href="https://github.com/chrischizinski/tidycreel/issues" class="external-link uri">https://github.com/chrischizinski/tidycreel/issues</a> —
+there is no separate tidycreel.connect repository to open an issue
+on.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

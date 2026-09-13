@@ -2,7 +2,7 @@
 
 Computes a total harvest estimate and its uncertainty using the delta
 method, given a closed-population angler population estimate from
-[`estimate_angler_n`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+[`estimate_angler_n`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
 and a known harvest rate.
 
 The point estimate is \\\hat{H} = \hat{N} \times r\\ where \\r\\ is the
@@ -28,7 +28,7 @@ estimate_mr_harvest(
 - angler_n:
 
   A `creel_estimates` object returned by
-  [`estimate_angler_n`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md).
+  [`estimate_angler_n`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md).
 
 - harvest_rate:
 
@@ -96,7 +96,7 @@ two-source delta method is a planned future extension.
 The delta-method interval is also symmetric, which for a mark-recapture
 estimate is optimistic at the lower end and can place `ci_lower` below
 zero when recaptures are few; see the same note under
-[`estimate_angler_n`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md).
+[`estimate_angler_n`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md).
 
 ## References
 
@@ -108,8 +108,8 @@ Management*, 38(2), 400–410.
 ## See also
 
 Other Estimation:
-[`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md),
-[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+[`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md),
+[`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
 
 ## Examples
 

@@ -6,7 +6,7 @@ A sampling schedule defines which days and periods represent the survey
 season. With a stratified random schedule, estimates of effort, catch,
 and CPUE can represent that season without treating sampled days as if
 they were the whole population.
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md)
 builds the count-period calendar from season boundaries and a target
 sampling intensity.
 
@@ -108,7 +108,7 @@ characteristics. In that case, the scheduling layer should assign those
 dates to their own prospective stratum rather than leaving them inside
 the ordinary weekend pool.
 
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md)
 accepts a `special_periods` data frame with `start_date`, `end_date`,
 `label`, and optional `reason` columns. The periods are expanded to
 day-level assignments before sampling, so a boundary-crossing opener is
@@ -190,7 +190,7 @@ calendar rules were applied.
 
 When a declaration is technically valid but leaves a very small special
 stratum or consumes most of a baseline stratum,
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md)
 now emits a warning rather than failing silently. The returned schedule
 also carries a `special_period_diagnostics` attribute, and
 [`print()`](https://rdrr.io/r/base/print.html) /
@@ -308,10 +308,10 @@ identical(sched_a, sched_b)
 
 ## Saving and Sharing the Schedule
 
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 exports to CSV (for any spreadsheet application) or xlsx (for direct
 field printing).
-[`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md)
+[`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md)
 reloads the file with correct column types, so the schedule round-trips
 without type coercion issues.
 
@@ -329,7 +329,7 @@ identical(sched, sched_reload)
 ## Linking the Schedule to a Design
 
 Pass the schedule directly to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
 The schedule’s stratum structure informs the survey weights used by all
 downstream estimators.
 
@@ -379,13 +379,13 @@ design_special
 If you want to collapse multiple baseline labels into one analysis
 bucket (for example, `treat all non-special days as "regular"`), do that
 in the calendar you pass to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
 The key rule is that the analysis strata must be derived from the same
 resolved day-level assignments the scheduler used.
 
 Sparse special strata remain visible in analysis. If a special stratum
 has too few sampled PSUs for variance estimation,
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 or the product estimators abort with an explicit single-PSU diagnostic
 naming the stratum. If the stratum is merely small rather than
 impossible, tidycreel emits a warning about unstable variance instead of
@@ -405,7 +405,7 @@ days.
 ## Bus-Route Scheduling
 
 For bus-route designs,
-[`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md)
+[`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_bus_schedule.md)
 converts a count schedule and a site-level sampling frame into a
 complete bus-route sampling frame with inclusion probabilities. Each
 site’s probability of being visited in a given period is:
@@ -458,9 +458,9 @@ survey. As a starting point:
 
 Higher rates on weekends reflect greater angler activity and higher
 stratum variance. Use
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 or
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md)
 to select rates based on a CV target rather than rule of thumb.
 
 ``` r
@@ -487,7 +487,7 @@ angler-hours. When those count windows fall in the day matters —
 clustered or poorly spaced windows can introduce bias into effort
 estimates. Pollock et al. (1994) describe three strategies for placing
 count time windows within the survey day: random, systematic, and fixed.
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md)
 implements all three.
 
 ### Random Strategy
@@ -552,7 +552,7 @@ Use the fixed strategy when count time windows are defined by
 regulation, permit conditions, or a prior-season protocol that must be
 replicated exactly. Supply a `data.frame` with `start_time` and
 `end_time` columns and
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md)
 wraps them in a `creel_schedule` object without any random placement.
 
 ``` r
@@ -572,7 +572,7 @@ ct_fixed
 
 Progressive surveys require a randomised circuit start time in addition
 to a day-level schedule. Use
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md)
 to draw start times that avoid the mid-day bias common in hand-crafted
 schedules.
 
@@ -597,11 +597,11 @@ field protocol.
 
 ### Exporting Count Time Schedules
 
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md)
 returns a `creel_schedule` object, the same class returned by
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md).
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md).
 It therefore passes directly to
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 for field printing without any conversion step.
 
 ``` r
@@ -611,13 +611,13 @@ write_schedule(ct_systematic, "count_times_2024.csv")
 
 ## Combining the Daily Schedule with Count Time Windows
 
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md)
 and
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md)
 each return a separate `creel_schedule`. Before field dispatch,
 biologists need a single table — one row per (date x period x count
 window) — that tells each crew exactly when to count.
-[`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md)
+[`attach_count_times()`](https://chrischizinski.com/tidycreel/reference/attach_count_times.md)
 performs the cross-join in one step.
 
 ``` r
@@ -652,18 +652,18 @@ field_schedule
 The result has `nrow(sched) * nrow(ct)` rows — every sampled day-period
 combination appears once per count window. Pass `field_schedule`
 directly to
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 to produce a printable field dispatch sheet.
 
 ## Validating the Design Before the Season
 
 After building a schedule,
-[`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md)
+[`validate_design()`](https://chrischizinski.com/tidycreel/reference/validate_design.md)
 checks whether the proposed sampling intensity is sufficient to meet a
 target coefficient of variation (CV) — catching under-sampling problems
 before the season starts rather than discovering them in the post-season
 analysis. It uses the same pilot mean and variance inputs as
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 and compares the proposed day counts against the minimum required sample
 size per stratum.
 
@@ -703,7 +703,7 @@ report$results
 
 ## Checking Data Completeness After the Season
 
-[`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md)
+[`check_completeness()`](https://chrischizinski.com/tidycreel/reference/check_completeness.md)
 runs post-season on a `creel_design` with survey data attached, flagging
 missing sampling days and strata with too few interviews to produce
 reliable estimates. It is the first diagnostic step before running
@@ -758,10 +758,10 @@ interview count is below the minimum threshold (`n_min`, default 10).
 
 ## Assembling the Season Summary
 
-[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
+[`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md)
 accepts a named list of `creel_estimates` objects — the outputs of
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
 and related functions — and joins them into a single wide tibble for
 reporting or export. It performs no re-estimation; it is purely an
 assembly step that makes it easy to view all key metrics side by side.
@@ -780,7 +780,7 @@ summary_tbl$table
 The full estimation workflow — building the design, attaching counts and
 interviews, and running the estimators — is covered in the main
 tidycreel vignette.
-[`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md)
+[`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md)
 is the final step that wraps pre-computed results for export or
 reporting.
 
@@ -789,7 +789,7 @@ reporting.
 write_schedule(summary_tbl$table, "season_2024_summary.xlsx")
 ```
 
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 accepts any data frame or tibble, so the season summary table exports to
 CSV or xlsx with a single call.
 

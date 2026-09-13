@@ -21,7 +21,7 @@ plot_design(design, title = NULL, ...)
 - design:
 
   A `creel_design` object created by
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
 
 - title:
 
@@ -38,15 +38,15 @@ A `ggplot` object.
 
 ## See also
 
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_schedule.md)
 
 Other "Visualisation":
-[`autoplot.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_estimates.md),
-[`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md),
-[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md),
-[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`autoplot.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_estimates.md),
+[`autoplot.creel_length_distribution()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_length_distribution.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_schedule.md),
+[`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md),
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 
 ## Examples
 

@@ -26,9 +26,9 @@ column.
 ## See also
 
 Other "Bus-Route Helpers":
-[`get_enumeration_counts()`](https://chrischizinski.github.io/tidycreel/reference/get_enumeration_counts.md),
-[`get_inclusion_probs()`](https://chrischizinski.github.io/tidycreel/reference/get_inclusion_probs.md),
-[`get_site_contributions()`](https://chrischizinski.github.io/tidycreel/reference/get_site_contributions.md)
+[`get_enumeration_counts()`](https://chrischizinski.com/tidycreel/reference/get_enumeration_counts.md),
+[`get_inclusion_probs()`](https://chrischizinski.com/tidycreel/reference/get_inclusion_probs.md),
+[`get_site_contributions()`](https://chrischizinski.com/tidycreel/reference/get_site_contributions.md)
 
 ## Examples
 

@@ -95,11 +95,11 @@ Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70:
 
 ## See also
 
-[`simulate_creel_data`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+[`simulate_creel_data`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
 
 Other "Simulation":
-[`day_length()`](https://chrischizinski.github.io/tidycreel/reference/day_length.md),
-[`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+[`day_length()`](https://chrischizinski.com/tidycreel/reference/day_length.md),
+[`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
 
 ## Examples
 

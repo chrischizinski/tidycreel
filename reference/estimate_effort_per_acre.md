@@ -12,7 +12,7 @@ effort's unit was unknown.
 
 This is a composable estimator: the effort object must be pre-computed
 via
-[`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 before calling this function.
 
 ## Usage
@@ -26,7 +26,7 @@ estimate_effort_per_acre(effort, acres, ...)
 - effort:
 
   A `creel_estimates` object returned by
-  [`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+  [`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md).
   Must contain `estimate`, `se`, `ci_lower`, and `ci_upper` columns in
   `effort$estimates`.
 
@@ -50,5 +50,5 @@ are inherited from the input effort object.
 
 ## See also
 
-[`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_angler_trips`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
+[`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_angler_trips`](https://chrischizinski.com/tidycreel/reference/estimate_angler_trips.md)

@@ -2,9 +2,9 @@
 
 `est_length_distribution()` estimates a pressure-weighted
 length-frequency distribution from fish length data attached via
-[`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md).
+[`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md).
 Unlike
-[`summarize_length_freq()`](https://chrischizinski.github.io/tidycreel/reference/summarize_length_freq.md),
+[`summarize_length_freq()`](https://chrischizinski.com/tidycreel/reference/summarize_length_freq.md),
 which reports raw sample frequencies, `est_length_distribution()`
 aggregates interview-level bin counts through the internal interview
 survey design so the result reflects the survey design rather than only
@@ -59,7 +59,7 @@ est_length_distribution(
 
   Optional character column name in `design$lengths` to use for the
   length values. Defaults to the column registered by
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md).
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md).
 
 - variance:
 
@@ -96,7 +96,7 @@ measured fish through the interview design alone estimates *the total
 number of fish that happened to be measured*, which is not the catch —
 on this package's example data it returns 14 against a reported harvest
 of 77. Because
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md)
 multiplies these counts by weight-at-length and calls the result total
 biomass, the error propagated to a headline number (GH \#310).
 
@@ -120,32 +120,32 @@ not.
 Where \\\hat{T}\\ comes from depends on the grouping. A species group
 can only be scaled by that species' own total, which lives in the table
 attached by
-[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md);
+[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md);
 grouping by species without it is refused rather than scaled by the
 all-species total. Any other grouping uses the interview-level column
 (`catch` or `harvest` from
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)),
 with release implied as caught − harvested so that harvest and release
 sum back to catch.
 
 ## See also
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

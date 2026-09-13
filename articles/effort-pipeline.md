@@ -18,7 +18,7 @@ will understand three things:
 
 Each concept is developed from first principles, illustrated with a
 worked numeric example, and confirmed against
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 output.
 
 ------------------------------------------------------------------------
@@ -374,11 +374,11 @@ blocks there are — and cancels between them. So the cancellation is a
 property of the method, not an accident of the algebra: $`\tau`$ has
 already done its work in **defining the blocks the count was scheduled
 within**, which is why
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md)
 needs it and the final arithmetic does not.
 
 That also explains why $`\tau`$ is still required by
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 It is not inert — it determines whether the schedule that produced
 $`C_d`$ was valid. Two consequences are enforced: a shift shorter than
 one circuit ($`K < 1`$) is an error, since no circuit completed; and
@@ -401,7 +401,7 @@ Season total (N = n = 3):
 $`\hat{E} = (3/3) \times (120 + 160 + 200) = 480`$ angler-hours.
 
 Confirming with R (note:
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 stores the expanded $`\hat{E}_d`$ values in the `n_anglers` column
 automatically):
 
@@ -476,7 +476,7 @@ single-count instantaneous surveys. The formula is unbiased only when
 the circuit start, start location and travel direction were randomised
 and the observer outpaced the anglers; none of this is checkable from
 the counts table, so see
-[`vignette("progressive-count-surveys")`](https://chrischizinski.github.io/tidycreel/articles/progressive-count-surveys.md)
+[`vignette("progressive-count-surveys")`](https://chrischizinski.com/tidycreel/articles/progressive-count-surveys.md)
 for the field conditions before relying on the estimate.
 
 ------------------------------------------------------------------------
@@ -502,4 +502,4 @@ for the field conditions before relying on the estimate.
 
 For the API walkthrough showing these functions on your own data, see
 [Flexible Count
-Estimation](https://chrischizinski.github.io/tidycreel/articles/flexible-count-estimation.md).
+Estimation](https://chrischizinski.com/tidycreel/articles/flexible-count-estimation.md).

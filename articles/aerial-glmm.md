@@ -30,7 +30,7 @@ flight fell.
 
 For the basic aerial workflow without GLMM correction, see the [aerial
 surveys
-vignette](https://chrischizinski.github.io/tidycreel/articles/aerial-surveys.md).
+vignette](https://chrischizinski.com/tidycreel/articles/aerial-surveys.md).
 
 ## Example Data
 
@@ -115,7 +115,7 @@ print(design)
 ## GLMM Effort Estimation
 
 Call
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md)
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md)
 with `time_col = time_of_flight`. The default model fits a
 negative-binomial GLMM with a quadratic temporal effect and a day-level
 random intercept:
@@ -181,9 +181,9 @@ print(glmm_boot)
 
 GLMM effort feeds directly into the standard downstream estimators.
 Attach interview data and call
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 and
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 on the same design object.
 
 ``` r
@@ -263,9 +263,9 @@ print(total_catch)
 ```
 
 `example_aerial_interviews` carries no party-size column, so
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
 cannot normalise effort to angler-hours and
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 warns that the CPUE it multiplies is per *party*-hour while the
 count-derived effort is angler-hours. The warning is correct for this
 dataset and is left visible rather than suppressed: with one angler per
@@ -342,7 +342,7 @@ comparison <- rbind(
 
 print(comparison)
 #>   method  estimate se ci_lower ci_upper
-#> 1   GLMM  378.5646 NA       NA       NA
+#> 1   GLMM  378.5647 NA       NA       NA
 #> 2 Simple 5092.5000 NA       NA       NA
 ```
 

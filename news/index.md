@@ -5,9 +5,9 @@
 ### Breaking changes
 
 - Identifier columns are normalised to character at every join
-  ([`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md),
-  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)).
+  ([`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md),
+  [`add_ages()`](https://chrischizinski.com/tidycreel/reference/add_ages.md)).
 
   A uid is a label, not a quantity: nothing is summed or ordered by
   magnitude on it, and what it must do is join. The CSV reader infers a
@@ -36,7 +36,7 @@
   can hold; a non-whole value is left alone rather than truncated into a
   collision.
 
-- [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+- [`summarize_boat_composition()`](https://chrischizinski.com/tidycreel/reference/summarize_boat_composition.md)
   counts the events it excludes
   ([\#337](https://github.com/chrischizinski/tidycreel/issues/337)).
 
@@ -75,9 +75,9 @@
   and 100%. The warning already emitted for this case says the counts
   are pooled; now they are.
 
-- [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md)
+- [`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_cws_rates.md)
   and
-  [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md)
+  [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_hws_rates.md)
   exclude interviews whose sought species was not recorded, and report
   how many
   ([\#336](https://github.com/chrischizinski/tidycreel/issues/336)).
@@ -109,7 +109,7 @@
   ([\#339](https://github.com/chrischizinski/tidycreel/issues/339)). A
   zero is a real record — a party interviewed before it started fishing
   — and a negative one is a data error that
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   already warns about; neither yields a rate, and both used to be
   dropped with no trace at all. A table could report 20 of 22 interviews
   with nothing in it to say the other two existed.
@@ -140,7 +140,7 @@
 
   A party that genuinely caught none of a **recorded** target is a real
   zero and still counts, per
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md).
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md).
   A group with no interview left to rate keeps its row, reporting `NA`
   for `mean_rate`, `se` and the interval.
 
@@ -193,9 +193,9 @@
   lengths frame, and no fixture built from the shipped data got that
   far.
 
-- [`summarize_cws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_cws_rates.md)
+- [`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_cws_rates.md)
   and
-  [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md)
+  [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_hws_rates.md)
   no longer fail with `non-numeric argument to binary operator` when
   every sought species is unrecorded
   ([\#336](https://github.com/chrischizinski/tidycreel/issues/336)).
@@ -222,10 +222,10 @@
   [`table()`](https://rdrr.io/r/base/table.html) and
   `stats::aggregate(by = )` both discard every record whose grouping
   value is `NA`.
-  [`summarize_by_angler_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_angler_type.md),
-  [`summarize_by_method()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_method.md),
-  [`summarize_by_species_sought()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_species_sought.md),
-  [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md),
+  [`summarize_by_angler_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_angler_type.md),
+  [`summarize_by_method()`](https://chrischizinski.com/tidycreel/reference/summarize_by_method.md),
+  [`summarize_by_species_sought()`](https://chrischizinski.com/tidycreel/reference/summarize_by_species_sought.md),
+  [`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md),
   `summarize_cws_rates(by = )` and `summarize_hws_rates(by = )` all
   grouped that way, so an interview with no recorded angler type, method
   or sought species left the table entirely. `sum(N)` silently stopped
@@ -234,7 +234,7 @@
 
   Measured on the shipped example data, blanking 7 of 22 interviews:
   every one of the six went from accounting for 22 interviews to 15, and
-  [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+  [`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md)
   lost two whole rows. The groups that survived lost their own members,
   so this was never only a missing row — in
   `summarize_cws_rates(by = "angler_type")` the boat group’s mean rate
@@ -243,9 +243,9 @@
 
   An unrecorded grouping value is now reported under `"Unknown"`, sorted
   last, matching
-  [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+  [`summarize_by_zip()`](https://chrischizinski.com/tidycreel/reference/summarize_by_zip.md)
   and
-  [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md),
+  [`summarize_by_county()`](https://chrischizinski.com/tidycreel/reference/summarize_by_county.md),
   which have always done this. `"Unknown"` labels the absence; it is
   never a category anyone selected, and nothing is imputed. (The
   survey-weighted estimators use `<unknown>` via `group_value_labels()`;
@@ -257,7 +257,7 @@
   reaching the functions that sweep could not see: these group with base
   R, not [`survey::svyby()`](https://rdrr.io/pkg/survey/man/svyby.html).
 
-- [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+- [`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md)
   reports `NA`, not `0`, where success cannot be determined
   ([\#333](https://github.com/chrischizinski/tidycreel/issues/333)).
 
@@ -292,7 +292,7 @@
   literal value `"Unknown"` now warns, because the two are pooled into
   one row and cannot be told apart in the output.
 
-- [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+- [`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md)
   no longer dies inside base R when a grouping column is entirely
   unrecorded
   ([\#333](https://github.com/chrischizinski/tidycreel/issues/333)).
@@ -301,14 +301,14 @@
   `replacement has 1 row, data has 0`, naming nothing the caller had
   set.
 
-- [`summarize_successful_parties()`](https://chrischizinski.github.io/tidycreel/reference/summarize_successful_parties.md)
+- [`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/reference/summarize_successful_parties.md)
   now reads
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)’s
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)’s
   catch-type model, so a party that recorded only `harvested`/`released`
   rows counts as successful
   ([\#329](https://github.com/chrischizinski/tidycreel/issues/329)).
 
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
   documents the `caught` row as **optional**: when a pair has none, its
   total catch is `harvested + released`. This function held a private
   copy of the rule with no such fallback — it asked whether a `caught`
@@ -364,12 +364,12 @@ Every instance produced a plausible number, no error and no warning.
 
 - **Length-based standard errors get larger.** The bins’ covariance
   matrix was discarded, and
-  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-  [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+  [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+  [`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md)
   and
-  [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+  [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md)
   each rebuilt a variance assuming the bins were independent.
-  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+  [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md)
   reported a standard error **32% below** an independently computed
   [`survey::svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
   reference; it now reproduces that reference exactly. `compliance_se`,
@@ -377,7 +377,7 @@ Every instance produced a plausible number, no error and no warning.
   move**
   ([\#311](https://github.com/chrischizinski/tidycreel/issues/311)).
 
-- **[`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+- **[`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
   refuses an unknown count.** `count = NA` was accepted and read as a
   genuine zero everywhere downstream — the unknown and the zero produced
   byte-identical output. Now an error
@@ -419,11 +419,11 @@ grouped table, re-run before comparing to earlier output.
   labelled `"NA"` remains a **different** group — the two collided under
   [`paste()`](https://rdrr.io/r/base/paste.html), which renders a
   missing value as the string `"NA"`, and that collision also made
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   report such a row as a repeated sampling unit.
 
   **The supplied variance.**
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   accepts a precomputed `within_day_var` column and validated nothing
   about it. The consumer reads a missing value as *“this unit had a
   single count, so its within-day term is zero”* — true for a unit
@@ -457,12 +457,12 @@ grouped table, re-run before comparing to earlier output.
   [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) over
   the bin columns estimates a full covariance matrix, and
   `two_phase_rescale()` propagates it. It then died at the
-  [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+  [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
   seam, and
-  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-  [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+  [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+  [`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md)
   and
-  [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+  [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md)
   each rebuilt a variance from the **diagonal alone** — the quadratic
   form with every off-diagonal set to zero.
 
@@ -475,9 +475,9 @@ grouped table, re-run before comparing to earlier output.
 
   |  | proportion | SE |
   |----|----|----|
-  | [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md), before | 0.5714286 | **0.1422436** |
+  | [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md), before | 0.5714286 | **0.1422436** |
   | [`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html) reference | 0.5714286 | 0.2093703 |
-  | [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md), now | 0.5714286 | **0.2093703** |
+  | [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md), now | 0.5714286 | **0.2093703** |
 
   The point estimates agreed all along — only the uncertainty was wrong,
   which is why nothing looked wrong. The package standard error was
@@ -486,7 +486,7 @@ grouped table, re-run before comparing to earlier output.
 
   All three consumers now take the quadratic form against the full
   matrix, and
-  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+  [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md)
   reproduces the independent reference exactly. The matrix travels as an
   attribute keyed by reported group, with bin labels as dimnames, so a
   consumer aligns to it **by bin** rather than by position — a caller
@@ -499,7 +499,7 @@ grouped table, re-run before comparing to earlier output.
   so. An absent covariance is unknown, not zero; falling back in silence
   would restore the defect by the back door.
 
-  [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+  [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md)
   was the one consumer that documented the omission. It is no longer an
   omission, and its `@details` now says so, as do the other two.
 
@@ -507,12 +507,12 @@ grouped table, re-run before comparing to earlier output.
   `mean_length_se` and `biomass_se` all change**, and in the direction
   of being larger. The point estimates do not move.
 
-- [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+- [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
   now **refuses an unknown count**, which was indistinguishable from a
   genuine zero everywhere downstream
   ([\#324](https://github.com/chrischizinski/tidycreel/issues/324)).
 
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
   documents that an angler who caught none of a species need not appear
   in the catch table at all. Every consumer therefore reads a *missing
   row* as a catch of none. That reading is right for an absent row and
@@ -523,7 +523,7 @@ grouped table, re-run before comparing to earlier output.
 
   Changing a single harvested count on the package’s own example data:
 
-  | that pair’s count | [`summarize_hws_rates()`](https://chrischizinski.github.io/tidycreel/reference/summarize_hws_rates.md) | `se` |
+  | that pair’s count | [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/reference/summarize_hws_rates.md) | `se` |
   |----|----|----|
   | `5` (known) | 0.2332251 | 0.07883204 |
   | `NA` (**unknown**) | **0.1682900** | **0.05512425** |
@@ -605,10 +605,10 @@ grouped table, re-run before comparing to earlier output.
 
   **Grouped results gain a row** wherever a grouping column contains
   `NA`, in
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and the bus-route effort, catch-total and catch-rate paths. A grouped
   ratio request whose unknown group falls below `n >= 10` now errors
   where it previously returned an estimate for the other groups.
@@ -652,21 +652,21 @@ grouped table, re-run before comparing to earlier output.
   Two estimators named in the issue turned out **not** to be reachable,
   and are recorded here so the question is not re-opened: the camera
   path groups by strata rather than by a user variable, and
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   rejects an `NA` stratum at Tier 1; the aerial path calls
   [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) and
   supports no `by=` at all. The sectioned paths group by a registered
   section, and
-  [`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
+  [`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md)
   rejects an unregistered `NA`.
 
 - Species-level catch now reads
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)’s
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)’s
   catch-type model **per species-interview pair**, as that model is
   documented, instead of once per species across the whole catch table
   ([\#318](https://github.com/chrischizinski/tidycreel/issues/318)).
 
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
   states the rule per pair: a `"caught"` row is the pair’s total and is
   optional, and *when it is absent, total catch is inferred as
   `harvested + released`*. CATCH-04 enforces
@@ -692,7 +692,7 @@ grouped table, re-run before comparing to earlier output.
 
   An interview absent from the catch table entirely still counts as zero
   for that species.
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
   documents that too, and the two absences are different: a missing row
   means the angler caught none, while a missing `"caught"` row alongside
   recorded dispositions is an instruction to derive.
@@ -701,9 +701,9 @@ grouped table, re-run before comparing to earlier output.
   [\#317](https://github.com/chrischizinski/tidycreel/issues/317) — a
   quantity that is unknown or absent behaving like a zero.
 
-- [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+- [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
   and
-  [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+  [`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
   now read the same per-pair rule when they build the reported total
   they scale onto, and they refuse per **group** rather than per species
   ([\#317](https://github.com/chrischizinski/tidycreel/issues/317)).
@@ -711,7 +711,7 @@ grouped table, re-run before comparing to earlier output.
   Both distributions are rescaled onto a design-estimated reported total
   (see [\#310](https://github.com/chrischizinski/tidycreel/issues/310)
   below). That total was built by a second, private copy of the
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md)
   catch-type model — the table-wide copy
   [\#318](https://github.com/chrischizinski/tidycreel/issues/318)
   removed everywhere else. A species with a `"caught"` row on any one
@@ -742,9 +742,9 @@ grouped table, re-run before comparing to earlier output.
   finding 7 — the same “absent behaves like a zero” pattern, in the
   rescaling path.
 
-- [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+- [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
   and
-  [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+  [`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
   now scale their totals onto the design-estimated **reported catch**
   instead of expanding the measured subsample
   ([\#310](https://github.com/chrischizinski/tidycreel/issues/310)).
@@ -754,7 +754,7 @@ grouped table, re-run before comparing to earlier output.
   number of fish that happened to be measured* — on the package’s
   example data, 14 against a reported harvest of 77, with no error and
   no warning.
-  [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+  [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md)
   multiplies those counts by weight-at-length and calls the result total
   biomass, so a headline number was low by whatever fraction of the
   catch got measured. Measuring every fish twice doubled the reported
@@ -770,14 +770,14 @@ grouped table, re-run before comparing to earlier output.
 
   **`estimate`, `se` and the confidence bounds change value**, as does
   every column of
-  [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md).
+  [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md).
   `percent` and `cumulative_percent` do not: a share is invariant to how
   many fish were measured, which is why the shape of the distribution
   was always right and only its level was wrong.
 
-  [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md)
+  [`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md)
   and
-  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+  [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md)
   keep their **point estimates** for the same reason — both are ratios.
   Their standard errors do move, because the per-bin standard errors
   they read now carry the reported total’s variance through the delta
@@ -789,12 +789,12 @@ grouped table, re-run before comparing to earlier output.
 
   Two consequences for existing code. Grouping by species now
   **requires**
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
   because only that table is species-resolved and scaling one species by
   the all-species total would be worse than refusing. And a design with
   no matching total — a harvest distribution with no `harvest =`
   supplied to
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   — is now an error rather than a subsample total.
 
   Every call that rescales warns, naming the measured total, the
@@ -870,10 +870,10 @@ grouped table, re-run before comparing to earlier output.
   caller’s column — `by = day_type` returns a `day_type` column.
 
   This affects all seven sectioned paths:
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
   and the three `estimate_total_*()`. The lake-wide aggregate row is
   unchanged in substance — `.lake_total` is a *value* in the section
   column, so it now appears under the caller’s name too.
@@ -890,7 +890,7 @@ grouped table, re-run before comparing to earlier output.
   Code that reads `est$section` on a design registered under a different
   name should read `est[[design$section_col]]`.
 
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   now takes one long-form `counts` table plus a `frame_col` naming the
   column that partitions it, instead of two pre-split tables named
   `access_data` and `roving_data`
@@ -968,15 +968,15 @@ grouped table, re-run before comparing to earlier output.
   new values. No estimate changes; the numbers were already
   mean-of-ratios.
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   gained an `estimator` argument and now resolve it from the design’s
   `interview_type`, matching
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   gained `estimator` and `truncate_at` and follow their own rate
   functions through the resolver added in
   [\#268](https://github.com/chrischizinski/tidycreel/issues/268)
@@ -1016,7 +1016,7 @@ grouped table, re-run before comparing to earlier output.
   reporting `"ratio-of-means-"`. Code matching on `method` for these two
   metrics should expect the new values on MOR paths.
 
-- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   now resolves its rate estimator from the design’s `interview_type`
   instead of always requesting ratio-of-means, and gained `estimator`
   and `truncate_at` arguments
@@ -1027,7 +1027,7 @@ grouped table, re-run before comparing to earlier output.
   caller specified neither `use_trips` nor `estimator`, the total is now
   built from all trips using the truncated mean-of-ratios estimator –
   the same specification
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   already chose for that design. Previously the rate function used
   all-trip MOR while the total used complete-trip ratio-of-means on the
   same object, so a survey’s reported catch rate and its reported total
@@ -1049,13 +1049,13 @@ grouped table, re-run before comparing to earlier output.
   Horvitz-Thompson total, never auto-route, and now refuse a
   mean-of-ratios estimator rather than accepting and ignoring it.
 
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   are unchanged:
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   offer no estimator selection to follow, so routing their totals would
   have re-created the same rate-versus-total disagreement in the other
   direction. All three totals now resolve through one function, so when
@@ -1073,12 +1073,12 @@ grouped table, re-run before comparing to earlier output.
   [`match.arg()`](https://rdrr.io/r/base/match.arg.html)’s “should be
   one of”.
 
-- [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+- [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   gain a `use_trips` argument and now estimate from **complete trips by
   default**, and
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   honours `use_trips` on the paths that were silently discarding it
   ([\#266](https://github.com/chrischizinski/tidycreel/issues/266)).
   **This changes the numbers all three return on any design that records
@@ -1093,17 +1093,17 @@ grouped table, re-run before comparing to earlier output.
 
   Three separate failures, one shape:
 
-  - [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  - [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
     and
-    [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+    [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
     had no `use_trips` argument and no trip filter on **any** path. They
     were built from every interview, while
-    [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+    [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
     and
-    [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+    [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
     default to the complete ones – so the total and the rate on one
     design disagreed about which interviews they came from.
-  - [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  - [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
     threaded `use_trips` into each dispatch branch separately. It
     reached the ungrouped and grouped paths and was dropped at the call
     sites for `by = <species>` and for sectioned designs, where the
@@ -1111,7 +1111,7 @@ grouped table, re-run before comparing to earlier output.
     `"all"` returned the same number, which was the `"all"` number.
   - On bus-route and ice designs the new argument refuses
     `use_trips = "all"`, as
-    [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+    [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
     already did. Those estimate a completed-trip Horvitz-Thompson total,
     where an uncompleted trip would contribute catch-so-far under the
     inclusion probability of a completed one.
@@ -1133,7 +1133,7 @@ grouped table, re-run before comparing to earlier output.
   to filter on – and callers wanting the previous behaviour can ask for
   it with `use_trips = "all"`. The new argument sits after `target`,
   matching
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
   so positional calls that reached `aggregate_sections` or later without
   naming them will land one argument short.
 
@@ -1142,9 +1142,9 @@ grouped table, re-run before comparing to earlier output.
   function to mean-of-ratios. That is a separate defect, filed as
   [\#268](https://github.com/chrischizinski/tidycreel/issues/268).
 
-- [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+- [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   no longer ignore a design’s sections when grouping by species
   ([\#255](https://github.com/chrischizinski/tidycreel/issues/255)).
   **This changes the numbers those two calls return on a sectioned
@@ -1156,7 +1156,7 @@ grouped table, re-run before comparing to earlier output.
   rather than per section, reported with no `section` column and nothing
   to say the sectioning had been ignored. It was a believable number for
   a different estimand.
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   was not affected in the same way – it dispatched to sections first and
   then failed, with tidyselect’s “Column `species` doesn’t exist”,
   because species lives in the catch table and so is in neither the
@@ -1180,7 +1180,7 @@ grouped table, re-run before comparing to earlier output.
   ([\#241](https://github.com/chrischizinski/tidycreel/issues/241)),
   rather than a second wording.
 
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   now requires a `calendar` and estimates a **period total** rather than
   a sampled-day total
   ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)).
@@ -1206,7 +1206,7 @@ grouped table, re-run before comparing to earlier output.
 
   The population now comes from a required `calendar` argument giving
   the days each stratum holds, counted as distinct dates the way
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
   counts them, and shared by both components – one stratum is one span
   of the season, whichever method observed it. Both expansions live in
   the weight: the within-day fraction to the whole of a sampled day, and
@@ -1217,7 +1217,7 @@ grouped table, re-run before comparing to earlier output.
   before by the day expansion. `calendar` has no default, and every
   sampled date must appear in it under the same stratum.
 
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   now refuses a `calendar` that assigns one date to more than one
   stratum
   ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)).
@@ -1229,7 +1229,7 @@ grouped table, re-run before comparing to earlier output.
   warning. A date repeated *within* one stratum is still accepted:
   counts distinct dates, so it changes nothing.
 
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   now refuses an `fpc` that is not a non-missing logical scalar
   ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)). It
   is branched on with a bare `if`, where `NA` surfaced as base R’s
@@ -1237,7 +1237,7 @@ grouped table, re-run before comparing to earlier output.
   took its first element – building the design with a correction the
   caller never chose.
 
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   now requires `Date` date columns and refuses a missing date or stratum
   in `access_data`, `roving_data` or `calendar`
   ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)).
@@ -1257,7 +1257,7 @@ grouped table, re-run before comparing to earlier output.
   the same reason the rest of the package requires it: the keys must
   mean the same day on both sides of the join.
 
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   now refuses repeated counts on one date
   ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)).
 
@@ -1275,7 +1275,7 @@ grouped table, re-run before comparing to earlier output.
   construction now aborts with a `creel_error_repeated_psus` condition.
   Average repeats to one row per date before constructing the design.
 
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   now requires `trips_disjoint`, stratifies on the stratum-by-component
   interaction, and clusters on the date
   ([\#229](https://github.com/chrischizinski/tidycreel/issues/229)).
@@ -1312,7 +1312,7 @@ grouped table, re-run before comparing to earlier output.
 
   The documentation also said the returned object was “suitable for
   effort estimation via
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)”,
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)”,
   which refuses it: it is a `survey.design2`, not a `creel_design`. The
   help page now sends users to
   [`survey::svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html),
@@ -1326,7 +1326,7 @@ grouped table, re-run before comparing to earlier output.
 - The within-day variance component is now keyed by the sampling unit
   rather than by the PSU alone
   ([\#227](https://github.com/chrischizinski/tidycreel/issues/227)).
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   keys `design$within_day_var` by the full unit key – the section, the
   site, or whatever `unit_cols` named – and two consumers rebuilt a
   narrower `c(psu_col, strata_cols)` key from the design instead of
@@ -1358,10 +1358,10 @@ grouped table, re-run before comparing to earlier output.
   downstream product** for any design whose unit key is wider than
   `(psu, strata)`: sectioned designs, site-structured designs, and any
   use of `unit_cols`. Point estimates are unchanged.
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   all build products from `estimate_effort_total()` and inherit the
   correction.
 
@@ -1485,16 +1485,16 @@ grouped table, re-run before comparing to earlier output.
   and no longer include incomplete trips by default
   ([\#263](https://github.com/chrischizinski/tidycreel/issues/263)).
 
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   dispatched to their section path *before* the block that validates
   `use_trips`, filters the interviews and reports what it did. On a
   sectioned design the argument was therefore inert: `use_trips = "all"`
   and `use_trips = "complete"` returned the same number, an unrecognised
   value was accepted rather than refused, and no filtering message was
   emitted.
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   has always dispatched after that block, so on one design the three
   estimators disagreed about which interviews they were built from –
   catch rate from the complete trips, harvest and release from every
@@ -1511,7 +1511,7 @@ grouped table, re-run before comparing to earlier output.
   `use_trips = "all"`, which now reaches the sectioned path.
 
   The sectioned path of
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   discards `use_trips` for a different reason – the argument is never
   passed to the section helper – and is tracked separately as
   [\#266](https://github.com/chrischizinski/tidycreel/issues/266).
@@ -1588,10 +1588,10 @@ grouped table, re-run before comparing to earlier output.
   where levels differ in rate the pooled total inherits that difference.
   Nothing in the reported output distinguished the two situations.
 
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   now raise a warning of class `creel_warning_pooled_domain_mix` when
   the interviews carry an unclassified categorical domain **and** a
   crude rate differs by more than 20% across its levels. Both conditions
@@ -1615,7 +1615,7 @@ grouped table, re-run before comparing to earlier output.
 
 ### New features
 
-- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md)
   gains `harvest_lengths_table` and `release_lengths_table`, for a
   source that keeps harvest and release lengths in separate tables
   ([\#185](https://github.com/chrischizinski/tidycreel/issues/185)).
@@ -1629,11 +1629,11 @@ grouped table, re-run before comparing to earlier output.
   no cause. The connect DBI backend reads the two lengths tables through
   them.
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   gain a `targeted` argument, matching
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
 
   `targeted = FALSE` restricts the domain to the interviews that
@@ -1722,9 +1722,9 @@ grouped table, re-run before comparing to earlier output.
 
   [\#233](https://github.com/chrischizinski/tidycreel/issues/233) fixed
   this citation in one block of
-  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   and missed two others — a second block in the same file, and the
-  [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md)
+  [`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md)
   documentation. All three gave `Fish. Res. 106: 325-333`; the paper is
   *Braz. J. Biol.* 70: 483-491,
   [10.1590/S1519-69842010005000010](https://doi.org/10.1590/S1519-69842010005000010).
@@ -1792,10 +1792,10 @@ grouped table, re-run before comparing to earlier output.
   never what a name looks like or what values happen to hold.
 
   The key comes from whichever of
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
   or
-  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md)
+  [`add_ages()`](https://chrischizinski.com/tidycreel/reference/add_ages.md)
   registered the interview id. Testing for distinct values instead would
   be wrong: on a short survey a real grouping column such as `date` can
   be unique per row without being a key.
@@ -1820,7 +1820,7 @@ grouped table, re-run before comparing to earlier output.
   design whose only dot-named column is derived, and a silent drop on
   one that also has a user column such as `.se_expansion`.
 
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   is unaffected: it resolves `by =` against the counts, which carry
   neither an interview key nor these derived columns.
 
@@ -1830,7 +1830,7 @@ grouped table, re-run before comparing to earlier output.
   still only warns at `n < 3`; whether `n = 1` should be refused
   generally is a wider question this did not settle.
 
-- [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+- [`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md)
   no longer warns that a stratum is below a Feltz and Middaugh (2025)
   camera-day minimum
   ([\#234](https://github.com/chrischizinski/tidycreel/issues/234)). The
@@ -1850,7 +1850,7 @@ grouped table, re-run before comparing to earlier output.
   loose row; and the simulations measured boat-trailer counts on six
   Arkansas reservoirs, whereas `ybar_h` and `s2_h` are whatever the
   caller piloted. The benchmark is now stated in
-  [`?creel_n_camera`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  [`?creel_n_camera`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md)
   in the study’s own units, with those conditions, as design context
   rather than a threshold.
 
@@ -1878,7 +1878,7 @@ grouped table, re-run before comparing to earlier output.
 - `estimator = "regression"` now runs on a sectioned design instead of
   being silently discarded
   ([\#285](https://github.com/chrischizinski/tidycreel/issues/285)).
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   dispatches on sections before it dispatches on the estimator, so a
   sectioned regression request fell through to `estimate_cpue_total()`,
   whose estimator test names only the mean-of-ratios variants – and
@@ -1886,7 +1886,7 @@ grouped table, re-run before comparing to earlier output.
   warning, and a believable number.
 
   The visible symptom was in
-  [`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
+  [`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
   whose purpose is making estimator divergence visible: on every
   sectioned design it reported the regression row as numerically
   identical to the ratio-of-means row, carrying a jackknife standard
@@ -1903,7 +1903,7 @@ grouped table, re-run before comparing to earlier output.
   section-level jackknife SE rests on that section’s interviews rather
   than the whole sample and is correspondingly less stable; this is
   documented on
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
 
 - `species` in `by` combined with `estimator = "regression"` is now
   refused rather than answered with a different estimator
@@ -1947,7 +1947,7 @@ grouped table, re-run before comparing to earlier output.
   one while using none. The banner now names the trip set – “All Trips”,
   “Complete Trips” or “DIAGNOSTIC: … (Incomplete Trips)” – and the
   length-of-stay caveat and the
-  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
   pointer appear only for the incomplete set, which is what
   `mor_estimation_warning()` already did at run time. The truncation
   report appears on every path, because truncation is part of the
@@ -2056,7 +2056,7 @@ grouped table, re-run before comparing to earlier output.
   message is what a caller reads to judge whether the threshold is
   discarding too much data.
 
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+- [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   no longer aborts when an interview has no recorded trip duration and
   MOR truncation is in effect
   ([\#272](https://github.com/chrischizinski/tidycreel/issues/272)). The
@@ -2078,7 +2078,7 @@ grouped table, re-run before comparing to earlier output.
   `mor_n_truncated` now counts only short trips.
 
   Affects every truncating path in
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md):
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md):
   `use_trips = "incomplete"`, `use_trips = "all"` including the roving
   auto-route, and `estimator = "mortr"`. This is the guard
   `truncate_interviews_for_mor()`
@@ -2088,7 +2088,7 @@ grouped table, re-run before comparing to earlier output.
   one site left without it. Designs with a complete duration column are
   unaffected.
 
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+- [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   no longer aborts on a bus-route or ice design built with
   `add_interviews(interview_type = "roving")`
   ([\#270](https://github.com/chrischizinski/tidycreel/issues/270)). The
@@ -2106,9 +2106,9 @@ grouped table, re-run before comparing to earlier output.
   completed-trip Horvitz-Thompson total, for which `use_trips = "all"`
   names no estimator that exists. Standard designs are unaffected.
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   can now group by species on a sectioned design
   ([\#257](https://github.com/chrischizinski/tidycreel/issues/257)).
 
@@ -2132,7 +2132,7 @@ grouped table, re-run before comparing to earlier output.
   explains the constraint instead of reporting the column as
   non-existent
   ([\#241](https://github.com/chrischizinski/tidycreel/issues/241)).
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
   the three `estimate_total_*()` functions and their sectioned paths
   resolve `by=` against the count data, which is correct – effort comes
   from counts, so it can only be split by what the counter could see.
@@ -2191,10 +2191,10 @@ grouped table, re-run before comparing to earlier output.
 - The three sectioned product totals now report
   `expansion_decomposition` alongside `se_expansion`
   ([\#238](https://github.com/chrischizinski/tidycreel/issues/238)).
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   each gathered the per-section decomposition, used it in
   `combine_section_variances()`, and then called `new_creel_estimates()`
   without it.
@@ -2241,7 +2241,7 @@ grouped table, re-run before comparing to earlier output.
   `312, 150, 462`.
 
   This was unreachable from
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
   which aborts for a sectioned design whenever
   `target != "sampled_days"`. That abort describes itself as temporary,
   and this is the estimand-mislabelling class rather than an arithmetic
@@ -2271,10 +2271,10 @@ grouped table, re-run before comparing to earlier output.
 
 ### Documentation
 
-- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   now document why they have no `targeted` argument
   ([\#307](https://github.com/chrischizinski/tidycreel/issues/307)).
 
@@ -2289,7 +2289,7 @@ grouped table, re-run before comparing to earlier output.
   targeted total is not, as a property of the estimand rather than a gap
   in the implementation.
 
-- [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+- [`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md)
   no longer attributes either of its imputation models to a paper that
   does not contain it
   ([\#297](https://github.com/chrischizinski/tidycreel/issues/297)).
@@ -2314,7 +2314,7 @@ grouped table, re-run before comparing to earlier output.
   intercepts are temporal classes; neither appears here. It is now cited
   for what it does support — the multiple-imputation framing behind
   `m > 1` and
-  [`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md).
+  [`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md).
 
   The Poisson GLM default was attributed in-text to “Hartill 2016”, with
   no matching reference entry to follow. Hartill et al. (2016) do impute
@@ -2346,7 +2346,7 @@ grouped table, re-run before comparing to earlier output.
   Documentation only; no estimate, imputed value or model changes.
 
 - Corrected two bad references in
-  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)) —
   one fabricated, one mis-cited.
 
@@ -2391,7 +2391,7 @@ grouped table, re-run before comparing to earlier output.
 - Corrected the attribution of the camera calibration ratio, which cited
   Hartill et al. (2020) for an estimator that paper does not contain
   ([\#236](https://github.com/chrischizinski/tidycreel/issues/236)).
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   estimates `rho`, the hours of effort per camera count, as a ratio of
   sums over the days carrying both a count and interviews, and applies
   it to the stratum’s full count total.
@@ -2417,7 +2417,7 @@ grouped table, re-run before comparing to earlier output.
   hierarchical Bayesian model, and a fitted linear correction
   respectively.
 
-  [`?est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  [`?est_effort_camera`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   now states plainly that the ratio-of-totals form is this package’s own
   application of standard double-sampling ratio estimation, not a
   reproduction of a published fisheries estimator. In particular it is
@@ -2426,7 +2426,7 @@ grouped table, re-run before comparing to earlier output.
   that are a subsample of the camera’s own frame, with a bootstrap
   variance.
 
-  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  [`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md)
   also carried the Hartill et al. (2020) reference, for a function that
   imputes camera outages by a per-stratum Poisson GLM or a negative
   binomial GLMM. The review supports neither, and the entry is removed.
@@ -2435,7 +2435,7 @@ grouped table, re-run before comparing to earlier output.
   comments and the camera vignette only.
 
 - Corrected the framing of
-  [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md),
+  [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md),
   which described *access* and *roving* as though they were count
   methods
   ([\#246](https://github.com/chrischizinski/tidycreel/issues/246)).
@@ -2447,10 +2447,10 @@ grouped table, re-run before comparing to earlier output.
   catch-rate estimators (Pollock et al. 1994). A survey mixing them is a
   *hybrid interview* design. Counts are described by their own methods:
   instantaneous, progressive, bus-route, camera or aerial – the values
-  [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+  [`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md)
   accepts for `survey_type`, none of which is “access” or “roving”.
   tidycreel already carries the interview axis on
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   via `interview_type`.
 
   The help page previously stated that `component` “names a survey
@@ -2467,9 +2467,9 @@ grouped table, re-run before comparing to earlier output.
   to be wrong.
 
   - **Hartill et al. 2020**, cited by
-    [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+    [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
     `estimate_effort_camera()` and
-    [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md),
+    [`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md),
     gave a title, an author list and a journal that belong to no paper,
     and a DOI (`10.1016/j.fishres.2020.105706`) that resolves to a study
     of age determination in sawsharks. The real reference is Hartill,
@@ -2477,25 +2477,25 @@ grouped table, re-run before comparing to earlier output.
     recreational fishing effort: applications and challenges*, Fish and
     Fisheries 21:204-215, .
   - **De Lury 1958**, cited by
-    [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+    [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
     and the mark-recapture vignette, used `10.1139/f58-002`, which is
     *The Abundance and Distribution of the Northern Sea Lion*. The
     correct DOI is `10.1139/f58-003`; it is one article later in the
     same issue.
   - **Askey et al. 2018**, cited by
-    [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
+    [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
     `example_aerial_glmm_counts` and the aerial GLMM vignette, had the
     right DOI but an invented title and the wrong pages, and the
     vignette named four authors none of whom wrote it. It is *Angler
     effort estimates from instantaneous aerial counts*, NAFM 38:194-209.
   - **Su and Clapp**, cited by
-    [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md),
+    [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md),
     is in Transactions of the American Fisheries Society 142:234-246
     under the title *Evaluation of sample design and estimation methods
     for Great Lakes angler surveys*, not in NAFM 33:895-909 under the
     title given.
   - **Feltz and Middaugh 2025**, cited by
-    [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
+    [`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md),
     was recorded as in press under a title the paper does not carry. It
     is published as *Improving efficiency of estimating angler effort
     using low-frequency time-lapse camera data*, NAFM 45:322-332.
@@ -2503,19 +2503,19 @@ grouped table, re-run before comparing to earlier output.
   No estimator changed. What changed is that following a reference now
   reaches the work it claims to. Two related questions are tracked
   separately: the provenance of the
-  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  [`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md)
   camera-day minimums, which were attributed to the Feltz and Middaugh
   title that does not exist
   ([\#234](https://github.com/chrischizinski/tidycreel/issues/234)), and
   the unverified Greene 1995 citation in
-  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   ([\#233](https://github.com/chrischizinski/tidycreel/issues/233)).
 
 ### Internal
 
-- [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+- [`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
   and
-  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  [`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md)
   now share one internal implementation instead of holding two copies of
   the same 37 lines
   ([\#295](https://github.com/chrischizinski/tidycreel/issues/295)).
@@ -2541,15 +2541,15 @@ grouped table, re-run before comparing to earlier output.
 
 ### Breaking changes
 
-- [`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md)
+- [`summarize_by_day_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_day_type.md)
   and
-  [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+  [`summarize_boat_composition()`](https://chrischizinski.com/tidycreel/reference/summarize_boat_composition.md)
   now resolve the day type column instead of assuming it is the first
   stratum
   ([\#221](https://github.com/chrischizinski/tidycreel/issues/221)).
   Both read `design$strata_cols[1]` and labelled whatever they found
   there `day_type`. But
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
   preserves the order the caller declared their strata in, so that index
   is a declaration order, not a definition: a design declaring
   `strata = c(site, day_type)` produced a table of site names under a
@@ -2564,10 +2564,10 @@ grouped table, re-run before comparing to earlier output.
 
   **This moves numbers for multi-stratum designs.** On a six-day
   two-site fixture whose boat composition is driven by site,
-  [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+  [`summarize_boat_composition()`](https://chrischizinski.com/tidycreel/reference/summarize_boat_composition.md)
   reported 90% / 10% – the per-site means under a `day_type` header –
   where the per-day-type figures are 63.3% / 36.7%.
-  [`summarize_by_day_type()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_day_type.md)
+  [`summarize_by_day_type()`](https://chrischizinski.com/tidycreel/reference/summarize_by_day_type.md)
   moves labels rather than counts in the balanced case, which is what
   made it invisible: the 6 / 6 site split and the 6 / 6 weekday /
   weekend split are the same numbers.
@@ -2583,12 +2583,12 @@ grouped table, re-run before comparing to earlier output.
   path. Found while fixing that issue and recorded rather than fixed
   inline.
 
-- [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+- [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   and the three total estimators now refuse camera designs
   ([\#214](https://github.com/chrischizinski/tidycreel/issues/214)). A
   camera count is a daily ingress total – a count of arrivals – not an
   instantaneous count of anglers present. The dispatch chain in
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   branches on `bus_route`, `ice` and `aerial`, and camera had no branch,
   so it fell through to the instantaneous path and its counts were
   summed as though they were snapshots of how many anglers were present.
@@ -2597,11 +2597,11 @@ grouped table, re-run before comparing to earlier output.
   calibrated estimator returns 111 angler-hours.
 
   The camera vignette documented that route. It called
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   for both sub-modes, stated that camera designs “feed into the same
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   … pipeline – no changes”, never mentioned
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
   and wrapped every call in
   [`suppressWarnings()`](https://rdrr.io/r/base/warning.html). So the
   guards added by
@@ -2615,21 +2615,21 @@ grouped table, re-run before comparing to earlier output.
   the documented path.
 
   The refusal is raised at all four entry points, not only in
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
   because
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   call `estimate_effort_total()` directly and never pass through it.
   Guarding only
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   would have left the totals building a product from the same arrival
   count – multiplying a rate per angler-hour by a count of arrivals and
   reporting it as fish.
 
   Refusing rather than dispatching is deliberate.
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   already implements the calibrated estimator and carries the guards;
   giving those guards a second caller to be right about is how the split
   arose. It also takes arguments the generic signature has nowhere to
@@ -2687,7 +2687,7 @@ grouped table, re-run before comparing to earlier output.
   while `se_within` was reported as `0`, indistinguishable from a
   within-day component that had been evaluated and found to be nil.
 
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   warned about this, and its sibling check already *aborted* on rows
   identical in every column – so the harmless case (a double entry) was
   refused while the dangerous one (a genuine second count) was merely
@@ -2702,18 +2702,18 @@ grouped table, re-run before comparing to earlier output.
   is retained.
 
   The refusal is raised by
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
   not
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
   so estimators that never sum these rows are unaffected:
-  [`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md)
+  [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md)
   models counts against their flight time and keeps its several rows per
   day.
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   still warns, so the problem is reported next to the call that
   introduced it.
 
-- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+- [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   now estimates the calibration ratio within every stratum the design
   declares, not within the first stratum column only
   ([\#216](https://github.com/chrischizinski/tidycreel/issues/216)). A
@@ -2739,7 +2739,7 @@ grouped table, re-run before comparing to earlier output.
 
   Estimating within the declared strata puts fewer paired days in each
   stratum, so
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   may now report an `NA` standard error where it previously reported a
   number: a stratum with one paired interview/count day has no
   measurable ratio variance
@@ -2756,7 +2756,7 @@ grouped table, re-run before comparing to earlier output.
   Single-column-stratified camera designs – every fixture in the
   package’s own examples and tests – are bit-identical.
 
-- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+- [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   no longer treats a missing camera count as a zero-effort day on the
   ratio-calibration path
   ([\#215](https://github.com/chrischizinski/tidycreel/issues/215)).
@@ -2776,7 +2776,7 @@ grouped table, re-run before comparing to earlier output.
   input two opposite ways depending on which branch it took. Both now
   return `NA`, and both now warn – naming the affected dates, the
   `camera_status` values that explain them, and
-  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  [`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md)
   as the remedy. The count is not imputed or reweighted here: which day
   is missing is informative, so the treatment is the caller’s to choose.
 
@@ -2810,7 +2810,7 @@ grouped table, re-run before comparing to earlier output.
   There are two ways to fail to cancel, and both were labelled `"fish"`:
 
   - The effort unit is unknown. `design$effort_unit` is `NA` whenever
-    [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+    [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
     received no `period_length_col`, because a bare count column may be
     an instantaneous head count or effort the caller already expanded,
     and nothing can tell the two apart. Unknown times known is unknown.
@@ -2825,9 +2825,9 @@ grouped table, re-run before comparing to earlier output.
   previously reported `"fish"`. Point estimates, standard errors and
   confidence intervals are unchanged – only the label moves. Supply
   `period_length_col` to
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
   and `n_anglers` to
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
   to make the unit derivable.
 
   The same literal appeared three more times on the bus-route and ice
@@ -2838,11 +2838,11 @@ grouped table, re-run before comparing to earlier output.
   unaffected: their units already cancelled, and now they are shown to.
 
   This follows the rule
-  [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+  [`estimate_effort_per_acre()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_per_acre.md)
   already used – compose the unit from its inputs, and an unknown input
   yields an unknown result.
 
-- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+- [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   now reports the within-day variance component instead of a literal `0`
   ([\#217](https://github.com/chrischizinski/tidycreel/issues/217)).
   `add_counts(count_time_col = )` averages several counts on one day
@@ -2875,7 +2875,7 @@ grouped table, re-run before comparing to earlier output.
 
 ### Bug fixes
 
-- [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+- [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
   requires `se_C` when `C` is a bare number
   ([\#208](https://github.com/chrischizinski/tidycreel/issues/208)). It
   previously reached `if (se_C < 0)` holding a `NULL` and failed as
@@ -2897,15 +2897,15 @@ grouped table, re-run before comparing to earlier output.
   wrong. The direction is now also asserted in the test suite, so prose
   and arithmetic cannot drift apart again silently.
 
-- [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+- [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
   now accepts the
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   result itself for `C`, and checks it
   ([\#206](https://github.com/chrischizinski/tidycreel/issues/206)).
   `u = (C/T)(m/n)/lambda` is the fraction of the tagged cohort removed
   *over the whole season*, so `C` must be a period total while `T` is
   the full cohort – but
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   defaults to `target = "sampled_days"`, and `C` arrived as a bare
   number with its estimand stripped off. The shortest correct-looking
   pipeline was therefore the wrong one, and it failed silently: on a
@@ -2927,17 +2927,17 @@ grouped table, re-run before comparing to earlier output.
   – the object and numeric paths return identical results for the same
   total.
 
-- [`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md)
+- [`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md)
   restored only four column types, so `window_id` came back as character
   ([\#194](https://github.com/chrischizinski/tidycreel/issues/194)). The
   column is added by
-  [`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md)
+  [`attach_count_times()`](https://chrischizinski.com/tidycreel/reference/attach_count_times.md)
   rather than by
-  [`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md),
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md),
   and `coerce_schedule_columns()` matches an allow-list by name, so a
-  [`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+  [`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
   -\>
-  [`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md)
+  [`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md)
   round trip was not type-stable for it: a join against an integer
   `window_id`, an arithmetic comparison, or an
   [`identical()`](https://rdrr.io/r/base/identical.html) check silently
@@ -2955,12 +2955,12 @@ grouped table, re-run before comparing to earlier output.
   means; the GLMM continues to read the individual flights, which is
   what it fits the diurnal curve against.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now records `unit_cols` on the design. It was previously validated and
   discarded, leaving the design unable to distinguish a declared
   multi-column sampling unit from an undeclared repeat.
 
-- [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+- [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   on an ice design renamed its `estimate` column to record the effort
   type, so `tidy()` returned `total_effort_hr_on_ice` (or
   `total_effort_hr_active`) and no `estimate` at all
@@ -3005,7 +3005,7 @@ grouped table, re-run before comparing to earlier output.
 
 - The stratified sample-size functions reported a `total` that was not
   the sum of the per-stratum values, and
-  [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+  [`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md)
   rendered it as though it were
   ([\#195](https://github.com/chrischizinski/tidycreel/issues/195)).
   `total` is Cochran’s *n*, solved from the variance equation before
@@ -3016,14 +3016,14 @@ grouped table, re-run before comparing to earlier output.
 
   `total` is unchanged — it is a real quantity and was documented as
   such.
-  [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-  [`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md)
+  [`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+  [`optimal_n()`](https://chrischizinski.com/tidycreel/reference/optimal_n.md)
   and
-  [`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md)
+  [`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md)
   now additionally return `allocated`, the sum of the per-stratum
   values, which is what the returned allocation commits to and the
   number to budget against.
-  [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+  [`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md)
   reports both rows. Code reading these results by name is unaffected;
   code depending on the length or exact names of the returned vector
   will see one more element.
@@ -3065,26 +3065,26 @@ grouped table, re-run before comparing to earlier output.
   can see that the quantity being expanded is a day rather than a row.
 
   Registered sectioned designs never reached this:
-  [`add_sections()`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
+  [`add_sections()`](https://chrischizinski.com/tidycreel/reference/add_sections.md)
   refuses expanded targets outright.
 
 ## tidycreel 5.0.0 “Pallid Sturgeon” (2026-08-22)
 
 ### New features
 
-- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md)
   gains `count_time_col`, naming the time a count was taken
   ([\#129](https://github.com/chrischizinski/tidycreel/issues/129)). A
   count row is one observation at one moment, not a day’s total, and
   sources routinely record several on a sampled day; the time is the
   only thing that tells those rows apart. Map it whenever the source
   records one and pass the fetched `count_time` to
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)’s
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)’s
   `count_time_col`. Optional, and carried through as character rather
   than parsed — it is a label that distinguishes observations, not a
   quantity, and a source may write a clock time in any format.
 
-- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md)
   gains `length_bin_col` and `length_count_col`, the pair a source needs
   when it reports released fish as length groups rather than
   measurements
@@ -3096,7 +3096,7 @@ grouped table, re-run before comparing to earlier output.
   than `length_mm_col`, whose name asserts a unit the label does not
   carry.
 
-- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md)
   gains `value_maps`, declaring what a source’s codes mean for the three
   columns whose meaning is a fixed vocabulary rather than a number —
   `trip_status`, `catch_type`, `length_type`
@@ -3104,26 +3104,26 @@ grouped table, re-run before comparing to earlier output.
   Each entry maps the source’s own codes to canonical values,
   `c("1" = "complete", "2" = "incomplete")`. `tidycreel.connect` applies
   the map at the fetch, so a coded source reaches
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   speaking the vocabulary every downstream filter matches. Map targets
   are checked against the canonical vocabulary at construction, so a
   typo’d target is caught where the map is written rather than several
   stages later against the data.
 
 - New
-  [`creel_vocabulary()`](https://chrischizinski.github.io/tidycreel/reference/creel_vocabulary.md)
+  [`creel_vocabulary()`](https://chrischizinski.com/tidycreel/reference/creel_vocabulary.md)
   returns those canonical vocabularies. Exported because
   `tidycreel.connect` translates source codes and must check its targets
   against the same list this package filters on — a second copy would be
   free to drift from this one.
 
-- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md)
   gains `strata_cols`, naming the stratum columns to carry through from
   the source
   ([\#171](https://github.com/chrischizinski/tidycreel/issues/171)). It
   is the one mapping here with no canonical tidycreel name on the other
   side:
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   matches `design$strata_cols` — the caller’s own calendar column names
   — against the names of the counts frame, so the mapping is two-sided.
   Names are the column the design refers to, values the source column
@@ -3133,9 +3133,9 @@ grouped table, re-run before comparing to earlier output.
 ### Bug fixes
 
 - The advanced-use warning issued by
-  [`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md)
+  [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md)
   (formerly
-  [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md))
+  [`as_survey_design()`](https://chrischizinski.com/tidycreel/reference/as_survey_design.md))
   no longer prints unevaluated cli markup. It was raised with
   [`rlang::warn()`](https://rlang.r-lib.org/reference/abort.html), which
   does not interpolate cli fields, so the line reached users as
@@ -3151,14 +3151,14 @@ grouped table, re-run before comparing to earlier output.
 - The Calamus 2016 validation script now runs
   ([\#130](https://github.com/chrischizinski/tidycreel/issues/130)).
   `inst/validation/calamus-2016-validation.R` aborted at
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   — the fixture carries three numeric count columns and the call named
   none of them — so the package’s only end-to-end validation of its own
   reference outputs had not executed at all. It also called
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
   which returns HPUE (0.4226 here), where `reference-outputs.csv`
   records the Horvitz–Thompson total that
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   produces; a comment argued explicitly for the wrong one. Both fixed,
   and the script now reports 3/3 estimands within tolerance.
 
@@ -3171,7 +3171,7 @@ grouped table, re-run before comparing to earlier output.
   was aborting. It now asserts the script runs to completion and that no
   estimand reports FAIL.
 
-- [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+- [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
   now accepts a `length` column whose name is not literally `length`
   ([\#127](https://github.com/chrischizinski/tidycreel/issues/127)).
   `length` is one of this function’s own arguments, so an unqualified
@@ -3188,9 +3188,9 @@ grouped table, re-run before comparing to earlier output.
 - Bus-route and ice totals now refuse a design with no complete trips by
   name
   ([\#128](https://github.com/chrischizinski/tidycreel/issues/128)).
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   and the bus-route rate estimators filter to completed trips, and a
   Horvitz–Thompson assembly handed a zero-row frame does not notice: it
   failed several calls later inside
@@ -3208,9 +3208,9 @@ grouped table, re-run before comparing to earlier output.
   groups `n_counted_col` under **interviews** rather than counts
   ([\#170](https://github.com/chrischizinski/tidycreel/issues/170)).
   Both enumeration columns live on the interviews table —
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   resolves them against the interviews frame and
-  [`get_enumeration_counts()`](https://chrischizinski.github.io/tidycreel/reference/get_enumeration_counts.md)
+  [`get_enumeration_counts()`](https://chrischizinski.com/tidycreel/reference/get_enumeration_counts.md)
   reads them back off it — so a bus-route user reading the printed
   schema was told the enumeration count belonged to a table it is not
   in, while its own denominator was listed under another. Display only;
@@ -3218,15 +3218,15 @@ grouped table, re-run before comparing to earlier output.
 
 ### Breaking changes
 
-- [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+- [`summarize_by_zip()`](https://chrischizinski.com/tidycreel/reference/summarize_by_zip.md)
   and
-  [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md)
+  [`summarize_by_county()`](https://chrischizinski.com/tidycreel/reference/summarize_by_county.md)
   gain a `zip_col` argument, defaulting to `"zip_code"`. Both previously
   required a hardcoded raw field name from one agency’s database, which
   no general-purpose package should assume. Rename the column, or pass
   `zip_col`, to keep existing code working.
 
-- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+- [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   now **warns** rather than informs when `n_anglers` is omitted
   ([\#126](https://github.com/chrischizinski/tidycreel/issues/126)). The
   assumption it states is a claim about the data, not a note about a
@@ -3237,7 +3237,7 @@ grouped table, re-run before comparing to earlier output.
   each; that silences the warning and, unlike omission, marks the effort
   as genuine angler-hours.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   refuses a counts table containing rows identical in every column
   ([\#152](https://github.com/chrischizinski/tidycreel/issues/152)).
   [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) sums
@@ -3260,20 +3260,20 @@ grouped table, re-run before comparing to earlier output.
   unaffected, since the counts themselves differ; CNT-06 still warns
   about those.
 
-- [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+- [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
   now removes the columns it consumed (`bank`, `boat_anglers`,
   `boat_count`) from its result. They are superseded by the derived
   count and by `expansion_basis`, and leaving them in produced a table
   that varied between sub-counts of one sampling unit —
   indistinguishable, to
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
   from a structural dimension it had not been told about
   ([\#162](https://github.com/chrischizinski/tidycreel/issues/162)). The
   destination column is never dropped, even when it is also an input.
   Code reading a raw component off the result must read it from the
   input table instead.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   aborts, rather than silently taking a first value, when within-day
   aggregation would collapse rows that differ in a column the
   sampling-unit key does not contain
@@ -3282,9 +3282,9 @@ grouped table, re-run before comparing to earlier output.
 
 ### Deprecated
 
-- [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
+- [`as_survey_design()`](https://chrischizinski.com/tidycreel/reference/as_survey_design.md)
   is renamed to
-  [`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md)
+  [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md)
   ([\#167](https://github.com/chrischizinski/tidycreel/issues/167)). The
   old name is srvyr’s principal entry point, and srvyr is the natural
   companion for tidy survey work, so attaching both packages masked one
@@ -3292,12 +3292,12 @@ grouped table, re-run before comparing to earlier output.
   and called `as_survey_design(design)` got srvyr’s generic failing to
   dispatch on `creel_design`, with an error that said nothing about
   masking. The new name also matches the sibling
-  [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+  [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   and states what the function does: it extracts the internal `survey`
   object rather than constructing a design.
-  [`as_survey_design()`](https://chrischizinski.github.io/tidycreel/reference/as_survey_design.md)
+  [`as_survey_design()`](https://chrischizinski.com/tidycreel/reference/as_survey_design.md)
   keeps working and now warns; it delegates to
-  [`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md),
+  [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md),
   so the two cannot diverge.
 
 ### Statistical correctness
@@ -3351,14 +3351,14 @@ grouped table, re-run before comparing to earlier output.
   output” check passing on a zero-length vector, testing nothing.
 
 - The sampling unit is now declarable:
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   gains `unit_cols`
   ([\#162](https://github.com/chrischizinski/tidycreel/issues/162)).
   Until now the unit was inferred from the design alone — the PSU column
   plus strata, section, and site — so a counts table carrying a
   dimension the design does not model was read as repeated units. That
   is exactly what
-  [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+  [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md)
   produces: it emits one row per `(date, strata, effort_type)`, and bank
   and boat counts on the same day are two units, not one day counted
   twice.
@@ -3380,12 +3380,12 @@ grouped table, re-run before comparing to earlier output.
   which is why the fix stops enumerating dimensions and lets the caller
   state the unit instead.
 
-- [`creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/creel_schema.md)
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/reference/creel_schema.md)
   gains `site_col` and `circuit_col`
   ([\#126](https://github.com/chrischizinski/tidycreel/issues/126)). A
   bus-route interview has to name the site and circuit it was taken at,
   or
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   cannot join the site inclusion probability — but the schema had no way
   to say which source columns hold them, so the connect layer dropped
   them and the join aborted with an error that pointed nowhere near the
@@ -3426,7 +3426,7 @@ previously smaller than the single term they had omitted.
   supply its standard error as 0 deliberately
   (`visibility_correction = 1, visibility_se = 0`).
 
-- **[`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+- **[`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   without `interviews` must pass `calibration = "none"`, and then
   reports `NA` standard error.** Expanding a raw camera count by
   `h_open` alone assumes each counted object contributes exactly one
@@ -3439,24 +3439,24 @@ previously smaller than the single term they had omitted.
 
 - **Breaking (numeric): `estimate_effort_aerial()` standard errors move
   upward wherever a boat count was expanded by
-  [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md).**
+  [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md).**
   The function never called `compute_expansion_var_contribution()`, so a
   count carrying a `party_size_se` reached
   [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) with
   its multiplier’s uncertainty discarded — the carrier columns survived
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   and were simply not read. Measured on a fixture, the dropped component
   was 560 against a reported standard error of 236: the missing term was
   larger than the entire standard error being reported.
 
 - **Breaking (numeric):
-  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  [`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md)
   returns a different object when `m > 1`.** It now yields a
   `camera_imputations` object of `m` completed data sets rather than
   one. `m = 1` is unchanged and still returns a plain data frame.
 
 - **Breaking (numeric):
-  [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+  [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   confidence intervals are no longer built by scaling the endpoints of
   the abundance interval** when the harvest rate is estimated. That
   identity is exact only while the rate is a known positive constant;
@@ -3488,7 +3488,7 @@ previously smaller than the single term they had omitted.
   up), so applying only the visibility correction is not conservative:
   it is biased in the direction of the correction that was kept.
 
-- [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+- [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   gains `harvest_rate_se`
   ([\#138](https://github.com/chrischizinski/tidycreel/issues/138)). It
   computed `se_H <- harvest_rate * se_N`, which is
@@ -3501,7 +3501,7 @@ previously smaller than the single term they had omitted.
   in the product are known, not estimated”. The bootstrap path now draws
   the rate once per replicate rather than holding it fixed.
 
-- [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+- [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
   gains `reporting_rate_se` and the third delta term
   `(u/lambda)^2 var(lambda)`
   ([\#139](https://github.com/chrischizinski/tidycreel/issues/139)),
@@ -3519,7 +3519,7 @@ previously smaller than the single term they had omitted.
 
 - Multiple imputation for camera outages
   ([\#137](https://github.com/chrischizinski/tidycreel/issues/137)).
-  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  [`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md)
   filled every outage row with the model’s fitted mean and returned one
   completed data set. Inside
   [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
@@ -3536,7 +3536,7 @@ previously smaller than the single term they had omitted.
 
 ### New features
 
-- [`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md)
+- [`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md)
   estimates once per completed data set and pools by Afrifa-Yamoah et
   al. (2020) eq. (5): the within-imputation mean variance plus the
   `(M+1)/(M(M-1))` between-imputation term — the quantity a single
@@ -3577,10 +3577,10 @@ previously smaller than the single term they had omitted.
 ### Statistical correctness
 
 - **Breaking (numeric):** the per-section totals from
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   no longer aggregate to the `.lake_total` row as though the sections
   were independent when one party-size estimate spans them
   ([\#145](https://github.com/chrischizinski/tidycreel/issues/145)).
@@ -3614,7 +3614,7 @@ previously smaller than the single term they had omitted.
   term.
 
 - **Breaking (numeric):**
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now keys the sampling unit on the PSU crossed with the section and
   site, not on the PSU column alone
   ([\#155](https://github.com/chrischizinski/tidycreel/issues/155)).
@@ -3643,7 +3643,7 @@ previously smaller than the single term they had omitted.
     squares were 50 and 2.
   - **A section-specific party size was refused**, reporting
     `expansion_se varies within a single PSU` and blaming two
-    [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+    [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
     calls, on a single coherent call. Under sections the unit is the day
     within a section, and each such unit carries exactly one estimate.
 
@@ -3687,12 +3687,12 @@ previously smaller than the single term they had omitted.
   retained for the case where no decomposition was carried, since a
   combination that cannot be computed still must not be guessed.
 
-- [`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md)
+- [`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md)
   gains `mean_party_size_se`, and emits the `expansion_*` carrier
   columns when it is supplied
   ([\#143](https://github.com/chrischizinski/tidycreel/issues/143)).
   This function performs the same boat-to-angler expansion as
-  [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
+  [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md),
   but wrote no carriers and had no argument through which a party-size
   standard error could be given — so on this path the component was not
   merely omitted by default, it was unreachable, and no user action
@@ -3730,7 +3730,7 @@ previously smaller than the single term they had omitted.
   and can be verified, rather than asserting the rescale.
 
 - **Breaking (error):**
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)’s
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)’s
   ratio-calibration path now refuses a counts table that holds more than
   one row for the same day, rather than silently double-counting it
   ([\#142](https://github.com/chrischizinski/tidycreel/issues/142)). The
@@ -3741,7 +3741,7 @@ previously smaller than the single term they had omitted.
   estimate, not only the standard error** — 16 to 19.5 on the package’s
   own five-day test fixture, a 22% shift produced by a duplicated row
   carrying no new information.
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   only warns about repeated PSU rows (CNT-06), so such a table reached
   the estimator intact.
 
@@ -3749,7 +3749,7 @@ previously smaller than the single term they had omitted.
   day are either sub-period snapshots or a data error, and nothing on
   this path can tell which. Callers with genuine sub-daily counts should
   pass `count_time_col` to
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
   which already collapses them to one row per day; the error names the
   offending dates and says so. The raw-count path (`h_open`, no
   interviews) is deliberately unchanged: expanding a duplicated PSU row
@@ -3768,10 +3768,10 @@ the statistical seam audits of 2026-08-14; none produced an error, a
 warning, or an implausible number.
 
 - **Breaking (numeric):**
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   no longer combine a shared party-size estimate across strata as though
   the strata were independent
   ([\#144](https://github.com/chrischizinski/tidycreel/issues/144)). The
@@ -3782,7 +3782,7 @@ warning, or an implausible number.
   `2 Σ_{h<k} R_h R_k s_h s_k`. Standard errors were understated by up to
   `sqrt(H)` on the expansion term for H strata. This is the default
   configuration, since
-  [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
   without `by` returns one estimate. **Reported standard errors move
   upward** on affected designs; point estimates are unchanged, and
   designs whose party-size estimate is per-stratum are unchanged
@@ -3824,10 +3824,10 @@ warning, or an implausible number.
   the component contract depends on. `se_between` and `se_within` are
   likewise documented as not reconstructing `se` on expansion designs.
 
-- [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+- [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
   now writes a fourth carrier column, `expansion_of`, naming the column
   the expansion basis is the derivative of, and
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   aborts when the count column is not that column
   ([\#131](https://github.com/chrischizinski/tidycreel/issues/131)).
   `expansion_basis` is `d(count)/d(party_size)`, so a count transformed
@@ -3843,9 +3843,9 @@ warning, or an implausible number.
   count and the basis together. **Breaking:** pipelines that
   premultiplied the count while retaining the carriers now abort.
 
-- [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+- [`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
   now names its `"se"` attribute by the group key, and
-  [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+  [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
   addresses it by name
   ([\#133](https://github.com/chrischizinski/tidycreel/issues/133)). The
   attribute was matched by row order while the means were joined by key,
@@ -3860,12 +3860,12 @@ warning, or an implausible number.
   not have it: it is built from the counts rows, never indexed into the
   lookup.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now aborts when `counts` carries some but not all of the `expansion_*`
   carrier columns
   ([\#132](https://github.com/chrischizinski/tidycreel/issues/132)).
   They are written together by
-  [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md),
+  [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md),
   so a proper subset can only come from partial deletion. The gate
   previously required the full set and otherwise took the no-carriers
   path, which left an `expansion_se` sitting visibly in the table while
@@ -3886,7 +3886,7 @@ warning, or an implausible number.
 
   The single-day test counts distinct paired dates rather than matched
   count rows, so a counts table holding two rows for one date — which
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   only warns about — cannot present one day’s information as two and
   restore the false-precision path. The variance denominator is
   unchanged, so no existing standard error moves. That such a table also
@@ -3898,7 +3898,7 @@ warning, or an implausible number.
   ([\#137](https://github.com/chrischizinski/tidycreel/issues/137)),
   naming how many days contain imputed counts and what share of the
   total they are.
-  [`impute_camera_counts()`](https://chrischizinski.github.io/tidycreel/reference/impute_camera_counts.md)
+  [`impute_camera_counts()`](https://chrischizinski.com/tidycreel/reference/impute_camera_counts.md)
   flags rows it filled with model predictions, but nothing downstream
   read the flag: inside
   [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
@@ -3969,9 +3969,9 @@ warning, or an implausible number.
   Treating it as known made every count-expanded effort standard error
   too small.
 
-  [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
   now returns that standard error as a `"se"` attribute, and
-  [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+  [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
   reads it, so the usual pipeline propagates the term with no extra
   argument:
 
@@ -3992,7 +3992,7 @@ warning, or an implausible number.
   release totals as well. The estimates tibble keeps its existing seven
   columns.
 
-- [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+- [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md)
   can now propagate the length-weight regression error
   ([\#117](https://github.com/chrischizinski/tidycreel/issues/117)). `a`
   and `b` are point estimates from a regression, and `a * L^b`
@@ -4024,7 +4024,7 @@ warning, or an implausible number.
 
 - Effort standard errors **increase** for designs that expand a boat
   count by
-  [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
   output, because a variance component that was previously dropped is
   now carried. Estimates themselves are unchanged; only their
   uncertainty moves. Designs that pass a bare number or a column as
@@ -4041,10 +4041,10 @@ warning, or an implausible number.
   propagates to an `NA` standard error rather than being read as
   certainty.
 
-- [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+- [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
   writes three further columns — `expansion_basis`, `expansion_se`, and
   `expansion_group` — when a standard error is available.
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   recognises all three and excludes them from count-column detection, so
   they cannot make an otherwise unambiguous counts table look ambiguous.
 
@@ -4052,9 +4052,9 @@ warning, or an implausible number.
 
 ### New features
 
-- [`derive_angler_count()`](https://chrischizinski.github.io/tidycreel/reference/derive_angler_count.md)
+- [`derive_angler_count()`](https://chrischizinski.com/tidycreel/reference/derive_angler_count.md)
   builds the single angler-count column
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   needs from the columns a clerk actually records. Two forms, matching
   the two ways boat anglers reach the form:
 
@@ -4089,14 +4089,14 @@ warning, or an implausible number.
 
   Until now this derivation was available only on the sampled-day
   `prep_counts_*` seam, via
-  [`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md).
+  [`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md).
   The raw-count pipeline — the one that takes a within-day count
   schedule through `count_time_col` and derives the within-day variance
   component itself — had no equivalent, so callers there built the total
   by hand. Closes
   [\#119](https://github.com/chrischizinski/tidycreel/issues/119).
 
-- [`mean_party_size()`](https://chrischizinski.github.io/tidycreel/reference/mean_party_size.md)
+- [`mean_party_size()`](https://chrischizinski.com/tidycreel/reference/mean_party_size.md)
   returns the mean anglers per boat party from an interviews table,
   optionally by stratum. It filters to boat parties, and errors rather
   than returning `NaN` when no row matches — a silent `NaN` would
@@ -4106,12 +4106,12 @@ warning, or an implausible number.
 
 - Bus-route estimators no longer report a confidence bound below zero.
   Every `ci_lower` produced by
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   and
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   on a bus-route design is now clamped at zero, in both the ungrouped
   and `by`-grouped paths and in the bootstrap columns (`ci_lo_boot`).
   Bus-route was the last family of estimators in the package without
@@ -4126,7 +4126,7 @@ warning, or an implausible number.
   few sites, unequal inclusion probabilities, or catch concentrated in
   one interview. The package’s own bootstrap snapshot fixture was
   already in that regime:
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   reported an estimate of `115` with an SE of `78.3` and a lower bound
   of `-38.8`, which is now `0`. On a deliberately skewed two-site design
   with `p_site` of 0.05 and 0.95 the excursion is larger, with the
@@ -4137,14 +4137,14 @@ warning, or an implausible number.
   the estimate. It is not a statement that the quantity could be zero,
   and the clamp does not narrow the interval or change the estimate or
   the standard error. See
-  [`?creel_confidence_intervals`](https://chrischizinski.github.io/tidycreel/reference/creel_confidence_intervals.md).
+  [`?creel_confidence_intervals`](https://chrischizinski.com/tidycreel/reference/creel_confidence_intervals.md).
   Closes part of
   [\#95](https://github.com/chrischizinski/tidycreel/issues/95).
 
 ### Documentation
 
 - New topic
-  [`?creel_confidence_intervals`](https://chrischizinski.github.io/tidycreel/reference/creel_confidence_intervals.md)
+  [`?creel_confidence_intervals`](https://chrischizinski.com/tidycreel/reference/creel_confidence_intervals.md)
   states the two conventions the package follows when building
   intervals: transform where a principled transform for the quantity
   exists (logit for exploitation rate, Sadinle’s transformed logit for
@@ -4156,11 +4156,11 @@ warning, or an implausible number.
   [\#95](https://github.com/chrischizinski/tidycreel/issues/95) and
   [\#99](https://github.com/chrischizinski/tidycreel/issues/99).
 
-- [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-  [`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-  [`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md)
+- [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+  [`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+  [`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md)
   and
-  [`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)
+  [`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md)
   now record why they use a normal rather than a t quantile. Their
   standard error is propagated from the per-bin standard errors of a
   length or age distribution, so there is no local sample size to key
@@ -4171,7 +4171,7 @@ warning, or an implausible number.
   fish measured. Closes
   [\#99](https://github.com/chrischizinski/tidycreel/issues/99).
 
-- [`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md)
+- [`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md)
   now states that the length-weight parameters `a` and `b` are treated
   as known constants, so `biomass_se` omits their estimation error and
   should be read as a lower bound. Because `a * L^b` multiplies every
@@ -4189,15 +4189,15 @@ warning, or an implausible number.
 - Argument guards on `truncate_at` and `conf_level` now reject a value
   whose length is not 1, rather than letting it reach the comparison.
   Passing `truncate_at = c(0.5, 1)` to
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   raised base R’s `'length = 2' in coercion to 'logical(1)'`, and
   `numeric(0)` raised `missing value where TRUE/FALSE needed` — both of
   which name neither the argument nor the constraint it violated. The
   intended error, which cites the argument and its default, now fires
   instead. Affects
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
   the bus-route incomplete-trip path, and
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md).
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md).
 
   A `conf_level` or `truncate_at` of `NA_real_` still reaches base R’s
   “missing value where TRUE/FALSE needed”. That gap predates this change
@@ -4224,7 +4224,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   [`print()`](https://rdrr.io/r/base/print.html) shows a `Unit:` line,
   [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
   puts it on the y-axis, and
-  [`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)
+  [`write_estimates()`](https://chrischizinski.com/tidycreel/reference/write_estimates.md)
   records it in the CSV header. This replaces hardcoded axis and header
   strings, which could not tell that the number underneath them had
   changed dimension.
@@ -4234,9 +4234,9 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   place to write the wrong thing — so tidycreel asserts one only where
   it performed the arithmetic that produces it: angler-hours on the
   count side when
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   multiplied by T_d, angler-hours on the interview side when
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   multiplied trip hours by a supplied party size, and party-hours when
   it did not.
 
@@ -4249,7 +4249,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   the claim that tidycreel does not know, which is a different statement
   from a default.
 
-- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+- [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   gains `n_anglers`, which makes the ratio-calibration path’s unit
   derivable instead of unknown. The calibration ratio is a ratio of
   sums, so the camera counts cancel and the estimate inherits whatever
@@ -4266,9 +4266,9 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
   The party-size rule is not reimplemented. This path calls the same
   exported
-  [`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md)
+  [`compute_angler_effort()`](https://chrischizinski.com/tidycreel/reference/compute_angler_effort.md)
   that
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   uses, so a party size of zero is refused at both seams for the same
   reason, and they cannot drift apart. `n_anglers` here takes a column
   *name* or a constant rather than a tidyselect symbol, matching its
@@ -4316,12 +4316,12 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   data frame, which nothing normalises by party size, so angler-hours
   and party-hours are indistinguishable there. Unknown is the honest
   answer, and the same one
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   gives a bare count column.
 
-- [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
+- [`estimate_angler_trips()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_trips.md)
   and
-  [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+  [`estimate_effort_per_acre()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_per_acre.md)
   now carry units, and both **inherit** rather than assert them. These
   two take a `creel_estimates` rather than a design, so they cannot ask
   a design what anything is in; each transforms a quantity whose unit it
@@ -4345,26 +4345,26 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   estimators, the last group without units, and the honest answer for
   most of them is `NA`.
 
-  [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+  [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
   reports `"proportion"` on both the stratified and unstratified paths.
   It is the one estimator in the package whose unit no input can change:
   divides fish by fish twice, so both actors cancel for every design.
 
-  [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+  [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
   reports `NA`, **not** `"anglers"`. Its `M`, `n` and `m` arrive as bare
   numerics that nothing inspects, and the arithmetic divides counts by
   counts, so carries whatever actor the marking protocol marked —
   anglers on some surveys, boats or parties on others. Asserting
   `"anglers"` would restate the function’s name rather than derive
   anything.
-  [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+  [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   inherits that unknown for the same reason: its product is in fish only
   if counted anglers.
 
-- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   abort with class `creel_error_unit_mismatch` when the effort unit and
   the rate’s denominator are both known and disagree. Their product is
   not a catch.
@@ -4376,7 +4376,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   the T_d warning below rather than a second message, so one defect
   produces one diagnosis.
 
-- [`day_length()`](https://chrischizinski.github.io/tidycreel/reference/day_length.md)
+- [`day_length()`](https://chrischizinski.com/tidycreel/reference/day_length.md)
   computes hours between sunrise and sunset for a latitude and date
   using the CBM model of Forsythe et al. (1995). Closed form — no lookup
   table, no network access, no location database. Only latitude is
@@ -4390,16 +4390,16 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   estimators’ , which is the period the counts were randomised within —
   a property of the survey design, set by regulation, access hours, or
   field protocol. Use
-  [`day_length()`](https://chrischizinski.github.io/tidycreel/reference/day_length.md)
+  [`day_length()`](https://chrischizinski.com/tidycreel/reference/day_length.md)
   for simulation and planning; pass the period your protocol actually
   used to
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 
-- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+- [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   gains `lat` and `daylight_hours`, either of which adds
   `daylight_hours` and `angler_hours` columns to the simulated counts
   table. `lat` derives the daily period per date via
-  [`day_length()`](https://chrischizinski.github.io/tidycreel/reference/day_length.md);
+  [`day_length()`](https://chrischizinski.com/tidycreel/reference/day_length.md);
   `daylight_hours` sets it directly, as a scalar or a named monthly
   vector, for surveys whose fishing day is fixed by regulation.
   Supplying both is an error.
@@ -4410,7 +4410,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### Bug fixes
 
-- [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+- [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
   warns when a binned release row carries a fractional `count`. The
   guard’s own error message had always said “a positive integer count”
   while nothing checked integrality, so `count = 3.5` was accepted
@@ -4425,7 +4425,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   message now says “a positive count; non-integer values warn”, so what
   it claims and what it enforces agree.
 
-- [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+- [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   warns, once per session, when an instantaneous design carries no
   `period_length_col`. Without T_d the estimator expands the count
   column to the season and returns it, which is not angler-hours. The
@@ -4437,23 +4437,23 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
   The three product totals raise the same warning. They call
   `estimate_effort_total()` directly rather than
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
   so without this a caller who only ever asks for a total never heard
   that the count column had no T_d applied.
 
   Output from the `prep_counts_*()` helpers is exempt. That seam
   resolves counts into sampled-day effort before
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   sees them, so there is no instantaneous count left to expand and no
   T_d to ask for — warning there would fire on the documented preferred
   workflow. The marker is carried as an attribute, so a table piped
   through intervening dplyr verbs degrades to “unknown”, which is the
   safe direction.
 
-- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   now accept `by = species` on bus-route and ice designs, and answer on
   the Horvitz–Thompson path. All three resolved `by` against the
   interview columns, which carry no species column, so the call aborted
@@ -4521,9 +4521,9 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 - The three rate estimators now dispatch to the Horvitz–Thompson path on
   **ice** designs as well as bus-route ones, and
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   gains the bus-route dispatch it never had.
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   and all three totals already treated ice as the degenerate bus route
   it is documented to be; the rate estimators were the outliers, so a
   single design object returned a rate that its own totals contradict.
@@ -4545,16 +4545,16 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   path’s, so they now accept the two values their own design type is
   built on and reject `"all"`, which is not an estimator on this path.
   For
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   the roving auto-route to `"all"` + MOR does not apply on these
   designs.
 
   **Breaking:** ice HPUE, ice RPUE, ice CPUE and bus-route CPUE all
   move.
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   now validate `use_trips` on the bus-route path. The bus-route dispatch
   runs before the standard path’s check and handed the string straight
   to the estimator, which branches on `"diagnostic"`, then `"complete"`,
@@ -4579,52 +4579,52 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 - The product totals now warn when the rate and the effort they multiply
   are in different units. Without `n_anglers`,
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   leaves `.angler_effort` equal to the raw effort column, so every rate
   is fish per *party*-hour while count-derived effort is angler-hours;
   both operands are individually correct but the product is not, unless
   every party is a single angler.
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   informed at construction, but `design$angler_effort_col` was
   `".angler_effort"` either way, so nothing downstream could tell the
   two apart and nothing spoke up where the units actually collide.
   Designs now carry `n_anglers_supplied`, and
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   warn on the product path when it is `FALSE`. Bus-route and ice designs
   are unaffected: their totals are Horvitz–Thompson sums over interviews
   with no rate multiplication. The package’s own examples now pass
   `n_anglers`
   ([\#112](https://github.com/chrischizinski/tidycreel/issues/112)).
 
-- [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+- [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   had no bus-route dispatch, so on a bus-route or ice design they ran
   the count-based product path and ignored the inclusion probabilities
   entirely. The interview-derived release counts were divided by a
   [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) over
   count rows — a different effort basis from the one
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   reports for the same design, with no warning. On a fixture whose catch
   records set the released count equal to the harvest column interview
   by interview, so that the true release total *equals* the true harvest
   total,
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   returned 465.4 and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   returned 51.1; the two now agree to machine precision. Bus-route
   designs carrying no counts aborted demanding
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
   which they do not need. `estimate_total_release_br()` had been correct
   and unreachable since it was written
   ([\#110](https://github.com/chrischizinski/tidycreel/issues/110)).
 
-- [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+- [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   on a bus-route design reaches the same estimators as
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md).
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md).
   `use_trips` accepts `"incomplete"` — the truncated, Hájek-weighted
   mean of ratios of Hoenig et al. (1997), reported as
   `method = "mean-of-ratios-rpue"` — and `"diagnostic"`, alongside the
@@ -4632,18 +4632,18 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   (`method = "ratio-of-means-rpue"`). Both are releases per angler-hour
   ([\#110](https://github.com/chrischizinski/tidycreel/issues/110)).
 
-- [`prep_counts_daily_effort()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_daily_effort.md)
+- [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/reference/prep_counts_daily_effort.md)
   and
-  [`prep_counts_boat_party()`](https://chrischizinski.github.io/tidycreel/reference/prep_counts_boat_party.md)
+  [`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/reference/prep_counts_boat_party.md)
   emitted `n_counts` and `within_day_var` columns that
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   never read, so a within-day variance component supplied through the
   documented preferred seam was silently dropped and the reported SE
   omitted it entirely — biased **downward**, the dangerous direction. On
   an eight-day fixture with three counts per day the prep seam reported
   SE 6.93 where the equivalent `add_counts(count_time_col = )` route
   reported 9.52.
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now reads both columns into `design$within_day_var`, and the two seams
   agree exactly
   ([\#109](https://github.com/chrischizinski/tidycreel/issues/109)).
@@ -4667,13 +4667,13 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### Breaking changes
 
-- [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+- [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
   now defaults to Sadinle’s (2009) 0.5 transformed logit confidence
   interval on the Chapman and Petersen branches, via a new
   `ci_method = "logit"`. **Every Chapman and Petersen bound moves.**
   Pass `ci_method = "delta"` to reproduce the previous symmetric Wald
   interval exactly.
-  [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+  [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   inherits the change, rebuilding its interval from the same capture
   table.
 
@@ -4708,7 +4708,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   point estimate because the data imply . Use `ci_method = "delta"` if a
   bound that brackets the point estimate matters more than coverage.
 
-- [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+- [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   now derives its interval from the angler-population interval instead
   of rebuilding a symmetric one, so a positive angler bound can no
   longer become a negative harvest bound. On the `ci_method = "delta"`
@@ -4742,7 +4742,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   Dettloff (2023) eq. (6) simulated both forms across population sizes
   from to . The unadjusted estimator turns biased *high* at moderate
   sample sizes before settling, which propagates into an inflated
-  [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md);
+  [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md);
   the adjusted form’s bias “approaches zero as the sample size increases
   without ever becoming positive”, at lower variance and no cost in
   large samples. He recommends the adjusted estimators “in place of the
@@ -4761,7 +4761,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   inverts the distribution of rather than centring on , so **its bounds
   do not move**; the large-sample interval is built around and does.
 
-- [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+- [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
   gains `method = "schumacher"`, the Schumacher-Eschmeyer regression
   estimator, for occasions. It takes the same inputs as `"schnabel"` and
   fits against through the origin with slope , giving . The interval is
@@ -4815,10 +4815,10 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   [`ppois()`](https://rdrr.io/r/stats/Poisson.html), never against the
   printed example.
 
-- [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+- [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   now keys its Wald interval to the number of sampling occasions when
   the input came from `method = "schnabel"`, matching the change to
-  [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+  [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
   above. It read `angler_n$estimates$n`, which for Schnabel is , so the
   degrees-of-freedom defect fixed in the estimator survived one function
   downstream: with five occasions and the harvest interval used where ,
@@ -4834,7 +4834,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   number of whole circuits in the day. When no circuit completed, so the
   count is not a progressive count of that shift and there is nothing
   for to expand.
-  [`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+  [`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md)
   already refused such a design, so the only way to reach the old
   warning was a hand-built schedule — precisely the case with no other
   guard in front of it.
@@ -4850,7 +4850,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   Those two readings produce different quantities from the same
   arithmetic. with a dimensionless proportion is a count of *anglers who
   kept a fish*; the function returns it as `total_harvest`, from
-  [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md),
+  [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md),
   with `method = "mark-recapture-harvest"`. The per-angler-rate reading
   is the one the output has always claimed, and the one that makes the
   product fish.
@@ -4867,17 +4867,17 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   your input was answering a different question than the output claimed
   to ask, and it should be replaced with mean fish kept per angler.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now aborts with class `creel_error_aerial_period_length` when
   `period_length_col` is supplied on an aerial design, and
-  [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   aborts with class `creel_error_camera_period_length` when its
   raw-count branch is handed counts that already carry T_d.
 
   Both estimators already have a period-length term of their own: aerial
   scales the count by `h_open / v` (Pollock Eq. 15.4) and camera’s
   raw-count fallback scales by a supplied `h_open`. Once
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   began applying `period_length_col` for any count type (see the
   previous entry), a design carrying both multiplied by time twice — on
   a 4-day fixture with `h_open = 14` and T_d = 2 the aerial total went
@@ -4892,7 +4892,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   by `mean(count)` before multiplying by `count`, so a constant T_d
   cancels out of the estimate.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now applies `period_length_col` to instantaneous counts instead of
   discarding it. Supplying the column on an instantaneous design used to
   be accepted, recorded in `design$period_length_col`, and then ignored
@@ -4927,7 +4927,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   [`tidyselect::eval_select()`](https://tidyselect.r-lib.org/reference/eval_select.html),
   where a bare integer selects a *column by position*, so
   `n_anglers = 1L` — the literal in
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)’s
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)’s
   own signature — selected column 1 and multiplied effort by whatever it
   held. On interviews whose first column is numeric that silently
   produced `.angler_effort = hours × <that column>`; on the shipped
@@ -4948,17 +4948,17 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   and non-finite values abort — a party of no anglers would silently
   zero out that interview’s effort — missing values abort as a stated
   constant but warn as a column, and non-integer values warn.
-  [`compute_angler_effort()`](https://chrischizinski.github.io/tidycreel/reference/compute_angler_effort.md)
+  [`compute_angler_effort()`](https://chrischizinski.com/tidycreel/reference/compute_angler_effort.md)
   follows the same contract; it is the other exported entry point that
   writes `.angler_effort`.
 
 - Bus-route and ice totals now count **completed trips only**, in all
   three quantities.
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   already filtered;
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   did not, so on one design the three totals were computed over
   different row sets and could not be compared. On a 24-interview
   fixture split 12 complete / 12 incomplete, total catch was 1089.81
@@ -4986,9 +4986,9 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   passing nothing see no change beyond the completed-trip filter above
   ([\#112](https://github.com/chrischizinski/tidycreel/issues/112)).
 
-- [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
+- [`estimate_angler_trips()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_trips.md)
   and
-  [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+  [`estimate_effort_per_acre()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_per_acre.md)
   now reject any `creel_estimates` whose `method` is outside the effort
   family (`"total"`, `"total-sections"`). Both are documented as taking
   angler-hours but guarded only on class, so a CPUE object passed
@@ -4997,10 +4997,10 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   accepted the same way
   ([\#112](https://github.com/chrischizinski/tidycreel/issues/112)).
 
-- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
   on a bus-route or ice design now report `method = "ht-total-catch"`,
   `"ht-total-harvest"` and `"ht-total-release"` respectively, in place
   of the bare `"total"` all three returned. `"total"` is the string the
@@ -5012,7 +5012,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   both plotted as “Total Effort” beside a genuine effort total of
   2513.38 angler-hours. The estimates themselves are unchanged; only the
   method string and the labels derived from it move.
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   still returns `"total"`, which was correct for it all along.
 
   The `ht-` prefix names the estimator as well as the quantity,
@@ -5022,10 +5022,10 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   exported file
   ([\#111](https://github.com/chrischizinski/tidycreel/issues/111)).
 
-- [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+- [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   gains `truncate_at`, defaulting to `0.5` hours, with the same meaning,
   units, and `NULL` behaviour it has on
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md).
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md).
   It applies only to the bus-route incomplete-trip path
   ([\#110](https://github.com/chrischizinski/tidycreel/issues/110)).
 
@@ -5036,19 +5036,19 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   Horvitz–Thompson estimators take no species argument, and `by`
   resolves against the interview table, where a species column does not
   exist.
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and
-  [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   have behaved this way since their own dispatches landed; per-species
   release on these designs was never estimated from the sampling frame
   ([\#110](https://github.com/chrischizinski/tidycreel/issues/110)).
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   on a bus-route or ice design now returns a rate. It dispatched to the
   Horvitz–Thompson harvest **total** of Jones & Pollock (2012) Eq. 19.5
   and returned it with `method = "total"`, so it produced a number
   identical to
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   under a function documented as returning fish per angler-hour
   ([\#107](https://github.com/chrischizinski/tidycreel/issues/107)).
 
@@ -5094,7 +5094,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   [`survey::svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
   so the variance is linearised over numerator and denominator together.
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   gains `truncate_at`, defaulting to `0.5` hours. The mean-of-ratios
   estimator has *infinite* asymptotic variance, because `1/L` has
   infinite expectation as trip length approaches zero; Hoenig et al.
@@ -5121,7 +5121,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   rather than always announcing the complete-trip one.
 
 - Bus-route and ice
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   now return angler-hours. They read the raw per-party trip duration, so
   the estimate was party-hours reported under an angler-hours label —
   invariant to party size, and understated by exactly the mean party
@@ -5133,12 +5133,12 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
   Surveys recording one angler per party are unaffected: with no
   `n_anglers`, angler-effort equals the raw effort, and
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   already warns. Anything with parties larger than one will see totals
   rise by roughly the mean party size. The ice output column
   `total_effort_hr_on_ice` is affected on the same terms.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   gains a `count_col` argument and no longer picks the count column by
   position. Previously the count variable was taken as the first numeric
   column that was not design metadata, so a counts table carrying more
@@ -5146,23 +5146,23 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   column, or a boat count silently expanded and reported as “Total
   Effort” — off by an order of magnitude, with no warning. When more
   than one numeric column qualifies,
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now aborts and lists the candidates; name the intended column with
   `count_col`. Tables with a single count column are unaffected
   ([\#105](https://github.com/chrischizinski/tidycreel/issues/105)).
 
   The resolved name is stored on the design as `$count_col` and used by
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
   the sections and grouped effort paths, the aerial and aerial-GLMM
   estimators, camera effort,
-  [`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
+  [`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md),
   and
   [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html),
   all of which previously repeated the same positional guess.
 
   Callers of `tidycreel.connect::fetch_counts()` are affected: it
   returns `bank_anglers`, `angler_boats`, and `non_ang_boats`, so
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   now requires `count_col` to be named.
 
 ### Documentation
@@ -5190,7 +5190,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   Also corrected: the “circuit time \< 30% of ” rule of thumb was not
   from Hoenig et al. and is not the paper’s condition.
 
-- [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+- [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   attributed its known-constant harvest rate to Hansen & Van Kirk
   (2018), which does the opposite: both factors of that rate are
   estimated there, given log-normal sampling distributions, and
@@ -5205,12 +5205,12 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   period `angler_n` counts anglers for. “Fish per angler” alone did not
   pin that down, and the daily rate is the wrong one.
 
-- [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+- [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
   documents that its Chapman and Petersen confidence intervals are
   symmetric and can fall below zero. is a ratio with a small integer
   denominator, so it is right-skewed; at `M = 200`, `n = 50`, `m = 3`
   the reported `ci_lower` is `-2124.8`, and
-  [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+  [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
   inherits the shape. Chapman is recommended precisely when recaptures
   are few, so the docs now direct small- users to
   `ci_method = "bootstrap"`, whose percentile bounds respect the skew.
@@ -5218,14 +5218,14 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   unaffected. The interval arithmetic is unchanged in this release —
   correcting it moves every shipped Chapman and Petersen bound.
 
-- [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+- [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
   described `C` as a harvest total while pointing at
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   to produce it. Catch includes released fish, which were never removed
   from the tagged cohort, so a catch total inflates by the release
   fraction. `@param C`, `@param strata` and
   `vignettes/mark-recapture.Rmd` now point at
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   and say why. The estimator is unchanged; only the cross-reference was
   wrong.
 
@@ -5254,7 +5254,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   places they appeared — `vignettes/progressive-count-surveys.Rmd`,
   `vignettes/effort-pipeline.Rmd` and
   `vignettes/temporal-extrapolation.Rmd`.
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
   reads only the date and the strata, so the column was never consulted
   anywhere it was written. The progressive article additionally listed
   the calendar’s `open_hours` as the the estimator applies; the real
@@ -5275,7 +5275,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   `effort_hours` column as an instantaneous count *of angler-hours*,
   which is two different quantities at once. Both now state that the
   column holds angler-hours, and that
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   expands whatever column it is given without converting units — raw
   counts in, angler-days out
   ([\#113](https://github.com/chrischizinski/tidycreel/issues/113)).
@@ -5287,7 +5287,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   ([\#113](https://github.com/chrischizinski/tidycreel/issues/113)).
 
 - `vignettes/ice-fishing.Rmd` described
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   as CPUE times effort over all interviews. On ice designs it is a
   Horvitz–Thompson sum with no CPUE term and no effort term, over
   complete trips only — 60 of the vignette’s 72 interviews — and
@@ -5299,7 +5299,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### New features
 
-- [`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+- [`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md)
   schedules randomised circuit start times for progressive count surveys
   following Hoenig et al. (1993). Two strategies supported: `"discrete"`
   (start drawn from valid τ-aligned offsets; avoids mid-day bias from
@@ -5309,25 +5309,25 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### Bug fixes
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   with `count_type = "progressive"`: multi-circuit designs (multiple
   counts per day via `count_time_col`) were previously blocked with an
   error. Now supported — daily effort is estimated as `mean(C_k) × T_d`
   across circuits.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   multi-circuit progressive: within-day variance `ss_d` was in count²
   units but `compute_within_day_var_contribution()` requires effort²
   units. `ss_d` is now scaled by `T_d²` per PSU before the progressive
   effort computation, correcting variance estimates for multi-circuit
   designs.
 
-- [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+- [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   progressive: `period_length_col` was incorrectly included in the
   numeric column scan used to auto-detect the count variable, causing it
   to be misidentified as the count. Now excluded from the scan.
 
-- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md):
+- [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md):
   minimum trip effort floor raised from 0.05 h to 0.1 h to reduce
   implausibly short simulated fishing trips.
 
@@ -5335,26 +5335,26 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### New features
 
-- [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+- [`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
   estimates proportional age structure with SE and confidence intervals
   from age-frequency interview data, fully integrated with the
   `creel_design` workflow. Stratified and grouped estimation supported.
 
-- [`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)
+- [`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md)
   estimates mean age (± SE, CI) from structured interview data.
   Complements
-  [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+  [`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
   for reporting age-structured harvest results.
 
 - `example_ages` — new built-in dataset of simulated age observations
   for use in examples and tests.
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   gains species-level dispatch: pass a species column and the function
   routes harvest-rate estimation independently per species, returning a
   tidy multi-species result in a single call.
 
-- [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+- [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
   gains `open_start` parameter for GLMM aerial designs, allowing the
   survey window to be anchored to the count time rather than requiring a
   fixed open time.
@@ -5363,39 +5363,39 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 #### Statistical correctness
 
-- [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-  [`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md):
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md):
   strata with effort but no interview coverage were silently dropped by
   an inner join in `compute_stratum_product_sum()`, biasing season
   totals low. Fixed to warn and retain all effort strata (#Tier1-Bug1).
 
-- [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md):
+- [`estimate_angler_trips()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_trips.md):
   [`stats::sd()`](https://rdrr.io/r/stats/sd.html) on a single-interview
   stratum returned `NA`, propagating silently into SE and CI. Guard
   added for `n < 2`; emits `cli_warn()` and returns `NA_real_` for SE so
   the point estimate remains usable (#Tier1-Bug2).
 
-- [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md):
+- [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md):
   finite population correction (FPC) was not applied to the expanded
   effort `svydesign`, causing inflated SE for designs with high sampling
   fractions. Fixed (#Tier1-Bug5-adjacent).
 
-- [`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md):
+- [`optimal_n()`](https://chrischizinski.com/tidycreel/reference/optimal_n.md):
   named `cost_ratio` vectors were applied positionally instead of by
   stratum name, producing wrong allocations when stratum order differed.
   Zero variance (`all s2_h = 0`) and zero total (`all ybar_h = 0`)
   produced silent `NaN`; both now abort with informative errors.
   `n_total` floored at 1 to prevent degenerate zero-sample result.
 
-- [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md):
+- [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/reference/adjust_nonresponse.md):
   `method = "calibrate"` was accepted and matched but silently ignored —
   both methods used direct weight rescaling. Now aborts with an
   informative error directing users to
   [`survey::calibrate()`](https://rdrr.io/pkg/survey/man/calibrate.html)
   directly (#Tier1-Bug4).
 
-- [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)
+- [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/reference/adjust_nonresponse.md)
   replicate-design path: `svy$scale` (a variance formula constant) was
   multiplied by `mean(wt_multipliers)`, affecting only variance and
   using an average instead of per-observation values. Fixed to scale
@@ -5414,7 +5414,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   when order differed. All three now rekeyed by `strata_names` before
   indexing.
 
-- [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md):
+- [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md):
   `perform_tost()` crashed or silently passed when `se_diff == 0`
   (identical SEs) or `df <= 0` (`n = 1` group). Early- return guards
   added for both degenerate cases;
@@ -5437,7 +5437,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   values are numeric strings; character period labels are preserved
   unchanged.
 
-- [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md):
+- [`compare_variance()`](https://chrischizinski.com/tidycreel/reference/compare_variance.md):
   Taylor and replicate SEs were paired by row position rather than
   stratum key. If the two estimators returned rows in different orders,
   divergence ratios were computed for mismatched strata. Fixed with a
@@ -5445,27 +5445,27 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   than a hardcoded exclusion list that would misclassify new output
   columns.
 
-- [`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md),
-  [`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md),
+- [`validation_report()`](https://chrischizinski.com/tidycreel/reference/validation_report.md),
+  [`standardize_species()`](https://chrischizinski.com/tidycreel/reference/standardize_species.md),
   `hybrid_design()`: second positional string to `cli_abort()` /
   `cli_warn()` was silently dropped by cli’s argument handling. Merged
   into single message or named vector.
 
 #### Age and length estimators
 
-- [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+- [`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
   and
-  [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md):
+  [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md):
   per-group `n` was reporting the global interview count
   (`nrow(design$interviews)`) instead of the within-group count. Fixed
   to `nrow(wide)` per group, consistent with
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   and
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md).
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md).
 
-- [`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+- [`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
   and
-  [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md):
+  [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md):
   `left_join()` was called inside the per-group loop against the full
   interviews table (constant across iterations). Replaced with
   [`match()`](https://rdrr.io/r/base/match.html) lookup and direct
@@ -5482,9 +5482,9 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### Breaking changes
 
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   and
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md)
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md)
   now default to `use_trips = "complete"` (previously
   `use_trips = "all"`). For standard (non-bus-route) designs that supply
   `trip_status`, HPUE and RPUE are now estimated from completed-trip
@@ -5518,11 +5518,11 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### New features
 
-- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+- [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   now returns a `$schedule` component — a full-season calendar (one row
   per season day) with columns `date` (Date), `day_type` (character),
   and `sampled` (logical). Pass directly to
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
   as the `calendar` argument for a complete round-trip simulation
   pipeline with no manual column construction. Unsampled days receive a
   `day_type` drawn proportionally from the `day_types` distribution.
@@ -5545,30 +5545,30 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### Documentation
 
-- [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+- [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   `day_types` parameter now explicitly documents that the argument must
   be a named **numeric** vector (not a character vector), with a worked
   example showing the correct form `c(weekday = 5/7, weekend = 2/7)`.
 - `@examples` block expanded with a multi-stratum simulation and the
   full round-trip pipeline from
-  [`simulate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/simulate_creel_data.md)
+  [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   through
-  [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md),
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md),
+  [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md),
   and
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md).
 
 ### Bug fixes / closed issues
 
-- [`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md):
+- [`standardize_species()`](https://chrischizinski.com/tidycreel/reference/standardize_species.md):
   added `custom_codes` argument (named character vector applied as a
   second AFS-NA pass), expanded AFS lookup table with Freshwater Drum
   (`"FRD"`), and corrected misleading “supply a custom code map”
   documentation that implied a non-existent function argument. Closes
   [\#66](https://github.com/chrischizinski/tidycreel/issues/66).
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   /
-  [`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md):
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md):
   added `use_trips` argument (`"all"` default, `"complete"` to restrict)
   with `cli_inform` notice showing trip-status breakdown. Documented
   livewell-observable rationale and downward-bias risk (Hansen & Van
@@ -5581,7 +5581,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### New features
 
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+- [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   now auto-routes roving designs: when
   `add_interviews(..., interview_type = "roving")` is set and
   `use_trips` / `estimator` are not explicitly supplied, the function
@@ -5593,7 +5593,7 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
   Closes [\#67](https://github.com/chrischizinski/tidycreel/issues/67).
 
 - New `use_trips = "all"` option for
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md):
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md):
   uses every interview (complete + incomplete) with the MOR estimator.
   Previously only `"complete"`, `"incomplete"`, and `"diagnostic"` were
   accepted.
@@ -5609,12 +5609,12 @@ than 2.5.0 did, because 2.5.0’s numbers were wrong.
 
 ### Documentation
 
-- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+- [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   `interview_type` parameter description corrected: now accurately
   states that `"roving"` triggers automatic estimator routing rather
   than carrying the false claim that the flag was “stored metadata
   only”.
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+- [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   `use_trips` parameter and Details section updated to document `"all"`,
   roving auto-routing, and the access vs. roving distinction.
 
@@ -5630,19 +5630,19 @@ rivers.
 
 ### New features
 
-- [`estimate_angler_trips()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_trips.md)
+- [`estimate_angler_trips()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_trips.md)
   — estimates angler trip counts (angler days) from effort and mean trip
   length using Delta Method variance propagation.
-- [`estimate_effort_per_acre()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_per_acre.md)
+- [`estimate_effort_per_acre()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_per_acre.md)
   — computes effort density (angler-hours per acre) by stratum from an
   extrapolated effort estimate and supplied acreage.
-- [`summarize_boat_composition()`](https://chrischizinski.github.io/tidycreel/reference/summarize_boat_composition.md)
+- [`summarize_boat_composition()`](https://chrischizinski.com/tidycreel/reference/summarize_boat_composition.md)
   — returns percent angler boats by month and day type, computed from
   the angler-boat and non-angler-boat count columns.
-- [`summarize_by_zip()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_zip.md)
+- [`summarize_by_zip()`](https://chrischizinski.com/tidycreel/reference/summarize_by_zip.md)
   — tabulates interview count and percentage by zip code from the
   interview zip code column.
-- [`summarize_by_county()`](https://chrischizinski.github.io/tidycreel/reference/summarize_by_county.md)
+- [`summarize_by_county()`](https://chrischizinski.com/tidycreel/reference/summarize_by_county.md)
   — maps zip codes to counties via zipcodeR and returns interview count
   and percentage by county; emits an informative error when zipcodeR is
   not installed.
@@ -5675,16 +5675,16 @@ rivers.
 - Threaded
   [`rlang::caller_env()`](https://rlang.r-lib.org/reference/stack.html)
   through the top-level bus-route estimator internals and relocated
-  [`get_site_contributions()`](https://chrischizinski.github.io/tidycreel/reference/get_site_contributions.md)
+  [`get_site_contributions()`](https://chrischizinski.com/tidycreel/reference/get_site_contributions.md)
   into the estimation layer to tighten call-frame quality and layering.
 - Added `@family` tags across the exported surface so the pkgdown
   reference is grouped by workflow topic rather than a flat function
   list.
 - Added snapshot regression coverage for
-  [`print.creel_design()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_design.md),
-  [`print.creel_estimates_mor()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_estimates_mor.md),
+  [`print.creel_design()`](https://chrischizinski.com/tidycreel/reference/print.creel_design.md),
+  [`print.creel_estimates_mor()`](https://chrischizinski.com/tidycreel/reference/print.creel_estimates_mor.md),
   and
-  [`print.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_schedule.md).
+  [`print.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/print.creel_schedule.md).
 - Added `quickcheck`-based property tests and generator helpers covering
   the highest-value implemented invariants: INV-01, INV-02, INV-03,
   INV-04, and INV-06.
@@ -5695,57 +5695,57 @@ rivers.
 
 ### New features
 
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+- [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   now accepts `estimator = "mortr"` for truncated mean-of-ratios
   (MORtr), which applies `truncate_at` as a mandatory threshold and
   labels the method `"mean-of-ratios-truncated-cpue"`.
-- [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+- [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   gains a `targeted` argument (default `TRUE`). Setting
   `targeted = FALSE` excludes zero-catch trips before MOR/MORtr
   estimation for incidental species workflows.
-- [`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md)
+- [`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md)
   provides a unified tidy entry point for pre-survey sample-size
   planning, wrapping
-  [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-  [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
+  [`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+  [`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
   and
-  [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
+  [`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md)
   into a single consistent interface with `mode = "effort_n"`,
   `"cpue_n"`, or `"power"`.
-- [`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md)
+- [`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md)
   compares multiple survey designs side by side from a named list of
   `creel_estimates` objects. An
   [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
   method renders a forest plot of point estimates with confidence
   intervals.
-- [`as_hybrid_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_hybrid_svydesign.md)
+- [`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_hybrid_svydesign.md)
   constructs a hybrid access + roving survey design from combined
   access-point and roving-route count data.
-- [`compare_variance()`](https://chrischizinski.github.io/tidycreel/reference/compare_variance.md)
+- [`compare_variance()`](https://chrischizinski.com/tidycreel/reference/compare_variance.md)
   computes Taylor linearization vs. replicate (bootstrap or jackknife)
   standard errors side-by-side for any `creel_estimates` object.
-- [`adjust_nonresponse()`](https://chrischizinski.github.io/tidycreel/reference/adjust_nonresponse.md)
+- [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/reference/adjust_nonresponse.md)
   applies nonresponse weighting to a `creel_design` and records
   per-stratum diagnostics.
-- [`est_effort_camera()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md)
+- [`est_effort_camera()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md)
   adds ratio-calibrated camera/time-lapse effort indexing.
-- [`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+- [`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
   adds weighted catch-at-length / size-structure estimation from
   attached length data.
-- [`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md)
+- [`autoplot.creel_length_distribution()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_length_distribution.md)
   adds a plotting surface for weighted size-structure estimates.
-- [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+- [`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
   and
-  [`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md)
+  [`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md)
   add package-standard plot styling.
 
 ### Data validation and cleaning
 
-- [`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md)
+- [`validate_creel_data()`](https://chrischizinski.com/tidycreel/reference/validate_creel_data.md)
   adds field-level schema validation for creel inputs.
-- [`standardize_species()`](https://chrischizinski.github.io/tidycreel/reference/standardize_species.md)
+- [`standardize_species()`](https://chrischizinski.com/tidycreel/reference/standardize_species.md)
   adds canonical species-code standardisation helpers.
-- [`validation_report()`](https://chrischizinski.github.io/tidycreel/reference/validation_report.md)
+- [`validation_report()`](https://chrischizinski.com/tidycreel/reference/validation_report.md)
   adds formatted validation summaries that can be exported alongside
   other report-ready outputs.
 - `creel_counts_toy` and `creel_interviews_toy` are now bundled example
@@ -5766,7 +5766,7 @@ rivers.
 
 ### Improvements
 
-- [`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md)
+- [`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md)
   now supports multi-strata designs.
 - Main estimator
   [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
@@ -5794,16 +5794,16 @@ rivers.
 
 ### New features
 
-- [`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md)
+- [`summary.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/summary.creel_estimates.md)
   converts any estimate object to a `creel_summary` with human-readable
   column names (`Estimate`, `SE`, `CI Lower`, `CI Upper`, `N`). Includes
-  [`print.creel_summary()`](https://chrischizinski.github.io/tidycreel/reference/print.creel_summary.md)
+  [`print.creel_summary()`](https://chrischizinski.com/tidycreel/reference/print.creel_summary.md)
   and
-  [`as.data.frame.creel_summary()`](https://chrischizinski.github.io/tidycreel/reference/as.data.frame.creel_summary.md)
+  [`as.data.frame.creel_summary()`](https://chrischizinski.com/tidycreel/reference/as.data.frame.creel_summary.md)
   methods. Works for effort, CPUE, harvest rate, total catch, and
   grouped variants.
 
-- [`flag_outliers()`](https://chrischizinski.github.io/tidycreel/reference/flag_outliers.md)
+- [`flag_outliers()`](https://chrischizinski.com/tidycreel/reference/flag_outliers.md)
   identifies extreme values in a numeric column using Tukey’s IQR fence
   (`k = 1.5` default). Returns the input data frame with `is_outlier`,
   `outlier_reason`, `fence_low`, and `fence_high` columns appended, and
@@ -5842,21 +5842,21 @@ rivers.
 
 ### New features
 
-- [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+- [`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md)
   adds three sampling strategies for allocating interview periods within
   a survey day: random, systematic, and fixed-interval. Supports a
   `seed` argument for reproducibility; returns a `creel_schedule` object
   compatible with
-  [`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md).
+  [`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md).
 
 - The `survey-scheduling` vignette now covers the full pre- and
   post-season planning workflow:
-  [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md)
+  [`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md)
   through
-  [`validate_design()`](https://chrischizinski.github.io/tidycreel/reference/validate_design.md),
-  [`check_completeness()`](https://chrischizinski.github.io/tidycreel/reference/check_completeness.md),
+  [`validate_design()`](https://chrischizinski.com/tidycreel/reference/validate_design.md),
+  [`check_completeness()`](https://chrischizinski.com/tidycreel/reference/check_completeness.md),
   and
-  [`season_summary()`](https://chrischizinski.github.io/tidycreel/reference/season_summary.md).
+  [`season_summary()`](https://chrischizinski.com/tidycreel/reference/season_summary.md).
 
 ### Documentation
 
@@ -5870,7 +5870,7 @@ rivers.
 ## tidycreel 1.0.0 (2026-03-31)
 
 - Launched the pkgdown documentation site at
-  <https://chrischizinski.github.io/tidycreel> with a custom Bootstrap 5
+  <https://chrischizinski.com/tidycreel> with a custom Bootstrap 5
   theme, full function reference index (46 exports + 15 datasets), and a
   workflow-driven navbar.
 

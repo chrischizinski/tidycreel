@@ -3,7 +3,7 @@
 Determines how many sampling days are needed to achieve a target
 coefficient of variation on the effort estimate, then allocates those
 days across strata using Neyman (optimal) allocation. Unlike
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
 which distributes days proportionally to stratum size, this function
 concentrates days in strata with higher between-day variance, minimising
 total days for a given precision.
@@ -50,7 +50,7 @@ optimal sampling days per stratum; element `"total"` gives Cochran's
 overall sample size *before* allocation, and `"allocated"` the sum of
 the per-stratum values actually returned. Budget against `"allocated"`;
 see
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 for why the two differ.
 
 ## Details
@@ -66,7 +66,7 @@ where \\A = \sum_h N_h s_h / \sqrt{c_h}\\, \\C = \sum_h N_h s_h
 \sum_h N_h \bar{y}\_h\\, and \\s_h = \sqrt{s_h^2}\\. When all \\c_h =
 1\\ (equal costs) this reduces to \\(\sum_h N_h s_h)^2 / (V_0 + \sum_h
 N_h s_h^2)\\, which gives the same `n_total` as
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 (per-stratum allocation differs: Neyman uses \\n_h \propto N_h s_h\\ vs
 proportional \\n_h \propto N_h\\).
 
@@ -94,22 +94,22 @@ creel surveys. North American Journal of Fisheries Management
 
 ## See also
 
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)
 for proportional allocation,
-[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md)
+[`reallocate_strata()`](https://chrischizinski.com/tidycreel/reference/reallocate_strata.md)
 to re-allocate a fixed day budget.
 
 Other "Planning & Sample Size":
-[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
-[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
-[`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
-[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
-[`power_creel()`](https://chrischizinski.github.io/tidycreel/reference/power_creel.md),
-[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md),
-[`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
+[`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md),
+[`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md),
+[`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md),
+[`cv_from_n()`](https://chrischizinski.com/tidycreel/reference/cv_from_n.md),
+[`power_creel()`](https://chrischizinski.com/tidycreel/reference/power_creel.md),
+[`reallocate_strata()`](https://chrischizinski.com/tidycreel/reference/reallocate_strata.md),
+[`simulate_strata_collapse()`](https://chrischizinski.com/tidycreel/reference/simulate_strata_collapse.md)
 
 ## Examples
 

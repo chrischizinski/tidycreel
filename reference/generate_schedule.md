@@ -4,7 +4,7 @@ Generates a stratified random sampling calendar for a creel survey
 season. The season is divided into `weekday` and `weekend` strata, and
 days are randomly selected within each stratum. Output is a
 `creel_schedule` tibble ready to pass to
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md).
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
 
 ## Usage
 
@@ -116,14 +116,14 @@ A `creel_schedule` data frame with columns:
 ## See also
 
 Other "Scheduling":
-[`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md),
-[`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md),
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md),
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md),
-[`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md),
-[`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md),
-[`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md),
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`attach_count_times()`](https://chrischizinski.com/tidycreel/reference/attach_count_times.md),
+[`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_bus_schedule.md),
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md),
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md),
+[`new_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/new_creel_schedule.md),
+[`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md),
+[`validate_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schedule.md),
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 
 ## Examples
 

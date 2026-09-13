@@ -2,7 +2,7 @@
 
 Converts paired ingress and egress POSIXct timestamps into a data frame
 of daily angler-effort hours, suitable for passing to
-[`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 Duration for each pair is computed as
 `difftime(egress_col, ingress_col, units = "hours")`. Pairs where egress
 precedes ingress (negative duration) are flagged with

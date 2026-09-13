@@ -4,9 +4,9 @@
 
 The tidycreel package is built on top of R’s `survey` package. Every
 estimation function in tidycreel —
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 — is a wrapper around a corresponding `survey` package call. The design
 objects tidycreel constructs are standard `svydesign` objects under the
 hood, and the estimators delegate directly to
@@ -243,9 +243,9 @@ cat(
 
 ### 2a. creel_design() + add_counts()
 
-[`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
 wraps the calendar and stratification into a design object.
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 attaches the count frame and builds the internal `svydesign` object —
 the equivalent of the
 [`svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html) call in
@@ -280,7 +280,7 @@ weekend) as the raw `svydesign` object above.
 
 ### 2b. estimate_effort()
 
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 calls [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
 on the internal design object and returns the result as a tidy tibble
 with labelled columns.
@@ -318,9 +318,9 @@ column as `estimate` instead of the raw column name.
 ### 2c. estimate_catch_rate() + add_interviews()
 
 Before calling
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
 attach the interview data via
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md).
 This maps interview columns to the design vocabulary and filters to
 complete trips by default.
 
@@ -369,7 +369,7 @@ Part 1c.
 
 ### 2d. estimate_total_catch()
 
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 applies the delta method to combine the effort and CPUE estimates,
 exactly as in Part 1c:
 
@@ -415,8 +415,8 @@ components — the statistical method is identical.
 
 | Step | survey package | tidycreel |
 |----|----|----|
-| Design construction | `svydesign(ids=~1, strata=~day_type, fpc=~fpc, data=counts)` | [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md) + [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md) |
-| Attach interview data | subset + `svydesign(ids=~1, data=complete_trips)` | [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
+| Design construction | `svydesign(ids=~1, strata=~day_type, fpc=~fpc, data=counts)` | [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md) + [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md) |
+| Attach interview data | subset + `svydesign(ids=~1, data=complete_trips)` | [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md) |
 | Effort estimation | `svytotal(~effort_hours, design)` | `estimate_effort(design)` |
 | Catch rate | `svyratio(~catch_total, ~hours_fished, int_design)` | `estimate_catch_rate(design)` |
 | Total catch | E × C with delta method Var(E×C) = E² Var(C) + C² Var(E) | `estimate_total_catch(design)` |
@@ -438,7 +438,7 @@ use.
 tidycreel’s scope: custom clustering structures,
 probability-proportional-to-size (PPS) sampling, replicate-weight
 designs, or nonstandard variance estimators. The
-[`as_creel_svydesign()`](https://chrischizinski.github.io/tidycreel/reference/as_creel_svydesign.md)
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/reference/as_creel_svydesign.md)
 function extracts the internal `svydesign` object from any tidycreel
 design, giving you full access to the survey package toolbox while still
 using tidycreel for the initial data setup.

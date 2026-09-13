@@ -6,25 +6,25 @@ Creel surveys are often paired with tagging studies to estimate either
 angler population size or seasonal exploitation rate. tidycreel provides
 three estimators for these purposes:
 
-- **[`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)**
+- **[`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)**
   — closed-population mark-recapture for total angler count (Chapman,
   Petersen, or Schnabel)
-- **[`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)**
+- **[`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)**
   — total harvest derived from a mark-recapture population estimate
-- **[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)**
+- **[`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)**
   — seasonal exploitation rate from tagged-fish recoveries (Pollock et
   al. 1994)
 
 All three return `creel_estimates` objects compatible with the standard
 tidycreel output tools ([`print()`](https://rdrr.io/r/base/print.html),
 `autoplot()`,
-[`write_estimates()`](https://chrischizinski.github.io/tidycreel/reference/write_estimates.md)).
+[`write_estimates()`](https://chrischizinski.com/tidycreel/reference/write_estimates.md)).
 
 | Goal | Estimator |
 |----|----|
-| Estimate total anglers from a tag-and-resight study | [`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md) |
-| Convert angler population estimate to total harvest | [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md) |
-| Estimate fraction of population harvested from tagged-fish recoveries | [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md) |
+| Estimate total anglers from a tag-and-resight study | [`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md) |
+| Convert angler population estimate to total harvest | [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md) |
+| Estimate fraction of population harvested from tagged-fish recoveries | [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md) |
 
 ------------------------------------------------------------------------
 
@@ -215,7 +215,7 @@ looking, or report both.
 ## Total Harvest from Mark-Recapture
 
 Once angler population size is estimated,
-[`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+[`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
 scales it by a known harvest rate to obtain total harvest. The harvest
 rate is typically derived from creel interview data — the mean number of
 fish kept per angler. It is a rate in fish per angler, not a proportion,
@@ -246,9 +246,9 @@ print(harvest)
 #> 1 total_harvest     326.  81.1     212.     600.
 ```
 
-[`estimate_angler_n()`](https://chrischizinski.github.io/tidycreel/reference/estimate_angler_n.md)
+[`estimate_angler_n()`](https://chrischizinski.com/tidycreel/reference/estimate_angler_n.md)
 reports its unit as `NA` rather than `"anglers"`, and
-[`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md)
+[`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md)
 inherits that. The estimators never see what the marking protocol marked
 — anglers, boats, or parties — so neither can say which of those
 $`\hat{N}`$ counts.
@@ -262,7 +262,7 @@ sensitivity check.
 
 ## Exploitation Rate
 
-[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+[`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
 implements the Pollock et al. (1994) moment estimator. Rather than
 counting anglers, it estimates the fraction of a tagged cohort that was
 harvested during the season. The inputs come from two sources:
@@ -270,10 +270,10 @@ harvested during the season. The inputs come from two sources:
 - **Tagging study**: $`T`$ fish tagged and released at season start;
   $`m`$ tagged fish recovered among $`n`$ fish inspected in the creel.
 - **Creel survey**: $`C`$ total estimated harvest (from
-  [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md))
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md))
   with standard error $`SE_C`$. This must be harvest, not catch —
   released fish stayed in the tagged cohort, so a catch total from
-  [`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
   inflates $`\hat{u}`$.
 
 ### Unstratified
@@ -407,8 +407,8 @@ accuracy as a separate sensitivity analysis.
 | Single recapture event, $`m \geq 7`$ | `"chapman"` or `"petersen"` (Chapman preferred) |
 | Multiple survey occasions with cumulative marking | `estimate_angler_n(method = "schnabel")` |
 | Three or more occasions, wanting a regression cross-check | `estimate_angler_n(method = "schumacher")` |
-| Converting population estimate to total harvest | [`estimate_mr_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_mr_harvest.md) |
-| Fraction of tagged cohort harvested (season-level) | [`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md) |
+| Converting population estimate to total harvest | [`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_mr_harvest.md) |
+| Fraction of tagged cohort harvested (season-level) | [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md) |
 
 ------------------------------------------------------------------------
 
@@ -425,7 +425,7 @@ All three estimators share the standard closed-population assumptions:
     the population before the second sample.
 
 For
-[`estimate_exploitation_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+[`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)
 two additional caveats apply:
 
 - Natural mortality between tagging and the creel survey is not
@@ -473,8 +473,8 @@ Canada*, 15(1), 19–25. <https://doi.org/10.1139/f58-003>
 ## See Also
 
 - [Interview
-  Estimation](https://chrischizinski.github.io/tidycreel/articles/interview-estimation.md)
+  Estimation](https://chrischizinski.com/tidycreel/articles/interview-estimation.md)
   — deriving harvest rates from creel interviews
 - [Survey Design
-  Toolbox](https://chrischizinski.github.io/tidycreel/articles/survey-design-toolbox.md)
+  Toolbox](https://chrischizinski.com/tidycreel/articles/survey-design-toolbox.md)
   — power and sample-size planning

@@ -49,12 +49,12 @@ independent selection probabilities.
 
 **R implementation:**
 
-- [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+- [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
   in `R/creel-design.R`: accepts `p_site` and `p_period` columns from
   the `sampling_frame` argument and precomputes
   `pi_i = p_site * p_period` for each site×circuit combination. The
   result is stored in `design$bus_route$sampling_frame`.
-- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+- [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   in `R/creel-design.R`: joins the precomputed `pi_i` value from the
   sampling frame to each interview row, storing it as the `.pi_i`
   column.
@@ -92,7 +92,7 @@ is needed. This is the case in Box 20.6 Example 1.
 
 **R implementation:**
 
-- [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+- [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   in `R/creel-design.R`: computes
   `.expansion = n_counted / n_interviewed` for each interview row. When
   `n_counted = 0` and `n_interviewed = 0` (zero-effort site),
@@ -134,7 +134,7 @@ gives an unbiased estimator of the population total (under the design).
   - Line 96:
     `total_estimate <- sum(interviews$.contribution, na.rm = TRUE)`
     (sums to produce $`\hat{E}`$)
-- [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+- [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
   in `R/creel-estimates.R`, line 310: dispatches to
   `estimate_effort_br()` when `design$design_type == "bus_route"`.
 
@@ -198,7 +198,7 @@ the same sampling design.
 
 - `estimate_harvest_br()` in `R/creel-estimates-bus-route.R`: computes
   `.h_i = harvest * .expansion` and `.contribution = .h_i / .pi_i`.
-- [`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+- [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
   sums those contributions via `survey::svytotal(~.contribution, ...)`
   to give $`\hat{H}`$.
 
@@ -216,7 +216,7 @@ the ratio of the two totals:
 ```
 
 This is the ratio-of-means form, the same quantity
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
 returns for standard designs, and it carries the same `method` string
 (`"ratio-of-means-hpue"`). Because $`e_i`$ is built from angler-effort,
 the result is fish per **angler**-hour, matching the CPUE denominator on
@@ -294,7 +294,7 @@ quantity.
 - `br_harvest_rate_estimates()` in `R/creel-estimates-bus-route.R`
   (shared ratio machinery for both trip paths).
 - `br_incomplete_harvest_rate()` in `R/creel-estimates-bus-route.R`.
-- [`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md)
+- [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
   in `R/creel-estimates.R`: dispatches to `estimate_harvest_br()` when
   `design$design_type == "bus_route"`.
 
@@ -333,8 +333,8 @@ Bootstrap (`variance = "bootstrap"`) and jackknife
 
 | Quantity | Formula | Source | Page | R Location |
 |----|----|----|----|----|
-| Inclusion probability | πᵢ = p_site × p_period | Jones & Pollock (2012) | p. 912 | `creel-design.R`: [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md), [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
-| Enumeration expansion | expansion = n_counted / n_interviewed | Malvestuto (1996) Box 20.6 | p. 614 | `creel-design.R`: [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) |
+| Inclusion probability | πᵢ = p_site × p_period | Jones & Pollock (2012) | p. 912 | `creel-design.R`: [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md), [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md) |
+| Enumeration expansion | expansion = n_counted / n_interviewed | Malvestuto (1996) Box 20.6 | p. 614 | `creel-design.R`: [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md) |
 | Expanded effort | eᵢ = angler-hours × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R`: `estimate_effort_br()` |
 | HT effort total | Ê = Σ(eᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.4 | p. 911 | `creel-estimates-bus-route.R` lines 83, 96 |
 | Expanded harvest | hᵢ = harvest × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R` (harvest branch) |

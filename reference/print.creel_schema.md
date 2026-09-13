@@ -18,7 +18,7 @@ print(x, ...)
 - ...:
 
   Passed to
-  [`format.creel_schema()`](https://chrischizinski.github.io/tidycreel/reference/format.creel_schema.md).
+  [`format.creel_schema()`](https://chrischizinski.com/tidycreel/reference/format.creel_schema.md).
 
 ## Value
 

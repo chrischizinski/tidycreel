@@ -124,7 +124,7 @@ print(design)
 ```
 
 The
-[`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+[`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
 function maps the interview data columns to the design structure. The
 design now shows both count and interview data attached. Interview data
 is treated as a parallel data stream to count data—the two datasets do
@@ -165,7 +165,7 @@ delta method, accounting for the covariance between numerator and
 denominator.
 
 For details on the ratio-of-means formula and variance calculation, see
-[`?estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+[`?estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
 
 ## Estimating Total Catch
 
@@ -211,7 +211,7 @@ Var(E × C) = E² Var(C) + C² Var(E)
 This formula assumes independence between the count and interview data
 streams, which is appropriate since they are collected through separate
 sampling processes. See
-[`?estimate_total_catch`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`?estimate_total_catch`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 for more details on the variance propagation.
 
 ## Estimating Harvest
@@ -343,11 +343,11 @@ when working with complex grouped estimates.
 Age data collected during interviews can be used to estimate a
 pressure-weighted age distribution and design-weighted mean age for the
 catch or harvest. Attach age records with
-[`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md),
+[`add_ages()`](https://chrischizinski.com/tidycreel/reference/add_ages.md),
 then call
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
 followed by
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md).
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md).
 
 ``` r
 
@@ -416,7 +416,7 @@ print(ad)
 ```
 
 Ages come from a subsample of the catch, so
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
 reports a two-phase estimate: the age composition among aged fish,
 scaled onto the design-estimated reported catch. The call warns when it
 rescales, naming the factor. Shares (`percent`) are unaffected by how
@@ -427,7 +427,7 @@ survey-design-weighted count of fish at that age, `percent` is the
 within-species proportion, and `cumulative_percent` accumulates from the
 youngest age class up. The same `variance`, `type`, and `conf_level`
 arguments available in
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md)
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md)
 are accepted here.
 
 ``` r
@@ -440,10 +440,10 @@ est_mean_age(ad)
 #> 3 walleye 4.444444   0.2706522         3.9139759          4.974913
 ```
 
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md)
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md)
 applies the ratio estimator (Σ a N̂\_a / N̂) to the weighted age counts
 returned by
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md)
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md)
 and propagates variance via the delta method.
 
 ## Complete Workflow Example
@@ -540,47 +540,47 @@ roving-access design principles.
 For situations with incomplete-trip interviews where you want to examine
 using them for estimation, see the **Incomplete Trip Estimation**
 vignette
-([`vignette("incomplete-trips", package = "tidycreel")`](https://chrischizinski.github.io/tidycreel/articles/incomplete-trips.md)).
+([`vignette("incomplete-trips", package = "tidycreel")`](https://chrischizinski.com/tidycreel/articles/incomplete-trips.md)).
 That vignette covers:
 
 - When incomplete trip estimation is scientifically valid
 - How to validate incomplete trip estimates using TOST equivalence
   testing
 - Step-by-step workflow with
-  [`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md)
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
 - Examples of passing and failing validation scenarios
 - Why you should NEVER pool complete and incomplete trips
 
 **Important:** The package defaults to complete trips only. Incomplete
 trip estimation requires explicit opt-in via the `use_trips` parameter
 in
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 and should only be used after validation with
-[`validate_incomplete_trips()`](https://chrischizinski.github.io/tidycreel/reference/validate_incomplete_trips.md).
+[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md).
 
 ## Next Steps
 
 For more details on interview-based estimation functions, see:
 
-- [`?add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md) -
+- [`?add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md) -
   Attach interview data to a design
-- [`?estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md) -
+- [`?estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md) -
   Estimate catch per unit effort
-- [`?estimate_harvest_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md) -
+- [`?estimate_harvest_rate`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md) -
   Estimate harvest per unit effort
-- [`?estimate_total_catch`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md) -
+- [`?estimate_total_catch`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md) -
   Estimate total catch
-- [`?estimate_total_harvest`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md) -
+- [`?estimate_total_harvest`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md) -
   Estimate total harvest
-- [`?add_ages`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md) -
+- [`?add_ages`](https://chrischizinski.com/tidycreel/reference/add_ages.md) -
   Attach age data to a design
-- [`?est_age_distribution`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md) -
+- [`?est_age_distribution`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md) -
   Estimate weighted age frequency
-- [`?est_mean_age`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md) -
+- [`?est_mean_age`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md) -
   Compute design-weighted mean age
-- [`?example_interviews`](https://chrischizinski.github.io/tidycreel/reference/example_interviews.md) -
+- [`?example_interviews`](https://chrischizinski.com/tidycreel/reference/example_interviews.md) -
   Example interview dataset
-- [`?example_ages`](https://chrischizinski.github.io/tidycreel/reference/example_ages.md) -
+- [`?example_ages`](https://chrischizinski.com/tidycreel/reference/example_ages.md) -
   Example age dataset
 
 For the effort estimation workflow, see the “Getting Started with

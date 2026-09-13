@@ -1,9 +1,9 @@
 # Attach count time windows to a daily sampling schedule
 
 Cross-joins a daily schedule produced by
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md)
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md)
 with a count-time template produced by
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md),
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md),
 returning a `creel_schedule` with one row per (date x period x
 count_window).
 
@@ -18,13 +18,13 @@ attach_count_times(schedule, count_times)
 - schedule:
 
   A `creel_schedule` from
-  [`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md).
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md).
   Must have a `date` column.
 
 - count_times:
 
   A `creel_schedule` from
-  [`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md).
+  [`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md).
   Must have `start_time`, `end_time`, and `window_id` columns.
 
 ## Value
@@ -36,14 +36,14 @@ equals `nrow(schedule) * nrow(count_times)`.
 ## See also
 
 Other "Scheduling":
-[`generate_bus_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_bus_schedule.md),
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md),
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md),
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md),
-[`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md),
-[`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md),
-[`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md),
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_bus_schedule.md),
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md),
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md),
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md),
+[`new_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/new_creel_schedule.md),
+[`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md),
+[`validate_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schedule.md),
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)
 
 ## Examples
 

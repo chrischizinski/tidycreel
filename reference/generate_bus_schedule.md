@@ -30,7 +30,7 @@ generate_bus_schedule(
 - schedule:
 
   A `creel_schedule` tibble from
-  [`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md).
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md).
   Currently unused in computation but required to ensure the caller has
   built a valid schedule before constructing the sampling frame.
 
@@ -71,11 +71,11 @@ A tibble: `sampling_frame` columns plus `p_period` and `inclusion_prob`.
 ## See also
 
 Other "Scheduling":
-[`attach_count_times()`](https://chrischizinski.github.io/tidycreel/reference/attach_count_times.md),
-[`generate_count_times()`](https://chrischizinski.github.io/tidycreel/reference/generate_count_times.md),
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md),
-[`generate_schedule()`](https://chrischizinski.github.io/tidycreel/reference/generate_schedule.md),
-[`new_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/new_creel_schedule.md),
-[`read_schedule()`](https://chrischizinski.github.io/tidycreel/reference/read_schedule.md),
-[`validate_creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_schedule.md),
-[`write_schedule()`](https://chrischizinski.github.io/tidycreel/reference/write_schedule.md)
+[`attach_count_times()`](https://chrischizinski.com/tidycreel/reference/attach_count_times.md),
+[`generate_count_times()`](https://chrischizinski.com/tidycreel/reference/generate_count_times.md),
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md),
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/reference/generate_schedule.md),
+[`new_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/new_creel_schedule.md),
+[`read_schedule()`](https://chrischizinski.com/tidycreel/reference/read_schedule.md),
+[`validate_creel_schedule()`](https://chrischizinski.com/tidycreel/reference/validate_creel_schedule.md),
+[`write_schedule()`](https://chrischizinski.com/tidycreel/reference/write_schedule.md)

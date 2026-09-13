@@ -14,7 +14,7 @@ print(x, ...)
 - x:
 
   A `creel_summary` object from
-  [`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md).
+  [`summary.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/summary.creel_estimates.md).
 
 - ...:
 

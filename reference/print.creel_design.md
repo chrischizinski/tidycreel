@@ -18,7 +18,7 @@ print(x, ...)
 - ...:
 
   Additional arguments passed to
-  [`format.creel_design()`](https://chrischizinski.github.io/tidycreel/reference/format.creel_design.md)
+  [`format.creel_design()`](https://chrischizinski.com/tidycreel/reference/format.creel_design.md)
 
 ## Value
 

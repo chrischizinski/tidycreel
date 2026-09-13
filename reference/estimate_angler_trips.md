@@ -4,7 +4,7 @@ Computes estimated trips by dividing extrapolated effort by the mean
 trip length per stratum, with Delta Method variance propagation (Powell
 2007). This is a composable estimator: the effort object must be
 pre-computed via
-[`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md)
+[`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
 before calling this function.
 
 The divisor is hours per trip, so the result comes back in whichever
@@ -24,7 +24,7 @@ estimate_angler_trips(effort, design, conf_level = 0.95, ...)
 - effort:
 
   A `creel_estimates` object returned by
-  [`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+  [`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md).
   Must have a numeric `estimate` column and a `se` column in
   `effort$estimates`.
 
@@ -84,5 +84,5 @@ using the delta method. *Journal of Wildlife Management*, 71(3),
 
 ## See also
 
-[`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_exploitation_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_exploitation_rate.md)
+[`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_exploitation_rate`](https://chrischizinski.com/tidycreel/reference/estimate_exploitation_rate.md)

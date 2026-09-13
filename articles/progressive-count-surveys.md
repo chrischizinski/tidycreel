@@ -25,7 +25,7 @@ $`\hat{E}_d = C \times \tau \times (T_d / \tau) = C \times T_d`$. The
 circuit time $`\tau`$ cancels, so only the raw count $`C`$ and the total
 open hours $`T_d`$ enter the final calculation. Nevertheless, $`\tau`$
 must be supplied to
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 as a check that the field protocol (circuit duration) is documented.
 
 ## When to Use Progressive Counts
@@ -53,7 +53,7 @@ Instantaneous counts are preferred when:
 $`\hat{E}_d = C \times T_d`$ is unbiased only when the field protocol
 satisfies three conditions (Hoenig et al. 1993, p. 725). They are
 properties of how the count is *collected*, so no check inside
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 can confirm them — they are the analyst’s responsibility:
 
 1.  **The starting location on the circuit is chosen randomly.** Always
@@ -61,7 +61,7 @@ can confirm them — they are the analyst’s responsibility:
     happening there at that hour.
 2.  **The direction of travel is chosen randomly** from the two
     alternatives.
-    [`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md)
+    [`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md)
     draws this for you and returns it in the `direction` column — it is
     a field instruction, not decoration.
 3.  **The observer travels faster than the anglers move** while those
@@ -89,7 +89,7 @@ A progressive count dataset needs:
 
 1.  **Calendar** — sampled dates with `day_type`. The calendar carries
     no hours column:
-    [`creel_design()`](https://chrischizinski.github.io/tidycreel/reference/creel_design.md)
+    [`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
     reads only the date and the strata, so $`T_d`$ must travel with the
     counts.
 2.  **Count data** — one row per sampled day with raw angler count
@@ -142,7 +142,7 @@ design
 
 Before field work begins, randomise the circuit start time for each
 survey day using
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md).
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md).
 This ensures the count is unbiased with respect to time-of-day effort
 patterns. Two strategies are available:
 
@@ -159,13 +159,13 @@ Under `"wraparound"` the count window slides freely, so is an ordinary
 ratio rather than a count of blocks and need not be a whole number.
 
 This is why
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 does not check it. Both schemes give every moment of the day equal
 probability of being observed, so both are estimated by the same ; a
 divisibility check in the estimator would reject perfectly valid
 wraparound designs. The constraint is enforced where it applies — at
 scheduling time, by
-[`generate_progressive_start()`](https://chrischizinski.github.io/tidycreel/reference/generate_progressive_start.md).
+[`generate_progressive_start()`](https://chrischizinski.com/tidycreel/reference/generate_progressive_start.md).
 
 ``` r
 
@@ -313,7 +313,7 @@ total_catch$estimates
 #> 1    3846.  305.    3243.    4450.   120
 ```
 
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md)
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
 multiplies the effort estimate by the CPUE estimate and propagates
 uncertainty via the delta method, producing a season-total catch with a
 combined standard error.
@@ -440,7 +440,7 @@ does not apply the progressive $`T_d`$ expansion, so `est_2p` is in
 counts rather than angler-hours. To get both, add
 `count_type = "progressive"`, `circuit_time`, and `period_length_col` as
 in the sections above —
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
 supports multiple circuits per day on the progressive path.
 
 ## Assemble a Summary Report

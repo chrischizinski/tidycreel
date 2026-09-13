@@ -31,9 +31,9 @@ estimate_total_catch(
 - design:
 
   A creel_design object with both counts (via
-  [`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md))
+  [`add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md))
   and interviews (via
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md))
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md))
   attached. Both count and interview survey objects must exist.
 
 - by:
@@ -45,7 +45,7 @@ estimate_total_catch(
 
   Two kinds of column are not groupings and are refused: the interview
   id registered by
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
   which holds one value per interview and so leaves no within-group
   variance to estimate, and columns the package derived rather than the
   user supplying, such as `.angler_effort`. A wildcard selector drops
@@ -65,7 +65,7 @@ estimate_total_catch(
 - target:
 
   Character string specifying the effort domain supplied to
-  [`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md).
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md).
   Options are `"sampled_days"` (default), `"stratum_total"`, or
   `"period_total"`. This controls which effort domain is multiplied by
   CPUE so total catch stays aligned with the requested temporal target.
@@ -90,7 +90,7 @@ estimate_total_catch(
   are *both* unspecified and the design was built with
   `add_interviews(interview_type = "roving")`, the pair resolves to
   all-trip truncated MOR, matching what
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
   chooses for the same design; otherwise the pair resolves to
   complete-trip ratio-of-means. Specifying either one suppresses the
   auto-route. Bus-route and ice designs never auto-route and accept only
@@ -114,7 +114,7 @@ estimate_total_catch(
 - aggregate_sections:
 
   Logical. When the design was created with
-  [`add_sections`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md),
+  [`add_sections`](https://chrischizinski.com/tidycreel/reference/add_sections.md),
   should a `.lake_total` row be appended that sums the per-section
   estimates? Default `TRUE`. Set to `FALSE` to return only the
   per-section rows without the lake total.
@@ -193,7 +193,7 @@ Variance is computed via a stratified delta-method sum in
 [`survey::svycontrast()`](https://rdrr.io/pkg/survey/man/svycontrast.html).
 
 **Sectioned designs:** When
-[`add_sections`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
+[`add_sections`](https://chrischizinski.com/tidycreel/reference/add_sections.md)
 has been called on the design, each section is estimated independently
 using its own count survey (via `rebuild_counts_survey`) and interview
 survey (via `rebuild_interview_survey`). The lake-wide total is the
@@ -210,11 +210,11 @@ then carries no `.lake_total` row and no `prop_of_lake_total`.
 **Design compatibility requirements:**
 
 - Count data must be attached via
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   for effort estimation
 
 - Interview data must be attached via
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   for CPUE estimation
 
 - Grouped estimation requires identical grouping variables for both
@@ -285,7 +285,7 @@ in angler-hours; anything else reports `NA_character_`, meaning unknown.
 Two ways to fail to cancel:
 
 - **The effort unit is unknown.** `design$effort_unit` is `NA` whenever
-  [`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md)
+  [`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md)
   received no `period_length_col`, because a bare count column may be an
   instantaneous head count or effort the caller already expanded, and
   nothing can tell the two apart. Unknown times known is unknown. Supply
@@ -293,7 +293,7 @@ Two ways to fail to cancel:
 
 - **The denominators disagree.** A rate per party-hour times an effort
   in angler-hours is not a count of fish. Pass `n_anglers` to
-  [`add_interviews()`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md)
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/reference/add_interviews.md)
   so the rate is per angler-hour.
 
 The estimate itself is unaffected in both cases – only the label
@@ -302,25 +302,25 @@ regardless of either factor (GH \#213).
 
 ## See also
 
-[`estimate_effort`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_effort`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

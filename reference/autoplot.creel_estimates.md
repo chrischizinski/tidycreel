@@ -31,7 +31,7 @@ autoplot(object, title = NULL, theme = c("default", "creel"), ...)
 
   Character string selecting the plot theme. Use `"default"` (default)
   to preserve the current ggplot styling or `"creel"` to apply
-  [`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+  [`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
   and package-standard colours.
 
 - ...:
@@ -44,16 +44,16 @@ A `ggplot` object.
 
 ## See also
 
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`summary.creel_estimates()`](https://chrischizinski.github.io/tidycreel/reference/summary.creel_estimates.md)
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`summary.creel_estimates()`](https://chrischizinski.com/tidycreel/reference/summary.creel_estimates.md)
 
 Other "Visualisation":
-[`autoplot.creel_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_length_distribution.md),
-[`autoplot.creel_schedule()`](https://chrischizinski.github.io/tidycreel/reference/autoplot.creel_schedule.md),
-[`creel_palette()`](https://chrischizinski.github.io/tidycreel/reference/creel_palette.md),
-[`plot_design()`](https://chrischizinski.github.io/tidycreel/reference/plot_design.md),
-[`theme_creel()`](https://chrischizinski.github.io/tidycreel/reference/theme_creel.md)
+[`autoplot.creel_length_distribution()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_length_distribution.md),
+[`autoplot.creel_schedule()`](https://chrischizinski.com/tidycreel/reference/autoplot.creel_schedule.md),
+[`creel_palette()`](https://chrischizinski.com/tidycreel/reference/creel_palette.md),
+[`plot_design()`](https://chrischizinski.com/tidycreel/reference/plot_design.md),
+[`theme_creel()`](https://chrischizinski.com/tidycreel/reference/theme_creel.md)
 
 ## Examples
 

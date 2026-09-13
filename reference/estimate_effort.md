@@ -26,7 +26,7 @@ estimate_effort(
 - design:
 
   A creel_design object with counts attached via
-  [`add_counts`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+  [`add_counts`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
   The design must have a survey object constructed.
 
 - by:
@@ -104,7 +104,7 @@ NULL). `se_between` is the between-day standard error from
 the within-day standard error from the Rasmussen two-stage formula; it
 is zero when a single count is recorded per PSU and nonzero when
 `count_time_col` is supplied to
-[`add_counts()`](https://chrischizinski.github.io/tidycreel/reference/add_counts.md).
+[`add_counts()`](https://chrischizinski.com/tidycreel/reference/add_counts.md).
 For bus-route designs, a "site_contributions" attribute is also present
 containing per-site e_i, pi_i, and e_i_over_pi_i columns.
 
@@ -120,7 +120,7 @@ overall total containing it. On the `.lake_total` row the share is
 exactly 1 with a standard error of 0, which is structural rather than an
 unpropagated component: that row's share of itself was never estimated.
 A section registered by
-[`add_sections`](https://chrischizinski.github.io/tidycreel/reference/add_sections.md)
+[`add_sections`](https://chrischizinski.com/tidycreel/reference/add_sections.md)
 but absent from the counts reports `NA` for both, alongside
 `data_available = FALSE`.
 
@@ -166,35 +166,35 @@ sum – a plausible number with a plausible standard error, and no
 indication that it was not effort.
 
 Use
-[`est_effort_camera`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera.md),
+[`est_effort_camera`](https://chrischizinski.com/tidycreel/reference/est_effort_camera.md),
 which calibrates the counts against interview effort and propagates the
 calibration's uncertainty, or
-[`est_effort_camera_mi`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md)
+[`est_effort_camera_mi`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md)
 to pool over multiply imputed counts. The same refusal is raised by
-[`estimate_total_catch`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md)
+[`estimate_total_catch`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
 and
-[`estimate_total_release`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md),
+[`estimate_total_release`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md),
 which build their own effort by this route.
 
 ## See also
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_harvest_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_harvest_rate.md),
-[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md),
+[`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

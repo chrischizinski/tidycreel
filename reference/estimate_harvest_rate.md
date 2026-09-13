@@ -29,7 +29,7 @@ estimate_harvest_rate(
 - design:
 
   A creel_design object with interviews attached via
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md).
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md).
   The design must have an interview survey object constructed with
   harvest, catch, and effort columns.
 
@@ -43,10 +43,10 @@ estimate_harvest_rate(
 
   Two kinds of column are not groupings and are refused: the interview
   id, as registered by
-  [`add_catch()`](https://chrischizinski.github.io/tidycreel/reference/add_catch.md),
-  [`add_lengths()`](https://chrischizinski.github.io/tidycreel/reference/add_lengths.md)
+  [`add_catch()`](https://chrischizinski.com/tidycreel/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/reference/add_lengths.md)
   or
-  [`add_ages()`](https://chrischizinski.github.io/tidycreel/reference/add_ages.md),
+  [`add_ages()`](https://chrischizinski.com/tidycreel/reference/add_ages.md),
   which holds one value per interview and so leaves no within-group
   variance to estimate; and columns the package derived rather than the
   user supplying, such as `.angler_effort`. A wildcard selector drops
@@ -87,7 +87,7 @@ estimate_harvest_rate(
   totals to numerators that are catch so far. Matching is exact on both
   paths, and unrecognised values are an error. When `trip_status` was
   not provided to
-  [`add_interviews`](https://chrischizinski.github.io/tidycreel/reference/add_interviews.md),
+  [`add_interviews`](https://chrischizinski.com/tidycreel/reference/add_interviews.md),
   this argument has no effect for standard designs.
 
 - estimator:
@@ -121,7 +121,7 @@ estimate_harvest_rate(
   to disable; the bus-route path warns when it is disabled there, the
   standard mean-of-ratios path treats it as a documented opt-out and is
   silent, matching
-  [`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  [`estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
   Ignored under `"ratio-of-means"`. An interview whose duration is
   missing cannot be shown to meet the threshold, so it is excluded and
   reported separately from the trips excluded as too short.
@@ -149,7 +149,7 @@ estimate_harvest_rate(
   `by = species` is an error rather than a silent no-op (GH \#307).
 
   Ignored for the `ratio-of-means` estimator, as for
-  [`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md).
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md).
   Note that the `estimate_total_*()` functions deliberately do not
   accept it — see their documentation for why a targeted rate has no
   matching total.
@@ -225,25 +225,25 @@ interviews.
 
 ## See also
 
-[`estimate_catch_rate`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md)
+[`estimate_catch_rate`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
 for total catch rate estimation
 
 Other "Estimation":
-[`compare_cpue_estimators()`](https://chrischizinski.github.io/tidycreel/reference/compare_cpue_estimators.md),
-[`est_age_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_age_distribution.md),
-[`est_biomass()`](https://chrischizinski.github.io/tidycreel/reference/est_biomass.md),
-[`est_compliance()`](https://chrischizinski.github.io/tidycreel/reference/est_compliance.md),
-[`est_effort_camera_mi()`](https://chrischizinski.github.io/tidycreel/reference/est_effort_camera_mi.md),
-[`est_length_distribution()`](https://chrischizinski.github.io/tidycreel/reference/est_length_distribution.md),
-[`est_mean_age()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_age.md),
-[`est_mean_length()`](https://chrischizinski.github.io/tidycreel/reference/est_mean_length.md),
-[`estimate_catch_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_catch_rate.md),
-[`estimate_effort()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort.md),
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.github.io/tidycreel/reference/estimate_effort_aerial_glmm.md),
-[`estimate_release_rate()`](https://chrischizinski.github.io/tidycreel/reference/estimate_release_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_catch.md),
-[`estimate_total_harvest()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_harvest.md),
-[`estimate_total_release()`](https://chrischizinski.github.io/tidycreel/reference/estimate_total_release.md)
+[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/reference/compare_cpue_estimators.md),
+[`est_age_distribution()`](https://chrischizinski.com/tidycreel/reference/est_age_distribution.md),
+[`est_biomass()`](https://chrischizinski.com/tidycreel/reference/est_biomass.md),
+[`est_compliance()`](https://chrischizinski.com/tidycreel/reference/est_compliance.md),
+[`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/reference/est_effort_camera_mi.md),
+[`est_length_distribution()`](https://chrischizinski.com/tidycreel/reference/est_length_distribution.md),
+[`est_mean_age()`](https://chrischizinski.com/tidycreel/reference/est_mean_age.md),
+[`est_mean_length()`](https://chrischizinski.com/tidycreel/reference/est_mean_length.md),
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md),
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md),
+[`estimate_release_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_release_rate.md),
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+[`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md),
+[`estimate_total_release()`](https://chrischizinski.com/tidycreel/reference/estimate_total_release.md)
 
 ## Examples
 

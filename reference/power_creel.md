@@ -1,10 +1,10 @@
 # Unified sample-size and power interface for creel surveys
 
 A single tidy entry point for pre-survey sample-size planning that wraps
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
 and
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md)
 and returns a consistent tibble.
 
 ## Usage
@@ -177,37 +177,37 @@ Three `mode` values are supported:
 
   Required sampling *days* per stratum to achieve `target_rse` on the
   effort estimate (calls
-  [`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md)).
+  [`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md)).
 
 - `"cpue_n"`:
 
   Required *interviews* to achieve `target_rse` on the CPUE estimate
   (calls
-  [`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md)).
+  [`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md)).
 
 - `"power"`:
 
   Statistical power to detect a fractional change in CPUE at a given
   sample size (calls
-  [`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)).
+  [`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md)).
 
 ## See also
 
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md)
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md)
 
 Other "Planning & Sample Size":
-[`audit_strata()`](https://chrischizinski.github.io/tidycreel/reference/audit_strata.md),
-[`compare_designs()`](https://chrischizinski.github.io/tidycreel/reference/compare_designs.md),
-[`creel_n_camera()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_camera.md),
-[`creel_n_cpue()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_cpue.md),
-[`creel_n_effort()`](https://chrischizinski.github.io/tidycreel/reference/creel_n_effort.md),
-[`creel_power()`](https://chrischizinski.github.io/tidycreel/reference/creel_power.md),
-[`cv_from_n()`](https://chrischizinski.github.io/tidycreel/reference/cv_from_n.md),
-[`optimal_n()`](https://chrischizinski.github.io/tidycreel/reference/optimal_n.md),
-[`reallocate_strata()`](https://chrischizinski.github.io/tidycreel/reference/reallocate_strata.md),
-[`simulate_strata_collapse()`](https://chrischizinski.github.io/tidycreel/reference/simulate_strata_collapse.md)
+[`audit_strata()`](https://chrischizinski.com/tidycreel/reference/audit_strata.md),
+[`compare_designs()`](https://chrischizinski.com/tidycreel/reference/compare_designs.md),
+[`creel_n_camera()`](https://chrischizinski.com/tidycreel/reference/creel_n_camera.md),
+[`creel_n_cpue()`](https://chrischizinski.com/tidycreel/reference/creel_n_cpue.md),
+[`creel_n_effort()`](https://chrischizinski.com/tidycreel/reference/creel_n_effort.md),
+[`creel_power()`](https://chrischizinski.com/tidycreel/reference/creel_power.md),
+[`cv_from_n()`](https://chrischizinski.com/tidycreel/reference/cv_from_n.md),
+[`optimal_n()`](https://chrischizinski.com/tidycreel/reference/optimal_n.md),
+[`reallocate_strata()`](https://chrischizinski.com/tidycreel/reference/reallocate_strata.md),
+[`simulate_strata_collapse()`](https://chrischizinski.com/tidycreel/reference/simulate_strata_collapse.md)
 
 ## Examples
 

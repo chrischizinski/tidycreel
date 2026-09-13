@@ -15,7 +15,7 @@ print(x, ...)
 - x:
 
   A `creel_data_validation` object returned by
-  [`validate_creel_data()`](https://chrischizinski.github.io/tidycreel/reference/validate_creel_data.md).
+  [`validate_creel_data()`](https://chrischizinski.com/tidycreel/reference/validate_creel_data.md).
 
 - ...:
 
