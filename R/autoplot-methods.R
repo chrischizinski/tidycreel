@@ -14,15 +14,16 @@ NULL
 #' supplied to the estimation function) each group level gets its own point,
 #' colour-coded and positioned along the x-axis.
 #'
-#' Requires the **ggplot2** package (listed in `Suggests`). Install it with
-#' `install.packages("ggplot2")` if needed.
+#' Returns a **ggplot2** object, which the package imports, so nothing extra
+#' needs installing.
 #'
 #' @param object A `creel_estimates` object.
 #' @param title Optional character string for the plot title. Defaults to
 #'   a human-readable description of the estimation method.
 #' @param theme Character string selecting the plot theme. Use `"default"`
-#'   (default) to preserve the current ggplot styling or `"creel"` to apply
-#'   [theme_creel()] and package-standard colours.
+#'   (default) for [ggplot2::theme_bw()], or `"creel"` for [theme_creel()] and
+#'   package-standard colours. Neither inherits a theme set with
+#'   [ggplot2::theme_set()]; add your own with `+` if you need it.
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A `ggplot` object.
@@ -203,8 +204,9 @@ autoplot.creel_estimates <- function(object, title = NULL, theme = c("default", 
 #' @param title Optional plot title. Defaults to a title derived from the
 #'   estimated fish type (`catch`, `harvest`, or `release`).
 #' @param theme Character string selecting the plot theme. Use `"default"`
-#'   (default) to preserve the current ggplot styling or `"creel"` to apply
-#'   [theme_creel()] and package-standard colours.
+#'   (default) for [ggplot2::theme_bw()], or `"creel"` for [theme_creel()] and
+#'   package-standard colours. Neither inherits a theme set with
+#'   [ggplot2::theme_set()]; add your own with `+` if you need it.
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A `ggplot` object.
@@ -342,8 +344,8 @@ autoplot.creel_length_distribution <- function(
 #' dates coloured by day type (weekday / weekend) and unsampled dates in grey.
 #' Multiple months are shown as faceted panels.
 #'
-#' Requires the **ggplot2** package (listed in `Suggests`). Install it with
-#' `install.packages("ggplot2")` if needed.
+#' Returns a **ggplot2** object, which the package imports, so nothing extra
+#' needs installing.
 #'
 #' @param object A `creel_schedule` object from [generate_schedule()] or
 #'   [generate_bus_schedule()].

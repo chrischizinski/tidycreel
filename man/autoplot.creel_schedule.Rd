@@ -23,8 +23,8 @@ A \code{ggplot} object.
 dates coloured by day type (weekday / weekend) and unsampled dates in grey.
 Multiple months are shown as faceted panels.
 
-Requires the \strong{ggplot2} package (listed in \code{Suggests}). Install it with
-\code{install.packages("ggplot2")} if needed.
+Returns a \strong{ggplot2} object, which the package imports, so nothing extra
+needs installing.
 }
 \examples{
 sched <- generate_schedule(

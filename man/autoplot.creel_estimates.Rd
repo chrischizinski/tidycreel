@@ -13,8 +13,9 @@
 a human-readable description of the estimation method.}
 
 \item{theme}{Character string selecting the plot theme. Use \code{"default"}
-(default) to preserve the current ggplot styling or \code{"creel"} to apply
-\code{\link[=theme_creel]{theme_creel()}} and package-standard colours.}
+(default) for \code{\link[ggplot2:ggtheme]{ggplot2::theme_bw()}}, or \code{"creel"} for \code{\link[=theme_creel]{theme_creel()}} and
+package-standard colours. Neither inherits a theme set with
+\code{\link[ggplot2:get_theme]{ggplot2::theme_set()}}; add your own with \code{+} if you need it.}
 
 \item{...}{Additional arguments (currently unused).}
 }
@@ -28,8 +29,8 @@ confidence interval is shown. For grouped estimates (when \code{by} was
 supplied to the estimation function) each group level gets its own point,
 colour-coded and positioned along the x-axis.
 
-Requires the \strong{ggplot2} package (listed in \code{Suggests}). Install it with
-\code{install.packages("ggplot2")} if needed.
+Returns a \strong{ggplot2} object, which the package imports, so nothing extra
+needs installing.
 }
 \examples{
 data(example_calendar)

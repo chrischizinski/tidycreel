@@ -14,8 +14,9 @@
 estimated fish type (\code{catch}, \code{harvest}, or \code{release}).}
 
 \item{theme}{Character string selecting the plot theme. Use \code{"default"}
-(default) to preserve the current ggplot styling or \code{"creel"} to apply
-\code{\link[=theme_creel]{theme_creel()}} and package-standard colours.}
+(default) for \code{\link[ggplot2:ggtheme]{ggplot2::theme_bw()}}, or \code{"creel"} for \code{\link[=theme_creel]{theme_creel()}} and
+package-standard colours. Neither inherits a theme set with
+\code{\link[ggplot2:get_theme]{ggplot2::theme_set()}}; add your own with \code{+} if you need it.}
 
 \item{...}{Additional arguments (currently unused).}
 }
