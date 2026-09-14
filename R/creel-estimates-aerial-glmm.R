@@ -41,7 +41,14 @@
 #'   - `se_between`: same as `se` (fixed-effect SE component)
 #'   - `se_within`: always `NA_real_` — no Rasmussen within-day decomposition
 #'     is performed for GLMM estimates
-#'   - `ci_lower`, `ci_upper`: confidence interval bounds
+#'   - `ci_lower`, `ci_upper`: confidence interval bounds, and `NA_real_`
+#'     whenever `se` is, on both the delta and bootstrap paths. If the
+#'     visibility correction or the angler-to-people ratio was declared
+#'     unknown, the total's uncertainty was never fully propagated, so no
+#'     unconditional interval exists to report. Reporting the remaining
+#'     spread would be an interval conditional on the unknown multiplier
+#'     being exact -- indistinguishable from declaring it known with zero
+#'     uncertainty, which is precisely the confusion `NA` exists to prevent.
 #'   - `n`: number of count observations used to fit the model
 #'   - `method`: `"aerial_glmm_total"`
 #'
@@ -314,9 +321,20 @@ estimate_effort_aerial_glmm <- function(
     # above deliberately skips (there is nothing to draw). The SE must still go
     # NA: the uncertainty is unpropagated, not zero. Applies to either
     # multiplier (GH #135, #158).
+    #
+    # The interval goes with it (GH #357). When a multiplier is skipped, boot_t
+    # carries the model term only, so its quantiles are an interval CONDITIONAL
+    # on that multiplier being exact -- numerically identical to the interval
+    # you get by declaring the multiplier known with zero uncertainty, which is
+    # the one thing an unknown must never be confused with. The delta path
+    # already reports NA here because its interval is derived from the SE and
+    # inherits it; the bootstrap path builds quantiles independently, so it has
+    # to say so explicitly.
     if ((!is.null(se_v) && is.na(se_v)) || (!is.null(se_a) && is.na(se_a))) {
       se <- NA_real_
       se_between <- NA_real_
+      ci_lower <- NA_real_
+      ci_upper <- NA_real_
     }
   }
 

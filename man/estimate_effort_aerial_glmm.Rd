@@ -48,7 +48,14 @@ A \code{creel_estimates} object with:
 \item \code{se_between}: same as \code{se} (fixed-effect SE component)
 \item \code{se_within}: always \code{NA_real_} — no Rasmussen within-day decomposition
 is performed for GLMM estimates
-\item \code{ci_lower}, \code{ci_upper}: confidence interval bounds
+\item \code{ci_lower}, \code{ci_upper}: confidence interval bounds, and \code{NA_real_}
+whenever \code{se} is, on both the delta and bootstrap paths. If the
+visibility correction or the angler-to-people ratio was declared
+unknown, the total's uncertainty was never fully propagated, so no
+unconditional interval exists to report. Reporting the remaining
+spread would be an interval conditional on the unknown multiplier
+being exact -- indistinguishable from declaring it known with zero
+uncertainty, which is precisely the confusion \code{NA} exists to prevent.
 \item \code{n}: number of count observations used to fit the model
 \item \code{method}: \code{"aerial_glmm_total"}
 }
