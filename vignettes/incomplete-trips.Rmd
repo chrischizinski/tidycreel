@@ -203,6 +203,15 @@ tidycreel **never auto-pools** complete and incomplete trips:
 
 There is no `use_trips = "both"` option because pooling is invalid.
 
+"Pooling" here means one ratio-of-means fitted over complete and incomplete
+trips together, which is invalid because the two have different sampling
+probabilities. The roving route described above is not that: all-trip
+mean-of-ratios treats each contact's catch rate as its own observation, which is
+what makes it valid over trips of unknown duration. It does use every contact,
+so if you need complete trips specifically, name them — the absence of a
+`"both"` option is not on its own a guarantee that you are getting
+complete-trip-only estimates.
+
 ### What the default does on a roving design
 
 Leaving `use_trips` unspecified is not the same as asking for complete trips.

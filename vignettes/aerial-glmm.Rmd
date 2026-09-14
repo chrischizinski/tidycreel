@@ -192,7 +192,9 @@ cannot normalise effort to angler-hours and `estimate_total_catch()` warns that
 the CPUE it multiplies is per *party*-hour while the count-derived effort is
 angler-hours. The warning is correct for this dataset and is left visible rather
 than suppressed: with one angler per party the total is right as printed, and
-with larger parties it is understated. Supply `n_anglers` from your own
+with larger parties it is **overstated** — by the mean party size, because the
+party-hour rate is multiplied by an effort that already counts every angler.
+Supplying `n_anglers = 2` on this example halves the total, from 250.6 to 125.3. Supply `n_anglers` from your own
 interview data, or state a constant party size (`n_anglers = 1`) when every
 interview really is a single angler, to remove the ambiguity.
 
