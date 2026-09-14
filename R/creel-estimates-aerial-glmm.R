@@ -239,8 +239,33 @@ estimate_effort_aerial_glmm <- function(
   # scales by the same constant. That is a documented limitation, not an
   # oversight -- propagating the uncertainty in the variance component itself
   # would need a different variance method than either path offers today.
+  # Only a single random INTERCEPT has a constant retransformation. With a
+  # random slope the marginal correction is exp(Var(b0 + b1 t) / 2), which
+  # varies across the integration grid, and summing the two variances as if
+  # they were one constant -- ignoring their covariance -- would silently
+  # return a wrong total for a formula this function documents as supported.
+  # Refuse instead (GH #363).
   vc <- as.data.frame(lme4::VarCorr(model))
-  sigma2 <- sum(vc$vcov[is.na(vc$var2)], na.rm = TRUE)
+  intercept_rows <- is.na(vc$var2) & vc$var1 == "(Intercept)"
+  if (nrow(vc) != 1L || !all(intercept_rows)) {
+    cli::cli_abort(
+      c(
+        "Expanding to a total needs a single random intercept.",
+        "x" = "The fitted model has {nrow(vc)} random-effect term{?s}.",
+        "i" = paste0(
+          "A random slope makes the log-link retransformation vary across the ",
+          "day, so a single constant cannot express it."
+        ),
+        "i" = paste0(
+        "Both targets report an expectation and both need the correction, so ",
+        "neither is available here. Fit with a single random intercept ",
+        "({.code (1 | date)}) to expand."
+      )
+      ),
+      class = "creel_error_glmm_retransform_unsupported"
+    )
+  }
+  sigma2 <- sum(vc$vcov[intercept_rows], na.rm = TRUE)
   retransform <- exp(sigma2 / 2)
   n_sampled_days <- length(unique(counts_data[[design$date_col]]))
   expansion <- retransform * if (identical(target, "sampled_days")) n_sampled_days else 1

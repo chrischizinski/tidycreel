@@ -391,15 +391,49 @@ test_that("GLMM-07: the median-day prediction is corrected before it is expanded
   one_day <- suppressMessages(
     estimate_effort_aerial_glmm(design, time_col = time_of_flight, target = "mean_day")
   )
+
+  # Rebuild the UNCORRECTED integral independently, the way the function did
+  # before GH #363: fit the same model, predict the fixed-effects curve over the
+  # same grid, integrate. Asserting only that exp(sigma^2 / 2) > 1 would pass
+  # with the correction deleted, which is the whole point of computing this.
   model <- lme4::glmer.nb(
     n_anglers ~ poly(time_of_flight, 2) + (1 | date),
     data = design$counts
   )
-  vc <- as.data.frame(lme4::VarCorr(model))
-  sigma2 <- sum(vc$vcov[is.na(vc$var2)], na.rm = TRUE)
+  h_open <- design$aerial$h_open
+  open_start <- min(design$counts$time_of_flight) - 0.5
+  grid <- seq(open_start, open_start + h_open, length.out = 100)
+  new_data <- stats::setNames(
+    data.frame(grid, NA_character_, stringsAsFactors = FALSE),
+    c("time_of_flight", design$date_col)
+  )
+  x_mat <- stats::model.matrix(stats::delete.response(stats::terms(model)), data = new_data)
+  mu <- as.numeric(exp(x_mat %*% lme4::fixef(model)))
+  uncorrected <- sum(mu) * (h_open / (length(grid) - 1L))
 
+  vc <- as.data.frame(lme4::VarCorr(model))
+  sigma2 <- sum(vc$vcov[is.na(vc$var2) & vc$var1 == "(Intercept)"], na.rm = TRUE)
   expect_gt(sigma2, 0)
-  # The correction is strictly greater than 1, so the reported mean day must
-  # exceed the uncorrected integral it is built from.
-  expect_gt(exp(sigma2 / 2), 1)
+
+  # The reported mean day is the uncorrected integral times exp(sigma^2 / 2).
+  expect_equal(one_day$estimates$estimate, uncorrected * exp(sigma2 / 2), tolerance = 1e-3)
+  # And it is strictly larger than the uncorrected value, so deleting the
+  # correction fails this test rather than passing it.
+  expect_gt(one_day$estimates$estimate, uncorrected)
+})
+
+test_that("GLMM-07: a random slope is refused rather than corrected with a constant", {
+  skip_if_not_installed("lme4")
+  # exp(Var(b0 + b1 t) / 2) varies across the integration grid, so no single
+  # factor expresses it. Summing the two variances would return a plausible
+  # wrong number for a formula this function documents as supported.
+  design <- make_aerial_glmm_design(visibility_correction = 1, visibility_se = 0)
+  expect_error(
+    suppressWarnings(suppressMessages(estimate_effort_aerial_glmm(
+      design,
+      time_col = time_of_flight,
+      formula = n_anglers ~ time_of_flight + (time_of_flight | date)
+    ))),
+    class = "creel_error_glmm_retransform_unsupported"
+  )
 })
