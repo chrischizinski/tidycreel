@@ -6,7 +6,8 @@
 # Every test here shared that until GH #357, which is why none of them could see
 # an interval that ignored it. Pass a numeric correction with `visibility_se` to
 # get the known-uncertainty case.
-make_aerial_glmm_design <- function(visibility_correction = "none", visibility_se = NULL) {
+make_aerial_glmm_design <- function(visibility_correction = "none", visibility_se = NULL,
+                                    with_count_time = FALSE) {
   data("example_aerial_glmm_counts", envir = environment())
   aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")]) # nolint: object_usage_linter
   aerial_cal <- aerial_cal[order(aerial_cal$date), ]
@@ -36,7 +37,15 @@ make_aerial_glmm_design <- function(visibility_correction = "none", visibility_s
       h_open = 14
     )
   }
-  add_counts(design, example_aerial_glmm_counts, count_col = n_anglers) # nolint: object_usage_linter
+  if (with_count_time) {
+    # estimate_effort() refuses repeated same-day counts unless it can tell them
+    # apart; the GLMM reads the same column through `time_col` instead.
+    add_counts(design, example_aerial_glmm_counts, # nolint: object_usage_linter
+      count_col = n_anglers, count_time_col = time_of_flight
+    )
+  } else {
+    add_counts(design, example_aerial_glmm_counts, count_col = n_anglers) # nolint: object_usage_linter
+  }
 }
 
 # GLMM-01: Basic usage ----
@@ -309,4 +318,88 @@ test_that("GLMM-06: the delta path already agreed, and still does", {
   expect_true(is.finite(known$se))
   expect_true(is.finite(known$ci_lower))
   expect_true(is.finite(known$ci_upper))
+})
+
+# GLMM-07: temporal basis of the returned estimate (GH #363) ----
+
+test_that("GLMM-07: the default estimate is on the same basis as estimate_effort()", {
+  skip_if_not_installed("lme4")
+  # Before GH #363 this function returned a single average day while
+  # estimate_effort() returned a total across the sampled days, so the two
+  # differed by a factor of n_days on the same design with nothing in either
+  # signature to say so. The discriminating fact is the RATIO: a diurnal
+  # correction is a modest percentage, not an order of magnitude.
+  design <- make_aerial_glmm_design(visibility_correction = 1, visibility_se = 0)
+  glmm <- suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight)
+  )
+  simple <- suppressMessages(estimate_effort(
+    make_aerial_glmm_design(
+      visibility_correction = 1, visibility_se = 0, with_count_time = TRUE
+    )
+  ))
+
+  ratio <- glmm$estimates$estimate / simple$estimates$estimate
+  expect_gt(ratio, 0.5)
+  expect_lt(ratio, 2)
+  expect_identical(glmm$effort_target, "sampled_days")
+})
+
+test_that("GLMM-07: mean_day is the sampled-days total divided by the sampled days", {
+  skip_if_not_installed("lme4")
+  design <- make_aerial_glmm_design(visibility_correction = 1, visibility_se = 0)
+  total <- suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight)
+  )
+  one_day <- suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight, target = "mean_day")
+  )
+  n_days <- length(unique(design$counts[[design$date_col]]))
+
+  expect_equal(total$estimates$estimate, one_day$estimates$estimate * n_days)
+  expect_identical(one_day$effort_target, "mean_day")
+})
+
+test_that("GLMM-07: the standard error scales with the expansion, not just the estimate", {
+  skip_if_not_installed("lme4")
+  # An expansion that moved the point estimate without moving its SE would
+  # report a total n_days times larger at unchanged precision.
+  design <- make_aerial_glmm_design(visibility_correction = 1, visibility_se = 0)
+  total <- suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight)
+  )
+  one_day <- suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight, target = "mean_day")
+  )
+  n_days <- length(unique(design$counts[[design$date_col]]))
+
+  expect_equal(total$estimates$se, one_day$estimates$se * n_days)
+  # The CV is what must NOT move: the same curve, described over more days.
+  expect_equal(
+    total$estimates$se / total$estimates$estimate,
+    one_day$estimates$se / one_day$estimates$estimate
+  )
+})
+
+test_that("GLMM-07: the median-day prediction is corrected before it is expanded", {
+  skip_if_not_installed("lme4")
+  # exp(X beta) is the day whose random intercept is zero -- the median day on a
+  # log link. Reporting it as a mean understates by exp(sigma^2 / 2). The fitted
+  # intercept variance is non-zero on this fixture, so a mean_day estimate that
+  # equalled the raw integral would mean the correction was never applied.
+  design <- make_aerial_glmm_design(visibility_correction = 1, visibility_se = 0)
+  one_day <- suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight, target = "mean_day")
+  )
+  model <- lme4::glmer.nb(
+    n_anglers ~ poly(time_of_flight, 2) + (1 | date),
+    data = design$counts
+  )
+  vc <- as.data.frame(lme4::VarCorr(model))
+  sigma2 <- sum(vc$vcov[is.na(vc$var2)], na.rm = TRUE)
+
+  expect_gt(sigma2, 0)
+  # The correction is strictly greater than 1, so the reported mean day must
+  # exceed the uncorrected integral it is built from.
+  expect_gt(exp(sigma2 / 2), 1)
 })

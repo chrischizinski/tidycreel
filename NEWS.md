@@ -2,6 +2,40 @@
 
 ## Breaking changes
 
+* `estimate_effort_aerial_glmm()` now reports a total across the sampled days,
+  the same basis `estimate_effort()` uses, instead of a single average day
+  (#363).
+
+  The two functions could be called on one design and returned quantities that
+  differed by a factor of the number of sampled days, with nothing in either
+  signature or either result to say so. On the package's own aerial fixture that
+  was 378.6 against 5092.5 — a gap a reader would naturally attribute to the
+  diurnal correction the GLMM exists to apply. It is now 4728.6 against 5092.5,
+  and the 7% between them is that correction.
+
+  `target = "mean_day"` restores the single-day figure for anyone who wants it,
+  and the basis is recorded on the result as `effort_target`, so which question
+  was answered can be read off the object rather than inferred.
+
+  Both targets are expectations, and both now carry a retransformation factor
+  the previous code did not apply. The fitted curve is a fixed-effects
+  prediction — the day whose random intercept is zero — which on a log link is
+  the *median* day, not the mean. Reporting it as a mean understates by
+  `exp(sigma^2 / 2)`: 4% on the package fixture, more where days vary more. A
+  `mean_day` estimate is therefore about 4% higher than the old return value,
+  not identical to it.
+
+  The standard error scales with the expansion, so the CV is unchanged. It does
+  not carry the uncertainty in the variance component itself, which makes it
+  mildly optimistic; that is documented rather than hidden, and closing it needs
+  a variance method neither the delta nor the bootstrap path offers.
+
+  This does not make the GLMM usable by the total estimators. They take no
+  effort argument, and every design carries strata, so they always multiply
+  per-stratum effort by per-stratum CPUE while this function returns one
+  ungrouped row. Connecting the two needs stratified GLMM estimation, which is
+  a modelling change and is tracked separately.
+
 * `estimate_effort_aerial_glmm(boot = TRUE)` now returns `NA` confidence
   interval bounds when a multiplier's uncertainty was declared unknown, instead
   of an interval that quietly left it out.
