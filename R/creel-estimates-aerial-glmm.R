@@ -34,6 +34,15 @@
 #' @param nboot Integer. Number of bootstrap replicates when `boot = TRUE`.
 #'   Default `500L`.
 #' @param conf_level Numeric confidence level for the CI. Default `0.95`.
+#' @param target Character string giving the temporal basis of the returned
+#'   estimate. `"sampled_days"` (default) expands the fitted day to every day
+#'   the design sampled, matching what [estimate_effort()] returns for the same
+#'   design so the two are comparable. `"mean_day"` reports a single average
+#'   day, which is what this function returned before tidycreel 7.1.0.
+#'
+#'   Both are expectations, so both carry the retransformation factor described
+#'   under Details. Neither expands beyond the sampled days: expanded targets
+#'   are not supported for aerial designs by [estimate_effort()] either.
 #'
 #' @return A `creel_estimates` object with:
 #'   - `estimate`: total angler effort integrated over the fishing day
@@ -51,6 +60,19 @@
 #'     uncertainty, which is precisely the confusion `NA` exists to prevent.
 #'   - `n`: number of count observations used to fit the model
 #'   - `method`: `"aerial_glmm_total"`
+#'
+#' @details
+#' The fitted curve is a fixed-effects prediction: the day whose random
+#' intercept is zero. On a log link that is the *median* day rather than the
+#' mean one, so summing it across days would understate the total. Both targets
+#' therefore carry a factor of `exp(sigma^2 / 2)`, where `sigma^2` is the
+#' day-level intercept variance — 4% on the package's own fixture, and larger
+#' where days vary more.
+#'
+#' That factor treats `sigma^2` as known. The reported standard error scales
+#' with the expansion but does not carry the uncertainty in the variance
+#' component itself, so it is mildly optimistic; quantifying that would need a
+#' variance method neither the delta nor the bootstrap path offers today.
 #'
 #' @references
 #'   Askey, P.J., Ward, H., Godin, T., Boucher, M., and Northrup, S. (2018).
@@ -103,8 +125,10 @@ estimate_effort_aerial_glmm <- function(
   family = NULL,
   boot = FALSE,
   nboot = 500L,
-  conf_level = 0.95
+  conf_level = 0.95,
+  target = c("sampled_days", "mean_day")
 ) {
+  target <- match.arg(target)
   # 1. Guard: lme4 must be installed
   rlang::check_installed("lme4", reason = "to fit the GLMM aerial effort estimator")
 
@@ -200,7 +224,53 @@ estimate_effort_aerial_glmm <- function(
   # hours, yielding people-hours. The visibility correction (1/v) and the
   # angler-to-people ratio (a) convert that to angler-hours — multiplying by
   # h_open again would double-count the time dimension.
-  total_effort <- sum(mu) * scale_factor * a / v
+  mean_day_effort <- sum(mu) * scale_factor * a / v
+
+  # Expansion to the sampled days (GH #363).
+  #
+  # `mu` is built with the date column set to NA, so it is a FIXED-EFFECTS
+  # prediction: the curve for a day whose random intercept is zero. On a log
+  # link that is the MEDIAN day, not the mean one. Summing it across days would
+  # therefore understate the total, because E[exp(b)] = exp(sigma^2 / 2) > 1 for
+  # a mean-zero normal intercept. The factor is applied for both targets, since
+  # both report an expectation.
+  #
+  # Treating sigma^2 as known understates the variance slightly; the SE below
+  # scales by the same constant. That is a documented limitation, not an
+  # oversight -- propagating the uncertainty in the variance component itself
+  # would need a different variance method than either path offers today.
+  # Only a single random INTERCEPT has a constant retransformation. With a
+  # random slope the marginal correction is exp(Var(b0 + b1 t) / 2), which
+  # varies across the integration grid, and summing the two variances as if
+  # they were one constant -- ignoring their covariance -- would silently
+  # return a wrong total for a formula this function documents as supported.
+  # Refuse instead (GH #363).
+  vc <- as.data.frame(lme4::VarCorr(model))
+  intercept_rows <- is.na(vc$var2) & vc$var1 == "(Intercept)"
+  if (nrow(vc) != 1L || !all(intercept_rows)) {
+    cli::cli_abort(
+      c(
+        "Expanding to a total needs a single random intercept.",
+        "x" = "The fitted model has {nrow(vc)} random-effect term{?s}.",
+        "i" = paste0(
+          "A random slope makes the log-link retransformation vary across the ",
+          "day, so a single constant cannot express it."
+        ),
+        "i" = paste0(
+        "Both targets report an expectation and both need the correction, so ",
+        "neither is available here. Fit with a single random intercept ",
+        "({.code (1 | date)}) to expand."
+      )
+      ),
+      class = "creel_error_glmm_retransform_unsupported"
+    )
+  }
+  sigma2 <- sum(vc$vcov[intercept_rows], na.rm = TRUE)
+  retransform <- exp(sigma2 / 2)
+  n_sampled_days <- length(unique(counts_data[[design$date_col]]))
+  expansion <- retransform * if (identical(target, "sampled_days")) n_sampled_days else 1
+
+  total_effort <- mean_day_effort * expansion
 
   # 8. Variance: delta method (default) or bootstrap
   #
@@ -221,7 +291,8 @@ estimate_effort_aerial_glmm <- function(
 
   if (!boot) {
     v_mat <- as.matrix(stats::vcov(model)) # nolint: object_name_linter
-    grad <- scale_factor * a / v * colSums(mu * x_mat)
+    # Gradient of the EXPANDED total, so `expansion` rides along with it.
+    grad <- expansion * scale_factor * a / v * colSums(mu * x_mat)
     var_model <- as.numeric(t(grad) %*% v_mat %*% grad)
     # No na.rm: these are NA under the declared "none" opt-outs, and a sum
     # missing an unknown term is a lower bound, not an SE.
@@ -246,7 +317,7 @@ estimate_effort_aerial_glmm <- function(
 
     boot_fn <- function(m) {
       mu_b <- as.numeric(exp(x_mat %*% lme4::fixef(m)))
-      sum(mu_b) * scale_factor * a / v
+      sum(mu_b) * scale_factor * a / v * expansion
     }
 
     b <- lme4::bootMer(model, FUN = boot_fn, nsim = nboot, type = "parametric", use.u = FALSE)
@@ -368,6 +439,7 @@ estimate_effort_aerial_glmm <- function(
     variance_method = variance_method_str,
     design = design,
     conf_level = conf_level,
-    by_vars = NULL
+    by_vars = NULL,
+    effort_target = target
   )
 }

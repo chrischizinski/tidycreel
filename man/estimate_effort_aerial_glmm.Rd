@@ -11,7 +11,8 @@ estimate_effort_aerial_glmm(
   family = NULL,
   boot = FALSE,
   nboot = 500L,
-  conf_level = 0.95
+  conf_level = 0.95,
+  target = c("sampled_days", "mean_day")
 )
 }
 \arguments{
@@ -39,6 +40,16 @@ bootstrap confidence intervals instead of the delta method. Default
 Default \code{500L}.}
 
 \item{conf_level}{Numeric confidence level for the CI. Default \code{0.95}.}
+
+\item{target}{Character string giving the temporal basis of the returned
+estimate. \code{"sampled_days"} (default) expands the fitted day to every day
+the design sampled, matching what \code{\link[=estimate_effort]{estimate_effort()}} returns for the same
+design so the two are comparable. \code{"mean_day"} reports a single average
+day, which is what this function returned before tidycreel 7.1.0.
+
+Both are expectations, so both carry the retransformation factor described
+under Details. Neither expands beyond the sampled days: expanded targets
+are not supported for aerial designs by \code{\link[=estimate_effort]{estimate_effort()}} either.}
 }
 \value{
 A \code{creel_estimates} object with:
@@ -76,6 +87,18 @@ parametric bootstrap (\code{\link[lme4:bootMer]{lme4::bootMer()}}).
 }
 \details{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+The fitted curve is a fixed-effects prediction: the day whose random
+intercept is zero. On a log link that is the \emph{median} day rather than the
+mean one, so summing it across days would understate the total. Both targets
+therefore carry a factor of \code{exp(sigma^2 / 2)}, where \code{sigma^2} is the
+day-level intercept variance — 4\% on the package's own fixture, and larger
+where days vary more.
+
+That factor treats \code{sigma^2} as known. The reported standard error scales
+with the expansion but does not carry the uncertainty in the variance
+component itself, so it is mildly optimistic; quantifying that would need a
+variance method neither the delta nor the bootstrap path offers today.
 }
 \examples{
 \dontshow{if (rlang::is_installed("lme4")) withAutoprint(\{ # examplesIf}
