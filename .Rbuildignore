@@ -129,3 +129,4 @@
 ^TODO-.*\.md$
 ^cheatsheet$
 ^cran-comments\.md$
+^CRAN-SUBMISSION$
