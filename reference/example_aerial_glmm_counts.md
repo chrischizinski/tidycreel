@@ -127,12 +127,13 @@ print(result)
 #> Method: aerial_glmm_total
 #> Variance: delta
 #> Confidence level: 95%
-#> model: 32.98 (known, but se is `NA`)
+#> Effort target: sampled_days
+#> model: 412 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     379.    NA         NA        NA       NA       NA    48
+#> 1    4729.    NA         NA        NA       NA       NA    48
 ```

@@ -133,14 +133,15 @@ print(glmm_result)
 #> Method: aerial_glmm_total
 #> Variance: delta
 #> Confidence level: 95%
-#> model: 32.98 (known, but se is `NA`)
+#> Effort target: sampled_days
+#> model: 412 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     379.    NA         NA        NA       NA       NA    48
+#> 1    4729.    NA         NA        NA       NA       NA    48
 ```
 
 The model fits the diurnal count curve over all 48 observations, then
@@ -348,51 +349,41 @@ simple_result <- estimate_effort(design_daily)
 # GLMM result from above
 # glmm_result already computed
 
-# Side-by-side comparison.
-#
-# The two estimators do not report the same estimand, so the basis is stated
-# rather than left implicit. estimate_effort_aerial_glmm() integrates the fitted
-# diurnal curve over ONE day's open-water window; estimate_effort() returns a
-# total across the sampled days. Comparing them directly would attribute a
-# factor of n_days to the diurnal correction.
-n_days <- length(unique(example_aerial_glmm_counts$date))
-
+# Side-by-side comparison. Both estimators report a total across the sampled
+# days, so the two numbers answer the same question and the gap between them is
+# the diurnal correction.
 comparison <- data.frame(
-  method = c("GLMM", "Simple", "Simple"),
-  basis = c(
-    "one day, diurnally integrated",
-    "one day, mean count x h_open",
-    sprintf("%d sampled days", n_days)
-  ),
+  method = c("GLMM", "Simple"),
   estimate = c(
     glmm_result$estimates$estimate,
-    simple_result$estimates$estimate / n_days,
     simple_result$estimates$estimate
+  ),
+  target = c(
+    glmm_result$effort_target,
+    simple_result$effort_target
   ),
   stringsAsFactors = FALSE
 )
 
 print(comparison)
-#>   method                         basis  estimate
-#> 1   GLMM one day, diurnally integrated  378.5647
-#> 2 Simple  one day, mean count x h_open  424.3750
-#> 3 Simple               12 sampled days 5092.5000
+#>   method estimate       target
+#> 1   GLMM 4728.546 sampled_days
+#> 2 Simple 5092.500 sampled_days
 ```
 
-Compare the first two rows: both describe a single day, and they differ
-only by the diurnal correction. The GLMM estimate corrects for the fact
-that all flights occurred at fixed hours (7, 10, 13, 16); the simple
-estimator treats each count as representative of the full open-water
-window, which inflates or deflates the day depending on where the peak
-falls in the diurnal curve. Here it inflates, so the corrected estimate
-is the lower of the two.
+The `target` column is worth checking rather than assuming. Both
+estimators report `sampled_days`, so the two totals cover the same
+twelve days and the gap between them is the diurnal correction and
+nothing else. The GLMM corrects for the fact that all flights occurred
+at fixed hours (7, 10, 13, 16); the simple estimator treats each count
+as representative of the full open-water window, which inflates or
+deflates the total depending on where the peak falls in the diurnal
+curve. Here it inflates, so the corrected estimate is the lower of the
+two.
 
-The third row is the same simple estimator reported over all sampled
-days, and is shown to make the difference in basis explicit. It is not
-an alternative to the GLMM figure above it — it answers a different
-question. Neither estimator reports a confidence interval here, for the
-reason given under “Variance and Confidence Intervals” above: this
-design declares `visibility_correction = "none"`.
+Neither estimator reports a confidence interval here, for the reason
+given under “Variance and Confidence Intervals” above: this design
+declares `visibility_correction = "none"`.
 
 ## Custom Formula
 
@@ -417,14 +408,15 @@ print(glmm_linear)
 #> Method: aerial_glmm_total
 #> Variance: delta
 #> Confidence level: 95%
-#> model: 108.5 (known, but se is `NA`)
+#> Effort target: sampled_days
+#> model: 1302 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     768.    NA         NA        NA       NA       NA    48
+#> 1    9212.    NA         NA        NA       NA       NA    48
 ```
 
 A linear temporal term reduces flexibility but can improve stability

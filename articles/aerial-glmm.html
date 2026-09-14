@@ -227,14 +227,15 @@ random intercept:</p>
 <span><span class="co">#&gt; Method: aerial_glmm_total</span></span>
 <span><span class="co">#&gt; Variance: delta</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; model: 32.98 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; model: 412 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     379.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">4</span>729.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p>The model fits the diurnal count curve over all 48 observations, then
 numerically integrates the predicted mean count across the full
 open-water window (from 0.5 hours before the earliest flight to 0.5
@@ -428,48 +429,38 @@ large.</p>
 <span><span class="co"># GLMM result from above</span></span>
 <span><span class="co"># glmm_result already computed</span></span>
 <span></span>
-<span><span class="co"># Side-by-side comparison.</span></span>
-<span><span class="co">#</span></span>
-<span><span class="co"># The two estimators do not report the same estimand, so the basis is stated</span></span>
-<span><span class="co"># rather than left implicit. estimate_effort_aerial_glmm() integrates the fitted</span></span>
-<span><span class="co"># diurnal curve over ONE day's open-water window; estimate_effort() returns a</span></span>
-<span><span class="co"># total across the sampled days. Comparing them directly would attribute a</span></span>
-<span><span class="co"># factor of n_days to the diurnal correction.</span></span>
-<span><span class="va">n_days</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_aerial_glmm_counts</span><span class="op">$</span><span class="va">date</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
+<span><span class="co"># Side-by-side comparison. Both estimators report a total across the sampled</span></span>
+<span><span class="co"># days, so the two numbers answer the same question and the gap between them is</span></span>
+<span><span class="co"># the diurnal correction.</span></span>
 <span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GLMM"</span>, <span class="st">"Simple"</span>, <span class="st">"Simple"</span><span class="op">)</span>,</span>
-<span>  basis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="st">"one day, diurnally integrated"</span>,</span>
-<span>    <span class="st">"one day, mean count x h_open"</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%d sampled days"</span>, <span class="va">n_days</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GLMM"</span>, <span class="st">"Simple"</span><span class="op">)</span>,</span>
 <span>  estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="va">glmm_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span>,</span>
-<span>    <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">/</span> <span class="va">n_days</span>,</span>
 <span>    <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="va">glmm_result</span><span class="op">$</span><span class="va">effort_target</span>,</span>
+<span>    <span class="va">simple_result</span><span class="op">$</span><span class="va">effort_target</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   method                         basis  estimate</span></span>
-<span><span class="co">#&gt; 1   GLMM one day, diurnally integrated  378.5647</span></span>
-<span><span class="co">#&gt; 2 Simple  one day, mean count x h_open  424.3750</span></span>
-<span><span class="co">#&gt; 3 Simple               12 sampled days 5092.5000</span></span></code></pre></div>
-<p>Compare the first two rows: both describe a single day, and they
-differ only by the diurnal correction. The GLMM estimate corrects for
-the fact that all flights occurred at fixed hours (7, 10, 13, 16); the
-simple estimator treats each count as representative of the full
-open-water window, which inflates or deflates the day depending on where
-the peak falls in the diurnal curve. Here it inflates, so the corrected
-estimate is the lower of the two.</p>
-<p>The third row is the same simple estimator reported over all sampled
-days, and is shown to make the difference in basis explicit. It is not
-an alternative to the GLMM figure above it — it answers a different
-question. Neither estimator reports a confidence interval here, for the
-reason given under “Variance and Confidence Intervals” above: this
-design declares <code>visibility_correction = "none"</code>.</p>
+<span><span class="co">#&gt;   method estimate       target</span></span>
+<span><span class="co">#&gt; 1   GLMM 4728.546 sampled_days</span></span>
+<span><span class="co">#&gt; 2 Simple 5092.500 sampled_days</span></span></code></pre></div>
+<p>The <code>target</code> column is worth checking rather than
+assuming. Both estimators report <code>sampled_days</code>, so the two
+totals cover the same twelve days and the gap between them is the
+diurnal correction and nothing else. The GLMM corrects for the fact that
+all flights occurred at fixed hours (7, 10, 13, 16); the simple
+estimator treats each count as representative of the full open-water
+window, which inflates or deflates the total depending on where the peak
+falls in the diurnal curve. Here it inflates, so the corrected estimate
+is the lower of the two.</p>
+<p>Neither estimator reports a confidence interval here, for the reason
+given under “Variance and Confidence Intervals” above: this design
+declares <code>visibility_correction = "none"</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="custom-formula">Custom Formula<a class="anchor" aria-label="anchor" href="#custom-formula"></a>
@@ -494,14 +485,15 @@ data.</p>
 <span><span class="co">#&gt; Method: aerial_glmm_total</span></span>
 <span><span class="co">#&gt; Variance: delta</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; model: 108.5 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; model: 1302 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     768.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>212.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p>A linear temporal term reduces flexibility but can improve stability
 when only a few survey days are available. Use the default quadratic
 formula when you have 8 or more survey days.</p>

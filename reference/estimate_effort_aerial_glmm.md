@@ -26,7 +26,8 @@ estimate_effort_aerial_glmm(
   family = NULL,
   boot = FALSE,
   nboot = 500L,
-  conf_level = 0.95
+  conf_level = 0.95,
+  target = c("sampled_days", "mean_day")
 )
 ```
 
@@ -79,6 +80,22 @@ estimate_effort_aerial_glmm(
 
   Numeric confidence level for the CI. Default `0.95`.
 
+- target:
+
+  Character string giving the temporal basis of the returned estimate.
+  `"sampled_days"` (default) expands the fitted day to every day the
+  design sampled, matching what
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
+  returns for the same design so the two are comparable. `"mean_day"`
+  reports a single average day, which is what this function returned
+  before tidycreel 7.1.0.
+
+  Both are expectations, so both carry the retransformation factor
+  described under Details. Neither expands beyond the sampled days:
+  expanded targets are not supported for aerial designs by
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/reference/estimate_effort.md)
+  either.
+
 ## Value
 
 A `creel_estimates` object with:
@@ -108,6 +125,19 @@ A `creel_estimates` object with:
 ## Details
 
 **\[experimental\]**
+
+The fitted curve is a fixed-effects prediction: the day whose random
+intercept is zero. On a log link that is the *median* day rather than
+the mean one, so summing it across days would understate the total. Both
+targets therefore carry a factor of `exp(sigma^2 / 2)`, where `sigma^2`
+is the day-level intercept variance — 4% on the package's own fixture,
+and larger where days vary more.
+
+That factor treats `sigma^2` as known. The reported standard error
+scales with the expansion but does not carry the uncertainty in the
+variance component itself, so it is mildly optimistic; quantifying that
+would need a variance method neither the delta nor the bootstrap path
+offers today.
 
 ## References
 
@@ -171,14 +201,15 @@ print(result)
 #> Method: aerial_glmm_total
 #> Variance: delta
 #> Confidence level: 95%
-#> model: 32.98 (known, but se is `NA`)
+#> Effort target: sampled_days
+#> model: 412 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     379.    NA         NA        NA       NA       NA    48
+#> 1    4729.    NA         NA        NA       NA       NA    48
 
 # Bootstrap CIs. `nboot` is held low here so the example stays fast on a
 # check machine; use at least 1000 replicates for real inference. The block
@@ -204,11 +235,12 @@ print(result_boot)
 #> Method: aerial_glmm_total
 #> Variance: Bootstrap
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> model: NA (unknown, so se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     379.    NA         NA        NA       NA       NA    48
+#> 1    4729.    NA         NA        NA       NA       NA    48
 # }
 ```
