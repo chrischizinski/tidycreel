@@ -211,9 +211,18 @@ print(daily_effort)
 ```
 
 `preprocess_camera_timestamps()` sums all valid trip durations within each day
-and returns a data frame with `date` and `daily_effort_hours`. A warning is
-issued for any rows where `egress_time < ingress_time` (negative durations);
-those rows are set to `NA` and excluded from the daily sum.
+and returns a data frame with `date` and `daily_effort_hours`. Rows where
+`egress_time < ingress_time` (negative durations) are dropped from that sum, and
+a warning reports how many.
+
+Read that warning rather than dismissing it, because the returned data will not
+repeat it. A dropped pair does not make the day `NA`; it makes the day's total
+smaller. On the fixture above, flipping a single ingress/egress pair takes one
+day from 11 hours to 7.75 — a 30% undercount that arrives as an ordinary number,
+indistinguishable in `daily_effort_hours` from a day that genuinely saw less
+fishing. The warning is the only place the exclusion is visible, so treat a
+non-zero count as something to resolve in the source data before estimating,
+not as routine noise.
 
 Because `add_counts()` requires all design strata columns, merge the day type
 back in from the raw timestamps:

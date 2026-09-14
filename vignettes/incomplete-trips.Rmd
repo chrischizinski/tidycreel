@@ -193,11 +193,57 @@ weighted_mean(c(complete_cpue, incomplete_cpue)) # INVALID!
 
 tidycreel **never auto-pools** complete and incomplete trips:
 
-- Default behavior: use complete trips only
+- Unspecified (`use_trips = NULL`, the default): resolves to complete trips on
+  an access-point design. On a **roving** design (`interview_type = "roving"`)
+  leaving it unspecified instead selects the all-trip mean-of-ratios estimator
+  of Hoenig et al. (1997) — see "What the default does on a roving design"
+  below. Naming either `use_trips` or `estimator` suppresses that routing.
 - Explicit option: `use_trips = "incomplete"` for incomplete only (valid after passing validation)
 - Diagnostic mode: `use_trips = "diagnostic"` for side-by-side comparison (not pooling)
 
 There is no `use_trips = "both"` option because pooling is invalid.
+
+### What the default does on a roving design
+
+Leaving `use_trips` unspecified is not the same as asking for complete trips.
+
+On an access-point design the two are equivalent: an unspecified value resolves
+to complete trips. On a **roving** design they are not. When `interview_type =
+"roving"` and neither `use_trips` nor `estimator` is named, tidycreel selects the
+all-trip mean-of-ratios estimator of Hoenig et al. (1997), because that is the
+estimator the roving design calls for — not because complete trips were
+unavailable.
+
+The `method` field reports which one ran, so the difference is visible rather
+than silent:
+
+```{r roving-default}
+roving_design <- creel_design(
+  example_calendar,
+  date = date, strata = day_type,
+  survey_type = "instantaneous", h_open = 14
+) |>
+  add_counts(example_counts, count_col = effort_hours) |>
+  add_interviews(
+    example_interviews,
+    catch = catch_total, effort = hours_fished, n_anglers = n_anglers,
+    harvest = catch_kept, trip_status = trip_status,
+    trip_duration = trip_duration,
+    interview_type = "roving"
+  )
+
+# Unspecified: routed to all-trip mean-of-ratios
+estimate_catch_rate(roving_design)$method
+
+# Named explicitly: complete trips, ratio-of-means
+estimate_catch_rate(roving_design, use_trips = "complete")$method
+```
+
+The two answers differ, and on a roving design the routed one is usually the
+one you want. The point is that **"the default" is not a synonym for "complete
+trips"** on this design type. Wherever this vignette tells you to estimate from
+complete trips — including after a failed validation — name `use_trips =
+"complete"` rather than relying on the default to mean that.
 
 If you need to compare complete vs. incomplete estimates, use **diagnostic comparison mode** (see section below) or **validation workflow** (next section).
 
@@ -325,7 +371,8 @@ The validation plot shows a scatter plot with:
 - Revalidate if survey protocol or location changes
 
 **If FAILED:**
-- Stick with `use_trips = "complete"` (default)
+- Pass `use_trips = "complete"` **explicitly** — do not rely on the default
+  (see "What the default does on a roving design")
 - Do not use incomplete trip estimates
 - Investigate why estimates differ (time of day effects, early vs. late anglers)
 - Consider refining sampling protocol for future surveys
@@ -505,7 +552,9 @@ print(validation_fail)
 ```{r after_fail, eval=FALSE}
 # DO NOT use incomplete trips
 # Stick with default complete trip estimation
-cpue_complete <- estimate_catch_rate(design_biased) # Uses complete trips (default)
+# `design_biased` is an access-point design, so an unspecified `use_trips`
+# resolves to complete trips. On a roving design it would not -- name it.
+cpue_complete <- estimate_catch_rate(design_biased, use_trips = "complete")
 print(cpue_complete)
 
 # Investigate why estimates differ
