@@ -92,7 +92,14 @@ A `creel_estimates` object with:
 - `se_within`: always `NA_real_` — no Rasmussen within-day decomposition
   is performed for GLMM estimates
 
-- `ci_lower`, `ci_upper`: confidence interval bounds
+- `ci_lower`, `ci_upper`: confidence interval bounds, and `NA_real_`
+  whenever `se` is, on both the delta and bootstrap paths. If the
+  visibility correction or the angler-to-people ratio was declared
+  unknown, the total's uncertainty was never fully propagated, so no
+  unconditional interval exists to report. Reporting the remaining
+  spread would be an interval conditional on the unknown multiplier
+  being exact – indistinguishable from declaring it known with zero
+  uncertainty, which is precisely the confusion `NA` exists to prevent.
 
 - `n`: number of count observations used to fit the model
 
@@ -202,6 +209,6 @@ print(result_boot)
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     379.    NA         NA        NA     310.     439.    48
+#> 1     379.    NA         NA        NA       NA       NA    48
 # }
 ```

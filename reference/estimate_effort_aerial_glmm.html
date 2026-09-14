@@ -162,7 +162,14 @@ Default <code>500L</code>.</p></dd>
 <li><p><code>se_between</code>: same as <code>se</code> (fixed-effect SE component)</p></li>
 <li><p><code>se_within</code>: always <code>NA_real_</code> — no Rasmussen within-day decomposition
 is performed for GLMM estimates</p></li>
-<li><p><code>ci_lower</code>, <code>ci_upper</code>: confidence interval bounds</p></li>
+<li><p><code>ci_lower</code>, <code>ci_upper</code>: confidence interval bounds, and <code>NA_real_</code>
+whenever <code>se</code> is, on both the delta and bootstrap paths. If the
+visibility correction or the angler-to-people ratio was declared
+unknown, the total's uncertainty was never fully propagated, so no
+unconditional interval exists to report. Reporting the remaining
+spread would be an interval conditional on the unknown multiplier
+being exact – indistinguishable from declaring it known with zero
+uncertainty, which is precisely the confusion <code>NA</code> exists to prevent.</p></li>
 <li><p><code>n</code>: number of count observations used to fit the model</p></li>
 <li><p><code>method</code>: <code>"aerial_glmm_total"</code></p></li>
 </ul></div>
@@ -270,7 +277,7 @@ North American Journal of Fisheries Management, 38, 194-209.
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     379.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>     310.     439.    48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     379.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

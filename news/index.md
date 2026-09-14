@@ -2,7 +2,57 @@
 
 ## tidycreel (development version)
 
+### Breaking changes
+
+- `estimate_effort_aerial_glmm(boot = TRUE)` now returns `NA` confidence
+  interval bounds when a multiplier’s uncertainty was declared unknown,
+  instead of an interval that quietly left it out.
+
+  The total carries uncertainty from three places: the GLMM fit, the
+  visibility correction, and the angler-to-people ratio. Declaring one
+  unknown — `visibility_correction = "none"`, or an `NA`
+  `angler_ratio_se` — makes the bootstrap skip that component, because
+  there is nothing to draw from. The standard error already went `NA`
+  for precisely that reason. The interval did not: it was built
+  independently from the bootstrap quantiles and kept a value.
+
+  What that value described was an interval conditional on the unknown
+  multiplier being exact. Measured, with the same data and the same
+  seed: declaring the visibility correction unknown and declaring it
+  known with zero uncertainty produced bit-for-bit identical bounds of
+  `[322.920, 449.732]`, distinguished only by `se` being `NA` in one and
+  `33.98` in the other. “Never studied” was reported exactly as
+  “studied, and found no uncertainty” — the one equivalence this package
+  must never assert.
+
+  The interval now goes `NA` alongside the standard error. The delta
+  path already behaved this way, because its interval is derived from
+  the SE and inherited the `NA` for free; the bootstrap path built
+  quantiles independently and had to say so explicitly. The two paths
+  now agree.
+
+  The point estimate is untouched — this is a reporting change, not an
+  estimation one. To get an interval back, state the correction’s
+  uncertainty (`visibility_se`, `angler_ratio_se`). Declaring it known
+  and zero is a claim you can make deliberately; it is just no longer
+  what silence means.
+
 ### Documentation
+
+- The PDF reference manual builds again. Six characters across four help
+  pages had no LaTeX definition under `pdflatex` — tau, kappa, pi, a
+  combining macron, U+2212 minus and U+1D62 subscript i — and stopped
+  `R CMD check` from producing the manual at all. They are now `\eqn{}`
+  math.
+
+- The README names vignettes rather than linking to the published
+  article pages.
+
+  Those vignettes ship inside the tarball, so
+  [`vignette("bus-route-surveys")`](https://chrischizinski.com/tidycreel/articles/bus-route-surveys.md)
+  works from an installed package where a link to the website only works
+  with a network. It also means the README no longer depends on a
+  checking machine being able to reach the documentation host.
 
 - Every exported function now has a runnable example, and nothing is
   wrapped in `\dontrun{}`.

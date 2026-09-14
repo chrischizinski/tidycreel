@@ -67,8 +67,23 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
 <div class="section level3">
-<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
 <ul><li>
+<p><code>estimate_effort_aerial_glmm(boot = TRUE)</code> now returns <code>NA</code> confidence interval bounds when a multiplier’s uncertainty was declared unknown, instead of an interval that quietly left it out.</p>
+<p>The total carries uncertainty from three places: the GLMM fit, the visibility correction, and the angler-to-people ratio. Declaring one unknown — <code>visibility_correction = "none"</code>, or an <code>NA</code> <code>angler_ratio_se</code> — makes the bootstrap skip that component, because there is nothing to draw from. The standard error already went <code>NA</code> for precisely that reason. The interval did not: it was built independently from the bootstrap quantiles and kept a value.</p>
+<p>What that value described was an interval conditional on the unknown multiplier being exact. Measured, with the same data and the same seed: declaring the visibility correction unknown and declaring it known with zero uncertainty produced bit-for-bit identical bounds of <code>[322.920, 449.732]</code>, distinguished only by <code>se</code> being <code>NA</code> in one and <code>33.98</code> in the other. “Never studied” was reported exactly as “studied, and found no uncertainty” — the one equivalence this package must never assert.</p>
+<p>The interval now goes <code>NA</code> alongside the standard error. The delta path already behaved this way, because its interval is derived from the SE and inherited the <code>NA</code> for free; the bootstrap path built quantiles independently and had to say so explicitly. The two paths now agree.</p>
+<p>The point estimate is untouched — this is a reporting change, not an estimation one. To get an interval back, state the correction’s uncertainty (<code>visibility_se</code>, <code>angler_ratio_se</code>). Declaring it known and zero is a claim you can make deliberately; it is just no longer what silence means.</p>
+</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<ul><li><p>The PDF reference manual builds again. Six characters across four help pages had no LaTeX definition under <code>pdflatex</code> — tau, kappa, pi, a combining macron, U+2212 minus and U+1D62 subscript i — and stopped <code>R CMD check</code> from producing the manual at all. They are now <code>\eqn{}</code> math.</p></li>
+<li>
+<p>The README names vignettes rather than linking to the published article pages.</p>
+<p>Those vignettes ship inside the tarball, so <code><a href="../articles/bus-route-surveys.html">vignette("bus-route-surveys")</a></code> works from an installed package where a link to the website only works with a network. It also means the README no longer depends on a checking machine being able to reach the documentation host.</p>
+</li>
+<li>
 <p>Every exported function now has a runnable example, and nothing is wrapped in <code>\dontrun{}</code>.</p>
 <p>Seventeen exported functions had no example at all, and fourteen help pages wrapped theirs in <code>\dontrun{}</code>. Most of those wrappers were not protecting anything: six ran as written once unwrapped, and the rest referenced objects that were never defined — <code>design_a</code>, <code>my_effort</code>, <code>counts_df</code> — so the block was a sketch rather than an example. One demonstrated writing a CSV into the user’s working directory.</p>
 <p>Examples that genuinely need a suggested package are guarded with <code>@examplesIf rlang::is_installed(...)</code> rather than hidden: <code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> needs lme4 and <code><a href="../reference/summarize_by_county.html">summarize_by_county()</a></code> needs zipcodeR. All 125 example topics run, each in under five seconds.</p>
