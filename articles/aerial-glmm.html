@@ -256,6 +256,20 @@ and uses the SD of the resulting totals as the SE. This method can give
 more accurate CIs for skewed count distributions. Use it for final
 production analyses; the delta method is appropriate for exploratory
 work.</p>
+<p><strong>Whichever method you choose, this vignette’s design reports
+no interval at all.</strong> <code><a href="../reference/creel_design.html">creel_design()</a></code> above sets
+<code>visibility_correction = "none"</code>, which declares that no
+detection-probability study was done. That is a statement of ignorance,
+not a value of one: the correction’s uncertainty is unknown, so it
+cannot be propagated, and <code>se</code>, <code>ci_lower</code> and
+<code>ci_upper</code> all come back <code>NA</code> rather than
+pretending the unknown component contributes zero.</p>
+<p>To get an interval, say what the correction’s uncertainty is — pass a
+numeric <code>visibility_correction</code> together with
+<code>visibility_se</code> to <code><a href="../reference/creel_design.html">creel_design()</a></code>. Declaring it
+known and exactly certain (<code>visibility_se = 0</code>) is also a
+valid claim and does produce an interval; it is simply a different claim
+from having never measured it.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Bootstrap CIs — use nboot = 500 for production analyses</span></span>
 <span><span class="va">glmm_boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm</a></span><span class="op">(</span></span>
@@ -269,9 +283,19 @@ work.</p>
 <div class="section level2">
 <h2 id="downstream-estimation">Downstream Estimation<a class="anchor" aria-label="anchor" href="#downstream-estimation"></a>
 </h2>
-<p>GLMM effort feeds directly into the standard downstream estimators.
-Attach interview data and call <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> and
-<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> on the same design object.</p>
+<p><code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> returns an effort
+estimate; it does not write that estimate back into the design, and the
+total estimators do not take one as an argument —
+<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> derives effort itself, from the
+counts attached to whatever design it is given. So the GLMM figure is a
+standalone result to read, report, or combine by hand, not an input the
+rest of the pipeline picks up automatically.</p>
+<p>What the downstream estimators need is a design carrying interviews.
+The example below builds one from the complementary aerial interview
+data and estimates catch rate and total catch from it. Note that this is
+a <em>different</em> design object from the one fitted above: it uses
+<code>example_aerial_counts</code>, and its effort comes from the
+standard aerial path rather than from the GLMM.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Build a complementary design with matching interview dates</span></span>
 <span><span class="va">aerial_int_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_aerial_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
@@ -351,10 +375,14 @@ and <code><a href="../reference/estimate_total_catch.html">estimate_total_catch(
 multiplies is per <em>party</em>-hour while the count-derived effort is
 angler-hours. The warning is correct for this dataset and is left
 visible rather than suppressed: with one angler per party the total is
-right as printed, and with larger parties it is understated. Supply
-<code>n_anglers</code> from your own interview data, or state a constant
-party size (<code>n_anglers = 1</code>) when every interview really is a
-single angler, to remove the ambiguity.</p>
+right as printed, and with larger parties it is
+<strong>overstated</strong> — by the mean party size, because the
+party-hour rate is multiplied by an effort that already counts every
+angler. Supplying <code>n_anglers = 2</code> on this example halves the
+total, from 250.6 to 125.3. Supply <code>n_anglers</code> from your own
+interview data, or state a constant party size
+(<code>n_anglers = 1</code>) when every interview really is a single
+angler, to remove the ambiguity.</p>
 </div>
 <div class="section level2">
 <h2 id="comparison-simple-vs--glmm-estimator">Comparison: Simple vs. GLMM Estimator<a class="anchor" aria-label="anchor" href="#comparison-simple-vs--glmm-estimator"></a>
@@ -400,34 +428,48 @@ large.</p>
 <span><span class="co"># GLMM result from above</span></span>
 <span><span class="co"># glmm_result already computed</span></span>
 <span></span>
-<span><span class="co"># Side-by-side comparison</span></span>
-<span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    method <span class="op">=</span> <span class="st">"GLMM"</span>,</span>
-<span>    estimate <span class="op">=</span> <span class="va">glmm_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span>,</span>
-<span>    se <span class="op">=</span> <span class="va">glmm_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span>,</span>
-<span>    ci_lower <span class="op">=</span> <span class="va">glmm_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ci_lower</span>,</span>
-<span>    ci_upper <span class="op">=</span> <span class="va">glmm_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ci_upper</span>,</span>
-<span>    stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="co"># Side-by-side comparison.</span></span>
+<span><span class="co">#</span></span>
+<span><span class="co"># The two estimators do not report the same estimand, so the basis is stated</span></span>
+<span><span class="co"># rather than left implicit. estimate_effort_aerial_glmm() integrates the fitted</span></span>
+<span><span class="co"># diurnal curve over ONE day's open-water window; estimate_effort() returns a</span></span>
+<span><span class="co"># total across the sampled days. Comparing them directly would attribute a</span></span>
+<span><span class="co"># factor of n_days to the diurnal correction.</span></span>
+<span><span class="va">n_days</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_aerial_glmm_counts</span><span class="op">$</span><span class="va">date</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GLMM"</span>, <span class="st">"Simple"</span>, <span class="st">"Simple"</span><span class="op">)</span>,</span>
+<span>  basis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"one day, diurnally integrated"</span>,</span>
+<span>    <span class="st">"one day, mean count x h_open"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%d sampled days"</span>, <span class="va">n_days</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    method <span class="op">=</span> <span class="st">"Simple"</span>,</span>
-<span>    estimate <span class="op">=</span> <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span>,</span>
-<span>    se <span class="op">=</span> <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span>,</span>
-<span>    ci_lower <span class="op">=</span> <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ci_lower</span>,</span>
-<span>    ci_upper <span class="op">=</span> <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">ci_upper</span>,</span>
-<span>    stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span>  <span class="op">)</span></span>
+<span>  estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="va">glmm_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span>,</span>
+<span>    <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">/</span> <span class="va">n_days</span>,</span>
+<span>    <span class="va">simple_result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   method  estimate se ci_lower ci_upper</span></span>
-<span><span class="co">#&gt; 1   GLMM  378.5646 NA       NA       NA</span></span>
-<span><span class="co">#&gt; 2 Simple 5092.5000 NA       NA       NA</span></span></code></pre></div>
-<p>The GLMM estimate corrects for the fact that all flights occurred at
-fixed hours (7, 10, 13, 16). The simple estimator treats each count as
-representative of the full open-water window, which inflates or deflates
-the total depending on where the peak falls in the diurnal curve.</p>
+<span><span class="co">#&gt;   method                         basis  estimate</span></span>
+<span><span class="co">#&gt; 1   GLMM one day, diurnally integrated  378.5647</span></span>
+<span><span class="co">#&gt; 2 Simple  one day, mean count x h_open  424.3750</span></span>
+<span><span class="co">#&gt; 3 Simple               12 sampled days 5092.5000</span></span></code></pre></div>
+<p>Compare the first two rows: both describe a single day, and they
+differ only by the diurnal correction. The GLMM estimate corrects for
+the fact that all flights occurred at fixed hours (7, 10, 13, 16); the
+simple estimator treats each count as representative of the full
+open-water window, which inflates or deflates the day depending on where
+the peak falls in the diurnal curve. Here it inflates, so the corrected
+estimate is the lower of the two.</p>
+<p>The third row is the same simple estimator reported over all sampled
+days, and is shown to make the difference in basis explicit. It is not
+an alternative to the GLMM figure above it — it answers a different
+question. Neither estimator reports a confidence interval here, for the
+reason given under “Variance and Confidence Intervals” above: this
+design declares <code>visibility_correction = "none"</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="custom-formula">Custom Formula<a class="anchor" aria-label="anchor" href="#custom-formula"></a>

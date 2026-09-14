@@ -335,7 +335,13 @@ you may never pool.</p>
 <p>tidycreel <strong>never auto-pools</strong> complete and incomplete
 trips:</p>
 <ul>
-<li>Default behavior: use complete trips only</li>
+<li>Unspecified (<code>use_trips = NULL</code>, the default): resolves
+to complete trips on an access-point design. On a
+<strong>roving</strong> design (<code>interview_type = "roving"</code>)
+leaving it unspecified instead selects the all-trip mean-of-ratios
+estimator of Hoenig et al. (1997) — see “What the default does on a
+roving design” below. Naming either <code>use_trips</code> or
+<code>estimator</code> suppresses that routing.</li>
 <li>Explicit option: <code>use_trips = "incomplete"</code> for
 incomplete only (valid after passing validation)</li>
 <li>Diagnostic mode: <code>use_trips = "diagnostic"</code> for
@@ -343,6 +349,73 @@ side-by-side comparison (not pooling)</li>
 </ul>
 <p>There is no <code>use_trips = "both"</code> option because pooling is
 invalid.</p>
+<p>“Pooling” here means one ratio-of-means fitted over complete and
+incomplete trips together, which is invalid because the two have
+different sampling probabilities. The roving route described above is
+not that: all-trip mean-of-ratios treats each contact’s catch rate as
+its own observation, which is what makes it valid over trips of unknown
+duration. It does use every contact, so if you need complete trips
+specifically, name them — the absence of a <code>"both"</code> option is
+not on its own a guarantee that you are getting complete-trip-only
+estimates.</p>
+</div>
+<div class="section level3">
+<h3 id="what-the-default-does-on-a-roving-design">What the default does on a roving design<a class="anchor" aria-label="anchor" href="#what-the-default-does-on-a-roving-design"></a>
+</h3>
+<p>Leaving <code>use_trips</code> unspecified is not the same as asking
+for complete trips.</p>
+<p>On an access-point design the two are equivalent: an unspecified
+value resolves to complete trips. On a <strong>roving</strong> design
+they are not. When <code>interview_type = "roving"</code> and neither
+<code>use_trips</code> nor <code>estimator</code> is named, tidycreel
+selects the all-trip mean-of-ratios estimator of Hoenig et al. (1997),
+because that is the estimator the roving design calls for — not because
+complete trips were unavailable.</p>
+<p>The <code>method</code> field reports which one ran, so the
+difference is visible rather than silent:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">roving_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
+<span>  <span class="va">example_calendar</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>,</span>
+<span>  survey_type <span class="op">=</span> <span class="st">"instantaneous"</span>, h_open <span class="op">=</span> <span class="fl">14</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">example_counts</span>, count_col <span class="op">=</span> <span class="va">effort_hours</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
+<span>    <span class="va">example_interviews</span>,</span>
+<span>    catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>, n_anglers <span class="op">=</span> <span class="va">n_anglers</span>,</span>
+<span>    harvest <span class="op">=</span> <span class="va">catch_kept</span>, trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>    trip_duration <span class="op">=</span> <span class="va">trip_duration</span>,</span>
+<span>    interview_type <span class="op">=</span> <span class="st">"roving"</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
+<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span></span>
+<span></span>
+<span><span class="co"># Unspecified: routed to all-trip mean-of-ratios</span></span>
+<span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">roving_design</span><span class="op">)</span><span class="op">$</span><span class="va">method</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Roving design: using all 22 interviews for CPUE via MOR [auto]</span></span>
+<span><span class="co">#&gt;   (17 complete, 5 incomplete)</span></span>
+<span><span class="co">#&gt;   Override with `use_trips = 'complete'` for access-point estimation.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> MOR truncation: 0 trips excluded (all &gt;= 0.5 hours)</span></span>
+<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
+<span><span class="co">#&gt; [1] "mean-of-ratios-cpue"</span></span>
+<span></span>
+<span><span class="co"># Named explicitly: complete trips, ratio-of-means</span></span>
+<span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">roving_design</span>, use_trips <span class="op">=</span> <span class="st">"complete"</span><span class="op">)</span><span class="op">$</span><span class="va">method</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews)</span></span>
+<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
+<span><span class="co">#&gt; [1] "ratio-of-means-cpue"</span></span></code></pre></div>
+<p>The two answers differ, and on a roving design the routed one is
+usually the one you want. The point is that <strong>“the default” is not
+a synonym for “complete trips”</strong> on this design type. Wherever
+this vignette tells you to estimate from complete trips — including
+after a failed validation — name <code>use_trips = "complete"</code>
+rather than relying on the default to mean that.</p>
 <p>If you need to compare complete vs. incomplete estimates, use
 <strong>diagnostic comparison mode</strong> (see section below) or
 <strong>validation workflow</strong> (next section).</p>
@@ -356,7 +429,7 @@ sufficiently with complete-trip estimates. The workflow is:</p>
 <div class="section level3">
 <h3 id="step-1-load-data-with-both-trip-types">Step 1: Load Data with Both Trip Types<a class="anchor" aria-label="anchor" href="#step-1-load-data-with-both-trip-types"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Your survey data should have trip_status field</span></span>
@@ -371,7 +444,7 @@ sufficiently with complete-trip estimates. The workflow is:</p>
 <div class="section level3">
 <h3 id="step-2-create-design-and-attach-data">Step 2: Create Design and Attach Data<a class="anchor" aria-label="anchor" href="#step-2-create-design-and-attach-data"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">your_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">your_counts</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">your_interviews</span>,</span>
@@ -384,7 +457,7 @@ sufficiently with complete-trip estimates. The workflow is:</p>
 <div class="section level3">
 <h3 id="step-3-run-tost-equivalence-testing">Step 3: Run TOST Equivalence Testing<a class="anchor" aria-label="anchor" href="#step-3-run-tost-equivalence-testing"></a>
 </h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Validate incomplete trips using TOST</span></span>
 <span><span class="va">validation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
@@ -446,7 +519,7 @@ trip estimates. Stick with complete trips only (Pollock et al. 1994).</code></pr
 <div class="section level3">
 <h3 id="step-5-view-validation-plot">Step 5: View Validation Plot<a class="anchor" aria-label="anchor" href="#step-5-view-validation-plot"></a>
 </h3>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Print method automatically shows plot</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">validation</span><span class="op">)</span> <span class="co"># Plot appears after text output</span></span>
 <span></span>
@@ -469,11 +542,12 @@ trip estimates. Stick with complete trips only (Pollock et al. 1994).</code></pr
 <code>use_trips = "diagnostic"</code> to compare estimates - Document
 validation results in your analysis notes - Revalidate if survey
 protocol or location changes</p>
-<p><strong>If FAILED:</strong> - Stick with
-<code>use_trips = "complete"</code> (default) - Do not use incomplete
-trip estimates - Investigate why estimates differ (time of day effects,
-early vs. late anglers) - Consider refining sampling protocol for future
-surveys</p>
+<p><strong>If FAILED:</strong> - Pass
+<code>use_trips = "complete"</code> <strong>explicitly</strong> — do not
+rely on the default (see “What the default does on a roving design”) -
+Do not use incomplete trip estimates - Investigate why estimates differ
+(time of day effects, early vs. late anglers) - Consider refining
+sampling protocol for future surveys</p>
 </div>
 </div>
 <div class="section level2">
@@ -481,7 +555,7 @@ surveys</p>
 </h2>
 <p>Here’s a realistic scenario where incomplete trip validation passes
 because catch rates are stationary throughout the day.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Simulate data where catch rates are similar for complete vs incomplete</span></span>
@@ -583,7 +657,7 @@ dataset</li>
 <li>Plot shows estimates within equivalence bounds</li>
 </ul>
 <p><strong>Next steps after passing validation:</strong></p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Now safe to use incomplete trips</span></span>
 <span><span class="va">cpue_incomplete</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>, use_trips <span class="op">=</span> <span class="st">"incomplete"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cpue_incomplete</span><span class="op">)</span></span>
@@ -598,7 +672,7 @@ dataset</li>
 <p>Here’s a realistic scenario where validation fails because
 early-morning anglers catch fish at higher rates than afternoon
 anglers.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span></span>
@@ -699,10 +773,12 @@ CPUE (~2.0)</li>
 <li>Plot shows estimates outside equivalence bounds (red)</li>
 </ul>
 <p><strong>Correct action after failing validation:</strong></p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># DO NOT use incomplete trips</span></span>
 <span><span class="co"># Stick with default complete trip estimation</span></span>
-<span><span class="va">cpue_complete</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_biased</span><span class="op">)</span> <span class="co"># Uses complete trips (default)</span></span>
+<span><span class="co"># `design_biased` is an access-point design, so an unspecified `use_trips`</span></span>
+<span><span class="co"># resolves to complete trips. On a roving design it would not -- name it.</span></span>
+<span><span class="va">cpue_complete</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_biased</span>, use_trips <span class="op">=</span> <span class="st">"complete"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cpue_complete</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Investigate why estimates differ</span></span>
@@ -718,7 +794,7 @@ CPUE (~2.0)</li>
 <p>For research purposes or to understand your survey dynamics, use
 <strong>diagnostic comparison mode</strong> to see complete and
 incomplete estimates side-by-side without statistical testing.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Compare complete vs incomplete estimates</span></span>
 <span><span class="va">cpue_diagnostic</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
@@ -781,7 +857,7 @@ use <code><a href="../reference/validate_incomplete_trips.html">validate_incompl
 </h2>
 <p>When estimating CPUE by strata (e.g., by day type), validate within
 each group:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Validate with grouping</span></span>
 <span><span class="va">validation_grouped</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
@@ -857,7 +933,7 @@ estimate).</p>
 <p>The default equivalence threshold is <strong>±20%</strong> of the
 complete trip estimate, appropriate for ecological field data. You can
 customize this:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Use stricter threshold (±15%)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidycreel.equivalence_threshold <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span></span>
 <span><span class="va">validation_strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips</a></span><span class="op">(</span><span class="va">design</span>,</span>
@@ -890,7 +966,7 @@ specific application.</p>
 inflate variance and bias estimates. tidycreel automatically truncates
 short incomplete trips using the Hoenig et al. (1997) recommended
 threshold:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default: truncate incomplete trips &lt;0.5 hours (30 minutes)</span></span>
 <span><span class="va">cpue_incomplete</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  use_trips <span class="op">=</span> <span class="st">"incomplete"</span>,</span>

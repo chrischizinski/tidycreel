@@ -311,10 +311,19 @@ effort.</p>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">8</span>918    <span style="color: #BB0000;">NA</span>       658.         0       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16</span></span></code></pre></div>
 <p>The <code>estimate</code> column is the projected total angler-hours
-over the full survey period. The <code>se</code> and
-<code>se_between</code> components quantify between-day variability in
-the instantaneous counts, and <code>ci_lower</code> /
-<code>ci_upper</code> give the 95% confidence interval.</p>
+over the full survey period, and <code>se_between</code> quantifies
+between-day variability in the instantaneous counts.</p>
+<p><code>se</code>, <code>ci_lower</code> and <code>ci_upper</code> are
+<code>NA</code>, and that is the correct output for this design rather
+than a gap in it. <code><a href="../reference/creel_design.html">creel_design()</a></code> above was given
+<code>visibility_correction = "none"</code>, which declares that no
+detection study was done. The between-day component is known, but a
+component of the total’s uncertainty is not, and a standard error that
+silently omitted it would describe a survey more precise than this one.
+<code>NA</code> says the uncertainty was never propagated;
+<code>0</code> would say it was measured and found to be nothing. The
+next section supplies a correction <em>and</em> its standard error, and
+the interval appears.</p>
 </div>
 <div class="section level2">
 <h2 id="visibility-correction">Visibility Correction<a class="anchor" aria-label="anchor" href="#visibility-correction"></a>

@@ -39,6 +39,47 @@
 
 ### Documentation
 
+- Four vignettes described behaviour the package does not have. Each was
+  found by running the vignette and reading its own output, not by
+  reading the source.
+
+  `incomplete-trips.Rmd` told a reader whose validation had just
+  **failed** to “stick with `use_trips = "complete"` (default)”. The
+  default is `NULL`, and on a roving design — which is what that
+  vignette is about — an unspecified `use_trips` selects the all-trip
+  mean-of-ratios estimator of Hoenig et al. (1997), not complete trips.
+  Following the parenthetical produced the estimator the line above it
+  warned against. Measured on the example data, catch rate differs by
+  30% between the two (`mean-of-ratios-cpue` at 1.257 against
+  `ratio-of-means-cpue` at 0.967). The same claim appeared twice more,
+  once in a code comment. All three are corrected, and a new section
+  demonstrates the routing with a runnable example rather than asserting
+  it.
+
+  `aerial-glmm.Rmd` compared a one-day GLMM total against a twelve-day
+  total in a table headed “side-by-side comparison”, and attributed the
+  resulting 13.5x gap to the diurnal correction. The table now states
+  each row’s basis, and the like-for-like rows differ by 10.8%, which is
+  the diurnal correction the prose actually describes. Its “Downstream
+  Estimation” section also claimed that GLMM effort “feeds directly into
+  the standard downstream estimators”; it does not —
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
+  takes no effort argument and derives effort itself, so the section now
+  says what the code does.
+
+  `aerial-surveys.Rmd` explained that `ci_lower` / `ci_upper` “give the
+  95% confidence interval” directly beneath output where both were `NA`,
+  because the design declares `visibility_correction = "none"`. Both
+  aerial vignettes now explain why an undeclared correction yields `NA`
+  rather than a number, and where to supply `visibility_se` to get an
+  interval.
+
+  `camera-surveys.Rmd` said negative-duration rows are “set to `NA` and
+  excluded from the daily sum”. They are excluded, but the day reports a
+  smaller number rather than `NA` — on the package fixture one flipped
+  ingress/egress pair takes a day from 11 hours to 7.75 — so the warning
+  is the only place the exclusion is visible.
+
 - The PDF reference manual builds again. Six characters across four help
   pages had no LaTeX definition under `pdflatex` — tau, kappa, pi, a
   combining macron, U+2212 minus and U+1D62 subscript i — and stopped

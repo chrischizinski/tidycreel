@@ -165,6 +165,22 @@ the resulting totals as the SE. This method can give more accurate CIs
 for skewed count distributions. Use it for final production analyses;
 the delta method is appropriate for exploratory work.
 
+**Whichever method you choose, this vignette’s design reports no
+interval at all.**
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
+above sets `visibility_correction = "none"`, which declares that no
+detection-probability study was done. That is a statement of ignorance,
+not a value of one: the correction’s uncertainty is unknown, so it
+cannot be propagated, and `se`, `ci_lower` and `ci_upper` all come back
+`NA` rather than pretending the unknown component contributes zero.
+
+To get an interval, say what the correction’s uncertainty is — pass a
+numeric `visibility_correction` together with `visibility_se` to
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md).
+Declaring it known and exactly certain (`visibility_se = 0`) is also a
+valid claim and does produce an interval; it is simply a different claim
+from having never measured it.
+
 ``` r
 
 # Bootstrap CIs — use nboot = 500 for production analyses
@@ -179,12 +195,21 @@ print(glmm_boot)
 
 ## Downstream Estimation
 
-GLMM effort feeds directly into the standard downstream estimators.
-Attach interview data and call
-[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_catch_rate.md)
-and
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/reference/estimate_effort_aerial_glmm.md)
+returns an effort estimate; it does not write that estimate back into
+the design, and the total estimators do not take one as an argument —
 [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md)
-on the same design object.
+derives effort itself, from the counts attached to whatever design it is
+given. So the GLMM figure is a standalone result to read, report, or
+combine by hand, not an input the rest of the pipeline picks up
+automatically.
+
+What the downstream estimators need is a design carrying interviews. The
+example below builds one from the complementary aerial interview data
+and estimates catch rate and total catch from it. Note that this is a
+*different* design object from the one fitted above: it uses
+`example_aerial_counts`, and its effort comes from the standard aerial
+path rather than from the GLMM.
 
 ``` r
 
@@ -270,9 +295,12 @@ warns that the CPUE it multiplies is per *party*-hour while the
 count-derived effort is angler-hours. The warning is correct for this
 dataset and is left visible rather than suppressed: with one angler per
 party the total is right as printed, and with larger parties it is
-understated. Supply `n_anglers` from your own interview data, or state a
-constant party size (`n_anglers = 1`) when every interview really is a
-single angler, to remove the ambiguity.
+**overstated** — by the mean party size, because the party-hour rate is
+multiplied by an effort that already counts every angler. Supplying
+`n_anglers = 2` on this example halves the total, from 250.6 to 125.3.
+Supply `n_anglers` from your own interview data, or state a constant
+party size (`n_anglers = 1`) when every interview really is a single
+angler, to remove the ambiguity.
 
 ## Comparison: Simple vs. GLMM Estimator
 
@@ -320,36 +348,51 @@ simple_result <- estimate_effort(design_daily)
 # GLMM result from above
 # glmm_result already computed
 
-# Side-by-side comparison
-comparison <- rbind(
-  data.frame(
-    method = "GLMM",
-    estimate = glmm_result$estimates$estimate,
-    se = glmm_result$estimates$se,
-    ci_lower = glmm_result$estimates$ci_lower,
-    ci_upper = glmm_result$estimates$ci_upper,
-    stringsAsFactors = FALSE
+# Side-by-side comparison.
+#
+# The two estimators do not report the same estimand, so the basis is stated
+# rather than left implicit. estimate_effort_aerial_glmm() integrates the fitted
+# diurnal curve over ONE day's open-water window; estimate_effort() returns a
+# total across the sampled days. Comparing them directly would attribute a
+# factor of n_days to the diurnal correction.
+n_days <- length(unique(example_aerial_glmm_counts$date))
+
+comparison <- data.frame(
+  method = c("GLMM", "Simple", "Simple"),
+  basis = c(
+    "one day, diurnally integrated",
+    "one day, mean count x h_open",
+    sprintf("%d sampled days", n_days)
   ),
-  data.frame(
-    method = "Simple",
-    estimate = simple_result$estimates$estimate,
-    se = simple_result$estimates$se,
-    ci_lower = simple_result$estimates$ci_lower,
-    ci_upper = simple_result$estimates$ci_upper,
-    stringsAsFactors = FALSE
-  )
+  estimate = c(
+    glmm_result$estimates$estimate,
+    simple_result$estimates$estimate / n_days,
+    simple_result$estimates$estimate
+  ),
+  stringsAsFactors = FALSE
 )
 
 print(comparison)
-#>   method  estimate se ci_lower ci_upper
-#> 1   GLMM  378.5646 NA       NA       NA
-#> 2 Simple 5092.5000 NA       NA       NA
+#>   method                         basis  estimate
+#> 1   GLMM one day, diurnally integrated  378.5647
+#> 2 Simple  one day, mean count x h_open  424.3750
+#> 3 Simple               12 sampled days 5092.5000
 ```
 
-The GLMM estimate corrects for the fact that all flights occurred at
-fixed hours (7, 10, 13, 16). The simple estimator treats each count as
-representative of the full open-water window, which inflates or deflates
-the total depending on where the peak falls in the diurnal curve.
+Compare the first two rows: both describe a single day, and they differ
+only by the diurnal correction. The GLMM estimate corrects for the fact
+that all flights occurred at fixed hours (7, 10, 13, 16); the simple
+estimator treats each count as representative of the full open-water
+window, which inflates or deflates the day depending on where the peak
+falls in the diurnal curve. Here it inflates, so the corrected estimate
+is the lower of the two.
+
+The third row is the same simple estimator reported over all sampled
+days, and is shown to make the difference in basis explicit. It is not
+an alternative to the GLMM figure above it — it answers a different
+question. Neither estimator reports a confidence interval here, for the
+reason given under “Variance and Confidence Intervals” above: this
+design declares `visibility_correction = "none"`.
 
 ## Custom Formula
 

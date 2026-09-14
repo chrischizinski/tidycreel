@@ -218,9 +218,19 @@ print(effort)
 ```
 
 The `estimate` column is the projected total angler-hours over the full
-survey period. The `se` and `se_between` components quantify between-day
-variability in the instantaneous counts, and `ci_lower` / `ci_upper`
-give the 95% confidence interval.
+survey period, and `se_between` quantifies between-day variability in
+the instantaneous counts.
+
+`se`, `ci_lower` and `ci_upper` are `NA`, and that is the correct output
+for this design rather than a gap in it.
+[`creel_design()`](https://chrischizinski.com/tidycreel/reference/creel_design.md)
+above was given `visibility_correction = "none"`, which declares that no
+detection study was done. The between-day component is known, but a
+component of the total’s uncertainty is not, and a standard error that
+silently omitted it would describe a survey more precise than this one.
+`NA` says the uncertainty was never propagated; `0` would say it was
+measured and found to be nothing. The next section supplies a correction
+*and* its standard error, and the interval appears.
 
 ## Visibility Correction
 

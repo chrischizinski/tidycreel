@@ -386,10 +386,18 @@ pairs into daily effort hours before calling
 <span><span class="co">#&gt; 4 2024-06-09              12.75</span></span></code></pre></div>
 <p><code><a href="../reference/preprocess_camera_timestamps.html">preprocess_camera_timestamps()</a></code> sums all valid trip
 durations within each day and returns a data frame with
-<code>date</code> and <code>daily_effort_hours</code>. A warning is
-issued for any rows where <code>egress_time &lt; ingress_time</code>
-(negative durations); those rows are set to <code>NA</code> and excluded
-from the daily sum.</p>
+<code>date</code> and <code>daily_effort_hours</code>. Rows where
+<code>egress_time &lt; ingress_time</code> (negative durations) are
+dropped from that sum, and a warning reports how many.</p>
+<p>Read that warning rather than dismissing it, because the returned
+data will not repeat it. A dropped pair does not make the day
+<code>NA</code>; it makes the day’s total smaller. On the fixture above,
+flipping a single ingress/egress pair takes one day from 11 hours to
+7.75 — a 30% undercount that arrives as an ordinary number,
+indistinguishable in <code>daily_effort_hours</code> from a day that
+genuinely saw less fishing. The warning is the only place the exclusion
+is visible, so treat a non-zero count as something to resolve in the
+source data before estimating, not as routine noise.</p>
 <p>Because <code><a href="../reference/add_counts.html">add_counts()</a></code> requires all design strata columns,
 merge the day type back in from the raw timestamps:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
