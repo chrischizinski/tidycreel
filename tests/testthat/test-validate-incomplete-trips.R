@@ -597,3 +597,23 @@ test_that("TOST-DEGEN-03: df <= 0 (n=1 group) warns and returns NA equivalence_p
   )
   expect_true(is.na(result$equivalence_passed))
 })
+
+test_that("printing a validation leaves the caller's plot margins as they were", {
+  # print() draws a scatter plot and widens the margins to fit it. CRAN policy
+  # (and the 7.0.0 review) require that the user's par() is restored afterwards;
+  # before the fix, every print left mar at c(5, 5, 4, 2) + 0.1 for the rest of
+  # the session.
+  design <- make_validation_design(n_complete = 50, n_incomplete = 50)
+  result <- validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
+
+  pdf_file <- tempfile(fileext = ".pdf")
+  grDevices::pdf(pdf_file)
+  on.exit({
+    grDevices::dev.off()
+    unlink(pdf_file)
+  }, add = TRUE)
+
+  graphics::par(mar = c(1, 1, 1, 1))
+  utils::capture.output(print(result))
+  expect_equal(graphics::par("mar"), c(1, 1, 1, 1))
+})

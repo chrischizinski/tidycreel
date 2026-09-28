@@ -67,6 +67,15 @@
 
 ## Documentation
 
+* Examples no longer contain commented-out code. The `estimate_total_catch()`,
+  `estimate_total_harvest()` and `estimate_harvest_rate()` examples now run the
+  lines they previously only showed, and `get_site_contributions()`, which had
+  no runnable example, now has one. CRAN's review of 7.0.0 asked for this.
+
+* The `validate_incomplete_trips()` example and the incomplete-trips vignette
+  restore the equivalence-threshold option they change.
+
+
 * Four vignettes described behaviour the package does not have. Each was found by
   running the vignette and reading its own output, not by reading the source.
 
@@ -136,6 +145,12 @@
   maintainer as copyright holder. The README shows `install.packages()`.
 
 ## Bug fixes
+
+* Printing a `validate_incomplete_trips()` result no longer leaves the plot
+  margins changed for the rest of the session. `print()` widened `par(mar)` to
+  draw its scatter plot and never put it back; it now restores the caller's
+  setting on exit.
+
 
 * `simulate_creel_data()` and `simulate_creel_catch()` no longer leave the
   caller's random number stream reset.

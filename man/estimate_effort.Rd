@@ -170,8 +170,7 @@ print(result)
 result_grouped <- estimate_effort(design_with_counts, by = day_type)
 print(result_grouped)
 
-# Note: Multiple grouping variables are supported if present in the data
-# For example: by = c(day_type, location)
+# Several grouping variables can be combined in `by` when the data carry them
 
 # Custom confidence level
 result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)

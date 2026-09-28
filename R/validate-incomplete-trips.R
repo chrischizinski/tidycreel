@@ -121,12 +121,13 @@
 #' )
 #' print(result_grouped)
 #'
-#' # Custom equivalence threshold
-#' options(tidycreel.equivalence_threshold = 0.15) # 15% threshold
+#' # Custom equivalence threshold, restoring the previous option afterwards
+#' old_opts <- options(tidycreel.equivalence_threshold = 0.15) # 15% threshold
 #' result_custom <- validate_incomplete_trips(design_with_interviews,
 #'   catch = catch_total,
 #'   effort = hours_fished
 #' )
+#' options(old_opts)
 #' @family "Reporting & Diagnostics"
 #' @export
 validate_incomplete_trips <- function(
@@ -698,8 +699,9 @@ print.creel_tost_validation <- function(x, ...) {
   # Generate scatter plot using plot_data
   plot_data <- x$plot_data
 
-  # Set up plot margins and layout
-  graphics::par(mar = c(5, 5, 4, 2) + 0.1)
+  # Set up plot margins, restoring the caller's settings on exit
+  old_par <- graphics::par(mar = c(5, 5, 4, 2) + 0.1)
+  on.exit(graphics::par(old_par), add = TRUE)
 
   # Determine axis ranges (include CI bounds)
   x_range <- range(

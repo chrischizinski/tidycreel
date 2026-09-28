@@ -1,3 +1,25 @@
+## Resubmission
+
+This is a resubmission. The review of 7.0.0 asked for two changes, both made:
+
+- **Commented-out code in examples.** Ten commented-out lines across four help
+  pages (`estimate_harvest_rate`, `estimate_total_catch`,
+  `estimate_total_harvest`, `get_site_contributions`) are now executed code.
+  `get_site_contributions()` had no runnable example at all and now has one
+  built on a small bus-route design; the note below that every exported
+  function has a runnable example was not true of the previous submission and
+  is true now.
+- **Changing the user's `par()` / `options()`.** `print()` for the
+  `validate_incomplete_trips()` result set `par(mar = ...)` without restoring
+  it; it now saves the old value and calls `on.exit()` on the next line. The
+  `validate_incomplete_trips()` example, and a vignette chunk, set an option
+  and now restore it with `old <- options(...)` / `options(old)`. The package
+  never calls `setwd()`.
+
+A test now scans every example for commented-out code and every function for
+`par()`, `options()`, `setwd()`, `Sys.setenv()` or `Sys.setlocale()` calls not
+followed by `on.exit()`, so neither can recur unnoticed.
+
 ## Submission
 
 tidycreel 7.0.0 — first CRAN submission.

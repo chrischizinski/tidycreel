@@ -279,15 +279,18 @@ print(total_catch)
 # Compare components
 effort_est <- estimate_effort(design)
 cpue_est <- estimate_catch_rate(design)
-# total_catch$estimates$estimate approximately equals effort_est * cpue_est
+# The total is close to, but not exactly, effort times CPUE
+c(
+  total = total_catch$estimates$estimate,
+  effort_x_cpue = effort_est$estimates$estimate * cpue_est$estimates$estimate
+)
 
-# Note: Grouped estimation requires n >= 10 per group
-# Check sample sizes before grouping:
-# table(design$interviews$day_type)
-# total_catch_by_type <- estimate_total_catch(design, by = day_type)
+# Grouped estimation needs at least 10 interviews per group, so check
+# the sample sizes before grouping
+table(design$interviews$day_type)
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
-# result_verbose <- estimate_total_catch(design, verbose = TRUE)
+result_verbose <- estimate_total_catch(design, verbose = TRUE)
 
 }
 \seealso{

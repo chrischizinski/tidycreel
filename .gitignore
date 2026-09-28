@@ -164,3 +164,6 @@ inst/audit/
 # Quarto render cache (cheatsheet)
 .quarto/
 cheatsheet/*_files/
+
+# CRAN reviewer correspondence — local only
+cran_review/
