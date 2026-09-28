@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidycreel</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">7.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">8.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,9 +65,9 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="8.0.0" id="tidycreel-800-mooneye">tidycreel 8.0.0 “Mooneye”<a class="anchor" aria-label="anchor" href="#tidycreel-800-mooneye"></a></h2>
 <div class="section level3">
-<h3 id="breaking-changes-development-version">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-development-version"></a></h3>
+<h3 id="breaking-changes-8-0-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-8-0-0"></a></h3>
 <ul><li>
 <p><code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> now reports a total across the sampled days, the same basis <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> uses, instead of a single average day (<a href="https://github.com/chrischizinski/tidycreel/issues/363" class="external-link">#363</a>).</p>
 <p>The two functions could be called on one design and returned quantities that differed by a factor of the number of sampled days, with nothing in either signature or either result to say so. On the package’s own aerial fixture that was 378.6 against 5092.5 — a gap a reader would naturally attribute to the diurnal correction the GLMM exists to apply. It is now 4728.6 against 5092.5, and the 7% between them is that correction.</p>
@@ -85,7 +85,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="documentation-development-version">Documentation<a class="anchor" aria-label="anchor" href="#documentation-development-version"></a></h3>
+<h3 id="documentation-8-0-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-8-0-0"></a></h3>
 <ul><li><p>Examples no longer contain commented-out code. The <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>, <code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and <code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> examples now run the lines they previously only showed, and <code><a href="../reference/get_site_contributions.html">get_site_contributions()</a></code>, which had no runnable example, now has one. CRAN’s review of 7.0.0 asked for this.</p></li>
 <li><p>The <code><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code> example and the incomplete-trips vignette restore the equivalence-threshold option they change.</p></li>
 <li>
@@ -108,7 +108,7 @@
 <li><p><code>DESCRIPTION</code> cites the methods the estimators implement — Hoenig, Jones, Pollock, Robson and Wade (1997) <a href="doi:10.2307/2533116" class="uri">doi:10.2307/2533116</a> for roving catch rates and Kinloch, McGlennon, Nicoll and Pike (1997) <a href="doi:10.1016/s0165-7836(97)00068-4" class="uri">doi:10.1016/s0165-7836(97)00068-4</a> for bus-route designs — and records the maintainer as copyright holder. The README shows <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<h3 id="bug-fixes-8-0-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-8-0-0"></a></h3>
 <ul><li><p>Printing a <code><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code> result no longer leaves the plot margins changed for the rest of the session. <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> widened <code>par(mar)</code> to draw its scatter plot and never put it back; it now restores the caller’s setting on exit.</p></li>
 <li>
 <p><code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> and <code><a href="../reference/simulate_creel_catch.html">simulate_creel_catch()</a></code> no longer leave the caller’s random number stream reset.</p>
