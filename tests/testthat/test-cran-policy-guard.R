@@ -54,7 +54,10 @@ example_lines <- function(rd_file) {
 commented_code <- function(lines) {
   is_comment <- grepl("^\\s*#", lines)
   body <- sub("^\\s*#+\\s?", "", lines)
-  looks_like_code <- grepl("[A-Za-z0-9_.]\\(|<-|\\|>|%>%|\\$", body)
+  looks_like_code <- grepl(
+    "[A-Za-z0-9_.]\\(|\\b(if|for|while|function)\\s*\\(|<-|\\|>|%>%|\\$",
+    body
+  )
   parses <- vapply(body, function(b) {
     nzchar(trimws(b)) &&
       !inherits(try(parse(text = b), silent = TRUE), "try-error")
@@ -72,7 +75,8 @@ unrestored_example_setters <- function(lines) {
   hits <- grep(setter_pattern, code)
   bad <- character()
   for (i in hits) {
-    line <- code[i]
+    line <- sub("\\s*#.*$", "", code[i]) # judge the code, not a trailing comment
+    if (grepl("on\\.exit\\(", line)) next # on.exit(par(old)) is the restore
     m <- regmatches(line, regexec(
       "^\\s*([A-Za-z_.][A-Za-z0-9_.]*)\\s*<-\\s*(graphics::)?([A-Za-z.]+)\\(",
       line
@@ -80,7 +84,7 @@ unrestored_example_setters <- function(lines) {
     if (length(m) == 0L) {
       # Either a restore call itself, or an uncaptured change.
       if (!grepl("\\(\\s*[A-Za-z_.][A-Za-z0-9_.]*\\s*\\)\\s*$", line)) {
-        bad <- c(bad, line)
+        bad <- c(bad, code[i])
       }
       next
     }
@@ -88,7 +92,7 @@ unrestored_example_setters <- function(lines) {
                       "\\(\\s*", gsub(".", "\\.", m[2], fixed = TRUE), "\\s*\\)")
     later <- if (i < length(code)) code[(i + 1L):length(code)] else character()
     if (!any(grepl(restore, later))) {
-      bad <- c(bad, line)
+      bad <- c(bad, code[i])
     }
   }
   bad
@@ -120,6 +124,7 @@ test_that("detectors catch the defects CRAN returned 7.0.0 for", {
     "# table(design$interviews$day_type)",
     "# total_catch$estimates$estimate approximately equals effort_est * cpue_est"
   )), 3L)
+  expect_length(commented_code("# if (x) y"), 1L)
   expect_length(commented_code(c(
     "# Estimate total catch",
     "# Discrete strategy: T = 10 h, tau = 2 h -> k = 5 valid start times",
@@ -136,6 +141,15 @@ test_that("detectors catch the defects CRAN returned 7.0.0 for", {
   expect_length(unrestored_example_setters(c(
     "old <- options(tidycreel.equivalence_threshold = 0.15)",
     "options(old)"
+  )), 0L)
+  # A trailing comment, or restoring through on.exit(), is still a restore.
+  expect_length(unrestored_example_setters(c(
+    "old <- options(tidycreel.equivalence_threshold = 0.15)",
+    "options(old) # put the threshold back"
+  )), 0L)
+  expect_length(unrestored_example_setters(c(
+    "old <- par(mar = c(1, 1, 1, 1))",
+    "on.exit(par(old), add = TRUE)"
   )), 0L)
 
   expect_length(unguarded_function_setters(c(
