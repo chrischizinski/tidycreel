@@ -34,8 +34,8 @@ tidycreel 8.0.0 — first CRAN release (resubmission of 7.0.0).
 ## Test environments
 
 - macOS Tahoe 26.6.2, aarch64-apple-darwin25.4.0 (local), R 4.6.1 (2026-06-24)
-- win-builder, R Under development (unstable) (2026-09-13 r90534 ucrt),
-  x86_64-w64-mingw32, Windows Server 2022 x64
+- win-builder, R Under development (unstable) (2026-09-25 r90590 ucrt),
+  x86_64-w64-mingw32
 - ubuntu-latest, macOS-latest, windows-latest (GitHub Actions), R release
 
 ## R CMD check results
@@ -48,8 +48,8 @@ doesn't look like recent enough HTML Tidy`, which reflects the HTML Tidy version
 on the local machine rather than anything in the package; win-builder reports
 `checking HTML version of manual ... OK`.
 
-The remaining note is the CRAN incoming feasibility note, and contains three
-things:
+The remaining note is the CRAN incoming feasibility note. On this submission's
+win-builder run it contains two things:
 
 ```
 Maintainer: 'Christopher Chizinski <cchizinski2@unl.edu>'
@@ -61,13 +61,6 @@ Possibly misspelled words in DESCRIPTION:
   Kinloch (15:5)
   McGlennon (15:14)
   Nicoll (15:25)
-
-Found the following (possibly) invalid URLs:
-  URL: https://chrischizinski.com/tidycreel/
-  URL: https://chrischizinski.com/tidycreel/articles/
-    Status: Error
-    Message: SSL connect error [chrischizinski.com]:
-      Recv failure: Connection was reset
 ```
 
 **New submission** is expected.
@@ -77,7 +70,11 @@ Found the following (possibly) invalid URLs:
 Kinloch, McGlennon and Nicoll (Kinloch, McGlennon, Nicoll and Pike 1997). They
 are spelled as published.
 
-**The two URLs are reachable and correct.** Both return HTTP 200 from the
+**No URLs are flagged on this run.** The 7.0.0 win-builder run flagged two, the
+package site `https://chrischizinski.com/tidycreel/` and its article index,
+with `SSL connect error ... Connection was reset`; the explanation is kept in
+case the note recurs.
+The two URLs are reachable and correct. Both return HTTP 200 from the
 maintainer's network over TLS 1.2 and TLS 1.3, with a valid Let's Encrypt
 certificate and a plain libcurl user agent, and `R CMD check --as-cran` run
 locally raises no URL complaint at all. The host is GitHub Pages serving a
@@ -122,4 +119,4 @@ four DOIs resolve through the Crossref API to the expected articles, and
   needs no resource the example cannot reach. It is exercised locally, where
   `R CMD check --as-cran` runs both passes — `checking examples` in 19s and
   `checking examples with --run-donttest` in 21s. win-builder runs the ordinary
-  pass only, reporting 49s for all 125 example topics together.
+  pass only, reporting 55s for all 125 example topics together.
