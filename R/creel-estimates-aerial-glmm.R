@@ -38,7 +38,9 @@
 #'   estimate. `"sampled_days"` (default) expands the fitted day to every day
 #'   the design sampled, matching what [estimate_effort()] returns for the same
 #'   design so the two are comparable. `"mean_day"` reports a single average
-#'   day, which is what this function returned before tidycreel 7.1.0.
+#'   day, the basis this function reported before tidycreel 8.0.0. It is not
+#'   identical to the old value: it now carries the retransformation factor
+#'   the old code omitted, so it is higher by `exp(sigma^2 / 2)`.
 #'
 #'   Both are expectations, so both carry the retransformation factor described
 #'   under Details. Neither expands beyond the sampled days: expanded targets

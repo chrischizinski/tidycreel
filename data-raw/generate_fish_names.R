@@ -67,13 +67,18 @@ used <- c(
   "Pallid Sturgeon",     # v5.0.0
   "Sturgeon Chub",       # v5.1.0
   "River Carpsucker",    # v5.2.0
-  "Blue Catfish"         # v6.0.0
+  "Blue Catfish",        # v6.0.0
+  "Goldeye",             # v7.0.0 -- a repeat of v2.2.0, see note below
+  "Mooneye"              # v8.0.0
 )
 # "Sauger" names two releases because it was drawn again for v3.1.0 while this
 # vector still stopped at v3.0.0. Left as-is: the duplicate is already in the
 # shipped NEWS and the tags, and renaming a released version is worse than
 # recording that it happened. The lesson is the one the comment above already
 # gives -- add the name here at release, not later.
+# "Goldeye" repeats for v7.0.0 for the same reason: the vector was not updated at
+# that release. v8.0.0 "Mooneye" is Goldeye's sister species (Hiodontidae),
+# chosen for the CRAN resubmission of the Goldeye release.
 names_final <- names_final[!names_final %in% used]
 
 message(sprintf("Total unique clean names: %d", length(names_final)))
