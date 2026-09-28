@@ -150,12 +150,13 @@ result_grouped <- validate_incomplete_trips(design_with_interviews,
 )
 print(result_grouped)
 
-# Custom equivalence threshold
-options(tidycreel.equivalence_threshold = 0.15) # 15\% threshold
+# Custom equivalence threshold, restoring the previous option afterwards
+old_opts <- options(tidycreel.equivalence_threshold = 0.15) # 15\% threshold
 result_custom <- validate_incomplete_trips(design_with_interviews,
   catch = catch_total,
   effort = hours_fished
 )
+options(old_opts)
 }
 \seealso{
 Other "Reporting & Diagnostics":

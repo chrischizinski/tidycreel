@@ -31,9 +31,39 @@
 #'   [get_enumeration_counts()]
 #'
 #' @examples
-#' # (Bus-route design + add_interviews() required — see estimate_effort() docs)
-#' # After: result <- estimate_effort(design_with_br_interviews)
-#' # site_table <- get_site_contributions(result)
+#' cal <- data.frame(
+#'   date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-06")),
+#'   day_type = "weekday"
+#' )
+#' sf <- data.frame(
+#'   site = c("A", "B"),
+#'   circuit = c("am", "am"),
+#'   p_site = c(0.6, 0.4),
+#'   p_period = rep(0.5, 2)
+#' )
+#' design_br <- creel_design(
+#'   cal,
+#'   date = date, strata = day_type,
+#'   survey_type = "bus_route", sampling_frame = sf,
+#'   site = site, circuit = circuit,
+#'   p_site = p_site, p_period = p_period
+#' )
+#' interviews <- data.frame(
+#'   date = as.Date(c("2024-06-03", "2024-06-04")),
+#'   site = c("A", "B"), circuit = c("am", "am"),
+#'   catch_total = c(3L, 2L), hours_fished = c(2.0, 1.5),
+#'   trip_status = c("complete", "complete"),
+#'   trip_duration = c(2.0, 1.5),
+#'   n_counted = c(5L, 4L), n_interviewed = c(3L, 2L)
+#' )
+#' design_br <- add_interviews(
+#'   design_br, interviews,
+#'   catch = catch_total, effort = hours_fished,
+#'   trip_status = trip_status, trip_duration = trip_duration,
+#'   n_counted = n_counted, n_interviewed = n_interviewed
+#' )
+#' result <- estimate_effort(design_br)
+#' get_site_contributions(result)
 #'
 #' @family "Bus-Route Helpers"
 #' @export

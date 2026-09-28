@@ -226,7 +226,7 @@ result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)
 result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstrap")
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
-# result_verbose <- estimate_harvest_rate(design, verbose = TRUE)
+result_verbose <- estimate_harvest_rate(design_with_interviews, verbose = TRUE)
 }
 \seealso{
 \code{\link{estimate_catch_rate}} for total catch rate estimation

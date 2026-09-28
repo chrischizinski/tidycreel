@@ -586,8 +586,7 @@ print.creel_estimates <- function(x, ...) {
 #' result_grouped <- estimate_effort(design_with_counts, by = day_type)
 #' print(result_grouped)
 #'
-#' # Note: Multiple grouping variables are supported if present in the data
-#' # For example: by = c(day_type, location)
+#' # Several grouping variables can be combined in `by` when the data carry them
 #'
 #' # Custom confidence level
 #' result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)
@@ -2158,7 +2157,7 @@ estimate_catch_rate <- function(
 #' result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstrap")
 #'
 #' # Verbose dispatch message (shows which estimator was used for bus-route designs)
-#' # result_verbose <- estimate_harvest_rate(design, verbose = TRUE)
+#' result_verbose <- estimate_harvest_rate(design_with_interviews, verbose = TRUE)
 #' @family "Estimation"
 #' @export
 estimate_harvest_rate <- function(
