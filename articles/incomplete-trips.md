@@ -843,8 +843,8 @@ estimate, appropriate for ecological field data. You can customize this:
 
 ``` r
 
-# Use stricter threshold (±15%)
-options(tidycreel.equivalence_threshold = 0.15)
+# Use stricter threshold (±15%), keeping the previous setting to restore later
+old_opts <- options(tidycreel.equivalence_threshold = 0.15)
 validation_strict <- validate_incomplete_trips(design,
   catch = catch_total,
   effort = hours_fished
@@ -856,6 +856,9 @@ validation_permissive <- validate_incomplete_trips(design,
   catch = catch_total,
   effort = hours_fished
 )
+
+# Restore the threshold that was in effect before
+options(old_opts)
 ```
 
 **Choosing a threshold:**

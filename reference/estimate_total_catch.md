@@ -377,13 +377,21 @@ cpue_est <- estimate_catch_rate(design)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
-# total_catch$estimates$estimate approximately equals effort_est * cpue_est
+# The total is close to, but not exactly, effort times CPUE
+c(
+  total = total_catch$estimates$estimate,
+  effort_x_cpue = effort_est$estimates$estimate * cpue_est$estimates$estimate
+)
+#>         total effort_x_cpue 
+#>      363.9368      360.3721 
 
-# Note: Grouped estimation requires n >= 10 per group
-# Check sample sizes before grouping:
-# table(design$interviews$day_type)
-# total_catch_by_type <- estimate_total_catch(design, by = day_type)
+# Grouped estimation needs at least 10 interviews per group, so check
+# the sample sizes before grouping
+table(design$interviews$day_type)
+#> 
+#> weekday weekend 
+#>      13       9 
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
-# result_verbose <- estimate_total_catch(design, verbose = TRUE)
+result_verbose <- estimate_total_catch(design, verbose = TRUE)
 ```

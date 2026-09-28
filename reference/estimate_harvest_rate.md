@@ -339,5 +339,10 @@ result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstr
 #> ℹ Variance estimates may be unstable with n < 30.
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
-# result_verbose <- estimate_harvest_rate(design, verbose = TRUE)
+result_verbose <- estimate_harvest_rate(design_with_interviews, verbose = TRUE)
+#> ℹ Filtering to complete trips for HPUE estimation
+#>   (n=20, 50% of 40 interviews) [default]
+#> Warning: Small sample size for harvest estimation.
+#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
 ```

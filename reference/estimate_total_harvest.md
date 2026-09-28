@@ -361,10 +361,18 @@ hpue_est <- estimate_harvest_rate(design)
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
-# total_harvest$estimates$estimate approximately equals effort_est * hpue_est
+# The total is close to, but not exactly, effort times HPUE
+c(
+  total = total_harvest$estimates$estimate,
+  effort_x_hpue = effort_est$estimates$estimate * hpue_est$estimates$estimate
+)
+#>         total effort_x_hpue 
+#>      224.5239      221.7674 
 
-# Note: Grouped estimation requires n >= 10 per group
-# Check sample sizes before grouping:
-# table(design$interviews$day_type)
-# total_harvest_by_type <- estimate_total_harvest(design, by = day_type)
+# Grouped estimation needs at least 10 interviews per group, so check
+# the sample sizes before grouping
+table(design$interviews$day_type)
+#> 
+#> weekday weekend 
+#>      13       9 
 ```

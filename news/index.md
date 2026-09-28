@@ -78,6 +78,21 @@
 
 ### Documentation
 
+- Examples no longer contain commented-out code. The
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/reference/estimate_total_harvest.md)
+  and
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/reference/estimate_harvest_rate.md)
+  examples now run the lines they previously only showed, and
+  [`get_site_contributions()`](https://chrischizinski.com/tidycreel/reference/get_site_contributions.md),
+  which had no runnable example, now has one. CRAN’s review of 7.0.0
+  asked for this.
+
+- The
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
+  example and the incomplete-trips vignette restore the
+  equivalence-threshold option they change.
+
 - Four vignettes described behaviour the package does not have. Each was
   found by running the vignette and reading its own output, not by
   reading the source.
@@ -160,6 +175,13 @@
   [`install.packages()`](https://rdrr.io/r/utils/install.packages.html).
 
 ### Bug fixes
+
+- Printing a
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/reference/validate_incomplete_trips.md)
+  result no longer leaves the plot margins changed for the rest of the
+  session. [`print()`](https://rdrr.io/r/base/print.html) widened
+  `par(mar)` to draw its scatter plot and never put it back; it now
+  restores the caller’s setting on exit.
 
 - [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/reference/simulate_creel_data.md)
   and

@@ -317,12 +317,13 @@ overlooking group-specific bias that could be masked by overall equivalence.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1/1 group passed equivalence</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Custom equivalence threshold</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidycreel.equivalence_threshold <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span> <span class="co"># 15% threshold</span></span></span>
+<span class="r-in"><span><span class="co"># Custom equivalence threshold, restoring the previous option afterwards</span></span></span>
+<span class="r-in"><span><span class="va">old_opts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidycreel.equivalence_threshold <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span> <span class="co"># 15% threshold</span></span></span>
 <span class="r-in"><span><span class="va">result_custom</span> <span class="op">&lt;-</span> <span class="fu">validate_incomplete_trips</span><span class="op">(</span><span class="va">design_with_interviews</span>,</span></span>
 <span class="r-in"><span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span></span>
 <span class="r-in"><span>  effort <span class="op">=</span> <span class="va">hours_fished</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span><span class="va">old_opts</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

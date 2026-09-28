@@ -934,8 +934,8 @@ estimate).</p>
 complete trip estimate, appropriate for ecological field data. You can
 customize this:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Use stricter threshold (±15%)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidycreel.equivalence_threshold <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Use stricter threshold (±15%), keeping the previous setting to restore later</span></span>
+<span><span class="va">old_opts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>tidycreel.equivalence_threshold <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span></span>
 <span><span class="va">validation_strict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>  effort <span class="op">=</span> <span class="va">hours_fished</span></span>
@@ -946,7 +946,10 @@ customize this:</p>
 <span><span class="va">validation_permissive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>  effort <span class="op">=</span> <span class="va">hours_fished</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Restore the threshold that was in effect before</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span><span class="va">old_opts</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Choosing a threshold:</strong></p>
 <ul>
 <li>Stricter (10-15%): High-stakes management decisions, research

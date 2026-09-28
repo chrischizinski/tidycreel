@@ -367,7 +367,7 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.546 sampled_days
+#> 1   GLMM 4728.545 sampled_days
 #> 2 Simple 5092.500 sampled_days
 ```
 

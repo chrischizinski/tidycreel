@@ -260,8 +260,7 @@ print(result_grouped)
 #> 1 weekday        38     8          8         0     3.58     72.4     2
 #> 2 weekend        97     7          7         0    66.9     127.      2
 
-# Note: Multiple grouping variables are supported if present in the data
-# For example: by = c(day_type, location)
+# Several grouping variables can be combined in `by` when the data carry them
 
 # Custom confidence level
 result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)

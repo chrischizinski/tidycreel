@@ -418,15 +418,23 @@ factor (GH #213).</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
-<span class="r-in"><span><span class="co"># total_catch$estimates$estimate approximately equals effort_est * cpue_est</span></span></span>
+<span class="r-in"><span><span class="co"># The total is close to, but not exactly, effort times CPUE</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  total <span class="op">=</span> <span class="va">total_catch</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span>,</span></span>
+<span class="r-in"><span>  effort_x_cpue <span class="op">=</span> <span class="va">effort_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">*</span> <span class="va">cpue_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         total effort_x_cpue </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      363.9368      360.3721 </span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Note: Grouped estimation requires n &gt;= 10 per group</span></span></span>
-<span class="r-in"><span><span class="co"># Check sample sizes before grouping:</span></span></span>
-<span class="r-in"><span><span class="co"># table(design$interviews$day_type)</span></span></span>
-<span class="r-in"><span><span class="co"># total_catch_by_type &lt;- estimate_total_catch(design, by = day_type)</span></span></span>
+<span class="r-in"><span><span class="co"># Grouped estimation needs at least 10 interviews per group, so check</span></span></span>
+<span class="r-in"><span><span class="co"># the sample sizes before grouping</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">design</span><span class="op">$</span><span class="va">interviews</span><span class="op">$</span><span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> weekday weekend </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      13       9 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Verbose dispatch message (shows which estimator was used for bus-route designs)</span></span></span>
-<span class="r-in"><span><span class="co"># result_verbose &lt;- estimate_total_catch(design, verbose = TRUE)</span></span></span>
+<span class="r-in"><span><span class="va">result_verbose</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_catch</span><span class="op">(</span><span class="va">design</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
