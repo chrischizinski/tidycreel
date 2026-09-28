@@ -45,7 +45,7 @@ Default \code{500L}.}
 estimate. \code{"sampled_days"} (default) expands the fitted day to every day
 the design sampled, matching what \code{\link[=estimate_effort]{estimate_effort()}} returns for the same
 design so the two are comparable. \code{"mean_day"} reports a single average
-day, which is what this function returned before tidycreel 7.1.0.
+day, which is what this function returned before tidycreel 8.0.0.
 
 Both are expectations, so both carry the retransformation factor described
 under Details. Neither expands beyond the sampled days: expanded targets

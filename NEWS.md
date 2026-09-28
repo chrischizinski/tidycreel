@@ -1,4 +1,4 @@
-# tidycreel (development version)
+# tidycreel 8.0.0 "Mooneye"
 
 ## Breaking changes
 

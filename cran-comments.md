@@ -1,6 +1,13 @@
 ## Resubmission
 
-This is a resubmission. The review of 7.0.0 asked for two changes, both made:
+This is a resubmission of tidycreel, first submitted as 7.0.0 on 2026-09-14.
+The version is now 8.0.0 rather than 7.0.1 because the development changes
+merged since 7.0.0 include a breaking change (`estimate_effort_aerial_glmm()`
+now reports a total across sampled days rather than a single-day mean, see
+NEWS), and the package follows semantic versioning. tidycreel has not been
+published on CRAN, so no CRAN user sees the jump.
+
+The review of 7.0.0 asked for two changes, both made:
 
 - **Commented-out code in examples.** Ten commented-out lines across four help
   pages (`estimate_harvest_rate`, `estimate_total_catch`,
@@ -22,7 +29,7 @@ followed by `on.exit()`, so neither can recur unnoticed.
 
 ## Submission
 
-tidycreel 7.0.0 — first CRAN submission.
+tidycreel 8.0.0 — first CRAN release (resubmission of 7.0.0).
 
 ## Test environments
 
