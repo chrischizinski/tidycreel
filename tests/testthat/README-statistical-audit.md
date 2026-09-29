@@ -43,12 +43,10 @@ caught. The dangerous failure is a plausible number with no error and no warning
 - Keep datasets tiny. If the expected answer needs the package to compute it,
   the test is circular.
 - Findings discovered while writing tests are recorded (GH issue / audit doc),
-  not fixed inline — see the Statistical Correctness section of `CLAUDE.md`.
+  not fixed inline.
 
 ## Relationship to the audit skill
 
-`/statistical-seam-audit` (`.claude/skills/statistical-seam-audit/SKILL.md`)
-produces findings reports; each confirmed finding should gain a regression test
-here as part of its fix PR. Checklists for new estimators and PR review live in
-`inst/audit/`, which — like the skill and `CLAUDE.md` above — is a local working
-directory and is not tracked in the repository.
+The statistical seam audit produces findings reports; each confirmed finding
+should gain a regression test here as part of its fix PR. The audit tooling and
+its checklists are local working files and are not tracked in the repository.
