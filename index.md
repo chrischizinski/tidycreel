@@ -391,11 +391,10 @@ for details.
 
 ## AI Use Acknowledgement
 
-Artificial intelligence tools were used during the development of
-tidycreel, primarily through Claude Code (Anthropic), with selected code
-and outputs reviewed using Codex (OpenAI). These tools supported code
-refinement, consistency across functions, GitHub Actions workflows,
-error checking, and the development of testing infrastructure.
+Artificial intelligence coding assistants were used during the
+development of tidycreel, including for code refinement, consistency
+across functions, GitHub Actions workflows, error checking, code review,
+and the development of testing infrastructure.
 
 All functions and analytical outputs have been reviewed by the author
 team and validated against real-world creel survey data and expected
