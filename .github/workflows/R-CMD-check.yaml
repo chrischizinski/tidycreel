@@ -26,6 +26,9 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      # Run the full test suite. Without this, tests/testthat.R runs only the
+      # CRAN core subset, because rcmdcheck does not set NOT_CRAN.
+      NOT_CRAN: "true"
 
     steps:
       - uses: actions/checkout@v4
