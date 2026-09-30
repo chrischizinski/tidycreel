@@ -1,3 +1,20 @@
+## Resubmission (check time)
+
+The pretest of 8.0.0 on 2026-09-30 reported `Overall checktime 21 min > 10 min`
+on r-devel-windows-x86_64, mainly from `checking tests ... [14m]`.
+
+The tests now run a core subset unless the `NOT_CRAN` environment variable is
+`"true"`. The subset is 8 test files (647 tests) covering the main workflow:
+design construction, counts, interviews, effort, catch rate and total catch,
+plus the CRAN policy guard. Locally the test step fell from 203 s to 20 s
+under `R CMD check --as-cran`, about a 90% reduction. The full suite (6,815
+tests) still runs on every push in GitHub Actions and in `devtools::test()`,
+both of which set `NOT_CRAN=true`. A test fails if any name in the subset stops
+matching a test file, so the subset cannot silently shrink.
+
+No package code changed; only `tests/testthat.R`, one new test file and the CI
+workflows. The version stays 8.0.0 because 8.0.0 was not published.
+
 ## Resubmission
 
 This is a resubmission of tidycreel, first submitted as 7.0.0 on 2026-09-14.
