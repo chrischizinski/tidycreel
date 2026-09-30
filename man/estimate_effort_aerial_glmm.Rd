@@ -61,8 +61,11 @@ strata enter the default model as additive fixed effects in ONE model --
 diurnal curve's shape and differ in its level; see Details. Each stratum
 expands by its own sampled days. Counts with a missing value in a \code{by}
 column are refused rather than dropped. Supported on the delta path only
-(\code{boot = FALSE}). When \code{formula} is supplied it is used as given, so it
-must contain the \code{by} columns for the strata to differ at all.}
+(\code{boot = FALSE}). When \code{formula} is supplied it is used as given, and it
+must contain every \code{by} column as a fixed effect; otherwise every stratum
+would get the same curve, so the call is refused. A \code{by} column with only
+one observed level is left out of the model (its level is the intercept)
+and still reported as a row.}
 }
 \value{
 A \code{creel_estimates} object with:
