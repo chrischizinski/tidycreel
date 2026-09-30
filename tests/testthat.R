@@ -28,5 +28,12 @@ cran_core_tests <- c(
 if (identical(Sys.getenv("NOT_CRAN"), "true")) {
   test_check("tidycreel")
 } else {
+  # Checked here as well as in test-cran-subset.R, so deleting that file cannot
+  # remove the only check. R CMD check runs this script from tests/.
+  test_names <- sub("^test-(.*)[.]R$", "\\1", list.files("testthat", "^test-.*[.]R$"))
+  unmatched <- setdiff(cran_core_tests, test_names)
+  if (length(unmatched) > 0L) {
+    stop("CRAN test subset names match no test file: ", paste(unmatched, collapse = ", "))
+  }
   test_check("tidycreel", filter = paste0("^(", paste(cran_core_tests, collapse = "|"), ")$"))
 }
