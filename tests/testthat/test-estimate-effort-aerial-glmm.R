@@ -605,3 +605,54 @@ test_that("GLMM-08: the default grouped fit reports the shape check; a user form
   # The positive assertion above proves messages were captured at all.
   expect_gt(length(msgs), 0L)
 })
+
+test_that("GLMM-08: a supplied formula without the by column is refused", {
+  skip_if_not_installed("lme4")
+  # Why: without the stratum in the fixed effects every stratum gets the same
+  # curve (the mean day was identical, 492.56, for both), so the rows differ
+  # only by their day counts and pass for per-stratum estimates.
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  expect_error(
+    grouped_glmm(design, formula = n_anglers ~ poly(time_of_flight, 2) + (1 | date)),
+    class = "creel_error_glmm_by_not_in_formula"
+  )
+})
+
+test_that("GLMM-08: a by column with one observed level still returns its row", {
+  skip_if_not_installed("lme4")
+  # Why: a season flown only on weekdays is a real design; a one-level factor
+  # cannot form contrasts, so it must be left out of the model, not crash it.
+  data("example_aerial_glmm_counts", envir = environment())
+  weekday <- example_aerial_glmm_counts[example_aerial_glmm_counts$day_type == "weekday", ]
+  cal <- unique(weekday[, c("date", "day_type")])
+  design <- suppressWarnings(suppressMessages(add_counts(
+    creel_design(cal,
+      date = date, strata = day_type, survey_type = "aerial",
+      visibility_correction = 0.8, visibility_se = 0.05,
+      angler_ratio = 1, angler_ratio_se = 0, h_open = 14
+    ),
+    weekday,
+    count_col = n_anglers
+  )))
+  grouped <- grouped_glmm(design)
+  pooled <- suppressWarnings(suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight)
+  ))
+
+  expect_identical(as.character(grouped$estimates$day_type), "weekday")
+  # One stratum is the whole design, so it must equal the ungrouped fit.
+  expect_equal(grouped$estimates$estimate, pooled$estimates$estimate)
+})
+
+test_that("GLMM-08: a non-syntactic by column name is accepted", {
+  skip_if_not_installed("lme4")
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  plain <- grouped_glmm(design)
+  design$counts[["day type"]] <- design$counts$day_type
+  spaced <- suppressWarnings(suppressMessages(estimate_effort_aerial_glmm(
+    design,
+    time_col = time_of_flight, by = tidyselect::all_of("day type")
+  )))
+
+  expect_equal(spaced$estimates$estimate, plain$estimates$estimate)
+})

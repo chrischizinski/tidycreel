@@ -52,8 +52,11 @@
 #'   diurnal curve's shape and differ in its level; see Details. Each stratum
 #'   expands by its own sampled days. Counts with a missing value in a `by`
 #'   column are refused rather than dropped. Supported on the delta path only
-#'   (`boot = FALSE`). When `formula` is supplied it is used as given, so it
-#'   must contain the `by` columns for the strata to differ at all.
+#'   (`boot = FALSE`). When `formula` is supplied it is used as given, and it
+#'   must contain every `by` column as a fixed effect; otherwise every stratum
+#'   would get the same curve, so the call is refused. A `by` column with only
+#'   one observed level is left out of the model (its level is the intercept)
+#'   and still reported as a row.
 #'
 #' @return A `creel_estimates` object with:
 #'   - `estimate`: total angler effort integrated over the fishing day
@@ -265,16 +268,36 @@ estimate_effort_aerial_glmm <- function(
   # from it. Smucker et al. (2010, Table 1) show weekday and weekend diel
   # shapes that do differ, so the assumption can fail; the BIC comparison
   # reported below is there to show when.
+  #
+  # Only grouping columns that vary enter the model. A column with one observed
+  # level (every flight on a weekday, say) cannot form contrasts, and its level
+  # is already the intercept; its row is still reported. Names are backquoted so
+  # a non-syntactic column (`day type`) parses.
+  by_terms <- by_vars[vapply(by_vars, function(nm) nlevels(counts_data[[nm]]) > 1L, logical(1))]
   if (is.null(formula)) {
     rhs <- paste0("poly(", time_col_name, ", 2)")
-    if (length(by_vars) > 0L) {
-      rhs <- paste(c(rhs, by_vars), collapse = " + ")
+    if (length(by_terms) > 0L) {
+      rhs <- paste(c(rhs, paste0("`", by_terms, "`")), collapse = " + ")
     }
     glmm_formula <- stats::as.formula(
       paste0(count_var, " ~ ", rhs, " + (1|", design$date_col, ")")
     )
   } else {
     glmm_formula <- formula
+    # A supplied formula that leaves a grouping column out of the fixed effects
+    # predicts one curve for every stratum; the rows would then differ only by
+    # their day counts and look like per-stratum estimates. Refuse instead.
+    missing_terms <- setdiff(by_terms, all.vars(lme4::nobars(formula)))
+    if (length(missing_terms) > 0L) {
+      cli::cli_abort(
+        c(
+          "{.arg formula} must contain every {.arg by} column as a fixed effect.",
+          "x" = "Not in the fixed effects: {.field {missing_terms}}.",
+          "i" = "Without it every stratum gets the same diurnal curve and differs only by its number of sampled days."
+        ),
+        class = "creel_error_glmm_by_not_in_formula"
+      )
+    }
   }
 
   # 6. Fit model
@@ -294,8 +317,8 @@ estimate_effort_aerial_glmm <- function(
   # the estimate always comes from the additive model above. BIC rather than
   # AIC, following Askey et al. (2018), where AIC selected an interaction that
   # cross-validation showed bought nothing at the scale of a total.
-  if (length(by_vars) > 0L && is.null(formula)) {
-    report_glmm_shape_bic(model, count_var, time_col_name, by_vars, design$date_col, counts_data, family)
+  if (length(by_terms) > 0L && is.null(formula)) {
+    report_glmm_shape_bic(model, count_var, time_col_name, by_terms, design$date_col, counts_data, family)
   }
 
   # 7. Build prediction grid for numerical integration over the fishing day.
@@ -686,7 +709,7 @@ estimate_effort_aerial_glmm <- function(
 report_glmm_shape_bic <- function(model, count_var, time_col_name, by_vars, date_col, data, family) {
   inter_formula <- stats::as.formula(paste0(
     count_var, " ~ poly(", time_col_name, ", 2) * (",
-    paste(by_vars, collapse = " + "), ") + (1|", date_col, ")"
+    paste0("`", by_vars, "`", collapse = " + "), ") + (1|", date_col, ")"
   ))
   n_warn <- 0L
   inter <- tryCatch(
