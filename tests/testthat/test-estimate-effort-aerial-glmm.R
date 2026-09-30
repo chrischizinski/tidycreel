@@ -656,3 +656,91 @@ test_that("GLMM-08: a non-syntactic by column name is accepted", {
 
   expect_equal(spaced$estimates$estimate, plain$estimates$estimate)
 })
+
+test_that("GLMM-08: by with boot = TRUE is refused before any model is fitted", {
+  skip_if_not_installed("lme4")
+  # Why: the refusal is about the argument combination, so it must not wait on
+  # two GLMM fits (the estimate and the shape check) or be masked when one of
+  # them fails. A fit that is reached here stops with a different error.
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  local_mocked_bindings(
+    glmer.nb = function(...) stop("a model was fitted"),
+    .package = "lme4"
+  )
+  expect_error(
+    grouped_glmm(design, boot = TRUE, nboot = 5L),
+    class = "creel_error_glmm_grouped_boot_unsupported"
+  )
+})
+
+test_that("GLMM-08: a user formula is checked without lme4::nobars()", {
+  skip_if_not_installed("lme4")
+  # Why: nobars() has moved to reformulas and warns on current lme4, and the
+  # check ran on the ungrouped path too, so every existing custom-formula call
+  # gained a deprecation warning. The check must still refuse a formula that
+  # leaves the by column out, and still accept one that has it.
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  local_mocked_bindings(
+    nobars = function(...) stop("nobars was called"),
+    .package = "lme4"
+  )
+  pooled <- suppressWarnings(suppressMessages(estimate_effort_aerial_glmm(
+    design,
+    time_col = time_of_flight,
+    formula = n_anglers ~ poly(time_of_flight, 2) + (1 | date)
+  )))
+  expect_s3_class(pooled, "creel_estimates")
+  inter <- grouped_glmm(
+    design,
+    formula = n_anglers ~ poly(time_of_flight, 2) * day_type + (1 | date)
+  )
+  expect_identical(nrow(inter$estimates), 2L)
+  expect_error(
+    grouped_glmm(design, formula = n_anglers ~ poly(time_of_flight, 2) + (1 | date)),
+    class = "creel_error_glmm_by_not_in_formula"
+  )
+  # A by column that appears only inside the random effects is not a fixed effect.
+  expect_error(
+    grouped_glmm(design, formula = n_anglers ~ poly(time_of_flight, 2) + (1 | day_type)),
+    class = "creel_error_glmm_by_not_in_formula"
+  )
+})
+
+test_that("GLMM-08: aliased by columns give the same strata as one of them alone", {
+  skip_if_not_installed("lme4")
+  # Why: two by columns that encode the same split make the fixed-effect matrix
+  # rank deficient; lme4 drops the redundant column from fixef() and vcov(), and
+  # the prediction grid must drop it too, or the call fails with
+  # "non-conformable arguments" after both fits.
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  single <- grouped_glmm(design)
+  design$counts$day_code <- paste0("code_", design$counts$day_type)
+  both <- suppressWarnings(suppressMessages(estimate_effort_aerial_glmm(
+    design,
+    time_col = time_of_flight, by = c(day_type, day_code)
+  )))
+
+  expect_equal(both$estimates$estimate, single$estimates$estimate)
+  expect_equal(both$estimates$se, single$estimates$se)
+  expect_equal(both$strata_vcov, single$strata_vcov)
+})
+
+test_that("GLMM-08: stratum columns keep their source type", {
+  skip_if_not_installed("lme4")
+  # Why: the fit needs factors, but the rows are joined to rate estimates by
+  # value; a numeric or character stratum returned as a factor does not join
+  # like its source, and every other grouped estimator restores the type.
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  design$counts$day_type <- as.character(design$counts$day_type)
+  chr <- grouped_glmm(design)
+  expect_type(chr$estimates$day_type, "character")
+
+  design$counts$weekend <- as.numeric(design$counts$day_type == "weekend")
+  num <- suppressWarnings(suppressMessages(estimate_effort_aerial_glmm(
+    design,
+    time_col = time_of_flight, by = weekend
+  )))
+  expect_type(num$estimates$weekend, "double")
+  expect_identical(num$estimates$weekend, c(0, 1))
+  expect_equal(num$estimates$estimate, chr$estimates$estimate)
+})

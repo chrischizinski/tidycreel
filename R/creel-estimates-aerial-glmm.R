@@ -155,8 +155,22 @@
 #' result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 #' print(result)
 #'
-#' # One row per day type, from one model with day type as an additive term
-#' by_day <- estimate_effort_aerial_glmm(design, time_col = time_of_flight, by = day_type)
+#' # One row per day type, from one model with day type as an additive term.
+#' # `visibility_correction = "none"` above leaves the SEs unknown (NA), so this
+#' # design declares a measured detection probability and its SE.
+#' design_v <- creel_design(
+#'   aerial_cal,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "aerial",
+#'   visibility_correction = 0.85,
+#'   visibility_se = 0.05,
+#'   angler_ratio = 1,
+#'   angler_ratio_se = 0,
+#'   h_open = 14
+#' )
+#' design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
+#' by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
 #' print(by_day)
 #' # SE of the summed total: use the joint covariance, not quadrature
 #' sqrt(sum(by_day$strata_vcov))
@@ -232,6 +246,21 @@ estimate_effort_aerial_glmm <- function(
   # ungrouped fits would rest on different data with nothing to say so. Refuse
   # with the count rather than exclude invisibly.
   if (length(by_vars) > 0L) {
+    # The grouped path is delta-method only. Returning a delta SE while the
+    # caller asked for a bootstrap would be a silently wrong variance method,
+    # so refuse instead -- here, before either model is fitted, so the refusal
+    # costs nothing and no fitting failure can mask it. bootMer can return a
+    # vector statistic, so this is a gap rather than an impossibility.
+    if (isTRUE(boot)) {
+      cli::cli_abort(
+        c(
+          "Grouped estimation does not support the bootstrap.",
+          "x" = "Got {.code by} together with {.code boot = TRUE}.",
+          "i" = "Use {.code boot = FALSE} for grouped estimates, or drop {.arg by}."
+        ),
+        class = "creel_error_glmm_grouped_boot_unsupported"
+      )
+    }
     na_rows <- !stats::complete.cases(counts_data[, by_vars, drop = FALSE])
     if (any(na_rows)) {
       cli::cli_abort(
@@ -287,7 +316,17 @@ estimate_effort_aerial_glmm <- function(
     # A supplied formula that leaves a grouping column out of the fixed effects
     # predicts one curve for every stratum; the rows would then differ only by
     # their day counts and look like per-stratum estimates. Refuse instead.
-    missing_terms <- setdiff(by_terms, all.vars(lme4::nobars(formula)))
+    # Fixed-effect variables are read from the term labels, dropping the
+    # random-effect terms (those containing `|`). Not lme4::nobars(): it has
+    # moved to reformulas and warns on current lme4, and it would run on the
+    # ungrouped path too, where there is nothing to check.
+    missing_terms <- if (length(by_terms) > 0L) {
+      labs <- attr(stats::terms(formula), "term.labels")
+      fixed_vars <- unlist(lapply(labs[!grepl("|", labs, fixed = TRUE)], function(l) all.vars(str2lang(l))))
+      setdiff(by_terms, fixed_vars)
+    } else {
+      character(0)
+    }
     if (length(missing_terms) > 0L) {
       cli::cli_abort(
         c(
@@ -372,6 +411,11 @@ estimate_effort_aerial_glmm <- function(
   terms_obj <- stats::delete.response(stats::terms(model))
   x_mat <- stats::model.matrix(terms_obj, data = new_data) # nolint: object_name_linter
   beta <- lme4::fixef(model)
+  # lme4 drops fixed-effect columns that are aliased (two `by` columns that
+  # encode the same split, say), and fixef() and vcov() then omit them. Keep the
+  # retained columns only, as predict() does; a dropped column's coefficient is
+  # effectively zero, so the prediction is unchanged.
+  x_mat <- x_mat[, names(beta), drop = FALSE] # nolint: object_name_linter
   mu <- as.numeric(exp(x_mat %*% beta))
   scale_factor <- h_open / (length(hour_grid) - 1L) # interval width: 100 pts = 99 gaps
   # sum(mu) * scale_factor integrates the fitted count-vs-time curve over h_open
@@ -429,20 +473,6 @@ estimate_effort_aerial_glmm <- function(
   # each stratum expands by ITS OWN sampled days -- the quantity the total
   # estimators multiply against that stratum's catch rate.
   if (length(by_vars) > 0L) {
-    # The grouped path is delta-method only. Returning a delta SE while the
-    # caller asked for a bootstrap would be a silently wrong variance method,
-    # so refuse instead. bootMer can return a vector statistic, so this is a
-    # gap rather than an impossibility.
-    if (isTRUE(boot)) {
-      cli::cli_abort(
-        c(
-          "Grouped estimation does not support the bootstrap.",
-          "x" = "Got {.code by} together with {.code boot = TRUE}.",
-          "i" = "Use {.code boot = FALSE} for grouped estimates, or drop {.arg by}."
-        ),
-        class = "creel_error_glmm_grouped_boot_unsupported"
-      )
-    }
     strata_tbl <- unique(counts_data[, by_vars, drop = FALSE])
     strata_tbl <- strata_tbl[do.call(order, unname(as.list(strata_tbl))), , drop = FALSE]
     row.names(strata_tbl) <- NULL
@@ -454,7 +484,7 @@ estimate_effort_aerial_glmm <- function(
       for (nm in by_vars) {
         grid_i[[nm]] <- factor(as.character(lvl[[nm]]), levels = strata_levels[[nm]])
       }
-      x_i <- stats::model.matrix(terms_obj, data = grid_i) # nolint: object_name_linter
+      x_i <- stats::model.matrix(terms_obj, data = grid_i)[, names(beta), drop = FALSE] # nolint: object_name_linter
       mu_i <- as.numeric(exp(x_i %*% beta))
 
       keep <- rep(TRUE, nrow(counts_data))
@@ -488,7 +518,9 @@ estimate_effort_aerial_glmm <- function(
 
     se_i <- sqrt(diag(strata_vcov))
     z <- stats::qnorm(1 - (1 - conf_level) / 2)
-    grouped_df <- tibble::as_tibble(strata_tbl)
+    # The fit needed factors; the rows report each stratum in its source type,
+    # as the other grouped estimators do, so they join to rates by value.
+    grouped_df <- tibble::as_tibble(restore_group_types(strata_tbl, design$counts, by_vars)) # nolint: object_usage_linter
     grouped_df$estimate <- est
     grouped_df$se <- se_i
     grouped_df$se_between <- se_i

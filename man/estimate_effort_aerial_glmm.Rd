@@ -172,8 +172,22 @@ design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
 
-# One row per day type, from one model with day type as an additive term
-by_day <- estimate_effort_aerial_glmm(design, time_col = time_of_flight, by = day_type)
+# One row per day type, from one model with day type as an additive term.
+# `visibility_correction = "none"` above leaves the SEs unknown (NA), so this
+# design declares a measured detection probability and its SE.
+design_v <- creel_design(
+  aerial_cal,
+  date = date,
+  strata = day_type,
+  survey_type = "aerial",
+  visibility_correction = 0.85,
+  visibility_se = 0.05,
+  angler_ratio = 1,
+  angler_ratio_se = 0,
+  h_open = 14
+)
+design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
+by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
 print(by_day)
 # SE of the summed total: use the joint covariance, not quadrature
 sqrt(sum(by_day$strata_vcov))
