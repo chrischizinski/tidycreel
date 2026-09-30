@@ -530,15 +530,63 @@ test_that("GLMM-08: an unknown visibility correction leaves the grouped SE unkno
   expect_true(all(is.na(result$strata_vcov)))
 })
 
-test_that("GLMM-08: a count with no stratum is refused, not dropped", {
+test_that("GLMM-08: a count with no stratum is its own NA row, not dropped", {
   skip_if_not_installed("lme4")
-  # Why: lme4 would drop the row silently, so the grouped fit would rest on
-  # different data from the ungrouped one with nothing to say so.
+  # Why: an unknown stratum is a stratum like any other (#317, #321). Refusing
+  # made this the one grouped estimator that could not report a design with a
+  # few unlabelled days; dropping the counts (lme4's na.action) would fit the
+  # grouped model to different data from the ungrouped one. The rows must
+  # account for every count, and the NA row must expand by ITS days.
   design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
-  design$counts$day_type[c(1, 5)] <- NA
+  wd_dates <- unique(design$counts$date[design$counts$day_type == "weekday"])
+  unknown <- design$counts$date %in% wd_dates[1:2]
+  design$counts$day_type <- as.character(design$counts$day_type)
+  design$counts$day_type[unknown] <- NA
+  result <- grouped_glmm(design)
+  est <- result$estimates
 
-  expect_error(grouped_glmm(design), class = "creel_error_glmm_by_missing")
-  expect_error(grouped_glmm(design), "2 of 48")
+  expect_identical(est$day_type, c("weekday", "weekend", NA))
+  expect_identical(sum(est$n), nrow(design$counts))
+  expect_identical(est$n[3], sum(unknown))
+  expect_true(all(is.finite(est$estimate)))
+  expect_true(all(is.finite(est$se)))
+  expect_identical(dim(result$strata_vcov), c(3L, 3L))
+
+  # mean_day divides out each row's own sampled days: 2 for the NA stratum.
+  per_day <- grouped_glmm(design, target = "mean_day")$estimates
+  expect_equal(est$estimate[3] / per_day$estimate[3], 2)
+})
+
+test_that("GLMM-08: a stratum labelled \"NA\" is not the unknown stratum", {
+  skip_if_not_installed("lme4")
+  # Why: rows are matched to their counts by level, and a value comparison
+  # would either miss the unknown stratum (NA == NA is NA) or merge it with a
+  # real label spelling "NA". Each count must land in exactly one row.
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  dates <- unique(design$counts$date)
+  design$counts$day_type <- as.character(design$counts$day_type)
+  design$counts$day_type[design$counts$date %in% dates[1:2]] <- NA
+  design$counts$day_type[design$counts$date %in% dates[3:4]] <- "NA"
+  est <- grouped_glmm(design)$estimates
+
+  expect_identical(sum(is.na(est$day_type)), 1L)
+  expect_identical(sum(est$day_type %in% "NA"), 1L)
+  expect_identical(sum(est$n), nrow(design$counts))
+  expect_identical(est$n[is.na(est$day_type)], sum(design$counts$date %in% dates[1:2]))
+})
+
+test_that("GLMM-08: a numeric stratum with an unknown value stays numeric", {
+  skip_if_not_installed("lme4")
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  design$counts$weekend <- as.numeric(design$counts$day_type == "weekend")
+  design$counts$weekend[design$counts$date == min(design$counts$date)] <- NA
+  est <- suppressWarnings(suppressMessages(estimate_effort_aerial_glmm(
+    design,
+    time_col = time_of_flight, by = weekend
+  )))$estimates
+
+  expect_type(est$weekend, "double")
+  expect_identical(est$weekend, c(0, 1, NA))
 })
 
 test_that("GLMM-08: an unused factor level does not break the prediction grid", {

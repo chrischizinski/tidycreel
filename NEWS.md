@@ -23,10 +23,13 @@
   631 from the covariance, so the naive combination understates the SE by
   about 9%.
 
-  Counts with a missing value in a `by` column are refused, not dropped. The
-  grouped path supports the delta method only; `boot = TRUE` with `by` is an
-  error. A supplied `formula` must contain every `by` column as a fixed effect;
-  without it every stratum would get the same curve, so the call is refused.
+  A count with a missing value in a `by` column is an unknown stratum, not a
+  dropped row: it is its own level in the model and its own `NA` row, as in
+  every other grouped estimator (#317, #321). Stratum columns keep their
+  source type. The grouped path supports the delta method only; `boot = TRUE`
+  with `by` is an error. A supplied `formula` must contain every `by` column
+  as a fixed effect; without it every stratum would get the same curve, so
+  the call is refused.
   A `by` column with only one observed level (a season flown only on weekdays)
   is left out of the model and still reported as a row.
 

@@ -50,8 +50,10 @@
 #'   strata enter the default model as additive fixed effects in ONE model --
 #'   `count ~ poly(time_col, 2) + day_type + (1 | date)` -- so they share the
 #'   diurnal curve's shape and differ in its level; see Details. Each stratum
-#'   expands by its own sampled days. Counts with a missing value in a `by`
-#'   column are refused rather than dropped. Supported on the delta path only
+#'   expands by its own sampled days. A count with a missing value in a `by`
+#'   column belongs to an unknown stratum, which is its own level in the model
+#'   and its own row (`NA`), so the rows account for every count. Stratum
+#'   columns keep their source type. Supported on the delta path only
 #'   (`boot = FALSE`). When `formula` is supplied it is used as given, and it
 #'   must contain every `by` column as a fixed effect; otherwise every stratum
 #'   would get the same curve, so the call is refused. A `by` column with only
@@ -241,10 +243,6 @@ estimate_effort_aerial_glmm <- function(
     eval_select_count_by(by_quo, design, species_route = FALSE, error_call = rlang::caller_env())
   }
 
-  # A count with no stratum cannot be placed in any stratum's total, and the
-  # model fit would drop it silently (lme4's na.action), so the grouped and
-  # ungrouped fits would rest on different data with nothing to say so. Refuse
-  # with the count rather than exclude invisibly.
   if (length(by_vars) > 0L) {
     # The grouped path is delta-method only. Returning a delta SE while the
     # caller asked for a bootstrap would be a silently wrong variance method,
@@ -261,21 +259,19 @@ estimate_effort_aerial_glmm <- function(
         class = "creel_error_glmm_grouped_boot_unsupported"
       )
     }
-    na_rows <- !stats::complete.cases(counts_data[, by_vars, drop = FALSE])
-    if (any(na_rows)) {
-      cli::cli_abort(
-        c(
-          "Missing values in grouping {cli::qty(length(by_vars))}column{?s} {.field {by_vars}}.",
-          "x" = "{sum(na_rows)} of {nrow(counts_data)} count{?s} would belong to no stratum.",
-          "i" = "Fill the missing values, or remove those counts before {.fn add_counts}."
-        ),
-        class = "creel_error_glmm_by_missing"
-      )
-    }
     # Fit on factors whose levels are exactly those observed, so the prediction
     # grid below can reuse the fitted levels and the design-matrix columns line
     # up. droplevels() keeps a supplied factor's own ordering.
-    for (nm in by_vars) counts_data[[nm]] <- droplevels(as.factor(counts_data[[nm]]))
+    #
+    # An unknown stratum (NA) is a stratum like any other (GH #317, #321): it
+    # gets its own level, its own row and its own sampled days, so the rows
+    # still account for every count. addNA() makes it a real level; left as a
+    # missing value, lme4's na.action would drop those counts from the fit
+    # without a word, and the grouped and ungrouped fits would rest on
+    # different data.
+    for (nm in by_vars) {
+      counts_data[[nm]] <- addNA(droplevels(as.factor(counts_data[[nm]])), ifany = TRUE)
+    }
   }
 
   # 5. Build GLMM formula.
@@ -401,11 +397,10 @@ estimate_effort_aerial_glmm <- function(
   # Carried as a factor with the FULL fitted level set, not a bare value: a
   # column holding one level cannot form contrasts, and the levels must match
   # those the model was fitted with or the design matrix columns will not line
-  # up.
-  strata_levels <- lapply(by_vars, function(nm) levels(counts_data[[nm]]))
-  names(strata_levels) <- by_vars
+  # up. Indexing the fitted factor keeps every level, including an NA one,
+  # which factor(x, levels = ) would drop under its default `exclude = NA`.
   for (nm in by_vars) {
-    new_data[[nm]] <- factor(strata_levels[[nm]][1], levels = strata_levels[[nm]])
+    new_data[[nm]] <- counts_data[[nm]][rep(1L, nrow(new_data))]
   }
 
   terms_obj <- stats::delete.response(stats::terms(model))
@@ -482,7 +477,7 @@ estimate_effort_aerial_glmm <- function(
       lvl <- strata_tbl[i, , drop = FALSE]
       grid_i <- new_data
       for (nm in by_vars) {
-        grid_i[[nm]] <- factor(as.character(lvl[[nm]]), levels = strata_levels[[nm]])
+        grid_i[[nm]] <- lvl[[nm]][rep(1L, nrow(grid_i))]
       }
       x_i <- stats::model.matrix(terms_obj, data = grid_i)[, names(beta), drop = FALSE] # nolint: object_name_linter
       mu_i <- as.numeric(exp(x_i %*% beta))
