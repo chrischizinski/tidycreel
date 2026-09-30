@@ -109,7 +109,8 @@ parametric bootstrap (<code><a href="https://rdrr.io/pkg/lme4/man/bootMer.html" 
 <span>  boot <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  nboot <span class="op">=</span> <span class="fl">500L</span>,</span>
 <span>  conf_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
-<span>  target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sampled_days"</span>, <span class="st">"mean_day"</span><span class="op">)</span></span>
+<span>  target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sampled_days"</span>, <span class="st">"mean_day"</span><span class="op">)</span>,</span>
+<span>  by <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -168,6 +169,23 @@ the old code omitted, so it is higher by <code>exp(sigma^2 / 2)</code>.</p>
 under Details. Neither expands beyond the sampled days: expanded targets
 are not supported for aerial designs by <code><a href="estimate_effort.html">estimate_effort()</a></code> either.</p></dd>
 
+
+<dt id="arg-by">by<a class="anchor" aria-label="anchor" href="#arg-by"></a></dt>
+<dd><p>Optional tidy selection of columns in <code>design$counts</code> to estimate
+within, typically the design strata (for example <code>by = day_type</code>). The
+strata enter the default model as additive fixed effects in ONE model –
+<code>count ~ poly(time_col, 2) + day_type + (1 | date)</code> – so they share the
+diurnal curve's shape and differ in its level; see Details. Each stratum
+expands by its own sampled days. A count with a missing value in a <code>by</code>
+column belongs to an unknown stratum, which is its own level in the model
+and its own row (<code>NA</code>), so the rows account for every count. Stratum
+columns keep their source type. Supported on the delta path only
+(<code>boot = FALSE</code>). When <code>formula</code> is supplied it is used as given, and it
+must contain every <code>by</code> column as a fixed effect; otherwise every stratum
+would get the same curve, so the call is refused. A <code>by</code> column with only
+one observed level is left out of the model (its level is the intercept)
+and still reported as a row.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -184,9 +202,19 @@ unconditional interval exists to report. Reporting the remaining
 spread would be an interval conditional on the unknown multiplier
 being exact – indistinguishable from declaring it known with zero
 uncertainty, which is precisely the confusion <code>NA</code> exists to prevent.</p></li>
-<li><p><code>n</code>: number of count observations used to fit the model</p></li>
+<li><p><code>n</code>: number of count observations used to fit the model (with <code>by</code>,
+the observations in that stratum)</p></li>
 <li><p><code>method</code>: <code>"aerial_glmm_total"</code></p></li>
-</ul></div>
+</ul><p>With <code>by</code>, there is one row per stratum, headed by the <code>by</code> columns, and
+the object carries <code>strata_vcov</code>: the covariance matrix of the stratum
+estimates, rows and columns in the order of the estimate rows. Its
+diagonal is <code>se^2</code>. The off-diagonal is not zero: every stratum is
+predicted from the same fixed effects, and the visibility correction and
+angler-to-people ratio are single estimates that multiply every stratum.
+Combine strata with it – <code>sqrt(sum(strata_vcov))</code> is the SE of the
+summed total – and never by adding the rows' SEs in quadrature, which
+understates it.</p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="figures/lifecycle-experimental.svg" alt="[Experimental]"></a></p>
@@ -199,7 +227,30 @@ where days vary more.</p>
 <p>That factor treats <code>sigma^2</code> as known. The reported standard error scales
 with the expansion but does not carry the uncertainty in the variance
 component itself, so it is mildly optimistic; quantifying that would need a
-variance method neither the delta nor the bootstrap path offers today.</p>
+variance method neither the delta nor the bootstrap path offers today.</p><div class="section">
+<h3 id="estimating-within-strata">Estimating within strata<a class="anchor" aria-label="anchor" href="#estimating-within-strata"></a></h3>
+
+
+<p>With <code>by</code>, the strata are additive: they shift the level of one shared
+diurnal curve and do not change its shape. That follows Askey et al.
+(2018), where day type is additive in every model structure compared; the
+one interaction they tested (month x hour) was preferred by AIC, rejected by
+BIC, and bought no predictive gain in cross-validation. A single model also
+shares strength across strata, which matters when a stratum has few flights.</p>
+<p>The assumption can fail. Smucker et al. (2010, Table 1) report weekday and
+weekend diurnal effort that differ in shape, most clearly for shore anglers.
+So the default grouped fit also fits the time x stratum interaction and
+reports the BIC difference as a message. A negative difference favours
+separate shapes; fit one by passing <code>formula</code>, for example
+<code>n_anglers ~ poly(time_of_flight, 2) * day_type + (1 | date)</code>. The estimate
+is never switched automatically, because a choice made from the data is not
+reflected in the reported standard error.</p>
+<p>Askey et al. also found that with many randomly timed counts (about 60 or
+more) a model-based estimator offered no advantage over expanding the mean
+count, which was the only unbiased estimator in their comparison. The GLMM
+earns its place when flights are few or their timing is not random.</p>
+</div>
+
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -208,6 +259,10 @@ Angler effort estimates from instantaneous aerial counts: use of
 high-frequency time-lapse camera data to inform model-based estimators.
 North American Journal of Fisheries Management, 38, 194-209.
 <a href="https://doi.org/10.1002/nafm.10010" class="external-link">doi:10.1002/nafm.10010</a></p>
+<p>Smucker, B.J., Lorantas, R.M., and Rosenberger, J.L. (2010). Correcting
+bias introduced by aerial counts in angler effort estimation. North
+American Journal of Fisheries Management, 30, 1051-1061.
+<a href="https://doi.org/10.1577/M09-193.1" class="external-link">doi:10.1577/M09-193.1</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -272,6 +327,54 @@ North American Journal of Fisheries Management, 38, 194-209.
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">4</span>729.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># One row per day type, from one model with day type as an additive term.</span></span></span>
+<span class="r-in"><span><span class="co"># `visibility_correction = "none"` above leaves the SEs unknown (NA), so this</span></span></span>
+<span class="r-in"><span><span class="co"># design declares a measured detection probability and its SE.</span></span></span>
+<span class="r-in"><span><span class="va">design_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">aerial_cal</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">date</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">day_type</span>,</span></span>
+<span class="r-in"><span>  survey_type <span class="op">=</span> <span class="st">"aerial"</span>,</span></span>
+<span class="r-in"><span>  visibility_correction <span class="op">=</span> <span class="fl">0.85</span>,</span></span>
+<span class="r-in"><span>  visibility_se <span class="op">=</span> <span class="fl">0.05</span>,</span></span>
+<span class="r-in"><span>  angler_ratio <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>  angler_ratio_se <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>  h_open <span class="op">=</span> <span class="fl">14</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_v</span>, <span class="va">example_aerial_glmm_counts</span>, count_col <span class="op">=</span> <span class="va">n_anglers</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`counts` has 36 repeated sampling units, with no count time to tell them apart.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The repeated rows are keyed on <span style="color: #00BB00;">date</span> and <span style="color: #00BB00;">day_type</span>.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   are repeat counts, or `unit_cols` if they are distinct units.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No weights or probabilities supplied, assuming equal probability</span>
+<span class="r-in"><span><span class="va">by_day</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort_aerial_glmm</span><span class="op">(</span><span class="va">design_v</span>, time_col <span class="op">=</span> <span class="va">time_of_flight</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>iteration limit reached</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   this estimate.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   The interaction fit raised 1 warning; treat the comparison with caution.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">by_day</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Method: aerial_glmm_total</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variance: delta</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Grouped by: day_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> model: 380.6 and 290.4 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> visibility: 212.0 and 115.3 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> angler_ratio: 0 and 0 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 8</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se se_between se_within ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>603.  436.       436.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>750.    <span style="text-decoration: underline;">4</span>457.    32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>960.  312.       312.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">1</span>347.    <span style="text-decoration: underline;">2</span>572.    16</span>
+<span class="r-in"><span><span class="co"># SE of the summed total: use the joint covariance, not quadrature</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 581.6956</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Bootstrap CIs. `nboot` is held low here so the example stays fast on a</span></span></span>
 <span class="r-in"><span><span class="co"># check machine; use at least 1000 replicates for real inference. The block</span></span></span>

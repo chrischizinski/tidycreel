@@ -385,6 +385,101 @@ Neither estimator reports a confidence interval here, for the reason
 given under “Variance and Confidence Intervals” above: this design
 declares `visibility_correction = "none"`.
 
+## Estimating Within Strata
+
+Pass `by` to get one row per stratum, typically the design strata. The
+strata enter ONE model as additive fixed effects —
+`n_anglers ~ poly(time_of_flight, 2) + day_type + (1 | date)` — so
+weekdays and weekends share the diurnal curve’s shape and differ in its
+level, and each stratum expands by its own sampled days. This follows
+Askey et al. (2018), where day type is additive in every model structure
+compared. Fitting one model rather than one per stratum shares strength
+across strata, which matters when a stratum has few flights. The grouped
+path uses the delta method only (`boot = FALSE`).
+
+The design below declares a measured visibility correction, so the
+grouped rows carry standard errors; with `"none"` they would be `NA`, as
+explained above.
+
+``` r
+
+design_v <- creel_design(
+  aerial_cal,
+  date        = date,
+  strata      = day_type,
+  survey_type = "aerial",
+  visibility_correction = 0.85,
+  visibility_se = 0.05,
+  angler_ratio = 1,
+  angler_ratio_se = 0,
+  h_open      = 14
+)
+design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
+#> Warning in add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers): `counts` has 36 repeated sampling units, with no count time to tell them apart.
+#> ℹ The repeated rows are keyed on date and day_type.
+#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
+#>   are repeat counts, or `unit_cols` if they are distinct units.
+#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
+#> weights or probabilities supplied, assuming equal probability
+
+glmm_by_day <- estimate_effort_aerial_glmm(
+  design_v,
+  time_col = time_of_flight,
+  by = day_type
+)
+#> Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :
+#> iteration limit reached
+#> ℹ BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for
+#>   this estimate.
+#>   The interaction fit raised 1 warning; treat the comparison with caution.
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
+print(glmm_by_day)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: aerial_glmm_total
+#> Variance: delta
+#> Confidence level: 95%
+#> Grouped by: day_type
+#> Effort target: sampled_days
+#> model: 380.6 and 290.4 (included in se)
+#> visibility: 212.0 and 115.3 (included in se)
+#> angler_ratio: 0 and 0 (included in se)
+#> 
+#> # A tibble: 2 × 8
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1 weekday     3603.  436.       436.        NA    2750.    4457.    32
+#> 2 weekend     1960.  312.       312.        NA    1347.    2572.    16
+```
+
+The shared-shape assumption can fail: Smucker et al. (2010) report
+weekday and weekend diurnal effort that differ in shape. The grouped fit
+therefore also fits the time × stratum interaction and reports the BIC
+difference as a message. A negative difference favours separate shapes;
+fit them by passing `formula`, for example
+`n_anglers ~ poly(time_of_flight, 2) * day_type + (1 | date)`. The
+estimate is never switched automatically, because a model chosen from
+the data is not reflected in the reported standard error.
+
+**Combining strata.** The stratum estimates are correlated: every
+stratum is predicted from the same fixed effects, and the visibility
+correction and angler-to-people ratio are single estimates that multiply
+every stratum. The result carries their joint covariance as
+`strata_vcov`. Use it for the SE of the summed total; adding the rows’
+SEs in quadrature treats them as independent and understates it.
+
+``` r
+
+# SE of the summed total, from the joint covariance
+sqrt(sum(glmm_by_day$strata_vcov))
+#> [1] 581.6956
+
+# The quadrature sum, shown only to compare -- it understates the SE
+sqrt(sum(glmm_by_day$estimates$se^2))
+#> [1] 536.0884
+```
+
 ## Custom Formula
 
 For surveys where a linear temporal term is sufficient — or where the
@@ -434,3 +529,8 @@ formula when you have 8 or more survey days.
 - Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
   estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
   Techniques* (3rd ed.), pp. 883–919. American Fisheries Society.
+
+- Smucker, B. J., Lorantas, R. M., & Rosenberger, J. L. (2010).
+  Correcting bias introduced by aerial counts in angler effort
+  estimation. *North American Journal of Fisheries Management*, 30(4),
+  1051–1061. <https://doi.org/10.1577/M09-193.1>

@@ -464,6 +464,95 @@ given under “Variance and Confidence Intervals” above: this design
 declares <code>visibility_correction = "none"</code>.</p>
 </div>
 <div class="section level2">
+<h2 id="estimating-within-strata">Estimating Within Strata<a class="anchor" aria-label="anchor" href="#estimating-within-strata"></a>
+</h2>
+<p>Pass <code>by</code> to get one row per stratum, typically the design
+strata. The strata enter ONE model as additive fixed effects —
+<code>n_anglers ~ poly(time_of_flight, 2) + day_type + (1 | date)</code>
+— so weekdays and weekends share the diurnal curve’s shape and differ in
+its level, and each stratum expands by its own sampled days. This
+follows Askey et al. (2018), where day type is additive in every model
+structure compared. Fitting one model rather than one per stratum shares
+strength across strata, which matters when a stratum has few flights.
+The grouped path uses the delta method only
+(<code>boot = FALSE</code>).</p>
+<p>The design below declares a measured visibility correction, so the
+grouped rows carry standard errors; with <code>"none"</code> they would
+be <code>NA</code>, as explained above.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">design_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
+<span>  <span class="va">aerial_cal</span>,</span>
+<span>  date        <span class="op">=</span> <span class="va">date</span>,</span>
+<span>  strata      <span class="op">=</span> <span class="va">day_type</span>,</span>
+<span>  survey_type <span class="op">=</span> <span class="st">"aerial"</span>,</span>
+<span>  visibility_correction <span class="op">=</span> <span class="fl">0.85</span>,</span>
+<span>  visibility_se <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  angler_ratio <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  angler_ratio_se <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  h_open      <span class="op">=</span> <span class="fl">14</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">design_v</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_v</span>, <span class="va">example_aerial_glmm_counts</span>, count_col <span class="op">=</span> <span class="va">n_anglers</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers): `counts` has 36 repeated sampling units, with no count time to tell them apart.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The repeated rows are keyed on <span style="color: #00BB00;">date</span> and <span style="color: #00BB00;">day_type</span>.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span></span>
+<span><span class="co">#&gt;   are repeat counts, or `unit_cols` if they are distinct units.</span></span>
+<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
+<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
+<span></span>
+<span><span class="va">glmm_by_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm</a></span><span class="op">(</span></span>
+<span>  <span class="va">design_v</span>,</span>
+<span>  time_col <span class="op">=</span> <span class="va">time_of_flight</span>,</span>
+<span>  by <span class="op">=</span> <span class="va">day_type</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :</span></span>
+<span><span class="co">#&gt; iteration limit reached</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for</span></span>
+<span><span class="co">#&gt;   this estimate.</span></span>
+<span><span class="co">#&gt;   The interaction fit raised 1 warning; treat the comparison with caution.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span></span>
+<span><span class="co">#&gt;   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: aerial_glmm_total</span></span>
+<span><span class="co">#&gt; Variance: delta</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Grouped by: day_type</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; model: 380.6 and 290.4 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; visibility: 212.0 and 115.3 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; angler_ratio: 0 and 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
+<span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>603.  436.       436.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>750.    <span style="text-decoration: underline;">4</span>457.    32</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>960.  312.       312.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">1</span>347.    <span style="text-decoration: underline;">2</span>572.    16</span></span></code></pre></div>
+<p>The shared-shape assumption can fail: Smucker et al. (2010) report
+weekday and weekend diurnal effort that differ in shape. The grouped fit
+therefore also fits the time × stratum interaction and reports the BIC
+difference as a message. A negative difference favours separate shapes;
+fit them by passing <code>formula</code>, for example
+<code>n_anglers ~ poly(time_of_flight, 2) * day_type + (1 | date)</code>.
+The estimate is never switched automatically, because a model chosen
+from the data is not reflected in the reported standard error.</p>
+<p><strong>Combining strata.</strong> The stratum estimates are
+correlated: every stratum is predicted from the same fixed effects, and
+the visibility correction and angler-to-people ratio are single
+estimates that multiply every stratum. The result carries their joint
+covariance as <code>strata_vcov</code>. Use it for the SE of the summed
+total; adding the rows’ SEs in quadrature treats them as independent and
+understates it.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># SE of the summed total, from the joint covariance</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 581.6956</span></span>
+<span></span>
+<span><span class="co"># The quadrature sum, shown only to compare -- it understates the SE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 536.0884</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="custom-formula">Custom Formula<a class="anchor" aria-label="anchor" href="#custom-formula"></a>
 </h2>
 <p>For surveys where a linear temporal term is sufficient — or where the
@@ -471,7 +560,7 @@ analyst prefers to control the model structure directly — pass a custom
 <code>formula</code>. The formula must reference the actual count column
 (<code>n_anglers</code>) and the time column by its exact name in the
 data.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">glmm_linear</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm</a></span><span class="op">(</span></span>
 <span>  <span class="va">design</span>,</span>
 <span>  time_col <span class="op">=</span> <span class="va">time_of_flight</span>,</span>
@@ -512,6 +601,10 @@ estimators. <em>North American Journal of Fisheries Management</em>,
 methods: estimation of effort, harvest, and abundance. Chapter 19 in
 <em>Fisheries Techniques</em> (3rd ed.), pp. 883–919. American Fisheries
 Society.</p></li>
+<li><p>Smucker, B. J., Lorantas, R. M., &amp; Rosenberger, J. L. (2010).
+Correcting bias introduced by aerial counts in angler effort estimation.
+<em>North American Journal of Fisheries Management</em>, 30(4),
+1051–1061. <a href="https://doi.org/10.1577/M09-193.1" class="external-link">https://doi.org/10.1577/M09-193.1</a></p></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

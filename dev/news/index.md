@@ -2,6 +2,44 @@
 
 ## tidycreel (development version)
 
+### New features
+
+- [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
+  gains `by`, which returns one effort estimate per stratum
+  ([\#364](https://github.com/chrischizinski/tidycreel/issues/364)).
+  This is the first step towards per-stratum aerial GLMM effort that the
+  `estimate_total_*()` functions can use. The step that lets them take
+  that effort as input is still open.
+
+  All strata are fitted in **one** model, with the stratum as an
+  additive fixed effect, so they share the shape of the diurnal curve
+  and differ only in its level. This follows Askey et al. (2018), whose
+  preferred structures treat day type additively. Smucker et al. (2010)
+  show weekday and weekend curves that differ in shape, so the default
+  grouped fit also fits the time x stratum interaction and reports the
+  BIC difference in a message. The estimate itself never switches model;
+  to fit an interaction, pass it through `formula`.
+
+  Each stratum expands by its own sampled days. The result carries
+  `strata_vcov`, the covariance matrix of the stratum estimates. It is
+  not diagonal: every stratum shares the fitted coefficients, the
+  visibility correction and the angler-to-people ratio. On the package
+  fixture, adding the two day-type SEs in quadrature gives 577 for their
+  summed total, against 631 from the covariance, so the naive
+  combination understates the SE by about 9%.
+
+  A count with a missing value in a `by` column is an unknown stratum,
+  not a dropped row: it is its own level in the model and its own `NA`
+  row, as in every other grouped estimator
+  ([\#317](https://github.com/chrischizinski/tidycreel/issues/317),
+  [\#321](https://github.com/chrischizinski/tidycreel/issues/321)).
+  Stratum columns keep their source type. The grouped path supports the
+  delta method only; `boot = TRUE` with `by` is an error. A supplied
+  `formula` must contain every `by` column as a fixed effect; without it
+  every stratum would get the same curve, so the call is refused. A `by`
+  column with only one observed level (a season flown only on weekdays)
+  is left out of the model and still reported as a row.
+
 ## tidycreel 8.0.0 “Mooneye”
 
 ### Breaking changes

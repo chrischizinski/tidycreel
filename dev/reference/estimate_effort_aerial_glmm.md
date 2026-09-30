@@ -27,7 +27,8 @@ estimate_effort_aerial_glmm(
   boot = FALSE,
   nboot = 500L,
   conf_level = 0.95,
-  target = c("sampled_days", "mean_day")
+  target = c("sampled_days", "mean_day"),
+  by = NULL
 )
 ```
 
@@ -98,6 +99,23 @@ estimate_effort_aerial_glmm(
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
   either.
 
+- by:
+
+  Optional tidy selection of columns in `design$counts` to estimate
+  within, typically the design strata (for example `by = day_type`). The
+  strata enter the default model as additive fixed effects in ONE model
+  – `count ~ poly(time_col, 2) + day_type + (1 | date)` – so they share
+  the diurnal curve's shape and differ in its level; see Details. Each
+  stratum expands by its own sampled days. A count with a missing value
+  in a `by` column belongs to an unknown stratum, which is its own level
+  in the model and its own row (`NA`), so the rows account for every
+  count. Stratum columns keep their source type. Supported on the delta
+  path only (`boot = FALSE`). When `formula` is supplied it is used as
+  given, and it must contain every `by` column as a fixed effect;
+  otherwise every stratum would get the same curve, so the call is
+  refused. A `by` column with only one observed level is left out of the
+  model (its level is the intercept) and still reported as a row.
+
 ## Value
 
 A `creel_estimates` object with:
@@ -120,9 +138,20 @@ A `creel_estimates` object with:
   being exact – indistinguishable from declaring it known with zero
   uncertainty, which is precisely the confusion `NA` exists to prevent.
 
-- `n`: number of count observations used to fit the model
+- `n`: number of count observations used to fit the model (with `by`,
+  the observations in that stratum)
 
 - `method`: `"aerial_glmm_total"`
+
+With `by`, there is one row per stratum, headed by the `by` columns, and
+the object carries `strata_vcov`: the covariance matrix of the stratum
+estimates, rows and columns in the order of the estimate rows. Its
+diagonal is `se^2`. The off-diagonal is not zero: every stratum is
+predicted from the same fixed effects, and the visibility correction and
+angler-to-people ratio are single estimates that multiply every stratum.
+Combine strata with it – `sqrt(sum(strata_vcov))` is the SE of the
+summed total – and never by adding the rows' SEs in quadrature, which
+understates it.
 
 ## Details
 
@@ -141,6 +170,31 @@ variance component itself, so it is mildly optimistic; quantifying that
 would need a variance method neither the delta nor the bootstrap path
 offers today.
 
+### Estimating within strata
+
+With `by`, the strata are additive: they shift the level of one shared
+diurnal curve and do not change its shape. That follows Askey et al.
+(2018), where day type is additive in every model structure compared;
+the one interaction they tested (month x hour) was preferred by AIC,
+rejected by BIC, and bought no predictive gain in cross-validation. A
+single model also shares strength across strata, which matters when a
+stratum has few flights.
+
+The assumption can fail. Smucker et al. (2010, Table 1) report weekday
+and weekend diurnal effort that differ in shape, most clearly for shore
+anglers. So the default grouped fit also fits the time x stratum
+interaction and reports the BIC difference as a message. A negative
+difference favours separate shapes; fit one by passing `formula`, for
+example `n_anglers ~ poly(time_of_flight, 2) * day_type + (1 | date)`.
+The estimate is never switched automatically, because a choice made from
+the data is not reflected in the reported standard error.
+
+Askey et al. also found that with many randomly timed counts (about 60
+or more) a model-based estimator offered no advantage over expanding the
+mean count, which was the only unbiased estimator in their comparison.
+The GLMM earns its place when flights are few or their timing is not
+random.
+
 ## References
 
 Askey, P.J., Ward, H., Godin, T., Boucher, M., and Northrup, S. (2018).
@@ -148,6 +202,11 @@ Angler effort estimates from instantaneous aerial counts: use of
 high-frequency time-lapse camera data to inform model-based estimators.
 North American Journal of Fisheries Management, 38, 194-209.
 [doi:10.1002/nafm.10010](https://doi.org/10.1002/nafm.10010)
+
+Smucker, B.J., Lorantas, R.M., and Rosenberger, J.L. (2010). Correcting
+bias introduced by aerial counts in angler effort estimation. North
+American Journal of Fisheries Management, 30, 1051-1061.
+[doi:10.1577/M09-193.1](https://doi.org/10.1577/M09-193.1)
 
 ## See also
 
@@ -212,6 +271,54 @@ print(result)
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
 #> 1    4729.    NA         NA        NA       NA       NA    48
+
+# One row per day type, from one model with day type as an additive term.
+# `visibility_correction = "none"` above leaves the SEs unknown (NA), so this
+# design declares a measured detection probability and its SE.
+design_v <- creel_design(
+  aerial_cal,
+  date = date,
+  strata = day_type,
+  survey_type = "aerial",
+  visibility_correction = 0.85,
+  visibility_se = 0.05,
+  angler_ratio = 1,
+  angler_ratio_se = 0,
+  h_open = 14
+)
+design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
+#> Warning: `counts` has 36 repeated sampling units, with no count time to tell them apart.
+#> ℹ The repeated rows are keyed on date and day_type.
+#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
+#>   are repeat counts, or `unit_cols` if they are distinct units.
+#> Warning: No weights or probabilities supplied, assuming equal probability
+by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
+#> Warning: iteration limit reached
+#> ℹ BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for
+#>   this estimate.
+#>   The interaction fit raised 1 warning; treat the comparison with caution.
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
+print(by_day)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: aerial_glmm_total
+#> Variance: delta
+#> Confidence level: 95%
+#> Grouped by: day_type
+#> Effort target: sampled_days
+#> model: 380.6 and 290.4 (included in se)
+#> visibility: 212.0 and 115.3 (included in se)
+#> angler_ratio: 0 and 0 (included in se)
+#> 
+#> # A tibble: 2 × 8
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1 weekday     3603.  436.       436.        NA    2750.    4457.    32
+#> 2 weekend     1960.  312.       312.        NA    1347.    2572.    16
+# SE of the summed total: use the joint covariance, not quadrature
+sqrt(sum(by_day$strata_vcov))
+#> [1] 581.6956
 
 # Bootstrap CIs. `nboot` is held low here so the example stays fast on a
 # check machine; use at least 1000 replicates for real inference. The block

@@ -66,6 +66,15 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="tidycreel-development-version">tidycreel (development version)<a class="anchor" aria-label="anchor" href="#tidycreel-development-version"></a></h2>
+<div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li>
+<p><code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> gains <code>by</code>, which returns one effort estimate per stratum (<a href="https://github.com/chrischizinski/tidycreel/issues/364" class="external-link">#364</a>). This is the first step towards per-stratum aerial GLMM effort that the <code>estimate_total_*()</code> functions can use. The step that lets them take that effort as input is still open.</p>
+<p>All strata are fitted in <strong>one</strong> model, with the stratum as an additive fixed effect, so they share the shape of the diurnal curve and differ only in its level. This follows Askey et al. (2018), whose preferred structures treat day type additively. Smucker et al. (2010) show weekday and weekend curves that differ in shape, so the default grouped fit also fits the time x stratum interaction and reports the BIC difference in a message. The estimate itself never switches model; to fit an interaction, pass it through <code>formula</code>.</p>
+<p>Each stratum expands by its own sampled days. The result carries <code>strata_vcov</code>, the covariance matrix of the stratum estimates. It is not diagonal: every stratum shares the fitted coefficients, the visibility correction and the angler-to-people ratio. On the package fixture, adding the two day-type SEs in quadrature gives 577 for their summed total, against 631 from the covariance, so the naive combination understates the SE by about 9%.</p>
+<p>A count with a missing value in a <code>by</code> column is an unknown stratum, not a dropped row: it is its own level in the model and its own <code>NA</code> row, as in every other grouped estimator (<a href="https://github.com/chrischizinski/tidycreel/issues/317" class="external-link">#317</a>, <a href="https://github.com/chrischizinski/tidycreel/issues/321" class="external-link">#321</a>). Stratum columns keep their source type. The grouped path supports the delta method only; <code>boot = TRUE</code> with <code>by</code> is an error. A supplied <code>formula</code> must contain every <code>by</code> column as a fixed effect; without it every stratum would get the same curve, so the call is refused. A <code>by</code> column with only one observed level (a season flown only on weekdays) is left out of the model and still reported as a row.</p>
+</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="8.0.0" id="tidycreel-800-mooneye">tidycreel 8.0.0 “Mooneye”<a class="anchor" aria-label="anchor" href="#tidycreel-800-mooneye"></a></h2>
