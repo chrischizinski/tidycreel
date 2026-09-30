@@ -26,8 +26,9 @@ cran_submit <- function(path = "~/Dev/tidycreel-submit", dry_run = FALSE) {
   path <- normalizePath(path, mustWork = TRUE)
   git <- function(...) {
     out <- suppressWarnings(system2("git", c("-C", shQuote(path), ...), stdout = TRUE, stderr = TRUE))
-    status <- attr(out, "status") %||% 0L
-    if (status != 0L) stop("git ", paste(c(...), collapse = " "), " failed:\n", paste(out, collapse = "\n"), call. = FALSE)
+    # No %||%: it is base R only from 4.4.
+    status <- attr(out, "status")
+    if (!is.null(status) && status != 0L) stop("git ", paste(c(...), collapse = " "), " failed:\n", paste(out, collapse = "\n"), call. = FALSE)
     out
   }
   refuse <- function(...) stop("Refusing to submit: ", ..., call. = FALSE)
@@ -37,8 +38,11 @@ cran_submit <- function(path = "~/Dev/tidycreel-submit", dry_run = FALSE) {
     refuse("'", path, "' is on branch '", branch, "', not a cran-* release branch. ",
            "Never submit from main or a feature branch.")
   }
-  if (length(git("status", "--porcelain", "--untracked-files=no")) > 0L) {
-    refuse("'", path, "' has uncommitted changes.")
+  # Untracked files count too: submit_cran() builds from the directory, so an
+  # untracked file that is not .Rbuildignore'd would enter the tarball.
+  # Gitignored files are not listed and need no check.
+  if (length(git("status", "--porcelain")) > 0L) {
+    refuse("'", path, "' has uncommitted or untracked files.")
   }
   git("fetch", "--quiet", "origin", branch)
   head <- git("rev-parse", "HEAD")
@@ -48,7 +52,7 @@ cran_submit <- function(path = "~/Dev/tidycreel-submit", dry_run = FALSE) {
   }
 
   version <- unname(read.dcf(file.path(path, "DESCRIPTION"), fields = "Version")[1, 1])
-  if (grepl("[.]9[0-9]{3}$", version)) {
+  if (grepl("[.]9[0-9]{3,}$", version)) {
     refuse("DESCRIPTION has a development version (", version, ").")
   }
   if (!identical(sub("^cran-", "", branch), version)) {
@@ -59,7 +63,9 @@ cran_submit <- function(path = "~/Dev/tidycreel-submit", dry_run = FALSE) {
   if (!file.exists(cc_path)) refuse("cran-comments.md is missing; CRAN would receive an empty comment.")
   comments <- paste(readLines(cc_path, warn = FALSE), collapse = "\n")
   if (!nzchar(trimws(comments))) refuse("cran-comments.md is empty.")
-  if (!grepl(version, comments, fixed = TRUE)) {
+  # The exact version, not a substring: "8.0.0" must not match "18.0.0".
+  version_rx <- paste0("(?<![0-9.])", gsub(".", "\\.", version, fixed = TRUE), "(?![0-9]|[.][0-9])")
+  if (!grepl(version_rx, comments, perl = TRUE)) {
     refuse("cran-comments.md never mentions version ", version, "; is it current?")
   }
 
