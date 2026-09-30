@@ -1,6 +1,10 @@
 url: https://chrischizinski.com/tidycreel
 title: tidycreel
 
+# CRAN release at the site root, main (x.y.z.9000) under /dev/.
+development:
+  mode: auto
+
 template:
   bootstrap: 5
   logo: logo.png
