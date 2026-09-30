@@ -12,7 +12,8 @@ estimate_effort_aerial_glmm(
   boot = FALSE,
   nboot = 500L,
   conf_level = 0.95,
-  target = c("sampled_days", "mean_day")
+  target = c("sampled_days", "mean_day"),
+  by = NULL
 )
 }
 \arguments{
@@ -52,6 +53,16 @@ the old code omitted, so it is higher by \code{exp(sigma^2 / 2)}.
 Both are expectations, so both carry the retransformation factor described
 under Details. Neither expands beyond the sampled days: expanded targets
 are not supported for aerial designs by \code{\link[=estimate_effort]{estimate_effort()}} either.}
+
+\item{by}{Optional tidy selection of columns in \code{design$counts} to estimate
+within, typically the design strata (for example \code{by = day_type}). The
+strata enter the default model as additive fixed effects in ONE model --
+\code{count ~ poly(time_col, 2) + day_type + (1 | date)} -- so they share the
+diurnal curve's shape and differ in its level; see Details. Each stratum
+expands by its own sampled days. Counts with a missing value in a \code{by}
+column are refused rather than dropped. Supported on the delta path only
+(\code{boot = FALSE}). When \code{formula} is supplied it is used as given, so it
+must contain the \code{by} columns for the strata to differ at all.}
 }
 \value{
 A \code{creel_estimates} object with:
@@ -69,9 +80,20 @@ unconditional interval exists to report. Reporting the remaining
 spread would be an interval conditional on the unknown multiplier
 being exact -- indistinguishable from declaring it known with zero
 uncertainty, which is precisely the confusion \code{NA} exists to prevent.
-\item \code{n}: number of count observations used to fit the model
+\item \code{n}: number of count observations used to fit the model (with \code{by},
+the observations in that stratum)
 \item \code{method}: \code{"aerial_glmm_total"}
 }
+
+With \code{by}, there is one row per stratum, headed by the \code{by} columns, and
+the object carries \code{strata_vcov}: the covariance matrix of the stratum
+estimates, rows and columns in the order of the estimate rows. Its
+diagonal is \code{se^2}. The off-diagonal is not zero: every stratum is
+predicted from the same fixed effects, and the visibility correction and
+angler-to-people ratio are single estimates that multiply every stratum.
+Combine strata with it -- \code{sqrt(sum(strata_vcov))} is the SE of the
+summed total -- and never by adding the rows' SEs in quadrature, which
+understates it.
 }
 \description{
 Estimates total angler effort from aerial creel surveys using a generalized
@@ -101,6 +123,29 @@ That factor treats \code{sigma^2} as known. The reported standard error scales
 with the expansion but does not carry the uncertainty in the variance
 component itself, so it is mildly optimistic; quantifying that would need a
 variance method neither the delta nor the bootstrap path offers today.
+\subsection{Estimating within strata}{
+
+With \code{by}, the strata are additive: they shift the level of one shared
+diurnal curve and do not change its shape. That follows Askey et al.
+(2018), where day type is additive in every model structure compared; the
+one interaction they tested (month x hour) was preferred by AIC, rejected by
+BIC, and bought no predictive gain in cross-validation. A single model also
+shares strength across strata, which matters when a stratum has few flights.
+
+The assumption can fail. Smucker et al. (2010, Table 1) report weekday and
+weekend diurnal effort that differ in shape, most clearly for shore anglers.
+So the default grouped fit also fits the time x stratum interaction and
+reports the BIC difference as a message. A negative difference favours
+separate shapes; fit one by passing \code{formula}, for example
+\code{n_anglers ~ poly(time_of_flight, 2) * day_type + (1 | date)}. The estimate
+is never switched automatically, because a choice made from the data is not
+reflected in the reported standard error.
+
+Askey et al. also found that with many randomly timed counts (about 60 or
+more) a model-based estimator offered no advantage over expanding the mean
+count, which was the only unbiased estimator in their comparison. The GLMM
+earns its place when flights are few or their timing is not random.
+}
 }
 \examples{
 \dontshow{if (rlang::is_installed("lme4")) withAutoprint(\{ # examplesIf}
@@ -124,6 +169,12 @@ design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
 
+# One row per day type, from one model with day type as an additive term
+by_day <- estimate_effort_aerial_glmm(design, time_col = time_of_flight, by = day_type)
+print(by_day)
+# SE of the summed total: use the joint covariance, not quadrature
+sqrt(sum(by_day$strata_vcov))
+
 # Bootstrap CIs. `nboot` is held low here so the example stays fast on a
 # check machine; use at least 1000 replicates for real inference. The block
 # is wrapped in \donttest{} for runtime alone -- it needs no resource the
@@ -145,6 +196,11 @@ Angler effort estimates from instantaneous aerial counts: use of
 high-frequency time-lapse camera data to inform model-based estimators.
 North American Journal of Fisheries Management, 38, 194-209.
 \doi{10.1002/nafm.10010}
+
+Smucker, B.J., Lorantas, R.M., and Rosenberger, J.L. (2010). Correcting
+bias introduced by aerial counts in angler effort estimation. North
+American Journal of Fisheries Management, 30, 1051-1061.
+\doi{10.1577/M09-193.1}
 }
 \seealso{
 Other "Estimation":

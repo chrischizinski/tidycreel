@@ -45,6 +45,15 @@
 #'   Both are expectations, so both carry the retransformation factor described
 #'   under Details. Neither expands beyond the sampled days: expanded targets
 #'   are not supported for aerial designs by [estimate_effort()] either.
+#' @param by Optional tidy selection of columns in `design$counts` to estimate
+#'   within, typically the design strata (for example `by = day_type`). The
+#'   strata enter the default model as additive fixed effects in ONE model --
+#'   `count ~ poly(time_col, 2) + day_type + (1 | date)` -- so they share the
+#'   diurnal curve's shape and differ in its level; see Details. Each stratum
+#'   expands by its own sampled days. Counts with a missing value in a `by`
+#'   column are refused rather than dropped. Supported on the delta path only
+#'   (`boot = FALSE`). When `formula` is supplied it is used as given, so it
+#'   must contain the `by` columns for the strata to differ at all.
 #'
 #' @return A `creel_estimates` object with:
 #'   - `estimate`: total angler effort integrated over the fishing day
@@ -60,8 +69,19 @@
 #'     spread would be an interval conditional on the unknown multiplier
 #'     being exact -- indistinguishable from declaring it known with zero
 #'     uncertainty, which is precisely the confusion `NA` exists to prevent.
-#'   - `n`: number of count observations used to fit the model
+#'   - `n`: number of count observations used to fit the model (with `by`,
+#'     the observations in that stratum)
 #'   - `method`: `"aerial_glmm_total"`
+#'
+#'   With `by`, there is one row per stratum, headed by the `by` columns, and
+#'   the object carries `strata_vcov`: the covariance matrix of the stratum
+#'   estimates, rows and columns in the order of the estimate rows. Its
+#'   diagonal is `se^2`. The off-diagonal is not zero: every stratum is
+#'   predicted from the same fixed effects, and the visibility correction and
+#'   angler-to-people ratio are single estimates that multiply every stratum.
+#'   Combine strata with it -- `sqrt(sum(strata_vcov))` is the SE of the
+#'   summed total -- and never by adding the rows' SEs in quadrature, which
+#'   understates it.
 #'
 #' @details
 #' The fitted curve is a fixed-effects prediction: the day whose random
@@ -76,12 +96,40 @@
 #' component itself, so it is mildly optimistic; quantifying that would need a
 #' variance method neither the delta nor the bootstrap path offers today.
 #'
+#' ## Estimating within strata
+#'
+#' With `by`, the strata are additive: they shift the level of one shared
+#' diurnal curve and do not change its shape. That follows Askey et al.
+#' (2018), where day type is additive in every model structure compared; the
+#' one interaction they tested (month x hour) was preferred by AIC, rejected by
+#' BIC, and bought no predictive gain in cross-validation. A single model also
+#' shares strength across strata, which matters when a stratum has few flights.
+#'
+#' The assumption can fail. Smucker et al. (2010, Table 1) report weekday and
+#' weekend diurnal effort that differ in shape, most clearly for shore anglers.
+#' So the default grouped fit also fits the time x stratum interaction and
+#' reports the BIC difference as a message. A negative difference favours
+#' separate shapes; fit one by passing `formula`, for example
+#' `n_anglers ~ poly(time_of_flight, 2) * day_type + (1 | date)`. The estimate
+#' is never switched automatically, because a choice made from the data is not
+#' reflected in the reported standard error.
+#'
+#' Askey et al. also found that with many randomly timed counts (about 60 or
+#' more) a model-based estimator offered no advantage over expanding the mean
+#' count, which was the only unbiased estimator in their comparison. The GLMM
+#' earns its place when flights are few or their timing is not random.
+#'
 #' @references
 #'   Askey, P.J., Ward, H., Godin, T., Boucher, M., and Northrup, S. (2018).
 #'   Angler effort estimates from instantaneous aerial counts: use of
 #'   high-frequency time-lapse camera data to inform model-based estimators.
 #'   North American Journal of Fisheries Management, 38, 194-209.
 #'   \doi{10.1002/nafm.10010}
+#'
+#'   Smucker, B.J., Lorantas, R.M., and Rosenberger, J.L. (2010). Correcting
+#'   bias introduced by aerial counts in angler effort estimation. North
+#'   American Journal of Fisheries Management, 30, 1051-1061.
+#'   \doi{10.1577/M09-193.1}
 #'
 #' @examplesIf rlang::is_installed("lme4")
 #' data(example_aerial_glmm_counts)
@@ -103,6 +151,12 @@
 #' # Default Askey quadratic model with delta-method SE
 #' result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 #' print(result)
+#'
+#' # One row per day type, from one model with day type as an additive term
+#' by_day <- estimate_effort_aerial_glmm(design, time_col = time_of_flight, by = day_type)
+#' print(by_day)
+#' # SE of the summed total: use the joint covariance, not quadrature
+#' sqrt(sum(by_day$strata_vcov))
 #'
 #' # Bootstrap CIs. `nboot` is held low here so the example stays fast on a
 #' # check machine; use at least 1000 replicates for real inference. The block
@@ -128,9 +182,11 @@ estimate_effort_aerial_glmm <- function(
   boot = FALSE,
   nboot = 500L,
   conf_level = 0.95,
-  target = c("sampled_days", "mean_day")
+  target = c("sampled_days", "mean_day"),
+  by = NULL
 ) {
   target <- match.arg(target)
+  by_quo <- rlang::enquo(by)
   # 1. Guard: lme4 must be installed
   rlang::check_installed("lme4", reason = "to fit the GLMM aerial effort estimator")
 
@@ -161,10 +217,61 @@ estimate_effort_aerial_glmm <- function(
     count_col = design$count_col
   )
 
-  # 5. Build GLMM formula
+  # 4b. Resolve `by` to column names, if grouping was asked for.
+  by_vars <- if (rlang::quo_is_null(by_quo)) {
+    character(0)
+  } else {
+    eval_select_count_by(by_quo, design, species_route = FALSE, error_call = rlang::caller_env())
+  }
+
+  # A count with no stratum cannot be placed in any stratum's total, and the
+  # model fit would drop it silently (lme4's na.action), so the grouped and
+  # ungrouped fits would rest on different data with nothing to say so. Refuse
+  # with the count rather than exclude invisibly.
+  if (length(by_vars) > 0L) {
+    na_rows <- !stats::complete.cases(counts_data[, by_vars, drop = FALSE])
+    if (any(na_rows)) {
+      cli::cli_abort(
+        c(
+          "Missing values in grouping {cli::qty(length(by_vars))}column{?s} {.field {by_vars}}.",
+          "x" = "{sum(na_rows)} of {nrow(counts_data)} count{?s} would belong to no stratum.",
+          "i" = "Fill the missing values, or remove those counts before {.fn add_counts}."
+        ),
+        class = "creel_error_glmm_by_missing"
+      )
+    }
+    # Fit on factors whose levels are exactly those observed, so the prediction
+    # grid below can reuse the fitted levels and the design-matrix columns line
+    # up. droplevels() keeps a supplied factor's own ordering.
+    for (nm in by_vars) counts_data[[nm]] <- droplevels(as.factor(counts_data[[nm]]))
+  }
+
+  # 5. Build GLMM formula.
+  #
+  # Grouping variables enter as FIXED categorical predictors in one model, not
+  # as separate models per stratum. That is what Askey et al. (2018) do -- their
+  # data are "observations from a series of fixed temporal strata", with the
+  # random intercept reserved for the unit being scaled (their camera-year, our
+  # date), described there as "the key parameter that scales individual
+  # observations to predict total effort". Fitting a model per stratum would
+  # estimate a separate diurnal curve and a separate intercept variance from
+  # each stratum's sampled days, which on a design with few days in a stratum is
+  # the unstable case the wider literature warns against.
+  #
+  # The additive form assumes strata share the curve's SHAPE and differ in
+  # level. In Askey et al. day type is additive in every structure compared
+  # (their Table 3); the only interaction tested was month x hour, which AIC
+  # preferred and BIC rejected, and cross-validation found no predictive gain
+  # from it. Smucker et al. (2010, Table 1) show weekday and weekend diel
+  # shapes that do differ, so the assumption can fail; the BIC comparison
+  # reported below is there to show when.
   if (is.null(formula)) {
+    rhs <- paste0("poly(", time_col_name, ", 2)")
+    if (length(by_vars) > 0L) {
+      rhs <- paste(c(rhs, by_vars), collapse = " + ")
+    }
     glmm_formula <- stats::as.formula(
-      paste0(count_var, " ~ poly(", time_col_name, ", 2) + (1|", design$date_col, ")")
+      paste0(count_var, " ~ ", rhs, " + (1|", design$date_col, ")")
     )
   } else {
     glmm_formula <- formula
@@ -181,6 +288,14 @@ estimate_effort_aerial_glmm <- function(
     model <- lme4::glmer.nb(glmm_formula, data = counts_data)
   } else {
     model <- lme4::glmer(glmm_formula, data = counts_data, family = family)
+  }
+
+  # 6b. Shape check for the default grouped fit (GH #364). Information only:
+  # the estimate always comes from the additive model above. BIC rather than
+  # AIC, following Askey et al. (2018), where AIC selected an interaction that
+  # cross-validation showed bought nothing at the scale of a total.
+  if (length(by_vars) > 0L && is.null(formula)) {
+    report_glmm_shape_bic(model, count_var, time_col_name, by_vars, design$date_col, counts_data, family)
   }
 
   # 7. Build prediction grid for numerical integration over the fishing day.
@@ -216,6 +331,20 @@ estimate_effort_aerial_glmm <- function(
     data.frame(hour_grid, NA_character_, stringsAsFactors = FALSE),
     c(time_col_name, design$date_col)
   )
+  # A grouped fit carries the stratum in its fixed effects, so model.matrix()
+  # needs that column present to build a design matrix at all. Seed it with the
+  # first fitted level; the grouped branch below overwrites it per stratum,
+  # and the ungrouped quantities computed from this placeholder are not reached
+  # on that path.
+  # Carried as a factor with the FULL fitted level set, not a bare value: a
+  # column holding one level cannot form contrasts, and the levels must match
+  # those the model was fitted with or the design matrix columns will not line
+  # up.
+  strata_levels <- lapply(by_vars, function(nm) levels(counts_data[[nm]]))
+  names(strata_levels) <- by_vars
+  for (nm in by_vars) {
+    new_data[[nm]] <- factor(strata_levels[[nm]][1], levels = strata_levels[[nm]])
+  }
 
   terms_obj <- stats::delete.response(stats::terms(model))
   x_mat <- stats::model.matrix(terms_obj, data = new_data) # nolint: object_name_linter
@@ -269,6 +398,102 @@ estimate_effort_aerial_glmm <- function(
   }
   sigma2 <- sum(vc$vcov[intercept_rows], na.rm = TRUE)
   retransform <- exp(sigma2 / 2)
+
+  # 7b. Grouped estimation (GH #364).
+  #
+  # One model, already fitted above; only the prediction grid changes. Each
+  # stratum's curve is the shared shape evaluated at that stratum's level, and
+  # each stratum expands by ITS OWN sampled days -- the quantity the total
+  # estimators multiply against that stratum's catch rate.
+  if (length(by_vars) > 0L) {
+    # The grouped path is delta-method only. Returning a delta SE while the
+    # caller asked for a bootstrap would be a silently wrong variance method,
+    # so refuse instead. bootMer can return a vector statistic, so this is a
+    # gap rather than an impossibility.
+    if (isTRUE(boot)) {
+      cli::cli_abort(
+        c(
+          "Grouped estimation does not support the bootstrap.",
+          "x" = "Got {.code by} together with {.code boot = TRUE}.",
+          "i" = "Use {.code boot = FALSE} for grouped estimates, or drop {.arg by}."
+        ),
+        class = "creel_error_glmm_grouped_boot_unsupported"
+      )
+    }
+    strata_tbl <- unique(counts_data[, by_vars, drop = FALSE])
+    strata_tbl <- strata_tbl[do.call(order, unname(as.list(strata_tbl))), , drop = FALSE]
+    row.names(strata_tbl) <- NULL
+    v_cov <- as.matrix(stats::vcov(model)) # nolint: object_name_linter
+
+    parts <- lapply(seq_len(nrow(strata_tbl)), function(i) {
+      lvl <- strata_tbl[i, , drop = FALSE]
+      grid_i <- new_data
+      for (nm in by_vars) {
+        grid_i[[nm]] <- factor(as.character(lvl[[nm]]), levels = strata_levels[[nm]])
+      }
+      x_i <- stats::model.matrix(terms_obj, data = grid_i) # nolint: object_name_linter
+      mu_i <- as.numeric(exp(x_i %*% beta))
+
+      keep <- rep(TRUE, nrow(counts_data))
+      for (nm in by_vars) keep <- keep & counts_data[[nm]] == lvl[[nm]]
+      days_i <- length(unique(counts_data[[design$date_col]][keep]))
+      expansion_i <- retransform * if (identical(target, "sampled_days")) days_i else 1
+
+      list(
+        est = sum(mu_i) * scale_factor * a / v * expansion_i,
+        grad = expansion_i * scale_factor * a / v * colSums(mu_i * x_i),
+        n = sum(keep)
+      )
+    })
+    est <- vapply(parts, `[[`, numeric(1), "est")
+    grad_mat <- do.call(rbind, lapply(parts, `[[`, "grad"))
+
+    # Joint covariance of the stratum estimates, not only their variances.
+    # Every stratum is predicted from the SAME fixed effects, so the model term
+    # is correlated across strata through vcov(model); and v and a are single
+    # estimates multiplying every stratum, so each contributes a rank-one,
+    # perfectly correlated term (GH #135, #158). Summing the rows' SEs in
+    # quadrature would treat both as independent and understate the SE of any
+    # combination of strata; the full matrix is what a combination needs.
+    cov_model <- grad_mat %*% v_cov %*% t(grad_mat)
+    cov_vis <- if (is.null(se_v)) NULL else (se_v / v)^2 * tcrossprod(est)
+    cov_ar <- if (is.null(se_a)) NULL else (se_a / a)^2 * tcrossprod(est)
+    # No na.rm: an undeclared correction is NA, and a sum missing an unknown
+    # term is a lower bound rather than a covariance (GH #135, #158).
+    strata_vcov <- cov_model + (cov_vis %||% 0) + (cov_ar %||% 0)
+    dimnames(strata_vcov) <- NULL
+
+    se_i <- sqrt(diag(strata_vcov))
+    z <- stats::qnorm(1 - (1 - conf_level) / 2)
+    grouped_df <- tibble::as_tibble(strata_tbl)
+    grouped_df$estimate <- est
+    grouped_df$se <- se_i
+    grouped_df$se_between <- se_i
+    grouped_df$se_within <- NA_real_
+    grouped_df$ci_lower <- est - z * se_i
+    grouped_df$ci_upper <- est + z * se_i
+    grouped_df$n <- vapply(parts, `[[`, integer(1), "n")
+
+    # Named components, as on the ungrouped delta path (GH #141): `model` is
+    # the model term alone, never the combined SE.
+    se_components <- list(model = sqrt(diag(cov_model)))
+    if (!is.null(se_v)) se_components$visibility <- est * se_v / v
+    if (!is.null(se_a)) se_components$angler_ratio <- est * se_a / a
+
+    result <- new_creel_estimates( # nolint: object_usage_linter
+      estimates = grouped_df,
+      se_components = se_components,
+      method = "aerial_glmm_total",
+      variance_method = "delta",
+      design = design,
+      conf_level = conf_level,
+      by_vars = by_vars,
+      effort_target = target
+    )
+    result$strata_vcov <- strata_vcov
+    return(result)
+  }
+
   n_sampled_days <- length(unique(counts_data[[design$date_col]]))
   expansion <- retransform * if (identical(target, "sampled_days")) n_sampled_days else 1
 
@@ -444,4 +669,55 @@ estimate_effort_aerial_glmm <- function(
     by_vars = NULL,
     effort_target = target
   )
+}
+
+#' Report whether strata appear to need their own diurnal shape
+#'
+#' Internal helper for [estimate_effort_aerial_glmm()] (GH #364). Refits the
+#' default grouped model with a time x stratum interaction and reports the BIC
+#' difference. Information only: the caller's estimate always comes from the
+#' additive model. A refit that errors is reported as unavailable, and its
+#' warnings are counted rather than passed through, since they belong to a
+#' comparison model the caller never asked to use.
+#'
+#' @return `NULL`, invisibly. Called for the message.
+#' @keywords internal
+#' @noRd
+report_glmm_shape_bic <- function(model, count_var, time_col_name, by_vars, date_col, data, family) {
+  inter_formula <- stats::as.formula(paste0(
+    count_var, " ~ poly(", time_col_name, ", 2) * (",
+    paste(by_vars, collapse = " + "), ") + (1|", date_col, ")"
+  ))
+  n_warn <- 0L
+  inter <- tryCatch(
+    withCallingHandlers(
+      if (is.null(family) || identical(family, "negbin")) {
+        lme4::glmer.nb(inter_formula, data = data)
+      } else {
+        lme4::glmer(inter_formula, data = data, family = family)
+      },
+      warning = function(w) {
+        n_warn <<- n_warn + 1L
+        invokeRestart("muffleWarning")
+      }
+    ),
+    error = function(e) NULL
+  )
+  if (is.null(inter)) {
+    cli::cli_inform(c(
+      "i" = "Could not fit the time x {.field {by_vars}} interaction to check the shared-shape assumption."
+    ))
+    return(invisible(NULL))
+  }
+  delta_bic <- stats::BIC(inter) - stats::BIC(model)
+  verdict <- if (delta_bic < 0) {
+    "favours separate diurnal shapes per stratum; consider an interaction via {.arg formula}"
+  } else {
+    "favours the shared shape used for this estimate"
+  }
+  cli::cli_inform(c(
+    "i" = paste0("BIC(interaction) - BIC(additive) = {round(delta_bic, 1)}: ", verdict, "."),
+    if (n_warn > 0L) c(" " = "The interaction fit raised {n_warn} warning{?s}; treat the comparison with caution.")
+  ))
+  invisible(NULL)
 }
