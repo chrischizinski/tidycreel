@@ -1,0 +1,162 @@
+# Generate a validation summary report
+
+Runs
+[`validate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_data.md)
+on `counts` and/or `interviews`, aggregates the results into a
+human-readable summary tibble (one row per table x check type), and
+optionally detects unrecognised species values via
+[`standardize_species()`](https://chrischizinski.com/tidycreel/dev/reference/standardize_species.md).
+
+## Usage
+
+``` r
+validation_report(
+  counts = NULL,
+  interviews = NULL,
+  species_col = NULL,
+  na_threshold = 0.1,
+  date_range = c(as.Date("1970-01-01"), as.Date("2100-12-31"))
+)
+```
+
+## Arguments
+
+- counts:
+
+  A data frame of count (effort) observations, or `NULL`.
+
+- interviews:
+
+  A data frame of interview observations, or `NULL`.
+
+- species_col:
+
+  Character scalar. If non-`NULL` and `interviews` is provided, calls
+  [`standardize_species()`](https://chrischizinski.com/tidycreel/dev/reference/standardize_species.md)
+  on this column and appends a `species_coverage` row showing the
+  fraction of rows successfully matched to an AFS code. Default `NULL`
+  (no species check).
+
+- na_threshold:
+
+  Passed to
+  [`validate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_data.md).
+  Default `0.10`.
+
+- date_range:
+
+  Passed to
+  [`validate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_data.md).
+  Default `c(as.Date("1970-01-01"), as.Date("2100-12-31"))`.
+
+## Value
+
+An object of class `creel_validation_report` - a data frame with
+columns:
+
+- `table`:
+
+  Source table: `"counts"`, `"interviews"`, or `"species"`.
+
+- `check`:
+
+  Check type (e.g. `"na_rate"`, `"date_range"`).
+
+- `n_pass`:
+
+  Number of columns with `"pass"` status.
+
+- `n_warn`:
+
+  Number of columns with `"warn"` status.
+
+- `n_fail`:
+
+  Number of columns with `"fail"` status.
+
+- `detail`:
+
+  Comma-separated list of flagged columns, or `"all ok"`.
+
+## Details
+
+The returned object is a `creel_validation_report` - a data frame with a
+custom `print` method that renders a colour-coded cli summary. It can be
+exported with
+[`write_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/write_estimates.md).
+
+## See also
+
+[`write_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/write_estimates.md)
+
+Other "Reporting & Diagnostics":
+[`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md),
+[`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md),
+[`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md),
+[`flag_outliers()`](https://chrischizinski.com/tidycreel/dev/reference/flag_outliers.md),
+[`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md),
+[`standardize_species()`](https://chrischizinski.com/tidycreel/dev/reference/standardize_species.md),
+[`summarize_boat_composition()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_boat_composition.md),
+[`summarize_by_angler_type()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_angler_type.md),
+[`summarize_by_county()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_county.md),
+[`summarize_by_day_type()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_day_type.md),
+[`summarize_by_method()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_method.md),
+[`summarize_by_species_sought()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_species_sought.md),
+[`summarize_by_trip_length()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_trip_length.md),
+[`summarize_by_zip()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_zip.md),
+[`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_cws_rates.md),
+[`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_hws_rates.md),
+[`summarize_length_freq()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_length_freq.md),
+[`summarize_refusals()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_refusals.md),
+[`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_successful_parties.md),
+[`summarize_trips()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_trips.md),
+[`summary.creel_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/summary.creel_estimates.md),
+[`tidy.creel_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/tidy.creel_estimates.md),
+[`validate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_data.md),
+[`validate_design()`](https://chrischizinski.com/tidycreel/dev/reference/validate_design.md),
+[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md),
+[`write_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/write_estimates.md)
+
+## Examples
+
+``` r
+counts <- data.frame(
+  date     = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type = c("weekday", "weekend"),
+  count    = c(10L, NA_integer_)
+)
+interviews <- data.frame(
+  date      = as.Date(c("2024-06-01", "2024-06-02")),
+  fish_kept = c(2L, -1L),
+  species   = c("walleye", "")
+)
+rpt <- validation_report(counts, interviews, species_col = "species")
+print(rpt)
+#> 
+#> ── Creel Validation Report ─────────────────────────────────────────────────────
+#> Overall: FAIL
+#> 
+#> 
+#> ── Table: counts ──
+#> 
+#> ✔ type: all ok (3p / 0w / 0f)
+#> ⚠ na_rate: count (2p / 1w / 0f)
+#> ✔ date_range: all ok (1p / 0w / 0f)
+#> ✔ empty_strings: all ok (1p / 0w / 0f)
+#> ✔ negative_values: all ok (1p / 0w / 0f)
+#> 
+#> 
+#> ── Table: interviews ──
+#> 
+#> ✔ type: all ok (3p / 0w / 0f)
+#> ✔ na_rate: all ok (3p / 0w / 0f)
+#> ✔ date_range: all ok (1p / 0w / 0f)
+#> ⚠ empty_strings: species (0p / 1w / 0f)
+#> ✖ negative_values: fish_kept (0p / 0w / 1f)
+#> 
+#> 
+#> ── Table: species ──
+#> 
+#> ⚠ species_coverage: 1 / 2 matched (50.0%) (0p / 1w / 0f)
+#> 
+```

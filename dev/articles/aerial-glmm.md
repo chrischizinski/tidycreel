@@ -1,0 +1,436 @@
+# GLMM Aerial Effort Estimation
+
+## When to Use the GLMM Estimator
+
+If your pilot always flies at the same time of day — say, 10 AM — your
+instantaneous count systematically over- or under-represents total daily
+effort. Early-morning flights catch fewer anglers than are present at
+peak hours; late-afternoon flights may miss early starters entirely.
+When flight timing is non-random, the simple expansion (count × h_open /
+v) inherits this temporal bias.
+
+The GLMM approach (Askey et al. 2018) models how angler counts change
+through the day using a quadratic hour effect and a day-level random
+intercept: `count ~ poly(hour, 2) + (1 | date)`. Once the diurnal curve
+is estimated, the model integrates predicted counts across the full
+open-water window — correcting for wherever in the curve the actual
+flight fell.
+
+**When to use the GLMM estimator:**
+
+1.  Flights always occur in the same part of the day (fixed morning or
+    afternoon schedule).
+2.  You have multiple overflights per day across several days (minimum
+    8–10 survey days recommended for stable random-effect estimation).
+
+**When to use the simple estimator:**
+
+1.  Flight timing is randomly assigned across the open-water window.
+2.  You have only one count per day.
+
+For the basic aerial workflow without GLMM correction, see the [aerial
+surveys
+vignette](https://chrischizinski.com/tidycreel/dev/articles/aerial-surveys.md).
+
+## Example Data
+
+The `example_aerial_glmm_counts` dataset contains 12 survey days with 4
+overflights per day at fixed hours (7, 10, 13, and 16 hours), producing
+48 observations. Angler counts follow a diurnal curve with day-level
+Poisson variability — representative of a scenario where a fixed
+morning-to-afternoon flight schedule is used throughout the season.
+
+``` r
+
+library(tidycreel)
+data(example_aerial_glmm_counts)
+head(example_aerial_glmm_counts)
+#>         date day_type n_anglers time_of_flight
+#> 1 2024-06-03  weekday         3              7
+#> 2 2024-06-03  weekday        30             10
+#> 3 2024-06-03  weekday        65             13
+#> 4 2024-06-03  weekday        50             16
+#> 5 2024-06-06  weekday         5              7
+#> 6 2024-06-06  weekday        15             10
+```
+
+The four columns are `date`, `day_type`, `n_anglers` (instantaneous
+count), and `time_of_flight` (decimal hour of each overflight).
+
+## Building the Aerial Design
+
+Build an aerial `creel_design` from the survey dates and attach the
+count data. The `h_open = 14` argument specifies the number of hours the
+fishery is open each day — this enters the final expansion after the
+diurnal curve is integrated.
+
+``` r
+
+aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
+aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+
+design <- creel_design(
+  aerial_cal,
+  date        = date,
+  strata      = day_type,
+  survey_type = "aerial",
+  visibility_correction = "none",
+  angler_ratio = 1,
+  angler_ratio_se = 0,
+  h_open      = 14
+)
+
+design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
+#> Warning in add_counts(design, example_aerial_glmm_counts, count_col = n_anglers): `counts` has 36 repeated sampling units, with no count time to tell them apart.
+#> ℹ The repeated rows are keyed on date and day_type.
+#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
+#>   are repeat counts, or `unit_cols` if they are distinct units.
+#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
+#> weights or probabilities supplied, assuming equal probability
+print(design)
+#> 
+#> ── Creel Survey Design ─────────────────────────────────────────────────────────
+#> Type: "aerial"
+#> Date column: date
+#> Strata: day_type
+#> Calendar: 12 days (2024-06-03 to 2024-07-06)
+#> day_type: 2 levels
+#> Counts: 48 observations
+#> PSU column: date
+#> Count column: n_anglers
+#> Party-size term: not carried
+#> Count type: "instantaneous"
+#> Survey: <survey.design2> (constructed)
+#> Interviews: "none"
+#> Sections: "none"
+#> 
+#> ── Aerial Survey Design ──
+#> 
+#> Hours open (h_open): 14
+#> Visibility correction: "none" (declared; SE is "NA")
+#> Angler-to-people ratio: 1
+#> Angler ratio SE: 0
+```
+
+## GLMM Effort Estimation
+
+Call
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
+with `time_col = time_of_flight`. The default model fits a
+negative-binomial GLMM with a quadratic temporal effect and a day-level
+random intercept:
+
+``` r
+
+glmm_result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
+#> Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :
+#> iteration limit reached
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
+print(glmm_result)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: aerial_glmm_total
+#> Variance: delta
+#> Confidence level: 95%
+#> Effort target: sampled_days
+#> model: 412 (known, but se is `NA`)
+#> visibility: NA (unknown, so se is `NA`)
+#> angler_ratio: 0 (known, but se is `NA`)
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1    4729.    NA         NA        NA       NA       NA    48
+```
+
+The model fits the diurnal count curve over all 48 observations, then
+numerically integrates the predicted mean count across the full
+open-water window (from 0.5 hours before the earliest flight to 0.5
+hours after the latest). The integrated area is scaled by
+`h_open / visibility_correction` to convert counts to angler-hours.
+
+## Variance and Confidence Intervals
+
+Two variance methods are available.
+
+**Delta method (default):** Propagates the fixed-effect covariance
+matrix from `lme4::vcov()` to the derived integral via a gradient
+vector. This is fast and analytic, and is the default when
+`boot = FALSE`.
+
+**Parametric bootstrap:**
+[`lme4::bootMer()`](https://rdrr.io/pkg/lme4/man/bootMer.html) re-fits
+the model under parametric resampling `nsim` times and uses the SD of
+the resulting totals as the SE. This method can give more accurate CIs
+for skewed count distributions. Use it for final production analyses;
+the delta method is appropriate for exploratory work.
+
+**Whichever method you choose, this vignette’s design reports no
+interval at all.**
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+above sets `visibility_correction = "none"`, which declares that no
+detection-probability study was done. That is a statement of ignorance,
+not a value of one: the correction’s uncertainty is unknown, so it
+cannot be propagated, and `se`, `ci_lower` and `ci_upper` all come back
+`NA` rather than pretending the unknown component contributes zero.
+
+To get an interval, say what the correction’s uncertainty is — pass a
+numeric `visibility_correction` together with `visibility_se` to
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md).
+Declaring it known and exactly certain (`visibility_se = 0`) is also a
+valid claim and does produce an interval; it is simply a different claim
+from having never measured it.
+
+``` r
+
+# Bootstrap CIs — use nboot = 500 for production analyses
+glmm_boot <- estimate_effort_aerial_glmm(
+  design,
+  time_col = time_of_flight,
+  boot = TRUE,
+  nboot = 100L
+)
+print(glmm_boot)
+```
+
+## Downstream Estimation
+
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
+returns an effort estimate; it does not write that estimate back into
+the design, and the total estimators do not take one as an argument —
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
+derives effort itself, from the counts attached to whatever design it is
+given. So the GLMM figure is a standalone result to read, report, or
+combine by hand, not an input the rest of the pipeline picks up
+automatically.
+
+What the downstream estimators need is a design carrying interviews. The
+example below builds one from the complementary aerial interview data
+and estimates catch rate and total catch from it. Note that this is a
+*different* design object from the one fitted above: it uses
+`example_aerial_counts`, and its effort comes from the standard aerial
+path rather than from the GLMM.
+
+``` r
+
+# Build a complementary design with matching interview dates
+aerial_int_cal <- unique(example_aerial_counts[, c("date", "day_type")])
+aerial_int_cal <- aerial_int_cal[order(aerial_int_cal$date), ]
+
+design_int <- creel_design(
+  aerial_int_cal,
+  date        = date,
+  strata      = day_type,
+  survey_type = "aerial",
+  visibility_correction = "none",
+  angler_ratio = 1,
+  angler_ratio_se = 0,
+  h_open      = 14
+)
+design_int <- add_counts(design_int, example_aerial_counts)
+#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
+#> weights or probabilities supplied, assuming equal probability
+design_int <- add_interviews(design_int, example_aerial_interviews,
+  catch       = walleye_catch,
+  effort      = hours_fished,
+  trip_status = trip_status
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> Warning: 15 interviews have zero catch.
+#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
+catch_rate <- estimate_catch_rate(design_int)
+#> ℹ Using complete trips for CPUE estimation
+#>   (n=48, 100% of 48 interviews) [default]
+print(catch_rate)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Ratio-of-Means CPUE
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Unit: fish/party-hour
+#> 
+#> # A tibble: 1 × 5
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1    0.413 0.0601    0.295    0.531    48
+
+total_catch <- estimate_total_catch(design_int)
+#> Warning in estimate_total_catch(design_int): Rate and effort may be in different units.
+#> ✖ `n_anglers` was not supplied, so the rate is per party-hour while
+#>   count-derived effort is per angler.
+#> ℹ The product is correct only if every party is one angler. Pass
+#>   `add_interviews(n_anglers = <col>)` to normalise.
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> This warning is displayed once per session.
+print(total_catch)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total Catch (Effort × CPUE)
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: sampled_days
+#> 
+#> # A tibble: 1 × 5
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1     251.  45.1     160.     341.    48
+```
+
+`example_aerial_interviews` carries no party-size column, so
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+cannot normalise effort to angler-hours and
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
+warns that the CPUE it multiplies is per *party*-hour while the
+count-derived effort is angler-hours. The warning is correct for this
+dataset and is left visible rather than suppressed: with one angler per
+party the total is right as printed, and with larger parties it is
+**overstated** — by the mean party size, because the party-hour rate is
+multiplied by an effort that already counts every angler. Supplying
+`n_anglers = 2` on this example halves the total, from 250.6 to 125.3.
+Supply `n_anglers` from your own interview data, or state a constant
+party size (`n_anglers = 1`) when every interview really is a single
+angler, to remove the ambiguity.
+
+## Comparison: Simple vs. GLMM Estimator
+
+The two estimators need the counts at different grains, so they take
+different designs built from the same data.
+
+The GLMM consumes each overflight individually — the flight times are
+what it fits the diurnal curve against, so the four flights a day must
+stay four rows.
+
+The simple estimator does not model time. It treats each count as an
+instantaneous estimate of the anglers present and expands by
+`h_open / v`. Four flights on one day are therefore four looks at that
+day, not four sampled days: they average to the day’s mean occupancy,
+and the spread between them becomes the within-day variance component.
+Naming `count_time_col` is what performs that aggregation. Without it
+the four counts would be summed as separate sampling units and the
+estimate would come back four times too large.
+
+``` r
+
+# Daily means for the simple estimator: the flights are four looks at each day,
+# so they aggregate rather than accumulate.
+design_daily <- add_counts(
+  creel_design(
+    aerial_cal,
+    date        = date,
+    strata      = day_type,
+    survey_type = "aerial",
+    visibility_correction = "none",
+    angler_ratio = 1,
+    angler_ratio_se = 0,
+    h_open      = 14
+  ),
+  example_aerial_glmm_counts,
+  count_col      = n_anglers,
+  count_time_col = time_of_flight
+)
+#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
+#> weights or probabilities supplied, assuming equal probability
+
+# Simple aerial estimator — no diurnal correction
+simple_result <- estimate_effort(design_daily)
+
+# GLMM result from above
+# glmm_result already computed
+
+# Side-by-side comparison. Both estimators report a total across the sampled
+# days, so the two numbers answer the same question and the gap between them is
+# the diurnal correction.
+comparison <- data.frame(
+  method = c("GLMM", "Simple"),
+  estimate = c(
+    glmm_result$estimates$estimate,
+    simple_result$estimates$estimate
+  ),
+  target = c(
+    glmm_result$effort_target,
+    simple_result$effort_target
+  ),
+  stringsAsFactors = FALSE
+)
+
+print(comparison)
+#>   method estimate       target
+#> 1   GLMM 4728.545 sampled_days
+#> 2 Simple 5092.500 sampled_days
+```
+
+The `target` column is worth checking rather than assuming. Both
+estimators report `sampled_days`, so the two totals cover the same
+twelve days and the gap between them is the diurnal correction and
+nothing else. The GLMM corrects for the fact that all flights occurred
+at fixed hours (7, 10, 13, 16); the simple estimator treats each count
+as representative of the full open-water window, which inflates or
+deflates the total depending on where the peak falls in the diurnal
+curve. Here it inflates, so the corrected estimate is the lower of the
+two.
+
+Neither estimator reports a confidence interval here, for the reason
+given under “Variance and Confidence Intervals” above: this design
+declares `visibility_correction = "none"`.
+
+## Custom Formula
+
+For surveys where a linear temporal term is sufficient — or where the
+analyst prefers to control the model structure directly — pass a custom
+`formula`. The formula must reference the actual count column
+(`n_anglers`) and the time column by its exact name in the data.
+
+``` r
+
+glmm_linear <- estimate_effort_aerial_glmm(
+  design,
+  time_col = time_of_flight,
+  formula  = n_anglers ~ time_of_flight + (1 | date)
+)
+#> boundary (singular) fit: see help('isSingular')
+#> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
+#>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
+print(glmm_linear)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: aerial_glmm_total
+#> Variance: delta
+#> Confidence level: 95%
+#> Effort target: sampled_days
+#> model: 1302 (known, but se is `NA`)
+#> visibility: NA (unknown, so se is `NA`)
+#> angler_ratio: 0 (known, but se is `NA`)
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1    9212.    NA         NA        NA       NA       NA    48
+```
+
+A linear temporal term reduces flexibility but can improve stability
+when only a few survey days are available. Use the default quadratic
+formula when you have 8 or more survey days.
+
+## References
+
+- Askey, P. J., Ward, H., Godin, T., Boucher, M., & Northrup, S. (2018).
+  Angler effort estimates from instantaneous aerial counts: use of
+  high-frequency time-lapse camera data to inform model-based
+  estimators. *North American Journal of Fisheries Management*, 38(1),
+  194–209. <https://doi.org/10.1002/nafm.10010>
+
+- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
+  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
+  Techniques* (3rd ed.), pp. 883–919. American Fisheries Society.

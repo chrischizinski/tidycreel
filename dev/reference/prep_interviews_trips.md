@@ -1,0 +1,166 @@
+# Standardize trip/interview rows for interview-based workflows
+
+Converts raw-ish interview records into a canonical tibble for
+downstream use with
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
+This helper standardizes the trip/interview unit, computes effort from
+timestamps when needed, normalizes `trip_status`, and emits stable
+columns for effort, trip duration, angler party size, and optional
+interview attributes.
+
+The returned table always contains canonical columns: `date`,
+`interview_uid`, `effort_hours`, `trip_status`, `trip_duration`,
+`n_anglers`, and `refused`. Optional columns such as `catch_total`,
+`harvest_total`, `angler_type`, `angler_method`, `species_sought`, and
+any selected strata are appended when supplied.
+
+## Usage
+
+``` r
+prep_interviews_trips(
+  data,
+  date,
+  interview_uid,
+  effort_hours = NULL,
+  trip_status,
+  trip_duration = NULL,
+  trip_start = NULL,
+  interview_time = NULL,
+  catch_total = NULL,
+  harvest_total = NULL,
+  angler_type = NULL,
+  angler_method = NULL,
+  species_sought = NULL,
+  n_anglers = NULL,
+  refused = NULL,
+  strata = NULL
+)
+```
+
+## Arguments
+
+- data:
+
+  A data frame containing interview records.
+
+- date:
+
+  Tidy selector for the Date column.
+
+- interview_uid:
+
+  Tidy selector for the unique interview identifier.
+
+- effort_hours:
+
+  Optional tidy selector for an effort-in-hours column. Supply this when
+  hours are already available directly.
+
+- trip_status:
+
+  Tidy selector for the trip-status column. Values are normalized to
+  lowercase and must resolve to `"complete"` or `"incomplete"`.
+
+- trip_duration:
+
+  Optional tidy selector for a trip duration column in hours. When
+  omitted, the helper uses `effort_hours` if present or computes
+  duration from `trip_start` and `interview_time`.
+
+- trip_start:
+
+  Optional tidy selector for trip start timestamps.
+
+- interview_time:
+
+  Optional tidy selector for interview timestamps. When `effort_hours`
+  is omitted, `trip_start` and `interview_time` are used to compute
+  effort in hours.
+
+- catch_total:
+
+  Optional tidy selector for total catch per trip.
+
+- harvest_total:
+
+  Optional tidy selector for total harvest per trip.
+
+- angler_type:
+
+  Optional tidy selector for angler type (e.g. `"bank"`, `"boat"`).
+
+- angler_method:
+
+  Optional tidy selector for fishing method.
+
+- species_sought:
+
+  Optional tidy selector for the target species field.
+
+- n_anglers:
+
+  Optional tidy selector for party size. Defaults to `1L` when omitted.
+
+- refused:
+
+  Optional tidy selector for the refused interview flag. Defaults to
+  `FALSE` when omitted.
+
+- strata:
+
+  Optional tidy selector for one or more strata columns to carry forward
+  into the standardized output.
+
+## Value
+
+A tibble with canonical trip/interview columns ready for
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
+
+## See also
+
+[`compute_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_effort.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/dev/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/dev/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/dev/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_catch.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+raw <- data.frame(
+  survey_date = as.Date(c("2024-06-01", "2024-06-02")),
+  day_type    = c("weekend", "weekend"),
+  iid         = c("i1", "i2"),
+  hours       = c(2.5, 3.0),
+  status      = c("Complete", "incomplete"),
+  duration    = c(2.5, 3.0)
+)
+prep_interviews_trips(raw, date = survey_date, interview_uid = iid,
+                      effort_hours = hours, trip_status = status,
+                      trip_duration = duration)
+#> # A tibble: 2 × 7
+#>   date       interview_uid effort_hours trip_status trip_duration n_anglers
+#>   <date>     <chr>                <dbl> <chr>               <dbl>     <int>
+#> 1 2024-06-01 i1                     2.5 complete              2.5         1
+#> 2 2024-06-02 i2                     3   incomplete            3           1
+#> # ℹ 1 more variable: refused <lgl>
+```

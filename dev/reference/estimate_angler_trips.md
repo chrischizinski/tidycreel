@@ -1,0 +1,121 @@
+# Estimate angler trips from extrapolated effort
+
+Computes estimated trips by dividing extrapolated effort by the mean
+trip length per stratum, with Delta Method variance propagation (Powell
+2007). This is a composable estimator: the effort object must be
+pre-computed via
+[`estimate_effort`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+before calling this function.
+
+The divisor is hours per trip, so the result comes back in whichever
+actor the effort was measured in: angler-hours give angler trips,
+party-hours give party trips. The returned `unit` field records which,
+and is `NA` when the effort's own unit was unknown. The method string is
+`"angler-trips"` in every case and so is not a guide to the actor.
+
+## Usage
+
+``` r
+estimate_angler_trips(effort, design, conf_level = 0.95, ...)
+```
+
+## Arguments
+
+- effort:
+
+  A `creel_estimates` object returned by
+  [`estimate_effort`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md).
+  Must have a numeric `estimate` column and a `se` column in
+  `effort$estimates`.
+
+- design:
+
+  A `creel_design` object with interview data containing a trip duration
+  column (set via `add_interviews(trip_duration = ...)`). Used to
+  compute per-stratum mean trip length.
+
+- conf_level:
+
+  Confidence level for confidence intervals. Default 0.95.
+
+- ...:
+
+  Reserved for future arguments.
+
+## Value
+
+A `creel_estimates` object with `method = "angler-trips"` and
+`variance_method = "delta"`. The `estimates` tibble contains:
+
+- by_vars columns:
+
+  Any grouping columns from the effort object (if grouped).
+
+- estimate:
+
+  Estimated trips per stratum (effort / mean trip length), in the actor
+  the effort was measured in.
+
+- se:
+
+  Standard error via Delta Method variance propagation.
+
+- ci_lower:
+
+  Lower confidence interval bound.
+
+- ci_upper:
+
+  Upper confidence interval bound.
+
+- n:
+
+  Number of interviews contributing to mean trip length per stratum.
+
+For grouped effort, an `.overall` row is appended with
+`estimate = sum(stratum trips)` and `se` propagated by addition in
+quadrature.
+
+## References
+
+Powell, L. A. (2007). Approximating variance of demographic parameters
+using the delta method. *Journal of Wildlife Management*, 71(3),
+1018-1024.
+
+## See also
+
+[`estimate_effort`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
+[`estimate_exploitation_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_exploitation_rate.md)
+
+## Examples
+
+``` r
+data(example_calendar)
+data(example_counts)
+data(example_interviews)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_counts)
+#> Warning: No weights or probabilities supplied, assuming equal probability
+design <- add_interviews(design, example_interviews,
+  catch = catch_total, effort = hours_fished, harvest = catch_kept,
+  trip_status = trip_status, trip_duration = trip_duration
+)
+#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
+#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
+#>   normalization.
+#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
+#>   that and silence this warning.
+#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+effort <- estimate_effort(design)
+estimate_angler_trips(effort, design)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: angler-trips
+#> Variance: delta
+#> Confidence level: 95%
+#> 
+#> # A tibble: 1 × 5
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1     161.  16.9     126.     197.    22
+```

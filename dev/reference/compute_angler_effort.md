@@ -1,0 +1,77 @@
+# Normalize fishing effort to angler-hours
+
+Multiplies per-trip effort (hours) by party size (number of anglers) to
+produce angler-hours. This converts party-level effort records to
+individual-angler units, which are required for CPUE and harvest-rate
+computations.
+
+This function can be called standalone on a raw data frame or is called
+internally by
+[`add_interviews`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+when constructing the design object.
+
+## Usage
+
+``` r
+compute_angler_effort(data, effort, n_anglers)
+```
+
+## Arguments
+
+- data:
+
+  A data frame containing the interview records.
+
+- effort:
+
+  Tidy selector for the effort column (numeric, hours per trip).
+
+- n_anglers:
+
+  Number of anglers in the party. Either a bare column name (e.g.
+  `n_anglers = party_size`) or a single positive number stating a
+  constant party size (e.g. `n_anglers = 1` for individual-level
+  interviews). A bare number is read as a party size, **not** as a
+  tidyselect column position. Values must be positive and finite.
+
+## Value
+
+The input data frame with an added `.angler_effort` column (numeric,
+angler-hours). Existing columns are preserved.
+
+## See also
+
+[`compute_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_effort.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_hybrid_svydesign.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/dev/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/dev/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/dev/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+parties <- data.frame(effort = c(2.0, 3.0), n_anglers = c(2L, 3L))
+compute_angler_effort(parties, effort, n_anglers)
+#>   effort n_anglers .angler_effort
+#> 1      2         2              4
+#> 2      3         3              9
+```

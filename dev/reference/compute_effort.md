@@ -1,0 +1,84 @@
+# Resolve fishing effort from timestamps or self-reported time
+
+Computes fishing effort (hours) for each interview row using a
+conditional rule: if the `time_fished` column is present and non-NA for
+a row, use that value (angler self-reported hours, e.g. after a break);
+otherwise compute from timestamps as
+`difftime(interview_time, trip_start, units = "hours")`.
+
+This function can be called standalone on raw data before entering the
+[`add_interviews`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+workflow, or used to preprocess a column that will be passed as the
+`effort` argument to
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
+
+## Usage
+
+``` r
+compute_effort(data, trip_start, interview_time, time_fished = NULL)
+```
+
+## Arguments
+
+- data:
+
+  A data frame containing the interview records.
+
+- trip_start:
+
+  Tidy selector for the trip start timestamp column (POSIXct).
+
+- interview_time:
+
+  Tidy selector for the interview timestamp column (POSIXct).
+
+- time_fished:
+
+  Optional tidy selector for a self-reported hours column. When a row
+  has a non-NA value here, it overrides the timestamp calculation.
+  Default is `NULL` (always compute from timestamps).
+
+## Value
+
+The input data frame with an added `.effort` column (numeric, hours).
+Existing columns are preserved.
+
+## See also
+
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/dev/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/dev/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/dev/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+trips <- data.frame(
+  trip_start     = as.POSIXct(c("2024-06-01 08:00:00", "2024-06-01 09:15:00")),
+  interview_time = as.POSIXct(c("2024-06-01 10:30:00", "2024-06-01 12:00:00"))
+)
+compute_effort(trips, trip_start, interview_time)
+#>            trip_start      interview_time .effort
+#> 1 2024-06-01 08:00:00 2024-06-01 10:30:00    2.50
+#> 2 2024-06-01 09:15:00 2024-06-01 12:00:00    2.75
+```

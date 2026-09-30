@@ -1,0 +1,91 @@
+# Standardize long catch-table rows for interview-based workflows
+
+Converts a long-format catch table into a canonical tibble for
+downstream use with
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md).
+The helper standardizes the interview linkage field, species field,
+numeric catch counts, and normalized catch-type values while keeping the
+data in long form.
+
+The returned table always contains canonical columns: `interview_uid`,
+`species`, `count`, and `catch_type`.
+
+## Usage
+
+``` r
+prep_interview_catch(data, interview_uid, species, count, catch_type)
+```
+
+## Arguments
+
+- data:
+
+  A data frame in long format: one row per interview/species/catch-type
+  combination.
+
+- interview_uid:
+
+  Tidy selector for the interview linkage column.
+
+- species:
+
+  Tidy selector for the species code or name column.
+
+- count:
+
+  Tidy selector for the numeric catch count column.
+
+- catch_type:
+
+  Tidy selector for the catch fate column. Values are normalized to
+  lowercase.
+
+## Value
+
+A tibble with canonical columns `interview_uid`, `species`, `count`, and
+`catch_type`.
+
+## See also
+
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
+[`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/dev/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/dev/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/dev/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+raw <- data.frame(
+  iid  = c("i1", "i1", "i2"),
+  sp   = c("walleye", "walleye", "bass"),
+  n    = c(5, 2, 1),
+  fate = c("Caught", "HARVESTED", "released")
+)
+prep_interview_catch(raw, interview_uid = iid, species = sp,
+                     count = n, catch_type = fate)
+#> # A tibble: 3 × 4
+#>   interview_uid species count catch_type
+#>   <chr>         <chr>   <dbl> <chr>     
+#> 1 i1            walleye     5 caught    
+#> 2 i1            walleye     2 harvested 
+#> 3 i2            bass        1 released  
+```

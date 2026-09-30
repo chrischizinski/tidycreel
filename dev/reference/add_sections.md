@@ -1,0 +1,144 @@
+# Register spatial sections for a creel survey design
+
+Attaches a sections registry to a `creel_design` object. Once sections
+are registered, all subsequent calls to
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+and
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+validate that every row's section value matches a registered section
+name. Unrecognised section values abort with an informative error
+identifying the bad values and listing valid options.
+
+`add_sections()` is optional for single-section surveys. Call it when
+your survey covers multiple named sections and you want early detection
+of mislabelled data (e.g. "NRTH" instead of "NORTH").
+
+## Usage
+
+``` r
+add_sections(
+  design,
+  sections,
+  section_col,
+  description_col = NULL,
+  area_col = NULL,
+  shoreline_col = NULL
+)
+```
+
+## Arguments
+
+- design:
+
+  A `creel_design` object (created with
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)).
+
+- sections:
+
+  A data frame with one row per section. Must contain the column
+  identified by `section_col`. Optional metadata columns are identified
+  by `description_col`, `area_col`, and `shoreline_col`.
+
+- section_col:
+
+  Tidy selector for the column in `sections` that holds section names or
+  IDs. Must be character or factor. No duplicate values are permitted.
+
+- description_col:
+
+  Optional tidy selector for a free-text description column (e.g. "North
+  inlet", "Main basin"). Stored for reporting only.
+
+- area_col:
+
+  Optional tidy selector for a surface area column (numeric, ha). All
+  values must be strictly positive. Stored now; used in v0.8.0 aerial
+  survey estimation.
+
+- shoreline_col:
+
+  Optional tidy selector for a shoreline length column (numeric, km).
+  All values must be strictly positive. Stored now; used in v0.8.0
+  aerial survey estimation.
+
+## Value
+
+A new `creel_design` object with `$sections` and `$section_col`
+populated. The input `design` is not modified.
+
+## Validation performed by downstream functions
+
+After `add_sections()` is called,
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+and
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+check that every row's section value is present in
+`design$sections[[design$section_col]]`. An unrecognised value produces
+a `cli_abort()` naming the bad values and listing valid section names.
+
+## How sections are named in results
+
+Every sectioned estimate reports its sections in a column named after
+`section_col`, as a design declaring `strata = day_type` reports a
+`day_type` column. Register sections under `reach` and the result's
+first column is `reach`, so it joins back to your own section table by
+name. Read it as `est[[design$section_col]]` rather than assuming a
+fixed name (#282).
+
+The lake-wide aggregate row, where requested, is a *value* in that same
+column – the reserved name `.lake_total` – not a separate column.
+
+## See also
+
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+
+Other "Survey Design":
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+[`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
+[`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md),
+[`as_hybrid_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_hybrid_svydesign.md),
+[`compute_angler_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.md),
+[`compute_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_effort.md),
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+[`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md),
+[`creel_vocabulary()`](https://chrischizinski.com/tidycreel/dev/reference/creel_vocabulary.md),
+[`derive_angler_count()`](https://chrischizinski.com/tidycreel/dev/reference/derive_angler_count.md),
+[`est_effort_camera()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera.md),
+[`impute_camera_counts()`](https://chrischizinski.com/tidycreel/dev/reference/impute_camera_counts.md),
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md),
+[`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md),
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md),
+[`prep_interview_catch()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_catch.md),
+[`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interviews_trips.md),
+[`validate_creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_schema.md)
+
+## Examples
+
+``` r
+cal <- data.frame(
+  date = as.Date(c(
+    "2024-06-01", "2024-06-02",
+    "2024-06-03", "2024-06-04"
+  )),
+  day_type = c("weekday", "weekday", "weekend", "weekend")
+)
+design <- creel_design(cal, date = date, strata = day_type)
+
+my_sections <- data.frame(
+  section      = c("North Inlet", "Main Basin", "South Outlet"),
+  description  = c("Tributary inlet", "Open water", "Dam outlet"),
+  area_ha      = c(45.0, 820.0, 12.0),
+  shoreline_km = c(8.2, 62.1, 3.4)
+)
+
+design2 <- add_sections(design, my_sections,
+  section_col     = section,
+  description_col = description,
+  area_col        = area_ha,
+  shoreline_col   = shoreline_km
+)
+```
