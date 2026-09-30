@@ -25,7 +25,10 @@
 
   Counts with a missing value in a `by` column are refused, not dropped. The
   grouped path supports the delta method only; `boot = TRUE` with `by` is an
-  error.
+  error. A supplied `formula` must contain every `by` column as a fixed effect;
+  without it every stratum would get the same curve, so the call is refused.
+  A `by` column with only one observed level (a season flown only on weekdays)
+  is left out of the model and still reported as a row.
 
 # tidycreel 8.0.0 "Mooneye"
 
