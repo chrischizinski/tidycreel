@@ -126,7 +126,7 @@ test_that("#373: missing_rate = 'exclude' reports the covered total and records 
   expect_equal(nrow(ex), 1L)
   expect_identical(as.character(ex$day_type), "weekend")
   effort <- quiet(estimate_effort(d, by = day_type))$estimates
-  expect_equal(ex$effort, effort$estimate[effort$day_type == "weekend"])
+  expect_equal(ex$effort_excluded, effort$estimate[effort$day_type == "weekend"])
 })
 
 test_that("#373: an excluded by-group is an NA row, not a missing one", {
@@ -182,7 +182,11 @@ test_that("#373: missing_rate = 'exclude' is refused where there is no cell to e
 test_that("#373: a printed total over part of the effort says so", {
   # The warning scrolls past; the printed object is what gets read and pasted.
   res <- quiet(estimate_total_catch(mrs_design(), missing_rate = "exclude"))
-  expect_match(paste(format(res), collapse = "\n"), "excluded_strata", fixed = TRUE)
+  printed <- paste(format(res), collapse = "\n")
+  expect_match(printed, "excluded_strata", fixed = TRUE)
+  # Named, not only counted: two totals excluding different cells of equal
+  # effort would otherwise print identically.
+  expect_match(printed, "day_type = weekend: 201.9 effort units", fixed = TRUE)
   full <- quiet(estimate_total_catch(mrs_design(weekend_incomplete = FALSE)))
   expect_no_match(paste(format(full), collapse = "\n"), "excluded_strata", fixed = TRUE)
 })
@@ -247,4 +251,20 @@ test_that("#373: the refusal does not call a harvest or release total 'catch'", 
   )
   expect_no_match(msg, "catch is unknown", fixed = TRUE)
   expect_match(msg, "estimate_total_harvest", fixed = TRUE)
+})
+
+test_that("#373: the exclusion record never overwrites a grouping column", {
+  # The record's metadata used to be written as `effort` and `context`, which
+  # would silently replace a `by` column of either name.
+  d <- set_missing_rate_policy(mrs_design(), "exclude")
+  effort <- tibble::tibble(
+    day_type = c("weekday", "weekend"), effort = c("low", "high"),
+    estimate = c(170, 201.9)
+  )
+  rate <- tibble::tibble(day_type = "weekday", effort = "low", estimate = 0.9)
+  quiet(check_missing_rate_strata(d, effort, rate, c("day_type", "effort"), "test"))
+  rec <- d$total_excluded$rows[[1]]
+  expect_identical(rec$effort, "high")
+  expect_equal(rec$effort_excluded, 201.9)
+  expect_identical(rec$excluded_from, "test")
 })

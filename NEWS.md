@@ -55,7 +55,8 @@
   argument `missing_rate = "exclude"` is the explicit opt-in: the total covers
   the remaining cells, a classed warning says so, a `by` group with no covered
   cell is an `NA` row (not a missing one), and the cells left out are recorded
-  in `$excluded_strata` on the result and named when it prints. An ungrouped
+  in `$excluded_strata` on the result (one row per cell, with `effort_excluded`
+  and `excluded_from`) and named when it prints. An ungrouped
   total on a sectioned design pools one rate across each section's strata, so
   an uncovered stratum there took the other strata's rate; it is now refused
   under either setting, and the message points at the stratified `by =` total.

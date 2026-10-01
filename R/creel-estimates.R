@@ -429,14 +429,23 @@ format.creel_estimates <- function(x, ...) {
   # warning that scrolled past when it was computed (GH #373).
   if (!is.null(x$excluded_strata)) {
     ex <- x$excluded_strata
+    key_cols <- setdiff(names(ex), c("effort_excluded", "excluded_from"))
+    labels <- do.call(paste, c(
+      lapply(key_cols, function(v) paste0(v, " = ", ex[[v]])),
+      sep = ", "
+    ))
+    lines <- paste0("  ", labels, ": ", format(signif(ex$effort_excluded, 4)), " effort units")
+    shown <- utils::head(lines, 10L)
+    if (length(lines) > length(shown)) {
+      shown <- c(shown, paste0("  ... and ", length(lines) - length(shown), " more"))
+    }
     output <- c(
       output,
       "",
       paste0(
-        "Covers the cells with a rate only: ", nrow(ex),
-        " effort cell(s) with no rate excluded (", format(signif(sum(ex$effort), 4)),
-        " effort units); see $excluded_strata."
-      )
+        "Covers the cells with a rate only. Excluded (no rate), see $excluded_strata:"
+      ),
+      shown
     )
   }
 
@@ -6197,8 +6206,19 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
       excluded <- excluded[c(sec_col, setdiff(names(excluded), sec_col))]
     }
   }
-  excluded$effort <- missing_rate$estimate
-  excluded$context <- context
+  # Metadata beside the cell's own keys, under names a key column must not
+  # already use: assigning `excluded$effort` would overwrite a `by` column
+  # called `effort`.
+  meta_cols <- c("effort_excluded", "excluded_from")
+  clash <- intersect(meta_cols, names(excluded)) # nolint: object_usage_linter
+  if (length(clash) > 0L) {
+    cli::cli_abort(c(
+      "Cannot record excluded cells: a grouping column is named {.field {clash}}.",
+      "i" = "Rename that column before estimating with {.code missing_rate = \"exclude\"}."
+    ))
+  }
+  excluded$effort_excluded <- missing_rate$estimate
+  excluded$excluded_from <- context
   if (is.environment(design$total_excluded)) {
     design$total_excluded$rows <- c(design$total_excluded$rows, list(excluded))
   }
