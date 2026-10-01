@@ -271,8 +271,9 @@ summarize_refusals <- function(design) {
 #' `day_type`; then the first stratum, which warns when there is more than one
 #' so the assumption is visible at the point of use. A single-stratum design
 #' resolves silently, because there is nothing to choose between -- unless the
-#' inferred column's every value is confined to one month across data spanning
-#' several, which marks a composite month x day-type stratum and aborts.
+#' inferred column's every value is confined to one month of the year, across
+#' data spanning several months with at least one month holding two or more
+#' values, which marks a composite month x day-type stratum and aborts.
 #'
 #' @param design A `creel_design` object.
 #' @param day_type_col Caller-supplied column name, or `NULL` to infer.
@@ -332,14 +333,23 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
   # the caller named, or one named day_type, is taken as stated -- and only
   # when the data span more than one month, since one month cannot tell the two
   # apart.
+  #
+  # Month of YEAR, not year-month: the table crosses on the month name, and a
+  # composite "04_weekday" recurs every April of a multi-year creel. And at
+  # least one month must hold two or more values: a composite stratum puts
+  # weekday and weekend in the same month, whereas a real day type sampled
+  # sparsely (weekdays only in June, weekends only in July) has one value per
+  # month and must not be refused. A composite sampled that sparsely is not
+  # detected, which is the old behaviour, not a new wrong answer.
   inferred <- is.null(day_type_col) && !identical(col, "day_type")
   date_col <- design$date_col
   if (inferred && !is.null(date_col) && date_col %in% names(data)) {
-    month <- format(as.Date(data[[date_col]]), "%Y-%m")
+    month <- format(as.Date(data[[date_col]]), "%m")
     vals <- as.character(data[[col]])
     ok <- !is.na(month) & !is.na(vals)
     pairs <- unique(data.frame(v = vals[ok], m = month[ok], stringsAsFactors = FALSE))
-    if (length(unique(pairs$m)) > 1L && !any(duplicated(pairs$v))) {
+    confined <- length(unique(pairs$m)) > 1L && !any(duplicated(pairs$v))
+    if (confined && any(table(pairs$m) > 1L)) {
       cli::cli_abort(c(
         "Stratum {.field {col}} does not look like a day type.",
         "x" = paste(
@@ -364,9 +374,11 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
 #' declares one, otherwise the first stratum column, which warns when the
 #' design declares more than one. Pass \code{day_type_col} to state the
 #' column outright. An inferred column whose values each occur in a single
-#' month (a composite stratum such as \code{"04_weekday"}) is refused when the
-#' interviews span more than one month, since crossing it with month would
-#' produce a table of structural zeros.
+#' month of the year (a composite stratum such as \code{"04_weekday"}) is
+#' refused when the interviews span more than one month and some month holds
+#' two or more of its values, since crossing it with month would produce a
+#' table of structural zeros. A real day type sampled in disjoint months (only
+#' weekdays in one, only weekends in another) is not refused.
 #'
 #' @details
 #' \strong{Interview-based summary, not pressure-weighted.} This function

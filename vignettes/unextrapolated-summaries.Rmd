@@ -183,9 +183,10 @@ summarize_cws_rates(design, by = NULL)
 summarize_hws_rates(design, by = species_sought)
 ```
 
-**Interpretation guidance:** CWS and HWS rates > 1.0 are possible when anglers catch
-multiple fish of the target species in a single interview. A CWS rate of 0.6 means
-60% of interviews targeting that species resulted in at least one catch.
+**Interpretation guidance:** these are rates, not proportions. A CWS of 0.6 means the
+parties seeking that species caught, on average, 0.6 of it per angler-hour; rates above
+1.0 are common. For the share of parties that caught at least one, use
+`summarize_successful_parties()`.
 
 ## Length Frequency Distributions
 

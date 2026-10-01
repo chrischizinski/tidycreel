@@ -25,9 +25,11 @@ the design's strata: a stratum named \code{day_type} when the design
 declares one, otherwise the first stratum column, which warns when the
 design declares more than one. Pass \code{day_type_col} to state the
 column outright. An inferred column whose values each occur in a single
-month (a composite stratum such as \code{"04_weekday"}) is refused when the
-interviews span more than one month, since crossing it with month would
-produce a table of structural zeros.
+month of the year (a composite stratum such as \code{"04_weekday"}) is
+refused when the interviews span more than one month and some month holds
+two or more of its values, since crossing it with month would produce a
+table of structural zeros. A real day type sampled in disjoint months (only
+weekdays in one, only weekends in another) is not refused.
 }
 \details{
 \strong{Interview-based summary, not pressure-weighted.} This function

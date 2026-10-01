@@ -731,3 +731,32 @@ test_that("the boat-composition resolver applies the same check (#372)", {
     class = "creel_error_day_type_confined_to_month"
   )
 })
+
+test_that("a multi-year composite stratum is still refused (#372)", {
+  # Why: the table crosses on month of year, so "06_weekday" recurring every
+  # June of a multi-year creel still yields structural zeros. Keyed on
+  # year-month, the check let it through.
+  d <- dt372_design(composite, n_months = 2L)
+  d2 <- dt372_design(composite, n_months = 2L)
+  d2$interviews$date <- d2$interviews$date + 365
+  d$interviews <- rbind(d$interviews, transform(d2$interviews, interview_id = interview_id + 1000L))
+  expect_error(
+    resolve_day_type_col(d, NULL, d$interviews, "design$interviews"),
+    class = "creel_error_day_type_confined_to_month"
+  )
+})
+
+test_that("a real day type sampled in disjoint months is not refused (#372)", {
+  # The false positive the check must avoid: weekdays only in June and weekends
+  # only in July puts each value in one month, but no month holds two values,
+  # which a composite stratum always does.
+  d <- dt372_design(function(cal) cal$day_type)
+  m <- format(d$interviews$date, "%m")
+  keep <- (m == "06" & d$interviews$stratum == "weekday") |
+    (m == "07" & d$interviews$stratum == "weekend")
+  d$interviews <- d$interviews[keep, ]
+  expect_identical(
+    resolve_day_type_col(d, NULL, d$interviews, "design$interviews"),
+    "stratum"
+  )
+})
