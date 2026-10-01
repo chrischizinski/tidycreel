@@ -5054,12 +5054,19 @@ within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, 
   }
   if (n_unpaired == length(days)) {
     # No day pairs: the units are independent throughout, so the stratum's
-    # component is the sum of each unit's own -- the same numbers `by =` the unit
-    # column reports, whatever each unit's number of counts. The per-day rows
-    # above reproduce that only when every unit was counted equally often.
+    # component is the sum of each unit's own, whatever each unit's number of
+    # counts. The per-day rows above reproduce that only when every unit was
+    # counted equally often.
+    #
+    # Each unit is a domain of the stratum's sampled days: on a day it was not
+    # counted it contributes nothing, but that day was still sampled. Its
+    # variance is therefore scaled by the stratum's sampled days, not by the
+    # days the unit appears on. Units named per day (u1, u2 on one day; u3, u4 on
+    # the next) would otherwise each have one day, and each be expanded to the
+    # whole stratum as if it alone had been sampled.
     unit_cell <- group_key(rows, extra_cols) # nolint: object_usage_linter
     return(sum(vapply(split(rows, unit_cell), function(cell) {
-      rasmussen_within_var(cell$ss_d, cell$k_d, n_avail, target)
+      rasmussen_within_var(cell$ss_d, cell$k_d, n_avail, target, n_sampled = length(days))
     }, numeric(1))))
   }
 
@@ -5069,11 +5076,12 @@ within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, 
 #' The Rasmussen within-day variance formula for one stratum
 #'
 #' @param ss_d,k_d Per sampled day: sum of squares across counts, number of counts.
+#' @param n_sampled Sampled days in the stratum. Defaults to one per `ss_d`; a
+#'   unit counted on only some of them passes the stratum's count.
 #' @return Numeric scalar.
 #' @keywords internal
 #' @noRd
-rasmussen_within_var <- function(ss_d, k_d, n_avail, target) {
-  n_sampled <- length(ss_d)
+rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(ss_d)) {
   k_bar <- mean(k_d)
   if (k_bar <= 1) {
     return(0)

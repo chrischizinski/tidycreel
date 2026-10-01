@@ -324,3 +324,18 @@ test_that("#373: with no day paired, the unsplit component is the sum of the by-
   by_gear <- wdp_se_within(design, by = gear, target = "period_total")
   expect_equal(total$se_within^2, sum(by_gear$se_within^2))
 })
+
+test_that("#373: units named per day are not each expanded to the whole stratum", {
+  # `unit_cols` does not require a unit's label to recur across days. Here every
+  # day's units carry their own labels (bank-1, boat-1 on day 1, ...), counted
+  # at different times, so nothing pairs. Each label then appears on one day,
+  # and scaled by its own one day it was expanded as if it alone had been
+  # sampled -- the stratum's component doubled. Scaled by the stratum's sampled
+  # days, it is the same per-day sum the recurring labels give.
+  counts <- wdp_counts(times_bank = c("08:00", "16:00"), times_boat = c("09:00", "17:00"))
+  relabelled <- counts
+  relabelled$gear <- paste(counts$gear, match(counts$date, unique(counts$date)), sep = "-")
+
+  est <- wdp_se_within(wdp_design(relabelled), target = "period_total")
+  expect_equal(est$se_within, sqrt(wdp_hand_var_mixed(counts)))
+})
