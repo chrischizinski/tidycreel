@@ -55,9 +55,13 @@ apply survey weighting by sampling effort or effort stratum. For
 pressure-weighted extrapolated estimates use
 [`estimate_catch_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md).
 
-The catch filter ensures only species the angler was targeting are
-counted (i.e., rows in `design$catch` where `catch_type == "caught"` and
-`species == species_sought`).
+Only the species the party was seeking is counted. Its catch follows the
+model
+[`add_catch`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+documents: the pair's `"caught"` row when it has one, and otherwise
+`harvested + released`, because a `"caught"` row is optional. Data that
+record only dispositions give the same rates as data that also record
+the total.
 
 ## Unrecorded grouping values
 
@@ -182,8 +186,8 @@ summarize_cws_rates(d, by = species_sought)
 #> 1           bass  6                0                0                    0
 #> 2        panfish  5                0                0                    0
 #> 3        walleye 11                0                0                    0
-#>   mean_rate        se    ci_lower  ci_upper
-#> 1 0.2083333 0.2083333 -0.32720455 0.7438712
-#> 2 0.4666667 0.4666667 -0.82900772 1.7623410
-#> 3 0.7835498 0.3359583  0.03498793 1.5321116
+#>   mean_rate        se   ci_lower  ci_upper
+#> 1 0.3416667 0.2237620 -0.2335319 0.9168653
+#> 2 0.4666667 0.4666667 -0.8290077 1.7623410
+#> 3 1.2500000 0.3127661  0.5531138 1.9468862
 ```

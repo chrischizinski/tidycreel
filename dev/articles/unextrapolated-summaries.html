@@ -316,12 +316,16 @@ understanding effort patterns.</p>
 <div class="section level2">
 <h2 id="catch-while-sought-cws-and-harvest-while-sought-hws-rates">Catch-While-Sought (CWS) and Harvest-While-Sought (HWS) Rates<a class="anchor" aria-label="anchor" href="#catch-while-sought-cws-and-harvest-while-sought-hws-rates"></a>
 </h2>
-<p>CWS and HWS rates measure the proportion of interviews where anglers
-targeting a species actually caught (CWS) or kept (HWS) that species.
-These are useful quality indicators and input parameters for population
-models, but should <strong>not</strong> be treated as pressure-weighted
-catch rates for management use — they reflect the interview sample
-composition, not fishing pressure across the survey period.</p>
+<p>CWS and HWS rates are the mean, across parties seeking a species, of
+each party’s catch (CWS) or harvest (HWS) of that species per
+angler-hour. A party’s catch is its <code>caught</code> row when it
+recorded one, and otherwise its harvested + released fish, as
+<code><a href="../reference/add_catch.html">add_catch()</a></code> documents, so data that record only
+dispositions give the same CWS. These are useful quality indicators and
+input parameters for population models, but should <strong>not</strong>
+be treated as pressure-weighted catch rates for management use — they
+reflect the interview sample composition, not fishing pressure across
+the survey period.</p>
 <div class="section level3">
 <h3 id="cws-rates-by-species-sought">CWS Rates by Species Sought<a class="anchor" aria-label="anchor" href="#cws-rates-by-species-sought"></a>
 </h3>
@@ -331,10 +335,10 @@ composition, not fishing pressure across the survey period.</p>
 <span><span class="co">#&gt; 1           bass  6                0                0                    0</span></span>
 <span><span class="co">#&gt; 2        panfish  5                0                0                    0</span></span>
 <span><span class="co">#&gt; 3        walleye 11                0                0                    0</span></span>
-<span><span class="co">#&gt;    mean_rate         se    ci_lower  ci_upper</span></span>
-<span><span class="co">#&gt; 1 0.05208333 0.05208333 -0.08180114 0.1859678</span></span>
-<span><span class="co">#&gt; 2 0.23333333 0.23333333 -0.41450386 0.8811705</span></span>
-<span><span class="co">#&gt; 3 0.46158009 0.23247889 -0.05641517 0.9795753</span></span></code></pre></div>
+<span><span class="co">#&gt;   mean_rate        se   ci_lower  ci_upper</span></span>
+<span><span class="co">#&gt; 1 0.1854167 0.1330890 -0.1566994 0.5275328</span></span>
+<span><span class="co">#&gt; 2 0.2333333 0.2333333 -0.4145039 0.8811705</span></span>
+<span><span class="co">#&gt; 3 0.6293290 0.2163859  0.1471911 1.1114669</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="cws-rates-collapsed-across-all-groupings">CWS Rates Collapsed Across All Groupings<a class="anchor" aria-label="anchor" href="#cws-rates-collapsed-across-all-groupings"></a>
@@ -342,9 +346,9 @@ composition, not fishing pressure across the survey period.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/summarize_cws_rates.html">summarize_cws_rates</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    N n_unknown_target n_unknown_effort n_nonpositive_effort mean_rate        se</span></span>
-<span><span class="co">#&gt; 1 22                0                0                    0 0.2980249 0.1298807</span></span>
-<span><span class="co">#&gt;     ci_lower  ci_upper</span></span>
-<span><span class="co">#&gt; 1 0.02792314 0.5681266</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 22                0                0                    0  0.418263 0.1295774</span></span>
+<span><span class="co">#&gt;   ci_lower ci_upper</span></span>
+<span><span class="co">#&gt; 1 0.148792 0.687734</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="hws-rates">HWS Rates<a class="anchor" aria-label="anchor" href="#hws-rates"></a>
@@ -359,10 +363,11 @@ composition, not fishing pressure across the survey period.</p>
 <span><span class="co">#&gt; 1 0.0312500 0.0312500 -0.04908068 0.1115807</span></span>
 <span><span class="co">#&gt; 2 0.1333333 0.1333333 -0.23685935 0.5035260</span></span>
 <span><span class="co">#&gt; 3 0.3887987 0.1322997  0.09401668 0.6835807</span></span></code></pre></div>
-<p><strong>Interpretation guidance:</strong> CWS and HWS rates &gt; 1.0
-are possible when anglers catch multiple fish of the target species in a
-single interview. A CWS rate of 0.6 means 60% of interviews targeting
-that species resulted in at least one catch.</p>
+<p><strong>Interpretation guidance:</strong> these are rates, not
+proportions. A CWS of 0.6 means the parties seeking that species caught,
+on average, 0.6 of it per angler-hour; rates above 1.0 are common. For
+the share of parties that caught at least one, use
+<code><a href="../reference/summarize_successful_parties.html">summarize_successful_parties()</a></code>.</p>
 </div>
 </div>
 <div class="section level2">
@@ -389,8 +394,9 @@ by catch type and species.</p>
 <h3 id="release-lengths">Release Lengths<a class="anchor" aria-label="anchor" href="#release-lengths"></a>
 </h3>
 <p>Release lengths in <code>example_lengths</code> are stored in
-pre-binned format. <code><a href="../reference/summarize_length_freq.html">summarize_length_freq()</a></code> handles this
-automatically:</p>
+pre-binned format, as <code>"lower-upper"</code> labels in mm.
+<code><a href="../reference/summarize_length_freq.html">summarize_length_freq()</a></code> converts each bin to its
+midpoint:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/summarize_length_freq.html">summarize_length_freq</a></span><span class="op">(</span><span class="va">design</span>, type <span class="op">=</span> <span class="st">"release"</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   species length_bin N percent cumulative_percent</span></span>
@@ -400,11 +406,26 @@ automatically:</p>
 <span><span class="co">#&gt; 4 panfish  [225,226) 3    33.3              100.0</span></span>
 <span><span class="co">#&gt; 5 walleye  [375,376) 2    40.0               40.0</span></span>
 <span><span class="co">#&gt; 6 walleye  [425,426) 3    60.0              100.0</span></span></code></pre></div>
+<p>Many agencies record released fish by <strong>inch group</strong>
+instead, a single value such as <code>"12"</code> with a count. Declare
+the unit and the group width when attaching the lengths, and each group
+is read as its lower bound (<code>"12"</code> is 12.0 to under 13
+inches) and converted to mm, so it combines correctly with harvest
+lengths measured in mm:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_lengths.html">add_lengths</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">lengths_with_inch_groups</span>,</span>
+<span>  length_uid <span class="op">=</span> <span class="va">interview_id</span>, interview_uid <span class="op">=</span> <span class="va">interview_id</span>,</span>
+<span>  species <span class="op">=</span> <span class="va">species</span>, length <span class="op">=</span> <span class="va">length</span>, length_type <span class="op">=</span> <span class="va">length_type</span>, count <span class="op">=</span> <span class="va">count</span>,</span>
+<span>  release_format <span class="op">=</span> <span class="st">"binned"</span>, release_bin_unit <span class="op">=</span> <span class="st">"inch"</span>, release_bin_width <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>If your inch groups are rounded to the nearest inch rather than
+truncated, give <code>"lower-upper"</code> labels
+(<code>"11.5-12.5"</code>) instead.</p>
 </div>
 <div class="section level3">
 <h3 id="all-catch-lengths">All-Catch Lengths<a class="anchor" aria-label="anchor" href="#all-catch-lengths"></a>
 </h3>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/summarize_length_freq.html">summarize_length_freq</a></span><span class="op">(</span><span class="va">design</span>, type <span class="op">=</span> <span class="st">"catch"</span>, by <span class="op">=</span> <span class="va">species</span>, bin_width <span class="op">=</span> <span class="fl">25</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    species length_bin N percent cumulative_percent</span></span>
 <span><span class="co">#&gt; 1     bass  [225,250) 1     7.7                7.7</span></span>
@@ -431,7 +452,7 @@ catch data) using the ratio-of-means estimator.</p>
 <div class="section level3">
 <h3 id="catch-per-unit-effort-by-species">Catch Per Unit Effort by Species<a class="anchor" aria-label="anchor" href="#catch-per-unit-effort-by-species"></a>
 </h3>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
@@ -460,7 +481,7 @@ catch data) using the ratio-of-means estimator.</p>
 <div class="section level3">
 <h3 id="total-catch-by-species">Total Catch by Species<a class="anchor" aria-label="anchor" href="#total-catch-by-species"></a>
 </h3>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
@@ -488,7 +509,7 @@ catch data) using the ratio-of-means estimator.</p>
 <div class="section level3">
 <h3 id="total-harvest-by-species">Total Harvest by Species<a class="anchor" aria-label="anchor" href="#total-harvest-by-species"></a>
 </h3>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -508,7 +529,7 @@ catch data) using the ratio-of-means estimator.</p>
 <div class="section level3">
 <h3 id="release-rate-and-total-releases-by-species">Release Rate and Total Releases by Species<a class="anchor" aria-label="anchor" href="#release-rate-and-total-releases-by-species"></a>
 </h3>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_release_rate.html">estimate_release_rate</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>

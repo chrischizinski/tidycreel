@@ -226,8 +226,12 @@ understanding effort patterns.
 
 ## Catch-While-Sought (CWS) and Harvest-While-Sought (HWS) Rates
 
-CWS and HWS rates measure the proportion of interviews where anglers
-targeting a species actually caught (CWS) or kept (HWS) that species.
+CWS and HWS rates are the mean, across parties seeking a species, of
+each party’s catch (CWS) or harvest (HWS) of that species per
+angler-hour. A party’s catch is its `caught` row when it recorded one,
+and otherwise its harvested + released fish, as
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+documents, so data that record only dispositions give the same CWS.
 These are useful quality indicators and input parameters for population
 models, but should **not** be treated as pressure-weighted catch rates
 for management use — they reflect the interview sample composition, not
@@ -242,10 +246,10 @@ summarize_cws_rates(design, by = species_sought)
 #> 1           bass  6                0                0                    0
 #> 2        panfish  5                0                0                    0
 #> 3        walleye 11                0                0                    0
-#>    mean_rate         se    ci_lower  ci_upper
-#> 1 0.05208333 0.05208333 -0.08180114 0.1859678
-#> 2 0.23333333 0.23333333 -0.41450386 0.8811705
-#> 3 0.46158009 0.23247889 -0.05641517 0.9795753
+#>   mean_rate        se   ci_lower  ci_upper
+#> 1 0.1854167 0.1330890 -0.1566994 0.5275328
+#> 2 0.2333333 0.2333333 -0.4145039 0.8811705
+#> 3 0.6293290 0.2163859  0.1471911 1.1114669
 ```
 
 ### CWS Rates Collapsed Across All Groupings
@@ -254,9 +258,9 @@ summarize_cws_rates(design, by = species_sought)
 
 summarize_cws_rates(design, by = NULL)
 #>    N n_unknown_target n_unknown_effort n_nonpositive_effort mean_rate        se
-#> 1 22                0                0                    0 0.2980249 0.1298807
-#>     ci_lower  ci_upper
-#> 1 0.02792314 0.5681266
+#> 1 22                0                0                    0  0.418263 0.1295774
+#>   ci_lower ci_upper
+#> 1 0.148792 0.687734
 ```
 
 ### HWS Rates
@@ -274,10 +278,11 @@ summarize_hws_rates(design, by = species_sought)
 #> 3 0.3887987 0.1322997  0.09401668 0.6835807
 ```
 
-**Interpretation guidance:** CWS and HWS rates \> 1.0 are possible when
-anglers catch multiple fish of the target species in a single interview.
-A CWS rate of 0.6 means 60% of interviews targeting that species
-resulted in at least one catch.
+**Interpretation guidance:** these are rates, not proportions. A CWS of
+0.6 means the parties seeking that species caught, on average, 0.6 of it
+per angler-hour; rates above 1.0 are common. For the share of parties
+that caught at least one, use
+[`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_successful_parties.md).
 
 ## Length Frequency Distributions
 
@@ -303,9 +308,10 @@ summarize_length_freq(design, type = "harvest", by = species, bin_width = 25)
 
 ### Release Lengths
 
-Release lengths in `example_lengths` are stored in pre-binned format.
+Release lengths in `example_lengths` are stored in pre-binned format, as
+`"lower-upper"` labels in mm.
 [`summarize_length_freq()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_length_freq.md)
-handles this automatically:
+converts each bin to its midpoint:
 
 ``` r
 
@@ -318,6 +324,24 @@ summarize_length_freq(design, type = "release", by = species)
 #> 5 walleye  [375,376) 2    40.0               40.0
 #> 6 walleye  [425,426) 3    60.0              100.0
 ```
+
+Many agencies record released fish by **inch group** instead, a single
+value such as `"12"` with a count. Declare the unit and the group width
+when attaching the lengths, and each group is read as its lower bound
+(`"12"` is 12.0 to under 13 inches) and converted to mm, so it combines
+correctly with harvest lengths measured in mm:
+
+``` r
+
+design <- add_lengths(design, lengths_with_inch_groups,
+  length_uid = interview_id, interview_uid = interview_id,
+  species = species, length = length, length_type = length_type, count = count,
+  release_format = "binned", release_bin_unit = "inch", release_bin_width = 1
+)
+```
+
+If your inch groups are rounded to the nearest inch rather than
+truncated, give `"lower-upper"` labels (`"11.5-12.5"`) instead.
 
 ### All-Catch Lengths
 

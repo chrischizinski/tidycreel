@@ -107,7 +107,10 @@ inspecting data quality before estimation.</p>
 <dd><p>Percentage of incomplete trips</p></dd>
 
 <dt>duration_stats</dt>
-<dd><p>Data frame with duration statistics by trip status</p></dd>
+<dd><p>Data frame with duration statistics by trip
+status, or <code>NULL</code> when the interviews carry no trip duration (neither
+<code>trip_duration</code> nor <code>trip_start</code> + <code>interview_time</code> was given to
+<code><a href="add_interviews.html">add_interviews()</a></code>)</p></dd>
 
 
 </dl></div>

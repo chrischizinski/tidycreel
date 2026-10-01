@@ -5,7 +5,11 @@ data, grouped by calendar month and day type. Formula:
 `mean(angler_boats / (angler_boats + non_ang_boats))` per group. The day
 type column is resolved from the design's strata: a stratum named
 `day_type` when the design declares one, otherwise the first stratum
-column, which warns when the design declares more than one.
+column, which warns when the design declares more than one. An inferred
+column whose values each fall in one month of the year (a composite
+stratum such as `"04_weekday"`) is refused when at least two months each
+hold two or more of its values; pass `day_type_col` to name the day
+type.
 
 ## Usage
 

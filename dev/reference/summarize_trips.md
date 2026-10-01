@@ -43,7 +43,10 @@ A list (class "creel_trip_summary") with components:
 
 - duration_stats:
 
-  Data frame with duration statistics by trip status
+  Data frame with duration statistics by trip status, or `NULL` when the
+  interviews carry no trip duration (neither `trip_duration` nor
+  `trip_start` + `interview_time` was given to
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md))
 
 ## See also
 

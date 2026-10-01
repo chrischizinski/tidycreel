@@ -17,7 +17,9 @@ add_lengths(
   length,
   length_type,
   count = NULL,
-  release_format = "individual"
+  release_format = "individual",
+  release_bin_unit = "mm",
+  release_bin_width = NULL
 )
 ```
 
@@ -75,6 +77,23 @@ add_lengths(
   Character scalar: `"individual"` (default) or `"binned"`. Controls how
   release rows are validated and how the length range is computed for
   display.
+
+- release_bin_unit:
+
+  Character scalar: the unit of binned release labels, one of `"mm"`
+  (default), `"cm"` or `"inch"`. Only used when
+  `release_format = "binned"`. Harvest lengths are always mm; release
+  bins are converted to mm before they are combined with them.
+
+- release_bin_width:
+
+  Optional positive number, in `release_bin_unit`: the width of a bin
+  whose label is a single value (an inch group such as `"12"`). Such a
+  label is read as the bin's LOWER bound – `"12"` with width 1 is 12.0
+  to under 13 inches, the usual inch group for lengths truncated to the
+  inch below. A label of the form `"lower-upper"` carries its own bounds
+  and needs no width. If your agency rounds to the nearest inch instead,
+  give `"lower-upper"` labels (`"11.5-12.5"`).
 
 ## Value
 

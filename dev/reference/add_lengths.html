@@ -89,7 +89,9 @@ on the design for use by downstream summary and estimation functions.</p>
 <span>  <span class="va">length</span>,</span>
 <span>  <span class="va">length_type</span>,</span>
 <span>  count <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  release_format <span class="op">=</span> <span class="st">"individual"</span></span>
+<span>  release_format <span class="op">=</span> <span class="st">"individual"</span>,</span>
+<span>  release_bin_unit <span class="op">=</span> <span class="st">"mm"</span>,</span>
+<span>  release_bin_width <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -147,6 +149,24 @@ when all length data are individual measurements.</p></dd>
 <dd><p>Character scalar: <code>"individual"</code> (default) or
 <code>"binned"</code>. Controls how release rows are validated and how the
 length range is computed for display.</p></dd>
+
+
+<dt id="arg-release-bin-unit">release_bin_unit<a class="anchor" aria-label="anchor" href="#arg-release-bin-unit"></a></dt>
+<dd><p>Character scalar: the unit of binned release
+labels, one of <code>"mm"</code> (default), <code>"cm"</code> or <code>"inch"</code>. Only
+used when <code>release_format = "binned"</code>. Harvest lengths are always mm;
+release bins are converted to mm before they are combined with them.</p></dd>
+
+
+<dt id="arg-release-bin-width">release_bin_width<a class="anchor" aria-label="anchor" href="#arg-release-bin-width"></a></dt>
+<dd><p>Optional positive number, in
+<code>release_bin_unit</code>: the width of a bin whose label is a single value
+(an inch group such as <code>"12"</code>). Such a label is read as the bin's
+LOWER bound – <code>"12"</code> with width 1 is 12.0 to under 13 inches, the
+usual inch group for lengths truncated to the inch below. A label of the
+form <code>"lower-upper"</code> carries its own bounds and needs no width. If
+your agency rounds to the nearest inch instead, give <code>"lower-upper"</code>
+labels (<code>"11.5-12.5"</code>).</p></dd>
 
 </dl></div>
     <div class="section level2">

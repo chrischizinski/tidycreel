@@ -4,12 +4,18 @@ grouped by calendar month and day type. Formula:
 mean(angler_boats / (angler_boats + non_ang_boats)) per group. The
 day type column is resolved from the design's strata: a stratum named
 day_type when the design declares one, otherwise the first stratum
-column, which warns when the design declares more than one."><meta property="og:description" content="Computes the percentage of boats that are angler boats from raw count data,
+column, which warns when the design declares more than one. An inferred
+column whose values each fall in one month of the year (a composite stratum
+such as &quot;04_weekday&quot;) is refused when at least two months each hold
+two or more of its values; pass day_type_col to name the day type."><meta property="og:description" content="Computes the percentage of boats that are angler boats from raw count data,
 grouped by calendar month and day type. Formula:
 mean(angler_boats / (angler_boats + non_ang_boats)) per group. The
 day type column is resolved from the design's strata: a stratum named
 day_type when the design declares one, otherwise the first stratum
-column, which warns when the design declares more than one."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
+column, which warns when the design declares more than one. An inferred
+column whose values each fall in one month of the year (a composite stratum
+such as &quot;04_weekday&quot;) is refused when at least two months each hold
+two or more of its values; pass day_type_col to name the day type."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -81,7 +87,10 @@ grouped by calendar month and day type. Formula:
 <code>mean(angler_boats / (angler_boats + non_ang_boats))</code> per group. The
 day type column is resolved from the design's strata: a stratum named
 <code>day_type</code> when the design declares one, otherwise the first stratum
-column, which warns when the design declares more than one.</p>
+column, which warns when the design declares more than one. An inferred
+column whose values each fall in one month of the year (a composite stratum
+such as <code>"04_weekday"</code>) is refused when at least two months each hold
+two or more of its values; pass <code>day_type_col</code> to name the day type.</p>
     </div>
 
     <div class="section level2">
