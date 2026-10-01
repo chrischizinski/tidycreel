@@ -88,6 +88,8 @@ test_that("an unparseable label is refused with the package's own error", {
 test_that("add_lengths() validates the bin unit and width", {
   expect_error(rbu_design("300-350", release_bin_unit = "feet"), "release_bin_unit")
   expect_error(rbu_design("12", release_bin_unit = "inch", release_bin_width = 0), "release_bin_width")
+  # Inf passed a positivity check and only failed later, in seq(), downstream.
+  expect_error(rbu_design("12", release_bin_unit = "inch", release_bin_width = Inf), "release_bin_width")
   # Individual lengths have no bins; a unit given there is refused, not ignored.
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")

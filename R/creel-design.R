@@ -4531,10 +4531,10 @@ add_lengths <- function(
   }
   width_ok <- is.null(release_bin_width) ||
     (is.numeric(release_bin_width) && base::length(release_bin_width) == 1L &&
-       !is.na(release_bin_width) && release_bin_width > 0)
+       is.finite(release_bin_width) && release_bin_width > 0)
   if (!width_ok) {
     cli::cli_abort(c(
-      "{.arg release_bin_width} must be a single positive number.",
+      "{.arg release_bin_width} must be a single finite positive number.",
       "x" = "Got {.val {release_bin_width}}."
     ))
   }
