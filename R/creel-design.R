@@ -2089,9 +2089,18 @@ add_counts <- function(
 
   # Aggregate multiple counts per day to single PSU-level rows
   within_day_var <- NULL
+  within_day_counts <- NULL
   if (!is.null(count_time_col_name)) {
     key_cols <- unit_key_cols
     count_var <- count_col_name
+
+    # The per-occasion counts are kept as well as their sums of squares (GH #373).
+    # A sum of squares per unit cannot be combined across units: bank and boat
+    # anglers tallied at the same count move together, and the variance of their
+    # sum needs the cross-products the per-unit table threw away. With the raw
+    # occasions kept, the consumer can add units up at each occasion first.
+    within_day_counts <- counts[c(key_cols, count_time_col_name, count_var)]
+    names(within_day_counts)[length(key_cols) + 1:2] <- c(".count_time", ".value")
 
     agg_result <- aggregate_within_day( # nolint: object_usage_linter
       counts = counts,
@@ -2134,6 +2143,17 @@ add_counts <- function(
       )
     ]
     within_day_var$ss_d <- within_day_var$ss_d * td_vals^2
+    # The raw occasions go into the same effort units as the sums of squares
+    # built from them, by the same unit's T_d (GH #373).
+    if (!is.null(within_day_counts)) {
+      td_occ <- counts[[period_length_col_name]][
+        match(
+          group_key(within_day_counts, wdv_key_cols), # nolint: object_usage_linter
+          group_key(counts, wdv_key_cols) # nolint: object_usage_linter
+        )
+      ]
+      within_day_counts$.value <- within_day_counts$.value * td_occ
+    }
   }
 
   # Scale the expansion basis by T_d for the same reason ss_d is scaled above:
@@ -2174,6 +2194,7 @@ add_counts <- function(
   new_design$count_col <- count_col_name
   new_design$count_time_col <- count_time_col_name
   new_design$within_day_var <- within_day_var
+  new_design$within_day_counts <- within_day_counts
   new_design$n_counts_per_psu <- if (!is.null(within_day_var)) {
     within_day_var$k_d
   } else {

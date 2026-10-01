@@ -4903,29 +4903,24 @@ compute_within_day_var_contribution <- function(
     combined$.strata_key <- do.call(paste, c(combined[strata_cols], sep = "\u001f"))
   }
 
-  # Determine grouping: by_vars or strata alone
+  # Determine grouping: by_vars or strata alone. Each stratum (within each
+  # group) is first resolved to the grain being reported -- one row per sampled
+  # day -- because the table is keyed by the full unit key and a day may carry
+  # several units (GH #373).
+  grain_cols <- unique(c(design$psu_col, strata_cols, by_vars))
   if (is.null(by_vars)) {
     # Ungrouped: sum within-day variance across strata
     strata_keys <- unique(combined$.strata_key)
     v_within_total <- 0
     for (sk in strata_keys) {
-      rows <- combined$.strata_key == sk
-      n_sampled <- sum(rows)
-      n_avail <- as.integer(available_by_strata[sk])
-      k_d <- combined$k_d[rows]
-      ss_d <- combined$ss_d[rows]
-      k_bar <- mean(k_d)
-      if (k_bar <= 1) {
-        next
-      } # no within-day component when k_bar = 1
-      s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
-      # For sampled_days target the between-day variance is on the sampled-day
-      # scale (no expansion weights), so the within-day component must match:
-      # use n_sampled not N_avail. For expanded targets (stratum/period total)
-      # the Rasmussen N_s formula applies.
-      scale_n <- if (identical(target, "sampled_days")) n_sampled else n_avail
-      v_within <- (scale_n / k_bar) * s2_within
-      v_within_total <- v_within_total + v_within
+      v_within_total <- v_within_total + within_day_stratum_var(
+        combined[combined$.strata_key == sk, , drop = FALSE],
+        design = design,
+        key_cols = key_cols,
+        grain_cols = grain_cols,
+        n_avail = as.integer(available_by_strata[sk]),
+        target = target
+      )
     }
     v_within_total
   } else {
@@ -4940,29 +4935,164 @@ compute_within_day_var_contribution <- function(
       group_keys
     )
     for (gk in group_keys) {
-      g_rows <- combined$.group_key == gk
-      g_data <- combined[g_rows, , drop = FALSE]
-      strata_keys_g <- unique(g_data$.strata_key)
+      g_data <- combined[combined$.group_key == gk, , drop = FALSE]
       v_g <- 0
-      for (sk in strata_keys_g) {
-        s_rows <- g_data$.strata_key == sk
-        n_sampled <- sum(s_rows)
-        n_avail <- as.integer(available_by_strata[sk])
-        k_d <- g_data$k_d[s_rows]
-        ss_d <- g_data$ss_d[s_rows]
-        k_bar <- mean(k_d)
-        if (k_bar <= 1) {
-          next
-        }
-        s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
-        scale_n <- if (identical(target, "sampled_days")) n_sampled else n_avail
-        v_within <- (scale_n / k_bar) * s2_within
-        v_g <- v_g + v_within
+      for (sk in unique(g_data$.strata_key)) {
+        v_g <- v_g + within_day_stratum_var(
+          g_data[g_data$.strata_key == sk, , drop = FALSE],
+          design = design,
+          key_cols = key_cols,
+          grain_cols = grain_cols,
+          n_avail = as.integer(available_by_strata[sk]),
+          target = target
+        )
       }
       v_within_by_group[gk] <- v_g
     }
     v_within_by_group
   }
+}
+
+#' Rasmussen within-day variance for one stratum, at the reported grain
+#'
+#' Internal. `rows` are the stratum's count rows (within one `by` group, when
+#' grouped), joined to their `ss_d` and `k_d`. The formula needs one row per
+#' sampled day. That holds whenever the unit key is no finer than the grain
+#' being reported: a design keyed by date, or by date and the `by` column.
+#'
+#' When a day carries several units the report does not split -- bank and boat
+#' rows of one count, estimated as a single total -- the per-unit rows cannot be
+#' fed to the formula as they are. Counted as days they double `n_sampled`,
+#' halving the variance, and summed as sums of squares they drop the covariance
+#' between units tallied at the same occasion (GH #373). The day is rebuilt from
+#' the raw occasions instead: units are added up at each occasion and the sum of
+#' squares is taken of that total, which is the variance of the quantity being
+#' reported.
+#'
+#' Units counted at different occasions on the same day cannot be paired. They
+#' are then treated as independent -- each unit contributes its own variance --
+#' and a message says so. With no raw occasions at all (a supplied sum of
+#' squares) the cross-products are unknown, and the combination is refused.
+#'
+#' @return Numeric scalar: the stratum's within-day variance contribution.
+#' @keywords internal
+#' @noRd
+within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, target) {
+  extra_cols <- setdiff(key_cols, grain_cols)
+  day_key <- if (length(extra_cols) > 0L) group_key(rows, grain_cols) else NULL # nolint: object_usage_linter
+  if (is.null(day_key) || !anyDuplicated(day_key)) {
+    return(rasmussen_within_var(rows$ss_d, rows$k_d, n_avail, target))
+  }
+
+  occ <- design$within_day_counts
+  if (is.null(occ)) {
+    cli::cli_abort(
+      c(
+        "Within-day variance cannot be combined across {.field {extra_cols}}.",
+        "x" = "A sampled day carries more than one {.field {extra_cols}} unit, and the \\
+               design holds only a sum of squares for each. The covariance between \\
+               units counted at the same occasion is not recoverable from those.",
+        "i" = "Report {.code by} every one of {.field {extra_cols}}, or attach the \\
+               raw counts with {.arg count_time_col} so they can be added up at \\
+               each occasion."
+      ),
+      class = "creel_error_within_day_unpooled"
+    )
+  }
+
+  # Each occasion is placed on its day through the unit it belongs to, not by
+  # rebuilding the day from columns: a `by` column outside the unit key is on
+  # the count rows but not in the occasion table.
+  row_unit <- group_key(rows, key_cols) # nolint: object_usage_linter
+  occ_unit <- group_key(occ, key_cols) # nolint: object_usage_linter
+  occ <- occ[occ_unit %in% row_unit, , drop = FALSE]
+  occ_unit <- occ_unit[occ_unit %in% row_unit]
+  occ_day <- day_key[match(occ_unit, row_unit)]
+  occ_time <- as.character(occ$.count_time)
+
+  days <- unique(day_key)
+  ss_d <- numeric(length(days))
+  k_d <- numeric(length(days))
+  n_unpaired <- 0L
+  for (i in seq_along(days)) {
+    idx <- which(occ_day == days[i])
+    labels <- split(occ_time[idx], occ_unit[idx])
+    sets <- lapply(labels, sort)
+    # A day pairs only if every unit was counted at the same, known occasions,
+    # each once. An unknown occasion (NA) cannot be matched to anything.
+    paired <- !anyNA(occ_time[idx]) &&
+      !any(vapply(labels, anyDuplicated, integer(1)) > 0L) &&
+      all(vapply(sets, identical, logical(1), sets[[1]]))
+    if (paired) {
+      tot <- vapply(split(occ$.value[idx], occ_time[idx]), sum, numeric(1))
+      ss_d[i] <- sum((tot - mean(tot))^2)
+      k_d[i] <- length(tot)
+    } else {
+      # Independent units: the day's variance is the sum of the units'
+      # variances of the mean, carried as the sum of squares that gives that
+      # variance at the day's mean count. With equal counts per unit it is just
+      # the units' sums of squares added, every count kept.
+      n_unpaired <- n_unpaired + 1L
+      u <- rows[day_key == days[i], , drop = FALSE]
+      k_eq <- mean(u$k_d)
+      per_unit <- ifelse(u$k_d > 1, u$ss_d / (u$k_d * (u$k_d - 1)), 0)
+      ss_d[i] <- if (k_eq > 1) sum(per_unit) * k_eq * (k_eq - 1) else 0
+      k_d[i] <- k_eq
+    }
+  }
+
+  if (n_unpaired > 0L) {
+    cli::cli_inform(
+      c(
+        "i" = "Within-day variance: on {n_unpaired} day{?s} the {.field {extra_cols}} \\
+               units were not counted at the same known occasions, so they cannot be \\
+               paired.",
+        "i" = "Their within-day components are added as independent on those days."
+      ),
+      class = "creel_message_within_day_independent"
+    )
+  }
+  if (n_unpaired == length(days)) {
+    # No day pairs: the units are independent throughout, so the stratum's
+    # component is the sum of each unit's own, whatever each unit's number of
+    # counts. The per-day rows above reproduce that only when every unit was
+    # counted equally often.
+    #
+    # Each unit is a domain of the stratum's sampled days: on a day it was not
+    # counted it contributes nothing, but that day was still sampled. Its
+    # variance is therefore scaled by the stratum's sampled days, not by the
+    # days the unit appears on. Units named per day (u1, u2 on one day; u3, u4 on
+    # the next) would otherwise each have one day, and each be expanded to the
+    # whole stratum as if it alone had been sampled.
+    unit_cell <- group_key(rows, extra_cols) # nolint: object_usage_linter
+    return(sum(vapply(split(rows, unit_cell), function(cell) {
+      rasmussen_within_var(cell$ss_d, cell$k_d, n_avail, target, n_sampled = length(days))
+    }, numeric(1))))
+  }
+
+  rasmussen_within_var(ss_d, k_d, n_avail, target)
+}
+
+#' The Rasmussen within-day variance formula for one stratum
+#'
+#' @param ss_d,k_d Per sampled day: sum of squares across counts, number of counts.
+#' @param n_sampled Sampled days in the stratum. Defaults to one per `ss_d`; a
+#'   unit counted on only some of them passes the stratum's count.
+#' @return Numeric scalar.
+#' @keywords internal
+#' @noRd
+rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(ss_d)) {
+  k_bar <- mean(k_d)
+  if (k_bar <= 1) {
+    return(0)
+  } # no within-day component when k_bar = 1
+  s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
+  # For sampled_days target the between-day variance is on the sampled-day
+  # scale (no expansion weights), so the within-day component must match:
+  # use n_sampled not N_avail. For expanded targets (stratum/period total)
+  # the Rasmussen N_s formula applies.
+  scale_n <- if (identical(target, "sampled_days")) n_sampled else n_avail
+  (scale_n / k_bar) * s2_within
 }
 
 #' Build a target-aware survey design for effort estimation

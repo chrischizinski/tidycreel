@@ -43,6 +43,27 @@
 
 ## Bug fixes
 
+* The within-day SE of an effort total that combines several count units on
+  one day (long-form counts, one row per count x angler type, declared with
+  `unit_cols`) was too small, with no warning (#373). Asked for the unsplit
+  total, or for a `by` that does not separate the units, the estimator treated
+  each unit's row as a sampled day, which halved the variance for two angler
+  types. It also summed per-unit sums of squares, which drops the covariance
+  between bank and boat anglers tallied at the same count. On a 2025 creel the
+  component was 2,026 where 3,095 is correct.
+
+  `add_counts()` now keeps the per-occasion counts when `count_time_col` is
+  given. The units are added up at each occasion and the variance is taken of
+  that total, so long-form counts give the same `se_within` as one pooled row
+  per count. Pairing is decided day by day: on a day whose units were not
+  counted at the same known occasions (different times, or an `NA` count
+  time), their components are added as independent, with a message, and every
+  count is kept. A
+  design that carries only a supplied sum of squares (`within_day_var` from
+  `prep_counts_*()`) cannot recover the covariance, so the combined total is
+  refused (`creel_error_within_day_unpooled`); report `by` the unit column
+  instead. Per-unit results (`by = angler_type`) are unchanged.
+
 * `summarize_cws_rates()` read only the optional `"caught"` catch rows, so a
   creel that records only harvested and released fish -- legal, as
   `add_catch()` documents -- got a CWS of 0 (SE 0) for every species sought
@@ -69,6 +90,11 @@
 # tidycreel 8.0.0 "Mooneye"
 
 ## Breaking changes
+
+* An effort total that combines count units whose within-day variance was
+  supplied as a sum of squares (`prep_counts_*()` output with `unit_cols`) is
+  now an error instead of an understated SE (#373). Report `by` the unit
+  column, or attach the raw counts with `count_time_col`.
 
 * `estimate_effort_aerial_glmm()` now reports a total across the sampled days,
   the same basis `estimate_effort()` uses, instead of a single average day
