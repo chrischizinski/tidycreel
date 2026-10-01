@@ -271,9 +271,9 @@ summarize_refusals <- function(design) {
 #' `day_type`; then the first stratum, which warns when there is more than one
 #' so the assumption is visible at the point of use. A single-stratum design
 #' resolves silently, because there is nothing to choose between -- unless the
-#' inferred column's every value is confined to one month of the year, across
-#' data spanning several months with at least one month holding two or more
-#' values, which marks a composite month x day-type stratum and aborts.
+#' inferred column's every value is confined to one month of the year and at
+#' least two months each hold two or more values, which marks a composite
+#' month x day-type stratum and aborts.
 #'
 #' @param design A `creel_design` object.
 #' @param day_type_col Caller-supplied column name, or `NULL` to infer.
@@ -336,11 +336,14 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
   #
   # Month of YEAR, not year-month: the table crosses on the month name, and a
   # composite "04_weekday" recurs every April of a multi-year creel. And at
-  # least one month must hold two or more values: a composite stratum puts
-  # weekday and weekend in the same month, whereas a real day type sampled
-  # sparsely (weekdays only in June, weekends only in July) has one value per
-  # month and must not be refused. A composite sampled that sparsely is not
-  # detected, which is the old behaviour, not a new wrong answer.
+  # least TWO months must each hold two or more values: a composite stratum
+  # puts weekday and weekend in every month it covers, whereas a real day type
+  # sampled sparsely (weekdays only in June; weekends, or weekends and
+  # holidays, only in July) does not. Month incidence cannot separate every
+  # sparse real day type from a composite, so this is a heuristic: a composite
+  # too sparse to meet it is not detected (the old behaviour), and a real day
+  # type contrived to meet it is refused loudly, with `day_type_col` as the
+  # one-argument way through.
   inferred <- is.null(day_type_col) && !identical(col, "day_type")
   date_col <- design$date_col
   if (inferred && !is.null(date_col) && date_col %in% names(data)) {
@@ -349,7 +352,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
     ok <- !is.na(month) & !is.na(vals)
     pairs <- unique(data.frame(v = vals[ok], m = month[ok], stringsAsFactors = FALSE))
     confined <- length(unique(pairs$m)) > 1L && !any(duplicated(pairs$v))
-    if (confined && any(table(pairs$m) > 1L)) {
+    if (confined && sum(table(pairs$m) > 1L) >= 2L) {
       cli::cli_abort(c(
         "Stratum {.field {col}} does not look like a day type.",
         "x" = paste(
@@ -375,10 +378,10 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
 #' design declares more than one. Pass \code{day_type_col} to state the
 #' column outright. An inferred column whose values each occur in a single
 #' month of the year (a composite stratum such as \code{"04_weekday"}) is
-#' refused when the interviews span more than one month and some month holds
-#' two or more of its values, since crossing it with month would produce a
-#' table of structural zeros. A real day type sampled in disjoint months (only
-#' weekdays in one, only weekends in another) is not refused.
+#' refused when at least two months each hold two or more of its values, since
+#' crossing it with month would produce a table of structural zeros. This is a
+#' heuristic on which values occur in which months: pass \code{day_type_col}
+#' to state the column outright.
 #'
 #' @details
 #' \strong{Interview-based summary, not pressure-weighted.} This function
@@ -2199,9 +2202,8 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #' \code{day_type} when the design declares one, otherwise the first stratum
 #' column, which warns when the design declares more than one. An inferred
 #' column whose values each fall in one month of the year (a composite stratum
-#' such as \code{"04_weekday"}) is refused when the counts span more than one
-#' month and some month holds two or more of its values; pass
-#' \code{day_type_col} to name the day type.
+#' such as \code{"04_weekday"}) is refused when at least two months each hold
+#' two or more of its values; pass \code{day_type_col} to name the day type.
 #'
 #' @details
 #' Count-based summary, not interview-weighted. Rows where

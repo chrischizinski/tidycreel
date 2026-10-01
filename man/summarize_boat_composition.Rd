@@ -35,9 +35,8 @@ day type column is resolved from the design's strata: a stratum named
 \code{day_type} when the design declares one, otherwise the first stratum
 column, which warns when the design declares more than one. An inferred
 column whose values each fall in one month of the year (a composite stratum
-such as \code{"04_weekday"}) is refused when the counts span more than one
-month and some month holds two or more of its values; pass
-\code{day_type_col} to name the day type.
+such as \code{"04_weekday"}) is refused when at least two months each hold
+two or more of its values; pass \code{day_type_col} to name the day type.
 }
 \details{
 Count-based summary, not interview-weighted. Rows where

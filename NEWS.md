@@ -59,8 +59,9 @@
 
 * `summarize_by_day_type()` and `summarize_boat_composition()` refuse an
   inferred day-type column whose every value falls in a single month of the
-  year, across data spanning several months, when some month holds more than
-  one of its values (#372). Such a column is a composite stratum
+  year when at least two months each hold more than one of its values (#372).
+  It is a heuristic on month incidence, so a column you know is the day type
+  can always be named. Such a column is a composite stratum
   (`"04_weekday"`), and crossing it with month produced a table of structural
   zeros. Pass `day_type_col` to name the day type. A column you name, or one
   called `day_type`, is taken as stated.

@@ -760,3 +760,19 @@ test_that("a real day type sampled in disjoint months is not refused (#372)", {
     "stratum"
   )
 })
+
+test_that("a real day type with two values in one month only is not refused (#372)", {
+  # Copilot's case: weekday only in June; weekend AND holiday only in July.
+  # Every value is month-confined and July holds two, but no second month does,
+  # which a composite stratum covering two months always has.
+  d <- dt372_design(function(cal) cal$day_type)
+  m <- format(d$interviews$date, "%m")
+  iv <- d$interviews
+  iv <- iv[(m == "06" & iv$stratum == "weekday") | (m == "07" & iv$stratum == "weekend"), ]
+  iv$stratum[format(iv$date, "%m") == "07"][1:2] <- "holiday"
+  d$interviews <- iv
+  expect_identical(
+    resolve_day_type_col(d, NULL, d$interviews, "design$interviews"),
+    "stratum"
+  )
+})
