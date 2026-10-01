@@ -5052,6 +5052,16 @@ within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, 
       class = "creel_message_within_day_independent"
     )
   }
+  if (n_unpaired == length(days)) {
+    # No day pairs: the units are independent throughout, so the stratum's
+    # component is the sum of each unit's own -- the same numbers `by =` the unit
+    # column reports, whatever each unit's number of counts. The per-day rows
+    # above reproduce that only when every unit was counted equally often.
+    unit_cell <- group_key(rows, extra_cols) # nolint: object_usage_linter
+    return(sum(vapply(split(rows, unit_cell), function(cell) {
+      rasmussen_within_var(cell$ss_d, cell$k_d, n_avail, target)
+    }, numeric(1))))
+  }
 
   rasmussen_within_var(ss_d, k_d, n_avail, target)
 }

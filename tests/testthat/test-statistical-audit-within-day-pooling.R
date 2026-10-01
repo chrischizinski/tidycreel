@@ -303,3 +303,24 @@ test_that("#373: by = a column outside the unit key still pools the units", {
   est <- wdp_se_within(design, by = season, target = "period_total")
   expect_equal(est$se_within, sqrt(wdp_hand_var(counts)))
 })
+
+test_that("#373: with no day paired, the unsplit component is the sum of the by-unit ones", {
+  # Independent units throughout: the total's within-day variance is the sum of
+  # what `by = gear` reports for each, however often each gear was counted. Bank
+  # and boat are counted at different times, so nothing pairs, and boat gets two
+  # extra counts on the first day of each stratum only. Its number of counts
+  # then varies from day to day -- the case where folding each day to one
+  # pseudo-row at its mean count disagreed with the by-unit sum. (With a count
+  # number constant per unit the two agree algebraically.)
+  counts <- wdp_counts(times_bank = c("08:00", "16:00"), times_boat = c("09:00", "17:00"))
+  extra <- counts[counts$gear == "boat" &
+    counts$date %in% as.Date(c("2024-06-03", "2024-06-08")), ]
+  extra$count_time <- ifelse(extra$count_time == "09:00", "11:00", "19:00")
+  extra$anglers <- extra$anglers + c(5, -3, 9, 1)
+  counts <- rbind(counts, extra)
+  design <- wdp_design(counts)
+
+  total <- wdp_se_within(design, target = "period_total")
+  by_gear <- wdp_se_within(design, by = gear, target = "period_total")
+  expect_equal(total$se_within^2, sum(by_gear$se_within^2))
+})
