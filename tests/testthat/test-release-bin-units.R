@@ -77,6 +77,19 @@ test_that("a single-value label without a width is refused, not guessed", {
   expect_s3_class(summarize_length_freq(d, type = "harvest", bin_width = 25), "data.frame")
 })
 
+test_that("malformed numbers get the classed unparseable-label error", {
+  # Why: a bare [0-9.]+ accepted "." and "1..2", which then failed later with
+  # a generic message callers could not catch by class.
+  for (lab in c(".", "1..2", ".-2", "12-")) {
+    expect_error(
+      release_bin_midpoints_mm(lab, "inch", 1),
+      class = "creel_error_release_bin_unparseable"
+    )
+  }
+  expect_equal(release_bin_midpoints_mm(".5-1.5", "inch"), 25.4)
+  expect_equal(release_bin_midpoints_mm("12.", "inch", 1), 12.5 * 25.4)
+})
+
 test_that("an unparseable label is refused with the package's own error", {
   d <- rbu_design(c("12+", "8"), release_bin_unit = "inch", release_bin_width = 1)
   expect_error(

@@ -929,13 +929,16 @@ summarize_successful_parties <- function(design) {
 
   interviews <- design$interviews
   catch_data <- design[["catch"]]
-  uid_col <- design$catch_interview_uid_col
+  # The two sides of the catch key may be named differently (add_catch() takes
+  # `catch_uid` and `interview_uid` separately), so each side is read with its
+  # own name: catch rows by `uid_col`, interviews by `iuid_col` (GH #372).
+  uid_col <- design$catch_uid_col
   species_col <- design$catch_species_col
   count_col <- design$catch_count_col
   type_col <- design$catch_type_col
   at_col <- design$angler_type_col
   ss_col <- design$species_sought_col
-  iuid_col <- uid_col
+  iuid_col <- design$catch_interview_uid_col
 
   # A party is successful when it caught some of the species it SOUGHT, so the
   # quantity needed per interview is that pair's total catch of its own sought
@@ -1339,7 +1342,7 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   agg <- sought_target_counts( # nolint: object_usage_linter
     interviews, catch_data, "caught",
     uid_col = uid_col, species_col = species_col, type_col = type_col,
-    count_col = count_col, ss_col = ss_col
+    count_col = count_col, ss_col = ss_col, catch_uid_col = design$catch_uid_col
   )
 
   # Steps 3-7 are identical for CWS and HWS -- the only difference between the
@@ -1378,16 +1381,18 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
 # Called once per sought species, since the species differs by interview, and
 # restricted to the interviews that sought it. An interview whose sought species
 # is unrecorded matches nothing here; summarize_rate_by_group() counts it in
-# `n_unknown_target` (GH #336).
+# `n_unknown_target` (GH #336). `uid_col` names the interviews' key and
+# `catch_uid_col` the catch table's; add_catch() lets the two differ.
 #' @noRd
 sought_target_counts <- function(interviews, catch_data, catch_type_val, uid_col,
-                                 species_col, type_col, count_col, ss_col) {
+                                 species_col, type_col, count_col, ss_col,
+                                 catch_uid_col = uid_col) {
   sought <- as.character(interviews[[ss_col]])
   sought_vals <- unique(sought[!is.na(sought)])
   parts <- lapply(sought_vals, function(sp) {
     counts <- species_counts_per_interview( # nolint: object_usage_linter
       catch_data, sp, catch_type_val,
-      uid_col = uid_col, species_col = species_col,
+      uid_col = catch_uid_col, species_col = species_col,
       type_col = type_col, count_col = count_col
     )
     seekers <- as.character(interviews[[uid_col]][!is.na(sought) & sought == sp])
@@ -1757,7 +1762,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
   agg <- sought_target_counts( # nolint: object_usage_linter
     interviews, catch_data, "harvested",
     uid_col = uid_col, species_col = species_col, type_col = type_col,
-    count_col = count_col, ss_col = ss_col
+    count_col = count_col, ss_col = ss_col, catch_uid_col = design$catch_uid_col
   )
 
   # Steps 3-7 are identical for CWS and HWS -- the only difference between the

@@ -389,3 +389,31 @@ test_that("CWS with dispositions only equals the hand-computed rate (#372)", {
 
   expect_equal(result$mean_rate, as.numeric(hand[result$species_sought]))
 })
+
+test_that("the two sides of the catch key may be named differently (#372)", {
+  # Why: add_catch() takes `catch_uid` and `interview_uid` separately, so a
+  # catch table keyed `iid` against interviews keyed `interview_id` is accepted
+  # at attach time. CWS, HWS and successful parties read both sides with one
+  # name and failed. Renaming a key must not change any number.
+  data(example_catch, package = "tidycreel")
+  same <- cws_design_from_catch(example_catch)
+  renamed_catch <- example_catch
+  names(renamed_catch)[names(renamed_catch) == "interview_id"] <- "iid"
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  diff <- suppressWarnings(suppressMessages({
+    d <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+    d <- add_interviews(d, example_interviews,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+      trip_status = trip_status, species_sought = species_sought, # nolint: object_usage_linter
+      angler_type = angler_type # nolint: object_usage_linter
+    )
+    add_catch(d, renamed_catch,
+      catch_uid = iid, interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+    )
+  }))
+  expect_equal(summarize_cws_rates(diff, by = species_sought), summarize_cws_rates(same, by = species_sought))
+  expect_equal(summarize_hws_rates(diff, by = species_sought), summarize_hws_rates(same, by = species_sought))
+  expect_equal(summarize_successful_parties(diff), summarize_successful_parties(same))
+})

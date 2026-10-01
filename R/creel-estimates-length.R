@@ -566,8 +566,12 @@ release_bin_midpoints_mm <- function(labels, unit = "mm", width = NULL,
                                      call = rlang::caller_env()) {
   labels <- trimws(as.character(labels))
   to_mm <- length_unit_to_mm()[[unit]]
-  is_range <- grepl("^[0-9.]+\\s*-\\s*[0-9.]+$", labels)
-  is_single <- grepl("^[0-9.]+$", labels)
+  # A number is digits with an optional decimal part, or a leading-point
+  # decimal: "12", "12.5", "12.", ".5" -- never "." or "1..2", which would pass
+  # a bare [0-9.]+ and fail later without this function's classed error.
+  num <- "([0-9]+\\.?[0-9]*|\\.[0-9]+)"
+  is_range <- grepl(paste0("^", num, "\\s*-\\s*", num, "$"), labels)
+  is_single <- grepl(paste0("^", num, "$"), labels)
 
   bad <- !(is_range | is_single)
   if (any(bad)) {
