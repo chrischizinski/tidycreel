@@ -77,6 +77,15 @@
 #'   \code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}
 #'   clamped at zero. \code{"log"} applies a log-transform for a
 #'   strictly positive CI.
+#' @param missing_rate character. What to do when a stratum (or stratum x
+#'   \code{by} cell) has effort but no rate -- no interviews, or only trips
+#'   the rate cannot use. Its harvest is unknown, not zero.
+#'   \code{"error"} (default) stops and names the cells and their share of
+#'   effort. \code{"exclude"} reports the total over the covered cells only,
+#'   warns, gives a \code{by} group with no covered cell an \code{NA} row, and
+#'   records what it left out in \code{excluded_strata} on the result. Not
+#'   available for bus-route and ice designs, whose totals have no per-stratum
+#'   product (GH #373).
 #'
 #'
 #' @section Why there is no `targeted` argument:
@@ -250,7 +259,8 @@ estimate_total_harvest <- function(
   missing_sections = "warn",
   ci_method = c("delta", "bootstrap"),
   product_variance = c("goodman", "first_order"),
-  ci_type = c("symmetric", "log")
+  ci_type = c("symmetric", "log"),
+  missing_rate = c("error", "exclude")
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
@@ -258,6 +268,7 @@ estimate_total_harvest <- function(
   ci_method <- match.arg(ci_method)
   product_variance <- match.arg(product_variance)
   ci_type <- match.arg(ci_type)
+  missing_rate <- match.arg(missing_rate)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -301,6 +312,15 @@ estimate_total_harvest <- function(
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # Refused rather than ignored (GH #266): these designs build a
+    # Horvitz-Thompson total with no per-stratum effort x rate product, so
+    # there is no cell to exclude and the argument would be inert.
+    if (identical(missing_rate, "exclude")) {
+      cli::cli_abort(c(
+        "{.code missing_rate = \"exclude\"} does not apply to {.val {design$design_type}} designs.",
+        "x" = "Their totals are Horvitz-Thompson sums, not per-stratum effort x rate products."
+      ))
+    }
     # These designs estimate a completed-trip total; "all" has no estimator here.
     # Refused rather than ignored, which is the defect this argument was added to
     # remove (GH #266). Mirrors estimate_total_catch().
@@ -433,6 +453,11 @@ estimate_total_harvest <- function(
   # back through reported_estimator(), never tested on directly.
   design$total_mortr <- rate_spec$mortr
 
+  # A cell with effort and no rate has an unknown catch. Refused by default,
+  # excluded only on request, and recorded either way it is excluded (GH #373).
+  # Set once here, like total_estimator, so no path can drop it.
+  design <- set_missing_rate_policy(design, missing_rate) # nolint: object_usage_linter
+
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
   # (GH #242). After the harvest_col check, so a call that cannot produce a
@@ -446,17 +471,20 @@ estimate_total_harvest <- function(
   # saying the sectioning had been ignored (GH #255).
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
-    return(estimate_total_harvest_sections(
-      # nolint: object_usage_linter
-      design,
-      by_quo,
-      variance,
-      conf_level,
-      aggregate_sections,
-      missing_sections,
-      target = target,
-      product_variance = product_variance,
-      ci_type = ci_type
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      estimate_total_harvest_sections(
+        # nolint: object_usage_linter
+        design,
+        by_quo,
+        variance,
+        conf_level,
+        aggregate_sections,
+        missing_sections,
+        target = target,
+        product_variance = product_variance,
+        ci_type = ci_type
+      ),
+      design
     ))
   }
 
@@ -480,25 +508,38 @@ estimate_total_harvest <- function(
       target = target,
       product_variance = product_variance
     )
-    return(new_creel_estimates( # nolint: object_usage_linter
-      # nolint: object_usage_linter
-      estimates = tibble::as_tibble(estimates_df),
-      method = "product-total-harvest",
-      variance_method = variance,
-      design = design,
-      conf_level = conf_level,
-      by_vars = by_info$all_vars,
-      effort_target = target,
-      estimator = reported_estimator(design), # nolint: object_usage_linter
-      unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
-      se_expansion = attr(estimates_df, "se_expansion")
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      new_creel_estimates( # nolint: object_usage_linter
+        # nolint: object_usage_linter
+        estimates = tibble::as_tibble(estimates_df),
+        method = "product-total-harvest",
+        variance_method = variance,
+        design = design,
+        conf_level = conf_level,
+        by_vars = by_info$all_vars,
+        effort_target = target,
+        estimator = reported_estimator(design), # nolint: object_usage_linter
+        unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
+        se_expansion = attr(estimates_df, "se_expansion")
+      ),
+      design
     ))
   }
 
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation
-    return(estimate_total_harvest_ungrouped(design, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      estimate_total_harvest_ungrouped( # nolint: object_usage_linter
+        design,
+        variance,
+        conf_level,
+        target = target,
+        product_variance = product_variance,
+        ci_type = ci_type
+      ),
+      design
+    ))
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -512,7 +553,18 @@ estimate_total_harvest <- function(
     # Validate grouping compatibility
     validate_by_vars_in_interviews(design, by_vars) # nolint: object_usage_linter
 
-    return(estimate_total_harvest_grouped(design, by_vars, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      estimate_total_harvest_grouped( # nolint: object_usage_linter
+        design,
+        by_vars,
+        variance,
+        conf_level,
+        target = target,
+        product_variance = product_variance,
+        ci_type = ci_type
+      ),
+      design
+    ))
   }
 }
 
@@ -568,7 +620,7 @@ estimate_total_harvest_ungrouped <- function(
   }
   hpue_df <- hpue_result$estimates
 
-  warn_missing_rate_strata(effort_df, hpue_df, strata_cols, "estimate_total_harvest") # nolint: object_usage_linter
+  check_missing_rate_strata(design, effort_df, hpue_df, strata_cols, "estimate_total_harvest") # nolint: object_usage_linter
 
   # Stratified-sum product estimator: sum(E_h * HPUE_h) across strata h
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
@@ -637,7 +689,7 @@ estimate_total_harvest_grouped <- function(
   )
   hpue_df <- hpue_result$estimates
 
-  warn_missing_rate_strata(effort_df, hpue_df, stratum_by_vars, "estimate_total_harvest(by=)") # nolint: object_usage_linter
+  check_missing_rate_strata(design, effort_df, hpue_df, stratum_by_vars, "estimate_total_harvest(by=)") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     # nolint: object_usage_linter
@@ -712,8 +764,9 @@ estimate_total_harvest_species <- function(
   }
   effort_df <- effort_result$estimates
 
-  warn_missing_rate_strata(
+  check_missing_rate_strata(
     # nolint: object_usage_linter
+    design = design,
     effort_df = effort_df,
     rate_df = all_rate_df[, setdiff(names(all_rate_df), species_col), drop = FALSE],
     stratum_by_vars = stratum_by_vars,

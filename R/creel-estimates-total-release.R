@@ -70,6 +70,15 @@
 #'   \code{"symmetric"} (default) gives \eqn{\hat\theta \pm z \cdot SE}
 #'   clamped at zero. \code{"log"} applies a log-transform for a
 #'   strictly positive CI.
+#' @param missing_rate character. What to do when a stratum (or stratum x
+#'   \code{by} cell) has effort but no rate -- no interviews, or only trips
+#'   the rate cannot use. Its released catch is unknown, not zero.
+#'   \code{"error"} (default) stops and names the cells and their share of
+#'   effort. \code{"exclude"} reports the total over the covered cells only,
+#'   warns, gives a \code{by} group with no covered cell an \code{NA} row, and
+#'   records what it left out in \code{excluded_strata} on the result. Not
+#'   available for bus-route and ice designs, whose totals have no per-stratum
+#'   product (GH #373).
 #'
 #'
 #' @section Why there is no `targeted` argument:
@@ -223,12 +232,14 @@ estimate_total_release <- function(
   aggregate_sections = TRUE,
   missing_sections = "warn",
   product_variance = c("goodman", "first_order"),
-  ci_type = c("symmetric", "log")
+  ci_type = c("symmetric", "log"),
+  missing_rate = c("error", "exclude")
 ) {
   by_quo <- rlang::enquo(by)
   target <- match.arg(target)
   product_variance <- match.arg(product_variance)
   ci_type <- match.arg(ci_type)
+  missing_rate <- match.arg(missing_rate)
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -284,6 +295,15 @@ estimate_total_release <- function(
   # bus-route designs: interview-based releases against a svytotal over count
   # rows, two unrelated effort bases in one design object (GH #110).
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # Refused rather than ignored (GH #266): these designs build a
+    # Horvitz-Thompson total with no per-stratum effort x rate product, so
+    # there is no cell to exclude and the argument would be inert.
+    if (identical(missing_rate, "exclude")) {
+      cli::cli_abort(c(
+        "{.code missing_rate = \"exclude\"} does not apply to {.val {design$design_type}} designs.",
+        "x" = "Their totals are Horvitz-Thompson sums, not per-stratum effort x rate products."
+      ))
+    }
     # These designs estimate a completed-trip total; "all" has no estimator here.
     # Refused rather than ignored, which is the defect this argument was added to
     # remove (GH #266). Mirrors estimate_total_catch().
@@ -397,6 +417,11 @@ estimate_total_release <- function(
   # back through reported_estimator(), never tested on directly.
   design$total_mortr <- rate_spec$mortr
 
+  # A cell with effort and no rate has an unknown catch. Refused by default,
+  # excluded only on request, and recorded either way it is excluded (GH #373).
+  # Set once here, like total_estimator, so no path can drop it.
+  design <- set_missing_rate_policy(design, missing_rate) # nolint: object_usage_linter
+
   # A domain the counts never classified forces the pooled product form,
   # whose weighting comes from the interview mix rather than the effort mix
   # (GH #242). Raised before the section dispatch so both paths hear it.
@@ -428,17 +453,20 @@ estimate_total_release <- function(
   # saying the sectioning had been ignored (GH #255).
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
-    return(estimate_total_release_sections(
-      # nolint: object_usage_linter
-      design,
-      by_quo,
-      variance,
-      conf_level,
-      aggregate_sections,
-      missing_sections,
-      target = target,
-      product_variance = product_variance,
-      ci_type = ci_type
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      estimate_total_release_sections(
+        # nolint: object_usage_linter
+        design,
+        by_quo,
+        variance,
+        conf_level,
+        aggregate_sections,
+        missing_sections,
+        target = target,
+        product_variance = product_variance,
+        ci_type = ci_type
+      ),
+      design
     ))
   }
 
@@ -458,24 +486,37 @@ estimate_total_release <- function(
       product_variance = product_variance,
       ci_type = ci_type
     )
-    return(new_creel_estimates( # nolint: object_usage_linter
-      # nolint: object_usage_linter
-      estimates = tibble::as_tibble(estimates_df),
-      method = "product-total-release",
-      variance_method = variance,
-      design = design,
-      conf_level = conf_level,
-      by_vars = by_info$all_vars,
-      effort_target = target,
-      estimator = reported_estimator(design), # nolint: object_usage_linter
-      unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
-      se_expansion = attr(estimates_df, "se_expansion")
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      new_creel_estimates( # nolint: object_usage_linter
+        # nolint: object_usage_linter
+        estimates = tibble::as_tibble(estimates_df),
+        method = "product-total-release",
+        variance_method = variance,
+        design = design,
+        conf_level = conf_level,
+        by_vars = by_info$all_vars,
+        effort_target = target,
+        estimator = reported_estimator(design), # nolint: object_usage_linter
+        unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
+        se_expansion = attr(estimates_df, "se_expansion")
+      ),
+      design
     ))
   }
 
   # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
-    return(estimate_total_release_ungrouped(design, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      estimate_total_release_ungrouped( # nolint: object_usage_linter
+        design,
+        variance,
+        conf_level,
+        target = target,
+        product_variance = product_variance,
+        ci_type = ci_type
+      ),
+      design
+    ))
   } else {
     by_vars <- eval_select_count_by( # nolint: object_usage_linter
       by_quo,
@@ -484,7 +525,18 @@ estimate_total_release <- function(
       error_call = rlang::caller_env()
     )
     validate_by_vars_in_interviews(design, by_vars) # nolint: object_usage_linter
-    return(estimate_total_release_grouped(design, by_vars, variance, conf_level, target = target, product_variance = product_variance, ci_type = ci_type)) # nolint: object_usage_linter
+    return(attach_excluded_strata( # nolint: object_usage_linter
+      estimate_total_release_grouped( # nolint: object_usage_linter
+        design,
+        by_vars,
+        variance,
+        conf_level,
+        target = target,
+        product_variance = product_variance,
+        ci_type = ci_type
+      ),
+      design
+    ))
   }
 }
 
@@ -563,7 +615,7 @@ estimate_total_release_ungrouped <- function(
   rpue_result <- rpue_for_stratum_product(design, strata_cols, variance_method, conf_level)
   rpue_df <- rpue_result$estimates
 
-  warn_missing_rate_strata(effort_df, rpue_df, strata_cols, "estimate_total_release") # nolint: object_usage_linter
+  check_missing_rate_strata(design, effort_df, rpue_df, strata_cols, "estimate_total_release") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     # nolint: object_usage_linter
@@ -620,7 +672,7 @@ estimate_total_release_grouped <- function(
   rpue_result <- rpue_for_stratum_product(design, stratum_by_vars, variance_method, conf_level)
   rpue_df <- rpue_result$estimates
 
-  warn_missing_rate_strata(effort_df, rpue_df, stratum_by_vars, "estimate_total_release(by=)") # nolint: object_usage_linter
+  check_missing_rate_strata(design, effort_df, rpue_df, stratum_by_vars, "estimate_total_release(by=)") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
     # nolint: object_usage_linter
@@ -695,8 +747,9 @@ estimate_total_release_species <- function(
   }
   effort_df <- effort_result$estimates
 
-  warn_missing_rate_strata(
+  check_missing_rate_strata(
     # nolint: object_usage_linter
+    design = design,
     effort_df = effort_df,
     rate_df = all_rate_df[, setdiff(names(all_rate_df), species_col), drop = FALSE],
     stratum_by_vars = stratum_by_vars,

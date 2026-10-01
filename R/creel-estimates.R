@@ -425,6 +425,21 @@ format.creel_estimates <- function(x, ...) {
   # Add estimates table
   output <- c(output, utils::capture.output(print(x$estimates)))
 
+  # A total over part of the effort says so where it is read, not only in the
+  # warning that scrolled past when it was computed (GH #373).
+  if (!is.null(x$excluded_strata)) {
+    ex <- x$excluded_strata
+    output <- c(
+      output,
+      "",
+      paste0(
+        "Covers the cells with a rate only: ", nrow(ex),
+        " effort cell(s) with no rate excluded (", format(signif(sum(ex$effort), 4)),
+        " effort units); see $excluded_strata."
+      )
+    )
+  }
+
   output
 }
 
@@ -6095,22 +6110,32 @@ estimate_cpue_grouped <- function(
   }
 }
 
-#' Warn when effort strata have no matching species-rate rows
+#' Refuse, or explicitly exclude, effort cells that have no rate
 #'
-#' Species/product totals are computed from stratum-level effort × rate products.
-#' If the rate table lacks one or more effort strata, the merge in
-#' `compute_stratum_product_sum()` drops those strata and the resulting total is
-#' necessarily conditioned on the covered strata only. That may be the intended
-#' estimator behavior, but it should not happen silently.
+#' Totals are stratum-level effort x rate products. A cell with effort but no
+#' rate -- no interviews, or only trips the rate cannot use -- has an UNKNOWN
+#' catch. `compute_stratum_product_sum()` merges effort onto rates, so such a
+#' cell would drop out of the sum and its catch become zero while the result
+#' read as complete (GH #373). Unknowns are the user's to resolve, so the
+#' default is to stop. `missing_rate = "exclude"` is the explicit opt-in: the
+#' total covers the remaining cells, a classed warning says so, and each
+#' excluded cell is recorded for the returned object.
 #'
-#' @param effort_df Tibble of per-stratum effort estimates.
-#' @param rate_df Tibble of per-stratum rate estimates.
+#' The policy is read from `design$total_missing_rate`, set once by the exported
+#' total before dispatch, and the record goes to `design$total_excluded`, an
+#' environment, for the same reason `design$total_estimator` is a slot: a value
+#' threaded through the ungrouped, grouped, species and sectioned paths can be
+#' dropped at one of them (GH #266). This is the one reader.
+#'
+#' @param design The creel_design the total is computed on.
+#' @param effort_df Tibble of per-cell effort estimates.
+#' @param rate_df Tibble of per-cell rate estimates.
 #' @param stratum_by_vars Character vector of join columns.
-#' @param context Short human-readable label for the warning.
+#' @param context Short human-readable label for the condition.
 #'
 #' @keywords internal
 #' @noRd
-warn_missing_rate_strata <- function(effort_df, rate_df, stratum_by_vars, context) {
+check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_vars, context) {
   if (length(stratum_by_vars) == 0L) {
     return(invisible(NULL))
   }
@@ -6128,27 +6153,90 @@ warn_missing_rate_strata <- function(effort_df, rate_df, stratum_by_vars, contex
   omitted_pct_text <- if (is.finite(total_effort) && total_effort > 0) {
     paste0(format(round(100 * omitted_effort / total_effort, 1), trim = TRUE), "%")
   } else {
-    "NA%"
+    "an unknown share"
+  }
+  cells <- do.call(paste, c( # nolint: object_usage_linter
+    lapply(stratum_by_vars, function(v) paste0(v, " = ", missing_rate[[v]])),
+    sep = ", "
+  ))
+  n_cells <- nrow(missing_rate) # nolint: object_usage_linter
+  omitted_text <- format(round(omitted_effort, 3), trim = TRUE) # nolint: object_usage_linter
+
+  policy <- design$total_missing_rate %||% "error"
+  if (identical(policy, "error")) {
+    cli::cli_abort(
+      c(
+        "{n_cells} effort cell{?s} {cli::qty(n_cells)}{?has/have} no rate in {.val {context}}.",
+        "x" = "No usable interviews for: {cells}.",
+        "x" = "Their catch is unknown, not zero: {omitted_text} effort units, \\
+               {omitted_pct_text} of the effort being totalled.",
+        "i" = "Collect or attach interviews for {cli::qty(n_cells)}{?that cell/those cells}, \\
+               or group more coarsely so {cli::qty(n_cells)}{?it shares/they share} a rate.",
+        "i" = "{.code missing_rate = \"exclude\"} reports the total over the covered \\
+               cells only, and records what it left out."
+      ),
+      class = "creel_error_missing_rate_strata"
+    )
   }
 
-  cli::cli_warn(c(
-    "Missing rate strata detected during {.val {context}} aggregation.",
-    "!" = paste(
-      nrow(missing_rate),
-      "effort stratum row(s) had no matching rate estimate and will be excluded from the product sum."
-    ),
-    "i" = paste(
-      "Excluded effort total:",
-      format(round(omitted_effort, 3), trim = TRUE),
-      paste0("(", omitted_pct_text, " of grouped effort).")
-    ),
-    "i" = paste(
-      "This usually means count strata were observed without corresponding",
-      "interview coverage for the requested grouping."
-    )
-  ))
+  excluded <- tibble::as_tibble(missing_rate[stratum_by_vars])
+  # A sectioned total estimates each section on its own filtered design, so the
+  # section is not among the join columns; without it "weekend" would not say
+  # whose weekend was left out.
+  sec_col <- design$section_col
+  if (!is.null(sec_col) && !sec_col %in% names(excluded) && sec_col %in% names(design$counts)) {
+    sec_values <- unique(design$counts[[sec_col]])
+    if (length(sec_values) == 1L) {
+      excluded[[sec_col]] <- sec_values
+      excluded <- excluded[c(sec_col, setdiff(names(excluded), sec_col))]
+    }
+  }
+  excluded$effort <- missing_rate$estimate
+  excluded$context <- context
+  if (is.environment(design$total_excluded)) {
+    design$total_excluded$rows <- c(design$total_excluded$rows, list(excluded))
+  }
 
-  invisible(NULL)
+  cli::cli_warn(
+    c(
+      "{n_cells} effort cell{?s} with no rate excluded from {.val {context}}.",
+      "!" = "Excluded: {cells} ({omitted_text} effort units, {omitted_pct_text}).",
+      "i" = "The total covers the remaining cells only; see {.field excluded_strata} \\
+             on the result."
+    ),
+    class = "creel_warning_missing_rate_strata"
+  )
+
+  invisible(excluded)
+}
+
+#' Attach the cells a total excluded to its result
+#'
+#' The other end of `check_missing_rate_strata()`: reads the record that
+#' function wrote to `design$total_excluded` and stores it as
+#' `result$excluded_strata` (NULL when nothing was excluded).
+#'
+#' @keywords internal
+#' @noRd
+attach_excluded_strata <- function(result, design) {
+  # Forced first: `result` is the estimator call itself, passed lazily, and it
+  # is what writes the record. Read before it runs, the record is always empty.
+  force(result)
+  rows <-if (is.environment(design$total_excluded)) design$total_excluded$rows else NULL
+  if (length(rows) > 0L) {
+    result$excluded_strata <- dplyr::bind_rows(rows)
+  }
+  result
+}
+
+#' Set the missing-rate policy and its record on a design before dispatch
+#'
+#' @keywords internal
+#' @noRd
+set_missing_rate_policy <- function(design, missing_rate) {
+  design$total_missing_rate <- missing_rate
+  design$total_excluded <- new.env(parent = emptyenv())
+  design
 }
 
 #' Stratum-sum product helper for species total estimators
@@ -6252,6 +6340,15 @@ compute_stratum_product_sum <- function(
   merged$.expansion_key <- expansion_stratum_key(merged, stratum_by_vars) # nolint: object_usage_linter
 
   if (is.null(interview_by_vars)) {
+    # No stratum left to sum: every cell was excluded for want of a rate (only
+    # reachable under `missing_rate = "exclude"`). sum() over nothing is 0,
+    # which would report an unknown catch as none (GH #373).
+    if (nrow(merged) == 0L) {
+      return(data.frame(
+        estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_,
+        n = 0L, stringsAsFactors = FALSE
+      ))
+    }
     # Sum all strata to a single total
     est <- sum(merged$.est_sh)
     pv <- add_expansion_covariance(
@@ -6352,6 +6449,29 @@ compute_stratum_product_sum <- function(
     )
     if (is.null(expansion_se) || is.null(expansion_structure)) {
       attr(sp_result, "se_expansion") <- NULL
+    }
+    # A group whose every cell was excluded for want of a rate has an unknown
+    # total. It gets an NA row, not no row: an absent group reads as one that
+    # was never there (GH #317, #373). Only reachable under
+    # `missing_rate = "exclude"`; the default refuses before this point.
+    effort_groups <- unique(effort_df[interview_by_vars])
+    uncovered <- effort_groups[
+      !expansion_stratum_key(effort_groups, interview_by_vars) %in% agg_key, # nolint: object_usage_linter
+      ,
+      drop = FALSE
+    ]
+    if (nrow(uncovered) > 0L) {
+      se_exp <- attr(sp_result, "se_expansion")
+      na_rows <- tibble::as_tibble(uncovered)
+      na_rows$estimate <- NA_real_
+      na_rows$se <- NA_real_
+      na_rows$ci_lower <- NA_real_
+      na_rows$ci_upper <- NA_real_
+      na_rows$n <- 0L
+      sp_result <- dplyr::bind_rows(sp_result, na_rows)
+      if (!is.null(se_exp)) {
+        attr(sp_result, "se_expansion") <- c(se_exp, rep(NA_real_, nrow(na_rows)))
+      }
     }
     sp_result
   }

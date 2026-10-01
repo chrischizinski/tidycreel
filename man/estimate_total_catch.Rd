@@ -18,7 +18,8 @@ estimate_total_catch(
   verbose = FALSE,
   ci_method = c("delta", "bootstrap"),
   product_variance = c("goodman", "first_order"),
-  ci_type = c("symmetric", "log")
+  ci_type = c("symmetric", "log"),
+  missing_rate = c("error", "exclude")
 )
 }
 \arguments{
@@ -115,6 +116,16 @@ non-positive variance, the first-order value is used as a floor.}
   \cdot SE} interval clamped at zero. \code{"log"} applies a
 log-transform so the CI stays positive:
 \eqn{[\hat\theta e^{-z SE/\hat\theta},\; \hat\theta e^{z SE/\hat\theta}]}.}
+
+\item{missing_rate}{character. What to do when a stratum (or stratum x
+\code{by} cell) has effort but no rate -- no interviews, or only trips
+the rate cannot use. Its catch is unknown, not zero.
+\code{"error"} (default) stops and names the cells and their share of
+effort. \code{"exclude"} reports the total over the covered cells only,
+warns, gives a \code{by} group with no covered cell an \code{NA} row, and
+records what it left out in \code{excluded_strata} on the result. Not
+available for bus-route and ice designs, whose totals have no per-stratum
+product (GH #373).}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-catch".
