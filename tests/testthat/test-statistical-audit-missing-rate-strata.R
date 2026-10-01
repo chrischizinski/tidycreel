@@ -201,3 +201,50 @@ test_that("#373: a product sum with no covered stratum is NA, not zero", {
   expect_true(is.na(out$estimate))
   expect_identical(out$n, 0L)
 })
+
+test_that("#373: an ungrouped sectioned total refuses an uncovered stratum, under either setting", {
+  # This total multiplies each section's effort by one rate pooled across its
+  # strata, so it never formed per-stratum cells: South's weekend effort took
+  # South's weekday rate, with no error and no record.
+  d <- make_sectioned_species_design()
+  sel <- d$interviews$section == "South" & d$interviews$day_type == "weekend"
+  d$interviews$trip_status[sel] <- "incomplete"
+
+  expect_error(quiet(estimate_total_catch(d)), class = "creel_error_missing_rate_strata")
+  expect_error(quiet(estimate_total_harvest(d)), class = "creel_error_missing_rate_strata")
+  expect_error(quiet(estimate_total_release(d)), class = "creel_error_missing_rate_strata")
+  # A pooled rate leaves nothing to exclude, so the opt-in is refused too, and
+  # points at the stratified total that can.
+  expect_error(
+    quiet(estimate_total_catch(d, missing_rate = "exclude")),
+    "by = day_type",
+    fixed = TRUE,
+    class = "creel_error_missing_rate_strata"
+  )
+  # A fully covered sectioned design is untouched.
+  expect_no_error(quiet(estimate_total_catch(make_sectioned_species_design())))
+})
+
+test_that("#373: an unknown excluded effort is reported as unknown, not as zero", {
+  # na.rm would turn an NA effort into a plausible "0 effort units, 0%".
+  d <- set_missing_rate_policy(mrs_design(), "error")
+  effort <- tibble::tibble(day_type = c("weekday", "weekend"), estimate = c(170, NA))
+  rate <- tibble::tibble(day_type = "weekday", estimate = 0.9)
+  err <- tryCatch(
+    check_missing_rate_strata(d, effort, rate, "day_type", "test"),
+    creel_error_missing_rate_strata = function(e) e
+  )
+  msg <- conditionMessage(err)
+  expect_match(msg, "unknown amount of effort", fixed = TRUE)
+  expect_match(msg, "unknown share", fixed = TRUE)
+  expect_no_match(msg, "0 effort units", fixed = TRUE)
+})
+
+test_that("#373: the refusal does not call a harvest or release total 'catch'", {
+  msg <- tryCatch(
+    quiet(estimate_total_harvest(mrs_design())),
+    creel_error_missing_rate_strata = conditionMessage
+  )
+  expect_no_match(msg, "catch is unknown", fixed = TRUE)
+  expect_match(msg, "estimate_total_harvest", fixed = TRUE)
+})

@@ -6148,9 +6148,11 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
     return(invisible(NULL))
   }
 
-  omitted_effort <- sum(missing_rate$estimate, na.rm = TRUE)
-  total_effort <- sum(effort_df$estimate, na.rm = TRUE)
-  omitted_pct_text <- if (is.finite(total_effort) && total_effort > 0) {
+  # No na.rm: an unknown effort is reported as unknown, never as a plausible
+  # "0 effort units, 0%" exclusion.
+  omitted_effort <- sum(missing_rate$estimate)
+  total_effort <- sum(effort_df$estimate)
+  omitted_pct_text <- if (is.finite(omitted_effort) && is.finite(total_effort) && total_effort > 0) {
     paste0(format(round(100 * omitted_effort / total_effort, 1), trim = TRUE), "%")
   } else {
     "an unknown share"
@@ -6160,7 +6162,11 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
     sep = ", "
   ))
   n_cells <- nrow(missing_rate) # nolint: object_usage_linter
-  omitted_text <- format(round(omitted_effort, 3), trim = TRUE) # nolint: object_usage_linter
+  omitted_text <- if (is.finite(omitted_effort)) { # nolint: object_usage_linter
+    paste(format(round(omitted_effort, 3), trim = TRUE), "effort units")
+  } else {
+    "an unknown amount of effort"
+  }
 
   policy <- design$total_missing_rate %||% "error"
   if (identical(policy, "error")) {
@@ -6168,7 +6174,7 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
       c(
         "{n_cells} effort cell{?s} {cli::qty(n_cells)}{?has/have} no rate in {.val {context}}.",
         "x" = "No usable interviews for: {cells}.",
-        "x" = "Their catch is unknown, not zero: {omitted_text} effort units, \\
+        "x" = "Their contribution to the total is unknown, not zero: {omitted_text}, \\
                {omitted_pct_text} of the effort being totalled.",
         "i" = "Collect or attach interviews for {cli::qty(n_cells)}{?that cell/those cells}, \\
                or group more coarsely so {cli::qty(n_cells)}{?it shares/they share} a rate.",
@@ -6200,7 +6206,7 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
   cli::cli_warn(
     c(
       "{n_cells} effort cell{?s} with no rate excluded from {.val {context}}.",
-      "!" = "Excluded: {cells} ({omitted_text} effort units, {omitted_pct_text}).",
+      "!" = "Excluded: {cells} ({omitted_text}, {omitted_pct_text}).",
       "i" = "The total covers the remaining cells only; see {.field excluded_strata} \\
              on the result."
     ),
@@ -6208,6 +6214,62 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
   )
 
   invisible(excluded)
+}
+
+#' Refuse an ungrouped sectioned total whose section has an uncovered stratum
+#'
+#' The ungrouped sectioned totals multiply each section's effort by one rate
+#' pooled across that section's strata, so they never form per-stratum cells
+#' and never reach `check_missing_rate_strata()` on their own. A stratum with
+#' effort and no usable interviews then silently takes the other strata's rate
+#' (GH #373). Checked here per section: refused by default like every other
+#' total, and refused under `missing_rate = "exclude"` too, because a pooled rate
+#' leaves no stratum that could be excluded -- the stratified `by =` total can.
+#'
+#' @param sec_design The per-section design.
+#' @param rate_fun Function(design, by_vars, variance_method, conf_level)
+#'   returning per-stratum rate estimates for this total's quantity.
+#' @param section The section label, for the message.
+#' @param context Short label for the condition.
+#'
+#' @keywords internal
+#' @noRd
+check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method, conf_level,
+                                           target, section, context) {
+  strata_cols <- sec_design$strata_cols %||% character(0)
+  if (length(strata_cols) == 0L) {
+    return(invisible(NULL))
+  }
+  effort_df <- estimate_effort_grouped( # nolint: object_usage_linter
+    sec_design, strata_cols, variance_method, conf_level,
+    target = target
+  )$estimates
+  rate_df <- rate_fun(sec_design, strata_cols, variance_method, conf_level)$estimates
+  uncovered <- dplyr::anti_join(
+    unique(effort_df[strata_cols]), unique(rate_df[strata_cols]),
+    by = strata_cols
+  )
+  if (nrow(uncovered) == 0L) {
+    return(invisible(NULL))
+  }
+  if (identical(sec_design$total_missing_rate, "exclude")) {
+    cells <- do.call(paste, c( # nolint: object_usage_linter
+      lapply(strata_cols, function(v) paste0(v, " = ", uncovered[[v]])),
+      sep = ", "
+    ))
+    cli::cli_abort(
+      c(
+        "{.code missing_rate = \"exclude\"} cannot exclude a stratum from an ungrouped sectioned total.",
+        "x" = "Section {.val {section}} has effort and no usable interviews for: {cells}.",
+        "x" = "This total pools one rate across each section's strata, so the stratum \\
+               would take the other strata's rate rather than be left out.",
+        "i" = "Use {.code by = {strata_cols[1]}} for a stratified total that can \\
+               exclude it."
+      ),
+      class = "creel_error_missing_rate_strata"
+    )
+  }
+  check_missing_rate_strata(sec_design, effort_df, rate_df, strata_cols, context)
 }
 
 #' Attach the cells a total excluded to its result

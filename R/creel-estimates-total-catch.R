@@ -1042,6 +1042,17 @@ estimate_total_catch_sections <- function(
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped path: call internal helpers directly to bypass sample-size validation
+        # The pooled-rate product below never forms per-stratum cells, so an
+        # uncovered stratum is checked for here (GH #373).
+        check_section_stratum_coverage( # nolint: object_usage_linter
+          sec_design,
+          rate_fun = cpue_for_stratum_product,
+          variance_method = variance_method,
+          conf_level = conf_level,
+          target = target,
+          section = sec,
+          context = "estimate_total_catch (section)"
+        )
         effort_res <- estimate_effort_total(
           sec_design,
           variance_method,
