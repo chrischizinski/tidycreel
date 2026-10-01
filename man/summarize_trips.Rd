@@ -18,7 +18,10 @@ A list (class "creel_trip_summary") with components:
 \item{n_incomplete}{Number of incomplete trip interviews}
 \item{pct_complete}{Percentage of complete trips}
 \item{pct_incomplete}{Percentage of incomplete trips}
-\item{duration_stats}{Data frame with duration statistics by trip status}
+\item{duration_stats}{Data frame with duration statistics by trip
+status, or \code{NULL} when the interviews carry no trip duration (neither
+\code{trip_duration} nor \code{trip_start} + \code{interview_time} was given to
+\code{\link[=add_interviews]{add_interviews()}})}
 }
 }
 \description{

@@ -3725,7 +3725,10 @@ summary.creel_design <- function(object, ...) {
 #'     \item{n_incomplete}{Number of incomplete trip interviews}
 #'     \item{pct_complete}{Percentage of complete trips}
 #'     \item{pct_incomplete}{Percentage of incomplete trips}
-#'     \item{duration_stats}{Data frame with duration statistics by trip status}
+#'     \item{duration_stats}{Data frame with duration statistics by trip
+#'       status, or `NULL` when the interviews carry no trip duration (neither
+#'       `trip_duration` nor `trip_start` + `interview_time` was given to
+#'       [add_interviews()])}
 #'   }
 #'
 #' @examples
@@ -3774,7 +3777,12 @@ summarize_trips <- function(design) {
 
   # Extract trip metadata
   trip_status <- design$interviews[[design$trip_status_col]]
-  trip_duration <- design$interviews[[design$trip_duration_col]]
+  # A trip duration is optional in add_interviews() (neither `trip_duration` nor
+  # `trip_start` + `interview_time` given), so the column may not exist. Reading
+  # it with `[[NULL]]` crashed in base R's get1index (GH #372). The counts do not
+  # need it; the duration statistics are reported as not recorded, never as 0.
+  has_duration <- !is.null(design$trip_duration_col)
+  trip_duration <- if (has_duration) design$interviews[[design$trip_duration_col]] else NULL
 
   # Compute counts
   status_table <- table(trip_status)
@@ -3806,7 +3814,7 @@ summarize_trips <- function(design) {
 
   for (status_val in c("complete", "incomplete")) {
     status_mask <- trip_status == status_val
-    if (sum(status_mask) > 0) {
+    if (has_duration && sum(status_mask) > 0) {
       durations <- trip_duration[status_mask]
       duration_stats <- rbind(
         duration_stats,
@@ -3831,7 +3839,7 @@ summarize_trips <- function(design) {
     n_incomplete = n_incomplete,
     pct_complete = pct_complete,
     pct_incomplete = pct_incomplete,
-    duration_stats = duration_stats
+    duration_stats = if (has_duration) duration_stats else NULL
   )
   class(result) <- "creel_trip_summary"
   result
@@ -3846,6 +3854,9 @@ format.creel_trip_summary <- function(x, ...) {
   lines <- c(lines, cli::format_inline("  Complete:   {x$n_complete} ({x$pct_complete}%)"))
   lines <- c(lines, cli::format_inline("  Incomplete: {x$n_incomplete} ({x$pct_incomplete}%)"))
   lines <- c(lines, cli::format_inline(""))
+  if (is.null(x$duration_stats)) {
+    return(c(lines, cli::format_inline("Duration: not recorded (no trip duration given to {.fn add_interviews}).")))
+  }
   lines <- c(lines, cli::format_inline("Duration (hours) by status:"))
   # Format duration_stats table
   for (i in seq_len(nrow(x$duration_stats))) {
@@ -4406,6 +4417,18 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
 #' @param release_format Character scalar: \code{"individual"} (default) or
 #'   \code{"binned"}. Controls how release rows are validated and how the
 #'   length range is computed for display.
+#' @param release_bin_unit Character scalar: the unit of binned release
+#'   labels, one of \code{"mm"} (default), \code{"cm"} or \code{"inch"}. Only
+#'   used when \code{release_format = "binned"}. Harvest lengths are always mm;
+#'   release bins are converted to mm before they are combined with them.
+#' @param release_bin_width Optional positive number, in
+#'   \code{release_bin_unit}: the width of a bin whose label is a single value
+#'   (an inch group such as \code{"12"}). Such a label is read as the bin's
+#'   LOWER bound -- \code{"12"} with width 1 is 12.0 to under 13 inches, the
+#'   usual inch group for lengths truncated to the inch below. A label of the
+#'   form \code{"lower-upper"} carries its own bounds and needs no width. If
+#'   your agency rounds to the nearest inch instead, give \code{"lower-upper"}
+#'   labels (\code{"11.5-12.5"}).
 #'
 #' @details
 #' \strong{Mixed column type footgun:} The \code{length} column may contain
@@ -4458,7 +4481,9 @@ add_lengths <- function(
   length,
   length_type,
   count = NULL,
-  release_format = "individual"
+  release_format = "individual",
+  release_bin_unit = "mm",
+  release_bin_width = NULL
 ) {
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
@@ -4487,6 +4512,37 @@ add_lengths <- function(
     cli::cli_abort(c(
       "Invalid {.arg release_format}: {.val {release_format}}",
       "i" = "Accepted values: {.val {valid_formats}}"
+    ))
+  }
+
+  # Validate the release bin unit and width (GH #372). Both describe binned
+  # release labels only, so they are refused with individual lengths rather
+  # than silently ignored. `base::length()` throughout: this function has an
+  # argument named `length`, and a bare `length(...)` call here would force
+  # that promise and leave enquo(length) below with a function, not a column.
+  valid_units <- names(length_unit_to_mm()) # nolint: object_usage_linter
+  unit_ok <- is.character(release_bin_unit) && base::length(release_bin_unit) == 1L &&
+    release_bin_unit %in% valid_units
+  if (!unit_ok) {
+    cli::cli_abort(c(
+      "Invalid {.arg release_bin_unit}: {.val {release_bin_unit}}",
+      "i" = "Accepted values: {.val {valid_units}}"
+    ))
+  }
+  width_ok <- is.null(release_bin_width) ||
+    (is.numeric(release_bin_width) && base::length(release_bin_width) == 1L &&
+       is.finite(release_bin_width) && release_bin_width > 0)
+  if (!width_ok) {
+    cli::cli_abort(c(
+      "{.arg release_bin_width} must be a single finite positive number.",
+      "x" = "Got {.val {release_bin_width}}."
+    ))
+  }
+  if (release_format != "binned" && (release_bin_unit != "mm" || !is.null(release_bin_width))) {
+    cli::cli_abort(c(
+      "{.arg release_bin_unit} and {.arg release_bin_width} describe binned release lengths.",
+      "x" = "{.arg release_format} is {.val {release_format}}.",
+      "i" = "Use {.code release_format = \"binned\"}, or drop these arguments."
     ))
   }
 
@@ -4650,6 +4706,8 @@ add_lengths <- function(
   new_design$lengths_type_col <- type_col
   new_design$lengths_count_col <- count_col
   new_design$lengths_release_format <- release_format
+  new_design$lengths_release_bin_unit <- release_bin_unit
+  new_design$lengths_release_bin_width <- release_bin_width
   class(new_design) <- "creel_design"
   new_design
 }

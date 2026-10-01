@@ -214,7 +214,9 @@ est_length_distribution <- function(
     type_col = design$lengths_type_col,
     count_col = design$lengths_count_col,
     interview_uid_col = design$lengths_uid_col,
-    release_format = design$lengths_release_format
+    release_format = design$lengths_release_format,
+    bin_unit = design$lengths_release_bin_unit %||% "mm",
+    bin_width = design$lengths_release_bin_width
   )
 
   if (nrow(records) == 0) {
@@ -474,7 +476,9 @@ build_length_distribution_records <- function(
   type_col,
   count_col,
   interview_uid_col,
-  release_format
+  release_format,
+  bin_unit = "mm",
+  bin_width = NULL
 ) {
   if (type == "harvest") {
     lengths_data <- lengths_data[lengths_data[[type_col]] == "harvest", , drop = FALSE]
@@ -500,21 +504,7 @@ build_length_distribution_records <- function(
     }
 
     if (is_binned_release) {
-      parts <- strsplit(as.character(rows[[length_col]]), "-")
-      lower_bounds <- suppressWarnings(
-        as.numeric(vapply(parts, function(p) p[[1]], character(1)))
-      )
-      upper_bounds <- suppressWarnings(
-        as.numeric(vapply(parts, function(p) p[[2]], character(1)))
-      )
-      if (any(is.na(lower_bounds)) || any(is.na(upper_bounds))) {
-        cli::cli_abort(c(
-          "Could not parse bin labels in release length data.",
-          "i" = "Expected format: {.val '350-400'} (lower-upper separated by {.code -}).",
-          "x" = "Check the {.arg length_col} values in your attached length data."
-        ))
-      }
-      length_values <- (lower_bounds + upper_bounds) / 2
+      length_values <- release_bin_midpoints_mm(rows[[length_col]], bin_unit, bin_width)
       fish_count <- as.numeric(rows[[count_col]])
     } else {
       length_values <- suppressWarnings(as.numeric(rows[[length_col]]))
@@ -547,6 +537,78 @@ build_length_distribution_records <- function(
   )
 
   rbind(harvest_records, release_records)
+}
+
+# Length units, as the factor that converts each to mm.
+#' @noRd
+length_unit_to_mm <- function() {
+  c(mm = 1, cm = 10, inch = 25.4)
+}
+
+# Midpoints, in mm, of binned release length labels (GH #372).
+#
+# Shared by summarize_length_freq() and est_length_distribution(), which kept
+# private copies of this parser; harvest lengths are mm, so release bins are
+# converted before the two are combined.
+#
+# Two label forms:
+#   "lower-upper"  the bin's own bounds, in `unit`;
+#   "12"           a single value, read as the bin's LOWER bound, with
+#                  `width` (in `unit`) giving the upper -- the inch group of
+#                  lengths truncated to the inch below. Needs `width`.
+#
+# A single-value label used to crash both callers in base R ("subscript out of
+# bounds" from p[[2]]) before their own message could fire: an agency creel that
+# records released fish by inch group could summarise harvest lengths and
+# nothing else.
+#' @noRd
+release_bin_midpoints_mm <- function(labels, unit = "mm", width = NULL,
+                                     call = rlang::caller_env()) {
+  labels <- trimws(as.character(labels))
+  to_mm <- length_unit_to_mm()[[unit]]
+  # A number is digits with an optional decimal part, or a leading-point
+  # decimal: "12", "12.5", "12.", ".5" -- never "." or "1..2", which would pass
+  # a bare [0-9.]+ and fail later without this function's classed error.
+  num <- "([0-9]+\\.?[0-9]*|\\.[0-9]+)"
+  is_range <- grepl(paste0("^", num, "\\s*-\\s*", num, "$"), labels)
+  is_single <- grepl(paste0("^", num, "$"), labels)
+
+  bad <- !(is_range | is_single)
+  if (any(bad)) {
+    cli::cli_abort(c(
+      "Could not parse {sum(bad)} release length bin label{?s}.",
+      "x" = "First unparseable: {.val {utils::head(unique(labels[bad]), 3)}}.",
+      "i" = paste(
+        "Use {.val 300-350} (lower-upper) or, with {.arg release_bin_width} in",
+        "{.fn add_lengths}, a single lower bound such as {.val 12}."
+      )
+    ), class = "creel_error_release_bin_unparseable", call = call)
+  }
+  if (any(is_single) && is.null(width)) {
+    cli::cli_abort(c(
+      "Release length bins given as single values need a bin width.",
+      "x" = "{sum(is_single)} label{?s} such as {.val {labels[is_single][1]}} name{?s/} no upper bound.",
+      "i" = "Pass {.arg release_bin_width} (and {.arg release_bin_unit}, e.g. {.val inch}) to {.fn add_lengths}."
+    ), class = "creel_error_release_bin_width_missing", call = call)
+  }
+
+  mid <- rep(NA_real_, length(labels))
+  if (any(is_range)) {
+    parts <- strsplit(labels[is_range], "-", fixed = TRUE)
+    lower <- as.numeric(vapply(parts, `[[`, character(1), 1L))
+    upper <- as.numeric(vapply(parts, `[[`, character(1), 2L))
+    mid[is_range] <- (lower + upper) / 2
+  }
+  if (any(is_single)) {
+    mid[is_single] <- as.numeric(labels[is_single]) + width / 2
+  }
+  if (anyNA(mid)) {
+    cli::cli_abort(c(
+      "Could not read a number from every release length bin label.",
+      "i" = "Check the {.arg length} column of the binned release rows."
+    ), call = call)
+  }
+  mid * to_mm
 }
 
 # Biomass estimation ----

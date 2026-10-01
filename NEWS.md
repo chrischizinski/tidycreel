@@ -33,6 +33,39 @@
   A `by` column with only one observed level (a season flown only on weekdays)
   is left out of the model and still reported as a row.
 
+* `add_lengths()` gains `release_bin_unit` (`"mm"`, `"cm"`, `"inch"`) and
+  `release_bin_width` so binned release lengths recorded as **inch groups**
+  (`"12"`, with a count) can be used (#372). A single-value label is the bin's
+  lower bound; bins are converted to mm before they meet harvest lengths.
+  `summarize_length_freq()` and `est_length_distribution()` now share one
+  parser; a single-value label used to crash both with "subscript out of
+  bounds", and an unparseable label now gets the package's own error.
+
+## Bug fixes
+
+* `summarize_cws_rates()` read only the optional `"caught"` catch rows, so a
+  creel that records only harvested and released fish -- legal, as
+  `add_catch()` documents -- got a CWS of 0 (SE 0) for every species sought
+  (#372). A party's catch is now its `"caught"` row when it has one and
+  otherwise harvested + released, per species-interview pair, the rule
+  `summarize_successful_parties()` adopted in #329. **Numbers change** even on
+  the shipped example data, where 10 of 18 pairs carry no `"caught"` row: the
+  CWS for bass moves from 0.052 to 0.185 and for walleye from 0.462 to 0.629.
+  `summarize_hws_rates()` is unchanged.
+
+* `summarize_trips()` no longer crashes (`get1index`) when the interviews carry
+  no trip duration (#372). The counts are reported and `duration_stats` is
+  `NULL` -- not recorded, not zero.
+
+* `summarize_by_day_type()` and `summarize_boat_composition()` refuse an
+  inferred day-type column whose every value falls in a single month of the
+  year when at least two months each hold more than one of its values (#372).
+  It is a heuristic on month incidence, so a column you know is the day type
+  can always be named. Such a column is a composite stratum
+  (`"04_weekday"`), and crossing it with month produced a table of structural
+  zeros. Pass `day_type_col` to name the day type. A column you name, or one
+  called `day_type`, is taken as stated.
+
 # tidycreel 8.0.0 "Mooneye"
 
 ## Breaking changes
