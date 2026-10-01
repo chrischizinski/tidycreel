@@ -331,3 +331,61 @@ test_that("summarize_hws_rates() ungrouped returns single-row data.frame", {
   result <- summarize_hws_rates(d)
   expect_equal(nrow(result), 1L)
 })
+
+# GH #372: CWS reads the catch total the way add_catch() documents it ----
+#
+# A "caught" row is optional; without one a pair's total catch is harvested +
+# released. CWS used to read the "caught" rows alone, so an agency creel that
+# records only dispositions got a CWS of 0 (SE 0) for every species sought --
+# #329's defect in a sibling function.
+
+cws_design_from_catch <- function(catch) {
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  suppressWarnings(suppressMessages({
+    d <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+    d <- add_interviews(d, example_interviews,
+      catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+      trip_status = trip_status, species_sought = species_sought, # nolint: object_usage_linter
+      angler_type = angler_type # nolint: object_usage_linter
+    )
+    add_catch(d, catch,
+      catch_uid = interview_id, interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+    )
+  }))
+}
+
+test_that("CWS is unchanged when the optional caught rows are dropped (#372)", {
+  # Why: dropping the "caught" rows is legal and leaves every disposition
+  # intact, so the catch it describes is the same catch. A CWS that moves is
+  # reading the presence of an optional row, not the catch.
+  data(example_catch, package = "tidycreel")
+  with_caught <- summarize_cws_rates(cws_design_from_catch(example_catch), by = species_sought)
+  dispositions_only <- summarize_cws_rates(
+    cws_design_from_catch(example_catch[example_catch$catch_type != "caught", ]),
+    by = species_sought
+  )
+  expect_equal(dispositions_only$mean_rate, with_caught$mean_rate)
+  expect_equal(dispositions_only$se, with_caught$se)
+  expect_true(all(dispositions_only$mean_rate > 0))
+})
+
+test_that("CWS with dispositions only equals the hand-computed rate (#372)", {
+  # The agency shape: no "caught" rows at all. Each party's catch of its sought
+  # species is its harvested + released count; the rate is that over its
+  # angler-hours, averaged within the species sought.
+  data(example_catch, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  disp <- example_catch[example_catch$catch_type != "caught", ]
+  result <- summarize_cws_rates(cws_design_from_catch(disp), by = species_sought)
+
+  iv <- example_interviews
+  iv$target <- mapply(function(id, sp) {
+    sum(disp$count[disp$interview_id == id & disp$species == sp])
+  }, iv$interview_id, iv$species_sought)
+  iv$rate <- iv$target / iv$hours_fished
+  hand <- tapply(iv$rate, iv$species_sought, mean)
+
+  expect_equal(result$mean_rate, as.numeric(hand[result$species_sought]))
+})

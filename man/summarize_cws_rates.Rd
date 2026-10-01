@@ -48,9 +48,11 @@ computes a simple arithmetic mean over sampled interviews. It does NOT apply
 survey weighting by sampling effort or effort stratum. For pressure-weighted
 extrapolated estimates use \code{\link{estimate_catch_rate}}.
 
-The catch filter ensures only species the angler was targeting are counted
-(i.e., rows in \code{design$catch} where \code{catch_type == "caught"} and
-\code{species == species_sought}).
+Only the species the party was seeking is counted. Its catch follows the
+model \code{\link{add_catch}} documents: the pair's \code{"caught"} row when
+it has one, and otherwise \code{harvested + released}, because a
+\code{"caught"} row is optional. Data that record only dispositions give the
+same rates as data that also record the total.
 }
 \section{Unrecorded grouping values}{
 

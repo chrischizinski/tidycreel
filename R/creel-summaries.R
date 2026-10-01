@@ -270,7 +270,9 @@ summarize_refusals <- function(design) {
 #' Resolution order: an explicit `day_type_col`; then a stratum actually named
 #' `day_type`; then the first stratum, which warns when there is more than one
 #' so the assumption is visible at the point of use. A single-stratum design
-#' resolves silently, because there is nothing to choose between.
+#' resolves silently, because there is nothing to choose between -- unless the
+#' inferred column's every value is confined to one month across data spanning
+#' several, which marks a composite month x day-type stratum and aborts.
 #'
 #' @param design A `creel_design` object.
 #' @param day_type_col Caller-supplied column name, or `NULL` to infer.
@@ -321,6 +323,35 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
     ), call = call)
   }
 
+  # An INFERRED day type that is really a composite stratum (GH #372). A
+  # stratum such as "04_weekday" encodes the month as well as the day type, so
+  # each of its values occurs in one month only, where a real day type
+  # (weekday, weekend) recurs every month. Taken as the day type it crossed with
+  # month into a table of mostly structural zeros ("April, 05_weekday, 0") with
+  # nothing to say so. Checked only when the column was inferred -- a column
+  # the caller named, or one named day_type, is taken as stated -- and only
+  # when the data span more than one month, since one month cannot tell the two
+  # apart.
+  inferred <- is.null(day_type_col) && !identical(col, "day_type")
+  date_col <- design$date_col
+  if (inferred && !is.null(date_col) && date_col %in% names(data)) {
+    month <- format(as.Date(data[[date_col]]), "%Y-%m")
+    vals <- as.character(data[[col]])
+    ok <- !is.na(month) & !is.na(vals)
+    pairs <- unique(data.frame(v = vals[ok], m = month[ok], stringsAsFactors = FALSE))
+    if (length(unique(pairs$m)) > 1L && !any(duplicated(pairs$v))) {
+      cli::cli_abort(c(
+        "Stratum {.field {col}} does not look like a day type.",
+        "x" = paste(
+          "Each of its {length(unique(pairs$v))} values occurs in one month only",
+          "(e.g. {.val {utils::head(unique(pairs$v), 2)}}), so it appears to",
+          "combine month and day type."
+        ),
+        "i" = "Pass {.arg day_type_col} to name the column that holds the day type."
+      ), class = "creel_error_day_type_confined_to_month", call = call)
+    }
+  }
+
   col
 }
 
@@ -332,7 +363,10 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
 #' the design's strata: a stratum named \code{day_type} when the design
 #' declares one, otherwise the first stratum column, which warns when the
 #' design declares more than one. Pass \code{day_type_col} to state the
-#' column outright.
+#' column outright. An inferred column whose values each occur in a single
+#' month (a composite stratum such as \code{"04_weekday"}) is refused when the
+#' interviews span more than one month, since crossing it with month would
+#' produce a table of structural zeros.
 #'
 #' @details
 #' \strong{Interview-based summary, not pressure-weighted.} This function
@@ -1104,9 +1138,11 @@ summarize_by_trip_length <- function(design) {
 #' survey weighting by sampling effort or effort stratum. For pressure-weighted
 #' extrapolated estimates use \code{\link{estimate_catch_rate}}.
 #'
-#' The catch filter ensures only species the angler was targeting are counted
-#' (i.e., rows in \code{design$catch} where \code{catch_type == "caught"} and
-#' \code{species == species_sought}).
+#' Only the species the party was seeking is counted. Its catch follows the
+#' model \code{\link{add_catch}} documents: the pair's \code{"caught"} row when
+#' it has one, and otherwise \code{harvested + released}, because a
+#' \code{"caught"} row is optional. Data that record only dispositions give the
+#' same rates as data that also record the total.
 #'
 #' @param design A \code{creel_design} object with interviews attached via
 #'   \code{\link{add_interviews}} (with \code{species_sought}) and species
@@ -1287,44 +1323,12 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
     by_vars <- character(0)
   }
 
-  # Step 2: Filter catch to target type (caught for CWS)
-  target_catch <- catch_data[catch_data[[type_col]] == "caught", ]
-
-  # Merge to get species_sought on each catch row
-  sought_map <- interviews[, c(uid_col, ss_col), drop = FALSE]
-  catch_merged <- merge(
-    target_catch,
-    sought_map,
-    by.x = uid_col,
-    by.y = uid_col,
-    all.x = FALSE
+  # Step 2: each interview's count of the species it sought (caught).
+  agg <- sought_target_counts( # nolint: object_usage_linter
+    interviews, catch_data, "caught",
+    uid_col = uid_col, species_col = species_col, type_col = type_col,
+    count_col = count_col, ss_col = ss_col
   )
-
-  # Filter to rows where catch species == species_sought.
-  #
-  # The sought species is tested for NA explicitly, and the result indexed
-  # through which(): comparing anything with NA yields NA, and an NA subscript
-  # selects a PHANTOM all-NA row rather than nothing (GH #324's shape). With
-  # every target unrecorded, those phantoms made the frame look non-empty, the
-  # aggregate below returned zero rows with a logical key, and the join produced
-  # a non-numeric target count that failed later as base R's "non-numeric
-  # argument to binary operator" -- naming nothing the caller had set.
-  keep <- !is.na(catch_merged[[species_col]]) &
-    !is.na(catch_merged[[ss_col]]) &
-    catch_merged[[species_col]] == catch_merged[[ss_col]]
-  target_rows <- catch_merged[which(keep), , drop = FALSE]
-
-  # Aggregate: sum catch per interview UID
-  if (nrow(target_rows) > 0) {
-    agg <- stats::aggregate(
-      target_rows[[count_col]],
-      by = list(.uid = target_rows[[uid_col]]),
-      FUN = sum
-    )
-    names(agg)[2] <- ".target_count"
-  } else {
-    agg <- data.frame(.uid = character(0), .target_count = numeric(0))
-  }
 
   # Steps 3-7 are identical for CWS and HWS -- the only difference between the
   # two is which catch type Step 2 filtered to -- so they live in one place. The
@@ -1344,6 +1348,46 @@ summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
   result
 }
 
+
+# Per-interview count of the species each party SOUGHT, for one catch type.
+# Shared by summarize_cws_rates() ("caught") and summarize_hws_rates()
+# ("harvested").
+#
+# The count follows the model add_catch() documents, through
+# species_counts_per_interview(), the package's one implementation of it: a
+# pair's own "caught" row when it has one, otherwise harvested + released,
+# decided per species-interview PAIR (GH #318, #320). CWS used to read the
+# "caught" rows alone, so a party that recorded only its dispositions caught
+# nothing: on an agency creel with no "caught" rows every CWS rate was 0 with an
+# SE of 0, against 2.207 by hand (GH #372) -- #329's defect in a sibling. On the
+# shipped example data, where 10 of 18 pairs carry no "caught" row, the CWS
+# rates were understated too.
+#
+# Called once per sought species, since the species differs by interview, and
+# restricted to the interviews that sought it. An interview whose sought species
+# is unrecorded matches nothing here; summarize_rate_by_group() counts it in
+# `n_unknown_target` (GH #336).
+#' @noRd
+sought_target_counts <- function(interviews, catch_data, catch_type_val, uid_col,
+                                 species_col, type_col, count_col, ss_col) {
+  sought <- as.character(interviews[[ss_col]])
+  sought_vals <- unique(sought[!is.na(sought)])
+  parts <- lapply(sought_vals, function(sp) {
+    counts <- species_counts_per_interview( # nolint: object_usage_linter
+      catch_data, sp, catch_type_val,
+      uid_col = uid_col, species_col = species_col,
+      type_col = type_col, count_col = count_col
+    )
+    seekers <- as.character(interviews[[uid_col]][!is.na(sought) & sought == sp])
+    counts[as.character(counts$uid) %in% seekers, , drop = FALSE]
+  })
+  agg <- do.call(rbind, parts)
+  if (is.null(agg) || nrow(agg) == 0L) {
+    return(data.frame(.uid = character(0), .target_count = numeric(0)))
+  }
+  names(agg) <- c(".uid", ".target_count")
+  agg
+}
 
 # Turn per-interview target counts into a grouped rate table. Shared by
 # summarize_cws_rates() and summarize_hws_rates(), which differ only in which
@@ -1697,44 +1741,12 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
     by_vars <- character(0)
   }
 
-  # Step 2: Filter catch to target type (harvested for HWS)
-  target_catch <- catch_data[catch_data[[type_col]] == "harvested", ]
-
-  # Merge to get species_sought on each catch row
-  sought_map <- interviews[, c(uid_col, ss_col), drop = FALSE]
-  catch_merged <- merge(
-    target_catch,
-    sought_map,
-    by.x = uid_col,
-    by.y = uid_col,
-    all.x = FALSE
+  # Step 2: each interview's count of the species it sought (harvested).
+  agg <- sought_target_counts( # nolint: object_usage_linter
+    interviews, catch_data, "harvested",
+    uid_col = uid_col, species_col = species_col, type_col = type_col,
+    count_col = count_col, ss_col = ss_col
   )
-
-  # Filter to rows where catch species == species_sought.
-  #
-  # The sought species is tested for NA explicitly, and the result indexed
-  # through which(): comparing anything with NA yields NA, and an NA subscript
-  # selects a PHANTOM all-NA row rather than nothing (GH #324's shape). With
-  # every target unrecorded, those phantoms made the frame look non-empty, the
-  # aggregate below returned zero rows with a logical key, and the join produced
-  # a non-numeric target count that failed later as base R's "non-numeric
-  # argument to binary operator" -- naming nothing the caller had set.
-  keep <- !is.na(catch_merged[[species_col]]) &
-    !is.na(catch_merged[[ss_col]]) &
-    catch_merged[[species_col]] == catch_merged[[ss_col]]
-  target_rows <- catch_merged[which(keep), , drop = FALSE]
-
-  # Aggregate: sum catch per interview UID
-  if (nrow(target_rows) > 0) {
-    agg <- stats::aggregate(
-      target_rows[[count_col]],
-      by = list(.uid = target_rows[[uid_col]]),
-      FUN = sum
-    )
-    names(agg)[2] <- ".target_count"
-  } else {
-    agg <- data.frame(.uid = character(0), .target_count = numeric(0))
-  }
 
   # Steps 3-7 are identical for CWS and HWS -- the only difference between the
   # two is which catch type Step 2 filtered to -- so they live in one place. The
@@ -1923,23 +1935,12 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
     }
 
     if (is_binned_release) {
-      # Parse bin labels to midpoints; weight = count
-      raw_labels <- as.character(rows[[length_col]])
-      parts <- strsplit(raw_labels, "-")
-      lower_bounds <- suppressWarnings(
-        as.numeric(vapply(parts, function(p) p[[1]], character(1)))
+      # Parse bin labels to midpoints in mm; weight = count
+      midpoints <- release_bin_midpoints_mm( # nolint: object_usage_linter
+        rows[[length_col]],
+        design$lengths_release_bin_unit %||% "mm",
+        design$lengths_release_bin_width
       )
-      upper_bounds <- suppressWarnings(
-        as.numeric(vapply(parts, function(p) p[[2]], character(1)))
-      )
-      if (any(is.na(lower_bounds)) || any(is.na(upper_bounds))) {
-        cli::cli_abort(c(
-          "Could not parse bin labels in release length data.",
-          "i" = "Expected format: {.val \"350-400\"} (lower-upper separated by {.code -}).",
-          "x" = "Check the {.arg length} column in your lengths data."
-        ))
-      }
-      midpoints <- (lower_bounds + upper_bounds) / 2
       counts <- as.integer(rows[[count_col]])
       # Expand: rep each midpoint by its count; repeat by-group values similarly
       lengths <- rep(midpoints, times = counts)

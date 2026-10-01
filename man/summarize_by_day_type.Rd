@@ -24,7 +24,10 @@ weekend) within each calendar month. The day type column is resolved from
 the design's strata: a stratum named \code{day_type} when the design
 declares one, otherwise the first stratum column, which warns when the
 design declares more than one. Pass \code{day_type_col} to state the
-column outright.
+column outright. An inferred column whose values each occur in a single
+month (a composite stratum such as \code{"04_weekday"}) is refused when the
+interviews span more than one month, since crossing it with month would
+produce a table of structural zeros.
 }
 \details{
 \strong{Interview-based summary, not pressure-weighted.} This function

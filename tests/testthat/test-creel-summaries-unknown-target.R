@@ -49,26 +49,32 @@ ut_n <- function() {
 test_that("a design with every target recorded is unchanged (TGT-01)", {
   # Pins the numbers the fix must not move, and the reason the whole class was
   # invisible: with nothing missing there is nothing to exclude.
+  #
+  # The rates moved in GH #372, from 0.6667 / 0.3929: CWS read only the optional
+  # "caught" rows, and 10 of the example's 18 species-interview pairs have none,
+  # so their catch counted as zero. 0.8601 / 0.7725 are the hand-computed means
+  # with each pair's total taken as add_catch() documents it.
   result <- summarize_cws_rates(ut_design(), by = "angler_type")
   expect_equal(result$angler_type, c("bank", "boat"))
   expect_equal(result$N, c(13L, 9L))
-  expect_equal(round(result$mean_rate, 4), c(0.6667, 0.3929))
+  expect_equal(round(result$mean_rate, 4), c(0.8601, 0.7725))
   expect_equal(result$n_unknown_target, c(0L, 0L))
 })
 
 # --- the rate must stop counting an unknown target as zero — TGT-02..03 ------
 
 test_that("an unrecorded target is excluded from the rate, not scored zero (TGT-02)", {
-  # Discriminating on the exact number: 0.2540 is the answer the zero-fill gave,
-  # and it must not be reachable any more. The group had 9 interviews and keeps
-  # 3; asserting only "the rate changed" would also pass if the fix were wrong
-  # in some other direction.
+  # Discriminating on the exact number: 0.4484 is the answer the zero-fill
+  # would give (the 3 known rates summed over all 9 interviews), and it must not
+  # be reachable. The group had 9 interviews and keeps 3; asserting only "the
+  # rate changed" would also pass if the fix were wrong in some other direction.
+  # (Before GH #372 corrected the CWS catch total these were 0.2540 / 0.7619.)
   result <- summarize_cws_rates(ut_design(blank_sought = TRUE), by = "angler_type")
   boat <- result[result$angler_type == "boat", ]
   expect_equal(boat$N, 3L)
   expect_equal(boat$n_unknown_target, 6L)
-  expect_false(isTRUE(all.equal(round(boat$mean_rate, 4), 0.2540)))
-  expect_equal(round(boat$mean_rate, 4), 0.7619)
+  expect_false(isTRUE(all.equal(round(boat$mean_rate, 4), 0.4484)))
+  expect_equal(round(boat$mean_rate, 4), 1.3452)
 })
 
 test_that("every interview is accounted for across N and n_unknown_target (TGT-03)", {
@@ -118,11 +124,16 @@ test_that("a party that really caught none of its target still counts as zero (T
   # a KNOWN target with no catch row is a real zero and must stay in the mean.
   # Turning those into exclusions would bias every rate upward -- the mirror of
   # the defect being fixed.
+  #
+  # Bass: 4 known-target parties, three of which caught no bass and one 2 fish
+  # in 2.5 h. Keeping the zeros gives 0.2; dropping them would give 0.8. (Until
+  # GH #372 this group read exactly 0, because the one party's catch had no
+  # "caught" row -- a control that held only because of the defect.)
   result <- summarize_cws_rates(ut_design(blank_sought = TRUE), by = "species_sought")
   bass <- result[result$species_sought == "bass", ]
   expect_equal(bass$N, 4L)
   expect_equal(bass$n_unknown_target, 0L)
-  expect_equal(bass$mean_rate, 0)
+  expect_equal(bass$mean_rate, 0.2)
   expect_false(is.na(bass$mean_rate))
 })
 

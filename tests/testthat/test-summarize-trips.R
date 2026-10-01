@@ -175,3 +175,23 @@ test_that("percentages sum to approximately 100", {
   expect_gte(total_pct, 99.9)
   expect_lte(total_pct, 100.1)
 })
+
+test_that("summarize_trips() works without a trip duration (#372)", {
+  # Why: a trip duration is optional in add_interviews(), and a design without
+  # one was accepted there but crashed here in base R's get1index. The counts
+  # do not need a duration; the duration statistics are absent (NULL), not 0.
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  d <- suppressWarnings(suppressMessages(creel_design(example_calendar, date = date, strata = day_type))) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_interviews(d, example_interviews,
+    catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  )))
+  expect_null(d$trip_duration_col)
+
+  result <- summarize_trips(d)
+  expect_identical(result$n_total, nrow(example_interviews))
+  expect_identical(result$n_complete, sum(example_interviews$trip_status == "complete"))
+  expect_null(result$duration_stats)
+  expect_match(paste(format(result), collapse = "\n"), "not recorded")
+})
