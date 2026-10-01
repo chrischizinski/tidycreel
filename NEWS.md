@@ -55,8 +55,10 @@
   `add_counts()` now keeps the per-occasion counts when `count_time_col` is
   given. The units are added up at each occasion and the variance is taken of
   that total, so long-form counts give the same `se_within` as one pooled row
-  per count. Units counted at different occasions on the same day cannot be
-  paired; their components are added as independent, with a message. A
+  per count. Pairing is decided day by day: on a day whose units were not
+  counted at the same known occasions (different times, or an `NA` count
+  time), their components are added as independent, with a message, and every
+  count is kept. A
   design that carries only a supplied sum of squares (`within_day_var` from
   `prep_counts_*()`) cannot recover the covariance, so the combined total is
   refused (`creel_error_within_day_unpooled`); report `by` the unit column

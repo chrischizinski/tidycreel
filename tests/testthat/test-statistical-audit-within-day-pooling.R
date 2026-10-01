@@ -221,3 +221,85 @@ test_that("#373: occasions are pooled in effort units, each gear by its own peri
   est <- wdp_se_within(design, target = "period_total")
   expect_equal(est$se_within, sqrt(wdp_hand_var(effort)))
 })
+
+# Per-day hand value for schedules that pair on some days and not others. A day
+# whose gears share the same known occasions is pooled; any other day adds the
+# gears' own sums of squares (equal counts per gear, so no rescaling).
+wdp_hand_var_mixed <- function(counts, target = "period_total") {
+  cal <- wdp_cal()
+  v <- 0
+  for (s in c("weekday", "weekend")) {
+    sc <- counts[counts$day_type == s, ]
+    ss <- c()
+    for (dd in unique(as.character(sc$date))) {
+      day <- sc[as.character(sc$date) == dd, ]
+      tb <- day$count_time[day$gear == "bank"]
+      to <- day$count_time[day$gear == "boat"]
+      if (!anyNA(c(tb, to)) && identical(sort(tb), sort(to))) {
+        tot <- tapply(day$anglers, day$count_time, sum)
+        ss <- c(ss, sum((tot - mean(tot))^2))
+      } else {
+        per_gear <- tapply(day$anglers, day$gear, function(x) sum((x - mean(x))^2))
+        ss <- c(ss, sum(per_gear))
+      }
+    }
+    n <- length(ss)
+    scale <- if (target == "sampled_days") n else sum(cal$day_type == s)
+    v <- v + scale / 2 * sum(ss) / (n * (2 - 1))
+  }
+  v
+}
+
+test_that("#373: pairing is decided per day, so one off-schedule day keeps the others pooled", {
+  # One weekday counted boat-first at different times; every other day pairs.
+  # Deciding pairing once per stratum dropped the covariance on the weekday
+  # that did pair as well.
+  counts <- wdp_counts()
+  off <- counts$gear == "boat" & counts$date == as.Date("2024-06-03")
+  counts$count_time[off] <- c("09:00", "17:00")
+  design <- wdp_design(counts)
+
+  expect_message(
+    suppressWarnings(estimate_effort(design, target = "period_total")),
+    class = "creel_message_within_day_independent"
+  )
+  est <- wdp_se_within(design, target = "period_total")
+  expect_equal(est$se_within, sqrt(wdp_hand_var_mixed(counts)))
+  # Not the all-independent value: the paired days still carry their covariance.
+  all_indep <- wdp_hand_var(counts[counts$gear == "bank", ]) +
+    wdp_hand_var(counts[counts$gear == "boat", ])
+  expect_false(isTRUE(all.equal(est$se_within, sqrt(all_indep))))
+})
+
+test_that("#373: an unknown occasion is not dropped -- its day is added as independent", {
+  # An NA count time cannot be matched to anything. Both gears' second count on
+  # one day lost its time: their label sets still look alike once NA is
+  # dropped, so the day would pair on its one known occasion and lose a count
+  # from each gear, understating the variance. It is kept in each gear's own
+  # sum of squares instead.
+  counts <- wdp_counts()
+  na_row <- counts$date == as.Date("2024-06-03") & counts$count_time == "16:00"
+  counts$count_time[na_row] <- NA
+  design <- wdp_design(counts)
+
+  expect_message(
+    suppressWarnings(estimate_effort(design, target = "period_total")),
+    class = "creel_message_within_day_independent"
+  )
+  est <- wdp_se_within(design, target = "period_total")
+  expect_equal(est$se_within, sqrt(wdp_hand_var_mixed(counts)))
+})
+
+test_that("#373: by = a column outside the unit key still pools the units", {
+  # `season` is on the count rows but not in the unit key, so it is not in the
+  # occasion table either. The day is found through the unit, not rebuilt from
+  # columns the occasion table does not carry. A regression pin: the first
+  # version rebuilt it from columns and happened to group correctly anyway,
+  # because the missing column pasted as an empty field on every row.
+  counts <- wdp_counts()
+  counts$season <- "summer"
+  design <- wdp_design(counts)
+
+  est <- wdp_se_within(design, by = season, target = "period_total")
+  expect_equal(est$se_within, sqrt(wdp_hand_var(counts)))
+})

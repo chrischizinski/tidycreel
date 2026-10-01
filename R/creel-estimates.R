@@ -4992,46 +4992,67 @@ within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, 
         "x" = "A sampled day carries more than one {.field {extra_cols}} unit, and the \\
                design holds only a sum of squares for each. The covariance between \\
                units counted at the same occasion is not recoverable from those.",
-        "i" = "Report {.code by = {extra_cols[1]}}, or attach the raw counts with \\
-               {.arg count_time_col} so they can be added up at each occasion."
+        "i" = "Report {.code by} every one of {.field {extra_cols}}, or attach the \\
+               raw counts with {.arg count_time_col} so they can be added up at \\
+               each occasion."
       ),
       class = "creel_error_within_day_unpooled"
     )
   }
 
-  occ <- occ[group_key(occ, key_cols) %in% group_key(rows, key_cols), , drop = FALSE] # nolint: object_usage_linter
-  occ_day <- group_key(occ, grain_cols) # nolint: object_usage_linter
+  # Each occasion is placed on its day through the unit it belongs to, not by
+  # rebuilding the day from columns: a `by` column outside the unit key is on
+  # the count rows but not in the occasion table.
+  row_unit <- group_key(rows, key_cols) # nolint: object_usage_linter
   occ_unit <- group_key(occ, key_cols) # nolint: object_usage_linter
+  occ <- occ[occ_unit %in% row_unit, , drop = FALSE]
+  occ_unit <- occ_unit[occ_unit %in% row_unit]
+  occ_day <- day_key[match(occ_unit, row_unit)]
+  occ_time <- as.character(occ$.count_time)
 
-  # Pairable only if every unit of a day was counted at the same occasions.
-  paired <- all(vapply(split(seq_len(nrow(occ)), occ_day), function(idx) {
-    labels <- split(as.character(occ$.count_time[idx]), occ_unit[idx])
-    sets <- lapply(labels, function(x) sort(unique(x)))
-    all(vapply(sets, identical, logical(1), sets[[1]]))
-  }, logical(1)))
+  days <- unique(day_key)
+  ss_d <- numeric(length(days))
+  k_d <- numeric(length(days))
+  n_unpaired <- 0L
+  for (i in seq_along(days)) {
+    idx <- which(occ_day == days[i])
+    labels <- split(occ_time[idx], occ_unit[idx])
+    sets <- lapply(labels, sort)
+    # A day pairs only if every unit was counted at the same, known occasions,
+    # each once. An unknown occasion (NA) cannot be matched to anything.
+    paired <- !anyNA(occ_time[idx]) &&
+      !any(vapply(labels, anyDuplicated, integer(1)) > 0L) &&
+      all(vapply(sets, identical, logical(1), sets[[1]]))
+    if (paired) {
+      tot <- vapply(split(occ$.value[idx], occ_time[idx]), sum, numeric(1))
+      ss_d[i] <- sum((tot - mean(tot))^2)
+      k_d[i] <- length(tot)
+    } else {
+      # Independent units: the day's variance is the sum of the units'
+      # variances of the mean, carried as the sum of squares that gives that
+      # variance at the day's mean count. With equal counts per unit it is just
+      # the units' sums of squares added, every count kept.
+      n_unpaired <- n_unpaired + 1L
+      u <- rows[day_key == days[i], , drop = FALSE]
+      k_eq <- mean(u$k_d)
+      per_unit <- ifelse(u$k_d > 1, u$ss_d / (u$k_d * (u$k_d - 1)), 0)
+      ss_d[i] <- if (k_eq > 1) sum(per_unit) * k_eq * (k_eq - 1) else 0
+      k_d[i] <- k_eq
+    }
+  }
 
-  if (!paired) {
+  if (n_unpaired > 0L) {
     cli::cli_inform(
       c(
-        "i" = "Within-day variance: {.field {extra_cols}} units of a day were counted \\
-               at different occasions, so they cannot be paired.",
-        "i" = "Their within-day components are added as independent."
+        "i" = "Within-day variance: on {n_unpaired} day{?s} the {.field {extra_cols}} \\
+               units were not counted at the same known occasions, so they cannot be \\
+               paired.",
+        "i" = "Their within-day components are added as independent on those days."
       ),
       class = "creel_message_within_day_independent"
     )
-    unit_cell <- group_key(rows, extra_cols) # nolint: object_usage_linter
-    return(sum(vapply(split(rows, unit_cell), function(cell) {
-      rasmussen_within_var(cell$ss_d, cell$k_d, n_avail, target)
-    }, numeric(1))))
   }
 
-  day_tot <- stats::aggregate(
-    occ$.value,
-    by = list(day = occ_day, time = as.character(occ$.count_time)),
-    FUN = sum
-  )
-  ss_d <- vapply(split(day_tot$x, day_tot$day), function(x) sum((x - mean(x))^2), numeric(1))
-  k_d <- vapply(split(day_tot$x, day_tot$day), length, integer(1))
   rasmussen_within_var(ss_d, k_d, n_avail, target)
 }
 
