@@ -197,3 +197,27 @@ test_that("#403: units finer than the section are refused, not pooled flat", {
   lake <- res$estimates[res$estimates$section == ".lake_total", ]
   expect_equal(lake$se_within, 20, tolerance = 1e-8)
 })
+
+test_that("#403: a section that is also a stratum is refused, not silently ignored", {
+  # Codex, #403 round 2: with strata = c(day_type, section) the pooling runs per
+  # stratum, so no call holds two sections and the declaration did nothing. The
+  # lake component stayed 14.14 where pooling the two would give 20.
+  days <- as.Date("2024-06-03") + 0:3
+  cal <- data.frame(date = rep(days, 2), section = rep(c("A", "B"), each = 4), day_type = "weekday")
+  cnt <- rbind(
+    data.frame(date = rep(days, each = 2), section = "A", count_time = c(9, 15), n = c(10, 20)),
+    data.frame(date = rep(days, each = 2), section = "B", count_time = c(9, 15), n = c(10, 20))
+  )
+  cnt$day_type <- "weekday"
+  build <- function(shared) {
+    d <- creel_design(cal, date = date, strata = c(day_type, section)) # nolint: object_usage_linter
+    d <- add_sections(d, data.frame(section = c("A", "B")), # nolint: object_usage_linter
+      section_col = section, shared_count_times = shared # nolint: object_usage_linter
+    )
+    suppressWarnings(add_counts(d, cnt, count_col = "n", count_time_col = count_time)) # nolint: object_usage_linter
+  }
+  expect_error(sct_est(build(TRUE)), class = "creel_error_shared_times_section_strata")
+  # Undeclared, the design is estimated as before.
+  res <- sct_est(build(FALSE))
+  expect_equal(res$estimates$se_within[res$estimates$section == ".lake_total"], sqrt(200), tolerance = 1e-8)
+})

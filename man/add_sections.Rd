@@ -47,7 +47,8 @@ and fall together through the day. Requires \code{count_time_col} in
 circuit counts "am" in each section at a different moment, and pairing those
 would be a modelling choice the data cannot confirm. Not supported
 together with count units finer than the section (\code{unit_cols} beyond the
-section); that combination is refused. See the section below.}
+section), or when the section is also one of the design's strata; both
+combinations are refused. See the section below.}
 }
 \value{
 A new \code{creel_design} object with \verb{$sections} and \verb{$section_col}

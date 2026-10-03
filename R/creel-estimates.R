@@ -5248,6 +5248,24 @@ shared_times_lake_se_within <- function(design, result_df, target) {
       class = "creel_error_shared_times_unpooled"
     )
   }
+  # The pooling runs stratum by stratum. With the section among the strata each
+  # section is its own stratum, so no call ever holds two of them and the
+  # declaration would silently do nothing. It would also be a different model:
+  # strata are sampled independently, so each section would have its own sampled
+  # days rather than a day counted in both. Refused rather than ignored.
+  if (design$section_col %in% design$strata_cols) {
+    cli::cli_abort(
+      c(
+        "{.code shared_count_times = TRUE} is not supported when the section is also a stratum.",
+        "x" = "{.field {design$section_col}} is among the design strata ({.field {design$strata_cols}}).",
+        "i" = "Strata are sampled independently, so sections that are strata do not share sampled \
+               days or count times; there is no cross-section covariance to add.",
+        "i" = "Leave {.code shared_count_times = FALSE}, or register the section outside \
+               {.arg strata}."
+      ),
+      class = "creel_error_shared_times_section_strata"
+    )
+  }
   # Units finer than the section (angler type, say) need pooling at two levels:
   # within each section first, then across sections. The pooling below is flat,
   # so when sections cannot be paired on a day it falls back to treating every

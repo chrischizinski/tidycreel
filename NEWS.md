@@ -79,7 +79,9 @@
   different moment), and the default `FALSE` changes nothing. It needs
   `count_time_col` in `add_counts()` and is refused without it, and is also
   refused when the counts are keyed by units finer than the section (angler
-  type, say), which would need pooling at two levels. Only the
+  type, say), which would need pooling at two levels, or when the section is
+  also a stratum (strata are sampled independently, so there is no shared day
+  to pair). Only the
   `.lake_total` row moves; the section rows do not. The sectioned
   `estimate_total_*()` lake rows still assume zero covariance across sections.
 
