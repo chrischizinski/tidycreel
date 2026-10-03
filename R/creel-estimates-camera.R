@@ -375,7 +375,8 @@ estimate_effort_camera <- function(
       rho <- sum(E_d, na.rm = TRUE) / sum(C_d, na.rm = TRUE)
 
       # Variance via ratio-estimator delta method on paired daily residuals
-      # var(rho) = sum((E_d - rho*C_d)^2) / (n*(n-1)*mean_C^2)
+      # i.e. the sum of squared residuals (E_d - rho * C_d), divided by
+      # n (n - 1) times the squared mean count.
       mean_C <- mean(C_d, na.rm = TRUE)
       if (n_days > 1L) {
         resid_d <- E_d - rho * C_d

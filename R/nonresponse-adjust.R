@@ -237,11 +237,11 @@ apply_nonresponse_weights <- function(svy, strata_cols, diagnostics, method) {
       '{.val "calibrate"} method is not yet implemented in {.fn adjust_nonresponse}.',
       "i" = paste0(
         'Use {.val "postStratify"} (the default), which applies the ',
-        'inverse-response-rate weight scaling documented in the function.'
+        "inverse-response-rate weight scaling documented in the function."
       ),
       "i" = paste0(
-        'For calibration, call {.fn survey::calibrate} directly with ',
-        'population totals derived from your sampling frame.'
+        "For calibration, call {.fn survey::calibrate} directly with ",
+        "population totals derived from your sampling frame."
       )
     ))
   }

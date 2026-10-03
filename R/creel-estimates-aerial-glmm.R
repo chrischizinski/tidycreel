@@ -450,10 +450,10 @@ estimate_effort_aerial_glmm <- function(
           "day, so a single constant cannot express it."
         ),
         "i" = paste0(
-        "Both targets report an expectation and both need the correction, so ",
-        "neither is available here. Fit with a single random intercept ",
-        "({.code (1 | date)}) to expand."
-      )
+          "Both targets report an expectation and both need the correction, so ",
+          "neither is available here. Fit with a single random intercept ",
+          "({.code (1 | date)}) to expand."
+        )
       ),
       class = "creel_error_glmm_retransform_unsupported"
     )
