@@ -6292,6 +6292,38 @@ check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method
   check_missing_rate_strata(sec_design, effort_df, rate_df, strata_cols, context)
 }
 
+#' Apply the missing-rate policy to sections with effort but no usable interviews
+#'
+#' The sectioned totals treat a registered section as "missing" when it lacks
+#' counts or interviews. A section WITH counts but no usable interviews -- none
+#' at all, or none left after the trip filter -- is not missing: it has effort
+#' and no rate, so its catch is unknown. Under `missing_sections = "warn"` it got
+#' an NA row and the lake total silently summed the other sections while still
+#' marked available (GH #373). Those sections go through `missing_rate` instead:
+#' refused by default; under `"exclude"` recorded like any other excluded cell.
+#' Sections without counts stay under `missing_sections`, unchanged.
+#'
+#' @return The sections handled here, so the caller can drop them from its
+#'   "section not found" message (they were found; they have no rate).
+#' @keywords internal
+#' @noRd
+check_section_missing_rate <- function(design, no_rate_sections, section_col,
+                                       variance_method, conf_level, target, context) {
+  if (length(no_rate_sections) == 0L) {
+    return(character(0))
+  }
+  count_sections <- unique(design$counts[[section_col]])
+  sec_effort <- vapply(count_sections, function(sec) {
+    sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
+    sec_design[["sections"]] <- NULL
+    estimate_effort_total(sec_design, variance_method, conf_level, target = target)$estimates$estimate # nolint: object_usage_linter
+  }, numeric(1))
+  effort_df <- tibble::tibble(!!section_col := count_sections, estimate = unname(sec_effort))
+  rate_df <- tibble::tibble(!!section_col := setdiff(count_sections, no_rate_sections))
+  check_missing_rate_strata(design, effort_df, rate_df, section_col, context)
+  no_rate_sections
+}
+
 #' Attach the cells a total excluded to its result
 #'
 #' The other end of `check_missing_rate_strata()`: reads the record that

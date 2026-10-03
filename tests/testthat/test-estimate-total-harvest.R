@@ -1205,12 +1205,15 @@ test_that("PROD-01-harvest-missing: missing section inserts NA row with data_ava
   design <- make_3section_harvest_design_missing_south() # nolint: object_usage_linter
   warns <- character(0)
   result <- withCallingHandlers(
-    estimate_total_harvest(design, missing_sections = "warn"), # nolint: object_usage_linter
+    estimate_total_harvest(design, missing_sections = "warn", missing_rate = "exclude"), # nolint: object_usage_linter
     warning = function(w) {
       warns <<- c(warns, conditionMessage(w))
       invokeRestart("muffleWarning")
     }
   )
+  # South has counts but no usable interviews: missing_rate's question, not
+  # missing_sections' (#373). Opting in must still warn and mark the row unknown.
+  expect_true(any(grepl("no usable interviews|no rate", warns, ignore.case = TRUE)))
   south_row <- result$estimates[result$estimates$section == "South", ]
   expect_equal(nrow(south_row), 1L)
   expect_false(south_row$data_available)

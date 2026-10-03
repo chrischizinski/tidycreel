@@ -268,3 +268,32 @@ test_that("#373: the exclusion record never overwrites a grouping column", {
   expect_equal(rec$effort_excluded, 201.9)
   expect_identical(rec$excluded_from, "test")
 })
+
+test_that("#373: a section with counts but no usable interviews is not summed out of the lake total", {
+  # South has effort, but the trip filter leaves it no interviews. It used to be
+  # reported as a section "not found", given an NA row, and the .lake_total was
+  # North alone, still marked available.
+  d <- make_sectioned_species_design()
+  d$interviews$trip_status[d$interviews$section == "South"] <- "incomplete"
+
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    expect_error(
+      quiet(fn(d, use_trips = "complete")),
+      class = "creel_error_missing_rate_strata"
+    )
+  }
+
+  res <- quiet(estimate_total_catch(d, use_trips = "complete", missing_rate = "exclude"))
+  expect_identical(res$excluded_strata$section, "South")
+  expect_gt(res$excluded_strata$effort_excluded, 0)
+  south <- res$estimates[res$estimates$section == "South", ]
+  expect_true(is.na(south$estimate))
+  # It was found -- it has counts -- so it is not reported as missing.
+  expect_no_warning(
+    suppressMessages(withCallingHandlers(
+      estimate_total_catch(d, use_trips = "complete", missing_rate = "exclude"),
+      creel_warning_missing_rate_strata = function(w) invokeRestart("muffleWarning")
+    )),
+    message = "not found"
+  )
+})

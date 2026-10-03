@@ -60,6 +60,10 @@
   total on a sectioned design pools one rate across each section's strata, so
   an uncovered stratum there took the other strata's rate; it is now refused
   under either setting, and the message points at the stratified `by =` total.
+  A section that has counts but no usable interviews is likewise a
+  `missing_rate` case, not a `missing_sections` one: its effort is known and
+  its catch is not, so the lake total now stops instead of reporting the other
+  sections alone.
 
 * The within-day SE of an effort total that combines several count units on
   one day (long-form counts, one row per count x angler type, declared with

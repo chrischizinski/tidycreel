@@ -846,19 +846,37 @@ estimate_total_harvest_sections <- function(
     intersect(present_count_sections, present_interview_sections)
   )
 
+  # A section with counts but no usable interviews has effort and no rate: its
+  # catch is unknown, which is missing_rate's question, not missing_sections'
+  # (GH #373). Refused by default; recorded under "exclude". It still gets the
+  # NA row below, but is not reported as "not found".
+  no_rate_sections <- check_section_missing_rate( # nolint: object_usage_linter
+    design,
+    no_rate_sections = intersect(
+      setdiff(present_count_sections, present_interview_sections),
+      registered_sections
+    ),
+    section_col = section_col,
+    variance_method = variance_method,
+    conf_level = conf_level,
+    target = target,
+    context = "estimate_total_harvest (section)"
+  )
+  not_found_sections <- setdiff(absent_sections, no_rate_sections)
+
   # Handle missing sections
-  if (length(absent_sections) > 0) {
-    n_absent <- length(absent_sections) # nolint: object_usage_linter
+  if (length(not_found_sections) > 0) {
+    n_absent <- length(not_found_sections) # nolint: object_usage_linter
     if (missing_sections == "error") {
       cli::cli_abort(c(
         "{n_absent} missing section(s) in count or interview data.",
-        "x" = "Section(s) not found: {.val {absent_sections}}",
+        "x" = "Section(s) not found: {.val {not_found_sections}}",
         "i" = "All registered sections must have both count and interview data, or use {.arg missing_sections = 'warn'}." # nolint: line_length_linter
       ))
     } else {
       cli::cli_warn(c(
         "{n_absent} missing section(s) in count or interview data.",
-        "!" = "Section(s) not found: {.val {absent_sections}}",
+        "!" = "Section(s) not found: {.val {not_found_sections}}",
         "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
       ))
     }
