@@ -636,7 +636,7 @@ estimate_angler_n <- function(
     attr(result, "n_occasions") <- s_occ
     result
   } else {
-    # method == "schnabel"
+    # The Schnabel method.
     # --- point estimate ---
     sum_Mn <- sum(M * n)
     sum_m <- sum(m)

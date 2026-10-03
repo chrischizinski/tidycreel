@@ -1973,14 +1973,14 @@ estimate_catch_rate <- function(
       error_call = rlang::caller_env()
     )
     validate_ratio_sample_size(design, by_vars, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_grouped(
+    estimate_cpue_grouped(
       # nolint: object_usage_linter
       design,
       by_vars,
       variance,
       conf_level,
       dispatch_estimator
-    ))
+    )
   }
 }
 
@@ -6456,7 +6456,7 @@ attach_excluded_strata <- function(result, design) {
   # Forced first: `result` is the estimator call itself, passed lazily, and it
   # is what writes the record. Read before it runs, the record is always empty.
   force(result)
-  rows <-if (is.environment(design$total_excluded)) design$total_excluded$rows else NULL
+  rows <- if (is.environment(design$total_excluded)) design$total_excluded$rows else NULL
   if (length(rows) > 0L) {
     result$excluded_strata <- dplyr::bind_rows(rows)
   }
