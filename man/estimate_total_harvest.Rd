@@ -114,7 +114,12 @@ effort. \code{"exclude"} reports the total over the covered cells only,
 warns, gives a \code{by} group with no covered cell an \code{NA} row, and
 records what it left out in \code{excluded_strata} on the result. Not
 available for bus-route and ice designs, whose totals have no per-stratum
-product (GH #373).}
+product (GH #373). A cell whose effort is a known zero (estimate and SE
+both 0) is not counted as missing: its product is 0 for any rate. An
+ungrouped total on a sectioned design pools one rate across each section's
+strata, so an uncovered stratum there is refused under either setting; use
+\code{by} on the stratum column to get the covered cells and the
+\code{"exclude"} record.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-harvest".

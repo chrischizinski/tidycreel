@@ -63,7 +63,9 @@
   A section that has counts but no usable interviews is likewise a
   `missing_rate` case, not a `missing_sections` one: its effort is known and
   its catch is not, so the lake total now stops instead of reporting the other
-  sections alone.
+  sections alone. A cell whose effort is a known zero (estimate and SE both 0,
+  every sampled count zero) is not "missing a rate": its product is 0 for any
+  rate, so it neither stops the total nor turns a `by` row into `NA`.
 
 * The within-day SE of an effort total that combines several count units on
   one day (long-form counts, one row per count x angler type, declared with

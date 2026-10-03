@@ -297,3 +297,59 @@ test_that("#373: a section with counts but no usable interviews is not summed ou
     message = "not found"
   )
 })
+
+# A cell whose effort is a KNOWN zero (estimate 0, se 0: every sampled count was
+# zero) has a product of exactly 0 whatever its rate is, so a missing rate leaves
+# nothing unknown. Refusing it by default regressed a total the old code got
+# right, and the message contradicted itself ("unknown, not zero: 0 effort
+# units, 0%") -- Copilot, #408. Only estimate 0 AND se 0 is known; zero observed
+# with spread is not.
+mrs_zero_weekend_design <- function() {
+  data(example_counts, package = "tidycreel")
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  cn <- example_counts
+  cn$effort_hours[cn$day_type == "weekend"] <- 0
+  iv <- example_interviews
+  iv$trip_status[iv$date %in% cn$date[cn$day_type == "weekend"]] <- "incomplete"
+  d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- quiet(add_counts(d, cn))
+  d <- quiet(add_interviews(
+    d, iv,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished, # nolint: object_usage_linter
+    n_anglers = n_anglers, trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+  data(example_catch, package = "tidycreel")
+  quiet(add_catch(
+    d, example_catch[example_catch$interview_id %in% iv$interview_id, ],
+    catch_uid = interview_id, interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+  ))
+}
+
+test_that("#373: a known-zero effort cell with no rate is a zero product, not an unknown", {
+  d <- mrs_zero_weekend_design()
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    tot <- quiet(fn(d))
+    expect_false(is.na(tot$estimates$estimate))
+    grp <- quiet(fn(d, by = day_type))
+    wk <- grp$estimates[grp$estimates$day_type == "weekend", ]
+    expect_equal(nrow(wk), 1L)
+    # 0, not NA: NA would say the weekend catch is unknown when it is known.
+    expect_equal(wk$estimate, 0)
+    expect_equal(wk$se, 0)
+    # The weekday cell is untouched by carrying the zero cell.
+    expect_equal(
+      grp$estimates$estimate[grp$estimates$day_type == "weekday"],
+      tot$estimates$estimate
+    )
+  }
+})
+
+test_that("#373: known_zero_effort() needs estimate 0 AND se 0; NA is never known", {
+  df <- data.frame(
+    estimate = c(0, 0, 5, NA, 0, 0),
+    se = c(0, 2, 0, 0, NA, 0)
+  )
+  expect_identical(tidycreel:::known_zero_effort(df), c(TRUE, FALSE, FALSE, FALSE, FALSE, TRUE))
+})

@@ -6119,6 +6119,27 @@ estimate_cpue_grouped <- function(
   }
 }
 
+#' Cells whose effort is a known zero
+#'
+#' A cell with estimate 0 AND standard error 0 has no effort to multiply a rate
+#' by: its product is 0 and its variance is 0 for any finite rate, so a missing
+#' rate leaves nothing unknown. An estimate of 0 with a positive SE is a
+#' different thing -- zero was observed, zero is not known -- and the rate's
+#' absence still matters there. `NA` in either is unknown, never a known zero.
+#'
+#' @param effort_df Per-cell effort estimates with `estimate` and `se`.
+#' @return Logical vector, one per row.
+#' @keywords internal
+#' @noRd
+known_zero_effort <- function(effort_df) {
+  est <- effort_df$estimate
+  se <- effort_df$se
+  if (is.null(est) || is.null(se)) {
+    return(rep(FALSE, nrow(effort_df)))
+  }
+  !is.na(est) & !is.na(se) & est == 0 & se == 0
+}
+
 #' Refuse, or explicitly exclude, effort cells that have no rate
 #'
 #' Totals are stratum-level effort x rate products. A cell with effort but no
@@ -6149,6 +6170,9 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
     return(invisible(NULL))
   }
 
+  # A cell whose effort is a known zero contributes exactly 0 whatever its rate
+  # is, so it has no unknown to report (see `known_zero_effort()`).
+  effort_df <- effort_df[!known_zero_effort(effort_df), , drop = FALSE]
   effort_keys <- unique(effort_df[, c(stratum_by_vars, "estimate"), drop = FALSE])
   rate_keys <- unique(rate_df[, stratum_by_vars, drop = FALSE])
 
@@ -6420,6 +6444,21 @@ compute_stratum_product_sum <- function(
       n = rate_df$n,
       stringsAsFactors = FALSE
     ))
+  }
+
+  # A known-zero effort cell with no rate row is a zero product, not a missing
+  # one (the check lets it through). Carry it as a zero rate so it stays in the
+  # sum and a grouped row reads 0 rather than vanishing. The degrees of freedom
+  # above were taken from the real rate table and are unaffected.
+  zero_cells <- effort_df[known_zero_effort(effort_df), stratum_by_vars, drop = FALSE]
+  if (nrow(zero_cells) > 0L) {
+    zero_cells <- dplyr::anti_join(unique(zero_cells), rate_df[stratum_by_vars], by = stratum_by_vars)
+    if (nrow(zero_cells) > 0L) {
+      zero_cells$estimate <- 0
+      zero_cells$se <- 0
+      zero_cells$n <- 0L
+      rate_df <- dplyr::bind_rows(rate_df, zero_cells)
+    }
   }
 
   # Merge per-stratum effort and rate on stratum_by_vars
