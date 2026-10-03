@@ -70,7 +70,11 @@ estimate_effort(
 - aggregate_sections:
 
   Logical. If TRUE (default), a `.lake_total` row is appended
-  aggregating across all sections. Ignored for non-sectioned designs.
+  aggregating across all sections. Its within-day SE adds the sections'
+  components in quadrature, which treats their count times as
+  independently drawn; declare otherwise with
+  `add_sections(shared_count_times = TRUE)`. Ignored for non-sectioned
+  designs.
 
 - method:
 

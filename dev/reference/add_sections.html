@@ -98,7 +98,8 @@ mislabelled data (e.g. "NRTH" instead of "NORTH").</p>
 <span>  <span class="va">section_col</span>,</span>
 <span>  description_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  area_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  shoreline_col <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  shoreline_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  shared_count_times <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -138,6 +139,22 @@ aerial survey estimation.</p></dd>
 (numeric, km). All values must be strictly positive. Stored now; used
 in v0.8.0 aerial survey estimation.</p></dd>
 
+
+<dt id="arg-shared-count-times">shared_count_times<a class="anchor" aria-label="anchor" href="#arg-shared-count-times"></a></dt>
+<dd><p>Logical. <code>FALSE</code> (default) treats the sections'
+within-day sampling errors as independent. Set <code>TRUE</code> only when the
+sections' counts were taken at the <strong>same randomly drawn count times</strong>, so
+that a <code>count_time</code> label means the same moment in every section. The lake
+total's within-day SE then adds the sections up at each occasion before
+taking the variance, which keeps the covariance between sections that rise
+and fall together through the day. Requires <code>count_time_col</code> in
+<code><a href="add_counts.html">add_counts()</a></code>. Never inferred from matching labels: one clerk driving a
+circuit counts "am" in each section at a different moment, and pairing those
+would be a modelling choice the data cannot confirm. Not supported
+together with count units finer than the section (<code>unit_cols</code> beyond the
+section), or when the section is also one of the design's strata; both
+combinations are refused. See the section below.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -152,6 +169,25 @@ populated. The input <code>design</code> is not modified.</p>
 check that every row's section value is present in
 <code>design$sections[[design$section_col]]</code>. An unrecognised value produces a
 <code>cli_abort()</code> naming the bad values and listing valid section names.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="shared-count-times-and-the-lake-total-s-within-day-se">Shared count times and the lake total's within-day SE<a class="anchor" aria-label="anchor" href="#shared-count-times-and-the-lake-total-s-within-day-se"></a></h2>
+
+
+<p>A section's within-day SE is the second-stage sampling error of the count
+times drawn within its sampled days. Two sections have independent errors when
+their times were drawn independently, and correlated errors when the same
+drawn times were used in both – both rise on a busy afternoon and fall on a
+quiet morning together. The lake total's <code>se_within</code> is a sum over sections,
+so it needs the covariance in the second case and not in the first. Which
+case holds is a fact about how the counts were scheduled, so it is declared
+with <code>shared_count_times</code> and never read off the labels.</p>
+<p>With <code>shared_count_times = TRUE</code>, the per-section rows are unchanged; only
+the <code>.lake_total</code> row's <code>se_within</code> (and so its <code>se</code>) changes. A day on which
+the sections were not counted at the same known occasions cannot be paired and
+is added as independent, with a message saying so. Sections counted a
+different number of times on a day share the unequal-count limitation noted
+in GH #405: the pooled component averages the counts per day across sections.</p>
     </div>
     <div class="section level2">
     <h2 id="how-sections-are-named-in-results">How sections are named in results<a class="anchor" aria-label="anchor" href="#how-sections-are-named-in-results"></a></h2>

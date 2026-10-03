@@ -22,7 +22,8 @@ add_sections(
   section_col,
   description_col = NULL,
   area_col = NULL,
-  shoreline_col = NULL
+  shoreline_col = NULL,
+  shared_count_times = FALSE
 )
 ```
 
@@ -61,6 +62,24 @@ add_sections(
   All values must be strictly positive. Stored now; used in v0.8.0
   aerial survey estimation.
 
+- shared_count_times:
+
+  Logical. `FALSE` (default) treats the sections' within-day sampling
+  errors as independent. Set `TRUE` only when the sections' counts were
+  taken at the **same randomly drawn count times**, so that a
+  `count_time` label means the same moment in every section. The lake
+  total's within-day SE then adds the sections up at each occasion
+  before taking the variance, which keeps the covariance between
+  sections that rise and fall together through the day. Requires
+  `count_time_col` in
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md).
+  Never inferred from matching labels: one clerk driving a circuit
+  counts "am" in each section at a different moment, and pairing those
+  would be a modelling choice the data cannot confirm. Not supported
+  together with count units finer than the section (`unit_cols` beyond
+  the section), or when the section is also one of the design's strata;
+  both combinations are refused. See the section below.
+
 ## Value
 
 A new `creel_design` object with `$sections` and `$section_col`
@@ -75,6 +94,26 @@ and
 check that every row's section value is present in
 `design$sections[[design$section_col]]`. An unrecognised value produces
 a `cli_abort()` naming the bad values and listing valid section names.
+
+## Shared count times and the lake total's within-day SE
+
+A section's within-day SE is the second-stage sampling error of the
+count times drawn within its sampled days. Two sections have independent
+errors when their times were drawn independently, and correlated errors
+when the same drawn times were used in both – both rise on a busy
+afternoon and fall on a quiet morning together. The lake total's
+`se_within` is a sum over sections, so it needs the covariance in the
+second case and not in the first. Which case holds is a fact about how
+the counts were scheduled, so it is declared with `shared_count_times`
+and never read off the labels.
+
+With `shared_count_times = TRUE`, the per-section rows are unchanged;
+only the `.lake_total` row's `se_within` (and so its `se`) changes. A
+day on which the sections were not counted at the same known occasions
+cannot be paired and is added as independent, with a message saying so.
+Sections counted a different number of times on a day share the
+unequal-count limitation noted in GH \#405: the pooled component
+averages the counts per day across sections.
 
 ## How sections are named in results
 
