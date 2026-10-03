@@ -322,12 +322,17 @@ test_that("estimate_total_catch target='period_total' propagates expanded effort
   expect_equal(expanded$effort_target, "period_total")
 })
 
-test_that("estimate_total_catch species path warns when effort strata lack rate coverage", {
+test_that("estimate_total_catch species path refuses when effort strata lack rate coverage", {
   design <- make_species_missing_rate_strata_design()
-
-  expect_warning(
+  # Effort with no rate is an unknown catch, not zero: refused by default
+  # (GH #373), and excluded only on request, with a classed warning.
+  expect_error(
     estimate_total_catch(design, by = species, target = "period_total"), # nolint: object_usage_linter
-    "no matching rate estimate"
+    class = "creel_error_missing_rate_strata"
+  )
+  expect_warning(
+    estimate_total_catch(design, by = species, target = "period_total", missing_rate = "exclude"), # nolint: object_usage_linter
+    class = "creel_warning_missing_rate_strata"
   )
 })
 
@@ -1466,12 +1471,15 @@ test_that("PROD-01-catch-missing: missing section inserts NA row with data_avail
   design <- make_3section_catch_design_missing_south() # nolint: object_usage_linter
   warns <- character(0)
   result <- withCallingHandlers(
-    estimate_total_catch(design, missing_sections = "warn"), # nolint: object_usage_linter
+    estimate_total_catch(design, missing_sections = "warn", missing_rate = "exclude"), # nolint: object_usage_linter
     warning = function(w) {
       warns <<- c(warns, conditionMessage(w))
       invokeRestart("muffleWarning")
     }
   )
+  # South has counts but no usable interviews: missing_rate's question, not
+  # missing_sections' (#373). Opting in must still warn and mark the row unknown.
+  expect_true(any(grepl("no usable interviews|no rate", warns, ignore.case = TRUE)))
   south_row <- result$estimates[result$estimates$section == "South", ]
   expect_equal(nrow(south_row), 1L)
   expect_false(south_row$data_available)
@@ -1757,21 +1765,33 @@ test_that("AIR-05: estimate_total_catch() on aerial routes through standard (non
 
 # TOTC-WARN: standard-path missing-strata warning ----
 
-test_that("estimate_total_catch warns on standard (non-species) path when effort strata lack rate coverage", {
+test_that("estimate_total_catch refuses on standard (non-species) path when effort strata lack rate coverage", {
   # Reuse species fixture: interviews only in weekdays, counts in both strata.
-  # The standard (no by=species) path must also warn — previously it was silent.
+  # The standard (no by=species) path must refuse too — it was once silent.
   design <- make_species_missing_rate_strata_design() # nolint: object_usage_linter
-  expect_warning(
+  # Effort with no rate is an unknown catch, not zero: refused by default
+  # (GH #373), and excluded only on request, with a classed warning.
+  expect_error(
     estimate_total_catch(design), # nolint: object_usage_linter
-    regexp = "no matching rate estimate"
+    class = "creel_error_missing_rate_strata"
+  )
+  expect_warning(
+    estimate_total_catch(design, missing_rate = "exclude"), # nolint: object_usage_linter
+    class = "creel_warning_missing_rate_strata"
   )
 })
 
-test_that("estimate_total_catch(by=day_type) warns on grouped standard path when effort strata lack rate coverage", {
+test_that("estimate_total_catch(by=day_type) refuses on grouped standard path when effort strata lack rate coverage", {
   design <- make_species_missing_rate_strata_design() # nolint: object_usage_linter
-  expect_warning(
+  # Effort with no rate is an unknown catch, not zero: refused by default
+  # (GH #373), and excluded only on request, with a classed warning.
+  expect_error(
     estimate_total_catch(design, by = day_type), # nolint: object_usage_linter
-    regexp = "no matching rate estimate"
+    class = "creel_error_missing_rate_strata"
+  )
+  expect_warning(
+    estimate_total_catch(design, by = day_type, missing_rate = "exclude"), # nolint: object_usage_linter
+    class = "creel_warning_missing_rate_strata"
   )
 })
 

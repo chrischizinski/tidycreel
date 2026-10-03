@@ -274,12 +274,17 @@ test_that("estimate_total_harvest species path accepts target = 'period_total'",
   expect_true("species" %in% names(result$estimates))
 })
 
-test_that("estimate_total_harvest species path warns when effort strata lack rate coverage", {
+test_that("estimate_total_harvest species path refuses when effort strata lack rate coverage", {
   design <- make_total_harvest_missing_rate_strata_design()
-
-  expect_warning(
+  # Effort with no rate is an unknown catch, not zero: refused by default
+  # (GH #373), and excluded only on request, with a classed warning.
+  expect_error(
     estimate_total_harvest(design, by = species, target = "period_total"), # nolint: object_usage_linter
-    "no matching rate estimate"
+    class = "creel_error_missing_rate_strata"
+  )
+  expect_warning(
+    estimate_total_harvest(design, by = species, target = "period_total", missing_rate = "exclude"), # nolint: object_usage_linter
+    class = "creel_warning_missing_rate_strata"
   )
 })
 
@@ -1200,12 +1205,15 @@ test_that("PROD-01-harvest-missing: missing section inserts NA row with data_ava
   design <- make_3section_harvest_design_missing_south() # nolint: object_usage_linter
   warns <- character(0)
   result <- withCallingHandlers(
-    estimate_total_harvest(design, missing_sections = "warn"), # nolint: object_usage_linter
+    estimate_total_harvest(design, missing_sections = "warn", missing_rate = "exclude"), # nolint: object_usage_linter
     warning = function(w) {
       warns <<- c(warns, conditionMessage(w))
       invokeRestart("muffleWarning")
     }
   )
+  # South has counts but no usable interviews: missing_rate's question, not
+  # missing_sections' (#373). Opting in must still warn and mark the row unknown.
+  expect_true(any(grepl("no usable interviews|no rate", warns, ignore.case = TRUE)))
   south_row <- result$estimates[result$estimates$section == "South", ]
   expect_equal(nrow(south_row), 1L)
   expect_false(south_row$data_available)
@@ -1214,19 +1222,31 @@ test_that("PROD-01-harvest-missing: missing section inserts NA row with data_ava
 
 # TOTH-WARN: standard-path missing-strata warning ----
 
-test_that("estimate_total_harvest warns on standard (non-species) path when effort strata lack rate coverage", {
+test_that("estimate_total_harvest refuses on standard (non-species) path when effort strata lack rate coverage", {
   design <- make_total_harvest_missing_rate_strata_design() # nolint: object_usage_linter
-  expect_warning(
+  # Effort with no rate is an unknown catch, not zero: refused by default
+  # (GH #373), and excluded only on request, with a classed warning.
+  expect_error(
     estimate_total_harvest(design), # nolint: object_usage_linter
-    regexp = "no matching rate estimate"
+    class = "creel_error_missing_rate_strata"
+  )
+  expect_warning(
+    estimate_total_harvest(design, missing_rate = "exclude"), # nolint: object_usage_linter
+    class = "creel_warning_missing_rate_strata"
   )
 })
 
-test_that("estimate_total_harvest(by=day_type) warns on grouped standard path when effort strata lack rate coverage", {
+test_that("estimate_total_harvest(by=day_type) refuses on grouped standard path when effort strata lack rate coverage", {
   design <- make_total_harvest_missing_rate_strata_design() # nolint: object_usage_linter
-  expect_warning(
+  # Effort with no rate is an unknown catch, not zero: refused by default
+  # (GH #373), and excluded only on request, with a classed warning.
+  expect_error(
     estimate_total_harvest(design, by = day_type), # nolint: object_usage_linter
-    regexp = "no matching rate estimate"
+    class = "creel_error_missing_rate_strata"
+  )
+  expect_warning(
+    estimate_total_harvest(design, by = day_type, missing_rate = "exclude"), # nolint: object_usage_linter
+    class = "creel_warning_missing_rate_strata"
   )
 })
 
