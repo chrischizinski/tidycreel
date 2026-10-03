@@ -77,7 +77,9 @@
   taking the variance. It is a declaration, never inferred from matching
   `count_time` labels (one clerk on a circuit counts "am" in each section at a
   different moment), and the default `FALSE` changes nothing. It needs
-  `count_time_col` in `add_counts()` and is refused without it. Only the
+  `count_time_col` in `add_counts()` and is refused without it, and is also
+  refused when the counts are keyed by units finer than the section (angler
+  type, say), which would need pooling at two levels. Only the
   `.lake_total` row moves; the section rows do not. The sectioned
   `estimate_total_*()` lake rows still assume zero covariance across sections.
 
