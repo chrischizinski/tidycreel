@@ -519,7 +519,10 @@ print.creel_estimates <- function(x, ...) {
 #' @param verbose Logical. If TRUE, prints an informational message identifying
 #'   which estimator path was used. Default FALSE for transparent dispatch.
 #' @param aggregate_sections Logical. If TRUE (default), a \code{.lake_total}
-#'   row is appended aggregating across all sections. Ignored for non-sectioned
+#'   row is appended aggregating across all sections. Its within-day SE adds
+#'   the sections' components in quadrature, which treats their count times as
+#'   independently drawn; declare otherwise with
+#'   \code{add_sections(shared_count_times = TRUE)}. Ignored for non-sectioned
 #'   designs.
 #' @param method Character string specifying how the lake-wide total SE is
 #'   computed when \code{aggregate_sections = TRUE}. \code{"correlated"}
@@ -5210,6 +5213,86 @@ get_effort_target_design <- function(design, target) {
   )
 }
 
+#' The lake total's within-day SE when the sections share their count times
+#'
+#' Internal. Sections declared with `add_sections(shared_count_times = TRUE)` were
+#' counted at the same drawn times, so their within-day errors are correlated and
+#' the quadrature sum of the per-section components understates the lake's. The
+#' full design is run through the same occasion-pooling the unit case uses
+#' (GH #373): sections are added up at each occasion, then the variance is taken
+#' of that total. The section is already part of the unit key, so it is the
+#' "extra" column that gets pooled.
+#'
+#' The raw occasions are required. A supplied sum of squares per section has lost
+#' the cross-products, and a declaration that cannot be honoured is refused
+#' rather than quietly falling back to independence.
+#'
+#' A present section whose own component is unknown carries through as NA, as it
+#' does in the independent case.
+#'
+#' @param design A sectioned `creel_design` with counts attached.
+#' @param result_df The per-section rows, with `se_within` and `data_available`.
+#' @param target Effort target (`"sampled_days"` for sectioned designs).
+#' @return Numeric scalar: the lake total's within-day SE.
+#' @keywords internal
+#' @noRd
+shared_times_lake_se_within <- function(design, result_df, target) {
+  if (is.null(design$within_day_counts)) {
+    cli::cli_abort(
+      c(
+        "{.code shared_count_times = TRUE} cannot be honoured: the counts carry no per-occasion values.",
+        "x" = "Sections can only be added up at each occasion when the raw counts are kept.",
+        "i" = "Pass {.arg count_time_col} to {.fn add_counts}, or leave \
+               {.code shared_count_times = FALSE} to treat the sections as independent."
+      ),
+      class = "creel_error_shared_times_unpooled"
+    )
+  }
+  # The pooling runs stratum by stratum. With the section among the strata each
+  # section is its own stratum, so no call ever holds two of them and the
+  # declaration would silently do nothing. It would also be a different model:
+  # strata are sampled independently, so each section would have its own sampled
+  # days rather than a day counted in both. Refused rather than ignored.
+  if (design$section_col %in% design$strata_cols) {
+    cli::cli_abort(
+      c(
+        "{.code shared_count_times = TRUE} is not supported when the section is also a stratum.",
+        "x" = "{.field {design$section_col}} is among the design strata ({.field {design$strata_cols}}).",
+        "i" = "Strata are sampled independently, so sections that are strata do not share sampled \
+               days or count times; there is no cross-section covariance to add.",
+        "i" = "Leave {.code shared_count_times = FALSE}, or register the section outside \
+               {.arg strata}."
+      ),
+      class = "creel_error_shared_times_section_strata"
+    )
+  }
+  # Units finer than the section (angler type, say) need pooling at two levels:
+  # within each section first, then across sections. The pooling below is flat,
+  # so when sections cannot be paired on a day it falls back to treating every
+  # unit as independent and drops the pairing inside each section -- a lake
+  # component below even the undeclared quadrature sum. Refused until both
+  # levels are pooled, rather than reported smaller than the default.
+  key_cols <- within_day_key_cols(design$within_day_var) # nolint: object_usage_linter
+  finer <- setdiff(key_cols, c(design$psu_col, design$strata_cols, design$section_col))
+  if (length(finer) > 0L) {
+    cli::cli_abort(
+      c(
+        "{.code shared_count_times = TRUE} is not supported with count units finer than the section.",
+        "x" = "The counts are keyed by {.field {finer}} as well as the section.",
+        "i" = "Pooling would need to add the units up within each section and then the sections \
+               up across the lake; only the second level is implemented.",
+        "i" = "Leave {.code shared_count_times = FALSE} to treat the sections as independent."
+      ),
+      class = "creel_error_shared_times_finer_units"
+    )
+  }
+  present <- result_df$data_available
+  if (anyNA(result_df$se_within[present])) {
+    return(NA_real_)
+  }
+  sqrt(compute_within_day_var_contribution(design, by_vars = NULL, target = target)) # nolint: object_usage_linter
+}
+
 #' Per-section effort estimation orchestrator (Phase 39 logic)
 #'
 #' Dispatched from estimate_effort() when design$sections is non-NULL.
@@ -5421,7 +5504,11 @@ estimate_effort_sections <- function(
     # total is unavailable rather than offering the between-day figure alone as
     # though it were complete.
     lake_se_between <- agg$se
-    lake_se_within <- sqrt(sum(result_df$se_within[result_df$data_available]^2))
+    lake_se_within <- if (isTRUE(design$shared_count_times)) {
+      shared_times_lake_se_within(design, result_df, target) # nolint: object_usage_linter
+    } else {
+      sqrt(sum(result_df$se_within[result_df$data_available]^2))
+    }
 
     # The party-size component is the third term, and it was missing here for
     # the same reason the within-day one was: `agg$se` is a survey aggregation

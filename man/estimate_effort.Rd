@@ -49,7 +49,10 @@ supported for bus-route, ice, aerial, or sectioned designs.}
 which estimator path was used. Default FALSE for transparent dispatch.}
 
 \item{aggregate_sections}{Logical. If TRUE (default), a \code{.lake_total}
-row is appended aggregating across all sections. Ignored for non-sectioned
+row is appended aggregating across all sections. Its within-day SE adds
+the sections' components in quadrature, which treats their count times as
+independently drawn; declare otherwise with
+\code{add_sections(shared_count_times = TRUE)}. Ignored for non-sectioned
 designs.}
 
 \item{method}{Character string specifying how the lake-wide total SE is
