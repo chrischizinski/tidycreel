@@ -22,7 +22,8 @@ estimate_total_catch(
   verbose = FALSE,
   ci_method = c("delta", "bootstrap"),
   product_variance = c("goodman", "first_order"),
-  ci_type = c("symmetric", "log")
+  ci_type = c("symmetric", "log"),
+  missing_rate = c("error", "exclude")
 )
 ```
 
@@ -155,6 +156,22 @@ estimate_total_catch(
   zero. `"log"` applies a log-transform so the CI stays positive:
   \\\[\hat\theta e^{-z SE/\hat\theta},\\ \hat\theta e^{z
   SE/\hat\theta}\]\\.
+
+- missing_rate:
+
+  character. What to do when a stratum (or stratum x `by` cell) has
+  effort but no rate – no interviews, or only trips the rate cannot use.
+  Its catch is unknown, not zero. `"error"` (default) stops and names
+  the cells and their share of effort. `"exclude"` reports the total
+  over the covered cells only, warns, gives a `by` group with no covered
+  cell an `NA` row, and records what it left out in `excluded_strata` on
+  the result. Not available for bus-route and ice designs, whose totals
+  have no per-stratum product (GH \#373). A cell whose effort is a known
+  zero (estimate and SE both 0) is not counted as missing: its product
+  is 0 for any rate. An ungrouped total on a sectioned design pools one
+  rate across each section's strata, so an uncovered stratum there is
+  refused under either setting; use `by` on the stratum column to get
+  the covered cells and the `"exclude"` record.
 
 ## Value
 

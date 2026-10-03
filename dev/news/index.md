@@ -56,6 +56,37 @@
 
 ### Bug fixes
 
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
+  dropped a stratum (or stratum x `by` cell) that had effort but no rate
+  (no interviews, or only trips the rate cannot use) and reported the
+  rest as the total, with a warning only
+  ([\#373](https://github.com/chrischizinski/tidycreel/issues/373)). Its
+  catch was treated as zero when it is unknown. On the package example
+  with no complete weekend trips, the ungrouped total was the weekday
+  catch alone (54% of the season’s effort left out), and `by = day_type`
+  returned no weekend row.
+
+  The totals now stop and name the cells and their share of effort. The
+  new argument `missing_rate = "exclude"` is the explicit opt-in: the
+  total covers the remaining cells, a classed warning says so, a `by`
+  group with no covered cell is an `NA` row (not a missing one), and the
+  cells left out are recorded in `$excluded_strata` on the result (one
+  row per cell, with `effort_excluded` and `excluded_from`) and named
+  when it prints. An ungrouped total on a sectioned design pools one
+  rate across each section’s strata, so an uncovered stratum there took
+  the other strata’s rate; it is now refused under either setting, and
+  the message points at the stratified `by =` total. A section that has
+  counts but no usable interviews is likewise a `missing_rate` case, not
+  a `missing_sections` one: its effort is known and its catch is not, so
+  the lake total now stops instead of reporting the other sections
+  alone. A cell whose effort is a known zero (estimate and SE both 0,
+  every sampled count zero) is not “missing a rate”: its product is 0
+  for any rate, so it neither stops the total nor turns a `by` row into
+  `NA`.
+
 - The within-day SE of an effort total that combines several count units
   on one day (long-form counts, one row per count x angler type,
   declared with `unit_cols`) was too small, with no warning
@@ -120,6 +151,13 @@
 ## tidycreel 8.0.0 “Mooneye”
 
 ### Breaking changes
+
+- The effort x rate totals now stop, instead of warning and dropping the
+  cell, when a stratum or `by` cell has effort but no rate
+  ([\#373](https://github.com/chrischizinski/tidycreel/issues/373),
+  `creel_error_missing_rate_strata`). Code that relied on the old result
+  passes `missing_rate = "exclude"`, which reproduces it and records
+  what was excluded.
 
 - An effort total that combines count units whose within-day variance
   was supplied as a sum of squares (`prep_counts_*()` output with

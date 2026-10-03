@@ -90,7 +90,8 @@ data (for effort estimation) and interview data (for HPUE estimation).</p>
 <span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span>,</span>
 <span>  ci_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"delta"</span>, <span class="st">"bootstrap"</span><span class="op">)</span>,</span>
 <span>  product_variance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"goodman"</span>, <span class="st">"first_order"</span><span class="op">)</span>,</span>
-<span>  ci_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"symmetric"</span>, <span class="st">"log"</span><span class="op">)</span></span>
+<span>  ci_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"symmetric"</span>, <span class="st">"log"</span><span class="op">)</span>,</span>
+<span>  missing_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"exclude"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -204,6 +205,23 @@ non-positive variance, the first-order value is used as a floor.</p></dd>
 <code>"symmetric"</code> (default) gives \(\hat\theta \pm z \cdot SE\)
 clamped at zero. <code>"log"</code> applies a log-transform for a
 strictly positive CI.</p></dd>
+
+
+<dt id="arg-missing-rate">missing_rate<a class="anchor" aria-label="anchor" href="#arg-missing-rate"></a></dt>
+<dd><p>character. What to do when a stratum (or stratum x
+<code>by</code> cell) has effort but no rate – no interviews, or only trips
+the rate cannot use. Its harvest is unknown, not zero.
+<code>"error"</code> (default) stops and names the cells and their share of
+effort. <code>"exclude"</code> reports the total over the covered cells only,
+warns, gives a <code>by</code> group with no covered cell an <code>NA</code> row, and
+records what it left out in <code>excluded_strata</code> on the result. Not
+available for bus-route and ice designs, whose totals have no per-stratum
+product (GH #373). A cell whose effort is a known zero (estimate and SE
+both 0) is not counted as missing: its product is 0 for any rate. An
+ungrouped total on a sectioned design pools one rate across each section's
+strata, so an uncovered stratum there is refused under either setting; use
+<code>by</code> on the stratum column to get the covered cells and the
+<code>"exclude"</code> record.</p></dd>
 
 </dl></div>
     <div class="section level2">
