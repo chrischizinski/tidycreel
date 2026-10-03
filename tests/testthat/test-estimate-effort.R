@@ -411,6 +411,34 @@ test_that("estimate_effort warns when count data has zero values", {
   )
 })
 
+test_that("the zero-value screen skips the party-size carriers but still screens the count (GH #373)", {
+  # `expansion_basis` is d(count)/d(party_size), not a count: a count of no boats
+  # has a basis of 0 by construction. Warning there invited users to "fix" a
+  # correct column. The screen must still fire for the real count beside it, or
+  # the fix would be "never warn".
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:3, day_type = "weekday")
+  raw <- cal
+  raw$angler_boats <- c(5, 0, 6, 3)
+  lookup <- data.frame(day_type = "weekday", mps = 2.5)
+  attr(lookup, "se") <- c(weekday = 0.1)
+  counts <- derive_angler_count(raw, boat_count = angler_boats, party_size = lookup) # nolint: object_usage_linter
+  expect_equal(counts$expansion_basis[2], 0)
+
+  design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- suppressWarnings(add_counts(design, counts, count_col = "angler_count")) # nolint: object_usage_linter
+  warns <- character(0)
+  withCallingHandlers(
+    invisible(estimate_effort(design)), # nolint: object_usage_linter
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  zero_warns <- grep("zero value", warns, value = TRUE)
+  expect_true(any(grepl("angler_count", zero_warns)))
+  expect_false(any(grepl("expansion_", zero_warns)))
+})
+
 test_that("estimate_effort warns when count data has negative values", {
   cal <- make_test_calendar()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter

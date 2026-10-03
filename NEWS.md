@@ -67,6 +67,13 @@
   every sampled count zero) is not "missing a rate": its product is 0 for any
   rate, so it neither stops the total nor turns a `by` row into `NA`.
 
+* The data-quality screen no longer warns that the party-size carrier columns
+  (`expansion_basis` and the other `expansion_*` columns written by
+  `derive_angler_count()`) contain zero values (#373). They are not counts: a
+  count of no boats has a basis of 0 by construction, and the warning invited a
+  user to "fix" a correct column. The screen still checks the count column
+  itself, and still reports negative values in the carriers.
+
 * The within-day SE of an effort total that combines several count units on
   one day (long-form counts, one row per count x angler type, declared with
   `unit_cols`) was too small, with no warning (#373). Asked for the unsplit

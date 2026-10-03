@@ -1208,8 +1208,11 @@ warn_tier2_issues <- function(design) {
   for (count_var in count_vars) {
     values <- counts_data[[count_var]]
 
-    # Check for zero values
-    n_zero <- sum(values == 0, na.rm = TRUE)
+    # Check for zero values. The party-size carriers are not counts: a bank-only
+    # count has an `expansion_basis` of 0 by construction, so warning there
+    # invites a user to "fix" a correct column (GH #373). They keep the negative
+    # check below, since a negative derivative is still an error.
+    n_zero <- if (count_var %in% expansion_carrier_cols()) 0L else sum(values == 0, na.rm = TRUE) # nolint: object_usage_linter
     if (n_zero > 0) {
       cli::cli_warn(c(
         "Count variable {.field {count_var}} contains {n_zero} zero value{?s}.",
