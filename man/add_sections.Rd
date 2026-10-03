@@ -45,7 +45,9 @@ taking the variance, which keeps the covariance between sections that rise
 and fall together through the day. Requires \code{count_time_col} in
 \code{\link[=add_counts]{add_counts()}}. Never inferred from matching labels: one clerk driving a
 circuit counts "am" in each section at a different moment, and pairing those
-would be a modelling choice the data cannot confirm. See the section below.}
+would be a modelling choice the data cannot confirm. Not supported
+together with count units finer than the section (\code{unit_cols} beyond the
+section); that combination is refused. See the section below.}
 }
 \value{
 A new \code{creel_design} object with \verb{$sections} and \verb{$section_col}
@@ -84,7 +86,9 @@ with \code{shared_count_times} and never read off the labels.
 With \code{shared_count_times = TRUE}, the per-section rows are unchanged; only
 the \code{.lake_total} row's \code{se_within} (and so its \code{se}) changes. A day on which
 the sections were not counted at the same known occasions cannot be paired and
-is added as independent, with a message saying so.
+is added as independent, with a message saying so. Sections counted a
+different number of times on a day share the unequal-count limitation noted
+in GH #405: the pooled component averages the counts per day across sections.
 }
 
 \section{How sections are named in results}{

@@ -5248,6 +5248,26 @@ shared_times_lake_se_within <- function(design, result_df, target) {
       class = "creel_error_shared_times_unpooled"
     )
   }
+  # Units finer than the section (angler type, say) need pooling at two levels:
+  # within each section first, then across sections. The pooling below is flat,
+  # so when sections cannot be paired on a day it falls back to treating every
+  # unit as independent and drops the pairing inside each section -- a lake
+  # component below even the undeclared quadrature sum. Refused until both
+  # levels are pooled, rather than reported smaller than the default.
+  key_cols <- within_day_key_cols(design$within_day_var) # nolint: object_usage_linter
+  finer <- setdiff(key_cols, c(design$psu_col, design$strata_cols, design$section_col))
+  if (length(finer) > 0L) {
+    cli::cli_abort(
+      c(
+        "{.code shared_count_times = TRUE} is not supported with count units finer than the section.",
+        "x" = "The counts are keyed by {.field {finer}} as well as the section.",
+        "i" = "Pooling would need to add the units up within each section and then the sections \
+               up across the lake; only the second level is implemented.",
+        "i" = "Leave {.code shared_count_times = FALSE} to treat the sections as independent."
+      ),
+      class = "creel_error_shared_times_finer_units"
+    )
+  }
   present <- result_df$data_available
   if (anyNA(result_df$se_within[present])) {
     return(NA_real_)

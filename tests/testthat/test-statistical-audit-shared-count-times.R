@@ -162,3 +162,38 @@ test_that("#403: shared_count_times must be a plain TRUE or FALSE", {
     )
   }
 })
+
+test_that("#403: units finer than the section are refused, not pooled flat", {
+  # Codex, #403: bank and boat inside each section, A counted at (9, 15) and B at
+  # (10, 16), so no day pairs across sections. The flat pooling treated all four
+  # units as independent and reported a lake component of 14.14 -- BELOW the
+  # undeclared 20.0 -- because it lost the bank/boat pairing inside each section.
+  cal <- sct_calendar()
+  cal <- cal[cal$date %in% (as.Date("2024-06-03") + 0:1), ]
+  mk <- function(sec, times, type) {
+    data.frame(
+      date = rep(cal$date, each = 2), day_type = "weekday", section = sec,
+      angler_type = type, count_time = rep(times, 2), n = rep(c(10, 20), 2)
+    )
+  }
+  cnt <- rbind(
+    mk("A", c(9, 15), "bank"), mk("A", c(9, 15), "boat"),
+    mk("B", c(10, 16), "bank"), mk("B", c(10, 16), "boat")
+  )
+  build <- function(shared) {
+    d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+    d <- add_sections(d, data.frame(section = c("A", "B")), # nolint: object_usage_linter
+      section_col = section, shared_count_times = shared # nolint: object_usage_linter
+    )
+    suppressWarnings(add_counts(d, cnt, # nolint: object_usage_linter
+      count_col = "n", count_time_col = count_time,
+      unit_cols = c("date", "day_type", "section", "angler_type")
+    ))
+  }
+  expect_error(sct_est(build(TRUE)), class = "creel_error_shared_times_finer_units")
+  # The undeclared default is untouched, and is the larger figure the declared
+  # path used to undercut.
+  res <- sct_est(build(FALSE))
+  lake <- res$estimates[res$estimates$section == ".lake_total", ]
+  expect_equal(lake$se_within, 20, tolerance = 1e-8)
+})

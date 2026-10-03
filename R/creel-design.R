@@ -2283,7 +2283,9 @@ add_counts <- function(
 #'   and fall together through the day. Requires `count_time_col` in
 #'   [add_counts()]. Never inferred from matching labels: one clerk driving a
 #'   circuit counts "am" in each section at a different moment, and pairing those
-#'   would be a modelling choice the data cannot confirm. See the section below.
+#'   would be a modelling choice the data cannot confirm. Not supported
+#'   together with count units finer than the section (`unit_cols` beyond the
+#'   section); that combination is refused. See the section below.
 #'
 #' @return A new `creel_design` object with `$sections` and `$section_col`
 #'   populated. The input `design` is not modified.
@@ -2307,7 +2309,9 @@ add_counts <- function(
 #' With `shared_count_times = TRUE`, the per-section rows are unchanged; only
 #' the `.lake_total` row's `se_within` (and so its `se`) changes. A day on which
 #' the sections were not counted at the same known occasions cannot be paired and
-#' is added as independent, with a message saying so.
+#' is added as independent, with a message saying so. Sections counted a
+#' different number of times on a day share the unequal-count limitation noted
+#' in GH #405: the pooled component averages the counts per day across sections.
 #'
 #' @section How sections are named in results:
 #' Every sectioned estimate reports its sections in a column named after
