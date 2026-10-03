@@ -10,7 +10,8 @@ add_sections(
   section_col,
   description_col = NULL,
   area_col = NULL,
-  shoreline_col = NULL
+  shoreline_col = NULL,
+  shared_count_times = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,17 @@ aerial survey estimation.}
 \item{shoreline_col}{Optional tidy selector for a shoreline length column
 (numeric, km). All values must be strictly positive. Stored now; used
 in v0.8.0 aerial survey estimation.}
+
+\item{shared_count_times}{Logical. \code{FALSE} (default) treats the sections'
+within-day sampling errors as independent. Set \code{TRUE} only when the
+sections' counts were taken at the \strong{same randomly drawn count times}, so
+that a \code{count_time} label means the same moment in every section. The lake
+total's within-day SE then adds the sections up at each occasion before
+taking the variance, which keeps the covariance between sections that rise
+and fall together through the day. Requires \code{count_time_col} in
+\code{\link[=add_counts]{add_counts()}}. Never inferred from matching labels: one clerk driving a
+circuit counts "am" in each section at a different moment, and pairing those
+would be a modelling choice the data cannot confirm. See the section below.}
 }
 \value{
 A new \code{creel_design} object with \verb{$sections} and \verb{$section_col}
@@ -56,6 +68,23 @@ After \code{add_sections()} is called, \code{\link[=add_counts]{add_counts()}} a
 check that every row's section value is present in
 \code{design$sections[[design$section_col]]}. An unrecognised value produces a
 \code{cli_abort()} naming the bad values and listing valid section names.
+}
+
+\section{Shared count times and the lake total's within-day SE}{
+
+A section's within-day SE is the second-stage sampling error of the count
+times drawn within its sampled days. Two sections have independent errors when
+their times were drawn independently, and correlated errors when the same
+drawn times were used in both -- both rise on a busy afternoon and fall on a
+quiet morning together. The lake total's \code{se_within} is a sum over sections,
+so it needs the covariance in the second case and not in the first. Which
+case holds is a fact about how the counts were scheduled, so it is declared
+with \code{shared_count_times} and never read off the labels.
+
+With \code{shared_count_times = TRUE}, the per-section rows are unchanged; only
+the \code{.lake_total} row's \code{se_within} (and so its \code{se}) changes. A day on which
+the sections were not counted at the same known occasions cannot be paired and
+is added as independent, with a message saying so.
 }
 
 \section{How sections are named in results}{

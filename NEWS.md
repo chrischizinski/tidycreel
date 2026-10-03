@@ -67,6 +67,20 @@
   every sampled count zero) is not "missing a rate": its product is 0 for any
   rate, so it neither stops the total nor turns a `by` row into `NA`.
 
+* `add_sections()` gains `shared_count_times` (#403). A sectioned effort total's
+  `.lake_total` within-day SE has always added the sections' components in
+  quadrature, which is right when each section's count times were drawn
+  independently and understates it when the same drawn times were used in every
+  section, so that the sections rise and fall together through the day. On a
+  two-section probe the lake `se_within` was 24.7 where 31.6 is correct.
+  `shared_count_times = TRUE` adds the sections up at each occasion before
+  taking the variance. It is a declaration, never inferred from matching
+  `count_time` labels (one clerk on a circuit counts "am" in each section at a
+  different moment), and the default `FALSE` changes nothing. It needs
+  `count_time_col` in `add_counts()` and is refused without it. Only the
+  `.lake_total` row moves; the section rows do not. The sectioned
+  `estimate_total_*()` lake rows still assume zero covariance across sections.
+
 * The data-quality screen no longer warns that the party-size carrier columns
   (`expansion_basis` and the other `expansion_*` columns written by
   `derive_angler_count()`) contain zero values (#373). They are not counts: a
