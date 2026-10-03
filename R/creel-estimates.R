@@ -6289,8 +6289,11 @@ check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method
     target = target
   )$estimates
   rate_df <- rate_fun(sec_design, strata_cols, variance_method, conf_level)$estimates
+  # A stratum whose effort is a known zero has a product of 0 under any pooled
+  # rate, so it is not uncovered (see `known_zero_effort()`).
   uncovered <- dplyr::anti_join(
-    unique(effort_df[strata_cols]), unique(rate_df[strata_cols]),
+    unique(effort_df[!known_zero_effort(effort_df), strata_cols, drop = FALSE]),
+    unique(rate_df[strata_cols]),
     by = strata_cols
   )
   if (nrow(uncovered) == 0L) {
@@ -6337,12 +6340,18 @@ check_section_missing_rate <- function(design, no_rate_sections, section_col,
     return(character(0))
   }
   count_sections <- unique(design$counts[[section_col]])
-  sec_effort <- vapply(count_sections, function(sec) {
+  sec_effort <- lapply(count_sections, function(sec) {
     sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
     sec_design[["sections"]] <- NULL
-    estimate_effort_total(sec_design, variance_method, conf_level, target = target)$estimates$estimate # nolint: object_usage_linter
-  }, numeric(1))
-  effort_df <- tibble::tibble(!!section_col := count_sections, estimate = unname(sec_effort))
+    estimate_effort_total(sec_design, variance_method, conf_level, target = target)$estimates # nolint: object_usage_linter
+  })
+  # `se` rides along so a section whose counts are all zero is recognised as a
+  # known-zero effort rather than an unknown one (`known_zero_effort()`).
+  effort_df <- tibble::tibble(
+    !!section_col := count_sections,
+    estimate = vapply(sec_effort, function(x) x$estimate, numeric(1)),
+    se = vapply(sec_effort, function(x) x$se, numeric(1))
+  )
   rate_df <- tibble::tibble(!!section_col := setdiff(count_sections, no_rate_sections))
   check_missing_rate_strata(design, effort_df, rate_df, section_col, context)
   no_rate_sections

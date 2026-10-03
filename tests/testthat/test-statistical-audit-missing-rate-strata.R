@@ -353,3 +353,46 @@ test_that("#373: known_zero_effort() needs estimate 0 AND se 0; NA is never know
   )
   expect_identical(tidycreel:::known_zero_effort(df), c(TRUE, FALSE, FALSE, FALSE, FALSE, TRUE))
 })
+
+test_that("#373: sectioned totals do not refuse a stratum or section whose effort is a known zero", {
+  # Copilot, #408: the sectioned checks never filtered known-zero effort, so a
+  # stratum (or whole section) with every sampled count zero and no usable
+  # interviews aborted although its product is exactly 0.
+  zero_counts <- function(d, rows) {
+    d$counts$effort_hours[rows] <- 0
+    d
+  }
+
+  # (a) ungrouped sectioned total: South's weekend counts all zero, South's
+  # weekend interviews unusable. The pooled rate leaves it a zero product.
+  d <- make_sectioned_species_design()
+  d <- zero_counts(d, d$counts$section == "South" & d$counts$day_type == "weekend")
+  d$interviews$trip_status[d$interviews$section == "South" & d$interviews$day_type == "weekend"] <- "incomplete"
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    expect_no_error(quiet(fn(d)))
+    expect_no_error(quiet(fn(d, missing_rate = "exclude")))
+  }
+
+  # (b) a whole section with all-zero counts and no complete trips: nothing is
+  # unknown, so no abort and no exclusion record; the lake total is the other
+  # section's, which is the right total.
+  d2 <- make_sectioned_species_design()
+  d2 <- zero_counts(d2, d2$counts$section == "South")
+  d2$interviews$trip_status[d2$interviews$section == "South"] <- "incomplete"
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    res <- quiet(fn(d2, use_trips = "complete"))
+    lake <- res$estimates[res$estimates$section == ".lake_total", ]
+    north <- res$estimates[res$estimates$section == "North", ]
+    expect_equal(lake$estimate, north$estimate)
+    expect_null(res$excluded_strata)
+  }
+
+  # Discriminating partner: the SAME shape with positive South effort still
+  # refuses, so the filter is the known zero and nothing broader.
+  d3 <- make_sectioned_species_design()
+  d3$interviews$trip_status[d3$interviews$section == "South"] <- "incomplete"
+  expect_error(
+    quiet(estimate_total_catch(d3, use_trips = "complete")),
+    class = "creel_error_missing_rate_strata"
+  )
+})
