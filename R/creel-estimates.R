@@ -6371,6 +6371,10 @@ check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method
   if (length(strata_cols) == 0L) {
     return(invisible(NULL))
   }
+  # This is the ungrouped sectioned total's only estimation-time pass over a
+  # section's strata (it does not go through the ungrouped helper), so it is where
+  # a thin stratum is reported (GH #417).
+  warn_thin_rate_cells(sec_design, strata_cols, context) # nolint: object_usage_linter
   effort_df <- estimate_effort_grouped( # nolint: object_usage_linter
     sec_design, strata_cols, variance_method, conf_level,
     target = target

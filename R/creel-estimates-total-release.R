@@ -623,6 +623,7 @@ estimate_total_release_ungrouped <- function(
   rpue_result <- rpue_for_stratum_product(design, strata_cols, variance_method, conf_level)
   rpue_df <- rpue_result$estimates
 
+  warn_thin_rate_cells(design, strata_cols, "estimate_total_release") # nolint: object_usage_linter
   check_missing_rate_strata(design, effort_df, rpue_df, strata_cols, "estimate_total_release") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
@@ -680,6 +681,7 @@ estimate_total_release_grouped <- function(
   rpue_result <- rpue_for_stratum_product(design, stratum_by_vars, variance_method, conf_level)
   rpue_df <- rpue_result$estimates
 
+  warn_thin_rate_cells(design, stratum_by_vars, "estimate_total_release(by=)") # nolint: object_usage_linter
   check_missing_rate_strata(design, effort_df, rpue_df, stratum_by_vars, "estimate_total_release(by=)") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
@@ -738,6 +740,10 @@ estimate_total_release_species <- function(
     variance_method = variance_method,
     conf_level = conf_level,
     estimator = design$total_estimator %||% "ratio-of-means",
+    # Off because this call estimates per stratum x `by` cell, and the rate's own floor
+    # would refuse cells the caller never asked about. The groups they did ask for
+    # go through validate_total_rate_floor() (GH #377); the cells are reported, as a
+    # warning, by warn_thin_rate_cells() (GH #417).
     validate = FALSE
   )
 
@@ -755,6 +761,7 @@ estimate_total_release_species <- function(
   }
   effort_df <- effort_result$estimates
 
+  warn_thin_rate_cells(design, stratum_by_vars, "species total release") # nolint: object_usage_linter
   check_missing_rate_strata(
     # nolint: object_usage_linter
     design = design,

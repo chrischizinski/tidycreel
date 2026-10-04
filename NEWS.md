@@ -96,6 +96,19 @@
   species and sectioned paths. Only the groups you ask for are checked: the
   stratum cells a total multiplies, and an ungrouped total, are unchanged.
 
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` now warn when a rate they multiply is built on
+  fewer than 10 trips (#417, class `creel_warning_thin_rate_cells`). A total
+  sums one product per stratum, and per stratum x `by` cell, and each rate is a
+  ratio estimate from that cell's trips alone; only the groups you asked for were
+  checked, so a total could rest on a 7-trip stratum with no signal. On the
+  package example `estimate_total_catch(d)` multiplies the weekend effort by a
+  rate from 7 complete trips, the same rate `estimate_catch_rate(d, by =
+  day_type)` refuses. It is a warning, not an error: the figure is still
+  returned, one warning per call names each thin cell and its n, and a sectioned
+  total names the section too. Whether this floor should refuse is a separate,
+  undecided question.
+
 * The data-quality screen no longer warns that the party-size carrier columns
   (`expansion_basis` and the other `expansion_*` columns written by
   `derive_angler_count()`) contain zero values (#373). They are not counts: a

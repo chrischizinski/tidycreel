@@ -668,6 +668,7 @@ estimate_total_catch_ungrouped <- function(
   )
   cpue_df <- cpue_result$estimates
 
+  warn_thin_rate_cells(design, strata_cols, "estimate_total_catch") # nolint: object_usage_linter
   check_missing_rate_strata(design, effort_df, cpue_df, strata_cols, "estimate_total_catch") # nolint: object_usage_linter
 
   # Stratified-sum product estimator: sum(E_h * CPUE_h) across strata h
@@ -743,6 +744,7 @@ estimate_total_catch_grouped <- function(
   )
   cpue_df <- cpue_result$estimates
 
+  warn_thin_rate_cells(design, stratum_by_vars, "estimate_total_catch(by=)") # nolint: object_usage_linter
   check_missing_rate_strata(design, effort_df, cpue_df, stratum_by_vars, "estimate_total_catch(by=)") # nolint: object_usage_linter
 
   # Stratified-sum within each by_vars group
@@ -807,6 +809,10 @@ estimate_total_catch_species <- function(
     variance_method = variance_method,
     conf_level = conf_level,
     estimator = design$total_estimator %||% "ratio-of-means",
+    # Off because this call estimates per stratum x `by` cell, and the rate's own floor
+    # would refuse cells the caller never asked about. The groups they did ask for
+    # go through validate_total_rate_floor() (GH #377); the cells are reported, as a
+    # warning, by warn_thin_rate_cells() (GH #417).
     validate = FALSE
   )
 
@@ -824,6 +830,7 @@ estimate_total_catch_species <- function(
   }
   effort_df <- effort_result$estimates
 
+  warn_thin_rate_cells(design, stratum_by_vars, "species total catch") # nolint: object_usage_linter
   check_missing_rate_strata(
     # nolint: object_usage_linter
     design = design,
