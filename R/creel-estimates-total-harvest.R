@@ -1071,12 +1071,22 @@ estimate_total_harvest_sections <- function(
         sec_se <- sqrt(sec_var)
         sec_n <- hpue_res$estimates$n
         z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
+        sec_ci_lower <- if (ci_type == "log" && sec_estimate > 0) {
+          sec_estimate * exp(-z_val * sec_se / sec_estimate)
+        } else {
+          pmax(0, sec_estimate - z_val * sec_se)
+        }
+        sec_ci_upper <- if (ci_type == "log" && sec_estimate > 0) {
+          sec_estimate * exp(z_val * sec_se / sec_estimate)
+        } else {
+          sec_estimate + z_val * sec_se
+        }
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
           estimate = sec_estimate,
           se = sec_se,
-          ci_lower = if (ci_type == "log" && sec_estimate > 0) sec_estimate * exp(-z_val * sec_se / sec_estimate) else pmax(0, sec_estimate - z_val * sec_se),
-          ci_upper = if (ci_type == "log" && sec_estimate > 0) sec_estimate * exp(z_val * sec_se / sec_estimate) else sec_estimate + z_val * sec_se,
+          ci_lower = sec_ci_lower,
+          ci_upper = sec_ci_upper,
           n = sec_n,
           prop_of_lake_total = NA_real_,
           se_prop_of_lake_total = NA_real_,
@@ -1203,8 +1213,16 @@ estimate_total_harvest_sections <- function(
     # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
     df_lake <- max(1L, sum(present_rows$n) - nrow(present_rows))
     t_crit <- qt(1 - (1 - conf_level) / 2, df = df_lake)
-    lake_ci_lower <- if (ci_type == "log" && lake_est > 0) lake_est * exp(-t_crit * lake_se / lake_est) else pmax(0, lake_est - t_crit * lake_se)
-    lake_ci_upper <- if (ci_type == "log" && lake_est > 0) lake_est * exp(t_crit * lake_se / lake_est) else lake_est + t_crit * lake_se
+    lake_ci_lower <- if (ci_type == "log" && lake_est > 0) {
+      lake_est * exp(-t_crit * lake_se / lake_est)
+    } else {
+      pmax(0, lake_est - t_crit * lake_se)
+    }
+    lake_ci_upper <- if (ci_type == "log" && lake_est > 0) {
+      lake_est * exp(t_crit * lake_se / lake_est)
+    } else {
+      lake_est + t_crit * lake_se
+    }
 
     lake_row <- tibble::tibble(
       !!section_col := ".lake_total",
