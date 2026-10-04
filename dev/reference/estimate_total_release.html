@@ -385,6 +385,13 @@ factor (GH #213).</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Classifying <span style="color: #00BB00;">angler_type</span>, <span style="color: #00BB00;">angler_method</span>, and <span style="color: #00BB00;">species_sought</span> in the count data</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   removes the assumption -- the total becomes `sum(E_h * rate_h)`.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #555555;">This warning is displayed once per session.</span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 rate cell in <span style="color: #0000BB;">"estimate_total_release"</span> rests on fewer than 10 trips.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   trips alone; a ratio from so few trips is unstable, and the rate functions</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   refuse a group this small.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   (GH #417).</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_rel</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
@@ -400,6 +407,13 @@ factor (GH #213).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Total releases by species</span></span></span>
 <span class="r-in"><span><span class="va">total_rel_sp</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_release</span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 rate cell in <span style="color: #0000BB;">"species total release"</span> rests on fewer than 10 trips.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   trips alone; a ratio from so few trips is unstable, and the rate functions</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   refuse a group this small.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   (GH #417).</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_rel_sp</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>

@@ -116,6 +116,27 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #>   count-derived effort is per angler.
 #> ℹ The product is correct only if every party is one angler. Pass
 #>   `add_interviews(n_anglers = <col>)` to normalise.
+#> Warning: 1 rate cell in "estimate_total_catch (section)" rests on fewer than 10 trips.
+#> • section=North: n=9
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
+#> Warning: 1 rate cell in "estimate_total_catch (section)" rests on fewer than 10 trips.
+#> • section=Central: n=9
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
+#> Warning: 1 rate cell in "estimate_total_catch (section)" rests on fewer than 10 trips.
+#> • section=South: n=9
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: product-total-catch-sections

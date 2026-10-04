@@ -266,6 +266,13 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 5 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
+#> • day_type=weekend: n=9
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.
@@ -350,6 +357,13 @@ for (i in seq_along(months)) {
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 5 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
+#> • day_type=weekend: n=9
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 #> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
 #> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.

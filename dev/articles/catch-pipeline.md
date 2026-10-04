@@ -362,6 +362,13 @@ total <- estimate_total_catch(season_design)
 #> ℹ Classifying angler_method and species_sought in the count data removes the
 #>   assumption -- the total becomes `sum(E_h * rate_h)`.
 #> This warning is displayed once per session.
+#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
+#> • day_type=weekend: n=7
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 print(total)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

@@ -491,6 +491,13 @@ catch data) using the ratio-of-means estimator.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
 <span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
 <span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
+<span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"species total catch"</span> rests on fewer than 10 trips.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
+<span><span class="co">#&gt;   trips alone; a ratio from so few trips is unstable, and the rate functions</span></span>
+<span><span class="co">#&gt;   refuse a group this small.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
+<span><span class="co">#&gt;   (GH #417).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
@@ -511,6 +518,13 @@ catch data) using the ratio-of-means estimator.</p>
 </h3>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"species total harvest"</span> rests on fewer than 10 trips.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
+<span><span class="co">#&gt;   trips alone; a ratio from so few trips is unstable, and the rate functions</span></span>
+<span><span class="co">#&gt;   refuse a group this small.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
+<span><span class="co">#&gt;   (GH #417).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total Harvest (Effort × HPUE)</span></span>
@@ -555,6 +569,13 @@ catch data) using the ratio-of-means estimator.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish   0.018<span style="text-decoration: underline;">6</span> 0.010<span style="text-decoration: underline;">4</span> -<span style="color: #BB0000;">0.001</span><span style="color: #BB0000; text-decoration: underline;">73</span>   0.038<span style="text-decoration: underline;">9</span>    17</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye   0.140  0.038<span style="text-decoration: underline;">5</span>  0.064<span style="text-decoration: underline;">0</span>    0.215     17</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_release.html">estimate_total_release</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"species total release"</span> rests on fewer than 10 trips.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
+<span><span class="co">#&gt;   trips alone; a ratio from so few trips is unstable, and the rate functions</span></span>
+<span><span class="co">#&gt;   refuse a group this small.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
+<span><span class="co">#&gt;   (GH #417).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: product-total-release</span></span>

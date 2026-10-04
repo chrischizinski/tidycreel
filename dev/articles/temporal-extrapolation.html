@@ -355,6 +355,13 @@ generate synthetic interview data:</p>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 5 interviews have zero catch.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
+<span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=9</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
+<span><span class="co">#&gt;   trips alone; a ratio from so few trips is unstable, and the rate functions</span></span>
+<span><span class="co">#&gt;   refuse a group this small.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
+<span><span class="co">#&gt;   (GH #417).</span></span>
 <span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>
@@ -434,6 +441,13 @@ pass it to <code><a href="../reference/season_summary.html">season_summary()</a>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 5 interviews have zero catch.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
+<span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=9</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
+<span><span class="co">#&gt;   trips alone; a ratio from so few trips is unstable, and the rate functions</span></span>
+<span><span class="co">#&gt;   refuse a group this small.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
+<span><span class="co">#&gt;   (GH #417).</span></span>
 <span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
 <span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>

@@ -189,6 +189,13 @@ total_catch_est <- estimate_total_catch(design)
 #> ℹ Classifying angler_method and species_sought in the count data removes the
 #>   assumption -- the total becomes `sum(E_h * rate_h)`.
 #> This warning is displayed once per session.
+#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
+#> • day_type=weekend: n=7
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 print(total_catch_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -257,6 +264,13 @@ total_harvest_est <- estimate_total_harvest(design)
 #> ℹ Classifying angler_method in the count data removes the assumption -- the
 #>   total becomes `sum(E_h * rate_h)`.
 #> This warning is displayed once per session.
+#> Warning: 1 rate cell in "estimate_total_harvest" rests on fewer than 10 trips.
+#> • day_type=weekend: n=7
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 print(total_harvest_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -487,7 +501,21 @@ hpue <- estimate_harvest_rate(complete_design)
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 total_catch <- estimate_total_catch(complete_design)
+#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
+#> • day_type=weekend: n=7
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 total_harvest <- estimate_total_harvest(complete_design)
+#> Warning: 1 rate cell in "estimate_total_harvest" rests on fewer than 10 trips.
+#> • day_type=weekend: n=7
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 
 # Print key results
 print(effort)

@@ -357,6 +357,13 @@ total_harvest <- estimate_total_harvest(design)
 #> ℹ Classifying angler_method in the count data removes the assumption -- the
 #>   total becomes `sum(E_h * rate_h)`.
 #> This warning is displayed once per session.
+#> Warning: 1 rate cell in "estimate_total_harvest" rests on fewer than 10 trips.
+#> • day_type=weekend: n=7
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
 print(total_harvest)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
