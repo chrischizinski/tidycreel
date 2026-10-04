@@ -157,10 +157,13 @@ test_that("#373: a fully covered design is unchanged and records nothing exclude
 test_that("#373: a sectioned grouped total refuses, and its record names the section", {
   # Each section is estimated on its own filtered design, so the section is not
   # a join column; the record has to add it or "weekend" names no place.
-  # 60 interviews: marking South's weekend ones incomplete must still leave the
-  # weekend 10 or more complete trips, or the shared ratio floor refuses first
-  # (GH #377) and this stops being about the missing rate.
-  d <- make_sectioned_species_design(n_interviews = 60L)
+  # Marking South's weekend trips incomplete must still leave the weekend 10 or
+  # more complete trips, or the shared ratio floor refuses first (GH #377) and
+  # this stops being about the missing rate. The fixture permutes its dates at
+  # random, so South's share of the weekend varies: 120 interviews keeps North's
+  # remainder far above 10 on any draw, and the seed makes it the same draw.
+  set.seed(373)
+  d <- make_sectioned_species_design(n_interviews = 120L)
   sel <- d$interviews$section == "South" & d$interviews$day_type == "weekend"
   d$interviews$trip_status[sel] <- "incomplete"
 
