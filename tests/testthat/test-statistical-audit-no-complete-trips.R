@@ -110,3 +110,14 @@ test_that("#410: it does not fire when there are complete trips", {
     expect_no_error(nct_quiet(nct_totals[[nm]](d)))
   }
 })
+
+test_that("#410: the filter's message names a total only when it is called for one", {
+  # A direct caller passes no `metric`; the message must not claim a total.
+  d <- nct_design()
+  err <- tryCatch(filter_interviews_use_trips(d, "complete"), error = function(e) e) # nolint: object_usage_linter
+  expect_s3_class(err, "creel_error_no_complete_trips")
+  expect_match(conditionMessage(err), "available for rate", fixed = TRUE)
+  expect_no_match(conditionMessage(err), "total")
+  err2 <- tryCatch(filter_interviews_use_trips(d, "complete", metric = "harvest"), error = function(e) e) # nolint: object_usage_linter
+  expect_match(conditionMessage(err2), "total harvest estimation", fixed = TRUE)
+})

@@ -3144,11 +3144,12 @@ filter_interviews_use_trips <- function(design, use_trips, metric = NULL, call =
   # here by name (GH #128); this is the totals' version, in the same class.
   if (!any(keep)) {
     what <- if (is.null(metric)) "rate" else paste("total", metric, "estimation") # nolint: object_usage_linter
+    built <- if (is.null(metric)) "the rate" else "the rate a total multiplies" # nolint: object_usage_linter
     cli::cli_abort(
       c(
         "No {use_trips} trips available for {what}.",
         "x" = "{.arg use_trips} = {.val {use_trips}} but this design has 0 {use_trips} trips, \\
-               so the rate a total multiplies has nothing to be built from.",
+               so {built} has nothing to be built from.",
         "i" = "Use {.code use_trips = \"all\"} to include every interview.",
         "i" = "For a roving survey pair it with {.code estimator = \"mor\"}, the mean-of-ratios \\
                estimator built for incomplete trips; {.code estimator} alone leaves the trip set at \\
