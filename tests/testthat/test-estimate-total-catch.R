@@ -113,21 +113,24 @@ make_species_missing_rate_strata_design <- function() {
     stringsAsFactors = FALSE
   )
 
+  # Twelve weekday trips, no weekend ones: a group needs >= 10 trips to clear the
+  # ratio floor the totals now share with the rates (GH #377), and the weekend
+  # stratum must stay rate-less for these tests to be about the missing rate.
   interviews <- data.frame(
-    date = as.Date(c("2024-06-01", "2024-06-01", "2024-06-02", "2024-06-02")),
-    interview_id = 1:4,
-    catch_total = c(2, 1, 3, 2),
-    hours_fished = c(2, 3, 2, 3),
-    trip_status = rep("complete", 4),
-    trip_duration = c(2, 3, 2, 3),
+    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 6)),
+    interview_id = 1:12,
+    catch_total = rep(c(2, 1, 3, 2), 3),
+    hours_fished = rep(c(2, 3, 2, 3), 3),
+    trip_status = rep("complete", 12),
+    trip_duration = rep(c(2, 3, 2, 3), 3),
     stringsAsFactors = FALSE
   )
 
   catch_df <- data.frame(
-    interview_id = 1:4,
-    species = rep("walleye", 4),
-    count = c(2, 1, 3, 2),
-    catch_type = rep("caught", 4),
+    interview_id = 1:12,
+    species = rep("walleye", 12),
+    count = rep(c(2, 1, 3, 2), 3),
+    catch_type = rep("caught", 12),
     stringsAsFactors = FALSE
   )
 

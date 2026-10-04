@@ -23,6 +23,28 @@ make_total_harvest_design <- function() {
   design
 }
 
+#' The package example with every interview duplicated, so each day type clears
+#' the n >= 10 ratio floor the totals share with the rates (GH #377). The
+#' weekend had 7 complete trips. For tests of an identity that holds at any
+#' sample size, where the size is not the point.
+make_total_harvest_design_adequate <- function() {
+  data("example_calendar", package = "tidycreel")
+  data("example_counts", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  iv <- rbind(example_interviews, transform(example_interviews, interview_id = interview_id + 1000L)) # nolint: object_usage_linter
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_counts(design, example_counts) # nolint: object_usage_linter
+  add_interviews(
+    design,
+    iv,
+    catch = catch_total, # nolint: object_usage_linter
+    harvest = catch_kept, # nolint: object_usage_linter
+    effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = trip_duration # nolint: object_usage_linter
+  )
+}
+
 #' Create test design without harvest column
 make_design_no_harvest <- function() {
   # nolint: object_length_linter
@@ -167,22 +189,25 @@ make_total_harvest_missing_rate_strata_design <- function() {
     stringsAsFactors = FALSE
   )
 
+  # Twelve weekday trips, no weekend ones: a group needs >= 10 trips to clear the
+  # ratio floor the totals now share with the rates (GH #377), and the weekend
+  # stratum must stay rate-less for these tests to be about the missing rate.
   interviews <- data.frame(
-    date = as.Date(c("2024-06-01", "2024-06-01", "2024-06-02", "2024-06-02")),
-    interview_id = 1:4,
-    catch_total = c(2, 1, 3, 2),
-    catch_kept = c(1, 1, 2, 1),
-    hours_fished = c(2, 3, 2, 3),
-    trip_status = rep("complete", 4),
-    trip_duration = c(2, 3, 2, 3),
+    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 6)),
+    interview_id = 1:12,
+    catch_total = rep(c(2, 1, 3, 2), 3),
+    catch_kept = rep(c(1, 1, 2, 1), 3),
+    hours_fished = rep(c(2, 3, 2, 3), 3),
+    trip_status = rep("complete", 12),
+    trip_duration = rep(c(2, 3, 2, 3), 3),
     stringsAsFactors = FALSE
   )
 
   catch_df <- data.frame(
-    interview_id = c(1, 2, 3, 4, 1, 2, 3, 4),
-    species = rep("walleye", 8),
-    count = c(2, 1, 3, 2, 1, 1, 2, 1),
-    catch_type = c(rep("caught", 4), rep("harvested", 4)),
+    interview_id = rep(1:12, 2),
+    species = rep("walleye", 24),
+    count = rep(c(rep(c(2, 1, 3, 2), 3), rep(c(1, 1, 2, 1), 3))),
+    catch_type = c(rep("caught", 12), rep("harvested", 12)),
     stringsAsFactors = FALSE
   )
 
@@ -365,7 +390,7 @@ test_that("estimate_total_harvest errors for invalid variance method", {
 # Reference tests ----
 
 test_that("total harvest estimate equals sum of per-stratum effort * hpue", {
-  design <- make_total_harvest_design()
+  design <- make_total_harvest_design_adequate()
 
   result <- estimate_total_harvest(design) # nolint: object_usage_linter
   by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
@@ -377,7 +402,7 @@ test_that("total harvest estimate equals sum of per-stratum effort * hpue", {
 })
 
 test_that("total harvest SE matches stratified delta method formula", {
-  design <- make_total_harvest_design()
+  design <- make_total_harvest_design_adequate()
 
   result <- estimate_total_harvest(design) # nolint: object_usage_linter
   by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
@@ -407,19 +432,22 @@ make_grouped_harvest_design <- function() {
     count = rpois(120, lambda = 15)
   )
 
-  # Create synthetic interviews with adequate samples per group (15 per group = 30 total)
-  catch <- rpois(30, lambda = 3)
+  # Create synthetic interviews with adequate samples per group. The default
+  # keeps complete trips only (GH #266) and this fixture alternates status, so a
+  # group needs 30 interviews to leave 15 complete trips: the ratio floor shared
+  # with the rates is 10 per group (GH #377). At 15 per group it left about 7.
+  catch <- rpois(60, lambda = 3)
   interviews <- data.frame(
-    date = sample(dates, 30, replace = TRUE),
+    date = sample(dates, 60, replace = TRUE),
     catch_total = catch,
-    catch_kept = pmin(rpois(30, lambda = 2), catch), # Ensure harvest <= catch
-    hours_fished = runif(30, min = 1, max = 8),
-    trip_status = rep(c("complete", "incomplete"), 15),
-    trip_duration = runif(30, min = 1, max = 8)
+    catch_kept = pmin(rpois(60, lambda = 2), catch), # Ensure harvest <= catch
+    hours_fished = runif(60, min = 1, max = 8),
+    trip_status = rep(c("complete", "incomplete"), 30),
+    trip_duration = runif(60, min = 1, max = 8)
   )
-  # Ensure at least 15 in each group
-  interviews$date[1:15] <- sample(dates[1:30], 15, replace = TRUE) # weekday
-  interviews$date[16:30] <- sample(dates[31:60], 15, replace = TRUE) # weekend
+  # Ensure 30 in each group, alternating status within each
+  interviews$date[1:30] <- sample(dates[1:30], 30, replace = TRUE) # weekday
+  interviews$date[31:60] <- sample(dates[31:60], 30, replace = TRUE) # weekend
 
   # Create design
   design <- creel_design(calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -570,7 +598,7 @@ test_that("full workflow with example data produces valid total harvest", {
 })
 
 test_that("total harvest components are consistent", {
-  design <- make_total_harvest_design()
+  design <- make_total_harvest_design_adequate()
 
   total_harvest_est <- estimate_total_harvest(design) # nolint: object_usage_linter
   by_strata <- estimate_total_harvest(design, by = day_type) # nolint: object_usage_linter
