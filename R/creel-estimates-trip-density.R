@@ -221,7 +221,8 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       collapse = " / "
     )
     cli::cli_warn(c(
-      "!" = "{nrow(singleton_strata)} stratum/strata {?has/have} only 1 interview; SE of mean trip length is undefined.",
+      "!" = "{nrow(singleton_strata)} stratum/strata {?has/have} only 1 interview; \\
+             SE of mean trip length is undefined.",
       "i" = "SE and CI will be {.val NA} for: {.val {stratum_labels}}. Point estimates are still returned."
     ))
   }
