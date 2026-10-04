@@ -148,6 +148,21 @@
   is checked. Whether this floor should refuse is a separate, undecided
   question.
 
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
+  on a design with no complete trips now stop with a classed error that
+  says so
+  ([\#410](https://github.com/chrischizinski/tidycreel/issues/410),
+  class `creel_error_no_complete_trips`). They used to fail inside the
+  survey package with an unclassed base error, “all arguments must have
+  the same length”, naming neither trips nor `use_trips`. The message
+  points at `use_trips = "all"`, and at pairing it with
+  `estimator = "mor"` for a roving survey; `estimator` alone leaves the
+  trip set at complete trips and still stops. The rate functions already
+  stopped here; they now share the error class.
+
 - The data-quality screen no longer warns that the party-size carrier
   columns (`expansion_basis` and the other `expansion_*` columns written
   by
