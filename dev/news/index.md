@@ -110,6 +110,24 @@
   sectioned `estimate_total_*()` lake rows still assume zero covariance
   across sections.
 
+- A grouped
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
+  or
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
+  now refuses a `by` group with fewer than 10 trips, as the matching
+  rate function always has
+  ([\#377](https://github.com/chrischizinski/tidycreel/issues/377)). A
+  total is effort times that rate, so it used to return a figure for the
+  very group the rate had just refused: on the package example
+  `estimate_catch_rate(d, by = day_type)` stops on the weekend (7
+  complete trips) while `estimate_total_catch(d, by = day_type)`
+  returned a weekend total with no signal. It is the same check, on the
+  same complete-trip set, with the same message, and it covers the
+  species and sectioned paths. Only the groups you ask for are checked:
+  the stratum cells a total multiplies, and an ungrouped total, are
+  unchanged.
+
 - The data-quality screen no longer warns that the party-size carrier
   columns (`expansion_basis` and the other `expansion_*` columns written
   by
