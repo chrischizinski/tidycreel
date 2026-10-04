@@ -5188,14 +5188,25 @@ refuse_unsampled_cells <- function(design, cell_cols) {
 
   cal_cells <- dplyr::distinct(calendar, dplyr::across(dplyr::all_of(unique(c(cell_cols, unit_cols)))))
   sampled_units <- dplyr::distinct(counts, dplyr::across(dplyr::all_of(unit_cols)))
+  # The calendar and the counts may type section IDs differently (1L vs "1");
+  # the `%in%` above already treats those as the same section, so the join must
+  # too, or it stops with dplyr's incompatible-type error (#421 review).
+  cal_units <- cal_cells
+  if (length(unit_cols) > 1) {
+    cal_units[[section_col]] <- as.character(cal_units[[section_col]])
+    sampled_units[[section_col]] <- as.character(sampled_units[[section_col]])
+  }
   sampled_cells <- dplyr::distinct(
-    dplyr::semi_join(cal_cells, sampled_units, by = unit_cols)[, cell_cols, drop = FALSE]
+    dplyr::semi_join(cal_units, sampled_units, by = unit_cols)[, cell_cols, drop = FALSE]
   )
-  empty <- dplyr::anti_join(
-    dplyr::count(cal_cells, dplyr::across(dplyr::all_of(cell_cols)), name = ".n_days"),
-    sampled_cells,
-    by = cell_cols
+  # Days, not (date, section) pairs: on a date x section calendar where section
+  # is not a stratum, a cell holds each date once per section.
+  n_days <- dplyr::summarise(
+    dplyr::group_by(cal_units, dplyr::across(dplyr::all_of(cell_cols))),
+    .n_days = dplyr::n_distinct(.data[[date_col]]),
+    .groups = "drop"
   )
+  empty <- dplyr::anti_join(n_days, sampled_cells, by = cell_cols)
   if (nrow(empty) == 0) {
     return(invisible(NULL))
   }
