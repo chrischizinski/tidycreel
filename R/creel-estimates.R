@@ -5149,6 +5149,77 @@ rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(
   (scale_n / k_bar) * s2_within
 }
 
+#' Refuse an expanded effort target when a calendar cell has no sampled day
+#'
+#' A cell is one combination of `cell_cols` (calendar columns). It is refused
+#' when the calendar holds at least one day in it and the counts sample none:
+#' its effort is unknown, and the expansion would otherwise report it as
+#' nothing. Sampled days are looked up in the calendar by date, so a cell is
+#' defined by the calendar's values, never the counts' copy of them.
+#'
+#' @param design A creel_design object with counts attached.
+#' @param cell_cols Character vector of calendar columns defining a cell.
+#'
+#' @return `invisible(NULL)`; aborts with class
+#'   `creel_error_unsampled_cell` when any cell is unsampled.
+#'
+#' @keywords internal
+#' @noRd
+refuse_unsampled_cells <- function(design, cell_cols) {
+  date_col <- design$date_col
+  calendar <- design$calendar
+  cal_cells <- dplyr::distinct(calendar, dplyr::across(dplyr::all_of(c(cell_cols, date_col))))
+  sampled_dates <- unique(design$counts[[date_col]])
+  sampled_cells <- dplyr::distinct(
+    cal_cells[cal_cells[[date_col]] %in% sampled_dates, cell_cols, drop = FALSE]
+  )
+  empty <- dplyr::anti_join(
+    dplyr::count(cal_cells, dplyr::across(dplyr::all_of(cell_cols)), name = ".n_days"),
+    sampled_cells,
+    by = cell_cols
+  )
+  if (nrow(empty) == 0) {
+    return(invisible(NULL))
+  }
+
+  labels <- vapply(seq_len(nrow(empty)), function(i) {
+    parts <- vapply(cell_cols, function(col) paste0(col, "=", empty[[col]][[i]]), "")
+    paste0(paste(parts, collapse = ", "), " (", empty$.n_days[[i]], " day",
+           if (empty$.n_days[[i]] == 1) "" else "s", ")")
+  }, "")
+  # The labels carry user data; a brace in a stratum name must not be read as
+  # cli markup.
+  labels <- gsub("([{}])", "\\1\\1", labels)
+  names(labels) <- rep("*", length(labels))
+  is_stratum_level <- setequal(cell_cols, design$strata_cols)
+  cli::cli_abort(
+    c(
+      "Expanded effort cannot be estimated: {nrow(empty)} calendar \\
+       {cli::qty(nrow(empty))}cell{?s} {?has/have} no sampled day.",
+      labels,
+      "x" = if (is_stratum_level) {
+        "The days in an unsampled stratum would be left out of the total, \\
+         reporting their unknown effort as zero."
+      } else {
+        "Each sampled day is expanded to stand for its whole stratum, so the \\
+         unsampled cell's days would be counted in the stratum's other \\
+         groups: those groups would be overstated and this one reported as \\
+         nothing."
+      },
+      "i" = if (is_stratum_level) {
+        "Sample at least one day in every stratum, or merge the stratum into \\
+         another before estimating."
+      } else {
+        "To expand each group separately, declare it as a stratum: \\
+         {.code strata = c({paste(cell_cols, collapse = ', ')})} in \\
+         {.fn creel_design}. Otherwise group by a coarser variable, sample a \\
+         day in every cell, or use {.code target = 'sampled_days'}."
+      }
+    ),
+    class = "creel_error_unsampled_cell"
+  )
+}
+
 #' Build a target-aware survey design for effort estimation
 #'
 #' @param design A creel_design object with counts attached.
@@ -5184,6 +5255,13 @@ get_effort_target_design <- function(design, target) {
   # days, however many rows a day happens to carry.
   psu_col <- design$psu_col
   frame_unit <- design$date_col
+
+  # A calendar stratum with no sampled day has no count rows, so the joins below
+  # never see it and the expanded total quietly omits its days: a Labor Day
+  # stratum left unsampled dropped three days from the season total with no
+  # error (GH #421). Its effort is unknown, not zero.
+  refuse_unsampled_cells(design, cell_cols = strata_cols)
+
   available_by_strata <- calendar |>
     dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, frame_unit)))) |>
     dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".N_avail")
@@ -5770,6 +5848,20 @@ estimate_effort_grouped <- function(
   # Get appropriate survey design for variance method and target
   target_design <- get_effort_target_design(design, target) # nolint: object_usage_linter
   svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
+
+  # svyby() expands each sampled day by its stratum's N_h / n_h and credits it to
+  # its own group, so a stratum x group cell holding calendar days but no sampled
+  # day gets nothing and its days are credited to the stratum's other groups. A
+  # Labor Day stratum straddling August and September, sampled only on its
+  # August days, put 285 angler-hours into August against a true 190 and none
+  # into September -- no row, no warning (GH #421). Only an expanded target
+  # claims those days; `sampled_days` does not.
+  if (!identical(target, "sampled_days")) {
+    cal_by <- setdiff(intersect(by_vars, names(design$calendar)), design$strata_cols)
+    if (length(cal_by) > 0) {
+      refuse_unsampled_cells(design, cell_cols = c(design$strata_cols, cal_by))
+    }
+  }
 
   # An unknown group has to survive svyby(), which drops NA rows silently.
   # Grouping counts whose gear was unrecorded on three days returned 662.5
