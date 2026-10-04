@@ -1642,6 +1642,81 @@ validate_total_rate_floor <- function(design, by_vars, type = "cpue") {
   invisible(NULL)
 }
 
+#' Warn that a total multiplies a rate built on fewer than 10 trips
+#'
+#' The totals estimate a rate per stratum (and per stratum x `by` cell) and sum
+#' the products, so each of those cells is a ratio estimate in its own right.
+#' The rate functions refuse a group under 10 trips; a total only checks the
+#' groups the caller asked for (`validate_total_rate_floor()`). The cells it
+#' actually multiplies were never looked at, so a total could rest on a 7-trip
+#' stratum with no signal (GH #417). They are reported here, as a warning and not
+#' an error: refusing them would stop the package's own `estimate_total_catch(d)`
+#' example, and whether the floor is a validity floor for those cells is a policy
+#' call that has not been made.
+#'
+#' Counted on the trip-filtered interviews, so it is the same number the rate was
+#' built from, on every path. A cell with no interviews at all is not listed: that
+#' is a missing rate, and `check_missing_rate_strata()` owns it.
+#'
+#' @param design A creel_design whose interviews are already trip-filtered.
+#' @param stratum_by_vars The cell-defining columns: strata, plus any `by`.
+#' @param context Label for the message, e.g. `"estimate_total_catch(by=)"`.
+#' @param floor Trips below which a cell is reported.
+#' @return Invisibly NULL; called for its warning.
+#' @keywords internal
+#' @noRd
+warn_thin_rate_cells <- function(design, stratum_by_vars, context, floor = 10L) {
+  iv <- design$interviews
+  if (length(stratum_by_vars) == 0L || is.null(iv) || !all(stratum_by_vars %in% names(iv))) {
+    return(invisible(NULL))
+  }
+  key <- group_key(iv, stratum_by_vars) # nolint: object_usage_linter
+  counts <- table(key)
+  thin <- names(counts)[counts < floor]
+  if (length(thin) == 0L) {
+    return(invisible(NULL))
+  }
+  # A sectioned total estimates each section on its own interviews, so a cell
+  # is "weekend" within one section; name it, or the label points nowhere.
+  sec_col <- design$section_col
+  sec_label <- NULL
+  if (!is.null(sec_col) && !sec_col %in% stratum_by_vars && sec_col %in% names(iv)) {
+    sec_values <- unique(as.character(iv[[sec_col]]))
+    if (length(sec_values) == 1L) {
+      sec_label <- paste0(sec_col, "=", sec_values, ", ")
+    }
+  }
+  cell_rows <- iv[match(thin, key), stratum_by_vars, drop = FALSE]
+  labels <- vapply(seq_along(thin), function(k) {
+    paste0(
+      sec_label,
+      paste(
+        paste0(stratum_by_vars, "=", group_value_labels(cell_rows[k, , drop = FALSE])), # nolint: object_usage_linter
+        collapse = ", "
+      ),
+      ": n=", as.integer(counts[thin[k]])
+    )
+  }, character(1))
+  n_cells <- length(labels) # nolint: object_usage_linter
+  shown <- utils::head(labels, 8L)
+  names(shown) <- rep("*", length(shown))
+  more <- if (n_cells > length(shown)) {
+    c("i" = paste0("... and ", n_cells - length(shown), " more."))
+  }
+  cli::cli_warn(
+    c(
+      "{n_cells} rate cell{?s} in {.val {context}} rest{?s/} on fewer than {floor} trips.",
+      shown,
+      more,
+      "i" = "The total multiplies each cell's effort by a rate built from that cell's trips alone; \
+             a ratio from so few trips is unstable, and the rate functions refuse a group this small.",
+      "i" = "Combine cells or collect more interviews. Totals warn here rather than refuse (GH #417)."
+    ),
+    class = "creel_warning_thin_rate_cells"
+  )
+  invisible(NULL)
+}
+
 #' Validate MOR estimator availability
 #'
 #' Checks that trip_status field exists and incomplete trips are available

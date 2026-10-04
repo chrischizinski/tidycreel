@@ -6371,6 +6371,16 @@ check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method
   if (length(strata_cols) == 0L) {
     return(invisible(NULL))
   }
+  # This is the ungrouped sectioned total's only estimation-time pass over a
+  # section (it does not go through the ungrouped helper), so it is where a thin
+  # rate is reported (GH #417). That total multiplies a section's whole effort by
+  # ONE rate pooled across the section's strata, so the trips that rate rests on
+  # are the section's, not each stratum's: a section with 35 weekday and 5 weekend
+  # trips uses a 40-trip rate. Counting by stratum here would call a pooled rate
+  # unstable and advise combining cells that are already pooled.
+  if (!is.null(sec_design$section_col)) {
+    warn_thin_rate_cells(sec_design, sec_design$section_col, context) # nolint: object_usage_linter
+  }
   effort_df <- estimate_effort_grouped( # nolint: object_usage_linter
     sec_design, strata_cols, variance_method, conf_level,
     target = target

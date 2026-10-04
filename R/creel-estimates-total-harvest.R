@@ -628,6 +628,7 @@ estimate_total_harvest_ungrouped <- function(
   }
   hpue_df <- hpue_result$estimates
 
+  warn_thin_rate_cells(design, strata_cols, "estimate_total_harvest") # nolint: object_usage_linter
   check_missing_rate_strata(design, effort_df, hpue_df, strata_cols, "estimate_total_harvest") # nolint: object_usage_linter
 
   # Stratified-sum product estimator: sum(E_h * HPUE_h) across strata h
@@ -697,6 +698,7 @@ estimate_total_harvest_grouped <- function(
   )
   hpue_df <- hpue_result$estimates
 
+  warn_thin_rate_cells(design, stratum_by_vars, "estimate_total_harvest(by=)") # nolint: object_usage_linter
   check_missing_rate_strata(design, effort_df, hpue_df, stratum_by_vars, "estimate_total_harvest(by=)") # nolint: object_usage_linter
 
   estimates_df <- compute_stratum_product_sum( # nolint: object_usage_linter
@@ -755,6 +757,10 @@ estimate_total_harvest_species <- function(
     variance_method = variance_method,
     conf_level = conf_level,
     estimator = design$total_estimator %||% "ratio-of-means",
+    # Off because this call estimates per stratum x `by` cell, and the rate's own floor
+    # would refuse cells the caller never asked about. The groups they did ask for
+    # go through validate_total_rate_floor() (GH #377); the cells are reported, as a
+    # warning, by warn_thin_rate_cells() (GH #417).
     validate = FALSE
   )
 
@@ -772,6 +778,7 @@ estimate_total_harvest_species <- function(
   }
   effort_df <- effort_result$estimates
 
+  warn_thin_rate_cells(design, stratum_by_vars, "species total harvest") # nolint: object_usage_linter
   check_missing_rate_strata(
     # nolint: object_usage_linter
     design = design,
