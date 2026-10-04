@@ -111,6 +111,16 @@
   trip count that is checked. Whether this floor should refuse is a separate,
   undecided question.
 
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` on a design with no complete trips now stop with a
+  classed error that says so (#410, class `creel_error_no_complete_trips`).
+  They used to fail inside the survey package with an unclassed base error,
+  "all arguments must have the same length", naming neither trips nor
+  `use_trips`. The message points at `use_trips = "all"`, and at pairing it with
+  `estimator = "mor"` for a roving survey; `estimator` alone leaves the trip set
+  at complete trips and still stops. The rate functions already stopped here; they
+  now share the error class.
+
 * The data-quality screen no longer warns that the party-size carrier columns
   (`expansion_basis` and the other `expansion_*` columns written by
   `derive_angler_count()`) contain zero values (#373). They are not counts: a

@@ -439,7 +439,7 @@ estimate_total_harvest <- function(
   # built from: with the filter after it, `use_trips = "complete"` reported a
   # rate spread, and per-level rates, drawn from the incomplete trips it had
   # just excluded.
-  design <- filter_interviews_use_trips(design, use_trips) # nolint: object_usage_linter
+  design <- filter_interviews_use_trips(design, use_trips, metric = "harvest") # nolint: object_usage_linter
 
   # Truncation is part of the MOR estimator, not a tuning knob: untruncated MOR
   # has infinite variance (Hoenig et al. 1997). Applied once, before dispatch,

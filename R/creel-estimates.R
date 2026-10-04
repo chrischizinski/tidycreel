@@ -1490,7 +1490,7 @@ estimate_catch_rate <- function(
           "x" = "use_trips='complete' but dataset has 0 complete trips",
           "i" = "Use {.code use_trips = 'incomplete'} if incomplete trips are available",
           "i" = "Or check trip_status values in interview data"
-        ))
+        ), class = "creel_error_no_complete_trips")
       }
 
       # Check sample size for complete trips
@@ -2417,7 +2417,7 @@ estimate_harvest_rate <- function(
           "No complete trips available for HPUE estimation",
           "x" = "{.arg use_trips} = 'complete' but dataset has 0 complete trips",
           "i" = "Use {.code use_trips = 'all'} to include all interviews"
-        ))
+        ), class = "creel_error_no_complete_trips")
       }
       default_tag <- if (use_trips_is_default) " [default]" else "" # nolint: object_usage_linter
       pct_complete <- round(100 * n_complete / n_total, 1) # nolint: object_usage_linter
@@ -2895,7 +2895,7 @@ estimate_release_rate <- function(
           "No complete trips available for RPUE estimation",
           "x" = "{.arg use_trips} = 'complete' but dataset has 0 complete trips",
           "i" = "Use {.code use_trips = 'all'} to include all interviews"
-        ))
+        ), class = "creel_error_no_complete_trips")
       }
       default_tag <- if (use_trips_is_default) " [default]" else "" # nolint: object_usage_linter
       pct_complete <- round(100 * n_complete / n_total, 1) # nolint: object_usage_linter
@@ -3124,7 +3124,7 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
 #'
 #' @keywords internal
 #' @noRd
-filter_interviews_use_trips <- function(design, use_trips) {
+filter_interviews_use_trips <- function(design, use_trips, metric = NULL, call = rlang::caller_env()) {
   trip_status_col <- design$trip_status_col
   if (is.null(trip_status_col) || identical(use_trips, "all")) {
     return(design)
@@ -3135,6 +3135,29 @@ filter_interviews_use_trips <- function(design, use_trips) {
   # so this is unreachable through the constructor, but a phantom interview
   # would reach svydesign() as a missing stratum and abort inside survey.
   keep <- tolower(design$interviews[[trip_status_col]]) %in% use_trips
+
+  # Asked here, before the survey is rebuilt. On a design with no complete trips
+  # the default filter keeps nothing, and rebuild_interview_survey() then hands
+  # survey::svydesign() an empty frame, which dies in a base rowSums() with "all
+  # arguments must have the same length": no condition class, no mention of
+  # trips (GH #410). The rate functions and the bus-route paths already stop
+  # here by name (GH #128); this is the totals' version, in the same class.
+  if (!any(keep)) {
+    what <- if (is.null(metric)) "rate" else paste("total", metric, "estimation")
+    cli::cli_abort(
+      c(
+        "No {use_trips} trips available for {what}.",
+        "x" = "{.arg use_trips} = {.val {use_trips}} but this design has 0 {use_trips} trips, so the rate a total multiplies has nothing to be built from.",
+        "i" = "Use {.code use_trips = \"all\"} to include every interview.",
+        "i" = "For a roving survey pair it with {.code estimator = \"mor\"}, the mean-of-ratios \\
+               estimator built for incomplete trips; {.code estimator} alone leaves the trip set at \\
+               {.val complete}.",
+        "i" = "Check the trip status values in the interview data."
+      ),
+      class = "creel_error_no_complete_trips",
+      call = call
+    )
+  }
   rebuild_interview_survey(design, design$interviews[keep, , drop = FALSE]) # nolint: object_usage_linter
 }
 
