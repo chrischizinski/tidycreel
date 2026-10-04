@@ -106,7 +106,9 @@
   rate from 7 complete trips, the same rate `estimate_catch_rate(d, by =
   day_type)` refuses. It is a warning, not an error: the figure is still
   returned, one warning per call names each thin cell and its n, and a sectioned
-  total names the section too. Whether this floor should refuse is a separate,
+  total names the section too. An ungrouped sectioned total multiplies each
+  section by one rate pooled across its strata, so there it is the section's
+  trip count that is checked. Whether this floor should refuse is a separate,
   undecided question.
 
 * The data-quality screen no longer warns that the party-size carrier columns
