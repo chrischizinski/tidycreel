@@ -53,6 +53,10 @@ mrs_type_design <- function() {
   weekend <- example_counts$date[example_counts$day_type == "weekend"]
   iv <- example_interviews[!(example_interviews$date %in% weekend &
     example_interviews$angler_type == "bank"), ]
+  # Duplicated AFTER the weekend bank rows are dropped, so that cell stays
+  # uncovered while each angler type clears the n >= 10 ratio floor the totals
+  # share with the rates (GH #377): bank had 6 trips and boat 7.
+  iv <- rbind(iv, transform(iv, interview_id = interview_id + 1000L)) # nolint: object_usage_linter
   d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
   d <- suppressWarnings(suppressMessages(add_counts(
     d, rbind(bank, boat),
@@ -153,7 +157,13 @@ test_that("#373: a fully covered design is unchanged and records nothing exclude
 test_that("#373: a sectioned grouped total refuses, and its record names the section", {
   # Each section is estimated on its own filtered design, so the section is not
   # a join column; the record has to add it or "weekend" names no place.
-  d <- make_sectioned_species_design()
+  # Marking South's weekend trips incomplete must still leave the weekend 10 or
+  # more complete trips, or the shared ratio floor refuses first (GH #377) and
+  # this stops being about the missing rate. The fixture permutes its dates at
+  # random, so South's share of the weekend varies: 120 interviews keeps North's
+  # remainder far above 10 on any draw, and the seed makes it the same draw.
+  set.seed(373)
+  d <- make_sectioned_species_design(n_interviews = 120L)
   sel <- d$interviews$section == "South" & d$interviews$day_type == "weekend"
   d$interviews$trip_status[sel] <- "incomplete"
 

@@ -1614,6 +1614,34 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
   invisible(NULL)
 }
 
+#' Apply the rate's n >= 10 per-group floor to a total that is built on that rate
+#'
+#' `estimate_total_*()` multiplies effort by a rate, and the rate functions refuse
+#' a `by` group with fewer than 10 trips. A total grouped the same way read the
+#' same rate and returned a number for the group the rate had just refused, with
+#' no signal (GH #377). This puts the total through the same validator, on the
+#' same trip-filtered interviews, with the same message.
+#'
+#' Only the groups the caller asked for are checked. The rate a total multiplies
+#' lives in finer stratum x `by` cells, and the floor is deliberately not applied
+#' there: that is a different, wider question than the rate function's own, and
+#' it is tracked separately. With no `by` there is nothing to mirror, so an
+#' ungrouped total is unchanged.
+#'
+#' @param design A creel_design whose interviews are already trip-filtered.
+#' @param by_vars Character vector of interview grouping columns, or NULL.
+#' @param type `"cpue"` or `"harvest"`, as for [validate_ratio_sample_size()].
+#' @return Invisibly NULL; called for its error or warning.
+#' @keywords internal
+#' @noRd
+validate_total_rate_floor <- function(design, by_vars, type = "cpue") {
+  if (length(by_vars) == 0L) {
+    return(invisible(NULL))
+  }
+  validate_ratio_sample_size(design, by_vars, type = type)
+  invisible(NULL)
+}
+
 #' Validate MOR estimator availability
 #'
 #' Checks that trip_status field exists and incomplete trips are available

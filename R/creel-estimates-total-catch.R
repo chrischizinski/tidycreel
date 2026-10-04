@@ -517,6 +517,7 @@ estimate_total_catch <- function(
         "x" = "Call {.fn add_catch} before using species grouping in {.fn estimate_total_catch}."
       ))
     }
+    validate_total_rate_floor(design, by_info$interview_vars, type = "cpue") # nolint: object_usage_linter
     estimates_df <- estimate_total_catch_species(
       # nolint: object_usage_linter
       design,
@@ -572,6 +573,8 @@ estimate_total_catch <- function(
 
     # Validate grouping compatibility
     validate_by_vars_in_interviews(design, by_vars) # nolint: object_usage_linter
+    # The rate this total multiplies refuses a group under 10 trips; so does the total (GH #377).
+    validate_total_rate_floor(design, by_vars, type = "cpue") # nolint: object_usage_linter
 
     return(attach_excluded_strata( # nolint: object_usage_linter
       estimate_total_catch_grouped(
@@ -977,6 +980,9 @@ estimate_total_catch_sections <- function(
   # column in by= asks for a split that has happened. Without this it reached
   # tibble::add_column() and failed on a duplicated column name.
   refuse_section_in_by(by_vars, design, error_call = rlang::caller_env()) # nolint: object_usage_linter
+
+  # Same floor as the unsectioned total, on the whole design's interviews as the rate has them (GH #377).
+  validate_total_rate_floor(design, by_vars, type = "cpue") # nolint: object_usage_linter
 
   # Species is a grouping: like the grouped path, it yields per-section rows and
   # no lake row or share. Both gates below key off this rather than `by_vars`,
