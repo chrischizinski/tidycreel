@@ -125,3 +125,70 @@ test_that("#421: a brace in a stratum name is printed, not read as cli markup", 
   expect_s3_class(err, "creel_error_unsampled_cell")
   expect_match(conditionMessage(err), "day_type={holiday} (3 days)", fixed = TRUE)
 })
+
+# A calendar may carry one row per date per section, with section as a stratum.
+# The sectioned totals estimate each section on counts filtered to it while
+# keeping the whole calendar (Codex, #421 review).
+uc_section_design <- function(cal, cnt) {
+  d <- creel_design(cal, date = date, strata = c(day_type, section)) # nolint: object_usage_linter
+  d <- add_sections(d, data.frame(section = c("A", "B")), section_col = section) # nolint: object_usage_linter
+  suppressWarnings(suppressMessages(add_counts(d, cnt, count_col = "n"))) # nolint: object_usage_linter
+}
+
+uc_section_total <- function(d, sec) {
+  sec_design <- suppressWarnings(rebuild_counts_survey(d, sec)) # nolint: object_usage_linter
+  sec_design[["sections"]] <- NULL
+  suppressWarnings(suppressMessages(
+    estimate_effort_total(sec_design, "taylor", 0.95, target = "period_total") # nolint: object_usage_linter
+  ))
+}
+
+test_that("#421: a section's estimate is not refused for another section's strata", {
+  # Sections on different dates: estimating A must not read B's calendar strata
+  # as unsampled. Before the section scoping this refused a fully sampled design.
+  d_a <- as.Date("2024-06-03") + 0:3
+  d_b <- as.Date("2024-06-10") + 0:3
+  cal <- data.frame(date = c(d_a, d_b), section = rep(c("A", "B"), each = 4), day_type = "weekday")
+  cnt <- data.frame(
+    date = c(d_a[1:2], d_b[1:2]), section = rep(c("A", "B"), each = 2),
+    day_type = "weekday", n = c(10, 12, 20, 22)
+  )
+  d <- uc_section_design(cal, cnt)
+  # 4 days available / 2 sampled, times the sampled sum.
+  expect_equal(uc_section_total(d, "A")$estimates$estimate, 4 / 2 * 22)
+  expect_equal(uc_section_total(d, "B")$estimates$estimate, 4 / 2 * 42)
+})
+
+test_that("#421: a section unsampled in a stratum is refused even when another section covered those dates", {
+  # Both sections share the dates. A is counted on weekdays and weekends, B on
+  # weekends only, so B's weekday effort is unknown. On the whole design,
+  # matching sampled units on date alone marked B's weekdays sampled because A
+  # was counted on them, so the total silently left B's weekdays out. On B's own
+  # filtered design it named A's strata as well, which B's estimate never uses.
+  days <- as.Date("2024-06-03") + 0:6 # Mon..Sun
+  dt <- ifelse(weekdays(days) %in% c("Saturday", "Sunday"), "weekend", "weekday")
+  cal <- data.frame(date = rep(days, 2), section = rep(c("A", "B"), each = 7), day_type = rep(dt, 2))
+  a_days <- days[c(1, 2, 6, 7)]
+  b_days <- days[c(6, 7)]
+  cnt <- data.frame(
+    date = c(a_days, b_days), section = c(rep("A", 4), rep("B", 2)),
+    day_type = c(dt[c(1, 2, 6, 7)], dt[c(6, 7)]), n = c(5, 6, 30, 32, 40, 44)
+  )
+  d <- uc_section_design(cal, cnt)
+  expect_no_error(uc_section_total(d, "A"))
+  err <- tryCatch(uc_section_total(d, "B"), error = function(e) e)
+  expect_s3_class(err, "creel_error_unsampled_cell")
+  expect_match(conditionMessage(err), "day_type=weekday, section=B (5 days)", fixed = TRUE)
+  expect_no_match(conditionMessage(err), "section=A", fixed = TRUE)
+
+  whole <- d
+  whole[["sections"]] <- NULL
+  err_whole <- tryCatch(
+    suppressWarnings(suppressMessages(
+      estimate_effort_total(whole, "taylor", 0.95, target = "period_total") # nolint: object_usage_linter
+    )),
+    error = function(e) e
+  )
+  expect_s3_class(err_whole, "creel_error_unsampled_cell")
+  expect_match(conditionMessage(err_whole), "day_type=weekday, section=B (5 days)", fixed = TRUE)
+})

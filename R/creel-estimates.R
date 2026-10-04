@@ -5168,10 +5168,28 @@ rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(
 refuse_unsampled_cells <- function(design, cell_cols) {
   date_col <- design$date_col
   calendar <- design$calendar
-  cal_cells <- dplyr::distinct(calendar, dplyr::across(dplyr::all_of(c(cell_cols, date_col))))
-  sampled_dates <- unique(design$counts[[date_col]])
+  counts <- design$counts
+
+  # A calendar can carry one row per date per section (section as a stratum).
+  # Then a sampling unit is a date in a section, not a date: matching on date
+  # alone would mark section B's day sampled because section A was counted on
+  # it. And the sectioned totals estimate each section on counts filtered to it
+  # while keeping the whole calendar, so the other sections' strata would read
+  # as unsampled and refuse a fully sampled design (Codex, #421 review). Only
+  # the sections the counts carry are checked here; a registered section with no
+  # counts at all is `missing_sections`' business.
+  unit_cols <- date_col
+  section_col <- design$section_col
+  if (!is.null(section_col) && section_col %in% names(calendar) &&
+        section_col %in% names(counts)) {
+    unit_cols <- c(date_col, section_col)
+    calendar <- calendar[calendar[[section_col]] %in% unique(counts[[section_col]]), , drop = FALSE]
+  }
+
+  cal_cells <- dplyr::distinct(calendar, dplyr::across(dplyr::all_of(unique(c(cell_cols, unit_cols)))))
+  sampled_units <- dplyr::distinct(counts, dplyr::across(dplyr::all_of(unit_cols)))
   sampled_cells <- dplyr::distinct(
-    cal_cells[cal_cells[[date_col]] %in% sampled_dates, cell_cols, drop = FALSE]
+    dplyr::semi_join(cal_cells, sampled_units, by = unit_cols)[, cell_cols, drop = FALSE]
   )
   empty <- dplyr::anti_join(
     dplyr::count(cal_cells, dplyr::across(dplyr::all_of(cell_cols)), name = ".n_days"),
