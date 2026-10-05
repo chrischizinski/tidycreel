@@ -19,6 +19,8 @@ wrap_survey_call <- function(expr) {
       if (grepl("has only one PSU at stage", msg, fixed = TRUE)) {
         # Extract stratum name from: "Stratum (X) has only one PSU at stage 1"
         strat <- regmatches(msg, regexpr("(?<=Stratum \\()([^)]+)", msg, perl = TRUE))
+        # A multi-column stratum key carries the \u001f separator (GH #422).
+        strat <- gsub("\u001f", " / ", strat, fixed = TRUE)
         strat_label <- if (length(strat) > 0L && nzchar(strat)) strat else "unknown" # nolint: object_usage_linter
         cli::cli_abort(
           c(
@@ -5228,12 +5230,15 @@ get_effort_target_design <- function(design, target) {
     ))
   }
 
+  # One interaction key: `~day_type + month` would be read as two-stage strata
+  # and stratify the days by day_type alone (GH #422).
+  key <- strata_design_key(expanded_counts, strata_cols) # nolint: object_usage_linter
   survey::svydesign(
     ids = stats::reformulate(design$psu_col),
-    strata = stats::reformulate(strata_cols),
+    strata = key$strata,
     weights = ~.expansion_weight,
     fpc = ~.N_avail,
-    data = expanded_counts,
+    data = key$data,
     nest = TRUE
   )
 }
