@@ -833,7 +833,8 @@ generate_schedule <- function(
   if (expand_periods) {
     if (is.null(draws$shifts)) {
       base <- expand_periods_impl(base, n_periods, period_labels, ordered_periods)
-      base$p_period <- 1
+      # Unsampled days (include_all = TRUE) were not worked: no probability.
+      base$p_period <- if ("sampled" %in% names(base)) ifelse(base$sampled, 1, NA_real_) else 1
     } else {
       base <- expand_drawn_periods(
         base, draws$shifts, sampled, all_dates, n_periods, periods_per_day,

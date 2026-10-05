@@ -139,7 +139,8 @@ test_that("#385: a pre-p_period file of whole days is read as p_period = 1, with
   tmp <- withr::local_tempfile(fileext = ".csv")
   utils::write.csv(s, tmp, row.names = FALSE)
   expect_warning(back <- read_schedule(tmp), class = "creel_warning_p_period_inferred")
-  expect_identical(unique(back$p_period), 1)
+  expect_identical(unique(back$p_period[back$sampled]), 1)
+  expect_true(all(is.na(back$p_period[!back$sampled])))
 })
 
 test_that("#385: a pre-p_period file whose days carry different shifts is refused", {
@@ -150,4 +151,37 @@ test_that("#385: a pre-p_period file whose days carry different shifts is refuse
   tmp <- withr::local_tempfile(fileext = ".csv")
   utils::write.csv(s, tmp, row.names = FALSE)
   expect_error(read_schedule(tmp), "differ between days", class = "creel_error_schema_validation")
+})
+
+test_that("#385: with every period worked, unsampled days still carry no probability", {
+  # An unsampled day was not worked; p_period = 1 there would read as a period
+  # worked with certainty (review finding, 2026-10-05).
+  s <- ss_sched(include_all = TRUE)
+  expect_true(all(is.na(s$p_period[!s$sampled])))
+  expect_identical(unique(s$p_period[s$sampled]), 1)
+  # The same for a pre-p_period file read back.
+  x <- as.data.frame(s)
+  x$p_period <- NULL
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(x, tmp, row.names = FALSE)
+  back <- suppressWarnings(read_schedule(tmp))
+  expect_identical(back$p_period, s$p_period)
+})
+
+test_that("#385: a schedule file with unreadable or midnight-crossing shift times is refused on read", {
+  # The shift length will be derived from these times, so a bad one is
+  # refused where it enters, not where it is used.
+  s <- as.data.frame(ss_sched(periods_per_day = 1, periods = ss_shifts()))
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  for (case in list(c("06:00", "25:00"), c("6am", "13:00"), c("19:30", "00:30"))) {
+    x <- s
+    x$shift_start[1] <- case[1]
+    x$shift_end[1] <- case[2]
+    utils::write.csv(x, tmp, row.names = FALSE)
+    expect_error(read_schedule(tmp), "shift|Shift", class = "creel_error_schema_validation")
+  }
+  x <- s
+  x$shift_end <- NULL
+  utils::write.csv(x, tmp, row.names = FALSE)
+  expect_error(read_schedule(tmp), "together", class = "creel_error_schema_validation")
 })

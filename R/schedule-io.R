@@ -262,7 +262,7 @@ infer_census_p_period <- function(df, path, call = rlang::caller_env()) {
       call = call
     )
   }
-  df$p_period <- ifelse(is.na(df$period_id), NA_real_, 1)
+  df$p_period <- ifelse(worked, 1, NA_real_)
   cli::cli_warn(
     c(
       "{.path {basename(path)}} has periods but no {.col p_period} column; set {.code p_period = 1}.",
