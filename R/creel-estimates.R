@@ -6500,13 +6500,16 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
 
 #' Refuse an ungrouped sectioned total whose section has an uncovered stratum
 #'
-#' The ungrouped sectioned totals multiply each section's effort by one rate
-#' pooled across that section's strata, so they never form per-stratum cells
-#' and never reach `check_missing_rate_strata()` on their own. A stratum with
-#' effort and no usable interviews then silently takes the other strata's rate
-#' (GH #373). Checked here per section: refused by default like every other
-#' total, and refused under `missing_rate = "exclude"` too, because a pooled rate
-#' leaves no stratum that could be excluded -- the stratified `by =` total can.
+#' Written when the ungrouped sectioned totals multiplied each section's effort
+#' by one rate pooled across its strata, so they formed no per-stratum cells and
+#' a stratum with effort and no usable interviews silently took the other
+#' strata's rate (GH #373). Checked here per section: refused by default like
+#' every other total, and refused under `missing_rate = "exclude"` too, because a
+#' pooled rate left no stratum that could be excluded.
+#'
+#' Those totals are now the stratified sum (GH #409), which forms the cells, so
+#' exclusion would be possible; the refusal under "exclude" is kept as the
+#' stricter behaviour until that is decided rather than relaxed in passing.
 #'
 #' @param sec_design The per-section design.
 #' @param rate_fun Function(design, by_vars, variance_method, conf_level)
@@ -6522,16 +6525,11 @@ check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method
   if (length(strata_cols) == 0L) {
     return(invisible(NULL))
   }
-  # This is the ungrouped sectioned total's only estimation-time pass over a
-  # section (it does not go through the ungrouped helper), so it is where a thin
-  # rate is reported (GH #417). That total multiplies a section's whole effort by
-  # ONE rate pooled across the section's strata, so the trips that rate rests on
-  # are the section's, not each stratum's: a section with 35 weekday and 5 weekend
-  # trips uses a 40-trip rate. Counting by stratum here would call a pooled rate
-  # unstable and advise combining cells that are already pooled.
-  if (!is.null(sec_design$section_col)) {
-    warn_thin_rate_cells(sec_design, sec_design$section_col, context) # nolint: object_usage_linter
-  }
+  # No thin-rate warning here any more. The ungrouped sectioned total used to
+  # multiply a section's whole effort by one pooled rate, so this pass counted the
+  # section's trips (GH #417). It is now the stratified sum (GH #409), which goes
+  # through the ungrouped helper and warns for each section x stratum cell; a
+  # pooled count here would report a rate the total no longer uses.
   effort_df <- estimate_effort_grouped( # nolint: object_usage_linter
     sec_design, strata_cols, variance_method, conf_level,
     target = target
@@ -6786,6 +6784,14 @@ compute_stratum_product_sum <- function(
       rate = merged[[r_col]],
       expansion_se = expansion_se[merged$.expansion_key],
       structure = expansion_structure,
+      decomposition = expansion_decomposition[merged$.expansion_key]
+    )
+    # The same per-group decomposition on the product scale: each stratum's
+    # party-size groups weighted by that stratum's own rate. A sectioned lake
+    # total needs it to combine sections that share groups (GH #409), and a
+    # stratified sum has no single rate to scale by afterwards.
+    attr(out, "expansion_decomposition") <- combine_section_decompositions( # nolint: object_usage_linter
+      rate = merged[[r_col]],
       decomposition = expansion_decomposition[merged$.expansion_key]
     )
     out

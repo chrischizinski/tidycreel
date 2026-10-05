@@ -211,6 +211,9 @@ test_that("PROPSE-10: the shares and every other column are unchanged", {
     tolerance = 1e-12
   )
   # Pinned across #144/#145/#150/#238; the same fixture, the same numbers.
+  # #409 made the sectioned total the stratified sum: the estimates happen not
+  # to move on this fixture, the SEs do (32.54820 / 18.07388 / 37.62030 under
+  # the pooled rate), because each stratum's rate now carries its own variance.
   expect_equal(
     e$estimate,
     c(98.4375, 92.8125, 191.25),
@@ -218,7 +221,7 @@ test_that("PROPSE-10: the shares and every other column are unchanged", {
   )
   expect_equal(
     e$se,
-    c(32.54820, 18.07388, 37.62030),
+    c(35.083757, 18.412653, 39.989145),
     tolerance = 1e-5
   )
 })
