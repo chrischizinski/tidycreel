@@ -687,7 +687,7 @@ estimate_total_catch_ungrouped <- function(
     expansion_decomposition = named_expansion_decomposition(effort_result, strata_cols) # nolint: object_usage_linter
   )
 
-  new_creel_estimates( # nolint: object_usage_linter
+  result <- new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-catch",
     variance_method = variance_method,
@@ -706,6 +706,9 @@ estimate_total_catch_ungrouped <- function(
       list(attr(estimates_df, "expansion_decomposition"))
     }
   )
+  # The interval's degrees of freedom, for a lake row summed from sections (GH #409).
+  attr(result, "ci_df") <- attr(estimates_df, "ci_df")
+  result
 }
 
 #' Grouped total catch estimation (stratified-sum product estimator)
@@ -1018,6 +1021,8 @@ estimate_total_catch_sections <- function(
   names(sec_expansion_se) <- registered_sections
   sec_decomposition <- vector("list", length(registered_sections))
   names(sec_decomposition) <- registered_sections
+  sec_ci_df <- vector("list", length(registered_sections))
+  names(sec_ci_df) <- registered_sections
   # Components for the branches whose sections contribute several rows -- one
   # vector per section rather than one scalar, because a grouped or species
   # result carries a component per row of its own.
@@ -1119,6 +1124,7 @@ estimate_total_catch_sections <- function(
         sec_rate[[sec]] <- 1
         sec_expansion_se[[sec]] <- sec_result$se_expansion
         sec_decomposition[[sec]] <- sec_result$expansion_decomposition
+        sec_ci_df[[sec]] <- attr(sec_result, "ci_df")
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
           estimate = sec_row$estimate,
@@ -1248,8 +1254,17 @@ estimate_total_catch_sections <- function(
       )
     }
 
-    # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
-    df_lake <- max(1L, sum(present_rows$n) - nrow(present_rows))
+    # CI for the lake total: the sum of the sections' own degrees of freedom,
+    # i.e. total interviews minus every section x stratum rate cell -- the rule
+    # compute_stratum_product_sum() applies within a section. `sum(n) -
+    # n_sections` matched it only while each section had one pooled rate
+    # (Codex, #409 review).
+    lake_df_parts <- unlist(sec_ci_df[present], use.names = FALSE)
+    df_lake <- if (length(lake_df_parts) == length(present)) {
+      max(1L, sum(lake_df_parts))
+    } else {
+      max(1L, sum(present_rows$n) - nrow(present_rows))
+    }
     t_crit <- qt(1 - (1 - conf_level) / 2, df = df_lake)
     lake_ci_lower <- if (ci_type == "log" && lake_est > 0) {
       lake_est * exp(-t_crit * lake_se / lake_est)

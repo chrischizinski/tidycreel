@@ -51,3 +51,36 @@ test_that("#409: the fixture's interview mix differs from its effort mix, so the
   }, numeric(1))
   expect_true(any(gap > 0.05))
 })
+
+test_that("#409: with one section present, the lake interval equals the section's", {
+  # Codex, #409 review: the section interval now takes its degrees of freedom
+  # from the stratified sum (interviews minus rate cells) while the lake row
+  # kept `sum(n) - n_sections`, so one section's identical estimate and SE got
+  # a narrower lake interval. The lake now sums the sections' own df.
+  set.seed(409)
+  d <- make_sectioned_species_design(n_interviews = 36L) # nolint: object_usage_linter
+  d$counts <- d$counts[d$counts$section == "North", ]
+  for (nm in names(ssum_totals)) {
+    e <- ssum_quiet(ssum_totals[[nm]](d, missing_sections = "warn"))$estimates
+    north <- e[e$section == "North", ]
+    lake <- e[e$section == ".lake_total", ]
+    expect_equal(lake$estimate, north$estimate, info = nm)
+    expect_equal(lake$ci_lower, north$ci_lower, tolerance = 1e-10, info = nm)
+    expect_equal(lake$ci_upper, north$ci_upper, tolerance = 1e-10, info = nm)
+  }
+})
+
+test_that("#409: the exclude refusal no longer describes a pooled rate", {
+  # The message said the total "pools one rate across each section's strata",
+  # which stopped being true with the stratified sum (#409 review).
+  set.seed(409)
+  d <- make_sectioned_species_design(n_interviews = 36L) # nolint: object_usage_linter
+  d$interviews$trip_status[d$interviews$section == "South" & d$interviews$day_type == "weekend"] <- "incomplete"
+  err <- tryCatch(
+    ssum_quiet(estimate_total_catch(d, use_trips = "complete", missing_rate = "exclude")),
+    error = function(e) e
+  )
+  expect_s3_class(err, "creel_error_missing_rate_strata")
+  expect_no_match(conditionMessage(err), "pools one rate", fixed = TRUE)
+  expect_match(conditionMessage(err), "not yet supported", fixed = TRUE)
+})

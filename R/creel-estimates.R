@@ -6554,8 +6554,8 @@ check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method
       c(
         "{.code missing_rate = \"exclude\"} cannot exclude a stratum from an ungrouped sectioned total.",
         "x" = "Section {.val {section}} has effort and no usable interviews for: {cells}.",
-        "x" = "This total pools one rate across each section's strata, so the stratum \\
-               would take the other strata's rate rather than be left out.",
+        "x" = "Excluding a stratum is not yet supported on the ungrouped sectioned \\
+               total, so it is refused rather than report the section without it.",
         "i" = "Use {.code by = {strata_cols[1]}} for a stratified total that can \\
                exclude it."
       ),
@@ -6794,6 +6794,9 @@ compute_stratum_product_sum <- function(
       rate = merged[[r_col]],
       decomposition = expansion_decomposition[merged$.expansion_key]
     )
+    # The t degrees of freedom the interval used, so a total built from several
+    # of these (the sectioned lake row) can use the matching rule (GH #409).
+    attr(out, "ci_df") <- df_ci
     out
   } else {
     # Sum strata within each interview_by_vars group; compute per-group df (#94)
