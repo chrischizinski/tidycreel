@@ -45,6 +45,30 @@
   (28 hours a day) are caught. It is a warning, not an error, because unequal
   shifts drawn unevenly can pass 24 by chance.
 
+* `attach_count_times()` draws new count windows for each sampled day (#385).
+  Pass `n_windows`, `window_size` and `min_gap` (and optionally `strategy`
+  and `seed`) instead of a template, and every day gets its own windows,
+  inside that day's shift when the schedule has shift times. Instantaneous
+  count effort assumes the count times are random on each sampled day; the
+  same clock times every day sample a time-of-day pattern the same way and it
+  never averages out. One call replaces splitting the schedule by shift,
+  attaching windows to each piece and `rbind()`-ing them back.
+
+  `strategy = "systematic"` draws a fresh random start each day (Pollock et
+  al. 1994). `strategy = "fixed"` takes clock times from `fixed_windows`,
+  which carries `period_id` when the schedule has shifts. Passing a
+  `count_times` template still copies the same windows to every day, for
+  fixed-time protocols; with shifts, a template window outside a day's shift
+  is now an error. A schedule that draws shifts but has no shift times is an
+  error at attach time.
+
+* `generate_count_times(strategy = "random")` now keeps `min_gap` between
+  windows (#385). The start of each window could fall anywhere in its
+  stratum, so neighbouring windows could be a minute apart even with
+  `min_gap = 60` (on 294 of 500 seeds tested). Random windows for a given seed
+  change. A window that exactly fills its stratum (`window_size` equal to the
+  stratum length, `min_gap = 0`) no longer stops with an internal error.
+
 * `add_counts()` reads `p_period` from a shift schedule (#385). When the
   design calendar is a schedule from `generate_schedule()` or
   `read_schedule()` that draws shifts, each counted day's probability is taken

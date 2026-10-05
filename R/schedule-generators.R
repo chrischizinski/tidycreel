@@ -1083,58 +1083,78 @@ generate_count_times <- function(
   window_size <- as.integer(window_size)
   min_gap <- as.integer(min_gap)
 
-  total_min <- end_min - start_min
-
-  # Validate even divisibility
-  if (total_min %% n_windows != 0L) {
-    cli::cli_abort(c(
-      "Span must divide evenly by n_windows.",
-      "x" = "{total_min} min / {n_windows} = {total_min / n_windows} -- must be a whole number.",
-      "i" = "Adjust n_windows or start/end time so the span divides evenly."
-    ))
-  }
-
-  k <- total_min %/% n_windows
-
-  # Validate window fits in stratum
-  if (window_size + min_gap > k) {
-    cli::cli_abort(c(
-      "window_size + min_gap exceeds stratum length.",
-      "x" = "Stratum is {k} min, but window_size + min_gap = {window_size + min_gap} min.",
-      "i" = "Reduce n_windows, window_size, or min_gap."
-    ))
-  }
-
-  # Generate windows
+  check_window_spacing(start_min, end_min, n_windows, window_size, min_gap)
   t_starts <- withr::with_seed(seed, {
-    if (strategy == "random") {
-      vapply(
-        seq_len(n_windows) - 1L,
-        function(i) {
-          stratum_start <- start_min + i * k
-          sample(stratum_start:(stratum_start + k - window_size), 1L)
-        },
-        integer(1)
-      )
-    } else {
-      # systematic
-      t1 <- sample(start_min:(start_min + k - window_size), 1L)
-      t1 + (seq_len(n_windows) - 1L) * k
-    }
+    draw_window_starts(start_min, end_min, strategy, n_windows, window_size, min_gap)
   })
-
-  t_ends <- t_starts + window_size
-
-  # Defensive check: all windows within bounds
-  stopifnot(all(t_starts >= start_min), all(t_ends <= end_min))
 
   result <- data.frame(
     start_time = format_min_to_hhmm(t_starts),
-    end_time = format_min_to_hhmm(t_ends),
+    end_time = format_min_to_hhmm(t_starts + window_size),
     window_id = seq_len(n_windows),
     stringsAsFactors = FALSE
   )
   new_creel_schedule(result)
+}
+
+#' Check that n_windows count windows fit a span
+#'
+#' The span is split into `n_windows` equal strata of `k` minutes, and each
+#' must hold a window plus the gap to the next.
+#'
+#' @return `k`, the stratum length in minutes, invisibly.
+#' @noRd
+check_window_spacing <- function(start_min, end_min, n_windows, window_size, min_gap,
+                                 where = NULL, call = rlang::caller_env()) {
+  total_min <- end_min - start_min
+  if (total_min %% n_windows != 0L) {
+    cli::cli_abort(c(
+      "Span must divide evenly by n_windows{where}.",
+      "x" = "{total_min} min / {n_windows} = {total_min / n_windows} -- must be a whole number.",
+      "i" = "Adjust n_windows or start/end time so the span divides evenly."
+    ), call = call)
+  }
+  k <- total_min %/% n_windows
+  if (window_size + min_gap > k) {
+    cli::cli_abort(c(
+      "window_size + min_gap exceeds stratum length{where}.",
+      "x" = "Stratum is {k} min, but window_size + min_gap = {window_size + min_gap} min.",
+      "i" = "Reduce n_windows, window_size, or min_gap."
+    ), call = call)
+  }
+  invisible(k)
+}
+
+#' Draw count-window start times within a span
+#'
+#' Uses the current RNG state; callers seed it. Assumes
+#' check_window_spacing() has passed.
+#'
+#' Random: one window per stratum, its start uniform over the positions that
+#' leave `min_gap` before the next stratum begins, so consecutive windows are
+#' always at least `min_gap` apart (before #385 the start ranged to the end of
+#' the stratum, and neighbouring windows could almost touch). Systematic: one
+#' random start in the first stratum, then every `k` minutes; the gap is
+#' `k - window_size >= min_gap` by construction.
+#'
+#' @return Integer start times, minutes since midnight.
+#' @noRd
+draw_window_starts <- function(start_min, end_min, strategy, n_windows, window_size, min_gap) {
+  k <- (end_min - start_min) %/% n_windows
+  if (strategy == "random") {
+    vapply(
+      seq_len(n_windows) - 1L,
+      function(i) {
+        stratum_start <- start_min + i * k
+        last <- stratum_start + k - window_size - if (i < n_windows - 1L) min_gap else 0L
+        stratum_start + sample.int(last - stratum_start + 1L, 1L) - 1L
+      },
+      integer(1)
+    )
+  } else {
+    t1 <- start_min + sample.int(k - window_size + 1L, 1L) - 1L
+    as.integer(t1 + (seq_len(n_windows) - 1L) * k)
+  }
 }
 
 #' Schedule progressive count circuit start times
@@ -1411,21 +1431,63 @@ generate_bus_schedule <- function(
 
 #' Attach count time windows to a daily sampling schedule
 #'
-#' Cross-joins a daily schedule produced by [generate_schedule()] with a
-#' count-time template produced by [generate_count_times()], returning a
-#' `creel_schedule` with one row per (date x period x count_window).
+#' Gives each sampled day (and each worked shift) its count windows. Two ways:
 #'
-#' @param schedule A `creel_schedule` from [generate_schedule()]. Must have a
-#'   `date` column.
-#' @param count_times A `creel_schedule` from [generate_count_times()]. Must
-#'   have `start_time`, `end_time`, and `window_id` columns.
+#' - **Draw new windows for each day** (pass `n_windows`, `window_size`,
+#'   `min_gap`): every day gets its own random placement, inside that day's
+#'   shift when the schedule carries shift times (from
+#'   [generate_schedule()]`(periods = )`), otherwise inside `start_time` --
+#'   `end_time`. Instantaneous-count effort assumes the count times are random
+#'   on *each* sampled day; the same clock times every day sample any
+#'   time-of-day pattern in pressure the same way, which never averages out
+#'   and understates the within-day variance (#385).
+#' - **Copy one template to every day** (pass `count_times` from
+#'   [generate_count_times()]): the same windows on every day, for fixed-time
+#'   protocols. With shift times in the schedule, every window must fall inside
+#'   each day's shift.
 #'
-#' @return A `creel_schedule` data frame with all columns from `schedule` plus
-#'   `start_time`, `end_time`, and `window_id` from `count_times`.
-#'   Row count equals `nrow(schedule) * nrow(count_times)`.
+#' @param schedule A `creel_schedule` from [generate_schedule()] or
+#'   [read_schedule()]. Must have a `date` column.
+#' @param count_times Optional `creel_schedule` from [generate_count_times()]
+#'   with `start_time`, `end_time` and `window_id`, copied to every row. Give
+#'   this or the drawing arguments, not both.
+#' @param n_windows,window_size,min_gap Number of windows per day (or shift),
+#'   window length and minimum gap between windows, in minutes. Required to
+#'   draw windows. The span (shift or `start_time`--`end_time`) must divide
+#'   evenly by `n_windows`, and each of the equal strata must hold
+#'   `window_size + min_gap`.
+#' @param strategy `"random"` (default; one window at a random position in
+#'   each stratum), `"systematic"` (a random start in the first stratum, then
+#'   every stratum length; a fresh start each day, as in Pollock et al. 1994),
+#'   or `"fixed"` (the clock times in `fixed_windows`).
+#' @param fixed_windows For `strategy = "fixed"`: a data frame of `start_time`
+#'   and `end_time` (`"HH:MM"`). With shift times in the schedule it must also
+#'   carry `period_id`, giving each shift its own windows, and every window
+#'   must fall inside its shift.
+#' @param start_time,end_time The day's counting span (`"HH:MM"`), used to
+#'   draw windows when the schedule has no shift times. Not allowed when it
+#'   does: the shift is the span.
+#' @param seed Optional integer seed. The same seed gives the same windows.
+#'
+#' @return A `creel_schedule` with all columns from `schedule` plus
+#'   `start_time`, `end_time` and `window_id`, one row per (schedule row x
+#'   count window). Unsampled rows of a schedule made with `include_all = TRUE`
+#'   keep one row with missing windows when windows are drawn.
 #'
 #' @examples
+#' # Per-day windows inside each day's drawn shift
 #' sched <- generate_schedule(
+#'   start_date = "2024-06-01", end_date = "2024-06-07",
+#'   n_periods = 2, sampling_rate = 0.5, seed = 1,
+#'   periods_per_day = 1,
+#'   periods = data.frame(
+#'     period_id = 1:2, start_time = c("06:00", "13:00"), end_time = c("13:00", "20:00")
+#'   )
+#' )
+#' attach_count_times(sched, n_windows = 2, window_size = 30, min_gap = 60, seed = 1)
+#'
+#' # The same template on every day (a fixed-time protocol)
+#' sched2 <- generate_schedule(
 #'   start_date = "2024-06-01", end_date = "2024-06-07",
 #'   n_periods = 2, sampling_rate = 0.5, seed = 1
 #' )
@@ -1434,11 +1496,22 @@ generate_bus_schedule <- function(
 #'   strategy = "systematic", n_windows = 3,
 #'   window_size = 30, min_gap = 10, seed = 1
 #' )
-#' attach_count_times(sched, ct)
+#' attach_count_times(sched2, ct)
 #'
 #' @family "Scheduling"
 #' @export
-attach_count_times <- function(schedule, count_times) {
+attach_count_times <- function(
+  schedule,
+  count_times = NULL,
+  n_windows = NULL,
+  window_size = NULL,
+  min_gap = NULL,
+  strategy = c("random", "systematic", "fixed"),
+  fixed_windows = NULL,
+  start_time = NULL,
+  end_time = NULL,
+  seed = NULL
+) {
   # Validate schedule
   if (!is.data.frame(schedule) || !"date" %in% names(schedule)) {
     cli::cli_abort(c(
@@ -1446,7 +1519,147 @@ attach_count_times <- function(schedule, count_times) {
       "i" = "Use {.fn generate_schedule} to produce a valid schedule."
     ))
   }
-  # Validate count_times
+  if (any(c("window_id", "start_time", "end_time") %in% names(schedule))) {
+    cli::cli_abort(c(
+      "{.arg schedule} already has count windows.",
+      "i" = "Attach count times to the schedule from {.fn generate_schedule}, once."
+    ))
+  }
+  strategy <- match.arg(strategy)
+  drawing <- !is.null(n_windows) || !is.null(window_size) || !is.null(min_gap) ||
+    !is.null(fixed_windows) || !is.null(start_time) || !is.null(end_time)
+  has_shift_times <- all(c("shift_start", "shift_end") %in% names(schedule))
+
+  if (!is.null(count_times)) {
+    if (drawing) {
+      cli::cli_abort(c(
+        "Give {.arg count_times} or the arguments to draw windows, not both.",
+        "i" = "{.arg count_times} copies one template to every day; {.arg n_windows} etc. \\
+               draw new windows for each day."
+      ))
+    }
+    return(attach_count_template(schedule, count_times, has_shift_times))
+  }
+  if (!drawing) {
+    cli::cli_abort(c(
+      "Nothing to attach.",
+      "i" = "Draw windows for each day with {.arg n_windows}, {.arg window_size} and {.arg min_gap}, \\
+             or copy one template with {.arg count_times}."
+    ))
+  }
+
+  samples_shifts <- "p_period" %in% names(schedule) && any(schedule$p_period < 1, na.rm = TRUE)
+  if (!has_shift_times) {
+    if (samples_shifts) {
+      cli::cli_abort(c(
+        "The schedule draws shifts but has no shift times.",
+        "x" = "Count windows must fall inside each day's shift, and the schedule does not say \\
+               when its shifts are.",
+        "i" = "Regenerate it with {.code generate_schedule(periods = )} giving each shift's \\
+               {.field start_time} and {.field end_time}."
+      ))
+    }
+    if (strategy != "fixed" && (is.null(start_time) || is.null(end_time))) {
+      cli::cli_abort(c(
+        "{.arg start_time} and {.arg end_time} are required: the schedule has no shift times.",
+        "i" = "They give the span each day's windows are drawn in."
+      ))
+    }
+  } else if (!is.null(start_time) || !is.null(end_time)) {
+    cli::cli_abort(c(
+      "{.arg start_time} / {.arg end_time} cannot be used: the schedule has shift times.",
+      "i" = "Each day's windows are drawn inside that day's shift."
+    ))
+  }
+
+  hhmm_re <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+  to_min <- function(x) {
+    x <- as.character(x)
+    out <- rep(NA_integer_, length(x))
+    ok <- !is.na(x) & grepl(hhmm_re, x)
+    out[ok] <- vapply(x[ok], parse_hhmm_to_min, integer(1), USE.NAMES = FALSE)
+    if (any(!is.na(x) & !ok)) {
+      cli::cli_abort("Times must be {.val HH:MM} (00:00 to 23:59).", call = rlang::caller_env(2))
+    }
+    out
+  }
+  if (has_shift_times) {
+    span_start <- to_min(schedule$shift_start)
+    span_end <- to_min(schedule$shift_end)
+  } else {
+    span_start <- rep(if (is.null(start_time)) NA_integer_ else to_min(start_time), nrow(schedule))
+    span_end <- rep(if (is.null(end_time)) NA_integer_ else to_min(end_time), nrow(schedule))
+  }
+  # Days the schedule did not sample get no windows.
+  idle <- rep(FALSE, nrow(schedule))
+  if ("sampled" %in% names(schedule)) idle <- idle | !(schedule$sampled %in% TRUE)
+  if ("period_id" %in% names(schedule)) idle <- idle | is.na(schedule$period_id)
+  span_start[idle] <- NA_integer_
+  span_end[idle] <- NA_integer_
+  crosses <- !is.na(span_start) & !is.na(span_end) & span_end <= span_start
+  if (any(crosses)) {
+    cli::cli_abort(c(
+      "A counting span ends at or before it starts on {sum(crosses)} row{?s}.",
+      "x" = "Shifts that cross midnight are not supported yet (#407)."
+    ))
+  }
+
+  if (strategy == "fixed") {
+    windows <- fixed_windows_by_row(schedule, fixed_windows, has_shift_times,
+                                    span_start, span_end, idle, to_min)
+  } else {
+    for (arg_name in c("n_windows", "window_size", "min_gap")) {
+      if (is.null(get(arg_name))) {
+        cli::cli_abort("{.arg {arg_name}} is required to draw count windows.")
+      }
+    }
+    n_windows <- as.integer(n_windows)
+    window_size <- as.integer(window_size)
+    min_gap <- as.integer(min_gap)
+    worked <- which(!is.na(span_start) & !is.na(span_end))
+    for (i in worked) {
+      check_window_spacing(span_start[i], span_end[i], n_windows, window_size, min_gap,
+                           where = paste0(" on ", schedule$date[i]),
+                           call = rlang::current_env())
+    }
+    # One seeded stream, drawn row by row in schedule order: the same seed and
+    # schedule give the same windows, and each day's draw is independent.
+    starts <- withr::with_seed(seed, lapply(worked, function(i) {
+      draw_window_starts(span_start[i], span_end[i], strategy, n_windows, window_size, min_gap)
+    }))
+    windows <- vector("list", nrow(schedule))
+    windows[worked] <- lapply(starts, function(st) {
+      data.frame(start = st, end = st + window_size)
+    })
+  }
+
+  rows <- lapply(seq_len(nrow(schedule)), function(i) {
+    w <- windows[[i]]
+    base <- schedule[i, , drop = FALSE]
+    if (is.null(w) || nrow(w) == 0L) {
+      base$start_time <- NA_character_
+      base$end_time <- NA_character_
+      base$window_id <- NA_integer_
+      return(base)
+    }
+    out <- base[rep(1L, nrow(w)), , drop = FALSE]
+    out$start_time <- format_min_to_hhmm(as.integer(w$start))
+    out$end_time <- format_min_to_hhmm(as.integer(w$end))
+    out$window_id <- seq_len(nrow(w))
+    out
+  })
+  result <- do.call(rbind, rows)
+  rownames(result) <- NULL
+  new_creel_schedule(result)
+}
+
+#' Copy one count-time template to every schedule row
+#'
+#' The behaviour of attach_count_times() before #385, plus a check that every
+#' window falls inside each row's shift when the schedule has shift times.
+#'
+#' @noRd
+attach_count_template <- function(schedule, count_times, has_shift_times, call = rlang::caller_env()) {
   required_ct <- c("start_time", "end_time", "window_id")
   missing_ct <- setdiff(required_ct, names(count_times))
   if (!is.data.frame(count_times) || length(missing_ct) > 0) {
@@ -1454,7 +1667,26 @@ attach_count_times <- function(schedule, count_times) {
       "{.arg count_times} must be a data frame with columns {.val {required_ct}}.",
       "x" = "Missing: {.val {missing_ct}}",
       "i" = "Use {.fn generate_count_times} to produce a valid count-time template."
-    ))
+    ), call = call)
+  }
+  if (has_shift_times) {
+    w_start <- vapply(as.character(count_times$start_time), parse_hhmm_to_min, integer(1))
+    w_end <- vapply(as.character(count_times$end_time), parse_hhmm_to_min, integer(1))
+    worked <- !is.na(schedule$shift_start) & !is.na(schedule$shift_end)
+    outside <- vapply(which(worked), function(i) {
+      s0 <- parse_hhmm_to_min(as.character(schedule$shift_start[i]))
+      s1 <- parse_hhmm_to_min(as.character(schedule$shift_end[i]))
+      any(w_start < s0 | w_end > s1)
+    }, logical(1))
+    if (any(outside)) {
+      bad <- unique(as.character(schedule$date[which(worked)[outside]])) # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "Template count windows fall outside the shift on {length(bad)} day{?s}: {.val {bad}}.",
+        "x" = "A count outside the shift worked that day is not a count of that shift.",
+        "i" = "Draw windows inside each day's shift with {.arg n_windows}, {.arg window_size} \\
+               and {.arg min_gap} instead of a template."
+      ), call = call)
+    }
   }
   # Cross-join: each schedule row gets one copy per count window
   # merge() with no by columns performs a full cross-join
@@ -1469,4 +1701,62 @@ attach_count_times <- function(schedule, count_times) {
   ]
   rownames(result) <- NULL
   new_creel_schedule(result)
+}
+
+#' Fixed clock-time windows for each schedule row
+#'
+#' With shift times, `fixed_windows` carries `period_id` and each row takes its
+#' shift's windows, which must fall inside the shift. Without, every worked row
+#' takes all of them.
+#'
+#' @noRd
+fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_start, span_end,
+                                 idle, to_min, call = rlang::caller_env()) {
+  if (!is.data.frame(fixed_windows) || !all(c("start_time", "end_time") %in% names(fixed_windows))) {
+    cli::cli_abort(
+      "{.arg fixed_windows} must be a data frame with {.field start_time} and {.field end_time}.",
+      call = call
+    )
+  }
+  if (has_shift_times && !"period_id" %in% names(fixed_windows)) {
+    cli::cli_abort(c(
+      "{.arg fixed_windows} needs a {.field period_id} column: the schedule has shifts.",
+      "i" = "Give each shift its own clock times, e.g. the AM shift counts at 08:00 and 11:00."
+    ), call = call)
+  }
+  fw_start <- to_min(fixed_windows$start_time)
+  fw_end <- to_min(fixed_windows$end_time)
+  if (anyNA(fw_start) || anyNA(fw_end) || any(fw_end <= fw_start)) {
+    cli::cli_abort("Every fixed window needs a start before its end.", call = call)
+  }
+  group <- if (has_shift_times) as.character(fixed_windows$period_id) else rep("all", nrow(fixed_windows))
+  for (g in unique(group)) {
+    o <- order(fw_start[group == g])
+    st <- fw_start[group == g][o]
+    en <- fw_end[group == g][o]
+    if (length(st) > 1L && any(en[-length(en)] > st[-1])) {
+      cli::cli_abort("Windows in {.arg fixed_windows} must not overlap.", call = call)
+    }
+  }
+  lapply(seq_len(nrow(schedule)), function(i) {
+    if (idle[i] || (has_shift_times && is.na(span_start[i]))) {
+      return(NULL)
+    }
+    take <- if (has_shift_times) group == as.character(schedule$period_id[i]) else rep(TRUE, length(group))
+    w <- data.frame(start = fw_start[take], end = fw_end[take])
+    w <- w[order(w$start), , drop = FALSE]
+    if (nrow(w) == 0L) {
+      cli::cli_abort(
+        "{.arg fixed_windows} has no windows for shift {.val {schedule$period_id[i]}}.",
+        call = call
+      )
+    }
+    if (has_shift_times && any(w$start < span_start[i] | w$end > span_end[i])) {
+      cli::cli_abort(c(
+        "A fixed window for shift {.val {schedule$period_id[i]}} falls outside the shift.",
+        "x" = "The shift runs {schedule$shift_start[i]} to {schedule$shift_end[i]}."
+      ), call = call)
+    }
+    w
+  })
 }

@@ -4,27 +4,88 @@
 \alias{attach_count_times}
 \title{Attach count time windows to a daily sampling schedule}
 \usage{
-attach_count_times(schedule, count_times)
+attach_count_times(
+  schedule,
+  count_times = NULL,
+  n_windows = NULL,
+  window_size = NULL,
+  min_gap = NULL,
+  strategy = c("random", "systematic", "fixed"),
+  fixed_windows = NULL,
+  start_time = NULL,
+  end_time = NULL,
+  seed = NULL
+)
 }
 \arguments{
-\item{schedule}{A \code{creel_schedule} from \code{\link[=generate_schedule]{generate_schedule()}}. Must have a
-\code{date} column.}
+\item{schedule}{A \code{creel_schedule} from \code{\link[=generate_schedule]{generate_schedule()}} or
+\code{\link[=read_schedule]{read_schedule()}}. Must have a \code{date} column.}
 
-\item{count_times}{A \code{creel_schedule} from \code{\link[=generate_count_times]{generate_count_times()}}. Must
-have \code{start_time}, \code{end_time}, and \code{window_id} columns.}
+\item{count_times}{Optional \code{creel_schedule} from \code{\link[=generate_count_times]{generate_count_times()}}
+with \code{start_time}, \code{end_time} and \code{window_id}, copied to every row. Give
+this or the drawing arguments, not both.}
+
+\item{n_windows, window_size, min_gap}{Number of windows per day (or shift),
+window length and minimum gap between windows, in minutes. Required to
+draw windows. The span (shift or \code{start_time}--\code{end_time}) must divide
+evenly by \code{n_windows}, and each of the equal strata must hold
+\code{window_size + min_gap}.}
+
+\item{strategy}{\code{"random"} (default; one window at a random position in
+each stratum), \code{"systematic"} (a random start in the first stratum, then
+every stratum length; a fresh start each day, as in Pollock et al. 1994),
+or \code{"fixed"} (the clock times in \code{fixed_windows}).}
+
+\item{fixed_windows}{For \code{strategy = "fixed"}: a data frame of \code{start_time}
+and \code{end_time} (\code{"HH:MM"}). With shift times in the schedule it must also
+carry \code{period_id}, giving each shift its own windows, and every window
+must fall inside its shift.}
+
+\item{start_time, end_time}{The day's counting span (\code{"HH:MM"}), used to
+draw windows when the schedule has no shift times. Not allowed when it
+does: the shift is the span.}
+
+\item{seed}{Optional integer seed. The same seed gives the same windows.}
 }
 \value{
-A \code{creel_schedule} data frame with all columns from \code{schedule} plus
-\code{start_time}, \code{end_time}, and \code{window_id} from \code{count_times}.
-Row count equals \code{nrow(schedule) * nrow(count_times)}.
+A \code{creel_schedule} with all columns from \code{schedule} plus
+\code{start_time}, \code{end_time} and \code{window_id}, one row per (schedule row x
+count window). Unsampled rows of a schedule made with \code{include_all = TRUE}
+keep one row with missing windows when windows are drawn.
 }
 \description{
-Cross-joins a daily schedule produced by \code{\link[=generate_schedule]{generate_schedule()}} with a
-count-time template produced by \code{\link[=generate_count_times]{generate_count_times()}}, returning a
-\code{creel_schedule} with one row per (date x period x count_window).
+Gives each sampled day (and each worked shift) its count windows. Two ways:
+}
+\details{
+\itemize{
+\item \strong{Draw new windows for each day} (pass \code{n_windows}, \code{window_size},
+\code{min_gap}): every day gets its own random placement, inside that day's
+shift when the schedule carries shift times (from
+\code{\link[=generate_schedule]{generate_schedule()}}\verb{(periods = )}), otherwise inside \code{start_time} --
+\code{end_time}. Instantaneous-count effort assumes the count times are random
+on \emph{each} sampled day; the same clock times every day sample any
+time-of-day pattern in pressure the same way, which never averages out
+and understates the within-day variance (#385).
+\item \strong{Copy one template to every day} (pass \code{count_times} from
+\code{\link[=generate_count_times]{generate_count_times()}}): the same windows on every day, for fixed-time
+protocols. With shift times in the schedule, every window must fall inside
+each day's shift.
+}
 }
 \examples{
+# Per-day windows inside each day's drawn shift
 sched <- generate_schedule(
+  start_date = "2024-06-01", end_date = "2024-06-07",
+  n_periods = 2, sampling_rate = 0.5, seed = 1,
+  periods_per_day = 1,
+  periods = data.frame(
+    period_id = 1:2, start_time = c("06:00", "13:00"), end_time = c("13:00", "20:00")
+  )
+)
+attach_count_times(sched, n_windows = 2, window_size = 30, min_gap = 60, seed = 1)
+
+# The same template on every day (a fixed-time protocol)
+sched2 <- generate_schedule(
   start_date = "2024-06-01", end_date = "2024-06-07",
   n_periods = 2, sampling_rate = 0.5, seed = 1
 )
@@ -33,7 +94,7 @@ ct <- generate_count_times(
   strategy = "systematic", n_windows = 3,
   window_size = 30, min_gap = 10, seed = 1
 )
-attach_count_times(sched, ct)
+attach_count_times(sched2, ct)
 
 }
 \seealso{
