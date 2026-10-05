@@ -1530,9 +1530,16 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #' @keywords internal
 #' @noRd
 resolve_count_p_period <- function(p_period_quo, counts, design, period_length_col_name,
-                                   call = rlang::caller_env()) {
+                                   period_vals = NULL, call = rlang::caller_env()) {
+  # A schedule drawn with shifts (generate_schedule(), read_schedule()) carries
+  # each sampled day's probability and shift window in the calendar (GH #385).
+  sched <- schedule_shift_lookup(design, counts, call = call)
   if (rlang::quo_is_null(p_period_quo)) {
-    return(NULL)
+    if (is.null(sched)) {
+      return(NULL)
+    }
+    return(apply_schedule_p_period(sched, NULL, counts, design, period_length_col_name,
+                                   period_vals, call))
   }
   if (identical(design$design_type, "bus_route")) {
     cli::cli_abort(
@@ -1610,7 +1617,22 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
       call = call
     )
   }
+  if (!is.null(sched)) {
+    return(apply_schedule_p_period(sched, structure(vals, source = source), counts, design,
+                                   period_length_col_name, period_vals, call))
+  }
+  p_period_checks(vals, col, counts, design, period_length_col_name, call)
+  structure(as.numeric(vals), source = source)
+}
 
+#' Checks shared by every source of p_period
+#'
+#' Internal (GH #368). Run on the per-count probabilities whether they came from
+#' the argument or the schedule.
+#'
+#' @keywords internal
+#' @noRd
+p_period_checks <- function(vals, col, counts, design, period_length_col_name, call) {
   # With p_period supplied, the period length is the real clock length of one
   # shift, which cannot exceed a day. A longer value is almost always a length
   # already divided by p (the workaround from before p_period existed), which
@@ -1696,8 +1718,190 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
       )
     }
   }
+  invisible(NULL)
+}
 
-  structure(as.numeric(vals), source = source)
+#' Each counted day's shift probability and window, from the calendar
+#'
+#' Internal (GH #385). A schedule drawn with shifts carries `p_period` on every
+#' worked row and, when shift times were given, `shift_start` / `shift_end`.
+#' Returns `NULL` when the calendar declares no shift sampling (no `p_period`
+#' column, or every probability 1 with no shift times), otherwise one entry per
+#' sampled date: its probability and the total hours of its worked shifts.
+#'
+#' @keywords internal
+#' @noRd
+schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
+  # These designs carry the period term in creel_design() or expand by h_open.
+  if (design$design_type %in% c("bus_route", "ice", "aerial")) {
+    return(NULL)
+  }
+  cal <- design$calendar
+  date_col <- design$date_col
+  if (!"p_period" %in% names(cal) || !date_col %in% names(counts)) {
+    return(NULL)
+  }
+  has_window <- all(c("shift_start", "shift_end") %in% names(cal))
+  if (!has_window && !any(cal$p_period < 1, na.rm = TRUE)) {
+    return(NULL)
+  }
+
+  worked <- !is.na(cal$p_period)
+  if ("period_id" %in% names(cal)) worked <- worked & !is.na(cal$period_id)
+  cal <- cal[worked, , drop = FALSE]
+  day <- as.character(cal[[date_col]])
+
+  n_p <- tapply(cal$p_period, day, function(v) length(unique(v)))
+  if (any(n_p > 1L)) {
+    bad <- names(n_p)[n_p > 1L] # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "The schedule gives more than one {.field p_period} on {length(bad)} day{?s}: {.val {bad}}.",
+        "x" = "The counts on one day are expanded by one probability, the chance that \
+               the day's worked shifts were the ones drawn.",
+        "i" = "Check the schedule's {.field p_period} column for those days."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+  p <- tapply(cal$p_period, day, `[`, 1L)
+
+  window <- NULL
+  if (has_window) {
+    start <- vapply(as.character(cal$shift_start), function(t) {
+      if (is.na(t)) NA_real_ else parse_hhmm_to_min(t) # nolint: object_usage_linter
+    }, numeric(1), USE.NAMES = FALSE)
+    end <- vapply(as.character(cal$shift_end), function(t) {
+      if (is.na(t)) NA_real_ else parse_hhmm_to_min(t) # nolint: object_usage_linter
+    }, numeric(1), USE.NAMES = FALSE)
+    # A shift ending at or before it starts crosses midnight. Its length, and
+    # which date its counts belong to, wait on clock-time handling (#407);
+    # refused rather than guessed.
+    crosses <- !is.na(start) & !is.na(end) & end <= start
+    if (any(crosses)) {
+      bad <- unique(day[crosses]) # nolint: object_usage_linter
+      cli::cli_abort(
+        c(
+          "The schedule has a shift that crosses midnight on {length(bad)} day{?s}: {.val {bad}}.",
+          "x" = "Shifts that end at or before they start are not supported yet (#407).",
+          "i" = "Split the shift at midnight, or leave out the shift times."
+        ),
+        class = "creel_error_period_length_window",
+        call = call
+      )
+    }
+    # A day's window is the total length of its worked shifts: with two of
+    # three 5 h shifts worked at p = 2/3, daily effort is the mean count x 10 h
+    # / (2/3), so the period length to compare with is 10.
+    window <- tapply((end - start) / 60, day, sum)
+  }
+  list(date_col = date_col, days = names(p), p = as.numeric(p),
+       window = if (is.null(window)) NULL else as.numeric(window[names(p)]))
+}
+
+#' Apply the schedule's shift probability to the counts
+#'
+#' Internal (GH #385). Every counted day must have a probability in the
+#' schedule; an explicit `p_period` must agree with it; and the period length
+#' must equal the day's worked window, so the probability is applied once.
+#'
+#' @keywords internal
+#' @noRd
+apply_schedule_p_period <- function(sched, user_vals, counts, design, period_length_col_name,
+                                    period_vals, call) {
+  count_day <- as.character(counts[[sched$date_col]])
+  idx <- match(count_day, sched$days)
+  vals <- sched$p[idx]
+
+  if (anyNA(vals)) {
+    bad <- unique(count_day[is.na(vals)]) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "Counts on {length(bad)} day{?s} the schedule did not sample: {.val {bad}}.",
+        "x" = "The schedule declares shift sampling, but gives no shift or {.field p_period} \
+               for a day with counts, so they cannot be expanded to the day.",
+        "i" = "Add the day's worked shift and its {.field p_period} to the schedule."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+
+  if (!is.null(user_vals)) {
+    differ <- abs(as.numeric(user_vals) - vals) > 1e-8
+    if (any(differ)) {
+      bad <- unique(count_day[differ]) # nolint: object_usage_linter
+      cli::cli_abort(
+        c(
+          "{.arg p_period} disagrees with the schedule on {length(bad)} day{?s}: {.val {bad}}.",
+          "x" = "The schedule in the design calendar already gives each day's \
+                 {.field p_period}; two different probabilities for one draw mean one is wrong.",
+          "i" = "Drop the {.arg p_period} argument to use the schedule, or correct the schedule."
+        ),
+        class = "creel_error_p_period_invalid",
+        call = call
+      )
+    }
+  }
+
+  if (is.null(period_length_col_name)) {
+    if (all(vals == 1)) {
+      return(NULL)
+    }
+    cli::cli_abort(
+      c(
+        "The schedule samples shifts, so {.fn add_counts} needs {.arg period_length_col}.",
+        "x" = "Daily effort is the mean count x the period length / {.field p_period}; \
+               without the length there is nothing to divide.",
+        "i" = "Supply the length in hours of the shift each day's counts were made in."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+
+  # The period length is the real length of the day's worked shifts. A length
+  # already divided by p (the workaround from before p_period existed) would be
+  # divided again here and double every effort and total (GH #368, #426).
+  # Tolerance 0.01 h (36 s) allows lengths typed to two decimals.
+  if (!is.null(sched$window)) {
+    window <- sched$window[idx]
+    off <- abs(period_vals - window) > 0.01
+    if (any(off)) {
+      twice <- off & vals < 1 & abs(period_vals - window / vals) <= 0.01
+      bad <- unique(count_day[off]) # nolint: object_usage_linter
+      if (any(twice)) {
+        cli::cli_abort(
+          c(
+            "{.field {period_length_col_name}} is the shift window / {.field p_period} \
+             on {length(bad)} day{?s}: {.val {bad}}.",
+            "x" = "The probability is taken from the schedule, so a length already divided \
+                   by it would apply it twice and double effort.",
+            "i" = "Supply the real hours of the day's worked shifts."
+          ),
+          class = "creel_error_p_period_applied_twice",
+          call = call
+        )
+      }
+      first <- which(off)[1] # nolint: object_usage_linter
+      cli::cli_abort(
+        c(
+          "{.field {period_length_col_name}} disagrees with the schedule's shift window \
+           on {length(bad)} day{?s}: {.val {bad}}.",
+          "x" = "On {.val {count_day[first]}} the length is {period_vals[first]} h; \
+                 the worked shifts cover {round(window[first], 2)} h.",
+          "i" = "The period length must be the real hours of the day's worked shifts."
+        ),
+        class = "creel_error_period_length_window",
+        call = call
+      )
+    }
+  }
+
+  p_period_checks(vals, NULL, counts, design, period_length_col_name, call)
+  source <- if (is.null(user_vals)) structure("p_period", from_schedule = TRUE) else attr(user_vals, "source")
+  structure(vals, source = source)
 }
 
 #' Attach count data to a creel design
@@ -1820,7 +2024,19 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
 #'   constant within each sampled day. Not used on aerial designs (which expand
 #'   by `h_open`) or bus-route designs (which declare `p_period` in
 #'   [creel_design()]). `NULL` (default) means every period of the day was
-#'   eligible to be counted, as before.
+#'   eligible to be counted, as before -- unless the design calendar is a
+#'   schedule that samples shifts (see below).
+#'
+#'   **Shift schedules.** When the design calendar comes from
+#'   [generate_schedule()] or [read_schedule()] with shifts drawn (a
+#'   `p_period` column below 1, or `shift_start` / `shift_end`), `add_counts()`
+#'   reads each counted day's `p_period` from it, so the argument can be left
+#'   out. If it is given it must agree with the schedule. Counts on a day the
+#'   schedule gives no worked shift are refused. When the schedule has shift
+#'   times, `period_length_col` must equal the total hours of the day's worked
+#'   shifts (to 0.01 h); a length equal to that window / `p_period` is refused
+#'   as applying the probability twice. Shifts that cross midnight are refused
+#'   until #407.
 #'
 #' @return A new creel_design object (list) with components:
 #'   \item{calendar}{Original calendar data frame}
@@ -2076,6 +2292,7 @@ add_counts <- function(
     counts = counts,
     design = design,
     period_length_col_name = period_length_col_name,
+    period_vals = period_vals,
     call = rlang::current_env()
   )
   # Folded into the period length here, on the counts as supplied and before
@@ -3459,7 +3676,9 @@ format.creel_design <- function(x, ...) {
       if (!is.null(x$p_period)) {
         # The probability daily effort was expanded by, so the shift design is
         # visible in every printed design (GH #368).
-        p_period_display <- if (is.character(x$p_period)) { # nolint: object_usage_linter
+        p_period_display <- if (isTRUE(attr(x$p_period, "from_schedule"))) { # nolint: object_usage_linter
+          "from the schedule (calendar column `p_period`)"
+        } else if (is.character(x$p_period)) {
           paste0("column `", x$p_period, "`")
         } else {
           format(x$p_period)
