@@ -148,6 +148,18 @@ validate_creel_schedule <- function(data) {
         has <- !is.na(st) | !is.na(en)
         hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
         bad_fmt <- has & (!grepl(hhmm, st) | !grepl(hhmm, en))
+        # A worked period on a sampled day needs its shift: with the columns
+        # present, a blank pair would leave that day's shift length unknown.
+        worked <- rep(TRUE, nrow(data))
+        if ("period_id" %in% names(data)) worked <- worked & !is.na(data$period_id)
+        if ("sampled" %in% names(data)) worked <- worked & data$sampled %in% TRUE
+        no_times <- worked & !has
+        if (any(no_times)) {
+          collection$push(paste0(
+            "Every worked period needs 'shift_start' and 'shift_end'; ",
+            sum(no_times), " row(s) have neither (first on ", format(data$date[which(no_times)[1]]), ")"
+          ))
+        }
         if (any(bad_fmt)) {
           collection$push(paste0(
             "Columns 'shift_start'/'shift_end' must be \"HH:MM\" (00:00 to 23:59); ",

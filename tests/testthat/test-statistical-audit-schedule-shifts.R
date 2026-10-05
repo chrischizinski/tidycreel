@@ -185,3 +185,25 @@ test_that("#385: a schedule file with unreadable or midnight-crossing shift time
   utils::write.csv(x, tmp, row.names = FALSE)
   expect_error(read_schedule(tmp), "together", class = "creel_error_schema_validation")
 })
+
+test_that("#385: a worked period with no shift times is refused when the file carries shift times", {
+  # Its shift length would be unknown, and the length is what expands the
+  # count to the day (review finding, 2026-10-05).
+  s <- as.data.frame(ss_sched(periods_per_day = 1, periods = ss_shifts()))
+  s$shift_start[2] <- NA
+  s$shift_end[2] <- NA
+  tmp <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(s, tmp, row.names = FALSE)
+  expect_error(read_schedule(tmp), "needs 'shift_start'", class = "creel_error_schema_validation")
+})
+
+test_that("#385: n_periods must be a whole number of at least 1", {
+  # The shift probability is periods_per_day / n_periods, so n_periods is a
+  # denominator; 0 used to return a schedule with no periods.
+  for (bad in list(0, -1, NA, 1.5, c(2, 3))) {
+    expect_error(
+      generate_schedule("2024-06-01", "2024-06-30", n_periods = bad, sampling_rate = 0.5, seed = 1),
+      "must be a whole number of at least 1"
+    )
+  }
+})

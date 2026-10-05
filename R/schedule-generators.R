@@ -680,6 +680,13 @@ generate_schedule <- function(
     ))
   }
 
+  if (!is.numeric(n_periods) || length(n_periods) != 1L || is.na(n_periods) ||
+        n_periods < 1 || n_periods != round(n_periods)) {
+    cli::cli_abort(c(
+      "{.arg n_periods} must be a whole number of at least 1.",
+      "x" = "Got {.val {n_periods}}."
+    ))
+  }
   period_allocation <- rlang::arg_match(period_allocation)
   periods_per_day <- validate_periods_per_day(periods_per_day, n_periods, expand_periods)
   if (!is.null(periods)) {
