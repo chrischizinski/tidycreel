@@ -16,6 +16,15 @@ A \code{creel_schedule} object with columns:
 \item \code{date} (Date)
 \item \code{day_type} (character)
 \item \code{period_id} (integer, if present)
+\item \code{p_period} (numeric, if present): the probability each worked period
+was drawn for its day. Every row with a period on a sampled day must
+carry one in (0, 1]; a missing, non-numeric or out-of-range value is an
+error, because the period could not be expanded to the day.
+A file with \code{period_id} but no \code{p_period} column (written before the
+column existed) is read as \code{p_period = 1}, with a warning, when every
+sampled day carries the same periods (each was worked every day); if
+the periods differ between days they were drawn, and it is an error.
+\item \code{shift_start}, \code{shift_end} (character "HH:MM", if present)
 \item \code{sampled} (logical, if present)
 }
 }

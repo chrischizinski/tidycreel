@@ -111,6 +111,72 @@ validate_creel_schedule <- function(data) {
       }
       # character and factor period_id are always valid — no further checks
     }
+
+    # p_period (GH #385): the chance each worked period (shift) was drawn for
+    # that day. Every row with a period on a sampled day needs one in (0, 1];
+    # without it the period cannot be expanded to the day. An unsampled day
+    # (sampled = FALSE) has no drawn period and may carry NA.
+    if ("p_period" %in% names(data)) {
+      p <- data$p_period
+      if (!is.numeric(p)) {
+        collection$push("Column 'p_period' must be numeric")
+      } else {
+        needs_p <- rep(TRUE, nrow(data))
+        if ("period_id" %in% names(data)) needs_p <- needs_p & !is.na(data$period_id)
+        if ("sampled" %in% names(data)) needs_p <- needs_p & data$sampled %in% TRUE
+        bad_p <- needs_p & (is.na(p) | p <= 0 | p > 1)
+        if (any(bad_p)) {
+          collection$push(paste0(
+            "Column 'p_period' must be in (0, 1] for every worked period; ",
+            sum(bad_p), " row(s) are missing or out of range (first on ",
+            format(data$date[which(bad_p)[1]]), ")"
+          ))
+        }
+      }
+    }
+
+    # Shift times (GH #385): "HH:MM", both present, ending later the same day.
+    # The shift length is derived from them, so an unreadable time or a
+    # midnight crossing (not supported until #407) is refused here, not when
+    # it is used.
+    if (any(c("shift_start", "shift_end") %in% names(data))) {
+      if (!all(c("shift_start", "shift_end") %in% names(data))) {
+        collection$push("Columns 'shift_start' and 'shift_end' must be supplied together")
+      } else {
+        st <- as.character(data$shift_start)
+        en <- as.character(data$shift_end)
+        has <- !is.na(st) | !is.na(en)
+        hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        bad_fmt <- has & (!grepl(hhmm, st) | !grepl(hhmm, en))
+        # A worked period on a sampled day needs its shift: with the columns
+        # present, a blank pair would leave that day's shift length unknown.
+        worked <- rep(TRUE, nrow(data))
+        if ("period_id" %in% names(data)) worked <- worked & !is.na(data$period_id)
+        if ("sampled" %in% names(data)) worked <- worked & data$sampled %in% TRUE
+        no_times <- worked & !has
+        if (any(no_times)) {
+          collection$push(paste0(
+            "Every worked period needs 'shift_start' and 'shift_end'; ",
+            sum(no_times), " row(s) have neither (first on ", format(data$date[which(no_times)[1]]), ")"
+          ))
+        }
+        if (any(bad_fmt)) {
+          collection$push(paste0(
+            "Columns 'shift_start'/'shift_end' must be \"HH:MM\" (00:00 to 23:59); ",
+            sum(bad_fmt), " row(s) are not (first on ", format(data$date[which(bad_fmt)[1]]), ")"
+          ))
+        } else if (any(has)) {
+          to_min <- function(x) as.integer(substr(x, 1, 2)) * 60L + as.integer(substr(x, 4, 5))
+          wraps <- has & to_min(en) <= to_min(st)
+          if (any(wraps, na.rm = TRUE)) {
+            collection$push(paste0(
+              "Shifts must end later the same day (crossing midnight is not supported yet, #407); ",
+              sum(wraps, na.rm = TRUE), " row(s) do not"
+            ))
+          }
+        }
+      }
+    }
   }
 
   if (!collection$isEmpty()) {
