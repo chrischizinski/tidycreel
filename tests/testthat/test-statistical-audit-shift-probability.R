@@ -241,3 +241,37 @@ test_that("#368: a factor section column with an uncounted level neither warns f
   expect_length(overrun, 1L)
   expect_match(overrun, "cover 28 hours a day on average (North)", fixed = TRUE)
 })
+
+test_that("#368: p_period is refused on designs that already carry the period term", {
+  # Bus-route designs declare p_period in creel_design() and aerial designs
+  # expand by h_open; a second probability here would be applied on top. The
+  # message is matched so an earlier, unrelated abort cannot pass the test.
+  cal <- sp_calendar()
+  counts <- sp_counts(7)
+
+  aerial <- suppressWarnings(suppressMessages(creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, survey_type = "aerial", # nolint: object_usage_linter
+    visibility_correction = "none", angler_ratio = 1, angler_ratio_se = 0, h_open = 14
+  )))
+  expect_error(
+    suppressWarnings(add_counts(aerial, counts, count_col = anglers, p_period = 0.5)), # nolint: object_usage_linter
+    class = "creel_error_p_period_invalid",
+    regexp = "aerial"
+  )
+
+  frame <- data.frame(site = c("A", "B"), circuit = "C1", p_site = c(0.5, 0.5), p_period = 0.5)
+  bus <- suppressWarnings(suppressMessages(creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, survey_type = "bus_route", # nolint: object_usage_linter
+    sampling_frame = frame, site = site, circuit = circuit, p_site = p_site, p_period = p_period # nolint: object_usage_linter
+  )))
+  expect_error(
+    suppressWarnings(add_counts(
+      bus, counts,
+      count_col = anglers, count_time_col = count_time, period_length_col = shift_hours, p_period = 0.5 # nolint: object_usage_linter
+    )),
+    class = "creel_error_p_period_invalid",
+    regexp = "bus-route"
+  )
+})
