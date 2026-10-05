@@ -43,6 +43,26 @@
 
 ## Bug fixes
 
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` on a sectioned design with no `by` multiplied
+  each section's whole effort by **one rate pooled across its strata** (#409).
+  Every other total uses the stratified sum, effort × rate within each stratum,
+  then added: the non-sectioned total, the sectioned `by =` total and the
+  species total. On one design, a section's total and the sum of its
+  `by = day_type` rows could therefore differ. On the package fixture they
+  differed by up to about 4%, and the gap grows when interviews are not spread
+  across strata the way effort is.
+
+  The ungrouped sectioned total is now the stratified sum, so it equals the sum
+  of its `by = <strata>` rows. `.lake_total` follows, and its variance still
+  includes the party-size covariance shared across sections, now weighted by
+  each stratum's own rate. Section and lake estimates and SEs change for
+  sectioned designs whose rates differ between strata.
+
+  A section × stratum rate cell under 10 trips now warns
+  (`creel_warning_thin_rate_cells`, naming the section and stratum), as other
+  totals do. Before, only the section's pooled trip count was checked.
+
 * Designs with more than one strata column (for example
   `strata = c(day_type, season)`) got standard errors computed over the
   **first** column only, wherever a survey design was rebuilt (#422). This

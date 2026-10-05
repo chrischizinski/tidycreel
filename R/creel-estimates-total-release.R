@@ -641,7 +641,7 @@ estimate_total_release_ungrouped <- function(
     expansion_decomposition = named_expansion_decomposition(effort_result, strata_cols) # nolint: object_usage_linter
   )
 
-  new_creel_estimates( # nolint: object_usage_linter
+  result <- new_creel_estimates( # nolint: object_usage_linter
     estimates = tibble::as_tibble(estimates_df),
     method = "product-total-release",
     variance_method = variance_method,
@@ -651,8 +651,18 @@ estimate_total_release_ungrouped <- function(
     effort_target = target,
     estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
-    se_expansion = attr(estimates_df, "se_expansion")
+    se_expansion = attr(estimates_df, "se_expansion"),
+    # One row, so one entry: the product-scale decomposition a sectioned lake
+    # total combines across sections (GH #409).
+    expansion_decomposition = if (is.null(attr(estimates_df, "expansion_decomposition"))) {
+      NULL
+    } else {
+      list(attr(estimates_df, "expansion_decomposition"))
+    }
   )
+  # The interval's degrees of freedom, for a lake row summed from sections (GH #409).
+  attr(result, "ci_df") <- attr(estimates_df, "ci_df")
+  result
 }
 
 #' @keywords internal
@@ -942,6 +952,8 @@ estimate_total_release_sections <- function(
   names(sec_expansion_se) <- registered_sections
   sec_decomposition <- vector("list", length(registered_sections))
   names(sec_decomposition) <- registered_sections
+  sec_ci_df <- vector("list", length(registered_sections))
+  names(sec_ci_df) <- registered_sections
   # Components for the branches whose sections contribute several rows -- one
   # vector per section rather than one scalar, because a grouped or species
   # result carries a component per row of its own.
@@ -1009,8 +1021,8 @@ estimate_total_release_sections <- function(
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped path: call internal helpers directly to bypass sample-size validation.
-        # The pooled-rate product below never forms per-stratum cells, so an
-        # uncovered stratum is checked for here (GH #373).
+        # An uncovered stratum is refused here first, with the section named
+        # (GH #373).
         check_section_stratum_coverage( # nolint: object_usage_linter
           sec_design,
           rate_fun = rpue_for_stratum_product,
@@ -1021,70 +1033,37 @@ estimate_total_release_sections <- function(
           context = "estimate_total_release (section)"
         )
         # Build release data inline (mirrors estimate_release_rate_sections pattern).
-        effort_res <- estimate_effort_total(
+        # Stratified sum, sum_h(E_h x rate_h), the estimator every other total
+        # path uses -- the non-sectioned total, the sectioned `by =` path and the
+        # species path. This branch used to multiply the section's whole effort
+        # by one rate pooled across its strata, a combined ratio, so a section's
+        # total and the sum of its `by = <strata>` rows disagreed (South harvest
+        # +3.3%, release -4.1% on the sectioned fixture; GH #409). The helper also
+        # warns for a section x stratum rate cell under 10 trips (#417).
+        sec_result <- estimate_total_release_ungrouped( # nolint: object_usage_linter
           sec_design,
           variance_method,
           conf_level,
-          target = target
-        ) # nolint: object_usage_linter
-        release_data <- estimate_release_build_data(sec_design, species = NULL) # nolint: object_usage_linter
-        release_data$.release_effort <- release_data[[sec_design$angler_effort_col]]
-        design_rel <- sec_design
-        design_rel$interviews <- release_data
-        design_rel$catch_col <- ".release_count"
-        design_rel$angler_effort_col <- ".release_effort"
-        strata_cols <- sec_design$strata_cols
-        strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
-          stats::reformulate(strata_cols)
-        } else {
-          NULL
-        }
-        design_rel$interview_survey <- build_interview_survey(
-          # nolint: object_usage_linter
-          release_data,
-          strata = strata_formula
+          target = target,
+          product_variance = product_variance,
+          ci_type = ci_type
         )
-        rpue_res <- estimate_cpue_total( # nolint: object_usage_linter
-          design_rel,
-          variance_method,
-          conf_level,
-          sec_design$total_estimator %||% "ratio-of-means"
-        )
-        effort_est <- effort_res$estimates$estimate
-        rpue_est <- rpue_res$estimates$estimate
-        effort_se <- effort_res$estimates$se
-        rpue_se <- rpue_res$estimates$se
-        sec_rate[[sec]] <- rpue_est
-        sec_expansion_se[[sec]] <- effort_res$se_expansion
-        sec_decomposition[[sec]] <- effort_res$expansion_decomposition
-        sec_estimate <- effort_est * rpue_est
-        sec_var <- product_total_variance(
-          effort_est,
-          effort_se,
-          rpue_est,
-          rpue_se,
-          product_variance
-        )
-        sec_se <- sqrt(sec_var)
-        sec_n <- rpue_res$estimates$n
-        z_val <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, sec_n - 1L))
-        sec_ci_lower <- if (ci_type == "log" && sec_estimate > 0) {
-          sec_estimate * exp(-z_val * sec_se / sec_estimate)
-        } else {
-          pmax(0, sec_estimate - z_val * sec_se)
-        }
-        sec_ci_upper <- if (ci_type == "log" && sec_estimate > 0) {
-          sec_estimate * exp(z_val * sec_se / sec_estimate)
-        } else {
-          sec_estimate + z_val * sec_se
-        }
+        sec_row <- sec_result$estimates
+        # A stratified sum has no single rate. The lake helpers only ever use
+        # `rate` to scale a section's expansion terms, so those arrive already on
+        # the product scale -- each stratum weighted by its own rate -- and the
+        # scale applied to them is 1.
+        sec_rate[[sec]] <- 1
+        sec_expansion_se[[sec]] <- sec_result$se_expansion
+        sec_decomposition[[sec]] <- sec_result$expansion_decomposition
+        sec_ci_df[[sec]] <- attr(sec_result, "ci_df")
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
-          estimate = sec_estimate,
-          se = sec_se,
-          ci_lower = sec_ci_lower,
-          ci_upper = sec_ci_upper,
-          n = sec_n,
+          estimate = sec_row$estimate,
+          se = sec_row$se,
+          ci_lower = sec_row$ci_lower,
+          ci_upper = sec_row$ci_upper,
+          n = sec_row$n,
           prop_of_lake_total = NA_real_,
           se_prop_of_lake_total = NA_real_,
           data_available = TRUE
@@ -1207,8 +1186,17 @@ estimate_total_release_sections <- function(
       )
     }
 
-    # CI for lake total: sum(section n) - n_sections (consistent with compute_stratum_product_sum)
-    df_lake <- max(1L, sum(present_rows$n) - nrow(present_rows))
+    # CI for the lake total: the sum of the sections' own degrees of freedom,
+    # i.e. total interviews minus every section x stratum rate cell -- the rule
+    # compute_stratum_product_sum() applies within a section. `sum(n) -
+    # n_sections` matched it only while each section had one pooled rate
+    # (Codex, #409 review).
+    lake_df_parts <- unlist(sec_ci_df[present], use.names = FALSE)
+    df_lake <- if (length(lake_df_parts) == length(present)) {
+      max(1L, sum(lake_df_parts))
+    } else {
+      max(1L, sum(present_rows$n) - nrow(present_rows))
+    }
     t_crit <- qt(1 - (1 - conf_level) / 2, df = df_lake)
     lake_ci_lower <- if (ci_type == "log" && lake_est > 0) {
       lake_est * exp(-t_crit * lake_se / lake_est)

@@ -130,20 +130,19 @@ test_that("#417: a grouped total warns on thin cells whose BY-GROUP clears the f
   }
 })
 
-test_that("#417: an ungrouped sectioned total checks the section's POOLED rate, not its strata", {
-  # That total multiplies a section's whole effort by one rate pooled across the
-  # section's strata (Codex, #417). 36 interviews leave 18 per section: each
-  # section's day-type cells have 8 or 10, but the rate it uses rests on 18, so
-  # warning here would call a pooled rate unstable. 16 leave 8 per section, and
-  # then the pooled rate really is thin. One factor: the sample size.
-  ok <- make_sectioned_species_design(n_interviews = 36L) # nolint: object_usage_linter
-  thin <- make_sectioned_species_design(n_interviews = 16L) # nolint: object_usage_linter
+test_that("#409: an ungrouped sectioned total checks each section x stratum rate cell", {
+  # The total is now the stratified sum, sum_h(E_h x rate_h) per section, so each
+  # section's day-type cell is a ratio estimate in its own right and is what a
+  # thin rate means (GH #409). Before #409 it multiplied a section's effort by
+  # one pooled rate and this test pinned the pooled count instead (#417). 36
+  # interviews leave 18 per section and day-type cells of 8 or 10: the 8s warn,
+  # named by section and day type, and the old pooled form never appears.
+  d <- make_sectioned_species_design(n_interviews = 36L) # nolint: object_usage_linter
   for (nm in names(ttc_totals)) {
-    expect_length(ttc_thin_warnings(ttc_totals[[nm]](ok)), 0L)
-    msgs <- vapply(ttc_thin_warnings(ttc_totals[[nm]](thin)), conditionMessage, character(1))
-    expect_length(msgs, 2L)
-    expect_true(any(grepl("section=North: n=", msgs, fixed = TRUE)), info = nm)
-    expect_true(any(grepl("section=South: n=", msgs, fixed = TRUE)), info = nm)
+    msgs <- vapply(ttc_thin_warnings(ttc_totals[[nm]](d)), conditionMessage, character(1))
+    expect_gt(length(msgs), 0L)
+    expect_true(all(grepl("section=(North|South), day_type=", msgs)), info = nm)
+    expect_false(any(grepl("section=(North|South): n=", msgs)), info = nm)
   }
 })
 

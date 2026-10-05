@@ -279,32 +279,43 @@ test_that("the partial lake SE sits between the nested and shared ones (GH #150)
 })
 
 test_that("the partial lake SE equals the hand-combined decomposition (GH #150)", {
-  # Hand-computed outside the estimator: each group's per-section
-  # contributions are b = 1.0 (North) and 0.9 (South), scaled by the section
-  # rates 1.96875 and 2.06250. Same-group terms add before squaring, different
-  # groups add as variances, giving 2 * 3.825^2 = 29.26125 for the expansion
-  # term. Pinning the arithmetic rather than the output keeps this from
-  # ratifying whatever the code happens to produce.
+  # Hand-computed outside the estimator. Each group (a day type) spans both
+  # sections; its per-section contributions are b = 1.0 (North) and 0.9
+  # (South) boats-SE, each scaled by THAT section x stratum's own catch rate,
+  # because the sectioned total is the stratified sum (GH #409): North 1.75 /
+  # 2.1875, South 2.00 / 2.125 (weekday / weekend), straight from the
+  # interviews. Same-group terms add before squaring, different groups add as
+  # variances: (1.75 + 1.8)^2 + (2.1875 + 1.9125)^2 = 29.4125. Before #409 the
+  # section's single pooled rate scaled both groups and this was 2 * 3.825^2.
+  # Pinning the arithmetic rather than the output keeps this from ratifying
+  # whatever the code happens to produce.
   result <- suppressWarnings(estimate_total_catch(sections_design(partial_section_counts())))
   secs <- result$estimates[result$estimates$section != ".lake_total", ]
   components <- result$se_expansion[result$estimates$section != ".lake_total"]
 
-  exact_var <- 2 * 3.825^2
+  rate <- rbind(North = c(1.75, 2.1875), South = c(2.00, 2.125))
+  b <- c(North = 1.0, South = 0.9)
+  expect_equal(components, unname(sqrt(rowSums((rate * b)^2))), tolerance = 1e-9)
+
+  exact_var <- (1.75 * 1.0 + 2.00 * 0.9)^2 + (2.1875 * 1.0 + 2.125 * 0.9)^2
   expected <- sqrt(sum(secs$se^2) - sum(components^2) + exact_var)
 
   expect_equal(lake_row(result)$se, expected, tolerance = 1e-9)
-  expect_equal(lake_row(result)$se, 37.23078214, tolerance = 1e-7)
+  expect_equal(lake_row(result)$se, 39.62349930, tolerance = 1e-7)
 })
 
 test_that("the nested and shared section SEs are untouched by #150", {
   # These two were already exact. #150 must recover the third case without
   # perturbing them, so their branches keep their own arithmetic rather than
-  # routing through the general formula.
+  # routing through the general formula. The values moved with #409 (37.2297 /
+  # 37.6203 under the pooled rate): the section SEs are now the stratified sum's,
+  # and the identities pinned above (quadrature for nested, linear sum for
+  # shared) still hold against them.
   nested <- suppressWarnings(estimate_total_catch(sections_design(separate_section_counts())))
   shared <- suppressWarnings(estimate_total_catch(sections_design(shared_section_counts())))
 
-  expect_equal(lake_row(nested)$se, 37.2297, tolerance = 1e-5)
-  expect_equal(lake_row(shared)$se, 37.6203, tolerance = 1e-5)
+  expect_equal(lake_row(nested)$se, 39.621910, tolerance = 1e-5)
+  expect_equal(lake_row(shared)$se, 39.989145, tolerance = 1e-5)
 })
 
 test_that("harvest and release recover the partial geometry too (GH #150)", {
