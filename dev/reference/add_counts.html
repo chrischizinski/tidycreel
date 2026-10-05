@@ -123,7 +123,8 @@ randomised within; supply that column and the estimate is in angler-hours.</p>
 <span>  circuit_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  period_length_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  unit_cols <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  allow_invalid <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  allow_invalid <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  p_period <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -236,6 +237,25 @@ more on long days, so the collapsed form biases low.</p></dd>
 <dd><p>Logical flag for validation behavior. If FALSE (default),
 validation failures abort with detailed error messages. If TRUE, validation
 failures generate warnings and attach counts anyway (use with caution).</p></dd>
+
+
+<dt id="arg-p-period">p_period<a class="anchor" aria-label="anchor" href="#arg-p-period"></a></dt>
+<dd><p>The probability that the counted period (shift) was the one
+worked on that sampled day: a single number, or a column of <code>counts</code>, in
+(0, 1]. For a design that draws one of two shifts per sampled day at
+random, <code>p_period = 0.5</code>. Daily effort is then the mean count x the period
+length / <code>p_period</code> (Horvitz-Thompson over the shift draw), and the same
+factor reaches the within-day variance and the party-size expansion term.
+Requires <code>period_length_col</code>, which must hold the real length of the
+shift, not a length already divided by the probability: that would apply
+the probability twice and double the effort. A length over 24 hours is
+refused for that reason, and a warning is given when the length /
+<code>p_period</code>, averaged over sampled days, passes 24 hours (the shifts would
+then cover more than a day). A column must be
+constant within each sampled day. Not used on aerial designs (which expand
+by <code>h_open</code>) or bus-route designs (which declare <code>p_period</code> in
+<code><a href="creel_design.html">creel_design()</a></code>). <code>NULL</code> (default) means every period of the day was
+eligible to be counted, as before.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -4,6 +4,44 @@
 
 ### New features
 
+- [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  gains `p_period`: the probability that the counted period (shift) was
+  the one worked on that sampled day, as a number or a column, in (0,
+  1\] ([\#368](https://github.com/chrischizinski/tidycreel/issues/368)).
+  A common roving design draws one of two shifts per sampled day at p =
+  0.5 and counts only inside it. Daily effort is then the mean count ×
+  the shift length / `p_period`.
+
+  There was no way to say this before. Passing the real shift length
+  gave half the effort with no warning, and the only workaround was to
+  pass the length already divided by p. The same factor now reaches the
+  within-day variance and the party-size expansion term. `p_period`
+  needs `period_length_col`. It is refused on aerial designs (which
+  expand by `h_open`) and on bus-route designs (which declare `p_period`
+  in
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)),
+  and must be constant within a sampled day. The design records the
+  probability and prints it.
+
+  **If you used the workaround, change the length back to the real shift
+  hours in the same change that adds `p_period`.** A length already
+  divided by p, plus `p_period`, applies the probability twice and
+  doubles every effort and total.
+
+  Two checks guard against this. A period length over 24 hours with
+  `p_period` is refused (`creel_error_p_period_applied_twice`): one
+  shift cannot exceed a day. And when the length / `p_period`, averaged
+  over sampled days (per section on a sectioned design), passes 24
+  hours,
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  warns (`creel_warning_p_period_coverage`). That average estimates the
+  total length of the shifts, which cannot exceed a day, so two 7-hour
+  shifts entered as 14 (28 hours a day) are caught. It is a warning, not
+  an error, because unequal shifts drawn unevenly can pass 24 by chance.
+  The exact check, the length against the declared shift window, comes
+  with shift-aware schedules
+  ([\#385](https://github.com/chrischizinski/tidycreel/issues/385)).
+
 - [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
   gains `by`, which returns one effort estimate per stratum
   ([\#364](https://github.com/chrischizinski/tidycreel/issues/364)).
