@@ -56,6 +56,32 @@
 
 ### Bug fixes
 
+- Designs with more than one strata column (for example
+  `strata = c(day_type, season)`) got standard errors computed over the
+  **first** column only, wherever a survey design was rebuilt
+  ([\#422](https://github.com/chrischizinski/tidycreel/issues/422)).
+  This covered every `stratum_total` / `period_total` effort estimate
+  and the interview surveys rebuilt for incomplete trips, species,
+  release, `mor` and bus-route estimates.
+
+  The cause: those rebuilds passed `~ day_type + season` to
+  [`survey::svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html),
+  which reads a multi-term strata formula as one strata variable per
+  sampling stage, not as their interaction.
+
+  Point estimates were right, because the weights are computed per cell.
+  The SE and the finite-population correction were not. On a
+  `strata = c(day_type, month)` season, an expanded effort total
+  reported SE 147.7 where the cells give 187.9. Some designs instead
+  stopped with “FPC implies \>100% sampling”.
+
+  Every survey design now builds a single stratum key. That key no
+  longer uses
+  [`interaction()`](https://rdrr.io/r/base/interaction.html)’s default
+  “.” separator, which merged cells whose labels share a dot (`"x.y"` +
+  `"z"` and `"x"` + `"y.z"`). Designs with one strata column are
+  unchanged.
+
 - [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
   [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
   and
