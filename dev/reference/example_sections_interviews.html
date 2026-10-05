@@ -177,22 +177,25 @@ for all 27 interviews</p></dd>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   count-derived effort is per angler.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The product is correct only if every party is one angler. Pass</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   `add_interviews(n_anglers = &lt;col&gt;)` to normalise.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 rate cell in <span style="color: #0000BB;">"estimate_total_catch (section)"</span> rests on fewer than 10 trips.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=North: n=9</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 rate cells in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=North, day_type=weekday: n=6</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=North, day_type=weekend: n=3</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   trips alone; a ratio from so few trips is unstable, and the rate functions</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   refuse a group this small.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   (GH #417).</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 rate cell in <span style="color: #0000BB;">"estimate_total_catch (section)"</span> rests on fewer than 10 trips.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=Central: n=9</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 rate cells in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=Central, day_type=weekday: n=6</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=Central, day_type=weekend: n=3</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   trips alone; a ratio from so few trips is unstable, and the rate functions</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   refuse a group this small.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   (GH #417).</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 rate cell in <span style="color: #0000BB;">"estimate_total_catch (section)"</span> rests on fewer than 10 trips.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=South: n=9</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 rate cells in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=South, day_type=weekday: n=6</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> section=South, day_type=weekend: n=3</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   trips alone; a ratio from so few trips is unstable, and the rate functions</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   refuse a group this small.</span>
@@ -209,10 +212,10 @@ for all 27 interviews</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 9</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> North           285.  23.1     232.     339.     9              0.228</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Central         711.  29.9     642.     780.     9              0.567</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> South           257.  22.7     205.     310.     9              0.205</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>254.  44.1    <span style="text-decoration: underline;">1</span>163.    <span style="text-decoration: underline;">1</span>345.     3              1    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> North           285.  20.3     237.     333.     9              0.226</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Central         717.  30.1     646.     788.     9              0.569</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> South           259.  22.8     205.     313.     9              0.205</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>261.  42.9    <span style="text-decoration: underline;">1</span>172.    <span style="text-decoration: underline;">1</span>350.     3              1    </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 2 more variables: se_prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

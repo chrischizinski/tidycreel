@@ -193,10 +193,10 @@ print(catch_est$estimates)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           285.  23.1     232.     339.     9              0.228
-#> 2 Central         711.  29.9     642.     780.     9              0.567
-#> 3 South           257.  22.7     205.     310.     9              0.205
-#> 4 .lake_total    1254.  44.1    1163.    1345.     3              1    
+#> 1 North           285.  20.3     237.     333.     9              0.226
+#> 2 Central         717.  30.1     646.     788.     9              0.569
+#> 3 South           259.  22.8     205.     313.     9              0.205
+#> 4 .lake_total    1261.  42.9    1172.    1350.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
@@ -218,10 +218,10 @@ print(harvest_est$estimates)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           165.  15.8     128.     201.     9              0.204
-#> 2 Central         466.  23.8     411.     520.     9              0.576
-#> 3 South           178.  15.9     142.     215.     9              0.221
-#> 4 .lake_total     809.  32.7     741.     876.     3              1    
+#> 1 North           166.  13.5     134.     198.     9              0.203
+#> 2 Central         472.  23.3     416.     527.     9              0.576
+#> 3 South           181.  15.9     143.     218.     9              0.221
+#> 4 .lake_total     818.  31.3     753.     883.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 

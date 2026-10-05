@@ -116,22 +116,25 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #>   count-derived effort is per angler.
 #> ℹ The product is correct only if every party is one angler. Pass
 #>   `add_interviews(n_anglers = <col>)` to normalise.
-#> Warning: 1 rate cell in "estimate_total_catch (section)" rests on fewer than 10 trips.
-#> • section=North: n=9
+#> Warning: 2 rate cells in "estimate_total_catch" rests on fewer than 10 trips.
+#> • section=North, day_type=weekday: n=6
+#> • section=North, day_type=weekend: n=3
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
 #>   trips alone; a ratio from so few trips is unstable, and the rate functions
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
-#> Warning: 1 rate cell in "estimate_total_catch (section)" rests on fewer than 10 trips.
-#> • section=Central: n=9
+#> Warning: 2 rate cells in "estimate_total_catch" rests on fewer than 10 trips.
+#> • section=Central, day_type=weekday: n=6
+#> • section=Central, day_type=weekend: n=3
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
 #>   trips alone; a ratio from so few trips is unstable, and the rate functions
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
-#> Warning: 1 rate cell in "estimate_total_catch (section)" rests on fewer than 10 trips.
-#> • section=South: n=9
+#> Warning: 2 rate cells in "estimate_total_catch" rests on fewer than 10 trips.
+#> • section=South, day_type=weekday: n=6
+#> • section=South, day_type=weekend: n=3
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
 #>   trips alone; a ratio from so few trips is unstable, and the rate functions
 #>   refuse a group this small.
@@ -148,9 +151,9 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           285.  23.1     232.     339.     9              0.228
-#> 2 Central         711.  29.9     642.     780.     9              0.567
-#> 3 South           257.  22.7     205.     310.     9              0.205
-#> 4 .lake_total    1254.  44.1    1163.    1345.     3              1    
+#> 1 North           285.  20.3     237.     333.     9              0.226
+#> 2 Central         717.  30.1     646.     788.     9              0.569
+#> 3 South           259.  22.8     205.     313.     9              0.205
+#> 4 .lake_total    1261.  42.9    1172.    1350.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
