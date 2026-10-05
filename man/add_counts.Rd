@@ -14,7 +14,8 @@ add_counts(
   circuit_time = NULL,
   period_length_col = NULL,
   unit_cols = NULL,
-  allow_invalid = FALSE
+  allow_invalid = FALSE,
+  p_period = NULL
 )
 }
 \arguments{
@@ -111,6 +112,23 @@ more on long days, so the collapsed form biases low.}
 \item{allow_invalid}{Logical flag for validation behavior. If FALSE (default),
 validation failures abort with detailed error messages. If TRUE, validation
 failures generate warnings and attach counts anyway (use with caution).}
+
+\item{p_period}{The probability that the counted period (shift) was the one
+worked on that sampled day: a single number, or a column of \code{counts}, in
+(0, 1]. For a design that draws one of two shifts per sampled day at
+random, \code{p_period = 0.5}. Daily effort is then the mean count x the period
+length / \code{p_period} (Horvitz-Thompson over the shift draw), and the same
+factor reaches the within-day variance and the party-size expansion term.
+Requires \code{period_length_col}, which must hold the real length of the
+shift, not a length already divided by the probability: that would apply
+the probability twice and double the effort. A length over 24 hours is
+refused for that reason, and a warning is given when the length /
+\code{p_period}, averaged over sampled days, passes 24 hours (the shifts would
+then cover more than a day). A column must be
+constant within each sampled day. Not used on aerial designs (which expand
+by \code{h_open}) or bus-route designs (which declare \code{p_period} in
+\code{\link[=creel_design]{creel_design()}}). \code{NULL} (default) means every period of the day was
+eligible to be counted, as before.}
 }
 \value{
 A new creel_design object (list) with components:
