@@ -43,8 +43,22 @@
   (`creel_warning_p_period_coverage`). That average estimates the total length
   of the shifts, which cannot exceed a day, so two 7-hour shifts entered as 14
   (28 hours a day) are caught. It is a warning, not an error, because unequal
-  shifts drawn unevenly can pass 24 by chance. The exact check, the length
-  against the declared shift window, comes with shift-aware schedules (#385).
+  shifts drawn unevenly can pass 24 by chance.
+
+* `add_counts()` reads `p_period` from a shift schedule (#385). When the
+  design calendar is a schedule from `generate_schedule()` or
+  `read_schedule()` that draws shifts, each counted day's probability is taken
+  from it, so `p_period` no longer has to be passed by hand. A `p_period`
+  argument that disagrees with the schedule is an error, and so are counts on
+  a day the schedule gives no worked shift.
+
+  When the schedule has shift times, the exact check now runs: the period
+  length must equal the total hours of the day's worked shifts (two of three
+  5-hour shifts worked: 10 hours, at `p_period` = 2/3). A length equal to the
+  window / `p_period` is refused (`creel_error_p_period_applied_twice`): the
+  probability would be applied twice and effort doubled. Any other mismatch is
+  refused as `creel_error_period_length_window`, naming the days. A shift that
+  crosses midnight is refused until #407.
 
 * `estimate_effort_aerial_glmm()` gains `by`, which returns one effort estimate
   per stratum (#364). This is the first step towards per-stratum aerial GLMM

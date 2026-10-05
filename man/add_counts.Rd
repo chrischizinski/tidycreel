@@ -128,7 +128,19 @@ then cover more than a day). A column must be
 constant within each sampled day. Not used on aerial designs (which expand
 by \code{h_open}) or bus-route designs (which declare \code{p_period} in
 \code{\link[=creel_design]{creel_design()}}). \code{NULL} (default) means every period of the day was
-eligible to be counted, as before.}
+eligible to be counted, as before -- unless the design calendar is a
+schedule that samples shifts (see below).
+
+\strong{Shift schedules.} When the design calendar comes from
+\code{\link[=generate_schedule]{generate_schedule()}} or \code{\link[=read_schedule]{read_schedule()}} with shifts drawn (a
+\code{p_period} column below 1, or \code{shift_start} / \code{shift_end}), \code{add_counts()}
+reads each counted day's \code{p_period} from it, so the argument can be left
+out. If it is given it must agree with the schedule. Counts on a day the
+schedule gives no worked shift are refused. When the schedule has shift
+times, \code{period_length_col} must equal the total hours of the day's worked
+shifts (to 0.01 h); a length equal to that window / \code{p_period} is refused
+as applying the probability twice. Shifts that cross midnight are refused
+until #407.}
 }
 \value{
 A new creel_design object (list) with components:
