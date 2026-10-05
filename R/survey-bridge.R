@@ -162,6 +162,8 @@ get_variance_design <- function(design, variance_method) {
             msg,
             regexpr("(?<=Stratum)(.+?)(?=has only one PSU)", msg, perl = TRUE)
           )
+          # A multi-column stratum key carries the \u001f separator (GH #422).
+          strat <- gsub("\u001f", " / ", strat, fixed = TRUE)
           strat_label <- if (length(strat) > 0L && nzchar(strat)) {
             # nolint: object_usage_linter
             strat
@@ -192,6 +194,45 @@ get_variance_design <- function(design, variance_method) {
   }
 }
 
+#' One stratum key for survey::svydesign()
+#'
+#' Internal. `svydesign(strata = ~a + b)` does not mean the a x b
+#' interaction: a multi-term strata formula gives one strata variable per
+#' sampling stage, so stage 1 would be stratified by `a` alone. The weights
+#' tidycreel computes are per cell, so point estimates stayed right while the
+#' between-day variance and the FPC were taken over the first column only -- a
+#' `strata = c(day_type, month)` effort total reported SE 147.7 where the cells
+#' give 187.9 (GH #422; the camera path had the same collapse, #216). Every
+#' survey design built from strata columns goes through here, so the rule is
+#' written once.
+#'
+#' @param data Data frame the design is built on.
+#' @param strata `NULL`, a one-sided formula, or a character vector of column
+#'   names.
+#'
+#' @return A list with `data` (with a `.strata` column added when there is
+#'   more than one strata column) and `strata` (a one-sided formula, or
+#'   `NULL`).
+#'
+#' @keywords internal
+#' @noRd
+strata_design_key <- function(data, strata) {
+  if (is.null(strata)) {
+    return(list(data = data, strata = NULL))
+  }
+  cols <- if (inherits(strata, "formula")) all.vars(strata) else strata
+  if (length(cols) == 0) {
+    return(list(data = data, strata = NULL))
+  }
+  if (length(cols) == 1) {
+    return(list(data = data, strata = stats::reformulate(cols)))
+  }
+  # `interaction()`'s default "." separator would merge a = "x.y", b = "z" with
+  # a = "x", b = "y.z" into one stratum; \u001f cannot occur in a label (#248).
+  data$.strata <- interaction(data[cols], drop = TRUE, sep = "\u001f")
+  list(data = data, strata = ~.strata)
+}
+
 #' Build interview survey design with explicit equal-probability weights
 #'
 #' Internal helper that constructs a \code{survey.design2} object for interview
@@ -201,6 +242,9 @@ get_variance_design <- function(design, variance_method) {
 #' assumption explicit and suppresses the survey package diagnostic
 #' "No weights or probabilities supplied, assuming equal probability", which
 #' would otherwise appear on every \code{add_interviews()} call.
+#'
+#' A multi-column strata formula is turned into one interaction key first:
+#' see \code{strata_design_key()}.
 #'
 #' Equal-probability weights do not affect downstream means or ratios
 #' (\code{svymean}, \code{svyratio}), nor variance estimates from Taylor
@@ -222,6 +266,9 @@ get_variance_design <- function(design, variance_method) {
 #' @keywords internal
 #' @noRd
 build_interview_survey <- function(data, strata = NULL, ids = NULL) {
+  key <- strata_design_key(data, strata)
+  data <- key$data
+  strata <- key$strata
   if (is.null(ids)) {
     return(survey::svydesign(
       ids = ~1,
@@ -842,19 +889,13 @@ construct_survey_design <- function(design) {
   psu_col <- design$psu_col
   strata_cols <- design$strata_cols
 
-  # Create strata variable
-  if (length(strata_cols) == 1) {
-    # Single stratum - use directly
-    counts_data$.strata <- counts_data[[strata_cols]]
-  } else {
-    # Multiple strata - create interaction
-    strata_factors <- counts_data[strata_cols]
-    counts_data$.strata <- interaction(strata_factors, drop = TRUE)
-  }
+  # One stratum key, built where every survey design builds it (GH #422)
+  key <- strata_design_key(counts_data, strata_cols)
+  counts_data <- key$data
 
   # Build formulas
   psu_formula <- stats::reformulate(psu_col)
-  strata_formula <- stats::reformulate(".strata")
+  strata_formula <- key$strata
 
   # Attempt to construct survey design with error wrapping
   tryCatch(
@@ -2260,18 +2301,12 @@ construct_interview_survey <- function(design) {
   interviews_data <- design$interviews
   strata_cols <- design$strata_cols
 
-  # Create strata variable
-  if (length(strata_cols) == 1) {
-    # Single stratum - use directly
-    interviews_data$.strata <- interviews_data[[strata_cols]]
-  } else {
-    # Multiple strata - create interaction
-    strata_factors <- interviews_data[strata_cols]
-    interviews_data$.strata <- interaction(strata_factors, drop = TRUE)
-  }
+  # One stratum key, built where every survey design builds it (GH #422)
+  key <- strata_design_key(interviews_data, strata_cols)
+  interviews_data <- key$data
 
   # Build formulas - use ~1 for ids (terminal sampling units)
-  strata_formula <- stats::reformulate(".strata")
+  strata_formula <- key$strata
 
   # Attempt to construct survey design with error wrapping
   tryCatch(
