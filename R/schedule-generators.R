@@ -158,6 +158,189 @@ expand_periods_impl <- function(base_df, n_periods, period_labels = NULL, ordere
   expanded
 }
 
+#' Validate periods_per_day for generate_schedule()
+#'
+#' Internal (GH #385). `NULL` means every period is worked on every sampled
+#' day (the behaviour before shifts were drawn).
+#'
+#' @return An integer in 1..n_periods.
+#' @noRd
+validate_periods_per_day <- function(periods_per_day, n_periods, expand_periods,
+                                     call = rlang::caller_env()) {
+  if (is.null(periods_per_day)) {
+    return(as.integer(n_periods))
+  }
+  ok <- is.numeric(periods_per_day) && length(periods_per_day) == 1L &&
+    !is.na(periods_per_day) && periods_per_day == round(periods_per_day) &&
+    periods_per_day >= 1 && periods_per_day <= n_periods
+  if (!ok) {
+    cli::cli_abort(
+      c(
+        "{.arg periods_per_day} must be a whole number from 1 to {.arg n_periods} ({n_periods}).",
+        "x" = "Got {.val {periods_per_day}}."
+      ),
+      call = call
+    )
+  }
+  if (periods_per_day < n_periods && !expand_periods) {
+    cli::cli_abort(
+      c(
+        "{.arg periods_per_day} below {.arg n_periods} needs {.code expand_periods = TRUE}.",
+        "x" = "The drawn shifts are recorded as {.col period_id} rows, which {.code expand_periods = FALSE} drops.",
+        "i" = "Without them the schedule cannot carry the selection probability the estimator needs."
+      ),
+      call = call
+    )
+  }
+  as.integer(periods_per_day)
+}
+
+#' Draw which periods (shifts) are worked on each sampled day
+#'
+#' Internal (GH #385). The shift is a second-stage sample within the sampled
+#' day. Every period has the same chance, `periods_per_day / n_periods`, of
+#' being worked on any sampled day under both allocations, which is the
+#' `p_period` the schedule records.
+#'
+#' - `"balanced"`: within each stratum, the days are put in random order and
+#'   the periods dealt to them cyclically from a random permutation, so the
+#'   number of days per period differs by at most one, and which periods get
+#'   the extra day is random. The draws are then slightly dependent (negatively
+#'   so), which the independent-draw variance treats conservatively.
+#' - `"random"`: an independent draw of `periods_per_day` periods per day.
+#'
+#' @param strata Stratum label of each sampled day, in date order.
+#' @return A list with one sorted integer vector of period indices per sampled
+#'   day, in the order of `strata`.
+#' @noRd
+draw_period_assignment <- function(strata, n_periods, periods_per_day, allocation) {
+  out <- vector("list", length(strata))
+  if (identical(allocation, "random")) {
+    for (i in seq_along(strata)) {
+      out[[i]] <- sort(sample.int(n_periods, periods_per_day))
+    }
+    return(out)
+  }
+  for (s in unique(strata)) {
+    idx <- which(strata == s)
+    day_order <- idx[sample.int(length(idx))]
+    perm <- sample.int(n_periods)
+    for (j in seq_along(day_order)) {
+      slots <- ((j - 1L) * periods_per_day + seq_len(periods_per_day) - 1L) %% n_periods + 1L
+      out[[day_order[j]]] <- sort(perm[slots])
+    }
+  }
+  out
+}
+
+#' Expand sampled days to their drawn periods
+#'
+#' Internal (GH #385). Each sampled day gets one row per drawn period, with
+#' `p_period = periods_per_day / n_periods`. An unsampled day (present only
+#' with `include_all = TRUE`) keeps a single row with `period_id` and
+#' `p_period` `NA`: no shift was drawn for it.
+#'
+#' @noRd
+expand_drawn_periods <- function(base, shifts, sampled, all_dates, n_periods, periods_per_day,
+                                 period_labels, ordered_periods) {
+  sampled_dates <- all_dates[sampled]
+  pos <- match(base$date, sampled_dates)
+  per_row <- lapply(pos, function(p) if (is.na(p)) NA_integer_ else shifts[[p]])
+  rows <- rep(seq_len(nrow(base)), lengths(per_row))
+  pid <- unlist(per_row, use.names = FALSE)
+  expanded <- base[rows, , drop = FALSE]
+  rownames(expanded) <- NULL
+
+  if (is.null(period_labels)) {
+    expanded$period_id <- as.integer(pid)
+  } else {
+    labelled <- period_labels[pid]
+    expanded$period_id <- if (ordered_periods) {
+      factor(labelled, levels = period_labels, ordered = TRUE)
+    } else {
+      as.character(labelled)
+    }
+  }
+  expanded$p_period <- ifelse(is.na(pid), NA_real_, periods_per_day / n_periods)
+  expanded
+}
+
+#' Validate the shift-times table for generate_schedule()
+#'
+#' Internal (GH #385). One row per period: `period_id` (matching
+#' `period_labels`, or 1..n_periods without labels), `start_time` and
+#' `end_time` as "HH:MM". A shift that ends at or before it starts (crossing
+#' midnight) is refused until clock-time handling for night creels lands
+#' (#407).
+#'
+#' @return A data frame with `key` (character period id), `shift_start`,
+#'   `shift_end`.
+#' @noRd
+validate_periods_table <- function(periods, n_periods, period_labels, call = rlang::caller_env()) {
+  needed <- c("period_id", "start_time", "end_time")
+  if (!is.data.frame(periods) || !all(needed %in% names(periods))) {
+    cli::cli_abort(
+      c(
+        "{.arg periods} must be a data frame with columns {.val {needed}}.",
+        "x" = "Missing: {.val {setdiff(needed, names(periods))}}."
+      ),
+      call = call
+    )
+  }
+  expected <- if (is.null(period_labels)) as.character(seq_len(n_periods)) else as.character(period_labels)
+  key <- as.character(periods$period_id)
+  if (anyDuplicated(key) || !setequal(key, expected)) {
+    cli::cli_abort(
+      c(
+        "{.arg periods} must have exactly one row per period.",
+        "x" = "Expected {.val {expected}}; got {.val {key}}."
+      ),
+      call = call
+    )
+  }
+  hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+  start <- as.character(periods$start_time)
+  end <- as.character(periods$end_time)
+  bad_fmt <- !grepl(hhmm, start) | !grepl(hhmm, end)
+  if (any(bad_fmt)) {
+    cli::cli_abort(
+      c(
+        "Shift times in {.arg periods} must be \"HH:MM\" (00:00 to 23:59).",
+        "x" = "Period{?s} {.val {key[bad_fmt]}} {?has/have} an unreadable time."
+      ),
+      call = call
+    )
+  }
+  start_min <- vapply(start, parse_hhmm_to_min, integer(1))
+  end_min <- vapply(end, parse_hhmm_to_min, integer(1))
+  wraps <- end_min <= start_min
+  if (any(wraps)) {
+    cli::cli_abort(
+      c(
+        "Shift{?s} {.val {key[wraps]}} end{?s/} at or before {?its/their} start.",
+        "x" = "A shift crossing midnight is not supported yet: its length and its date depend on \\
+               clock-time handling for night creels (#407).",
+        "i" = "Until then, give each shift an end time later the same day."
+      ),
+      call = call
+    )
+  }
+  data.frame(key = key, shift_start = start, shift_end = end, stringsAsFactors = FALSE)
+}
+
+#' Attach each row's shift start and end times
+#'
+#' Internal (GH #385). Columns, not an attribute, so the times survive a
+#' write_schedule() / read_schedule() round trip.
+#'
+#' @noRd
+attach_shift_times <- function(base, periods) {
+  i <- match(as.character(base$period_id), periods$key)
+  base$shift_start <- periods$shift_start[i]
+  base$shift_end <- periods$shift_end[i]
+  base
+}
+
 #' Resolve calendar-defined special periods to day-level stratum assignments
 #'
 #' @param all_dates Date vector for the full schedule season.
@@ -386,6 +569,25 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #'   periods. Must contain `start_date`, `end_date`, and `label` columns, with
 #'   optional `reason`. Periods are expanded to day-level assignments before
 #'   sampling so boundary-crossing periods are split by civil date.
+#' @param periods_per_day Integer. How many of the `n_periods` periods
+#'   (shifts) are worked on each sampled day. `NULL` (default) means all of
+#'   them, as before. With fewer, the worked periods are drawn at random for
+#'   each sampled day and each row records its selection probability in
+#'   `p_period` (`periods_per_day / n_periods`), e.g. one of two shifts gives
+#'   `p_period = 0.5`. Needs `expand_periods = TRUE`.
+#' @param period_allocation How the worked periods are drawn when
+#'   `periods_per_day < n_periods`. `"balanced"` (default): within each
+#'   stratum the periods are dealt to the sampled days in random order, so the
+#'   number of days per period differs by at most one (e.g. 5 morning + 5
+#'   evening over 10 weekdays). `"random"`: an independent draw for each day.
+#'   Under both, every period has the same chance, `p_period`, of being worked
+#'   on any sampled day. The variance estimators treat the draws as
+#'   independent, which is conservative for `"balanced"`.
+#' @param periods Optional data frame of shift times: `period_id` (one row per
+#'   period, matching `period_labels`, or 1 to `n_periods`), `start_time` and
+#'   `end_time` as `"HH:MM"`. Adds `shift_start` and `shift_end` to every row.
+#'   A shift that ends at or before it starts (crossing midnight) is not yet
+#'   supported.
 #'
 #' @return A `creel_schedule` data frame with columns:
 #'   - `date` (Date): Sampled (or all) dates.
@@ -396,6 +598,12 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #'     supplied; gives the optional reason for the special-period assignment.
 #'   - `period_id` (integer, character, or ordered factor): Period within day.
 #'     Absent when `expand_periods = FALSE`.
+#'   - `p_period` (numeric): Probability that the period was the one worked
+#'     that day: `1` when every period is worked, `periods_per_day /
+#'     n_periods` when they are drawn, `NA` on unsampled days. Absent when
+#'     `expand_periods = FALSE`.
+#'   - `shift_start`, `shift_end` (character, "HH:MM"): Present when `periods`
+#'     is supplied.
 #'   - `sampled` (logical): Present only when `include_all = TRUE`.
 #'
 #' @examples
@@ -411,6 +619,23 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #' # Use result with creel_design()
 #' creel_design(sched, date = date, strata = day_type)
 #'
+#' # One of two shifts worked on each sampled day, drawn at random
+#' shifts <- generate_schedule(
+#'   start_date = "2024-06-01",
+#'   end_date = "2024-08-31",
+#'   n_periods = 2,
+#'   period_labels = c("AM", "PM"),
+#'   sampling_rate = c(weekday = 0.3, weekend = 0.6),
+#'   periods_per_day = 1,
+#'   periods = data.frame(
+#'     period_id = c("AM", "PM"),
+#'     start_time = c("06:00", "13:00"),
+#'     end_time = c("13:00", "20:00")
+#'   ),
+#'   seed = 42
+#' )
+#' head(shifts)
+#'
 #' @family "Scheduling"
 #' @export
 generate_schedule <- function(
@@ -425,7 +650,10 @@ generate_schedule <- function(
   ordered_periods = FALSE,
   period_intensity = NULL,
   seed,
-  special_periods = NULL
+  special_periods = NULL,
+  periods_per_day = NULL,
+  period_allocation = c("balanced", "random"),
+  periods = NULL
 ) {
   rlang::check_installed("lubridate")
   # Validate mutually-exclusive intensity args
@@ -450,6 +678,18 @@ generate_schedule <- function(
       "{.arg period_intensity} is not yet implemented.",
       "i" = "Leave {.arg period_intensity} as NULL for now."
     ))
+  }
+
+  period_allocation <- rlang::arg_match(period_allocation)
+  periods_per_day <- validate_periods_per_day(periods_per_day, n_periods, expand_periods)
+  if (!is.null(periods)) {
+    if (!expand_periods) {
+      cli::cli_abort(c(
+        "{.arg periods} needs {.code expand_periods = TRUE}.",
+        "x" = "Shift times are attached per period, and {.code expand_periods = FALSE} drops periods."
+      ))
+    }
+    periods <- validate_periods_table(periods, n_periods, period_labels)
   }
 
   # Build season date sequence (lubridate DST-safe)
@@ -546,17 +786,30 @@ generate_schedule <- function(
     sampling_rate <- sampling_rate[names(sampling_rate) %in% active_sampling_strata]
   }
 
-  # Stratified random sampling inside scoped RNG (no global mutation)
-  sampled <- withr::with_seed(
+  # Stratified random sampling inside scoped RNG (no global mutation). The
+  # shift draw (GH #385) runs AFTER the day selection inside the same seeded
+  # block, so a given seed selects the same days as before shifts existed.
+  draws <- withr::with_seed(
     seed,
-    select_sampled_days(
-      all_dates,
-      strata_for_sampling,
-      n_days,
-      sampling_rate,
-      valid_strata = active_sampling_strata
-    )
+    {
+      sampled_days <- select_sampled_days(
+        all_dates,
+        strata_for_sampling,
+        n_days,
+        sampling_rate,
+        valid_strata = active_sampling_strata
+      )
+      shift_draw <- if (periods_per_day < n_periods) {
+        draw_period_assignment(
+          strata_for_sampling[sampled_days], n_periods, periods_per_day, period_allocation
+        )
+      } else {
+        NULL
+      }
+      list(sampled = sampled_days, shifts = shift_draw)
+    }
   )
+  sampled <- draws$sampled
 
   # Build base tibble with all season dates
   base <- tibble::tibble(
@@ -574,9 +827,22 @@ generate_schedule <- function(
     base <- base[base$sampled, ]
   }
 
-  # Expand periods (adds period_id column)
+  # Expand periods (adds period_id column). With every period worked on every
+  # sampled day, each was certain to be counted: p_period = 1. With a shift
+  # draw, each sampled day carries only its drawn periods (GH #385).
   if (expand_periods) {
-    base <- expand_periods_impl(base, n_periods, period_labels, ordered_periods)
+    if (is.null(draws$shifts)) {
+      base <- expand_periods_impl(base, n_periods, period_labels, ordered_periods)
+      base$p_period <- 1
+    } else {
+      base <- expand_drawn_periods(
+        base, draws$shifts, sampled, all_dates, n_periods, periods_per_day,
+        period_labels, ordered_periods
+      )
+    }
+    if (!is.null(periods)) {
+      base <- attach_shift_times(base, periods)
+    }
   }
 
   # Drop sampled column if not requested

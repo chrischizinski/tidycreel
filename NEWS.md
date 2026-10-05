@@ -2,6 +2,22 @@
 
 ## New features
 
+* `generate_schedule()` can draw which shift is worked on each sampled day
+  (#385). `periods_per_day` sets how many of the `n_periods` are worked
+  (default: all, as before), and `period_allocation` how they are drawn:
+  `"balanced"` (default) deals the shifts to each stratum's days in random
+  order so their counts differ by at most one; `"random"` draws each day
+  independently. Every row now records `p_period`, the probability its period
+  was the one worked that day (`periods_per_day / n_periods`, or 1 when every
+  period is worked), so the shift can be expanded to the day by the right
+  factor. An optional `periods` table of shift times adds `shift_start` and
+  `shift_end`. A seed selects the same days as before; the shift draw comes
+  after. `write_schedule()` / `read_schedule()` keep all of these, and
+  `read_schedule()` refuses a worked period with a missing or out-of-range
+  `p_period`. A file from before this change (no `p_period` column) is read
+  as `p_period = 1` with a warning when every sampled day has the same
+  periods, and refused when they differ (the periods were drawn). Shifts crossing midnight wait for #407.
+
 * `add_counts()` gains `p_period`: the probability that the counted period
   (shift) was the one worked on that sampled day, as a number or a column, in
   (0, 1] (#368). A common roving design draws one of two shifts per sampled day

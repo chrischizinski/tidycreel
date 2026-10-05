@@ -84,7 +84,7 @@
     Code
       print(sched)
     Output
-      # A creel_schedule: 18 rows x 3 cols (18 days, 1 periods)
+      # A creel_schedule: 18 rows x 4 cols (18 days, 1 periods)
       June 2024
       | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |
       |----------|----------|----------|----------|----------|----------|----------|

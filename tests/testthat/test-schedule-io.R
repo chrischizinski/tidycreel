@@ -221,7 +221,9 @@ test_that("SCHED-IO-01: read_schedule preserves character period_id without NA c
     stringsAsFactors = FALSE
   )
   utils::write.csv(df, tmp, row.names = FALSE)
-  result <- read_schedule(tmp)
+  # A file without p_period (GH #385) whose days carry the same periods is
+  # read as p_period = 1 with a warning.
+  expect_warning(result <- read_schedule(tmp), class = "creel_warning_p_period_inferred")
   expect_type(result$period_id, "character")
   expect_equal(result$period_id, c("AM", "PM"))
   expect_false(any(is.na(result$period_id)))
@@ -304,7 +306,9 @@ test_that("SCHED-04: non-numeric window labels survive the round trip as charact
     stringsAsFactors = FALSE
   )
   utils::write.csv(df, tmp, row.names = FALSE)
-  result <- read_schedule(tmp)
+  # A file without p_period (GH #385) whose days carry the same periods is
+  # read as p_period = 1 with a warning.
+  expect_warning(result <- read_schedule(tmp), class = "creel_warning_p_period_inferred")
   expect_type(result$window_id, "character")
   expect_identical(result$window_id, c("AM", "PM"))
 })

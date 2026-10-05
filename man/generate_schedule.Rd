@@ -16,7 +16,10 @@ generate_schedule(
   ordered_periods = FALSE,
   period_intensity = NULL,
   seed,
-  special_periods = NULL
+  special_periods = NULL,
+  periods_per_day = NULL,
+  period_allocation = c("balanced", "random"),
+  periods = NULL
 )
 }
 \arguments{
@@ -61,6 +64,28 @@ label order.}
 periods. Must contain \code{start_date}, \code{end_date}, and \code{label} columns, with
 optional \code{reason}. Periods are expanded to day-level assignments before
 sampling so boundary-crossing periods are split by civil date.}
+
+\item{periods_per_day}{Integer. How many of the \code{n_periods} periods
+(shifts) are worked on each sampled day. \code{NULL} (default) means all of
+them, as before. With fewer, the worked periods are drawn at random for
+each sampled day and each row records its selection probability in
+\code{p_period} (\code{periods_per_day / n_periods}), e.g. one of two shifts gives
+\code{p_period = 0.5}. Needs \code{expand_periods = TRUE}.}
+
+\item{period_allocation}{How the worked periods are drawn when
+\code{periods_per_day < n_periods}. \code{"balanced"} (default): within each
+stratum the periods are dealt to the sampled days in random order, so the
+number of days per period differs by at most one (e.g. 5 morning + 5
+evening over 10 weekdays). \code{"random"}: an independent draw for each day.
+Under both, every period has the same chance, \code{p_period}, of being worked
+on any sampled day. The variance estimators treat the draws as
+independent, which is conservative for \code{"balanced"}.}
+
+\item{periods}{Optional data frame of shift times: \code{period_id} (one row per
+period, matching \code{period_labels}, or 1 to \code{n_periods}), \code{start_time} and
+\code{end_time} as \code{"HH:MM"}. Adds \code{shift_start} and \code{shift_end} to every row.
+A shift that ends at or before it starts (crossing midnight) is not yet
+supported.}
 }
 \value{
 A \code{creel_schedule} data frame with columns:
@@ -73,6 +98,11 @@ gives the final stratum used for day selection.
 supplied; gives the optional reason for the special-period assignment.
 \item \code{period_id} (integer, character, or ordered factor): Period within day.
 Absent when \code{expand_periods = FALSE}.
+\item \code{p_period} (numeric): Probability that the period was the one worked
+that day: \code{1} when every period is worked, \code{periods_per_day / n_periods} when they are drawn, \code{NA} on unsampled days. Absent when
+\code{expand_periods = FALSE}.
+\item \code{shift_start}, \code{shift_end} (character, "HH:MM"): Present when \code{periods}
+is supplied.
 \item \code{sampled} (logical): Present only when \code{include_all = TRUE}.
 }
 }
@@ -94,6 +124,23 @@ sched <- generate_schedule(
 
 # Use result with creel_design()
 creel_design(sched, date = date, strata = day_type)
+
+# One of two shifts worked on each sampled day, drawn at random
+shifts <- generate_schedule(
+  start_date = "2024-06-01",
+  end_date = "2024-08-31",
+  n_periods = 2,
+  period_labels = c("AM", "PM"),
+  sampling_rate = c(weekday = 0.3, weekend = 0.6),
+  periods_per_day = 1,
+  periods = data.frame(
+    period_id = c("AM", "PM"),
+    start_time = c("06:00", "13:00"),
+    end_time = c("13:00", "20:00")
+  ),
+  seed = 42
+)
+head(shifts)
 
 }
 \seealso{

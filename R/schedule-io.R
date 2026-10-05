@@ -105,6 +105,13 @@ coerce_schedule_columns <- function(df) {
   if ("sampled" %in% names(df)) {
     df$sampled <- as.logical(df$sampled)
   }
+  if ("p_period" %in% names(df)) {
+    # Text that is not a number becomes NA, which validate_creel_schedule()
+    # then refuses on any worked period (GH #385).
+    pp <- df$p_period
+    pp[!is.na(pp) & (pp == "NA" | pp == "")] <- NA
+    df$p_period <- suppressWarnings(as.numeric(pp))
+  }
   df
 }
 
@@ -173,6 +180,15 @@ write_schedule <- function(schedule, path, format = c("csv", "xlsx"), overwrite 
 #'   - `date` (Date)
 #'   - `day_type` (character)
 #'   - `period_id` (integer, if present)
+#'   - `p_period` (numeric, if present): the probability each worked period
+#'     was drawn for its day. Every row with a period on a sampled day must
+#'     carry one in (0, 1]; a missing, non-numeric or out-of-range value is an
+#'     error, because the period could not be expanded to the day.
+#'     A file with `period_id` but no `p_period` column (written before the
+#'     column existed) is read as `p_period = 1`, with a warning, when every
+#'     sampled day carries the same periods (each was worked every day); if
+#'     the periods differ between days they were drawn, and it is an error.
+#'   - `shift_start`, `shift_end` (character "HH:MM", if present)
 #'   - `sampled` (logical, if present)
 #'
 #' @examples
@@ -204,5 +220,56 @@ read_schedule <- function(path) {
   raw <- as.data.frame(raw)
   coerced <- coerce_schedule_columns(raw)
   validate_creel_schedule(coerced) # nolint: object_usage_linter
+  # After validation: a file that is invalid for another reason errors without
+  # a p_period warning first, and an inferred p_period = 1 is always valid.
+  coerced <- infer_census_p_period(coerced, path)
   new_creel_schedule(coerced) # nolint: object_usage_linter
+}
+
+#' Supply p_period for a schedule file written before shifts were drawn
+#'
+#' Internal (GH #385). A file with `period_id` but no `p_period` predates the
+#' column. If every sampled day carries the same set of periods, every period
+#' was worked on every day -- no shift was drawn -- so each was certain to be
+#' worked: `p_period = 1`, with a warning saying it was inferred. If the sets
+#' differ between days, periods were drawn, and the probability is neither
+#' recorded nor computable from the file: an error naming the days.
+#'
+#' @noRd
+infer_census_p_period <- function(df, path, call = rlang::caller_env()) {
+  if (!"period_id" %in% names(df) || "p_period" %in% names(df)) {
+    return(df)
+  }
+  worked <- !is.na(df$period_id)
+  if ("sampled" %in% names(df)) worked <- worked & df$sampled %in% TRUE
+  if (!any(worked)) {
+    return(df)
+  }
+  sets <- tapply(as.character(df$period_id[worked]), as.character(df$date[worked]),
+                 function(x) paste(sort(unique(x)), collapse = "\u001f"))
+  common <- names(which.max(table(sets)))
+  odd_days <- names(sets)[sets != common]
+  if (length(odd_days) > 0L) {
+    cli::cli_abort(
+      c(
+        "{.path {basename(path)}} has periods but no {.col p_period} column, and the periods differ between days.",
+        "x" = "{length(odd_days)} sampled day{?s} carr{?ies/y} a different set of periods than the rest \\
+               (first: {.val {utils::head(odd_days, 3)}}), so periods were drawn and the chance each was \\
+               worked is not in the file.",
+        "i" = "Add a {.col p_period} column (e.g. 0.5 for one of two shifts drawn at random)."
+      ),
+      class = "creel_error_schema_validation",
+      call = call
+    )
+  }
+  df$p_period <- ifelse(is.na(df$period_id), NA_real_, 1)
+  cli::cli_warn(
+    c(
+      "{.path {basename(path)}} has periods but no {.col p_period} column; set {.code p_period = 1}.",
+      "i" = "Every sampled day carries the same periods, so every period was worked every day.",
+      "i" = "If the periods were in fact drawn, add the real {.col p_period} to the file."
+    ),
+    class = "creel_warning_p_period_inferred"
+  )
+  df
 }
