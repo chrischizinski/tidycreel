@@ -1668,7 +1668,10 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
     unit_key <- interaction(counts[unit_cols], drop = TRUE, sep = "\u001f")
     per_day <- tapply(counts[[period_length_col_name]] / vals, unit_key, mean)
     by_part <- if (!is.null(design$section_col) && design$section_col %in% names(counts)) {
-      part_of_day <- counts[[design$section_col]][match(names(per_day), as.character(unit_key))]
+      # Character, not the column as supplied: a factor keeps the levels of
+      # sections with no counts, and tapply() returns NA for them, which would
+      # warn on correct data and hide a real overrun behind max(NA).
+      part_of_day <- as.character(counts[[design$section_col]])[match(names(per_day), as.character(unit_key))]
       tapply(per_day, part_of_day, mean)
     } else {
       c(all = mean(per_day))

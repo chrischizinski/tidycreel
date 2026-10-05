@@ -210,3 +210,34 @@ test_that("#368: on a sectioned design the coverage warning is per section and n
   expect_match(msg, "(North)", fixed = TRUE)
   expect_no_match(msg, "South", fixed = TRUE)
 })
+
+test_that("#368: a factor section column with an uncounted level neither warns falsely nor hides an overrun", {
+  # A factor keeps the level of a declared section with no counts; averaged per
+  # section, that empty level came back NA, which warned "NA hours" on correct
+  # data and turned max() over a real overrun into NA.
+  cal <- sp_calendar()
+  d <- suppressMessages(creel_design(cal, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- add_sections(d, data.frame(section = c("North", "South", "East")), section_col = section) # nolint: object_usage_linter
+  base <- sp_counts(7)
+  coverage_msgs <- function(north_hours) {
+    cn <- rbind(transform(base, section = "North", shift_hours = north_hours), transform(base, section = "South"))
+    cn$section <- factor(cn$section, levels = c("North", "South", "East"))
+    msgs <- character(0)
+    withCallingHandlers(
+      suppressMessages(add_counts(
+        d, cn,
+        count_col = anglers, count_time_col = count_time, period_length_col = shift_hours, p_period = 0.5
+      )),
+      creel_warning_p_period_coverage = function(cnd) {
+        msgs <<- c(msgs, conditionMessage(cnd))
+        invokeRestart("muffleWarning")
+      },
+      warning = function(cnd) invokeRestart("muffleWarning")
+    )
+    msgs
+  }
+  expect_length(coverage_msgs(7), 0L)
+  overrun <- coverage_msgs(14)
+  expect_length(overrun, 1L)
+  expect_match(overrun, "cover 28 hours a day on average (North)", fixed = TRUE)
+})
