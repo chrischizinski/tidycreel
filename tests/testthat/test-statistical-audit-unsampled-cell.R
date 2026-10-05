@@ -227,3 +227,19 @@ test_that("#421: section IDs typed differently in calendar and counts are one se
   expect_s3_class(err, "creel_error_unsampled_cell")
   expect_match(conditionMessage(err), "day_type=weekday (5 days)", fixed = TRUE)
 })
+
+test_that("#421: the hinted month-as-stratum design reproduces a fully sampled split exactly", {
+  # The refusal points at strata = c(day_type, month). With every Labor Day
+  # day sampled each piece is a census: August 100 + 90, September 50, no
+  # between-day error. This only holds with multi-column strata stratifying by
+  # the cells (#422).
+  cal <- uc_calendar()
+  d <- suppressMessages(creel_design(cal, date = date, strata = c(day_type, month))) # nolint: object_usage_linter
+  base <- uc_design(c("2025-08-30", "2025-08-31", "2025-09-01"))
+  d <- suppressWarnings(suppressMessages(add_counts(d, base$counts)))
+  r <- as.data.frame(uc_effort(d, by = c(day_type, month), target = "period_total")$estimates)
+  ld <- r[r$day_type == "labor_day", ]
+  expect_equal(ld$estimate[ld$month == "08"], 190)
+  expect_equal(ld$estimate[ld$month == "09"], 50)
+  expect_equal(ld$se, c(0, 0))
+})

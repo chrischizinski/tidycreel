@@ -5241,8 +5241,9 @@ refuse_unsampled_cells <- function(design, cell_cols) {
       } else {
         "To expand each group separately, declare it as a stratum: \\
          {.code strata = c({paste(cell_cols, collapse = ', ')})} in \\
-         {.fn creel_design}. Otherwise group by a coarser variable, sample a \\
-         day in every cell, or use {.code target = 'sampled_days'}."
+         {.fn creel_design}. Each new stratum then needs two sampled days, or \\
+         every one of its days. Otherwise group by a coarser variable, sample \\
+         a day in every cell, or use {.code target = 'sampled_days'}."
       }
     ),
     class = "creel_error_unsampled_cell"
