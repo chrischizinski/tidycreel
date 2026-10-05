@@ -224,8 +224,11 @@ strata_design_key <- function(data, strata) {
   if (length(cols) == 0) {
     return(list(data = data, strata = NULL))
   }
+  # A single column is copied, not reformulated: a name such as `day type` is
+  # valid through tidyselect but does not parse inside a formula (#422 review).
   if (length(cols) == 1) {
-    return(list(data = data, strata = stats::reformulate(cols)))
+    data$.strata <- data[[cols]]
+    return(list(data = data, strata = ~.strata))
   }
   # `interaction()`'s default "." separator would merge a = "x.y", b = "z" with
   # a = "x", b = "y.z" into one stratum; \u001f cannot occur in a label (#248).

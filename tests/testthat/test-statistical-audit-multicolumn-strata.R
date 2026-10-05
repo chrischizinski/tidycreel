@@ -38,8 +38,9 @@ test_that("#422: a two-column stratum key stratifies by the cells, not the first
   # The formula form callers pass is normalised the same way.
   key_f <- strata_design_key(df, ~ a + b)
   expect_identical(levels(key_f$data$.strata), levels(key$data$.strata))
-  # One column is left as it is.
-  expect_identical(all.vars(strata_design_key(df, "a")$strata), "a")
+  # One column is copied into the key unchanged.
+  one <- strata_design_key(df, "a")
+  expect_identical(one$data$.strata, df$a)
   expect_null(strata_design_key(df, NULL)$strata)
 })
 
@@ -102,4 +103,18 @@ test_that("#422: a single-PSU stratum on two columns is named readably", {
   msg <- conditionMessage(err)
   expect_match(msg, "weekday / 09", fixed = TRUE)
   expect_false(grepl("\u001f", msg, fixed = TRUE))
+})
+
+test_that("#422: a single strata column with a non-syntactic name still builds", {
+  # Codex, #422 review: reformulate("day type") does not parse, and the
+  # constructors used to copy the column into `.strata`, so tidyselect's
+  # all_of("day type") worked before the shared key and must keep working.
+  dates <- as.Date("2024-06-03") + 0:13
+  cal <- data.frame(date = dates, check.names = FALSE)
+  cal[["day type"]] <- ifelse(as.POSIXlt(dates)$wday %in% c(0, 6), "weekend", "weekday") # locale-free
+  cnt <- cal[c(1, 2, 3, 6, 7, 13, 14), ]
+  cnt$effort_hours <- c(10, 12, 14, 30, 32, 28, 31)
+  d <- suppressMessages(creel_design(cal, date = date, strata = dplyr::all_of("day type"))) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts(d, cnt)))
+  expect_equal(suppressWarnings(estimate_effort(d))$estimates$se, 4.8648, tolerance = 1e-4)
 })
