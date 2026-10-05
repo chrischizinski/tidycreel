@@ -1516,6 +1516,190 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
   invisible(NULL)
 }
 
+#' Resolve the period selection probability for add_counts()
+#'
+#' Internal (GH #368). `p_period` is the probability that the counted period
+#' (shift) was the one worked on that sampled day: either a single number or a
+#' column of `counts`, in (0, 1]. It needs a period length to divide, and is
+#' refused where the design already carries the period term itself.
+#'
+#' @return `NULL` when `p_period` is absent, otherwise a numeric vector with one
+#'   value per count row and a `"source"` attribute (the number, or the column
+#'   name) for the design to record.
+#'
+#' @keywords internal
+#' @noRd
+resolve_count_p_period <- function(p_period_quo, counts, design, period_length_col_name,
+                                   call = rlang::caller_env()) {
+  if (rlang::quo_is_null(p_period_quo)) {
+    return(NULL)
+  }
+  if (identical(design$design_type, "bus_route")) {
+    cli::cli_abort(
+      c(
+        "{.arg p_period} cannot be given to {.fn add_counts} on a bus-route design.",
+        "i" = "A bus-route design declares {.arg p_period} in {.fn creel_design}."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+  if (identical(design$design_type, "aerial")) {
+    cli::cli_abort(
+      c(
+        "{.arg p_period} cannot be used with an aerial design.",
+        "i" = "An aerial design expands by {.field h_open}, not a period length."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+  if (is.null(period_length_col_name)) {
+    cli::cli_abort(
+      c(
+        "{.arg p_period} needs {.arg period_length_col}.",
+        "x" = "Daily effort is the mean count x the period length / {.arg p_period}; \\
+               without the length there is nothing to divide.",
+        "i" = "Supply the length in hours of the period each count was randomised within."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+
+  # Column or number is decided from the expression, not by trying tidyselect
+  # first: tidyselect reads a bare whole number as a column POSITION, so
+  # `p_period = 1` selected the first column (the date) instead of meaning
+  # "the period was certain to be worked".
+  expr <- rlang::quo_get_expr(p_period_quo)
+  names_a_column <- (is.symbol(expr) || is.character(expr)) &&
+    length(expr) == 1L && as.character(expr) %in% names(counts)
+  col <- if (names_a_column) {
+    resolve_single_col(p_period_quo, counts, "p_period", call)
+  } else {
+    NULL
+  }
+  if (!is.null(col)) {
+    vals <- counts[[col]]
+    source <- col
+  } else {
+    vals <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) NULL)
+    if (!is.numeric(vals) || length(vals) != 1L) {
+      cli::cli_abort(
+        c(
+          "{.arg p_period} must be a column of {.arg counts} or a single number in (0, 1].",
+          "x" = "Got {.cls {class(vals)[1]}} of length {length(vals)}."
+        ),
+        class = "creel_error_p_period_invalid",
+        call = call
+      )
+    }
+    source <- vals
+    vals <- rep(vals, nrow(counts))
+  }
+
+  bad <- !is.numeric(vals) | is.na(vals) | !is.finite(vals) | vals <= 0 | vals > 1
+  if (any(bad)) {
+    cli::cli_abort(
+      c(
+        "{.arg p_period} must be in (0, 1] for every count.",
+        "x" = "{sum(bad)} count{?s} {?has/have} a missing or out-of-range probability.",
+        "i" = "A period with no known selection probability cannot be expanded to the day."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+
+  # With p_period supplied, the period length is the real clock length of one
+  # shift, which cannot exceed a day. A longer value is almost always a length
+  # already divided by p (the workaround from before p_period existed), which
+  # would now be divided again and double every effort and total. Without
+  # p_period a length over 24 h is legitimate (T_d / p under the workaround), so
+  # this applies only here. It catches a doubled length whenever it passes 24 h;
+  # a doubled length under 24 (a 7 h shift entered as 14) needs the declared
+  # shift window to be caught (#426).
+  long <- counts[[period_length_col_name]] > 24
+  if (any(long, na.rm = TRUE)) {
+    cli::cli_abort(
+      c(
+        "{.field {period_length_col_name}} is longer than 24 hours on {sum(long, na.rm = TRUE)} \\
+         count{?s}, with {.arg p_period} supplied.",
+        "x" = "With {.arg p_period}, the period length must be the real length of one shift, \\
+               which cannot exceed a day. Largest value: {max(counts[[period_length_col_name]])} h.",
+        "i" = "A length already divided by the probability (shift hours / p) would be divided \\
+               again, applying the probability twice. Supply the real shift hours."
+      ),
+      class = "creel_error_p_period_applied_twice",
+      call = call
+    )
+  }
+
+  # One draw per sampled day (per section, where the day is split into them):
+  # every count on that day shares the period it was drawn from, so they share
+  # its probability.
+  day_cols <- intersect(c(design$date_col, design$section_col), names(counts))
+  if (!is.null(col) && length(day_cols) > 0L) {
+    n_p <- tapply(vals, interaction(counts[day_cols], drop = TRUE, sep = "\u001f"),
+                  function(v) length(unique(v)))
+    if (any(n_p > 1L)) {
+      cli::cli_abort(
+        c(
+          "{.arg p_period} varies within {sum(n_p > 1L)} sampled day{?s}.",
+          "x" = "The counts on one day come from one drawn period, so they share its probability.",
+          "i" = "Check {.field {col}}, or split days that carry counts from more than one period."
+        ),
+        class = "creel_error_p_period_invalid",
+        call = call
+      )
+    }
+  }
+
+  # Averaged over sampled days, T_d / p estimates the total length of all the
+  # shifts -- the counted fishing day -- which cannot exceed 24 h. A single day
+  # can legitimately pass 24 (an unequal or rarely drawn shift: 20 h at p = 0.5
+  # stands for 40 h that day), so this is checked on the average, not per row,
+  # and warns rather than refuses: unequal shifts and an unlucky run of draws
+  # can push a valid design's average over 24 by chance. Its job is the common
+  # doubling a 24 h row check cannot see: two 7 h shifts entered as 14 average
+  # 28 h instead of 14 (GH #368).
+  unit_cols <- intersect(c(design$date_col, design$section_col), names(counts))
+  if (length(unit_cols) > 0L) {
+    unit_key <- interaction(counts[unit_cols], drop = TRUE, sep = "\u001f")
+    per_day <- tapply(counts[[period_length_col_name]] / vals, unit_key, mean)
+    by_part <- if (!is.null(design$section_col) && design$section_col %in% names(counts)) {
+      # Character, not the column as supplied: a factor keeps the levels of
+      # sections with no counts, and tapply() returns NA for them, which would
+      # warn on correct data and hide a real overrun behind max(NA).
+      part_of_day <- as.character(counts[[design$section_col]])[match(names(per_day), as.character(unit_key))]
+      tapply(per_day, part_of_day, mean)
+    } else {
+      c(all = mean(per_day))
+    }
+    over <- by_part[by_part > 24]
+    if (length(over) > 0L) {
+      where <- if (identical(names(over), "all")) { # nolint: object_usage_linter
+        ""
+      } else {
+        paste0(" (", paste0(names(over), collapse = ", "), ")")
+      }
+      cli::cli_warn(
+        c(
+          "The counted shifts cover {round(max(over), 1)} hours a day on average{where}, more than a day.",
+          "x" = "Averaged over sampled days, {.field {period_length_col_name}} / {.arg p_period} \\
+                 estimates the total length of the shifts, which cannot exceed 24 hours.",
+          "i" = "Check that {.field {period_length_col_name}} holds the real shift hours, not hours \\
+                 already divided by the probability, which would apply it twice.",
+          "i" = "Unequal shifts drawn unevenly can pass 24 by chance; if so, this can be ignored."
+        ),
+        class = "creel_warning_p_period_coverage"
+      )
+    }
+  }
+
+  structure(as.numeric(vals), source = source)
+}
+
 #' Attach count data to a creel design
 #'
 #' @description
@@ -1621,6 +1805,22 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach counts anyway (use with caution).
+#' @param p_period The probability that the counted period (shift) was the one
+#'   worked on that sampled day: a single number, or a column of `counts`, in
+#'   (0, 1]. For a design that draws one of two shifts per sampled day at
+#'   random, `p_period = 0.5`. Daily effort is then the mean count x the period
+#'   length / `p_period` (Horvitz-Thompson over the shift draw), and the same
+#'   factor reaches the within-day variance and the party-size expansion term.
+#'   Requires `period_length_col`, which must hold the real length of the
+#'   shift, not a length already divided by the probability: that would apply
+#'   the probability twice and double the effort. A length over 24 hours is
+#'   refused for that reason, and a warning is given when the length /
+#'   `p_period`, averaged over sampled days, passes 24 hours (the shifts would
+#'   then cover more than a day). A column must be
+#'   constant within each sampled day. Not used on aerial designs (which expand
+#'   by `h_open`) or bus-route designs (which declare `p_period` in
+#'   [creel_design()]). `NULL` (default) means every period of the day was
+#'   eligible to be counted, as before.
 #'
 #' @return A new creel_design object (list) with components:
 #'   \item{calendar}{Original calendar data frame}
@@ -1757,7 +1957,8 @@ add_counts <- function(
   circuit_time = NULL,
   period_length_col = NULL,
   unit_cols = NULL,
-  allow_invalid = FALSE
+  allow_invalid = FALSE,
+  p_period = NULL
 ) {
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
@@ -1862,6 +2063,29 @@ add_counts <- function(
       ),
       class = "creel_error_aerial_period_length"
     )
+  }
+
+  # The probability that the counted period (shift) was the one worked that day
+  # (GH #368). A common roving design draws ONE of two shifts per sampled day at
+  # p = 0.5 and counts only inside it; daily effort is then the Horvitz-Thompson
+  # expansion C_bar x T_d / p. With no argument for p, passing the true shift
+  # length gave half the effort, silently, and the workaround hid p inside a
+  # column documented as a length.
+  p_period_vals <- resolve_count_p_period(
+    rlang::enquo(p_period),
+    counts = counts,
+    design = design,
+    period_length_col_name = period_length_col_name,
+    call = rlang::current_env()
+  )
+  # Folded into the period length here, on the counts as supplied and before
+  # anything reshapes them, so every later use of T_d -- the count, the
+  # within-day sums of squares (T_d^2), the raw occasions and the expansion
+  # basis -- carries T_d / p and none can be expanded by the length alone. The
+  # progressive guard below compares the REAL shift length (`period_vals`,
+  # captured above) with circuit_time.
+  if (!is.null(p_period_vals)) {
+    counts[[period_length_col_name]] <- counts[[period_length_col_name]] / p_period_vals
   }
 
   # Progressive-specific validation (CNT-03, CNT-05)
@@ -2202,6 +2426,9 @@ add_counts <- function(
   }
   new_design$circuit_time <- circuit_time
   new_design$period_length_col <- period_length_col_name
+  # Recorded as supplied (a single number, or the name of a counts column) so
+  # the design says which probability its daily effort was expanded by (GH #368).
+  new_design$p_period <- if (is.null(p_period_vals)) NULL else attr(p_period_vals, "source")
   # NULL, not a zero-variance placeholder, when no party-size standard error was
   # supplied. The estimators test for NULL to decide whether the component
   # exists at all, which is what keeps an unpropagated SE distinguishable from a
@@ -3228,6 +3455,16 @@ format.creel_design <- function(x, ...) {
       cli::cli_text("  Party-size term: {party_size_display}")
       if (!is.null(x$count_time_col)) {
         cli::cli_text("  Count time column: {.field {x$count_time_col}}")
+      }
+      if (!is.null(x$p_period)) {
+        # The probability daily effort was expanded by, so the shift design is
+        # visible in every printed design (GH #368).
+        p_period_display <- if (is.character(x$p_period)) { # nolint: object_usage_linter
+          paste0("column `", x$p_period, "`")
+        } else {
+          format(x$p_period)
+        }
+        cli::cli_text("  Period selection probability: {p_period_display}")
       }
       if (!is.null(x$count_type)) {
         cli::cli_text("  Count type: {.val {x$count_type}}")
