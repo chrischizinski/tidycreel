@@ -167,3 +167,74 @@ test_that("#385: generate_schedule() output drives add_counts() end to end", {
   cn$hours <- 14
   expect_error(sch_p_add(sched, cn), class = "creel_error_p_period_applied_twice")
 })
+
+test_that("#385 review: a schedule with count times attached is one shift per day, not one per window", {
+  # attach_count_times() repeats each worked shift once per count window.
+  # Summing those rows made a 7 h shift with two windows a 14 h window, which
+  # refused the correct length and accepted the doubled one.
+  cal <- sch_p_calendar()
+  per_window <- cal[rep(seq_len(nrow(cal)), each = 2), ]
+  per_window$count_window <- rep(1:2, nrow(cal))
+  cn <- sch_p_counts(7)
+  expect_equal(
+    sch_p_effort(sch_p_add(per_window, cn))$estimate,
+    sch_p_effort(sch_p_add(cal, cn))$estimate,
+    tolerance = 1e-12
+  )
+  expect_error(sch_p_add(per_window, sch_p_counts(14)), class = "creel_error_p_period_applied_twice")
+})
+
+test_that("#385 review: prepared daily effort is not re-expanded by the schedule's p", {
+  # prep_counts_daily_effort() output is final sampled-day effort with its
+  # count-side corrections resolved; it has no period length, and dividing it
+  # by p again would double it.
+  cal <- sch_p_calendar()
+  days <- as.Date("2024-06-03") + c(0, 1, 2, 3, 4, 6)
+  raw <- data.frame(
+    date = days,
+    day_type = c("weekday", "weekday", "weekend", "weekend", "weekday", "weekend"),
+    effort_type = "bank",
+    effort = c(120, 80, 300, 260, 150, 340)
+  )
+  prepared <- prep_counts_daily_effort(raw, date = date, strata = day_type,
+                                       effort_type = effort_type, daily_effort = effort)
+  d <- suppressMessages(creel_design(cal, date = date, strata = day_type))
+  with_schedule <- suppressWarnings(suppressMessages(add_counts(d, prepared)))
+  expect_null(with_schedule$p_period)
+  d_plain <- suppressMessages(creel_design(cal[c("date", "day_type")], date = date, strata = day_type))
+  plain <- suppressWarnings(suppressMessages(add_counts(d_plain, prepared)))
+  expect_equal(sch_p_effort(with_schedule)$estimate, sch_p_effort(plain)$estimate, tolerance = 1e-12)
+})
+
+test_that("#385 review: an out-of-range probability in the schedule is refused", {
+  # creel_design() does not validate a calendar's p_period; p = 2 would have
+  # halved effort.
+  expect_error(sch_p_add(sch_p_calendar(p = 2), sch_p_counts(7)), class = "creel_error_p_period_invalid")
+  expect_error(sch_p_add(sch_p_calendar(p = 0), sch_p_counts(7)), "\\(0, 1\\]")
+})
+
+test_that("#385 review: a calendar with a row per section keys the schedule by date and section", {
+  # North draws one of two 7 h shifts (p = 0.5); South counts its only 7 h
+  # shift (p = 1). Keyed by date alone, these conflicted, and equal p would
+  # have summed both sections' windows.
+  north <- transform(sch_p_calendar(), section = "North")
+  south <- transform(sch_p_calendar(p = 1), section = "South")
+  cal <- rbind(north, south)
+  d <- suppressMessages(creel_design(cal, date = date, strata = day_type))
+  d <- add_sections(d, data.frame(section = c("North", "South")), section_col = section) # nolint: object_usage_linter
+  base <- sch_p_counts(7)
+  cn <- rbind(transform(base, section = "North"), transform(base, section = "South"))
+  out <- suppressWarnings(suppressMessages(add_counts(
+    d, cn,
+    count_col = anglers, count_time_col = count_time, period_length_col = hours
+  )))
+  expect_equal(unique(attr(out$p_period, "from_schedule")), TRUE)
+  # North's length is divided by 0.5 and South's by 1: the stored lengths differ.
+  expect_error(
+    suppressWarnings(suppressMessages(add_counts(
+      d, rbind(transform(base, section = "North"), transform(base, section = "South", hours = 14)),
+      count_col = anglers, count_time_col = count_time, period_length_col = hours
+    ))),
+    class = "creel_error_period_length_window"
+  )
+})

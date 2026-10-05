@@ -1530,10 +1530,13 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #' @keywords internal
 #' @noRd
 resolve_count_p_period <- function(p_period_quo, counts, design, period_length_col_name,
-                                   period_vals = NULL, call = rlang::caller_env()) {
+                                   period_vals = NULL, counts_are_effort = FALSE,
+                                   call = rlang::caller_env()) {
   # A schedule drawn with shifts (generate_schedule(), read_schedule()) carries
   # each sampled day's probability and shift window in the calendar (GH #385).
-  sched <- schedule_shift_lookup(design, counts, call = call)
+  # Prepared daily effort (prep_counts_daily_effort()) has its count-side
+  # corrections resolved already, and has no period length to divide.
+  sched <- if (counts_are_effort) NULL else schedule_shift_lookup(design, counts, call = call)
   if (rlang::quo_is_null(p_period_quo)) {
     if (is.null(sched)) {
       return(NULL)
@@ -1749,7 +1752,32 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
   worked <- !is.na(cal$p_period)
   if ("period_id" %in% names(cal)) worked <- worked & !is.na(cal$period_id)
   cal <- cal[worked, , drop = FALSE]
-  day <- as.character(cal[[date_col]])
+
+  p_cal <- cal$p_period
+  bad_p <- !is.numeric(p_cal) | !is.finite(p_cal) | p_cal <= 0 | p_cal > 1
+  if (any(bad_p)) {
+    cli::cli_abort(
+      c(
+        "The schedule's {.field p_period} must be in (0, 1] on every worked shift.",
+        "x" = "{sum(bad_p)} worked row{?s} {?has/have} an out-of-range probability."
+      ),
+      class = "creel_error_p_period_invalid",
+      call = call
+    )
+  }
+
+  # One entry per sampled day -- per section too, when the calendar gives each
+  # section its own row -- and one row per worked shift: a schedule with count
+  # times attached repeats each shift once per count window, and summing those
+  # rows would multiply the window by the number of counts.
+  key_cols <- date_col
+  if (!is.null(design$section_col) && design$section_col %in% names(cal) &&
+        design$section_col %in% names(counts)) {
+    key_cols <- c(key_cols, design$section_col)
+  }
+  shift_cols <- intersect(c("period_id", "p_period", "shift_start", "shift_end"), names(cal))
+  cal <- unique(cal[c(key_cols, shift_cols)])
+  day <- unit_label(cal[key_cols])
 
   n_p <- tapply(cal$p_period, day, function(v) length(unique(v)))
   if (any(n_p > 1L)) {
@@ -1796,8 +1824,16 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
     # / (2/3), so the period length to compare with is 10.
     window <- tapply((end - start) / 60, day, sum)
   }
-  list(date_col = date_col, days = names(p), p = as.numeric(p),
+  list(key_cols = key_cols, days = names(p), p = as.numeric(p),
        window = if (is.null(window)) NULL else as.numeric(window[names(p)]))
+}
+
+#' A readable key for a sampled day (and section)
+#'
+#' @keywords internal
+#' @noRd
+unit_label <- function(df) {
+  do.call(paste, c(lapply(df, as.character), sep = " / "))
 }
 
 #' Apply the schedule's shift probability to the counts
@@ -1810,7 +1846,7 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
 #' @noRd
 apply_schedule_p_period <- function(sched, user_vals, counts, design, period_length_col_name,
                                     period_vals, call) {
-  count_day <- as.character(counts[[sched$date_col]])
+  count_day <- unit_label(counts[sched$key_cols])
   idx <- match(count_day, sched$days)
   vals <- sched$p[idx]
 
@@ -2293,6 +2329,7 @@ add_counts <- function(
     design = design,
     period_length_col_name = period_length_col_name,
     period_vals = period_vals,
+    counts_are_effort = counts_from_prep_seam,
     call = rlang::current_env()
   )
   # Folded into the period length here, on the counts as supplied and before
