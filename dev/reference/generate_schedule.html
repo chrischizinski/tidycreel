@@ -92,7 +92,10 @@ ready to pass to <code><a href="creel_design.html">creel_design()</a></code>.</p
 <span>  ordered_periods <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  period_intensity <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">seed</span>,</span>
-<span>  special_periods <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  special_periods <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  periods_per_day <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  period_allocation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"balanced"</span>, <span class="st">"random"</span><span class="op">)</span>,</span>
+<span>  periods <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -165,6 +168,34 @@ periods. Must contain <code>start_date</code>, <code>end_date</code>, and <code>
 optional <code>reason</code>. Periods are expanded to day-level assignments before
 sampling so boundary-crossing periods are split by civil date.</p></dd>
 
+
+<dt id="arg-periods-per-day">periods_per_day<a class="anchor" aria-label="anchor" href="#arg-periods-per-day"></a></dt>
+<dd><p>Integer. How many of the <code>n_periods</code> periods
+(shifts) are worked on each sampled day. <code>NULL</code> (default) means all of
+them, as before. With fewer, the worked periods are drawn at random for
+each sampled day and each row records its selection probability in
+<code>p_period</code> (<code>periods_per_day / n_periods</code>), e.g. one of two shifts gives
+<code>p_period = 0.5</code>. Needs <code>expand_periods = TRUE</code>.</p></dd>
+
+
+<dt id="arg-period-allocation">period_allocation<a class="anchor" aria-label="anchor" href="#arg-period-allocation"></a></dt>
+<dd><p>How the worked periods are drawn when
+<code>periods_per_day &lt; n_periods</code>. <code>"balanced"</code> (default): within each
+stratum the periods are dealt to the sampled days in random order, so the
+number of days per period differs by at most one (e.g. 5 morning + 5
+evening over 10 weekdays). <code>"random"</code>: an independent draw for each day.
+Under both, every period has the same chance, <code>p_period</code>, of being worked
+on any sampled day. The variance estimators treat the draws as
+independent, which is conservative for <code>"balanced"</code>.</p></dd>
+
+
+<dt id="arg-periods">periods<a class="anchor" aria-label="anchor" href="#arg-periods"></a></dt>
+<dd><p>Optional data frame of shift times: <code>period_id</code> (one row per
+period, matching <code>period_labels</code>, or 1 to <code>n_periods</code>), <code>start_time</code> and
+<code>end_time</code> as <code>"HH:MM"</code>. Adds <code>shift_start</code> and <code>shift_end</code> to every row.
+A shift that ends at or before it starts (crossing midnight) is not yet
+supported.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -176,6 +207,11 @@ gives the final stratum used for day selection.</p></li>
 supplied; gives the optional reason for the special-period assignment.</p></li>
 <li><p><code>period_id</code> (integer, character, or ordered factor): Period within day.
 Absent when <code>expand_periods = FALSE</code>.</p></li>
+<li><p><code>p_period</code> (numeric): Probability that the period was the one worked
+that day: <code>1</code> when every period is worked, <code>periods_per_day / n_periods</code> when they are drawn, <code>NA</code> on unsampled days. Absent when
+<code>expand_periods = FALSE</code>.</p></li>
+<li><p><code>shift_start</code>, <code>shift_end</code> (character, "HH:MM"): Present when <code>periods</code>
+is supplied.</p></li>
 <li><p><code>sampled</code> (logical): Present only when <code>include_all = TRUE</code>.</p></li>
 </ul></div>
     <div class="section level2">
@@ -204,6 +240,33 @@ Absent when <code>expand_periods = FALSE</code>.</p></li>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Use result with creel_design()</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">sched</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># One of two shifts worked on each sampled day, drawn at random</span></span></span>
+<span class="r-in"><span><span class="va">shifts</span> <span class="op">&lt;-</span> <span class="fu">generate_schedule</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  start_date <span class="op">=</span> <span class="st">"2024-06-01"</span>,</span></span>
+<span class="r-in"><span>  end_date <span class="op">=</span> <span class="st">"2024-08-31"</span>,</span></span>
+<span class="r-in"><span>  n_periods <span class="op">=</span> <span class="fl">2</span>,</span></span>
+<span class="r-in"><span>  period_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"AM"</span>, <span class="st">"PM"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  sampling_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.3</span>, weekend <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  periods_per_day <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>  periods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    period_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"AM"</span>, <span class="st">"PM"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    start_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"06:00"</span>, <span class="st">"13:00"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    end_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"13:00"</span>, <span class="st">"20:00"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  seed <span class="op">=</span> <span class="fl">42</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">shifts</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # A creel_schedule: 6 rows x 6 cols (6 days, 2 periods)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> June 2024</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> |----------|----------|----------|----------|----------|----------|----------|</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> |          |          |          |          |          |          | WEEKE    |</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> | WEEKE    | 03       | 04       | WEEKD    | 06       | WEEKD    | WEEKE    |</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> | WEEKE    | 10       | 11       | 12       | 13       | 14       | 15       |</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> | 16       | 17       | 18       | 19       | 20       | 21       | 22       |</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> | 23       | 24       | 25       | 26       | 27       | 28       | 29       |</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> | 30       |          |          |          |          |          |          |</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

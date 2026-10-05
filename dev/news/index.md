@@ -4,6 +4,31 @@
 
 ### New features
 
+- [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  can draw which shift is worked on each sampled day
+  ([\#385](https://github.com/chrischizinski/tidycreel/issues/385)).
+  `periods_per_day` sets how many of the `n_periods` are worked
+  (default: all, as before), and `period_allocation` how they are drawn:
+  `"balanced"` (default) deals the shifts to each stratum’s days in
+  random order so their counts differ by at most one; `"random"` draws
+  each day independently. Every row now records `p_period`, the
+  probability its period was the one worked that day
+  (`periods_per_day / n_periods`, or 1 when every period is worked), so
+  the shift can be expanded to the day by the right factor. An optional
+  `periods` table of shift times adds `shift_start` and `shift_end`. A
+  seed selects the same days as before; the shift draw comes after.
+  [`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
+  /
+  [`read_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/read_schedule.md)
+  keep all of these, and
+  [`read_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/read_schedule.md)
+  refuses a worked period with a missing or out-of-range `p_period`. A
+  file from before this change (no `p_period` column) is read as
+  `p_period = 1` with a warning when every sampled day has the same
+  periods, and refused when they differ (the periods were drawn). Shifts
+  crossing midnight wait for
+  [\#407](https://github.com/chrischizinski/tidycreel/issues/407).
+
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   gains `p_period`: the probability that the counted period (shift) was
   the one worked on that sampled day, as a number or a column, in (0,
@@ -38,9 +63,28 @@
   total length of the shifts, which cannot exceed a day, so two 7-hour
   shifts entered as 14 (28 hours a day) are caught. It is a warning, not
   an error, because unequal shifts drawn unevenly can pass 24 by chance.
-  The exact check, the length against the declared shift window, comes
-  with shift-aware schedules
+
+- [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  reads `p_period` from a shift schedule
   ([\#385](https://github.com/chrischizinski/tidycreel/issues/385)).
+  When the design calendar is a schedule from
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  or
+  [`read_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/read_schedule.md)
+  that draws shifts, each counted day’s probability is taken from it, so
+  `p_period` no longer has to be passed by hand. A `p_period` argument
+  that disagrees with the schedule is an error, and so are counts on a
+  day the schedule gives no worked shift.
+
+  When the schedule has shift times, the exact check now runs: the
+  period length must equal the total hours of the day’s worked shifts
+  (two of three 5-hour shifts worked: 10 hours, at `p_period` = 2/3). A
+  length equal to the window / `p_period` is refused
+  (`creel_error_p_period_applied_twice`): the probability would be
+  applied twice and effort doubled. Any other mismatch is refused as
+  `creel_error_period_length_window`, naming the days. A shift that
+  crosses midnight is refused until
+  [\#407](https://github.com/chrischizinski/tidycreel/issues/407).
 
 - [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
   gains `by`, which returns one effort estimate per stratum

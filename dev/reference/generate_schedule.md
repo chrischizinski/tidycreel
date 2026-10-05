@@ -21,7 +21,10 @@ generate_schedule(
   ordered_periods = FALSE,
   period_intensity = NULL,
   seed,
-  special_periods = NULL
+  special_periods = NULL,
+  periods_per_day = NULL,
+  period_allocation = c("balanced", "random"),
+  periods = NULL
 )
 ```
 
@@ -93,6 +96,34 @@ generate_schedule(
   `reason`. Periods are expanded to day-level assignments before
   sampling so boundary-crossing periods are split by civil date.
 
+- periods_per_day:
+
+  Integer. How many of the `n_periods` periods (shifts) are worked on
+  each sampled day. `NULL` (default) means all of them, as before. With
+  fewer, the worked periods are drawn at random for each sampled day and
+  each row records its selection probability in `p_period`
+  (`periods_per_day / n_periods`), e.g. one of two shifts gives
+  `p_period = 0.5`. Needs `expand_periods = TRUE`.
+
+- period_allocation:
+
+  How the worked periods are drawn when `periods_per_day < n_periods`.
+  `"balanced"` (default): within each stratum the periods are dealt to
+  the sampled days in random order, so the number of days per period
+  differs by at most one (e.g. 5 morning + 5 evening over 10 weekdays).
+  `"random"`: an independent draw for each day. Under both, every period
+  has the same chance, `p_period`, of being worked on any sampled day.
+  The variance estimators treat the draws as independent, which is
+  conservative for `"balanced"`.
+
+- periods:
+
+  Optional data frame of shift times: `period_id` (one row per period,
+  matching `period_labels`, or 1 to `n_periods`), `start_time` and
+  `end_time` as `"HH:MM"`. Adds `shift_start` and `shift_end` to every
+  row. A shift that ends at or before it starts (crossing midnight) is
+  not yet supported.
+
 ## Value
 
 A `creel_schedule` data frame with columns:
@@ -110,6 +141,14 @@ A `creel_schedule` data frame with columns:
 
 - `period_id` (integer, character, or ordered factor): Period within
   day. Absent when `expand_periods = FALSE`.
+
+- `p_period` (numeric): Probability that the period was the one worked
+  that day: `1` when every period is worked,
+  `periods_per_day / n_periods` when they are drawn, `NA` on unsampled
+  days. Absent when `expand_periods = FALSE`.
+
+- `shift_start`, `shift_end` (character, "HH:MM"): Present when
+  `periods` is supplied.
 
 - `sampled` (logical): Present only when `include_all = TRUE`.
 
@@ -139,4 +178,31 @@ sched <- generate_schedule(
 
 # Use result with creel_design()
 creel_design(sched, date = date, strata = day_type)
+
+# One of two shifts worked on each sampled day, drawn at random
+shifts <- generate_schedule(
+  start_date = "2024-06-01",
+  end_date = "2024-08-31",
+  n_periods = 2,
+  period_labels = c("AM", "PM"),
+  sampling_rate = c(weekday = 0.3, weekend = 0.6),
+  periods_per_day = 1,
+  periods = data.frame(
+    period_id = c("AM", "PM"),
+    start_time = c("06:00", "13:00"),
+    end_time = c("13:00", "20:00")
+  ),
+  seed = 42
+)
+head(shifts)
+#> # A creel_schedule: 6 rows x 6 cols (6 days, 2 periods)
+#> June 2024
+#> | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |
+#> |----------|----------|----------|----------|----------|----------|----------|
+#> |          |          |          |          |          |          | WEEKE    |
+#> | WEEKE    | 03       | 04       | WEEKD    | 06       | WEEKD    | WEEKE    |
+#> | WEEKE    | 10       | 11       | 12       | 13       | 14       | 15       |
+#> | 16       | 17       | 18       | 19       | 20       | 21       | 22       |
+#> | 23       | 24       | 25       | 26       | 27       | 28       | 29       |
+#> | 30       |          |          |          |          |          |          |
 ```

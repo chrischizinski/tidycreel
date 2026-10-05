@@ -184,7 +184,21 @@ add_counts(
   expand by `h_open`) or bus-route designs (which declare `p_period` in
   [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)).
   `NULL` (default) means every period of the day was eligible to be
-  counted, as before.
+  counted, as before – unless the design calendar is a schedule that
+  samples shifts (see below).
+
+  **Shift schedules.** When the design calendar comes from
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  or
+  [`read_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/read_schedule.md)
+  with shifts drawn (a `p_period` column below 1, or `shift_start` /
+  `shift_end`), `add_counts()` reads each counted day's `p_period` from
+  it, so the argument can be left out. If it is given it must agree with
+  the schedule. Counts on a day the schedule gives no worked shift are
+  refused. When the schedule has shift times, `period_length_col` must
+  equal the total hours of the day's worked shifts (to 0.01 h); a length
+  equal to that window / `p_period` is refused as applying the
+  probability twice. Shifts that cross midnight are refused until \#407.
 
 ## Value
 

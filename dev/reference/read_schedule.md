@@ -29,6 +29,17 @@ A `creel_schedule` object with columns:
 
 - `period_id` (integer, if present)
 
+- `p_period` (numeric, if present): the probability each worked period
+  was drawn for its day. Every row with a period on a sampled day must
+  carry one in (0, 1\]; a missing, non-numeric or out-of-range value is
+  an error, because the period could not be expanded to the day. A file
+  with `period_id` but no `p_period` column (written before the column
+  existed) is read as `p_period = 1`, with a warning, when every sampled
+  day carries the same periods (each was worked every day); if the
+  periods differ between days they were drawn, and it is an error.
+
+- `shift_start`, `shift_end` (character "HH:MM", if present)
+
 - `sampled` (logical, if present)
 
 ## Details

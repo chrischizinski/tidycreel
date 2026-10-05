@@ -37,7 +37,7 @@ sched <- generate_schedule(
   seed = 42
 )
 print(sched)
-#> # A creel_schedule: 24 rows x 3 cols (24 days, 1 periods)
+#> # A creel_schedule: 24 rows x 4 cols (24 days, 1 periods)
 #> June 2024
 #> | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |
 #> |----------|----------|----------|----------|----------|----------|----------|

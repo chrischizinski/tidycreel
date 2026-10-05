@@ -58,7 +58,7 @@ ct <- generate_count_times(
   window_size = 30, min_gap = 10, seed = 1
 )
 attach_count_times(sched, ct)
-#> # A creel_schedule: 18 rows x 6 cols (3 days, 2 periods)
+#> # A creel_schedule: 18 rows x 7 cols (3 days, 2 periods)
 #> June 2024
 #> | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |
 #> |----------|----------|----------|----------|----------|----------|----------|
