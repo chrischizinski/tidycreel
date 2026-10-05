@@ -65,6 +65,25 @@
   share a dot (`"x.y"` + `"z"` and `"x"` + `"y.z"`). Designs with one strata
   column are unchanged.
 
+* `estimate_effort()` with an expanded target (`"stratum_total"` or
+  `"period_total"`) lost calendar days that had no sampled day, without an error
+  (#421). Each case is now refused, and the error (class
+  `creel_error_unsampled_cell`) names the cell and its number of days.
+
+  - **A stratum with no sampled day.** Its days were left out of the total.
+    In one case a Labor Day stratum that was never sampled dropped three days
+    from the season total.
+  - **Grouped by a calendar column that cuts across a stratum.** One example is
+    `by = month` when the Labor Day stratum straddles August and September. Each
+    sampled day is expanded and credited to its own month, so a stratum x month
+    cell with no sampled day got nothing. Its days went to the stratum's other
+    months: August 285 against a true 190, September 0, with no row and no
+    warning.
+
+  With every cell sampled, the estimates are unchanged. The default
+  `target = "sampled_days"` never claims unsampled days, so it is unaffected.
+  A `by` column that the calendar does not carry is not checked.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` dropped a stratum (or stratum x `by` cell) that had
   effort but no rate (no interviews, or only trips the rate cannot use) and

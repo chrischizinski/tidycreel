@@ -5149,6 +5149,106 @@ rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(
   (scale_n / k_bar) * s2_within
 }
 
+#' Refuse an expanded effort target when a calendar cell has no sampled day
+#'
+#' A cell is one combination of `cell_cols` (calendar columns). It is refused
+#' when the calendar holds at least one day in it and the counts sample none:
+#' its effort is unknown, and the expansion would otherwise report it as
+#' nothing. Sampled days are looked up in the calendar by date, so a cell is
+#' defined by the calendar's values, never the counts' copy of them.
+#'
+#' @param design A creel_design object with counts attached.
+#' @param cell_cols Character vector of calendar columns defining a cell.
+#'
+#' @return `invisible(NULL)`; aborts with class
+#'   `creel_error_unsampled_cell` when any cell is unsampled.
+#'
+#' @keywords internal
+#' @noRd
+refuse_unsampled_cells <- function(design, cell_cols) {
+  date_col <- design$date_col
+  calendar <- design$calendar
+  counts <- design$counts
+
+  # A calendar can carry one row per date per section (section as a stratum).
+  # Then a sampling unit is a date in a section, not a date: matching on date
+  # alone would mark section B's day sampled because section A was counted on
+  # it. And the sectioned totals estimate each section on counts filtered to it
+  # while keeping the whole calendar, so the other sections' strata would read
+  # as unsampled and refuse a fully sampled design (Codex, #421 review). Only
+  # the sections the counts carry are checked here; a registered section with no
+  # counts at all is `missing_sections`' business.
+  unit_cols <- date_col
+  section_col <- design$section_col
+  if (!is.null(section_col) && section_col %in% names(calendar) &&
+        section_col %in% names(counts)) {
+    unit_cols <- c(date_col, section_col)
+    calendar <- calendar[calendar[[section_col]] %in% unique(counts[[section_col]]), , drop = FALSE]
+  }
+
+  cal_cells <- dplyr::distinct(calendar, dplyr::across(dplyr::all_of(unique(c(cell_cols, unit_cols)))))
+  sampled_units <- dplyr::distinct(counts, dplyr::across(dplyr::all_of(unit_cols)))
+  # The calendar and the counts may type section IDs differently (1L vs "1");
+  # the `%in%` above already treats those as the same section, so the join must
+  # too, or it stops with dplyr's incompatible-type error (#421 review).
+  cal_units <- cal_cells
+  if (length(unit_cols) > 1) {
+    cal_units[[section_col]] <- as.character(cal_units[[section_col]])
+    sampled_units[[section_col]] <- as.character(sampled_units[[section_col]])
+  }
+  sampled_cells <- dplyr::distinct(
+    dplyr::semi_join(cal_units, sampled_units, by = unit_cols)[, cell_cols, drop = FALSE]
+  )
+  # Days, not (date, section) pairs: on a date x section calendar where section
+  # is not a stratum, a cell holds each date once per section.
+  n_days <- dplyr::summarise(
+    dplyr::group_by(cal_units, dplyr::across(dplyr::all_of(cell_cols))),
+    .n_days = dplyr::n_distinct(.data[[date_col]]),
+    .groups = "drop"
+  )
+  empty <- dplyr::anti_join(n_days, sampled_cells, by = cell_cols)
+  if (nrow(empty) == 0) {
+    return(invisible(NULL))
+  }
+
+  labels <- vapply(seq_len(nrow(empty)), function(i) {
+    parts <- vapply(cell_cols, function(col) paste0(col, "=", empty[[col]][[i]]), "")
+    paste0(paste(parts, collapse = ", "), " (", empty$.n_days[[i]], " day",
+           if (empty$.n_days[[i]] == 1) "" else "s", ")")
+  }, "")
+  # The labels carry user data; a brace in a stratum name must not be read as
+  # cli markup.
+  labels <- gsub("([{}])", "\\1\\1", labels)
+  names(labels) <- rep("*", length(labels))
+  is_stratum_level <- setequal(cell_cols, design$strata_cols)
+  cli::cli_abort(
+    c(
+      "Expanded effort cannot be estimated: {nrow(empty)} calendar \\
+       {cli::qty(nrow(empty))}cell{?s} {?has/have} no sampled day.",
+      labels,
+      "x" = if (is_stratum_level) {
+        "The days in an unsampled stratum would be left out of the total, \\
+         reporting their unknown effort as zero."
+      } else {
+        "Each sampled day is expanded to stand for its whole stratum, so the \\
+         unsampled cell's days would be counted in the stratum's other \\
+         groups: those groups would be overstated and this one reported as \\
+         nothing."
+      },
+      "i" = if (is_stratum_level) {
+        "Sample at least one day in every stratum, or merge the stratum into \\
+         another before estimating."
+      } else {
+        "With the data in hand: group by a coarser variable, or use \\
+         {.code target = 'sampled_days'}. When planning sampling: declare the \\
+         groups as strata, {.code strata = c({paste(cell_cols, collapse = ', ')})} \\
+         in {.fn creel_design}, and sample two days in each, or all of its days."
+      }
+    ),
+    class = "creel_error_unsampled_cell"
+  )
+}
+
 #' Build a target-aware survey design for effort estimation
 #'
 #' @param design A creel_design object with counts attached.
@@ -5184,6 +5284,13 @@ get_effort_target_design <- function(design, target) {
   # days, however many rows a day happens to carry.
   psu_col <- design$psu_col
   frame_unit <- design$date_col
+
+  # A calendar stratum with no sampled day has no count rows, so the joins below
+  # never see it and the expanded total quietly omits its days: a Labor Day
+  # stratum left unsampled dropped three days from the season total with no
+  # error (GH #421). Its effort is unknown, not zero.
+  refuse_unsampled_cells(design, cell_cols = strata_cols)
+
   available_by_strata <- calendar |>
     dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, frame_unit)))) |>
     dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".N_avail")
@@ -5770,6 +5877,20 @@ estimate_effort_grouped <- function(
   # Get appropriate survey design for variance method and target
   target_design <- get_effort_target_design(design, target) # nolint: object_usage_linter
   svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
+
+  # svyby() expands each sampled day by its stratum's N_h / n_h and credits it to
+  # its own group, so a stratum x group cell holding calendar days but no sampled
+  # day gets nothing and its days are credited to the stratum's other groups. A
+  # Labor Day stratum straddling August and September, sampled only on its
+  # August days, put 285 angler-hours into August against a true 190 and none
+  # into September -- no row, no warning (GH #421). Only an expanded target
+  # claims those days; `sampled_days` does not.
+  if (!identical(target, "sampled_days")) {
+    cal_by <- setdiff(intersect(by_vars, names(design$calendar)), design$strata_cols)
+    if (length(cal_by) > 0) {
+      refuse_unsampled_cells(design, cell_cols = c(design$strata_cols, cal_by))
+    }
+  }
 
   # An unknown group has to survive svyby(), which drops NA rows silently.
   # Grouping counts whose gear was unrecorded on three days returned 662.5
