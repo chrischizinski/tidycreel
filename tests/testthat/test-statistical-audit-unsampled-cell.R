@@ -57,6 +57,11 @@ test_that("#421: a stratum x month cell with no sampled day refuses, naming the 
       # the empty one, and point at the design that expands each separately.
       expect_match(conditionMessage(err), "would be overstated", fixed = TRUE)
       expect_match(conditionMessage(err), "strata = c(day_type, month)", fixed = TRUE)
+      # Declaring the empty cell a stratum cannot rescue data already
+      # collected (it would have no sampled day), so the options that work on
+      # the data in hand come first and the strata advice is for planning.
+      expect_match(conditionMessage(err), "With the data in hand", fixed = TRUE)
+      expect_match(conditionMessage(err), "When planning sampling", fixed = TRUE)
     }
   }
 })

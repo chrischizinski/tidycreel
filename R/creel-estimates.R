@@ -5239,11 +5239,10 @@ refuse_unsampled_cells <- function(design, cell_cols) {
         "Sample at least one day in every stratum, or merge the stratum into \\
          another before estimating."
       } else {
-        "To expand each group separately, declare it as a stratum: \\
-         {.code strata = c({paste(cell_cols, collapse = ', ')})} in \\
-         {.fn creel_design}. Each new stratum then needs two sampled days, or \\
-         every one of its days. Otherwise group by a coarser variable, sample \\
-         a day in every cell, or use {.code target = 'sampled_days'}."
+        "With the data in hand: group by a coarser variable, or use \\
+         {.code target = 'sampled_days'}. When planning sampling: declare the \\
+         groups as strata, {.code strata = c({paste(cell_cols, collapse = ', ')})} \\
+         in {.fn creel_design}, and sample two days in each, or all of its days."
       }
     ),
     class = "creel_error_unsampled_cell"
