@@ -207,3 +207,17 @@ test_that("#385: n_periods must be a whole number of at least 1", {
     )
   }
 })
+
+test_that("#385: drawn shifts keep ordered period labels, and malformed inputs are refused", {
+  s <- ss_sched(periods_per_day = 1, ordered_periods = TRUE)
+  expect_true(is.ordered(s$period_id))
+  expect_identical(levels(s$period_id), c("AM", "PM"))
+
+  expect_error(ss_sched(periods = list(period_id = "AM")), "must be a data frame")
+  expect_error(ss_sched(periods = ss_shifts()[, c("period_id", "start_time")]), "end_time")
+  expect_error(ss_sched(periods = ss_shifts(), expand_periods = FALSE), "expand_periods = TRUE")
+
+  bad <- as.data.frame(ss_sched(periods_per_day = 1))
+  bad$p_period <- as.character(bad$p_period)
+  expect_error(validate_creel_schedule(bad), "must be numeric", class = "creel_error_schema_validation")
+})
