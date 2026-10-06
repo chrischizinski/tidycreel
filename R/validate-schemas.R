@@ -135,10 +135,32 @@ validate_creel_schedule <- function(data) {
       }
     }
 
-    # Shift times (GH #385): "HH:MM", both present, ending later the same day.
-    # The shift length is derived from them, so an unreadable time or a
-    # midnight crossing (not supported until #407) is refused here, not when
-    # it is used.
+    # day_start (GH #407): the clock time each survey day begins. One value
+    # for the whole schedule; absent means "00:00".
+    ds <- 0L
+    if ("day_start" %in% names(data)) {
+      dsv <- unique(as.character(data$day_start))
+      if (length(dsv) != 1L || is.na(dsv) || !grepl("^([01][0-9]|2[0-3]):[0-5][0-9]$", dsv)) {
+        collection$push("Column 'day_start' must hold one \"HH:MM\" time for every row")
+      } else {
+        ds <- parse_hhmm_to_min(dsv) # nolint: object_usage_linter
+      }
+    }
+
+    # shift_hours (GH #407): a shift's real elapsed length, positive.
+    if ("shift_hours" %in% names(data)) {
+      sh <- data$shift_hours
+      if (!is.numeric(sh)) {
+        collection$push("Column 'shift_hours' must be numeric")
+      } else if (any(!is.na(sh) & sh <= 0)) {
+        collection$push("Column 'shift_hours' must be positive")
+      }
+    }
+
+    # Shift times (GH #385): "HH:MM", both present, and each shift inside one
+    # survey day on the clock that starts at day_start (#407). The shift
+    # length is derived from them, so an unreadable time or a shift leaving
+    # its survey day is refused here, not when it is used.
     if (any(c("shift_start", "shift_end") %in% names(data))) {
       if (!all(c("shift_start", "shift_end") %in% names(data))) {
         collection$push("Columns 'shift_start' and 'shift_end' must be supplied together")
@@ -167,11 +189,11 @@ validate_creel_schedule <- function(data) {
           ))
         } else if (any(has)) {
           to_min <- function(x) as.integer(substr(x, 1, 2)) * 60L + as.integer(substr(x, 4, 5))
-          wraps <- has & to_min(en) <= to_min(st)
+          wraps <- has & survey_min(to_min(en), ds, end = TRUE) <= survey_min(to_min(st), ds) # nolint: object_usage_linter
           if (any(wraps, na.rm = TRUE)) {
             collection$push(paste0(
-              "Shifts must end later the same day (crossing midnight is not supported yet, #407); ",
-              sum(wraps, na.rm = TRUE), " row(s) do not"
+              "Shifts must end after they start within one survey day (day_start ",
+              format_min_to_hhmm(ds), "); ", sum(wraps, na.rm = TRUE), " row(s) do not" # nolint: object_usage_linter
             ))
           }
         }

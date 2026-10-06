@@ -28,15 +28,27 @@
 #' @param tz Time zone name, e.g. `"America/Chicago"` (see [OlsonNames()]).
 #' @param cutoffs Clock times (`"HH:MM"`, local) that divide the day into
 #'   shifts. One cutoff gives two shifts (AM: sunrise to cutoff; PM: cutoff to
-#'   sunset); `k` cutoffs give `k + 1`.
+#'   sunset); `k` cutoffs give `k + 1`. With `night = TRUE` they divide the
+#'   night instead, listed from evening to morning (e.g. `"00:30"`, or
+#'   `c("22:00", "01:00")`); the default there is none, one shift from sunset
+#'   to sunrise.
 #' @param horizon Sun depression angle that defines sunrise and sunset: as in
 #'   [day_length()], `"sunset"` (default), `"civil"`, `"nautical"`,
 #'   `"astronomical"`, or a number of degrees. `"civil"` adds roughly half an
 #'   hour at each end, for anglers who fish into twilight.
 #'
+#' @param night `FALSE` (default) for shifts from sunrise to sunset. `TRUE`
+#'   for night shifts from sunset to the next morning's sunrise, each night
+#'   dated by the date it starts (#407). Such shifts cross midnight, so pass
+#'   them to [generate_schedule()] with a `day_start` no shift spans (e.g.
+#'   `"12:00"`) and with `weekend_days`.
+#'
 #' @return A data frame with one row per date and shift: `date`,
 #'   `period_id` (1 = first shift of the day), `start_time` and `end_time`
-#'   (`"HH:MM"`, local), and `hours` (decimal hours).
+#'   (`"HH:MM"`, local), and `hours` (decimal hours). For night shifts,
+#'   `hours` is real elapsed time in `tz`, so a night that spans a
+#'   daylight-saving change is an hour longer or shorter than its clock
+#'   length; [generate_schedule()] keeps it as `shift_hours`.
 #'
 #' @details A cutoff that falls before sunrise or after sunset on some date
 #'   would give a shift of zero or negative length; that is an error naming
@@ -62,11 +74,20 @@
 #' )
 #' head(sched)
 #'
+#' # Night shifts, sunset to 00:30 and 00:30 to sunrise, dated by the evening
+#' nights <- daylight_shifts(as.Date(c("2024-11-01", "2024-11-02")), 40.699, -99.083,
+#'                           "America/Chicago", cutoffs = "00:30", night = TRUE)
+#' nights # the second night gains an hour when daylight saving ends
+#'
 #' @seealso [generate_schedule()], [attach_count_times()], [add_counts()],
 #'   [day_length()]
 #' @family "Scheduling"
 #' @export
-daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "sunset") {
+daylight_shifts <- function(date, lat, lon, tz, cutoffs = if (night) character(0) else "13:30",
+                            horizon = "sunset", night = FALSE) {
+  if (!isTRUE(night) && !isFALSE(night)) {
+    cli::cli_abort("{.arg night} must be {.code TRUE} or {.code FALSE}.")
+  }
   date <- tryCatch(as.Date(date), error = function(e) {
     cli::cli_abort("{.arg date} must be dates.")
   })
@@ -82,14 +103,26 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "su
     ))
   }
   hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
-  if (!is.character(cutoffs) || length(cutoffs) == 0L || anyNA(cutoffs) || !all(grepl(hhmm, cutoffs))) {
+  if (!is.character(cutoffs) || (!night && length(cutoffs) == 0L) || anyNA(cutoffs) ||
+        !all(grepl(hhmm, cutoffs))) {
     cli::cli_abort("{.arg cutoffs} must be clock times as {.val HH:MM}.")
   }
   cut_min <- vapply(cutoffs, parse_hhmm_to_min, integer(1), USE.NAMES = FALSE) # nolint: object_usage_linter
-  if (is.unsorted(cut_min, strictly = TRUE)) {
-    cli::cli_abort("{.arg cutoffs} must be in increasing order with no repeats.")
+  # A night's cutoffs run from evening to morning, so they are ordered on a
+  # clock that starts at noon: "22:00" before "01:00" (GH #407).
+  order_key <- if (night) (cut_min - 720L) %% 1440L else cut_min
+  if (is.unsorted(order_key, strictly = TRUE)) {
+    cli::cli_abort(if (night) {
+      "{.arg cutoffs} must run in order from evening to morning with no repeats."
+    } else {
+      "{.arg cutoffs} must be in increasing order with no repeats."
+    })
   }
   depression <- resolve_horizon(horizon) # nolint: object_usage_linter
+
+  if (night) {
+    return(night_shifts(date, lat, lon, tz, cut_min, depression))
+  }
 
   st <- local_sun_times(date, lat, lon, tz, depression)
   late <- !is.na(st$sunset) & st$sunset >= 1440L
@@ -97,7 +130,8 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "su
     bad <- as.character(date[late]) # nolint: object_usage_linter
     cli::cli_abort(c(
       "Sunset falls at or after midnight on {length(bad)} date{?s}: {.val {bad}}.",
-      "x" = "A shift ending after midnight is not supported yet (#407)."
+      "x" = "A daylight shift would end on the next calendar day.",
+      "i" = "Use {.code night = TRUE} for shifts from sunset to sunrise."
     ))
   }
   if (anyNA(st$sunrise) || anyNA(st$sunset)) {
@@ -128,6 +162,74 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "su
     start_time = format_min_to_hhmm(as.integer(t(bounds[, -ncol(bounds), drop = FALSE]))), # nolint: object_usage_linter
     end_time = format_min_to_hhmm(as.integer(t(bounds[, -1, drop = FALSE]))), # nolint: object_usage_linter
     hours = as.numeric(t(len)) / 60,
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Night shifts from sunset to the next sunrise
+#'
+#' Internal (GH #407). Each night is dated by the date it starts (its
+#' sunset). Bounds are minutes on a clock that starts at noon, so a night is
+#' one increasing interval; written back as local clock times. `hours` is real
+#' elapsed time in `tz`, so a night spanning a daylight-saving change is an
+#' hour shorter or longer than its clock length.
+#'
+#' @noRd
+night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
+  st <- local_sun_times(date, lat, lon, tz, depression)
+  nx <- local_sun_times(date + 1L, lat, lon, tz, depression)
+  never <- is.na(st$sunset) | is.na(nx$sunrise)
+  if (any(never)) {
+    bad <- as.character(date[never]) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "The sun does not set, or rise the next morning, on {length(bad)} night{?s} at this latitude: \\
+       {.val {bad}}.",
+      "i" = "Night shifts need a sunset and the next sunrise."
+    ))
+  }
+  if (any(st$sunset < 720L)) {
+    bad <- as.character(date[st$sunset < 720L]) # nolint: object_usage_linter
+    cli::cli_abort("Sunset falls before noon on {length(bad)} date{?s}: {.val {bad}}.")
+  }
+  noon <- 720L
+  set_off <- st$sunset - noon
+  rise_off <- nx$sunrise + 1440L - noon
+  cut_off <- (cut_min - noon) %% 1440L
+  bounds <- cbind(set_off, matrix(cut_off, nrow = length(date), ncol = length(cut_off), byrow = TRUE),
+                  rise_off)
+  len <- bounds[, -1, drop = FALSE] - bounds[, -ncol(bounds), drop = FALSE]
+  if (any(len <= 0)) {
+    bad <- as.character(date[apply(len <= 0, 1, any)]) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "A cutoff falls outside the night on {length(bad)} date{?s}: {.val {bad}}.",
+      "x" = "Every cutoff must fall between sunset and the next sunrise.",
+      "i" = "Check {.arg cutoffs}, {.arg lon} and {.arg tz}."
+    ))
+  }
+  # Real elapsed hours: each bound as a local time on its calendar date.
+  as_time <- function(off) {
+    clock <- off + noon
+    day <- date + (clock >= 1440L)
+    as.POSIXct(paste(day, format_min_to_hhmm(clock)), format = "%Y-%m-%d %H:%M", tz = tz) # nolint: object_usage_linter
+  }
+  times <- apply(bounds, 2, as_time)
+  times <- matrix(times, nrow = length(date))
+  if (anyNA(times)) {
+    bad <- as.character(date[apply(is.na(times), 1, any)]) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "A cutoff falls in the hour skipped by a daylight-saving change on {length(bad)} night{?s}: \\
+       {.val {bad}}.",
+      "i" = "Move the cutoff outside 02:00-03:00 local time."
+    ))
+  }
+  elapsed <- (times[, -1, drop = FALSE] - times[, -ncol(times), drop = FALSE]) / 3600
+  n_shift <- ncol(len)
+  data.frame(
+    date = rep(date, each = n_shift),
+    period_id = rep(seq_len(n_shift), times = length(date)),
+    start_time = format_min_to_hhmm(as.integer(t(bounds[, -ncol(bounds), drop = FALSE])) + noon), # nolint: object_usage_linter
+    end_time = format_min_to_hhmm(as.integer(t(bounds[, -1, drop = FALSE])) + noon), # nolint: object_usage_linter
+    hours = as.numeric(t(elapsed)),
     stringsAsFactors = FALSE
   )
 }

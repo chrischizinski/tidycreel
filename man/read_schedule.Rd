@@ -25,6 +25,9 @@ column existed) is read as \code{p_period = 1}, with a warning, when every
 sampled day carries the same periods (each was worked every day); if
 the periods differ between days they were drawn, and it is an error.
 \item \code{shift_start}, \code{shift_end} (character "HH:MM", if present)
+\item \code{shift_hours} (numeric, if present)
+\item \code{day_start} (character "HH:MM", if present): when each survey day
+begins; shift times are read on that clock
 \item \code{sampled} (logical, if present)
 }
 }

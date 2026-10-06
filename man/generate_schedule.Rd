@@ -19,7 +19,9 @@ generate_schedule(
   special_periods = NULL,
   periods_per_day = NULL,
   period_allocation = c("balanced", "random"),
-  periods = NULL
+  periods = NULL,
+  day_start = "00:00",
+  weekend_days = NULL
 )
 }
 \arguments{
@@ -86,8 +88,28 @@ period, matching \code{period_labels}, or 1 to \code{n_periods}), \code{start_ti
 \code{end_time} as \code{"HH:MM"}. Adds \code{shift_start} and \code{shift_end} to every row.
 With a \code{date} column the times vary by day -- one row per date and period,
 covering every worked date -- as returned by \code{\link[=daylight_shifts]{daylight_shifts()}} for
-shifts bounded by sunrise and sunset. A shift that ends at or before it
-starts (crossing midnight) is not yet supported.}
+shifts bounded by sunrise and sunset. Times are read on the survey-day
+clock that starts at \code{day_start}, and each shift must fall inside one
+survey day. An optional \code{hours} column (as \code{\link[=daylight_shifts]{daylight_shifts()}} returns)
+gives each shift's real elapsed length and is kept as \code{shift_hours}; it
+differs from the clock length only across a daylight-saving change.}
+
+\item{day_start}{Clock time (\code{"HH:MM"}) at which a survey day begins.
+The default \code{"00:00"} is the calendar day, as before. For night creels
+whose shifts cross midnight, choose a time no shift spans, e.g. \code{"12:00"}:
+then 19:30-00:30 and 00:30-06:00 are the two halves of one night, dated
+by the date the night starts. A shift time earlier than \code{day_start} is on
+the next calendar day. The schedule records it in a \code{day_start} column.
+Mapping counts and interviews to night survey days is not available yet
+(#407), so \code{\link[=creel_design]{creel_design()}} refuses such a schedule as its calendar for
+now.}
+
+\item{weekend_days}{Day names (full or three-letter English, any case) whose
+survey days form the \code{weekend} stratum. \code{NULL} (default) means Saturday
+and Sunday, and is only allowed when \code{day_start = "00:00"}: a night is
+dated by the day it starts, so with that default a Friday night would be
+a weekday, and agencies differ on which nights are the weekend (e.g.
+\code{c("Friday", "Saturday")}).}
 }
 \value{
 A \code{creel_schedule} data frame with columns:
@@ -105,6 +127,9 @@ that day: \code{1} when every period is worked, \code{periods_per_day / n_period
 \code{expand_periods = FALSE}.
 \item \code{shift_start}, \code{shift_end} (character, "HH:MM"): Present when \code{periods}
 is supplied.
+\item \code{shift_hours} (numeric): Present when \code{periods} has an \code{hours} column.
+\item \code{day_start} (character, "HH:MM"): Present when \code{day_start} is not
+\code{"00:00"}.
 \item \code{sampled} (logical): Present only when \code{include_all = TRUE}.
 }
 }

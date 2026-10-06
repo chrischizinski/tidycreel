@@ -308,7 +308,7 @@ test_that("#432 review: a generated template attaches to its own span when its l
 
 test_that("#432: a slot that would cross midnight is refused", {
   # Deterministic: a 30-minute slot starting at 23:50.
-  expect_error(check_slots_before_midnight(list(1430L), "2024-06-01", 30L), "midnight")
+  expect_error(check_slots_before_midnight(list(1430L), "2024-06-01", 30L), "end of the survey day")
   expect_no_error(check_slots_before_midnight(list(1400L), "2024-06-01", 30L))
   # Through the public function: a 90-minute slot drawn in 22:00-23:59 ends
   # past midnight on most seeds.

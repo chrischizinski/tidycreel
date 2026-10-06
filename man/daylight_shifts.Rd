@@ -4,7 +4,15 @@
 \alias{daylight_shifts}
 \title{Shift times bounded by sunrise and sunset}
 \usage{
-daylight_shifts(date, lat, lon, tz, cutoffs = "13:30", horizon = "sunset")
+daylight_shifts(
+  date,
+  lat,
+  lon,
+  tz,
+  cutoffs = if (night) character(0) else "13:30",
+  horizon = "sunset",
+  night = FALSE
+)
 }
 \arguments{
 \item{date}{Dates (a \code{Date} vector or anything \code{\link[=as.Date]{as.Date()}} accepts).}
@@ -18,17 +26,29 @@ Americas).}
 
 \item{cutoffs}{Clock times (\code{"HH:MM"}, local) that divide the day into
 shifts. One cutoff gives two shifts (AM: sunrise to cutoff; PM: cutoff to
-sunset); \code{k} cutoffs give \code{k + 1}.}
+sunset); \code{k} cutoffs give \code{k + 1}. With \code{night = TRUE} they divide the
+night instead, listed from evening to morning (e.g. \code{"00:30"}, or
+\code{c("22:00", "01:00")}); the default there is none, one shift from sunset
+to sunrise.}
 
 \item{horizon}{Sun depression angle that defines sunrise and sunset: as in
 \code{\link[=day_length]{day_length()}}, \code{"sunset"} (default), \code{"civil"}, \code{"nautical"},
 \code{"astronomical"}, or a number of degrees. \code{"civil"} adds roughly half an
 hour at each end, for anglers who fish into twilight.}
+
+\item{night}{\code{FALSE} (default) for shifts from sunrise to sunset. \code{TRUE}
+for night shifts from sunset to the next morning's sunrise, each night
+dated by the date it starts (#407). Such shifts cross midnight, so pass
+them to \code{\link[=generate_schedule]{generate_schedule()}} with a \code{day_start} no shift spans (e.g.
+\code{"12:00"}) and with \code{weekend_days}.}
 }
 \value{
 A data frame with one row per date and shift: \code{date},
 \code{period_id} (1 = first shift of the day), \code{start_time} and \code{end_time}
-(\code{"HH:MM"}, local), and \code{hours} (decimal hours).
+(\code{"HH:MM"}, local), and \code{hours} (decimal hours). For night shifts,
+\code{hours} is real elapsed time in \code{tz}, so a night that spans a
+daylight-saving change is an hour longer or shorter than its clock
+length; \code{\link[=generate_schedule]{generate_schedule()}} keeps it as \code{shift_hours}.
 }
 \description{
 Returns each date's shifts for a survey whose shifts run from sunrise to a
@@ -71,6 +91,11 @@ sched <- generate_schedule(
   sampling_rate = 0.3, periods_per_day = 1, periods = shifts, seed = 1
 )
 head(sched)
+
+# Night shifts, sunset to 00:30 and 00:30 to sunrise, dated by the evening
+nights <- daylight_shifts(as.Date(c("2024-11-01", "2024-11-02")), 40.699, -99.083,
+                          "America/Chicago", cutoffs = "00:30", night = TRUE)
+nights # the second night gains an hour when daylight saving ends
 
 }
 \references{

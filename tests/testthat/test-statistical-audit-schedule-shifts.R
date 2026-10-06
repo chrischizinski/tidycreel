@@ -95,11 +95,12 @@ test_that("#385: invalid shift arguments are refused", {
   bad_time <- ss_shifts()
   bad_time$end_time[2] <- "25:00"
   expect_error(ss_sched(periods = bad_time), "HH:MM")
-  # Crossing midnight waits for #407's clock-time handling.
+  # On the calendar-day clock (day_start "00:00") a shift ending after
+  # midnight leaves the survey day; night shifts need day_start (#407).
   night <- ss_shifts()
   night$start_time[2] <- "19:30"
   night$end_time[2] <- "00:30"
-  expect_error(ss_sched(periods = night), "crossing midnight")
+  expect_error(ss_sched(periods = night), "at or before")
 })
 
 test_that("#385: write_schedule() / read_schedule() keep the shift, its probability and its times", {

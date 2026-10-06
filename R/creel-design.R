@@ -464,6 +464,27 @@ creel_design <- function(
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
+  # A schedule whose survey day does not start at midnight (night shifts,
+  # GH #407) dates each night by the day it starts, while counts and
+  # interviews are still matched to the calendar by their own calendar date:
+  # a 02:00 count would join the next day, its stratum and its PSU. Refused
+  # until the mapping exists, rather than estimated wrongly.
+  if ("day_start" %in% names(calendar)) {
+    ds_vals <- unique(as.character(calendar$day_start))
+    if (!identical(ds_vals, "00:00")) {
+      cli::cli_abort(
+        c(
+          "This calendar's survey days start at {.val {ds_vals}}, not midnight (a night schedule).",
+          "x" = "Matching counts and interviews to night survey days is not available yet (#407), \\
+                 so records after midnight would join the wrong day.",
+          "i" = "The schedule can be generated, written and given count times now; estimation \\
+                 from it arrives with #407."
+        ),
+        class = "creel_error_night_design_pending"
+      )
+    }
+  }
+
   # 2. Resolve tidy selectors to column names
   date_col <- resolve_single_col(
     rlang::enquo(date),

@@ -105,6 +105,11 @@ coerce_schedule_columns <- function(df) {
   if ("sampled" %in% names(df)) {
     df$sampled <- as.logical(df$sampled)
   }
+  if ("shift_hours" %in% names(df)) {
+    sh <- df$shift_hours
+    sh[!is.na(sh) & (sh == "NA" | sh == "")] <- NA
+    df$shift_hours <- suppressWarnings(as.numeric(sh))
+  }
   if ("p_period" %in% names(df)) {
     # Text that is not a number becomes NA, which validate_creel_schedule()
     # then refuses on any worked period (GH #385).
@@ -189,6 +194,9 @@ write_schedule <- function(schedule, path, format = c("csv", "xlsx"), overwrite 
 #'     sampled day carries the same periods (each was worked every day); if
 #'     the periods differ between days they were drawn, and it is an error.
 #'   - `shift_start`, `shift_end` (character "HH:MM", if present)
+#'   - `shift_hours` (numeric, if present)
+#'   - `day_start` (character "HH:MM", if present): when each survey day
+#'     begins; shift times are read on that clock
 #'   - `sampled` (logical, if present)
 #'
 #' @examples
