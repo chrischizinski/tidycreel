@@ -70,22 +70,42 @@ test_that("#385: the same seed gives the same windows; another seed does not", {
   expect_false(identical(a1$start_time, a3$start_time))
 })
 
-test_that("#385: min_gap holds on every day", {
+test_that("#385: with systematic windows min_gap holds on every day", {
+  # Only systematic guarantees the gap; random trades it for equal coverage
+  # (next test). User decision 2026-10-05.
   for (seed in 1:30) {
-    a <- attach_count_times(pdc_schedule(), n_windows = 3, window_size = 30, min_gap = 70, seed = seed)
+    a <- attach_count_times(pdc_schedule(), n_windows = 3, window_size = 30, min_gap = 70,
+                            strategy = "systematic", seed = seed)
     expect_true(pdc_min_gap_holds(a, 70), info = as.character(seed))
   }
 })
 
-test_that("#385: generate_count_times(strategy = 'random') honours min_gap", {
-  # Before #385 a window could start anywhere in its stratum, so neighbouring
-  # windows could be 1 minute apart with min_gap = 60 (294 of 500 seeds).
-  for (seed in 1:200) {
+test_that("#385 review: random starts range over the whole stratum, whatever min_gap is", {
+  # Holding back room for min_gap pinned the first three of four windows to
+  # 06:00, 08:00 and 10:00 (min_gap = 90, 120-min strata): pressure at
+  # 07:00-08:00 was never counted on any seed (Codex, #385 review). Each start
+  # must instead be uniform over every position where its window fits:
+  # 06:00-07:30 in the first stratum.
+  starts <- vapply(seq_len(600), function(seed) {
     ct <- generate_count_times(start_time = "06:00", end_time = "14:00", strategy = "random",
-                               n_windows = 4, window_size = 30, min_gap = 60, seed = seed)
-    gaps <- pdc_min(ct$start_time)[-1] - pdc_min(ct$end_time)[-4]
-    expect_true(all(gaps >= 60), info = as.character(seed))
-  }
+                               n_windows = 4, window_size = 30, min_gap = 90, seed = seed)
+    pdc_min(ct$start_time)[1]
+  }, integer(1)) - 360L
+  expect_equal(range(starts), c(0L, 90L))
+  # Roughly uniform: each third of 0..90 holds about a third of the draws.
+  thirds <- table(cut(starts, c(-1, 30, 60, 90)))
+  expect_true(all(abs(thirds / 600 - 1 / 3) < 0.06))
+  # The hour the restricted draw never reached.
+  expect_true(any(starts >= 60L))
+})
+
+test_that("#385 review: per-day random draws cover the whole shift over a season", {
+  a <- attach_count_times(pdc_schedule(), n_windows = 2, window_size = 30, min_gap = 120, seed = 4)
+  w <- a[!is.na(a$window_id) & a$period_id == 2, ]
+  # A 13:00-20:00 shift in two 210-min strata, min_gap 120: the restricted
+  # draw could never start a first window after 14:00.
+  first <- tapply(pdc_min(w$start_time), w$date, min)
+  expect_true(any(first > pdc_min("14:00")))
 })
 
 test_that("#385: a window that fills its stratum is placed at the stratum start", {
@@ -172,4 +192,43 @@ test_that("#385: drawn windows feed add_counts() with the schedule's p and windo
   )))
   est <- suppressWarnings(suppressMessages(estimate_effort(out)))$estimates$estimate
   expect_equal(est, sum(tapply(counts$anglers, counts$date, mean) * 7 / 0.5), tolerance = 1e-12)
+})
+
+test_that("#385 review: one window needs no room for min_gap", {
+  ct <- generate_count_times(start_time = "06:00", end_time = "12:00", strategy = "random",
+                             n_windows = 1, window_size = 360, min_gap = 60, seed = 1)
+  expect_identical(ct$start_time, "06:00")
+})
+
+test_that("#385 review: negative window arguments are refused", {
+  expect_error(attach_count_times(pdc_schedule(), n_windows = 2, window_size = 30, min_gap = -10, seed = 1),
+               "min_gap")
+  expect_error(generate_count_times(start_time = "06:00", end_time = "14:00", strategy = "random",
+                                    n_windows = 2, window_size = -30, min_gap = 0, seed = 1),
+               "window_size")
+})
+
+test_that("#385 review: a schedule with no rows gives a typed empty result", {
+  empty <- pdc_schedule()[0, ]
+  a <- attach_count_times(empty, n_windows = 2, window_size = 30, min_gap = 60, seed = 1)
+  expect_s3_class(a, "creel_schedule")
+  expect_equal(nrow(a), 0L)
+  expect_true(all(c("start_time", "end_time", "window_id") %in% names(a)))
+})
+
+test_that("#385 review: fixed windows must fall inside a given start_time -- end_time", {
+  sched <- generate_schedule(start_date = "2024-06-01", end_date = "2024-06-07", n_periods = 2,
+                             sampling_rate = 0.5, seed = 1)
+  fw <- data.frame(start_time = c("05:00", "09:00"), end_time = c("05:30", "09:30"))
+  expect_error(
+    attach_count_times(sched, strategy = "fixed", fixed_windows = fw, start_time = "06:00", end_time = "14:00"),
+    "outside"
+  )
+  expect_no_error(attach_count_times(sched, strategy = "fixed", fixed_windows = fw))
+})
+
+test_that("#385 review: no seed draws without a .Random.seed warning", {
+  expect_no_warning(attach_count_times(pdc_schedule(), n_windows = 2, window_size = 30, min_gap = 60))
+  expect_no_warning(generate_count_times(start_time = "06:00", end_time = "14:00", strategy = "random",
+                                         n_windows = 2, window_size = 30, min_gap = 10))
 })

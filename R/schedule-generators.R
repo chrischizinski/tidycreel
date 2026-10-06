@@ -919,10 +919,15 @@ format_min_to_hhmm <- function(mins) {
 #'   `n_windows`.
 #' @param window_size Positive integer. Duration of each count window in
 #'   minutes. Required for `strategy = "random"` and `"systematic"`.
-#' @param min_gap Non-negative integer. Minimum gap (minutes) between windows.
-#'   Required for `strategy = "random"` and `"systematic"`.
-#'   `window_size + min_gap` must not exceed the stratum width
-#'   (`total_span / n_windows`).
+#' @param min_gap Non-negative integer, minutes. Required for
+#'   `strategy = "random"` and `"systematic"`. `window_size + min_gap` must
+#'   not exceed the stratum width (`total_span / n_windows`). With
+#'   `"systematic"` every gap is then at least `min_gap`. With `"random"` it is
+#'   only this fit check: each window's start is drawn uniformly from every
+#'   position where the window fits in its stratum, without holding back room
+#'   for the gap (which would leave parts of the span no count could reach),
+#'   so neighbouring windows can be closer than `min_gap`. Use `"systematic"`
+#'   when spacing must be guaranteed.
 #' @param fixed_windows A data frame with `start_time` and `end_time` columns
 #'   (character `"HH:MM"`). Required for `strategy = "fixed"`. Windows must be
 #'   non-overlapping.
@@ -1084,7 +1089,7 @@ generate_count_times <- function(
   min_gap <- as.integer(min_gap)
 
   check_window_spacing(start_min, end_min, n_windows, window_size, min_gap)
-  t_starts <- withr::with_seed(seed, {
+  t_starts <- with_optional_seed(seed, {
     draw_window_starts(start_min, end_min, strategy, n_windows, window_size, min_gap)
   })
 
@@ -1106,6 +1111,13 @@ generate_count_times <- function(
 #' @noRd
 check_window_spacing <- function(start_min, end_min, n_windows, window_size, min_gap,
                                  where = NULL, call = rlang::caller_env()) {
+  bad_arg <- function(x, min) length(x) != 1L || is.na(x) || x < min
+  if (bad_arg(n_windows, 1L) || bad_arg(window_size, 1L) || bad_arg(min_gap, 0L)) {
+    cli::cli_abort(c(
+      "Count windows need {.arg n_windows} >= 1, {.arg window_size} >= 1 and {.arg min_gap} >= 0.",
+      "x" = "Got n_windows = {n_windows}, window_size = {window_size}, min_gap = {min_gap}."
+    ), call = call)
+  }
   total_min <- end_min - start_min
   if (total_min %% n_windows != 0L) {
     cli::cli_abort(c(
@@ -1115,7 +1127,9 @@ check_window_spacing <- function(start_min, end_min, n_windows, window_size, min
     ), call = call)
   }
   k <- total_min %/% n_windows
-  if (window_size + min_gap > k) {
+  # The gap separates windows; a single window needs only to fit.
+  gap <- if (n_windows > 1L) min_gap else 0L
+  if (window_size + gap > k) {
     cli::cli_abort(c(
       "window_size + min_gap exceeds stratum length{where}.",
       "x" = "Stratum is {k} min, but window_size + min_gap = {window_size + min_gap} min.",
@@ -1125,17 +1139,31 @@ check_window_spacing <- function(start_min, end_min, n_windows, window_size, min
   invisible(k)
 }
 
+#' Evaluate code under a seed, or the session RNG when there is none
+#'
+#' `withr::with_seed(NULL, ...)` warns that `.Random.seed` is NULL.
+#'
+#' @noRd
+with_optional_seed <- function(seed, code) {
+  if (is.null(seed)) code else withr::with_seed(seed, code)
+}
+
 #' Draw count-window start times within a span
 #'
 #' Uses the current RNG state; callers seed it. Assumes
 #' check_window_spacing() has passed.
 #'
-#' Random: one window per stratum, its start uniform over the positions that
-#' leave `min_gap` before the next stratum begins, so consecutive windows are
-#' always at least `min_gap` apart (before #385 the start ranged to the end of
-#' the stratum, and neighbouring windows could almost touch). Systematic: one
-#' random start in the first stratum, then every `k` minutes; the gap is
-#' `k - window_size >= min_gap` by construction.
+#' Random: one window per equal stratum, its start uniform over every position
+#' where the window fits in the stratum. Neighbouring windows can therefore be
+#' closer than `min_gap` (Pollock et al.'s noted drawback of random times);
+#' restricting the start to keep the gap pinned windows in place and left
+#' parts of the span no count could reach (#385 review), so it is not done.
+#' Systematic: one random start in the first stratum, then every `k` minutes;
+#' the gap is `k - window_size >= min_gap`. In both, the last `window_size`
+#' minutes of a stratum are never a window start (#432).
+#'
+#' `sample.int()`, not `sample(a:b, 1)`: when the range is one value,
+#' `sample(x, 1)` draws from `1:x`.
 #'
 #' @return Integer start times, minutes since midnight.
 #' @noRd
@@ -1146,8 +1174,7 @@ draw_window_starts <- function(start_min, end_min, strategy, n_windows, window_s
       seq_len(n_windows) - 1L,
       function(i) {
         stratum_start <- start_min + i * k
-        last <- stratum_start + k - window_size - if (i < n_windows - 1L) min_gap else 0L
-        stratum_start + sample.int(last - stratum_start + 1L, 1L) - 1L
+        stratum_start + sample.int(k - window_size + 1L, 1L) - 1L
       },
       integer(1)
     )
@@ -1455,11 +1482,14 @@ generate_bus_schedule <- function(
 #'   window length and minimum gap between windows, in minutes. Required to
 #'   draw windows. The span (shift or `start_time`--`end_time`) must divide
 #'   evenly by `n_windows`, and each of the equal strata must hold
-#'   `window_size + min_gap`.
-#' @param strategy `"random"` (default; one window at a random position in
-#'   each stratum), `"systematic"` (a random start in the first stratum, then
-#'   every stratum length; a fresh start each day, as in Pollock et al. 1994),
-#'   or `"fixed"` (the clock times in `fixed_windows`).
+#'   `window_size + min_gap`. `min_gap` is guaranteed between windows only
+#'   with `"systematic"` (see `strategy`).
+#' @param strategy `"random"` (default; one window placed uniformly where it
+#'   fits in each equal stratum -- neighbouring windows can be closer than
+#'   `min_gap`),
+#'   `"systematic"` (a random start in the first stratum, then every stratum
+#'   length, so gaps are at least `min_gap`; a fresh start each day, as in
+#'   Pollock et al. 1994), or `"fixed"` (the clock times in `fixed_windows`).
 #' @param fixed_windows For `strategy = "fixed"`: a data frame of `start_time`
 #'   and `end_time` (`"HH:MM"`). With shift times in the schedule it must also
 #'   carry `period_id`, giving each shift its own windows, and every window
@@ -1624,7 +1654,7 @@ attach_count_times <- function(
     }
     # One seeded stream, drawn row by row in schedule order: the same seed and
     # schedule give the same windows, and each day's draw is independent.
-    starts <- withr::with_seed(seed, lapply(worked, function(i) {
+    starts <- with_optional_seed(seed, lapply(worked, function(i) {
       draw_window_starts(span_start[i], span_end[i], strategy, n_windows, window_size, min_gap)
     }))
     windows <- vector("list", nrow(schedule))
@@ -1648,7 +1678,15 @@ attach_count_times <- function(
     out$window_id <- seq_len(nrow(w))
     out
   })
-  result <- do.call(rbind, rows)
+  result <- if (length(rows) == 0L) {
+    empty <- schedule[0, , drop = FALSE]
+    empty$start_time <- character(0)
+    empty$end_time <- character(0)
+    empty$window_id <- integer(0)
+    empty
+  } else {
+    do.call(rbind, rows)
+  }
   rownames(result) <- NULL
   new_creel_schedule(result)
 }
@@ -1745,6 +1783,13 @@ fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_
     take <- if (has_shift_times) group == as.character(schedule$period_id[i]) else rep(TRUE, length(group))
     w <- data.frame(start = fw_start[take], end = fw_end[take])
     w <- w[order(w$start), , drop = FALSE]
+    if (!has_shift_times && !is.na(span_start[i]) &&
+          any(w$start < span_start[i] | w$end > span_end[i])) {
+      cli::cli_abort(
+        "A fixed window falls outside {.arg start_time} -- {.arg end_time}.",
+        call = call
+      )
+    }
     if (nrow(w) == 0L) {
       cli::cli_abort(
         "{.arg fixed_windows} has no windows for shift {.val {schedule$period_id[i]}}.",

@@ -29,12 +29,15 @@ this or the drawing arguments, not both.}
 window length and minimum gap between windows, in minutes. Required to
 draw windows. The span (shift or \code{start_time}--\code{end_time}) must divide
 evenly by \code{n_windows}, and each of the equal strata must hold
-\code{window_size + min_gap}.}
+\code{window_size + min_gap}. \code{min_gap} is guaranteed between windows only
+with \code{"systematic"} (see \code{strategy}).}
 
-\item{strategy}{\code{"random"} (default; one window at a random position in
-each stratum), \code{"systematic"} (a random start in the first stratum, then
-every stratum length; a fresh start each day, as in Pollock et al. 1994),
-or \code{"fixed"} (the clock times in \code{fixed_windows}).}
+\item{strategy}{\code{"random"} (default; one window placed uniformly where it
+fits in each equal stratum -- neighbouring windows can be closer than
+\code{min_gap}),
+\code{"systematic"} (a random start in the first stratum, then every stratum
+length, so gaps are at least \code{min_gap}; a fresh start each day, as in
+Pollock et al. 1994), or \code{"fixed"} (the clock times in \code{fixed_windows}).}
 
 \item{fixed_windows}{For \code{strategy = "fixed"}: a data frame of \code{start_time}
 and \code{end_time} (\code{"HH:MM"}). With shift times in the schedule it must also

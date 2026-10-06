@@ -62,12 +62,16 @@
   is now an error. A schedule that draws shifts but has no shift times is an
   error at attach time.
 
-* `generate_count_times(strategy = "random")` now keeps `min_gap` between
-  windows (#385). The start of each window could fall anywhere in its
-  stratum, so neighbouring windows could be a minute apart even with
-  `min_gap = 60` (on 294 of 500 seeds tested). Random windows for a given seed
-  change. A window that exactly fills its stratum (`window_size` equal to the
-  stratum length, `min_gap = 0`) no longer stops with an internal error.
+* `generate_count_times()` no longer stops with an internal error when a
+  window exactly fills its stratum (`window_size` equal to the stratum
+  length, `min_gap = 0`), checks that `n_windows`, `window_size` and
+  `min_gap` are not negative, and no longer requires room for `min_gap` when
+  there is only one window (#385). Its documentation now says what `min_gap`
+  guarantees: a minimum gap with `"systematic"`; with `"random"`, only that
+  window and gap fit the stratum. Each random window is placed uniformly
+  where it fits in its stratum, so neighbours can be closer than `min_gap`;
+  holding back room for the gap instead would leave parts of the day no
+  count could reach.
 
 * `add_counts()` reads `p_period` from a shift schedule (#385). When the
   design calendar is a schedule from `generate_schedule()` or

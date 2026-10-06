@@ -33,10 +33,15 @@ for \code{strategy = "random"} and \code{"systematic"}. The total span
 \item{window_size}{Positive integer. Duration of each count window in
 minutes. Required for \code{strategy = "random"} and \code{"systematic"}.}
 
-\item{min_gap}{Non-negative integer. Minimum gap (minutes) between windows.
-Required for \code{strategy = "random"} and \code{"systematic"}.
-\code{window_size + min_gap} must not exceed the stratum width
-(\code{total_span / n_windows}).}
+\item{min_gap}{Non-negative integer, minutes. Required for
+\code{strategy = "random"} and \code{"systematic"}. \code{window_size + min_gap} must
+not exceed the stratum width (\code{total_span / n_windows}). With
+\code{"systematic"} every gap is then at least \code{min_gap}. With \code{"random"} it is
+only this fit check: each window's start is drawn uniformly from every
+position where the window fits in its stratum, without holding back room
+for the gap (which would leave parts of the span no count could reach),
+so neighbouring windows can be closer than \code{min_gap}. Use \code{"systematic"}
+when spacing must be guaranteed.}
 
 \item{fixed_windows}{A data frame with \code{start_time} and \code{end_time} columns
 (character \code{"HH:MM"}). Required for \code{strategy = "fixed"}. Windows must be
