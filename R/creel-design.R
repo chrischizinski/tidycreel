@@ -1785,7 +1785,7 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
     cli::cli_abort(
       c(
         "The schedule gives more than one {.field p_period} on {length(bad)} day{?s}: {.val {bad}}.",
-        "x" = "The counts on one day are expanded by one probability, the chance that \
+        "x" = "The counts on one day are expanded by one probability, the chance that \\
                the day's worked shifts were the ones drawn.",
         "i" = "Check the schedule's {.field p_period} column for those days."
       ),
@@ -1855,7 +1855,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
     cli::cli_abort(
       c(
         "Counts on {length(bad)} day{?s} the schedule did not sample: {.val {bad}}.",
-        "x" = "The schedule declares shift sampling, but gives no shift or {.field p_period} \
+        "x" = "The schedule declares shift sampling, but gives no shift or {.field p_period} \\
                for a day with counts, so they cannot be expanded to the day.",
         "i" = "Add the day's worked shift and its {.field p_period} to the schedule."
       ),
@@ -1871,7 +1871,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
       cli::cli_abort(
         c(
           "{.arg p_period} disagrees with the schedule on {length(bad)} day{?s}: {.val {bad}}.",
-          "x" = "The schedule in the design calendar already gives each day's \
+          "x" = "The schedule in the design calendar already gives each day's \\
                  {.field p_period}; two different probabilities for one draw mean one is wrong.",
           "i" = "Drop the {.arg p_period} argument to use the schedule, or correct the schedule."
         ),
@@ -1888,7 +1888,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
     cli::cli_abort(
       c(
         "The schedule samples shifts, so {.fn add_counts} needs {.arg period_length_col}.",
-        "x" = "Daily effort is the mean count x the period length / {.field p_period}; \
+        "x" = "Daily effort is the mean count x the period length / {.field p_period}; \\
                without the length there is nothing to divide.",
         "i" = "Supply the length in hours of the shift each day's counts were made in."
       ),
@@ -1910,9 +1910,9 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
       if (any(twice)) {
         cli::cli_abort(
           c(
-            "{.field {period_length_col_name}} is the shift window / {.field p_period} \
+            "{.field {period_length_col_name}} is the shift window / {.field p_period} \\
              on {length(bad)} day{?s}: {.val {bad}}.",
-            "x" = "The probability is taken from the schedule, so a length already divided \
+            "x" = "The probability is taken from the schedule, so a length already divided \\
                    by it would apply it twice and double effort.",
             "i" = "Supply the real hours of the day's worked shifts."
           ),
@@ -1923,9 +1923,9 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
       first <- which(off)[1] # nolint: object_usage_linter
       cli::cli_abort(
         c(
-          "{.field {period_length_col_name}} disagrees with the schedule's shift window \
+          "{.field {period_length_col_name}} disagrees with the schedule's shift window \\
            on {length(bad)} day{?s}: {.val {bad}}.",
-          "x" = "On {.val {count_day[first]}} the length is {period_vals[first]} h; \
+          "x" = "On {.val {count_day[first]}} the length is {period_vals[first]} h; \\
                  the worked shifts cover {round(window[first], 2)} h.",
           "i" = "The period length must be the real hours of the day's worked shifts."
         ),
