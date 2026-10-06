@@ -581,7 +581,7 @@ PYA
   raw="$(mktemp)"
   err="$(mktemp)"
   local agy_args=(--print "$prompt" --model "${AGY_MODEL:-gemini-3.1-pro-high}" --mode plan
-                  --print-timeout "$(( ${AGY_TIMEOUT:-900} / 60 ))m")
+                  --print-timeout "${AGY_TIMEOUT:-900}s")
   if [ -n "$timeout_cmd" ]; then
     "$timeout_cmd" "$(( ${AGY_TIMEOUT:-900} + 60 ))" "$agy_bin" "${agy_args[@]}" > "$raw" 2> "$err" || rc=$?
   else
@@ -622,6 +622,12 @@ PYA
     "$(wc -c < "$raw" | tr -d " ")" >> "$board"
   rm -f "$raw" "$err"
 }
+
+# The scoreboard header is written once, here, before the reviewers start in
+# parallel: each one's own "create it if missing" could otherwise race another
+# reviewer's appended row on a first run and truncate it.
+board_init="${SCOREBOARD:-.ai/reviews/scoreboard.tsv}"
+[ -e "$board_init" ] || printf "date\trange\tmodel\tcost\tchars\tverified_true\tfalse\tnotes\n" > "$board_init"
 
 export REVIEW_RANGE="$RANGE"
 for m in "${MODELS[@]}"; do
