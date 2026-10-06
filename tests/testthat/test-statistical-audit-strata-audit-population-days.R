@@ -190,3 +190,16 @@ test_that("#440: repeat looks at one unit are averaged, not added as more effort
   expect_equal(res$strata$ybar_h, one$strata$ybar_h)
   expect_equal(unname(res$strata$s2_h), 0)
 })
+
+test_that("#440: a missing stratum value is refused, not audited as the stratum \"NA\"", {
+  # paste() turns NA into "NA", which would count an unsampled day of unknown
+  # stratum among the population days of a real "NA" stratum. add_counts()
+  # already refuses NA strata on count rows, so the NA is on an unsampled day.
+  cal <- sapd_cal()
+  cal$g1 <- "NA"
+  cal$g1[4] <- NA # 2024-06-06, not sampled
+  cn <- sapd_counts(cal)
+  cn$g1 <- cal$g1[match(cn$date, cal$date)]
+  d <- suppressWarnings(sapd_design(cal, cn, strata = c("day_type", "g1")))
+  expect_error(audit_strata(d), class = "creel_error_strata_missing") # nolint: object_usage_linter
+})

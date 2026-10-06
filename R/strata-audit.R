@@ -49,6 +49,22 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     }
   }
 
+  # A missing stratum value is unknown, not a stratum: paste() would turn it
+  # into the label "NA" and merge it with a real "NA" value (GH #440 review).
+  na_strata <- strata_cols[vapply(strata_cols, function(col) {
+    anyNA(design$calendar[[col]]) || anyNA(design$counts[[col]])
+  }, logical(1))]
+  if (length(na_strata) > 0L) {
+    cli::cli_abort(
+      c(
+        "Strata must be known on every calendar day and count row.",
+        "x" = "Missing values in {.field {na_strata}}.",
+        "i" = "Assign each day to a stratum before auditing."
+      ),
+      class = "creel_error_strata_missing"
+    )
+  }
+
   # N_h: population days per stratum, from the helper the estimators use.
   # Counting calendar ROWS inflated it whenever the calendar carried several
   # rows per date (a multi-period schedule, or one with count windows

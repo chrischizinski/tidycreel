@@ -188,7 +188,9 @@
   multi-column strata with no separator, so two different strata (`"a"` +
   `"bc"` and `"ab"` + `"c"`) were audited as one; they are now kept apart and
   labelled `"a / bc"`, as `plot_design()` labels them; strata whose labels
-  would still coincide are refused (`creel_error_strata_label_collision`).
+  would still coincide are refused (`creel_error_strata_label_collision`), as
+  is a calendar day with a missing stratum value (`creel_error_strata_missing`),
+  which the old key merged with a real `"NA"` value.
   Its sample side counted unit rows too: with `unit_cols` (e.g. bank and boat
   counts on one day) or a site-day `psu`, n_h counted units, not days, and
   could report a census (RSE 0) for a half-sampled stratum. A day's distinct
