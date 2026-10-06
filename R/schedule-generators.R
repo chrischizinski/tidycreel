@@ -289,7 +289,31 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
   }
   expected <- if (is.null(period_labels)) as.character(seq_len(n_periods)) else as.character(period_labels)
   key <- as.character(periods$period_id)
-  if (anyDuplicated(key) || !setequal(key, expected)) {
+  # With a date column the shift times vary by day (daylight shifts, #368):
+  # one row per date and period.
+  by_date <- "date" %in% names(periods)
+  if (by_date) {
+    pdate <- tryCatch(as.Date(periods$date), error = function(e) rep(as.Date(NA), nrow(periods)))
+    if (anyNA(pdate)) {
+      cli::cli_abort("{.field date} in {.arg periods} must be dates with no missing values.", call = call)
+    }
+    if (!all(key %in% expected)) {
+      cli::cli_abort(
+        c(
+          "{.arg periods} has periods the schedule does not.",
+          "x" = "Expected {.val {expected}}; got {.val {unique(key[!key %in% expected])}}."
+        ),
+        call = call
+      )
+    }
+    full_key <- paste(pdate, key)
+    if (anyDuplicated(full_key)) {
+      cli::cli_abort(
+        "{.arg periods} must have one row per date and period; {.val {full_key[duplicated(full_key)]}} repeat{?s}.",
+        call = call
+      )
+    }
+  } else if (anyDuplicated(key) || !setequal(key, expected)) {
     cli::cli_abort(
       c(
         "{.arg periods} must have exactly one row per period.",
@@ -298,6 +322,7 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
       call = call
     )
   }
+  label <- if (by_date) paste(pdate, key) else key # nolint: object_usage_linter
   hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
   start <- as.character(periods$start_time)
   end <- as.character(periods$end_time)
@@ -306,7 +331,7 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
     cli::cli_abort(
       c(
         "Shift times in {.arg periods} must be \"HH:MM\" (00:00 to 23:59).",
-        "x" = "Period{?s} {.val {key[bad_fmt]}} {?has/have} an unreadable time."
+        "x" = "Period{?s} {.val {label[bad_fmt]}} {?has/have} an unreadable time."
       ),
       call = call
     )
@@ -317,7 +342,7 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
   if (any(wraps)) {
     cli::cli_abort(
       c(
-        "Shift{?s} {.val {key[wraps]}} end{?s/} at or before {?its/their} start.",
+        "Shift{?s} {.val {label[wraps]}} end{?s/} at or before {?its/their} start.",
         "x" = "A shift crossing midnight is not supported yet: its length and its date depend on \\
                clock-time handling for night creels (#407).",
         "i" = "Until then, give each shift an end time later the same day."
@@ -325,7 +350,12 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
       call = call
     )
   }
-  data.frame(key = key, shift_start = start, shift_end = end, stringsAsFactors = FALSE)
+  if (by_date) {
+    key <- paste(pdate, key)
+  }
+  out <- data.frame(key = key, shift_start = start, shift_end = end, stringsAsFactors = FALSE)
+  attr(out, "by_date") <- by_date
+  out
 }
 
 #' Attach each row's shift start and end times
@@ -334,8 +364,24 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
 #' write_schedule() / read_schedule() round trip.
 #'
 #' @noRd
-attach_shift_times <- function(base, periods) {
-  i <- match(as.character(base$period_id), periods$key)
+attach_shift_times <- function(base, periods, call = rlang::caller_env()) {
+  by_date <- isTRUE(attr(periods, "by_date"))
+  key <- if (by_date) paste(as.Date(base$date), base$period_id) else as.character(base$period_id)
+  i <- match(key, periods$key)
+  # A worked shift on a date the table does not cover has no times: refused,
+  # not left blank, because its count windows and length check need them.
+  missing <- !is.na(base$period_id) & is.na(i)
+  if (any(missing)) {
+    bad <- unique(as.character(base$date[missing])) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{.arg periods} has no shift times for {length(bad)} worked date{?s}: {.val {bad}}.",
+        "i" = "A date-specific {.arg periods} table (e.g. from {.fn daylight_shifts}) must cover every \\
+               date in the season."
+      ),
+      call = call
+    )
+  }
   base$shift_start <- periods$shift_start[i]
   base$shift_end <- periods$shift_end[i]
   base
@@ -586,8 +632,10 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #' @param periods Optional data frame of shift times: `period_id` (one row per
 #'   period, matching `period_labels`, or 1 to `n_periods`), `start_time` and
 #'   `end_time` as `"HH:MM"`. Adds `shift_start` and `shift_end` to every row.
-#'   A shift that ends at or before it starts (crossing midnight) is not yet
-#'   supported.
+#'   With a `date` column the times vary by day -- one row per date and period,
+#'   covering every worked date -- as returned by [daylight_shifts()] for
+#'   shifts bounded by sunrise and sunset. A shift that ends at or before it
+#'   starts (crossing midnight) is not yet supported.
 #'
 #' @return A `creel_schedule` data frame with columns:
 #'   - `date` (Date): Sampled (or all) dates.
@@ -1122,7 +1170,7 @@ generate_count_times <- function(
 #' @return `k`, the stratum length in minutes, invisibly.
 #' @noRd
 check_window_spacing <- function(start_min, end_min, n_windows, window_size, min_gap,
-                                 where = NULL, call = rlang::caller_env()) {
+                                 where = NULL, require_even = TRUE, call = rlang::caller_env()) {
   bad_arg <- function(x, min) length(x) != 1L || is.na(x) || x < min
   if (bad_arg(n_windows, 1L) || bad_arg(window_size, 1L) || bad_arg(min_gap, 0L)) {
     cli::cli_abort(c(
@@ -1131,14 +1179,17 @@ check_window_spacing <- function(start_min, end_min, n_windows, window_size, min
     ), call = call)
   }
   total_min <- end_min - start_min
-  if (total_min %% n_windows != 0L) {
+  # generate_count_times() keeps its documented whole-minute strata; per-day
+  # draws inside a shift do not, because a shift bounded by sunrise or sunset
+  # has an arbitrary length (#368): its strata then differ by at most a minute.
+  if (require_even && total_min %% n_windows != 0L) {
     cli::cli_abort(c(
       "Span must divide evenly by n_windows{where}.",
       "x" = "{total_min} min / {n_windows} = {total_min / n_windows} -- must be a whole number.",
       "i" = "Adjust n_windows or start/end time so the span divides evenly."
     ), call = call)
   }
-  k <- total_min %/% n_windows
+  k <- min(diff(stratum_bounds(start_min, end_min, n_windows)))
   # The gap separates windows; a single window needs only to fit.
   gap <- if (n_windows > 1L) min_gap else 0L
   if (window_size + gap > k) {
@@ -1186,20 +1237,30 @@ with_optional_seed <- function(seed, code) {
 #' @return Integer start times, minutes since midnight.
 #' @noRd
 draw_window_starts <- function(start_min, end_min, strategy, n_windows, window_size, min_gap) {
-  k <- (end_min - start_min) %/% n_windows
+  b <- stratum_bounds(start_min, end_min, n_windows)
+  k <- diff(b)
   if (strategy == "random") {
     vapply(
-      seq_len(n_windows) - 1L,
-      function(i) {
-        stratum_start <- start_min + i * k
-        stratum_start + sample.int(k, 1L) - 1L
-      },
+      seq_len(n_windows),
+      function(i) b[i] + sample.int(k[i], 1L) - 1L,
       integer(1)
     )
   } else {
-    t1 <- start_min + sample.int(k, 1L) - 1L
-    as.integer(t1 + (seq_len(n_windows) - 1L) * k)
+    # Every stratum is offset by the same t1 (the first stratum's width is the
+    # narrowest, so t1 fits them all).
+    t1 <- sample.int(k[1], 1L) - 1L
+    as.integer(b[-length(b)] + t1)
   }
+}
+
+#' Boundaries of n equal strata over a span, in whole minutes
+#'
+#' `start + floor(i * span / n)` for i = 0..n: equal widths when the span
+#' divides evenly, otherwise widths that differ by at most one minute.
+#'
+#' @noRd
+stratum_bounds <- function(start_min, end_min, n_windows) {
+  as.integer(start_min + ((seq_len(n_windows + 1L) - 1L) * (end_min - start_min)) %/% n_windows)
 }
 
 #' Draw one day's count starts, redrawing until one crew can make them all
@@ -1263,9 +1324,9 @@ draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_si
 #' @noRd
 gibbs_day_starts <- function(span_start, span_end, n_windows, window_size, sweeps = 200L) {
   shift <- rep(seq_along(span_start), each = n_windows)
-  k <- (span_end - span_start) %/% n_windows
-  lo <- unlist(lapply(seq_along(span_start), function(j) span_start[j] + (seq_len(n_windows) - 1L) * k[j]))
-  hi <- lo + rep(k, each = n_windows) - 1L
+  b <- lapply(seq_along(span_start), function(j) stratum_bounds(span_start[j], span_end[j], n_windows))
+  lo <- unlist(lapply(b, function(x) x[-length(x)]))
+  hi <- unlist(lapply(b, function(x) x[-1] - 1L))
   ord <- order(lo)
   lo <- lo[ord]
   hi <- hi[ord]
@@ -1600,8 +1661,10 @@ generate_bus_schedule <- function(
 #'   this or the drawing arguments, not both.
 #' @param n_windows,window_size,min_gap Number of windows per day (or shift),
 #'   window length and minimum gap between windows, in minutes. Required to
-#'   draw windows. The span (shift or `start_time`--`end_time`) must divide
-#'   evenly by `n_windows`, and each of the equal strata must hold
+#'   draw windows. The span (shift or `start_time`--`end_time`) is split into
+#'   `n_windows` strata of equal length to the minute (a span that does not
+#'   divide evenly, such as a sunrise-bounded shift from [daylight_shifts()],
+#'   gets strata that differ by at most a minute), and each must hold
 #'   `window_size + min_gap`. `min_gap` is guaranteed between windows only
 #'   with `"systematic"` (see `strategy`).
 #' @param strategy `"random"` (default; one count start uniform over each
@@ -1789,7 +1852,7 @@ attach_count_times <- function(
     worked <- which(!is.na(span_start) & !is.na(span_end))
     for (i in worked) {
       check_window_spacing(span_start[i], span_end[i], n_windows, window_size, min_gap,
-                           where = paste0(" on ", schedule$date[i]),
+                           where = paste0(" on ", schedule$date[i]), require_even = FALSE,
                            call = rlang::current_env())
     }
     # One seeded stream, drawn date by date in schedule order: the same seed

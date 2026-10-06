@@ -120,6 +120,7 @@ generate_count_times(strategy = "fixed", fixed_windows = fw)
 \seealso{
 Other "Scheduling":
 \code{\link{attach_count_times}()},
+\code{\link{daylight_shifts}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_progressive_start}()},
 \code{\link{generate_schedule}()},

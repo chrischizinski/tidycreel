@@ -172,6 +172,7 @@ reference:
       Generate, validate, read, and write creel survey schedules.
     contents:
       - generate_schedule
+      - daylight_shifts
       - generate_bus_schedule
       - generate_count_times
       - generate_progressive_start

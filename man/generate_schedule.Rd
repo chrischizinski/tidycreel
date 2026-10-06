@@ -84,8 +84,10 @@ independent, which is conservative for \code{"balanced"}.}
 \item{periods}{Optional data frame of shift times: \code{period_id} (one row per
 period, matching \code{period_labels}, or 1 to \code{n_periods}), \code{start_time} and
 \code{end_time} as \code{"HH:MM"}. Adds \code{shift_start} and \code{shift_end} to every row.
-A shift that ends at or before it starts (crossing midnight) is not yet
-supported.}
+With a \code{date} column the times vary by day -- one row per date and period,
+covering every worked date -- as returned by \code{\link[=daylight_shifts]{daylight_shifts()}} for
+shifts bounded by sunrise and sunset. A shift that ends at or before it
+starts (crossing midnight) is not yet supported.}
 }
 \value{
 A \code{creel_schedule} data frame with columns:
@@ -146,6 +148,7 @@ head(shifts)
 \seealso{
 Other "Scheduling":
 \code{\link{attach_count_times}()},
+\code{\link{daylight_shifts}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},
 \code{\link{generate_progressive_start}()},
