@@ -38,14 +38,23 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
   }
 
   strata_cols <- design$strata_cols
-  cal <- design$calendar
 
-  if (length(strata_cols) == 1) {
-    cal$.strata_key <- as.character(cal[[strata_cols]])
-  } else {
-    cal$.strata_key <- do.call(paste, c(cal[strata_cols], sep = ""))
+  # Strata are matched on a key no label can contain, and shown as "a / b"
+  # (as plot_design() does); pasting with sep = "" merged distinct strata.
+  strata_key <- function(df) {
+    if (length(strata_cols) == 1) {
+      as.character(df[[strata_cols]])
+    } else {
+      do.call(paste, c(df[strata_cols], sep = "\u001f"))
+    }
   }
-  available_by_strata <- table(cal$.strata_key)
+
+  # N_h: population days per stratum, from the helper the estimators use.
+  # Counting calendar ROWS inflated it whenever the calendar carried several
+  # rows per date (a multi-period schedule, or one with count windows
+  # attached) (GH #440, as #436).
+  pop <- stratum_population_days(design$calendar, strata_cols, design$date_col)
+  available_by_strata <- stats::setNames(pop$.N_avail, strata_key(pop))
 
   counts_data <- design$counts
   count_var <- resolve_count_col( # nolint: object_usage_linter
@@ -54,11 +63,7 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     count_col = design$count_col
   )
 
-  if (length(strata_cols) == 1) {
-    counts_data$.strata_key <- as.character(counts_data[[strata_cols]])
-  } else {
-    counts_data$.strata_key <- do.call(paste, c(counts_data[strata_cols], sep = ""))
-  }
+  counts_data$.strata_key <- strata_key(counts_data)
 
   strata_keys <- unique(counts_data$.strata_key)
 
@@ -77,10 +82,11 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     s2_h_vals[i] <- if (n_h_i >= 2L) var(counts_data[[count_var]][rows]) else NA_real_ # nolint: object_name_linter
   }
 
-  names(n_h_vals) <- strata_keys # nolint: object_name_linter
-  names(N_h_vals) <- strata_keys # nolint: object_name_linter
-  names(ybar_h_vals) <- strata_keys # nolint: object_name_linter
-  names(s2_h_vals) <- strata_keys # nolint: object_name_linter
+  strata_labels <- gsub("\u001f", " / ", strata_keys, fixed = TRUE)
+  names(n_h_vals) <- strata_labels # nolint: object_name_linter
+  names(N_h_vals) <- strata_labels # nolint: object_name_linter
+  names(ybar_h_vals) <- strata_labels # nolint: object_name_linter
+  names(s2_h_vals) <- strata_labels # nolint: object_name_linter
 
   .build_strata_audit(
     N_h = N_h_vals, # nolint: object_name_linter
@@ -88,7 +94,7 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     ybar_h = ybar_h_vals, # nolint: object_name_linter
     s2_h = s2_h_vals, # nolint: object_name_linter
     rse_target = rse_target,
-    stratum = strata_keys
+    stratum = strata_labels
   )
 }
 

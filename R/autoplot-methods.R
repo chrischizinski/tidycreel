@@ -578,14 +578,14 @@ plot_design <- function(design, title = NULL, ...) {
 
   if (is.null(design$counts)) {
     # ---- No counts: stratum sample-size bar chart ---------------------------
-    cal <- design$calendar
-    cal$stratum <- .make_stratum(cal, strata_cols)
-    n_per_strat <- as.data.frame(
-      table(cal[["stratum"]]),
+    # Days, not calendar rows: a calendar may carry several rows per date
+    # (GH #440, as #436).
+    pop <- stratum_population_days(design$calendar, strata_cols, design$date_col) # nolint: object_usage_linter
+    n_per_strat <- data.frame(
+      stratum = .make_stratum(pop, strata_cols),
+      n_days = pop$.N_avail,
       stringsAsFactors = FALSE
     )
-    names(n_per_strat) <- c("stratum", "n_days")
-    n_per_strat$stratum <- as.character(n_per_strat$stratum)
 
     plot_title <- if (!is.null(title)) title else "Creel Design Summary"
 
