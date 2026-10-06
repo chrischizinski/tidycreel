@@ -123,8 +123,8 @@ OUT_DIR=".ai/reviews"
 # For comparison: codex 67/3 (96%), deepseek-v4-pro 78/16 (83%),
 # nemotron-3-ultra 18/23 (44%, and often a 503).
 #
-# On TRIAL from 2026-10-06 (new vendor families, so a Codex outage still
-# leaves two independent reviewers beside deepseek). Score them like the
+# On TRIAL from 2026-10-06: two new vendor families, so a Codex outage leaves
+# more than deepseek and nemotron-3-ultra (often a 503). Score them like the
 # rest; drop either that does not beat nemotron-3-ultra's precision after
 # ~15 runs. qwen3.8-max is not qwen3-coder (rejected above).
 #   qwen/qwen3.8-max-0902     ~$2 / $6 per M tokens
@@ -152,6 +152,17 @@ MODELS=(
 # It is skipped, loudly, when the CLI is absent or logged out. A reviewer that
 # did not run must say so -- see the note on curl failures below for why.
 CODEX_MODEL_LABEL="codex-cli"
+
+# Gemini through the Antigravity CLI (`agy`) is a SIXTH, also repo-aware,
+# reviewer from a different vendor: when Codex is out of quota (three rounds on
+# 2026-10-06) a round still has one reviewer that can read the repository. It
+# runs on the maintainer's Gemini subscription, headless (--print) in plan mode,
+# where any tool needing approval -- running a command, editing -- is
+# auto-denied; the tree is checked before and after as for Codex. Added on
+# trial 2026-10-06; score it like the rest. agy <= 1.3.0 can die at start-up on
+# "Eligibility check failed: failed to get profile picture: 403" (upstream
+# google-antigravity/antigravity-cli#621); that is reported as DID NOT RUN.
+AGY_MODEL_LABEL="agy-${AGY_MODEL:-gemini-3.1-pro-high}"
 
 key() {
   if [ -n "${OPENROUTER_API_KEY:-}" ]; then
@@ -520,11 +531,104 @@ PYX
   rm -f "$raw"
 }
 
+# The Gemini (agy) reviewer: the same prompt as the diff-only models, plus
+# permission to read the repository and confirm a claim before reporting it.
+run_agy() {
+  local out="$OUT_DIR/agy.md"
+  rm -f "$out"
+  local agy_bin
+  agy_bin="$(command -v agy || true)"
+  if [ -z "$agy_bin" ] && [ -x "$HOME/.local/bin/agy" ]; then
+    agy_bin="$HOME/.local/bin/agy"
+  fi
+  if [ -z "$agy_bin" ]; then
+    echo "  ${AGY_MODEL_LABEL}: not installed -- DID NOT RUN, not 'no findings'."
+    return 0
+  fi
+
+  # The brief goes in a file the agent reads, not on the command line: a large
+  # diff exceeds the per-argument limit (128 KiB on Linux), and agy's print
+  # mode does not take a plain prompt on stdin. .ai/reviews is gitignored, so
+  # writing it does not move the tree digest checked below.
+  local brief="$OUT_DIR/agy-brief.md"
+  python3 - "$BODY_BASE" "$brief" <<'PYA'
+import json, sys
+b = json.load(open(sys.argv[1]))
+pre = ("You are in a checkout of the repository at the state AFTER this change, on\n"
+       "the branch under review. You may read any file to confirm a claim before you\n"
+       "report it -- a finding you have checked against the code is worth far more\n"
+       "than one you have not. Do not modify any file and do not run commands.\n\n")
+open(sys.argv[2], "w").write(pre + b["messages"][0]["content"])
+PYA
+  local prompt="Read the review brief at $brief and carry it out exactly. Reply with the findings only."
+
+  local branch_before sha_before dirty_before
+  branch_before="$(git rev-parse --abbrev-ref HEAD)"
+  sha_before="$(git rev-parse HEAD)"
+  dirty_before="$(git status --porcelain | sha1sum | cut -d" " -f1)"
+
+  local timeout_cmd=""
+  if command -v timeout >/dev/null 2>&1; then
+    timeout_cmd="timeout"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    timeout_cmd="gtimeout"
+  fi
+
+  # stdout is the review; stderr is the CLI's own diagnostics. Failure is read
+  # from the exit code and stderr only, so a review that quotes an error
+  # message (e.g. when reviewing this function) is not mistaken for one.
+  local raw err rc=0
+  raw="$(mktemp)"
+  err="$(mktemp)"
+  local agy_args=(--print "$prompt" --model "${AGY_MODEL:-gemini-3.1-pro-high}" --mode plan
+                  --print-timeout "$(( ${AGY_TIMEOUT:-900} / 60 ))m")
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "$(( ${AGY_TIMEOUT:-900} + 60 ))" "$agy_bin" "${agy_args[@]}" > "$raw" 2> "$err" || rc=$?
+  else
+    "$agy_bin" "${agy_args[@]}" > "$raw" 2> "$err" || rc=$?
+  fi
+
+  local branch_after sha_after dirty_after
+  branch_after="$(git rev-parse --abbrev-ref HEAD)"
+  sha_after="$(git rev-parse HEAD)"
+  dirty_after="$(git status --porcelain | sha1sum | cut -d" " -f1)"
+  if [ "$branch_before" != "$branch_after" ] || [ "$sha_before" != "$sha_after" ] ||
+     [ "$dirty_before" != "$dirty_after" ]; then
+    echo "  ${AGY_MODEL_LABEL}: REPO CHANGED during review -- discarded" >&2
+    echo "      branch $branch_before -> $branch_after; HEAD $sha_before -> $sha_after" >&2
+    rm -f "$raw" "$err"
+    return 0
+  fi
+
+  # Since agy 1.1.28 an expired --print-timeout returns PARTIAL output, exits 0
+  # and warns on stderr: an unfinished review is a non-run, not a short one.
+  # A headless permission denial prints a one-line "jetski: no output
+  # produced" in place of a review.
+  if [ "$rc" -ne 0 ] || [ ! -s "$raw" ] ||
+     grep -q -i -E "print.timeout|partial output|Eligibility check failed|^error:" "$err" ||
+     head -1 "$raw" | grep -q "^jetski: no output produced"; then
+    echo "  ${AGY_MODEL_LABEL}: exited $rc / no complete review -- DID NOT RUN, not 'no findings'."
+    { tail -3 "$err"; head -1 "$raw"; } | sed "s/^/      /" >&2
+    rm -f "$raw" "$err"
+    return 0
+  fi
+
+  { printf "# %s (repo-aware)\n\n" "$AGY_MODEL_LABEL"; cat "$raw"; } > "$out"
+  echo "  ${AGY_MODEL_LABEL}: $(wc -c < "$raw" | tr -d " ") chars -> $out"
+  local board="${SCOREBOARD:-.ai/reviews/scoreboard.tsv}"
+  [ -e "$board" ] || printf "date\trange\tmodel\tcost\tchars\tverified_true\tfalse\tnotes\n" > "$board"
+  printf "%s\t%s\t%s\t%s\t%s\t\t\t\n" \
+    "$(date +%F)" "$RANGE" "$AGY_MODEL_LABEL" "subscription" \
+    "$(wc -c < "$raw" | tr -d " ")" >> "$board"
+  rm -f "$raw" "$err"
+}
+
 export REVIEW_RANGE="$RANGE"
 for m in "${MODELS[@]}"; do
   run_one "$m" &
 done
 run_codex &
+run_agy &
 wait
 
 echo
@@ -544,6 +648,10 @@ done
 if [ -e "$OUT_DIR/codex.md" ]; then
   echo
   cat "$OUT_DIR/codex.md"
+fi
+if [ -e "$OUT_DIR/agy.md" ]; then
+  echo
+  cat "$OUT_DIR/agy.md"
 fi
 
 echo
