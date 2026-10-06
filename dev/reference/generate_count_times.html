@@ -127,10 +127,15 @@ minutes. Required for <code>strategy = "random"</code> and <code>"systematic"</c
 
 
 <dt id="arg-min-gap">min_gap<a class="anchor" aria-label="anchor" href="#arg-min-gap"></a></dt>
-<dd><p>Non-negative integer. Minimum gap (minutes) between windows.
-Required for <code>strategy = "random"</code> and <code>"systematic"</code>.
-<code>window_size + min_gap</code> must not exceed the stratum width
-(<code>total_span / n_windows</code>).</p></dd>
+<dd><p>Non-negative integer, minutes. Required for
+<code>strategy = "random"</code> and <code>"systematic"</code>. <code>window_size + min_gap</code> must
+not exceed the stratum width (<code>total_span / n_windows</code>). With
+<code>"systematic"</code> every gap is then at least <code>min_gap</code>. With <code>"random"</code> it is
+only this fit check: each window's start is drawn uniformly from every
+position where the window fits in its stratum, without holding back room
+for the gap (which would leave parts of the span no count could reach),
+so neighbouring windows can be closer than <code>min_gap</code>. Use <code>"systematic"</code>
+when spacing must be guaranteed.</p></dd>
 
 
 <dt id="arg-fixed-windows">fixed_windows<a class="anchor" aria-label="anchor" href="#arg-fixed-windows"></a></dt>

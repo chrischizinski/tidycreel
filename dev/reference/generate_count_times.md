@@ -51,9 +51,15 @@ generate_count_times(
 
 - min_gap:
 
-  Non-negative integer. Minimum gap (minutes) between windows. Required
-  for `strategy = "random"` and `"systematic"`. `window_size + min_gap`
-  must not exceed the stratum width (`total_span / n_windows`).
+  Non-negative integer, minutes. Required for `strategy = "random"` and
+  `"systematic"`. `window_size + min_gap` must not exceed the stratum
+  width (`total_span / n_windows`). With `"systematic"` every gap is
+  then at least `min_gap`. With `"random"` it is only this fit check:
+  each window's start is drawn uniformly from every position where the
+  window fits in its stratum, without holding back room for the gap
+  (which would leave parts of the span no count could reach), so
+  neighbouring windows can be closer than `min_gap`. Use `"systematic"`
+  when spacing must be guaranteed.
 
 - fixed_windows:
 
