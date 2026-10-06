@@ -607,7 +607,7 @@ plot_design <- function(design, title = NULL, ...) {
       ggplot2::labs(
         title = plot_title,
         x = strata_label,
-        y = "Sampled days",
+        y = "Calendar days",
         fill = strata_label
       ) +
       ggplot2::theme_bw() +

@@ -165,3 +165,28 @@ test_that("#440: a calendar grouped by a non-stratum column is audited and plott
   expect_equal(res$strata$N_h, 8L)
   expect_gt(unname(res$strata$RSE), 0)
 })
+
+test_that("#440: repeat looks at one unit are averaged, not added as more effort", {
+  # Repeated same-day rows kept without count_time_col (as aerial flights are,
+  # for the GLMM) are repeat observations of the same day. Summing them made a
+  # day seen twice report twice its effort.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:9, day_type = "weekday")
+  cn <- data.frame(date = cal$date[c(1, 1, 2, 2, 2, 3, 4)],
+                   flight = c("09:10", "14:40", "08:30", "12:00", "16:20", "10:00", "11:00"),
+                   anglers = 10, hours = 10, day_type = "weekday")
+  d <- suppressMessages(creel_design(cal, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts( # nolint: object_usage_linter
+    d, cn, count_col = anglers, period_length_col = hours
+  )))
+  expect_gt(nrow(d$counts), 4L) # the repeats are kept
+  once <- data.frame(date = cal$date[1:4], anglers = 10, hours = 10, day_type = "weekday")
+  d1 <- suppressWarnings(suppressMessages(add_counts( # nolint: object_usage_linter
+    suppressMessages(creel_design(cal, date = date, strata = day_type)), # nolint: object_usage_linter
+    once, count_col = anglers, period_length_col = hours
+  )))
+  res <- suppressWarnings(audit_strata(d)) # nolint: object_usage_linter
+  one <- suppressWarnings(audit_strata(d1)) # nolint: object_usage_linter
+  expect_equal(res$strata$n_h, 4L)
+  expect_equal(res$strata$ybar_h, one$strata$ybar_h)
+  expect_equal(unname(res$strata$s2_h), 0)
+})

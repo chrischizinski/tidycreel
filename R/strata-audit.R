@@ -65,16 +65,20 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     count_col = design$count_col
   )
 
-  # n_h, ybar_h and s2_h are per DAY, as N_h is: a day carrying several unit
-  # rows (`unit_cols`, e.g. bank and boat, or a site-day PSU) contributes
-  # their total. Counting unit rows made n_h exceed the days sampled and could
-  # report a false census (GH #440). An NA unit keeps its day NA.
+  # n_h, ybar_h and s2_h are per DAY, as N_h is (GH #440). Rows that share a
+  # sampling-unit key are repeat looks at one unit (aerial flights kept for the
+  # GLMM) and are averaged; distinct units within a day (`unit_cols` such as
+  # bank and boat, sites, a site-day PSU) are summed into the day's total.
+  # Counting rows made n_h exceed the days sampled and could report a false
+  # census. An NA unit keeps its day NA.
+  unit_key <- psu_key_cols(design, design$psu_col, counts_data, design$unit_cols) # nolint: object_usage_linter
+  day_cols <- unique(c(strata_cols, design$date_col))
   counts_data <- counts_data |>
     dplyr::ungroup() |>
-    dplyr::summarise(
-      !!count_var := sum(.data[[count_var]]),
-      .by = dplyr::all_of(unique(c(strata_cols, design$date_col)))
-    )
+    dplyr::group_by(dplyr::across(dplyr::all_of(unique(c(day_cols, unit_key))))) |>
+    dplyr::summarise(!!count_var := mean(.data[[count_var]]), .groups = "drop") |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(day_cols))) |>
+    dplyr::summarise(!!count_var := sum(.data[[count_var]]), .groups = "drop")
 
   counts_data$.strata_key <- strata_key(counts_data)
 
