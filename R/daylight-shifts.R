@@ -187,9 +187,12 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
       "i" = "Night shifts need a sunset and the next sunrise."
     ))
   }
-  if (any(st$sunset < 720L)) {
-    bad <- as.character(date[st$sunset < 720L]) # nolint: object_usage_linter
-    cli::cli_abort("Sunset falls before noon on {length(bad)} date{?s}: {.val {bad}}.")
+  # The night is dated by its sunset, so the sunset must fall on that date
+  # (as in the daylight branch): not before noon, not at or after midnight.
+  off_day <- st$sunset < 720L | st$sunset >= 1440L
+  if (any(off_day)) {
+    bad <- as.character(date[off_day]) # nolint: object_usage_linter
+    cli::cli_abort("Sunset does not fall between noon and midnight on {length(bad)} date{?s}: {.val {bad}}.")
   }
   noon <- 720L
   set_off <- st$sunset - noon
@@ -220,6 +223,21 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
       "A cutoff falls in the hour skipped by a daylight-saving change on {length(bad)} night{?s}: \\
        {.val {bad}}.",
       "i" = "Move the cutoff outside 02:00-03:00 local time."
+    ))
+  }
+  # A clock time in the hour repeated when daylight saving ends happens twice;
+  # which one a crew means decides which shift gets the extra hour, so it is
+  # refused rather than picked.
+  t_vec <- as.POSIXct(as.vector(times), origin = "1970-01-01", tz = tz)
+  hm <- function(x) format(x, "%H:%M")
+  folded <- matrix(hm(t_vec - 3600) == hm(t_vec) | hm(t_vec + 3600) == hm(t_vec), nrow = length(date))
+  if (any(folded)) {
+    bad <- as.character(date[apply(folded, 1, any)]) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "A shift bound falls in the hour repeated by a daylight-saving change on {length(bad)} night{?s}: \\
+       {.val {bad}}.",
+      "x" = "That clock time happens twice, so the shift lengths on either side are ambiguous.",
+      "i" = "Move the cutoff outside 01:00-02:00 local time."
     ))
   }
   elapsed <- (times[, -1, drop = FALSE] - times[, -ncol(times), drop = FALSE]) / 3600

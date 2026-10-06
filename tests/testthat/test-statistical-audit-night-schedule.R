@@ -118,6 +118,10 @@ test_that("#407: a night's hours are elapsed time, an hour off its clock length 
   expect_equal(n$hours[late & n$date == as.Date("2024-03-09")],
                clock[late & n$date == as.Date("2024-03-09")] - 1) # spring forward: -1 h
   expect_equal(n$hours[!late], clock[!late])
+  # A cutoff in the repeated hour happens twice: which shift gets the extra
+  # hour would be an arbitrary pick, so it is refused (review).
+  expect_error(daylight_shifts(as.Date("2024-11-02"), 40.699, -99.083, "America/Chicago",
+                               cutoffs = "01:30", night = TRUE), "repeated")
   # A cutoff in the skipped hour has no time that night.
   expect_error(daylight_shifts(as.Date("2024-03-09"), 40.699, -99.083, "America/Chicago",
                                cutoffs = "02:30", night = TRUE), "skipped")
