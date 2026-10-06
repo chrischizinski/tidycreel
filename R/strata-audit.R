@@ -53,7 +53,9 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
   # Counting calendar ROWS inflated it whenever the calendar carried several
   # rows per date (a multi-period schedule, or one with count windows
   # attached) (GH #440, as #436).
-  pop <- stratum_population_days(design$calendar, strata_cols, design$date_col)
+  # Ungrouped: a calendar grouped by a non-stratum column would split N_h
+  # (the estimators still do -- GH #441).
+  pop <- stratum_population_days(dplyr::ungroup(design$calendar), strata_cols, design$date_col)
   available_by_strata <- stats::setNames(pop$.N_avail, strata_key(pop))
 
   counts_data <- design$counts
@@ -64,15 +66,14 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
   )
 
   # n_h, ybar_h and s2_h are per DAY, as N_h is: a day carrying several unit
-  # rows (`unit_cols`, e.g. bank and boat) contributes its total, the PSU total
-  # the estimators use. Counting unit rows made n_h exceed the days sampled
-  # and could report a false census (GH #440). An NA unit keeps its day NA.
-  psu_col <- design$psu_col %||% design$date_col
+  # rows (`unit_cols`, e.g. bank and boat, or a site-day PSU) contributes
+  # their total. Counting unit rows made n_h exceed the days sampled and could
+  # report a false census (GH #440). An NA unit keeps its day NA.
   counts_data <- counts_data |>
     dplyr::ungroup() |>
     dplyr::summarise(
       !!count_var := sum(.data[[count_var]]),
-      .by = dplyr::all_of(unique(c(strata_cols, psu_col)))
+      .by = dplyr::all_of(unique(c(strata_cols, design$date_col)))
     )
 
   counts_data$.strata_key <- strata_key(counts_data)
@@ -102,8 +103,8 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     cli::cli_abort(
       c(
         "Two different strata would share the label {.val {dup}}.",
-        "x" = "Their values contain {.val  / }, the separator used to label multi-column strata.",
-        "i" = "Rename the strata values so no value contains {.val  / }."
+        "x" = "Their values contain {.code /} between spaces, which joins multi-column strata labels.",
+        "i" = "Rename those strata values."
       ),
       class = "creel_error_strata_label_collision"
     )

@@ -190,9 +190,9 @@
   labelled `"a / bc"`, as `plot_design()` labels them; strata whose labels
   would still coincide are refused (`creel_error_strata_label_collision`).
   Its sample side counted unit rows too: with `unit_cols` (e.g. bank and boat
-  counts on one day) n_h counted units, not days, and could report a census
-  (RSE 0) for a half-sampled stratum. A day's units are now summed into its
-  day total, as the estimators do. `plot_design()`'s `n_days` bars for a
+  counts on one day) or a site-day `psu`, n_h counted units, not days, and
+  could report a census (RSE 0) for a half-sampled stratum. A day's units are
+  now summed into its day total. `plot_design()`'s `n_days` bars for a
   design without counts also counted rows, and now count days. Estimates and
   their SEs were not affected.
 

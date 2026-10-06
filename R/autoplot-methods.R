@@ -580,7 +580,7 @@ plot_design <- function(design, title = NULL, ...) {
     # ---- No counts: stratum sample-size bar chart ---------------------------
     # Days, not calendar rows: a calendar may carry several rows per date
     # (GH #440, as #436).
-    pop <- stratum_population_days(design$calendar, strata_cols, design$date_col) # nolint: object_usage_linter
+    pop <- stratum_population_days(dplyr::ungroup(design$calendar), strata_cols, design$date_col) # nolint: object_usage_linter
     n_per_strat <- data.frame(
       stratum = .make_stratum(pop, strata_cols),
       n_days = pop$.N_avail,

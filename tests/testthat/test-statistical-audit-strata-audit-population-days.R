@@ -128,3 +128,40 @@ test_that("#440: strata whose labels would coincide are refused, not merged", {
     class = "creel_error_strata_label_collision"
   )
 })
+
+test_that("#440: a site-day PSU still counts each sampled date once", {
+  # Two sites counted on each of 4 of 8 days: the audit's days are dates, as
+  # N_h is, so n_h is 4 -- not the 8 site-days, which would claim a census.
+  cal <- data.frame(date = as.Date("2024-06-03") + c(0:3, 7:10), day_type = "weekday")
+  sd <- cal$date[c(1, 2, 5, 6)]
+  cn <- data.frame(date = rep(sd, each = 2), site = rep(c("A", "B"), 4),
+                   count_time = "08:00", anglers = c(10, 4, 14, 6, 9, 2, 20, 8),
+                   hours = 10, day_type = "weekday")
+  cn$site_day <- paste(cn$site, cn$date)
+  d <- suppressMessages(creel_design(cal, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts( # nolint: object_usage_linter
+    d, cn, psu = "site_day", count_col = anglers, count_time_col = count_time,
+    period_length_col = hours
+  )))
+  res <- suppressWarnings(audit_strata(d)) # nolint: object_usage_linter
+  expect_equal(res$strata$N_h, 8L)
+  expect_equal(res$strata$n_h, 4L)
+  expect_gt(unname(res$strata$RSE), 0)
+})
+
+test_that("#440: a calendar grouped by a non-stratum column is audited and plotted whole", {
+  # Grouping by week must not split the weekday stratum's 8 days into two
+  # 4-day strata (4 sampled of 4 would read as a census). The estimators still
+  # split it -- GH #441.
+  cal <- data.frame(date = as.Date("2024-06-03") + c(0:3, 7:10), day_type = "weekday",
+                    week = rep(1:2, each = 4))
+  calg <- dplyr::group_by(tibble::as_tibble(cal), week)
+  cn <- data.frame(date = cal$date[c(1, 2, 5, 6)], count_time = "08:00",
+                   anglers = c(10, 14, 9, 20), hours = 10, day_type = "weekday")
+  d0 <- suppressMessages(creel_design(calg, date = date, strata = day_type)) # nolint: object_usage_linter
+  p <- plot_design(d0) # nolint: object_usage_linter
+  expect_equal(p$data$n_days, 8L)
+  res <- sapd_audit(calg, cn)
+  expect_equal(res$strata$N_h, 8L)
+  expect_gt(unname(res$strata$RSE), 0)
+})
