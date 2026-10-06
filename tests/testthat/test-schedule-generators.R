@@ -587,7 +587,7 @@ test_that("COUNT-TIME-03: window_size + min_gap > stratum_length throws cli_abor
   )
 })
 
-test_that("COUNT-TIME-04: random strategy — all windows within [start_time, end_time]", {
+test_that("COUNT-TIME-04: random strategy — all counts start within [start_time, end_time)", {
   result <- .ct_valid()
   to_min <- function(hhmm) {
     parts <- strsplit(hhmm, ":")[[1]]
@@ -595,13 +595,14 @@ test_that("COUNT-TIME-04: random strategy — all windows within [start_time, en
   }
   start_min <- 6L * 60L # 360
   end_min <- 14L * 60L # 840
+  # The start is the count instant and must be inside the span; since #432
+  # the last slot may run past the span end.
   starts <- vapply(result$start_time, to_min, integer(1))
-  ends <- vapply(result$end_time, to_min, integer(1))
   expect_true(all(starts >= start_min))
-  expect_true(all(ends <= end_min))
+  expect_true(all(starts < end_min))
 })
 
-test_that("COUNT-TIME-04: systematic strategy — all windows within [start_time, end_time]", {
+test_that("COUNT-TIME-04: systematic strategy — all counts start within [start_time, end_time)", {
   result <- generate_count_times(
     "06:00",
     "14:00",
@@ -617,10 +618,11 @@ test_that("COUNT-TIME-04: systematic strategy — all windows within [start_time
   }
   start_min <- 6L * 60L
   end_min <- 14L * 60L
+  # The start is the count instant and must be inside the span; since #432
+  # the last slot may run past the span end.
   starts <- vapply(result$start_time, to_min, integer(1))
-  ends <- vapply(result$end_time, to_min, integer(1))
   expect_true(all(starts >= start_min))
-  expect_true(all(ends <= end_min))
+  expect_true(all(starts < end_min))
 })
 
 test_that("COUNT-TIME-04: random strategy — no windows overlap", {

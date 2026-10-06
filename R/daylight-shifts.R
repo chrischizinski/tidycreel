@@ -82,7 +82,7 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "su
     ))
   }
   hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
-  if (!is.character(cutoffs) || length(cutoffs) == 0L || !all(grepl(hhmm, cutoffs))) {
+  if (!is.character(cutoffs) || length(cutoffs) == 0L || anyNA(cutoffs) || !all(grepl(hhmm, cutoffs))) {
     cli::cli_abort("{.arg cutoffs} must be clock times as {.val HH:MM}.")
   }
   cut_min <- vapply(cutoffs, parse_hhmm_to_min, integer(1), USE.NAMES = FALSE) # nolint: object_usage_linter
@@ -91,7 +91,15 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "su
   }
   depression <- resolve_horizon(horizon) # nolint: object_usage_linter
 
-  st <- noaa_sun_times(date, lat, lon, tz, depression)
+  st <- local_sun_times(date, lat, lon, tz, depression)
+  late <- !is.na(st$sunset) & st$sunset >= 1440L
+  if (any(late)) {
+    bad <- as.character(date[late]) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "Sunset falls at or after midnight on {length(bad)} date{?s}: {.val {bad}}.",
+      "x" = "A shift ending after midnight is not supported yet (#407)."
+    ))
+  }
   if (anyNA(st$sunrise) || anyNA(st$sunset)) {
     bad <- as.character(date[is.na(st$sunrise) | is.na(st$sunset)]) # nolint: object_usage_linter
     cli::cli_abort(c(
@@ -124,6 +132,28 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "su
   )
 }
 
+#' Sunrise and sunset for each requested LOCAL date
+#'
+#' The NOAA equations pick a solar cycle from the UTC date. Where the time
+#' zone's offset puts local dates a day away from that (zones across the date
+#' line, such as Pacific/Apia), the cycle found belongs to the next or
+#' previous local date. So the cycles for the day before, the day and the day
+#' after are computed, and each date takes the one whose sunrise falls on it.
+#'
+#' @noRd
+local_sun_times <- function(date, lat, lon, tz, depression) {
+  cand <- lapply(-1:1, function(off) noaa_sun_times(date + off, lat, lon, tz, depression, local_date = date))
+  pick <- function(field) {
+    out <- cand[[2]][[field]]
+    for (k in c(1L, 3L)) {
+      fill <- is.na(out) & !is.na(cand[[k]][[field]])
+      out[fill] <- cand[[k]][[field]][fill]
+    }
+    out
+  }
+  list(sunrise = pick("sunrise"), sunset = pick("sunset"))
+}
+
 #' Sunrise and sunset in local clock minutes (NOAA)
 #'
 #' NOAA's simplified solar equations (as in the NGPC prototype validated
@@ -132,7 +162,7 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = "13:30", horizon = "su
 #' where the sun does not cross the horizon that day.
 #'
 #' @noRd
-noaa_sun_times <- function(date, lat, lon, tz, depression = 0.8333) {
+noaa_sun_times <- function(date, lat, lon, tz, depression = 0.8333, local_date = date) {
   jd <- as.numeric(date) + 2440587.5
   n <- ceiling(jd - 2451545.0 + 0.0008)
   j_star <- n - lon / 360
@@ -150,9 +180,9 @@ noaa_sun_times <- function(date, lat, lon, tz, depression = 0.8333) {
     t <- as.POSIXct((j - 2440587.5) * 86400, origin = "1970-01-01", tz = "UTC")
     lt <- as.POSIXlt(t, tz = tz)
     out <- as.integer(round(lt$hour * 60 + lt$min + lt$sec / 60))
-    # A time that rounds onto another local date (far-west longitudes in the
-    # wrong zone) is not a daylight bound for this date.
-    out[as.Date(format(lt, "%Y-%m-%d")) != date] <- NA_integer_
+    # Only a time on the requested local date is a bound for that date; the
+    # caller tries neighbouring cycles for the rest.
+    out[as.Date(format(lt, "%Y-%m-%d")) != local_date] <- NA_integer_
     out
   }
   rise <- local_min(j_transit - w / 360)

@@ -370,14 +370,18 @@ attach_shift_times <- function(base, periods, call = rlang::caller_env()) {
   i <- match(key, periods$key)
   # A worked shift on a date the table does not cover has no times: refused,
   # not left blank, because its count windows and length check need them.
-  missing <- !is.na(base$period_id) & is.na(i)
+  worked <- !is.na(base$period_id)
+  # An unsampled day of an include_all schedule can carry period ids (every
+  # period expanded) without being worked; it needs no shift times.
+  if ("sampled" %in% names(base)) worked <- worked & base$sampled %in% TRUE
+  missing <- worked & is.na(i)
   if (any(missing)) {
     bad <- unique(as.character(base$date[missing])) # nolint: object_usage_linter
     cli::cli_abort(
       c(
         "{.arg periods} has no shift times for {length(bad)} worked date{?s}: {.val {bad}}.",
         "i" = "A date-specific {.arg periods} table (e.g. from {.fn daylight_shifts}) must cover every \\
-               date in the season."
+               worked date."
       ),
       call = call
     )
@@ -1189,13 +1193,13 @@ check_window_spacing <- function(start_min, end_min, n_windows, window_size, min
       "i" = "Adjust n_windows or start/end time so the span divides evenly."
     ), call = call)
   }
-  k <- min(diff(stratum_bounds(start_min, end_min, n_windows)))
+  k <- (end_min - start_min) / n_windows
   # The gap separates windows; a single window needs only to fit.
   gap <- if (n_windows > 1L) min_gap else 0L
   if (window_size + gap > k) {
     cli::cli_abort(c(
       "window_size + min_gap exceeds stratum length{where}.",
-      "x" = "Stratum is {k} min, but window_size + min_gap = {window_size + min_gap} min.",
+      "x" = "Stratum is {round(k, 1)} min, but window_size + min_gap = {window_size + min_gap} min.",
       "i" = "Reduce n_windows, window_size, or min_gap."
     ), call = call)
   }
@@ -1231,36 +1235,22 @@ with_optional_seed <- function(seed, code) {
 #' uniform in the first stratum, then every `k` minutes; the gap between slots
 #' is `k - window_size >= min_gap`.
 #'
-#' `sample.int()`, not `sample(a:b, 1)`: when the range is one value,
-#' `sample(x, 1)` draws from `1:x`.
-#'
 #' @return Integer start times, minutes since midnight.
 #' @noRd
 draw_window_starts <- function(start_min, end_min, strategy, n_windows, window_size, min_gap) {
-  b <- stratum_bounds(start_min, end_min, n_windows)
-  k <- diff(b)
+  # Continuous instants over strata of equal real length; the caller floors
+  # them to the minute. Every minute of the span then has exactly the same
+  # chance of being a count instant even when the span does not divide evenly
+  # by n_windows (a daylight shift, #368): whole-minute strata of 210 and 211
+  # minutes gave the minutes of the shorter one more weight, which the
+  # unweighted daily mean in add_counts() does not undo.
+  width <- (end_min - start_min) / n_windows
+  lower <- start_min + (seq_len(n_windows) - 1L) * width
   if (strategy == "random") {
-    vapply(
-      seq_len(n_windows),
-      function(i) b[i] + sample.int(k[i], 1L) - 1L,
-      integer(1)
-    )
+    lower + stats::runif(n_windows) * width
   } else {
-    # Every stratum is offset by the same t1 (the first stratum's width is the
-    # narrowest, so t1 fits them all).
-    t1 <- sample.int(k[1], 1L) - 1L
-    as.integer(b[-length(b)] + t1)
+    lower + stats::runif(1L) * width
   }
-}
-
-#' Boundaries of n equal strata over a span, in whole minutes
-#'
-#' `start + floor(i * span / n)` for i = 0..n: equal widths when the span
-#' divides evenly, otherwise widths that differ by at most one minute.
-#'
-#' @noRd
-stratum_bounds <- function(start_min, end_min, n_windows) {
-  as.integer(start_min + ((seq_len(n_windows + 1L) - 1L) * (end_min - start_min)) %/% n_windows)
 }
 
 #' Draw one day's count starts, redrawing until one crew can make them all
@@ -1284,12 +1274,15 @@ draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_si
     all_st <- sort(unlist(st))
     length(all_st) < 2L || all(all_st[-1] >= all_st[-length(all_st)] + window_size)
   }
+  # Instants are continuous until here; feasibility is judged on them, then
+  # they are floored, which keeps every gap >= window_size in whole minutes.
+  to_minutes <- function(st) lapply(st, function(x) as.integer(floor(x)))
   for (attempt in seq_len(1000L)) {
     st <- lapply(seq_along(span_start), function(j) {
       draw_window_starts(span_start[j], span_end[j], strategy, n_windows, window_size, min_gap)
     })
     if (feasible(st)) {
-      return(st)
+      return(to_minutes(st))
     }
   }
   # Dense days (slots nearly filling their strata) are rarely feasible by
@@ -1301,7 +1294,7 @@ draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_si
   if (strategy == "random") {
     st <- gibbs_day_starts(span_start, span_end, n_windows, window_size)
     if (!is.null(st)) {
-      return(st)
+      return(to_minutes(st))
     }
   }
   cli::cli_abort(c(
@@ -1313,20 +1306,22 @@ draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_si
 
 #' Gibbs sampler over a day's feasible random count starts
 #'
-#' Each start lies in its own stratum `[a_j, a_j + k_j - 1]` (minutes) and
+#' Each continuous start lies in its own stratum `[a_j, a_j + width)` and
 #' must be at least `window_size` after the previous start. Starting from the
 #' stratum starts (feasible when every stratum holds a slot and the shifts do
 #' not overlap), each sweep redraws every start uniformly between its
 #' neighbours' limits.
 #'
-#' @return A list of integer start vectors, one per shift, or `NULL` when the
-#'   stratum starts are themselves infeasible.
+#' @return A list of numeric (continuous) start vectors, one per shift, or
+#'   `NULL` when the stratum starts are themselves infeasible.
 #' @noRd
 gibbs_day_starts <- function(span_start, span_end, n_windows, window_size, sweeps = 200L) {
   shift <- rep(seq_along(span_start), each = n_windows)
-  b <- lapply(seq_along(span_start), function(j) stratum_bounds(span_start[j], span_end[j], n_windows))
-  lo <- unlist(lapply(b, function(x) x[-length(x)]))
-  hi <- unlist(lapply(b, function(x) x[-1] - 1L))
+  width <- rep((span_end - span_start) / n_windows, each = n_windows)
+  lo <- unlist(lapply(seq_along(span_start), function(j) {
+    span_start[j] + (seq_len(n_windows) - 1L) * (span_end[j] - span_start[j]) / n_windows
+  }))
+  hi <- lo + width
   ord <- order(lo)
   lo <- lo[ord]
   hi <- hi[ord]
@@ -1339,11 +1334,11 @@ gibbs_day_starts <- function(span_start, span_end, n_windows, window_size, sweep
     for (j in seq_len(m)) {
       a <- if (j > 1L) max(lo[j], s[j - 1L] + window_size) else lo[j]
       b <- if (j < m) min(hi[j], s[j + 1L] - window_size) else hi[j]
-      s[j] <- a + sample.int(b - a + 1L, 1L) - 1L
+      s[j] <- stats::runif(1L, a, b)
     }
   }
   s[ord] <- s
-  lapply(seq_along(span_start), function(j) as.integer(sort(s[shift == j])))
+  lapply(seq_along(span_start), function(j) sort(s[shift == j]))
 }
 
 #' Refuse count slots that would run past midnight
@@ -1662,9 +1657,10 @@ generate_bus_schedule <- function(
 #' @param n_windows,window_size,min_gap Number of windows per day (or shift),
 #'   window length and minimum gap between windows, in minutes. Required to
 #'   draw windows. The span (shift or `start_time`--`end_time`) is split into
-#'   `n_windows` strata of equal length to the minute (a span that does not
-#'   divide evenly, such as a sunrise-bounded shift from [daylight_shifts()],
-#'   gets strata that differ by at most a minute), and each must hold
+#'   `n_windows` strata of equal length, which need not be whole minutes (a
+#'   sunrise-bounded shift from [daylight_shifts()] rarely divides evenly):
+#'   count instants are drawn continuously and rounded down to the minute, so
+#'   every minute has the same chance. Each stratum must hold
 #'   `window_size + min_gap`. `min_gap` is guaranteed between windows only
 #'   with `"systematic"` (see `strategy`).
 #' @param strategy `"random"` (default; one count start uniform over each

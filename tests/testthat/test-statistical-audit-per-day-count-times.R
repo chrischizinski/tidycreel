@@ -307,11 +307,19 @@ test_that("#432 review: a generated template attaches to its own span when its l
 })
 
 test_that("#432: a slot that would cross midnight is refused", {
-  expect_error(
-    generate_count_times(start_time = "22:00", end_time = "23:59", strategy = "systematic",
-                         n_windows = 1, window_size = 90, min_gap = 0, seed = 2),
-    "midnight"
-  )
+  # Deterministic: a 30-minute slot starting at 23:50.
+  expect_error(check_slots_before_midnight(list(1430L), "2024-06-01", 30L), "midnight")
+  expect_no_error(check_slots_before_midnight(list(1400L), "2024-06-01", 30L))
+  # Through the public function: a 90-minute slot drawn in 22:00-23:59 ends
+  # past midnight on most seeds.
+  refused <- vapply(1:20, function(seed) {
+    inherits(tryCatch(
+      generate_count_times(start_time = "22:00", end_time = "23:59", strategy = "systematic",
+                           n_windows = 1, window_size = 90, min_gap = 0, seed = seed),
+      error = function(e) e
+    ), "error")
+  }, logical(1))
+  expect_true(any(refused))
 })
 
 test_that("#432 review: dense random days are drawn, not refused", {

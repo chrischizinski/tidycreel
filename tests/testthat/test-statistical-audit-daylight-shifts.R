@@ -103,3 +103,54 @@ test_that("#368: a date-specific periods table must cover every worked date", {
     "one row per date and period"
   )
 })
+
+test_that("#368 review: a span that does not divide evenly gives every minute the same chance", {
+  # 06:00-13:01 is 421 minutes in two strata. Whole-minute strata of 210 and
+  # 211 minutes weighted the minutes of the shorter one more, and a shared
+  # systematic offset never reached 13:00 (Codex, #368 review).
+  sched <- generate_schedule(start_date = "2024-06-01", end_date = "2024-06-01", n_periods = 1,
+                             sampling_rate = 1, periods_per_day = 1, seed = 1,
+                             periods = data.frame(period_id = 1, start_time = "06:00", end_time = "13:01"))
+  mins <- function(x) vapply(x, parse_hhmm_to_min, integer(1), USE.NAMES = FALSE)
+  for (strategy in c("random", "systematic")) {
+    hits <- integer(421)
+    for (seed in seq_len(3000)) {
+      a <- attach_count_times(sched, n_windows = 2, window_size = 10, min_gap = 0,
+                              strategy = strategy, seed = seed)
+      st <- mins(a$start_time) - 360L + 1L
+      hits[st] <- hits[st] + 1L
+    }
+    expect_gt(hits[421], 0) # 13:00 reachable
+    # Each minute's chance is 2 / 421: compare first and second stratum.
+    first <- mean(hits[1:200])
+    second <- mean(hits[221:420])
+    expect_lt(abs(first - second) / first, 0.06)
+  }
+})
+
+test_that("#368 review: include_all schedules need shift times only on worked days", {
+  days <- seq(as.Date("2024-06-01"), as.Date("2024-06-30"), by = "day")
+  shifts <- daylight_shifts(days, 40.699, -99.083, "America/Chicago")
+  # All periods worked on sampled days; unsampled days still carry period ids.
+  probe <- generate_schedule(start_date = "2024-06-01", end_date = "2024-06-30", n_periods = 2,
+                             sampling_rate = 0.5, include_all = TRUE, seed = 1)
+  sampled_days <- unique(probe$date[probe$sampled])
+  only_sampled <- shifts[shifts$date %in% sampled_days, ]
+  expect_no_error(generate_schedule(start_date = "2024-06-01", end_date = "2024-06-30", n_periods = 2,
+                                    sampling_rate = 0.5, include_all = TRUE, seed = 1,
+                                    periods = only_sampled))
+})
+
+test_that("#368 review: zones across the date line get their own local day", {
+  # Apia: UTC+13 at longitude -171.75; the UTC-date cycle is the next local day.
+  d <- daylight_shifts(as.Date("2024-06-21"), -13.83, -171.75, "Pacific/Apia", cutoffs = "12:00")
+  mins <- function(x) vapply(x, parse_hhmm_to_min, integer(1), USE.NAMES = FALSE)
+  expect_true(mins(d$start_time[1]) > 5 * 60 && mins(d$start_time[1]) < 9 * 60)
+  expect_true(mins(d$end_time[2]) > 17 * 60 && mins(d$end_time[2]) < 20 * 60)
+})
+
+test_that("#368 review: a sunset rounding to midnight is refused, not written as 24:00", {
+  expect_error(daylight_shifts(as.Date("2024-06-21"), 64.33, 10.4, "Europe/Oslo"), "midnight")
+  expect_error(daylight_shifts(as.Date("2024-06-21"), 40.7, -99.1, "America/Chicago", cutoffs = c("13:30", NA)),
+               "cutoffs")
+})

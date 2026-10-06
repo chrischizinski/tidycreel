@@ -59,9 +59,12 @@
   `generate_schedule(periods = )` now accepts a table with a `date` column
   -- such as `daylight_shifts()` output -- so each day's drawn shift carries
   that day's window. `attach_count_times()` then draws count times inside it
-  (a shift that does not divide evenly by `n_windows` gets strata that
-  differ by at most a minute), and `add_counts()` checks the period length
-  against it. A date-specific table must cover every worked date.
+  -- a shift need not divide evenly by `n_windows`: instants are drawn
+  continuously over equal strata and rounded down to the minute, so every
+  minute has the same chance -- and `add_counts()` checks the period length
+  against it. A date-specific table must cover every worked date (unsampled
+  days of an `include_all` schedule need none). Zones across the date line
+  get their own local day; a sunset at or after midnight is refused (#407).
 
 * `attach_count_times()` draws new count windows for each sampled day (#385).
   Pass `n_windows`, `window_size` and `min_gap` (and optionally `strategy`

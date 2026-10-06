@@ -28,9 +28,10 @@ this or the drawing arguments, not both.}
 \item{n_windows, window_size, min_gap}{Number of windows per day (or shift),
 window length and minimum gap between windows, in minutes. Required to
 draw windows. The span (shift or \code{start_time}--\code{end_time}) is split into
-\code{n_windows} strata of equal length to the minute (a span that does not
-divide evenly, such as a sunrise-bounded shift from \code{\link[=daylight_shifts]{daylight_shifts()}},
-gets strata that differ by at most a minute), and each must hold
+\code{n_windows} strata of equal length, which need not be whole minutes (a
+sunrise-bounded shift from \code{\link[=daylight_shifts]{daylight_shifts()}} rarely divides evenly):
+count instants are drawn continuously and rounded down to the minute, so
+every minute has the same chance. Each stratum must hold
 \code{window_size + min_gap}. \code{min_gap} is guaranteed between windows only
 with \code{"systematic"} (see \code{strategy}).}
 
