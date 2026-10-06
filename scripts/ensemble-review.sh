@@ -343,8 +343,11 @@ json.dump(b, open('$body', 'w'))"
   # A model that fails must SAY so. "Found nothing" and "never ran" are different
   # facts and the triage depends on which one it was.
   local rc=0
+  # The key reaches curl through a file descriptor from the printf builtin,
+  # never on curl's command line, where any local process could read it with
+  # ps. `-H @file` needs curl >= 7.55.
   curl -s --max-time 900 https://openrouter.ai/api/v1/chat/completions \
-    -H "Authorization: Bearer $KEY" \
+    -H @<(printf 'Authorization: Bearer %s\n' "$KEY") \
     -H "Content-Type: application/json" \
     -d @"$body" > "$resp" 2>&1 || rc=$?
 
