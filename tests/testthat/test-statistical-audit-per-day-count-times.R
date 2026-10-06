@@ -342,3 +342,22 @@ test_that("#432 review: fixed windows that overlap across adjacent shifts are re
   fw$end_time[2] <- "09:00"
   expect_no_error(attach_count_times(sched, strategy = "fixed", fixed_windows = fw))
 })
+
+test_that("#368 review: overlap is judged on clock minutes, not fractions of a minute", {
+  # 06:00-06:04, two 1-minute slots: every pair of minutes from different
+  # strata is workable, so each minute's chance is exactly 1/2. Judging overlap
+  # before flooring rejected 06:01.9 + 06:02.1, skewing it to ~4/7 vs 3/7.
+  hits <- integer(4)
+  n <- 4000
+  for (seed in seq_len(n)) {
+    ct <- generate_count_times(start_time = "06:00", end_time = "06:04", strategy = "random",
+                               n_windows = 2, window_size = 1, min_gap = 0, seed = seed)
+    st <- pdc_min(ct$start_time) - 360L + 1L
+    hits[st] <- hits[st] + 1L
+  }
+  expect_true(all(abs(hits / n - 0.5) < 0.03))
+  # The Gibbs fallback uses the same floored rule: its stratum starts and
+  # every draw stay workable.
+  g <- gibbs_day_starts(360, 364, 2L, 1L)
+  expect_true(diff(floor(unlist(g))) >= 1)
+})

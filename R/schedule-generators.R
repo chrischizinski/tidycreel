@@ -1270,13 +1270,16 @@ draw_window_starts <- function(start_min, end_min, strategy, n_windows, window_s
 #' @noRd
 draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_size, min_gap,
                             call = rlang::caller_env()) {
+  # Instants are continuous until they are floored to the clock minute the
+  # crew works to; overlap is judged on those minutes. Judging it on the
+  # continuous values rejected draws whose minute slots did not overlap
+  # (06:01.9 and 06:02.1 with 1-minute slots), which skewed minute chances
+  # (#368 review).
+  to_minutes <- function(st) lapply(st, function(x) as.integer(floor(x)))
   feasible <- function(st) {
-    all_st <- sort(unlist(st))
+    all_st <- sort(unlist(to_minutes(st)))
     length(all_st) < 2L || all(all_st[-1] >= all_st[-length(all_st)] + window_size)
   }
-  # Instants are continuous until here; feasibility is judged on them, then
-  # they are floored, which keeps every gap >= window_size in whole minutes.
-  to_minutes <- function(st) lapply(st, function(x) as.integer(floor(x)))
   for (attempt in seq_len(1000L)) {
     st <- lapply(seq_along(span_start), function(j) {
       draw_window_starts(span_start[j], span_end[j], strategy, n_windows, window_size, min_gap)
@@ -1306,8 +1309,8 @@ draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_si
 
 #' Gibbs sampler over a day's feasible random count starts
 #'
-#' Each continuous start lies in its own stratum `[a_j, a_j + width)` and
-#' must be at least `window_size` after the previous start. Starting from the
+#' Each continuous start lies in its own stratum `[a_j, a_j + width)`, and
+#' its floored minute must be at least `window_size` after the previous one. Starting from the
 #' stratum starts (feasible when every stratum holds a slot and the shifts do
 #' not overlap), each sweep redraws every start uniformly between its
 #' neighbours' limits.
@@ -1332,8 +1335,11 @@ gibbs_day_starts <- function(span_start, span_end, n_windows, window_size, sweep
   }
   for (sweep in seq_len(sweeps)) {
     for (j in seq_len(m)) {
-      a <- if (j > 1L) max(lo[j], s[j - 1L] + window_size) else lo[j]
-      b <- if (j < m) min(hi[j], s[j + 1L] - window_size) else hi[j]
+      # Feasibility is on floored minutes: floor(s_j) >= floor(s_j-1) + w and
+      # floor(s_j+1) >= floor(s_j) + w, i.e. s_j in
+      # [floor(s_j-1) + w, floor(s_j+1) - w + 1).
+      a <- if (j > 1L) max(lo[j], floor(s[j - 1L]) + window_size) else lo[j]
+      b <- if (j < m) min(hi[j], floor(s[j + 1L]) - window_size + 1) else hi[j]
       s[j] <- stats::runif(1L, a, b)
     }
   }
