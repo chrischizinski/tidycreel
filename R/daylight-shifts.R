@@ -209,16 +209,16 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
       "i" = "Check {.arg cutoffs}, {.arg lon} and {.arg tz}."
     ))
   }
-  # Real elapsed hours: each bound as a local time on its calendar date.
-  as_time <- function(off) {
-    clock <- off + noon
-    day <- date + (clock >= 1440L)
-    as.POSIXct(paste(day, format_min_to_hhmm(clock)), format = "%Y-%m-%d %H:%M", tz = tz) # nolint: object_usage_linter
-  }
-  times <- apply(bounds, 2, as_time)
-  times <- matrix(times, nrow = length(date))
-  if (anyNA(times)) {
-    bad <- as.character(date[apply(is.na(times), 1, any)]) # nolint: object_usage_linter
+  # Real elapsed hours: each bound as a local time on its calendar date,
+  # resolved without relying on how the platform parses an ambiguous time
+  # (macOS and Linux differ): a clock time with no instant was skipped by a
+  # daylight-saving change, one with two was repeated.
+  clock <- as.vector(bounds) + noon
+  stamp <- paste(rep(date, times = ncol(bounds)) + (clock >= 1440L), format_min_to_hhmm(clock)) # nolint: object_usage_linter
+  inst <- local_instants(stamp, tz)
+  skipped <- matrix(inst$n == 0L, nrow = length(date))
+  if (any(skipped)) {
+    bad <- as.character(date[apply(skipped, 1, any)]) # nolint: object_usage_linter
     cli::cli_abort(c(
       "A cutoff falls in the hour skipped by a daylight-saving change on {length(bad)} night{?s}: \\
        {.val {bad}}.",
@@ -228,9 +228,7 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
   # A clock time in the hour repeated when daylight saving ends happens twice;
   # which one a crew means decides which shift gets the extra hour, so it is
   # refused rather than picked.
-  t_vec <- as.POSIXct(as.vector(times), origin = "1970-01-01", tz = tz)
-  hm <- function(x) format(x, "%H:%M")
-  folded <- matrix(hm(t_vec - 3600) == hm(t_vec) | hm(t_vec + 3600) == hm(t_vec), nrow = length(date))
+  folded <- matrix(inst$n > 1L, nrow = length(date))
   if (any(folded)) {
     bad <- as.character(date[apply(folded, 1, any)]) # nolint: object_usage_linter
     cli::cli_abort(c(
@@ -240,6 +238,7 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
       "i" = "Move the cutoff outside 01:00-02:00 local time."
     ))
   }
+  times <- matrix(inst$t, nrow = length(date))
   elapsed <- (times[, -1, drop = FALSE] - times[, -ncol(times), drop = FALSE]) / 3600
   n_shift <- ncol(len)
   data.frame(
@@ -250,6 +249,27 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
     hours = as.numeric(t(elapsed)),
     stringsAsFactors = FALSE
   )
+}
+
+#' The real instants at which a local clock reading occurs
+#'
+#' Internal (GH #407). For each `"YYYY-MM-DD HH:MM"` stamp in `tz`, tries the
+#' zone's UTC offsets half a day either side and keeps the instants whose local
+#' clock reads the stamp. Returns the count of such instants (0 = skipped by a
+#' daylight-saving change, 2 = repeated) and, where there is exactly one, its
+#' time in seconds since the epoch. Independent of how the platform parses an
+#' ambiguous or non-existent local time.
+#'
+#' @noRd
+local_instants <- function(stamp, tz) {
+  naive <- as.numeric(as.POSIXct(stamp, format = "%Y-%m-%d %H:%M", tz = "UTC"))
+  off <- function(x) as.POSIXlt(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"), tz = tz)$gmtoff
+  cand <- cbind(naive - off(naive - 43200), naive - off(naive + 43200))
+  reads <- function(x) format(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"), "%Y-%m-%d %H:%M", tz = tz)
+  ok <- cbind(reads(cand[, 1]) == stamp, reads(cand[, 2]) == stamp)
+  n <- vapply(seq_along(stamp), function(i) length(unique(cand[i, ok[i, ]])), integer(1))
+  t <- ifelse(n == 1L, ifelse(ok[, 1], cand[, 1], cand[, 2]), NA_real_)
+  list(n = n, t = t)
 }
 
 #' Sunrise and sunset for each requested LOCAL date
