@@ -923,11 +923,11 @@ format_min_to_hhmm <- function(mins) {
 #'   `strategy = "random"` and `"systematic"`. `window_size + min_gap` must
 #'   not exceed the stratum width (`total_span / n_windows`). With
 #'   `"systematic"` every gap is then at least `min_gap`. With `"random"` it is
-#'   only this fit check: each window's start is drawn uniformly from every
-#'   position where the window fits in its stratum, without holding back room
-#'   for the gap (which would leave parts of the span no count could reach),
-#'   so neighbouring windows can be closer than `min_gap`. Use `"systematic"`
-#'   when spacing must be guaranteed.
+#'   only this fit check: each count's start is drawn uniformly over its whole
+#'   stratum, without holding back room for the gap (which would leave parts
+#'   of the span no count could reach), so neighbouring counts can be closer
+#'   than `min_gap` (but never so close that their slots overlap). Use
+#'   `"systematic"` when spacing must be guaranteed.
 #' @param fixed_windows A data frame with `start_time` and `end_time` columns
 #'   (character `"HH:MM"`). Required for `strategy = "fixed"`. Windows must be
 #'   non-overlapping.
@@ -941,15 +941,26 @@ format_min_to_hhmm <- function(mins) {
 #'   - `window_id`  (integer, 1-based, ordered by start time): Window index.
 #'
 #' @details
+#' The start of each window is the count instant: crews count at the start of
+#' the slot, and `window_size` is how long the count keeps them busy. Starts are
+#' drawn over the whole of each stratum, so every minute of the span is
+#' close to equally likely to be counted. One crew cannot run two counts at
+#' once, so a random draw whose slots overlap is redrawn (delaying the second
+#' count instead would move its instant and bias effort); this makes instants
+#' just after a stratum boundary slightly less likely than elsewhere.
+#' Systematic starts never overlap. A start late in the last stratum makes the
+#' last slot end after the span, which is fine: the count instant is inside
+#' it. Before #432 starts were drawn only where the whole slot fitted, so the
+#' last `window_size` minutes of each stratum were never counted.
+#'
 #' **Random strategy:** Each of the `n_windows` strata of equal length
 #' `k = total_span / n_windows` receives one window with a uniformly random
-#' start within `[stratum_start, stratum_start + k - window_size]`.
+#' start within `[stratum_start, stratum_start + k)`.
 #'
 #' **Systematic strategy (recommended):** A single random start `t1` is drawn
-#' from `[start_min, start_min + k - window_size]`; all subsequent windows
-#' begin at `t1 + (i-1) * k` for `i = 1, ..., n_windows`. This is the
-#' design described in Pollock et al. (1994) and recommended by Colorado CPW
-#' (2012).
+#' from `[start_min, start_min + k)`; all subsequent windows begin at
+#' `t1 + (i-1) * k` for `i = 1, ..., n_windows`. This is the design described
+#' in Pollock et al. (1994) and recommended by Colorado CPW (2012).
 #'
 #' **Fixed strategy:** Windows are taken exactly as supplied after sorting by
 #' start time. Overlapping windows trigger an error.
@@ -1090,8 +1101,9 @@ generate_count_times <- function(
 
   check_window_spacing(start_min, end_min, n_windows, window_size, min_gap)
   t_starts <- with_optional_seed(seed, {
-    draw_window_starts(start_min, end_min, strategy, n_windows, window_size, min_gap)
+    draw_day_starts(start_min, end_min, strategy, n_windows, window_size, min_gap)[[1]]
   })
+  check_slots_before_midnight(list(t_starts), "1", window_size)
 
   result <- data.frame(
     start_time = format_min_to_hhmm(t_starts),
@@ -1153,14 +1165,20 @@ with_optional_seed <- function(seed, code) {
 #' Uses the current RNG state; callers seed it. Assumes
 #' check_window_spacing() has passed.
 #'
-#' Random: one window per equal stratum, its start uniform over every position
-#' where the window fits in the stratum. Neighbouring windows can therefore be
+#' The window start is the count instant (crews count at the start of the
+#' slot; #432), so it is drawn over the WHOLE stratum, as in Pollock et al.
+#' ch. 11: every minute of the span is equally likely to be a count instant.
+#' The slot (`window_size`) is only the time the crew is busy, so it may run
+#' into the next stratum or past the span end; draw_day_starts() redraws a day
+#' whose slots overlap. Drawing only where the whole slot fits left the last `window_size`
+#' minutes of every stratum with no chance of being counted.
+#'
+#' Random: one start uniform in each equal stratum. Neighbouring counts can be
 #' closer than `min_gap` (Pollock et al.'s noted drawback of random times);
-#' restricting the start to keep the gap pinned windows in place and left
-#' parts of the span no count could reach (#385 review), so it is not done.
-#' Systematic: one random start in the first stratum, then every `k` minutes;
-#' the gap is `k - window_size >= min_gap`. In both, the last `window_size`
-#' minutes of a stratum are never a window start (#432).
+#' holding back room for the gap pinned counts in place and left hours no
+#' count could reach (#385 review), so it is not done. Systematic: one start
+#' uniform in the first stratum, then every `k` minutes; the gap between slots
+#' is `k - window_size >= min_gap`.
 #'
 #' `sample.int()`, not `sample(a:b, 1)`: when the range is one value,
 #' `sample(x, 1)` draws from `1:x`.
@@ -1174,14 +1192,115 @@ draw_window_starts <- function(start_min, end_min, strategy, n_windows, window_s
       seq_len(n_windows) - 1L,
       function(i) {
         stratum_start <- start_min + i * k
-        stratum_start + sample.int(k - window_size + 1L, 1L) - 1L
+        stratum_start + sample.int(k, 1L) - 1L
       },
       integer(1)
     )
   } else {
-    t1 <- start_min + sample.int(k - window_size + 1L, 1L) - 1L
+    t1 <- start_min + sample.int(k, 1L) - 1L
     as.integer(t1 + (seq_len(n_windows) - 1L) * k)
   }
+}
+
+#' Draw one day's count starts, redrawing until one crew can make them all
+#'
+#' A start drawn late in a stratum makes its slot run into the next count
+#' (#432), and one crew cannot count twice at once. Delaying the second count
+#' would move its instant to `max(drawn, previous end)`, which is no longer
+#' uniform and biases effort (#432 review), so the whole day is redrawn
+#' instead (user decision 2026-10-05). The price: instants just after a
+#' stratum boundary are slightly less likely than elsewhere. Systematic
+#' starts never overlap within a span (spacing `k >= window_size`), so only
+#' adjacent shifts on one day can trigger a redraw.
+#'
+#' @param span_start,span_end Integer vectors, one element per shift worked
+#'   that day.
+#' @return A list of integer start vectors, one per shift.
+#' @noRd
+draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_size, min_gap,
+                            call = rlang::caller_env()) {
+  feasible <- function(st) {
+    all_st <- sort(unlist(st))
+    length(all_st) < 2L || all(all_st[-1] >= all_st[-length(all_st)] + window_size)
+  }
+  for (attempt in seq_len(1000L)) {
+    st <- lapply(seq_along(span_start), function(j) {
+      draw_window_starts(span_start[j], span_end[j], strategy, n_windows, window_size, min_gap)
+    })
+    if (feasible(st)) {
+      return(st)
+    }
+  }
+  # Dense days (slots nearly filling their strata) are rarely feasible by
+  # chance: 10 one-hour slots in 10 h succeed about once in 2 million draws.
+  # The feasible random draws form a convex set (each start inside its own
+  # stratum, each at least window_size after the previous), so a Gibbs
+  # sampler over it targets the same distribution as rejection -- uniform over
+  # the feasible draws -- without waiting for luck (#432 review).
+  if (strategy == "random") {
+    st <- gibbs_day_starts(span_start, span_end, n_windows, window_size)
+    if (!is.null(st)) {
+      return(st)
+    }
+  }
+  cli::cli_abort(c(
+    "Could not draw count times that one crew can make without overlapping slots.",
+    "x" = "No feasible draw found: two counts always fell within {window_size} minutes of each other.",
+    "i" = "Check that the day's shifts do not overlap, shorten {.arg window_size}, or use fewer windows."
+  ), call = call)
+}
+
+#' Gibbs sampler over a day's feasible random count starts
+#'
+#' Each start lies in its own stratum `[a_j, a_j + k_j - 1]` (minutes) and
+#' must be at least `window_size` after the previous start. Starting from the
+#' stratum starts (feasible when every stratum holds a slot and the shifts do
+#' not overlap), each sweep redraws every start uniformly between its
+#' neighbours' limits.
+#'
+#' @return A list of integer start vectors, one per shift, or `NULL` when the
+#'   stratum starts are themselves infeasible.
+#' @noRd
+gibbs_day_starts <- function(span_start, span_end, n_windows, window_size, sweeps = 200L) {
+  shift <- rep(seq_along(span_start), each = n_windows)
+  k <- (span_end - span_start) %/% n_windows
+  lo <- unlist(lapply(seq_along(span_start), function(j) span_start[j] + (seq_len(n_windows) - 1L) * k[j]))
+  hi <- lo + rep(k, each = n_windows) - 1L
+  ord <- order(lo)
+  lo <- lo[ord]
+  hi <- hi[ord]
+  s <- lo
+  m <- length(s)
+  if (m > 1L && any(s[-1] < s[-m] + window_size)) {
+    return(NULL)
+  }
+  for (sweep in seq_len(sweeps)) {
+    for (j in seq_len(m)) {
+      a <- if (j > 1L) max(lo[j], s[j - 1L] + window_size) else lo[j]
+      b <- if (j < m) min(hi[j], s[j + 1L] - window_size) else hi[j]
+      s[j] <- a + sample.int(b - a + 1L, 1L) - 1L
+    }
+  }
+  s[ord] <- s
+  lapply(seq_along(span_start), function(j) as.integer(sort(s[shift == j])))
+}
+
+#' Refuse count slots that would run past midnight
+#'
+#' @param starts List of integer start vectors (one per worked shift).
+#' @param day The date of each element of `starts`, for counting days.
+#' @noRd
+check_slots_before_midnight <- function(starts, day, window_size, call = rlang::caller_env()) {
+  past <- vapply(starts, function(st) any(st + window_size > 1440L), logical(1))
+  if (any(past)) {
+    n_days <- length(unique(day[past])) # nolint: object_usage_linter
+    cli::cli_abort(c(
+      "A count slot would run past midnight on {n_days} day{?s}.",
+      "x" = "Slots crossing midnight are not supported yet (#407).",
+      "i" = "Shorten {.arg window_size}, or end the counting span earlier."
+    ), call = call)
+  }
+  invisible(NULL)
 }
 
 #' Schedule progressive count circuit start times
@@ -1470,8 +1589,9 @@ generate_bus_schedule <- function(
 #'   and understates the within-day variance (#385).
 #' - **Copy one template to every day** (pass `count_times` from
 #'   [generate_count_times()]): the same windows on every day, for fixed-time
-#'   protocols. With shift times in the schedule, every window must fall inside
-#'   each day's shift.
+#'   protocols. With shift times in the schedule, every window must start
+#'   inside each day's shift (the start is the count instant; the slot may run
+#'   past the shift end).
 #'
 #' @param schedule A `creel_schedule` from [generate_schedule()] or
 #'   [read_schedule()]. Must have a `date` column.
@@ -1484,16 +1604,17 @@ generate_bus_schedule <- function(
 #'   evenly by `n_windows`, and each of the equal strata must hold
 #'   `window_size + min_gap`. `min_gap` is guaranteed between windows only
 #'   with `"systematic"` (see `strategy`).
-#' @param strategy `"random"` (default; one window placed uniformly where it
-#'   fits in each equal stratum -- neighbouring windows can be closer than
-#'   `min_gap`),
+#' @param strategy `"random"` (default; one count start uniform over each
+#'   equal stratum -- neighbouring counts can be closer than `min_gap`; a day
+#'   whose slots would overlap is redrawn, checked across all of that day's
+#'   shifts because one crew works the day),
 #'   `"systematic"` (a random start in the first stratum, then every stratum
 #'   length, so gaps are at least `min_gap`; a fresh start each day, as in
 #'   Pollock et al. 1994), or `"fixed"` (the clock times in `fixed_windows`).
 #' @param fixed_windows For `strategy = "fixed"`: a data frame of `start_time`
 #'   and `end_time` (`"HH:MM"`). With shift times in the schedule it must also
 #'   carry `period_id`, giving each shift its own windows, and every window
-#'   must fall inside its shift.
+#'   must start inside its shift.
 #' @param start_time,end_time The day's counting span (`"HH:MM"`), used to
 #'   draw windows when the schedule has no shift times. Not allowed when it
 #'   does: the shift is the span.
@@ -1637,6 +1758,25 @@ attach_count_times <- function(
   if (strategy == "fixed") {
     windows <- fixed_windows_by_row(schedule, fixed_windows, has_shift_times,
                                     span_start, span_end, idle, to_min)
+    # A fixed window may run past its shift end (the start is the count
+    # instant, #432), so check every window of a date together: one crew
+    # works the day and cannot count twice at once.
+    # Without shift times every row of a date carries the same day-level
+    # windows, so there is nothing across shifts to compare.
+    used <- if (has_shift_times) which(!vapply(windows, is.null, logical(1))) else integer(0)
+    clash <- tapply(used, as.character(schedule$date[used]), function(rows) {
+      w <- do.call(rbind, windows[rows])
+      w <- w[order(w$start), , drop = FALSE]
+      nrow(w) > 1L && any(w$start[-1] < w$end[-nrow(w)])
+    })
+    if (any(clash)) {
+      bad <- names(clash)[clash] # nolint: object_usage_linter
+      cli::cli_abort(c(
+        "Fixed count windows overlap across shifts on {length(bad)} day{?s}: {.val {bad}}.",
+        "x" = "One crew cannot run two counts at once.",
+        "i" = "Move a window so each ends before the next one starts."
+      ))
+    }
   } else {
     for (arg_name in c("n_windows", "window_size", "min_gap")) {
       if (is.null(get(arg_name))) {
@@ -1652,11 +1792,20 @@ attach_count_times <- function(
                            where = paste0(" on ", schedule$date[i]),
                            call = rlang::current_env())
     }
-    # One seeded stream, drawn row by row in schedule order: the same seed and
-    # schedule give the same windows, and each day's draw is independent.
-    starts <- with_optional_seed(seed, lapply(worked, function(i) {
-      draw_window_starts(span_start[i], span_end[i], strategy, n_windows, window_size, min_gap)
-    }))
+    # One seeded stream, drawn date by date in schedule order: the same seed
+    # and schedule give the same windows. All of a date's shifts are drawn
+    # together, so a slot running past one shift's end is checked against the
+    # next shift's counts (one crew works the day).
+    day <- as.character(schedule$date[worked])
+    starts <- vector("list", length(worked))
+    with_optional_seed(seed, {
+      for (d in unique(day)) {
+        rows <- which(day == d)
+        starts[rows] <- draw_day_starts(span_start[worked[rows]], span_end[worked[rows]],
+                                        strategy, n_windows, window_size, min_gap)
+      }
+    })
+    check_slots_before_midnight(starts, day, window_size)
     windows <- vector("list", nrow(schedule))
     windows[worked] <- lapply(starts, function(st) {
       data.frame(start = st, end = st + window_size)
@@ -1709,17 +1858,17 @@ attach_count_template <- function(schedule, count_times, has_shift_times, call =
   }
   if (has_shift_times) {
     w_start <- vapply(as.character(count_times$start_time), parse_hhmm_to_min, integer(1))
-    w_end <- vapply(as.character(count_times$end_time), parse_hhmm_to_min, integer(1))
     worked <- !is.na(schedule$shift_start) & !is.na(schedule$shift_end)
     outside <- vapply(which(worked), function(i) {
       s0 <- parse_hhmm_to_min(as.character(schedule$shift_start[i]))
       s1 <- parse_hhmm_to_min(as.character(schedule$shift_end[i]))
-      any(w_start < s0 | w_end > s1)
+      # The start is the count instant (#432); the slot after it may run on.
+      any(w_start < s0 | w_start >= s1)
     }, logical(1))
     if (any(outside)) {
       bad <- unique(as.character(schedule$date[which(worked)[outside]])) # nolint: object_usage_linter
       cli::cli_abort(c(
-        "Template count windows fall outside the shift on {length(bad)} day{?s}: {.val {bad}}.",
+        "Template count times fall outside the shift on {length(bad)} day{?s}: {.val {bad}}.",
         "x" = "A count outside the shift worked that day is not a count of that shift.",
         "i" = "Draw windows inside each day's shift with {.arg n_windows}, {.arg window_size} \\
                and {.arg min_gap} instead of a template."
@@ -1744,7 +1893,7 @@ attach_count_template <- function(schedule, count_times, has_shift_times, call =
 #' Fixed clock-time windows for each schedule row
 #'
 #' With shift times, `fixed_windows` carries `period_id` and each row takes its
-#' shift's windows, which must fall inside the shift. Without, every worked row
+#' shift's windows, which must start inside the shift. Without, every worked row
 #' takes all of them.
 #'
 #' @noRd
@@ -1784,7 +1933,7 @@ fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_
     w <- data.frame(start = fw_start[take], end = fw_end[take])
     w <- w[order(w$start), , drop = FALSE]
     if (!has_shift_times && !is.na(span_start[i]) &&
-          any(w$start < span_start[i] | w$end > span_end[i])) {
+          any(w$start < span_start[i] | w$start >= span_end[i])) {
       cli::cli_abort(
         "A fixed window falls outside {.arg start_time} -- {.arg end_time}.",
         call = call
@@ -1796,7 +1945,7 @@ fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_
         call = call
       )
     }
-    if (has_shift_times && any(w$start < span_start[i] | w$end > span_end[i])) {
+    if (has_shift_times && any(w$start < span_start[i] | w$start >= span_end[i])) {
       cli::cli_abort(c(
         "A fixed window for shift {.val {schedule$period_id[i]}} falls outside the shift.",
         "x" = "The shift runs {schedule$shift_start[i]} to {schedule$shift_end[i]}."

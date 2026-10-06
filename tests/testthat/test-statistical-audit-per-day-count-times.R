@@ -18,9 +18,11 @@ pdc_schedule <- function(...) {
 
 pdc_min <- function(x) vapply(as.character(x), parse_hhmm_to_min, integer(1), USE.NAMES = FALSE) # nolint: object_usage_linter
 
+# The window start is the count instant (#432), so it must be inside the
+# shift; the slot after it may run past the shift end.
 pdc_inside_shift <- function(a) {
   w <- a[!is.na(a$window_id), ]
-  all(pdc_min(w$start_time) >= pdc_min(w$shift_start) & pdc_min(w$end_time) <= pdc_min(w$shift_end))
+  all(pdc_min(w$start_time) >= pdc_min(w$shift_start) & pdc_min(w$start_time) < pdc_min(w$shift_end))
 }
 
 pdc_min_gap_holds <- function(a, gap) {
@@ -33,7 +35,7 @@ pdc_min_gap_holds <- function(a, gap) {
   all(ok)
 }
 
-test_that("#385: every drawn window falls inside its day's shift", {
+test_that("#385: every drawn count starts inside its day's shift", {
   for (strategy in c("random", "systematic")) {
     for (seed in 1:20) {
       a <- attach_count_times(pdc_schedule(), n_windows = 3, window_size = 30, min_gap = 40,
@@ -84,16 +86,15 @@ test_that("#385 review: random starts range over the whole stratum, whatever min
   # Holding back room for min_gap pinned the first three of four windows to
   # 06:00, 08:00 and 10:00 (min_gap = 90, 120-min strata): pressure at
   # 07:00-08:00 was never counted on any seed (Codex, #385 review). Each start
-  # must instead be uniform over every position where its window fits:
-  # 06:00-07:30 in the first stratum.
+  # is uniform over its whole stratum (#432): 06:00-07:59 in the first.
   starts <- vapply(seq_len(600), function(seed) {
     ct <- generate_count_times(start_time = "06:00", end_time = "14:00", strategy = "random",
                                n_windows = 4, window_size = 30, min_gap = 90, seed = seed)
     pdc_min(ct$start_time)[1]
   }, integer(1)) - 360L
-  expect_equal(range(starts), c(0L, 90L))
-  # Roughly uniform: each third of 0..90 holds about a third of the draws.
-  thirds <- table(cut(starts, c(-1, 30, 60, 90)))
+  expect_equal(range(starts), c(0L, 119L))
+  # Roughly uniform: each third of 0..119 holds about a third of the draws.
+  thirds <- table(cut(starts, c(-1, 39, 79, 119)))
   expect_true(all(abs(thirds / 600 - 1 / 3) < 0.06))
   # The hour the restricted draw never reached.
   expect_true(any(starts >= 60L))
@@ -108,13 +109,15 @@ test_that("#385 review: per-day random draws cover the whole shift over a season
   expect_true(any(first > pdc_min("14:00")))
 })
 
-test_that("#385: a window that fills its stratum is placed at the stratum start", {
-  # sample(x:x, 1) draws from 1:x when the range has one value; with
-  # window_size equal to the stratum length the systematic start must be the
-  # span start, not a random minute after midnight.
+test_that("#385: a window that fills its stratum is drawn without an internal error", {
+  # sample(x:x, 1) draws from 1:x when the range has one value, which tripped
+  # an internal stopifnot. Starts are now uniform over the 30-min stratum
+  # (#432) and every 30 min after.
   ct <- generate_count_times(start_time = "06:00", end_time = "08:00", strategy = "systematic",
                              n_windows = 4, window_size = 30, min_gap = 0, seed = 3)
-  expect_identical(ct$start_time, c("06:00", "06:30", "07:00", "07:30"))
+  st <- pdc_min(ct$start_time)
+  expect_true(st[1] >= pdc_min("06:00") && st[1] < pdc_min("06:30"))
+  expect_equal(diff(st), rep(30L, 3))
 })
 
 test_that("#385: a schedule that draws shifts but has no shift times errors at attach time", {
@@ -195,9 +198,9 @@ test_that("#385: drawn windows feed add_counts() with the schedule's p and windo
 })
 
 test_that("#385 review: one window needs no room for min_gap", {
-  ct <- generate_count_times(start_time = "06:00", end_time = "12:00", strategy = "random",
-                             n_windows = 1, window_size = 360, min_gap = 60, seed = 1)
-  expect_identical(ct$start_time, "06:00")
+  expect_no_error(ct <- generate_count_times(start_time = "06:00", end_time = "12:00", strategy = "random",
+                                             n_windows = 1, window_size = 360, min_gap = 60, seed = 1))
+  expect_equal(nrow(ct), 1L)
 })
 
 test_that("#385 review: negative window arguments are refused", {
@@ -231,4 +234,103 @@ test_that("#385 review: no seed draws without a .Random.seed warning", {
   expect_no_warning(attach_count_times(pdc_schedule(), n_windows = 2, window_size = 30, min_gap = 60))
   expect_no_warning(generate_count_times(start_time = "06:00", end_time = "14:00", strategy = "random",
                                          n_windows = 2, window_size = 30, min_gap = 10))
+})
+
+test_that("#432: every minute of each stratum can be a count start, not only where the slot fits", {
+  # Crews count at the start of the slot, so the start is the count instant.
+  # Drawing it only where the whole 30-min slot fitted meant the last 30 min
+  # of every 120-min stratum were never counted (2 of 8 hours).
+  hits <- integer(480)
+  for (seed in seq_len(800)) {
+    for (strategy in c("random", "systematic")) {
+      ct <- generate_count_times(
+        start_time = "06:00", end_time = "14:00", strategy = strategy,
+        n_windows = 4, window_size = 30, min_gap = 0, seed = seed
+      )
+      st <- pdc_min(ct$start_time) - 360L + 1L
+      hits[st] <- hits[st] + 1L
+    }
+  }
+  # The final 30 min of strata 1-3 (07:30-08:00, 09:30-10:00, 11:30-12:00).
+  tails <- c(91:120, 211:240, 331:360)
+  expect_true(all(hits[tails] > 0))
+  # Per-minute start frequency is flat within a stratum: tail vs head.
+  expect_lt(abs(mean(hits[91:120]) - mean(hits[1:30])) / mean(hits[1:30]), 0.25)
+})
+
+pdc_slots_overlap <- function(a, window_size) {
+  w <- a[!is.na(a$window_id), ]
+  any(tapply(pdc_min(w$start_time), as.character(w$date), function(st) {
+    st <- sort(st)
+    length(st) > 1L && any(st[-1] < st[-length(st)] + window_size)
+  }))
+}
+
+test_that("#432 review: no day's slots overlap -- one crew can make every count as drawn", {
+  # Delaying an overlapping count moves its instant to max(drawn, previous
+  # end), which is not uniform and biases effort (Codex, #432 review). A day
+  # whose random slots overlap is redrawn instead (user decision).
+  for (seed in 1:200) {
+    ct <- generate_count_times(start_time = "06:00", end_time = "08:00", strategy = "random",
+                               n_windows = 2, window_size = 30, min_gap = 0, seed = seed)
+    st <- pdc_min(ct$start_time)
+    expect_true(st[2] >= st[1] + 30L, info = as.character(seed))
+  }
+  a <- attach_count_times(pdc_schedule(), n_windows = 3, window_size = 60, min_gap = 0, seed = 5)
+  expect_false(pdc_slots_overlap(a, 60L))
+})
+
+test_that("#432 review: overlaps are checked across adjacent shifts on the same day", {
+  # Codex: shifts 06:00-08:00 and 08:00-10:00, two systematic 60-min windows
+  # each; shift 1's last slot ran to 08:56 while shift 2's first count was at
+  # 08:03, with no warning.
+  periods <- data.frame(period_id = 1:2, start_time = c("06:00", "08:00"), end_time = c("08:00", "10:00"))
+  sched <- generate_schedule(start_date = "2024-06-01", end_date = "2024-06-20", n_periods = 2,
+                             sampling_rate = 0.5, periods_per_day = 2, periods = periods, seed = 1)
+  for (seed in 1:20) {
+    a <- attach_count_times(sched, n_windows = 2, window_size = 60, min_gap = 0,
+                            strategy = "systematic", seed = seed)
+    expect_false(pdc_slots_overlap(a, 60L), info = as.character(seed))
+  }
+})
+
+test_that("#432 review: a generated template attaches to its own span when its last slot runs on", {
+  # Systematic starts over the whole stratum can end the last slot after the
+  # span; the template check refused it although every count starts inside.
+  sched <- generate_schedule(start_date = "2024-06-01", end_date = "2024-06-14", n_periods = 1,
+                             sampling_rate = 0.5, periods_per_day = 1, seed = 1,
+                             periods = data.frame(period_id = 1, start_time = "06:00", end_time = "08:00"))
+  ct <- generate_count_times(start_time = "06:00", end_time = "08:00", strategy = "systematic",
+                             n_windows = 2, window_size = 60, min_gap = 0, seed = 1)
+  expect_gt(max(pdc_min(ct$end_time)), pdc_min("08:00"))
+  expect_no_error(attach_count_times(sched, ct))
+})
+
+test_that("#432: a slot that would cross midnight is refused", {
+  expect_error(
+    generate_count_times(start_time = "22:00", end_time = "23:59", strategy = "systematic",
+                         n_windows = 1, window_size = 90, min_gap = 0, seed = 2),
+    "midnight"
+  )
+})
+
+test_that("#432 review: dense random days are drawn, not refused", {
+  # Ten one-hour slots in ten hours: feasible, but independent draws are
+  # feasible about once in 2 million tries, so pure rejection refused it.
+  for (seed in 1:5) {
+    ct <- generate_count_times(start_time = "06:00", end_time = "16:00", strategy = "random",
+                               n_windows = 10, window_size = 60, min_gap = 0, seed = seed)
+    expect_true(all(diff(pdc_min(ct$start_time)) >= 60L), info = as.character(seed))
+  }
+})
+
+test_that("#432 review: fixed windows that overlap across adjacent shifts are refused", {
+  periods <- data.frame(period_id = 1:2, start_time = c("06:00", "08:00"), end_time = c("08:00", "10:00"))
+  sched <- generate_schedule(start_date = "2024-06-01", end_date = "2024-06-10", n_periods = 2,
+                             sampling_rate = 0.5, periods_per_day = 2, periods = periods, seed = 1)
+  fw <- data.frame(period_id = 1:2, start_time = c("07:50", "08:00"), end_time = c("08:20", "08:30"))
+  expect_error(attach_count_times(sched, strategy = "fixed", fixed_windows = fw), "overlap across shifts")
+  fw$start_time[2] <- "08:30"
+  fw$end_time[2] <- "09:00"
+  expect_no_error(attach_count_times(sched, strategy = "fixed", fixed_windows = fw))
 })

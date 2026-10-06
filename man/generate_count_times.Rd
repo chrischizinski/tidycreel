@@ -37,11 +37,11 @@ minutes. Required for \code{strategy = "random"} and \code{"systematic"}.}
 \code{strategy = "random"} and \code{"systematic"}. \code{window_size + min_gap} must
 not exceed the stratum width (\code{total_span / n_windows}). With
 \code{"systematic"} every gap is then at least \code{min_gap}. With \code{"random"} it is
-only this fit check: each window's start is drawn uniformly from every
-position where the window fits in its stratum, without holding back room
-for the gap (which would leave parts of the span no count could reach),
-so neighbouring windows can be closer than \code{min_gap}. Use \code{"systematic"}
-when spacing must be guaranteed.}
+only this fit check: each count's start is drawn uniformly over its whole
+stratum, without holding back room for the gap (which would leave parts
+of the span no count could reach), so neighbouring counts can be closer
+than \code{min_gap} (but never so close that their slots overlap). Use
+\code{"systematic"} when spacing must be guaranteed.}
 
 \item{fixed_windows}{A data frame with \code{start_time} and \code{end_time} columns
 (character \code{"HH:MM"}). Required for \code{strategy = "fixed"}. Windows must be
@@ -69,15 +69,26 @@ preferred per Pollock et al. 1994 and Colorado CPW 2012), or fixed
 \details{
 Output is a \code{creel_schedule} data frame compatible with \code{\link[=write_schedule]{write_schedule()}}.
 
+The start of each window is the count instant: crews count at the start of
+the slot, and \code{window_size} is how long the count keeps them busy. Starts are
+drawn over the whole of each stratum, so every minute of the span is
+close to equally likely to be counted. One crew cannot run two counts at
+once, so a random draw whose slots overlap is redrawn (delaying the second
+count instead would move its instant and bias effort); this makes instants
+just after a stratum boundary slightly less likely than elsewhere.
+Systematic starts never overlap. A start late in the last stratum makes the
+last slot end after the span, which is fine: the count instant is inside
+it. Before #432 starts were drawn only where the whole slot fitted, so the
+last \code{window_size} minutes of each stratum were never counted.
+
 \strong{Random strategy:} Each of the \code{n_windows} strata of equal length
 \code{k = total_span / n_windows} receives one window with a uniformly random
-start within \verb{[stratum_start, stratum_start + k - window_size]}.
+start within \verb{[stratum_start, stratum_start + k)}.
 
 \strong{Systematic strategy (recommended):} A single random start \code{t1} is drawn
-from \verb{[start_min, start_min + k - window_size]}; all subsequent windows
-begin at \code{t1 + (i-1) * k} for \verb{i = 1, ..., n_windows}. This is the
-design described in Pollock et al. (1994) and recommended by Colorado CPW
-(2012).
+from \verb{[start_min, start_min + k)}; all subsequent windows begin at
+\code{t1 + (i-1) * k} for \verb{i = 1, ..., n_windows}. This is the design described
+in Pollock et al. (1994) and recommended by Colorado CPW (2012).
 
 \strong{Fixed strategy:} Windows are taken exactly as supplied after sorting by
 start time. Overlapping windows trigger an error.
