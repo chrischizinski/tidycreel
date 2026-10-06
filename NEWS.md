@@ -62,14 +62,27 @@
   is now an error. A schedule that draws shifts but has no shift times is an
   error at attach time.
 
+* Count windows from `generate_count_times()` and `attach_count_times()`
+  are now started anywhere in their stratum, not only where the whole window
+  fits (#432). Crews count at the start of the slot, so the start is the
+  count instant, and it was never drawn in the last `window_size` minutes of
+  any stratum: with four 30-minute windows in an 8-hour day, two hours could
+  never be counted. Every minute of the span is now equally likely to be
+  counted (Pollock et al. 1994, ch. 11). A late start makes its slot run into
+  the next stratum; that is allowed and reported with a warning
+  (`creel_warning_count_window_overlap`) giving the number of days, and the
+  crew starts the next count when the previous one ends. The last slot of a
+  day can end after the span, which is expected and not warned. A slot past
+  midnight is refused (#407). Windows for a given seed change.
+
 * `generate_count_times()` no longer stops with an internal error when a
   window exactly fills its stratum (`window_size` equal to the stratum
   length, `min_gap = 0`), checks that `n_windows`, `window_size` and
   `min_gap` are not negative, and no longer requires room for `min_gap` when
   there is only one window (#385). Its documentation now says what `min_gap`
   guarantees: a minimum gap with `"systematic"`; with `"random"`, only that
-  window and gap fit the stratum. Each random window is placed uniformly
-  where it fits in its stratum, so neighbours can be closer than `min_gap`;
+  window and gap fit the stratum. Each random count is started uniformly
+  over its stratum (#432), so neighbours can be closer than `min_gap`;
   holding back room for the gap instead would leave parts of the day no
   count could reach.
 

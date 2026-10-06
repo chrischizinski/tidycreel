@@ -32,9 +32,8 @@ evenly by \code{n_windows}, and each of the equal strata must hold
 \code{window_size + min_gap}. \code{min_gap} is guaranteed between windows only
 with \code{"systematic"} (see \code{strategy}).}
 
-\item{strategy}{\code{"random"} (default; one window placed uniformly where it
-fits in each equal stratum -- neighbouring windows can be closer than
-\code{min_gap}),
+\item{strategy}{\code{"random"} (default; one count start uniform over each
+equal stratum -- neighbouring counts can be closer than \code{min_gap}),
 \code{"systematic"} (a random start in the first stratum, then every stratum
 length, so gaps are at least \code{min_gap}; a fresh start each day, as in
 Pollock et al. 1994), or \code{"fixed"} (the clock times in \code{fixed_windows}).}
