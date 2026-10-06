@@ -168,6 +168,18 @@
 
 ## Bug fixes
 
+* The within-day variance component of stratum and period effort totals
+  (instantaneous, aerial and camera effort, and the catch, harvest and
+  release totals built on that effort) no longer counts calendar *rows* as
+  population days (#436). A calendar with
+  several rows per date -- any `generate_schedule()` output with more than
+  one period, used as the design calendar, as the shift workflow does --
+  inflated the within-day SE by the square root of the rows per date (two
+  periods: 80.1 became 113 in a test design), with no message. The
+  between-day part already counted distinct dates; both now use one
+  definition. Estimates were not affected; `sampled_days` targets were not
+  affected.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` on a sectioned design with no `by` multiplied
   each section's whole effort by **one rate pooled across its strata** (#409).

@@ -4893,6 +4893,22 @@ restore_group_types <- function(result_df, source_df, by_vars) {
 }
 
 
+#' Population days per stratum: distinct calendar dates, never rows
+#'
+#' Internal (GH #436). One definition for the between-day N_h
+#' (get_effort_target_design()) and the within-day n_avail
+#' (compute_within_day_var_contribution()), so the two cannot drift: a
+#' calendar may carry several rows per date (one per period or count window).
+#'
+#' @return A data frame of the strata columns and `.N_avail`.
+#' @keywords internal
+#' @noRd
+stratum_population_days <- function(calendar, strata_cols, date_col) {
+  calendar |>
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, date_col)))) |>
+    dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".N_avail")
+}
+
 compute_within_day_var_contribution <- function(
   design,
   by_vars = NULL, # nolint: object_length_linter
@@ -4906,14 +4922,18 @@ compute_within_day_var_contribution <- function(
   counts_data <- design$counts
   strata_cols <- design$strata_cols
 
-  # Get n_avail (available days per stratum) from design$calendar
-  cal <- design$calendar
-  if (length(strata_cols) == 1) {
-    cal$.strata_key <- as.character(cal[[strata_cols]])
+  # n_avail: population days per stratum, from the same helper as the
+  # between-day N_h. Counting calendar ROWS here inflated it whenever the
+  # calendar carried several rows per date -- a multi-period schedule used as
+  # the calendar -- and with it the within-day SE, by sqrt(rows per date)
+  # (GH #436).
+  pop <- stratum_population_days(design$calendar, strata_cols, design$date_col)
+  pop_key <- if (length(strata_cols) == 1) {
+    as.character(pop[[strata_cols]])
   } else {
-    cal$.strata_key <- do.call(paste, c(cal[strata_cols], sep = "\u001f"))
+    do.call(paste, c(pop[strata_cols], sep = "\u001f"))
   }
-  available_by_strata <- table(cal$.strata_key)
+  available_by_strata <- stats::setNames(pop$.N_avail, pop_key)
 
   # Build a combined data frame: counts_data + within_day_var, joined on the key
   # the table was actually built with.
@@ -5291,9 +5311,7 @@ get_effort_target_design <- function(design, target) {
   # error (GH #421). Its effort is unknown, not zero.
   refuse_unsampled_cells(design, cell_cols = strata_cols)
 
-  available_by_strata <- calendar |>
-    dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, frame_unit)))) |>
-    dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".N_avail")
+  available_by_strata <- stratum_population_days(calendar, strata_cols, frame_unit)
   sampled_by_strata <- counts_data |>
     dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, psu_col)))) |>
     dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".n_sampled")
