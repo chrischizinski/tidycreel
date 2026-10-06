@@ -20,7 +20,10 @@ generate_count_times(
 Required for \code{strategy = "random"} and \code{"systematic"}.}
 
 \item{end_time}{Character. Survey-day end time in \code{"HH:MM"} format.
-Required for \code{strategy = "random"} and \code{"systematic"}.}
+Required for \code{strategy = "random"} and \code{"systematic"}. Must be after
+\code{start_time}; for a night that crosses midnight, use
+\code{\link[=attach_count_times]{attach_count_times()}} on a schedule built with
+\code{generate_schedule(day_start = )}.}
 
 \item{strategy}{Character scalar. One of \code{"random"}, \code{"systematic"}, or
 \code{"fixed"}.}

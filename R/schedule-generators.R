@@ -269,14 +269,18 @@ expand_drawn_periods <- function(base, shifts, sampled, all_dates, n_periods, pe
 #'
 #' Internal (GH #385). One row per period: `period_id` (matching
 #' `period_labels`, or 1..n_periods without labels), `start_time` and
-#' `end_time` as "HH:MM". A shift that ends at or before it starts (crossing
-#' midnight) is refused until clock-time handling for night creels lands
-#' (#407).
+#' `end_time` as "HH:MM". Times are read on the survey-day clock that starts at
+#' `day_start` (GH #407): with `day_start = "12:00"`, 19:30-00:30 and
+#' 00:30-06:00 are the two halves of one night. A shift must end after it
+#' starts on that clock, i.e. inside one survey day. An optional `hours`
+#' column (as from daylight_shifts()) is the real elapsed length, which on a
+#' daylight-saving night differs from the clock length by an hour; it is kept
+#' as `shift_hours`.
 #'
 #' @return A data frame with `key` (character period id), `shift_start`,
-#'   `shift_end`.
+#'   `shift_end`, and `shift_hours` when `hours` was given.
 #' @noRd
-validate_periods_table <- function(periods, n_periods, period_labels, call = rlang::caller_env()) {
+validate_periods_table <- function(periods, n_periods, period_labels, ds = 0L, call = rlang::caller_env()) {
   needed <- c("period_id", "start_time", "end_time")
   if (!is.data.frame(periods) || !all(needed %in% names(periods))) {
     cli::cli_abort(
@@ -336,16 +340,18 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
       call = call
     )
   }
-  start_min <- vapply(start, parse_hhmm_to_min, integer(1))
-  end_min <- vapply(end, parse_hhmm_to_min, integer(1))
+  start_min <- survey_min(vapply(start, parse_hhmm_to_min, integer(1)), ds)
+  end_min <- survey_min(vapply(end, parse_hhmm_to_min, integer(1)), ds, end = TRUE)
   wraps <- end_min <= start_min
   if (any(wraps)) {
     cli::cli_abort(
       c(
-        "Shift{?s} {.val {label[wraps]}} end{?s/} at or before {?its/their} start.",
-        "x" = "A shift crossing midnight is not supported yet: its length and its date depend on \\
-               clock-time handling for night creels (#407).",
-        "i" = "Until then, give each shift an end time later the same day."
+        "Shift{?s} {.val {label[wraps]}} end{?s/} at or before {?its/their} start on the survey day.",
+        "x" = "With {.code day_start = \"{format_min_to_hhmm(ds)}\"} a survey day runs from \\
+               {format_min_to_hhmm(ds)} to {format_min_to_hhmm(ds)} the next day, and each shift \\
+               must fall inside one.",
+        "i" = "For night shifts that cross midnight, set {.arg day_start} to a time no shift \\
+               spans, e.g. {.val 12:00}."
       ),
       call = call
     )
@@ -354,6 +360,24 @@ validate_periods_table <- function(periods, n_periods, period_labels, call = rla
     key <- paste(pdate, key)
   }
   out <- data.frame(key = key, shift_start = start, shift_end = end, stringsAsFactors = FALSE)
+  if ("hours" %in% names(periods)) {
+    hrs <- suppressWarnings(as.numeric(periods$hours))
+    clock <- (end_min - start_min) / 60
+    # Elapsed time differs from the clock length only by a daylight-saving
+    # change (one hour); anything else is a table that disagrees with itself.
+    bad <- is.na(hrs) | hrs <= 0 | abs(hrs - clock) > 1 + 1e-8
+    if (any(bad)) {
+      cli::cli_abort(
+        c(
+          "{.field hours} in {.arg periods} must be the shift's length.",
+          "x" = "Period{?s} {.val {label[bad]}} {?has/have} {.field hours} missing, not positive, \\
+                 or more than an hour from the {.field start_time}-{.field end_time} length."
+        ),
+        call = call
+      )
+    }
+    out$shift_hours <- hrs
+  }
   attr(out, "by_date") <- by_date
   out
 }
@@ -388,6 +412,9 @@ attach_shift_times <- function(base, periods, call = rlang::caller_env()) {
   }
   base$shift_start <- periods$shift_start[i]
   base$shift_end <- periods$shift_end[i]
+  if ("shift_hours" %in% names(periods)) {
+    base$shift_hours <- periods$shift_hours[i]
+  }
   base
 }
 
@@ -638,8 +665,26 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #'   `end_time` as `"HH:MM"`. Adds `shift_start` and `shift_end` to every row.
 #'   With a `date` column the times vary by day -- one row per date and period,
 #'   covering every worked date -- as returned by [daylight_shifts()] for
-#'   shifts bounded by sunrise and sunset. A shift that ends at or before it
-#'   starts (crossing midnight) is not yet supported.
+#'   shifts bounded by sunrise and sunset. Times are read on the survey-day
+#'   clock that starts at `day_start`, and each shift must fall inside one
+#'   survey day. An optional `hours` column (as [daylight_shifts()] returns)
+#'   gives each shift's real elapsed length and is kept as `shift_hours`; it
+#'   differs from the clock length only across a daylight-saving change.
+#' @param day_start Clock time (`"HH:MM"`) at which a survey day begins.
+#'   The default `"00:00"` is the calendar day, as before. For night creels
+#'   whose shifts cross midnight, choose a time no shift spans, e.g. `"12:00"`:
+#'   then 19:30-00:30 and 00:30-06:00 are the two halves of one night, dated
+#'   by the date the night starts. A shift time earlier than `day_start` is on
+#'   the next calendar day. The schedule records it in a `day_start` column.
+#'   Mapping counts and interviews to night survey days is not available yet
+#'   (#407), so [creel_design()] refuses such a schedule as its calendar for
+#'   now.
+#' @param weekend_days Day names (full or three-letter English, any case) whose
+#'   survey days form the `weekend` stratum. `NULL` (default) means Saturday
+#'   and Sunday, and is only allowed when `day_start = "00:00"`: a night is
+#'   dated by the day it starts, so with that default a Friday night would be
+#'   a weekday, and agencies differ on which nights are the weekend (e.g.
+#'   `c("Friday", "Saturday")`).
 #'
 #' @return A `creel_schedule` data frame with columns:
 #'   - `date` (Date): Sampled (or all) dates.
@@ -656,6 +701,9 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #'     `expand_periods = FALSE`.
 #'   - `shift_start`, `shift_end` (character, "HH:MM"): Present when `periods`
 #'     is supplied.
+#'   - `shift_hours` (numeric): Present when `periods` has an `hours` column.
+#'   - `day_start` (character, "HH:MM"): Present when `day_start` is not
+#'     `"00:00"`.
 #'   - `sampled` (logical): Present only when `include_all = TRUE`.
 #'
 #' @examples
@@ -705,9 +753,13 @@ generate_schedule <- function(
   special_periods = NULL,
   periods_per_day = NULL,
   period_allocation = c("balanced", "random"),
-  periods = NULL
+  periods = NULL,
+  day_start = "00:00",
+  weekend_days = NULL
 ) {
   rlang::check_installed("lubridate")
+  ds <- parse_day_start(day_start)
+  weekend_wday <- resolve_weekend_days(weekend_days, ds)
   # Validate mutually-exclusive intensity args
   if (!is.null(n_days) && !is.null(sampling_rate)) {
     cli::cli_abort(c(
@@ -748,7 +800,7 @@ generate_schedule <- function(
         "x" = "Shift times are attached per period, and {.code expand_periods = FALSE} drops periods."
       ))
     }
-    periods <- validate_periods_table(periods, n_periods, period_labels)
+    periods <- validate_periods_table(periods, n_periods, period_labels, ds)
   }
 
   # Build season date sequence (lubridate DST-safe)
@@ -758,9 +810,11 @@ generate_schedule <- function(
     by = "1 day"
   )
 
-  # Classify weekday vs weekend (week_start=1 => Mon=1 ... Sun=7)
+  # Classify weekday vs weekend (week_start=1 => Mon=1 ... Sun=7). A night
+  # survey day is dated by the date it starts, so its day type is that date's
+  # unless weekend_days says otherwise (GH #407).
   day_types <- ifelse(
-    lubridate::wday(all_dates, week_start = 1) %in% c(6L, 7L),
+    lubridate::wday(all_dates, week_start = 1) %in% weekend_wday,
     "weekend",
     "weekday"
   )
@@ -910,6 +964,12 @@ generate_schedule <- function(
     base$sampled <- NULL
   }
 
+  # A column, so it survives write_schedule() / read_schedule(); only when the
+  # survey day does not start at midnight, so day schedules are unchanged.
+  if (ds != 0L) {
+    base$day_start <- day_start
+  }
+
   result <- new_creel_schedule(base)
 
   if (!is.null(special_periods)) {
@@ -928,6 +988,50 @@ generate_schedule <- function(
   result
 }
 
+#' Which days of the week are weekend survey days
+#'
+#' Internal (GH #407). Returns ISO weekday numbers (Monday = 1 ... Sunday = 7).
+#' The default, Saturday and Sunday, holds only when the survey day is the
+#' calendar day. A night survey day is dated by the date it starts, so with the
+#' default a Friday night would be a weekday; agencies differ (many count
+#' Friday and Saturday nights as the weekend), so it must be given.
+#'
+#' @noRd
+resolve_weekend_days <- function(weekend_days, ds, call = rlang::caller_env()) {
+  full <- c("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+  if (is.null(weekend_days)) {
+    if (ds != 0L) {
+      cli::cli_abort(
+        c(
+          "{.arg weekend_days} is required when {.arg day_start} is not {.val 00:00}.",
+          "x" = "A survey day is dated by the date it starts, so a Friday night is dated Friday, \\
+                 and which nights count as the weekend differs between agencies.",
+          "i" = "Name them, e.g. {.code weekend_days = c(\"Friday\", \"Saturday\")}."
+        ),
+        call = call
+      )
+    }
+    return(c(6L, 7L))
+  }
+  if (!is.character(weekend_days) || anyNA(weekend_days)) {
+    cli::cli_abort("{.arg weekend_days} must be day names, e.g. {.val Saturday}.", call = call)
+  }
+  key <- tolower(weekend_days)
+  idx <- match(key, full)
+  short <- is.na(idx) & nchar(key) == 3L
+  idx[short] <- match(key[short], substr(full, 1L, 3L))
+  if (anyNA(idx)) {
+    cli::cli_abort(
+      c(
+        "{.arg weekend_days} must be English day names (full or three letters).",
+        "x" = "Not recognised: {.val {weekend_days[is.na(idx)]}}."
+      ),
+      call = call
+    )
+  }
+  sort(unique(idx))
+}
+
 #' Convert HH:MM string to integer minutes since midnight
 #'
 #' @param hhmm A character scalar matching "HH:MM".
@@ -940,13 +1044,82 @@ parse_hhmm_to_min <- function(hhmm) {
 
 #' Convert integer minutes since midnight to HH:MM string
 #'
+#' Minutes past 24 h (a time on the next calendar day) wrap to the clock.
+#'
 #' @param mins Integer vector of minutes since midnight.
 #' @return Character vector of "HH:MM" strings.
 #' @noRd
 format_min_to_hhmm <- function(mins) {
+  mins <- mins %% 1440L
   h <- mins %/% 60L
   m <- mins %% 60L
   sprintf("%02d:%02d", h, m)
+}
+
+#' Validate a survey-day start time and return it in minutes
+#'
+#' Internal (GH #407). `day_start` is the clock time a survey day begins:
+#' `"00:00"` is the calendar day; `"12:00"` makes Fri 19:30 to Sat 06:00 one
+#' survey day, dated Friday.
+#'
+#' @noRd
+parse_day_start <- function(day_start, call = rlang::caller_env()) {
+  hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+  if (!is.character(day_start) || length(day_start) != 1L || is.na(day_start) ||
+        !grepl(hhmm, day_start)) {
+    cli::cli_abort(
+      c(
+        "{.arg day_start} must be one clock time as {.val HH:MM}.",
+        "x" = "Got {.val {day_start}}."
+      ),
+      call = call
+    )
+  }
+  parse_hhmm_to_min(day_start)
+}
+
+#' Clock minutes to minutes since the survey day began
+#'
+#' Internal (GH #407). With `day_start` at `ds` minutes, a clock time `t` lies
+#' `(t - ds) mod 1440` minutes into the survey day, so a time before
+#' `day_start` is on the next calendar day. An END at the day's boundary is
+#' the end of the survey day (1440), not its start; with `ds = 0` that makes
+#' a shift ending `"00:00"` end at midnight. Times of day only: the length of
+#' a night that crosses a daylight-saving change is not its clock length (see
+#' `shift_hours`).
+#'
+#' @param clock_min Integer minutes since midnight (may be `NA`).
+#' @param ds Survey-day start in minutes since midnight.
+#' @param end Whether these are end times.
+#' @noRd
+survey_min <- function(clock_min, ds, end = FALSE) {
+  off <- (clock_min - ds) %% 1440L
+  if (end) off[!is.na(off) & off == 0L] <- 1440L
+  off
+}
+
+#' The survey-day start a schedule was built with, in minutes
+#'
+#' Internal (GH #407). Read from the `day_start` column, which
+#' generate_schedule() adds only when the day does not start at midnight, so a
+#' schedule without it (every schedule before #407) starts at `"00:00"`.
+#'
+#' @noRd
+schedule_day_start <- function(schedule, call = rlang::caller_env()) {
+  if (!"day_start" %in% names(schedule)) {
+    return(0L)
+  }
+  ds <- unique(as.character(schedule$day_start))
+  if (length(ds) != 1L) {
+    cli::cli_abort(
+      c(
+        "The schedule's {.field day_start} must be one clock time for every row.",
+        "x" = "Got {.val {ds}}."
+      ),
+      call = call
+    )
+  }
+  parse_day_start(ds, call = call)
 }
 
 #' Generate within-day count time windows
@@ -962,7 +1135,10 @@ format_min_to_hhmm <- function(mins) {
 #' @param start_time Character. Survey-day start time in `"HH:MM"` format.
 #'   Required for `strategy = "random"` and `"systematic"`.
 #' @param end_time Character. Survey-day end time in `"HH:MM"` format.
-#'   Required for `strategy = "random"` and `"systematic"`.
+#'   Required for `strategy = "random"` and `"systematic"`. Must be after
+#'   `start_time`; for a night that crosses midnight, use
+#'   [attach_count_times()] on a schedule built with
+#'   `generate_schedule(day_start = )`.
 #' @param strategy Character scalar. One of `"random"`, `"systematic"`, or
 #'   `"fixed"`.
 #' @param n_windows Positive integer. Number of count time windows. Required
@@ -1129,10 +1305,15 @@ generate_count_times <- function(
   start_min <- parse_hhmm_to_min(start_time)
   end_min <- parse_hhmm_to_min(end_time)
 
+  # A night span is drawn through attach_count_times() on a schedule built
+  # with day_start (GH #407), where the crossing is declared; here an end at
+  # or before the start stays an error, so swapped times are caught.
   if (end_min <= start_min) {
     cli::cli_abort(c(
       "end_time must be after start_time.",
-      "x" = "{.val {end_time}} is not after {.val {start_time}}."
+      "x" = "{.val {end_time}} is not after {.val {start_time}}.",
+      "i" = "For a night that crosses midnight, use {.fn attach_count_times} on a schedule \\
+             from {.code generate_schedule(day_start = )}."
     ))
   }
 
@@ -1347,18 +1528,22 @@ gibbs_day_starts <- function(span_start, span_end, n_windows, window_size, sweep
   lapply(seq_along(span_start), function(j) sort(s[shift == j]))
 }
 
-#' Refuse count slots that would run past midnight
+#' Refuse count slots that would run past the end of the survey day
+#'
+#' Starts are minutes since the survey day began (GH #407), so the day ends at
+#' `limit` (1440); with `day_start = "00:00"` that is midnight. A slot running
+#' into the next survey day would be a count of that day.
 #'
 #' @param starts List of integer start vectors (one per worked shift).
 #' @param day The date of each element of `starts`, for counting days.
 #' @noRd
-check_slots_before_midnight <- function(starts, day, window_size, call = rlang::caller_env()) {
-  past <- vapply(starts, function(st) any(st + window_size > 1440L), logical(1))
+check_slots_before_midnight <- function(starts, day, window_size, limit = 1440L, call = rlang::caller_env()) {
+  past <- vapply(starts, function(st) any(st + window_size > limit), logical(1))
   if (any(past)) {
     n_days <- length(unique(day[past])) # nolint: object_usage_linter
     cli::cli_abort(c(
-      "A count slot would run past midnight on {n_days} day{?s}.",
-      "x" = "Slots crossing midnight are not supported yet (#407).",
+      "A count slot would run past the end of the survey day on {n_days} day{?s}.",
+      "x" = "A slot running into the next survey day would count that day.",
       "i" = "Shorten {.arg window_size}, or end the counting span earlier."
     ), call = call)
   }
@@ -1799,12 +1984,17 @@ attach_count_times <- function(
     }
     out
   }
+  # Spans and windows are drawn in minutes since the survey day began, so a
+  # night that crosses midnight is one interval; written back as clock times
+  # (GH #407). With day_start "00:00" these are minutes since midnight.
+  ds <- schedule_day_start(schedule)
   if (has_shift_times) {
-    span_start <- to_min(schedule$shift_start)
-    span_end <- to_min(schedule$shift_end)
+    span_start <- survey_min(to_min(schedule$shift_start), ds)
+    span_end <- survey_min(to_min(schedule$shift_end), ds, end = TRUE)
   } else {
-    span_start <- rep(if (is.null(start_time)) NA_integer_ else to_min(start_time), nrow(schedule))
-    span_end <- rep(if (is.null(end_time)) NA_integer_ else to_min(end_time), nrow(schedule))
+    span_start <- rep(if (is.null(start_time)) NA_integer_ else survey_min(to_min(start_time), ds), nrow(schedule))
+    span_end <- rep(if (is.null(end_time)) NA_integer_ else survey_min(to_min(end_time), ds, end = TRUE),
+                    nrow(schedule))
   }
   # Days the schedule did not sample get no windows.
   idle <- rep(FALSE, nrow(schedule))
@@ -1816,13 +2006,15 @@ attach_count_times <- function(
   if (any(crosses)) {
     cli::cli_abort(c(
       "A counting span ends at or before it starts on {sum(crosses)} row{?s}.",
-      "x" = "Shifts that cross midnight are not supported yet (#407)."
+      "x" = "Each span must fall inside one survey day, which starts at \\
+             {.val {format_min_to_hhmm(ds)}}.",
+      "i" = "For night shifts, build the schedule with {.code generate_schedule(day_start = )}."
     ))
   }
 
   if (strategy == "fixed") {
     windows <- fixed_windows_by_row(schedule, fixed_windows, has_shift_times,
-                                    span_start, span_end, idle, to_min)
+                                    span_start, span_end, idle, to_min, ds)
     # A fixed window may run past its shift end (the start is the count
     # instant, #432), so check every window of a date together: one crew
     # works the day and cannot count twice at once.
@@ -1887,8 +2079,8 @@ attach_count_times <- function(
       return(base)
     }
     out <- base[rep(1L, nrow(w)), , drop = FALSE]
-    out$start_time <- format_min_to_hhmm(as.integer(w$start))
-    out$end_time <- format_min_to_hhmm(as.integer(w$end))
+    out$start_time <- format_min_to_hhmm(as.integer(w$start) + ds)
+    out$end_time <- format_min_to_hhmm(as.integer(w$end) + ds)
     out$window_id <- seq_len(nrow(w))
     out
   })
@@ -1922,11 +2114,13 @@ attach_count_template <- function(schedule, count_times, has_shift_times, call =
     ), call = call)
   }
   if (has_shift_times) {
-    w_start <- vapply(as.character(count_times$start_time), parse_hhmm_to_min, integer(1))
+    # On the survey-day clock (GH #407).
+    ds <- schedule_day_start(schedule, call = call)
+    w_start <- survey_min(vapply(as.character(count_times$start_time), parse_hhmm_to_min, integer(1)), ds)
     worked <- !is.na(schedule$shift_start) & !is.na(schedule$shift_end)
     outside <- vapply(which(worked), function(i) {
-      s0 <- parse_hhmm_to_min(as.character(schedule$shift_start[i]))
-      s1 <- parse_hhmm_to_min(as.character(schedule$shift_end[i]))
+      s0 <- survey_min(parse_hhmm_to_min(as.character(schedule$shift_start[i])), ds)
+      s1 <- survey_min(parse_hhmm_to_min(as.character(schedule$shift_end[i])), ds, end = TRUE)
       # The start is the count instant (#432); the slot after it may run on.
       any(w_start < s0 | w_start >= s1)
     }, logical(1))
@@ -1963,7 +2157,7 @@ attach_count_template <- function(schedule, count_times, has_shift_times, call =
 #'
 #' @noRd
 fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_start, span_end,
-                                 idle, to_min, call = rlang::caller_env()) {
+                                 idle, to_min, ds = 0L, call = rlang::caller_env()) {
   if (!is.data.frame(fixed_windows) || !all(c("start_time", "end_time") %in% names(fixed_windows))) {
     cli::cli_abort(
       "{.arg fixed_windows} must be a data frame with {.field start_time} and {.field end_time}.",
@@ -1976,8 +2170,9 @@ fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_
       "i" = "Give each shift its own clock times, e.g. the AM shift counts at 08:00 and 11:00."
     ), call = call)
   }
-  fw_start <- to_min(fixed_windows$start_time)
-  fw_end <- to_min(fixed_windows$end_time)
+  # On the survey-day clock, like the spans (GH #407).
+  fw_start <- survey_min(to_min(fixed_windows$start_time), ds)
+  fw_end <- survey_min(to_min(fixed_windows$end_time), ds, end = TRUE)
   if (anyNA(fw_start) || anyNA(fw_end) || any(fw_end <= fw_start)) {
     cli::cli_abort("Every fixed window needs a start before its end.", call = call)
   }
