@@ -456,6 +456,11 @@ creel_design <- function(
   angler_ratio_se = NULL,
   open_start = NULL
 ) {
+  # A grouped input would carry its grouping into every dplyr step that reads
+  # the stored table (GH #441).
+  calendar <- ungroup_input(calendar)
+  sampling_frame <- ungroup_input(sampling_frame)
+
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
@@ -1105,6 +1110,22 @@ validate_creel_design <- function(x) {
   }
 
   invisible(x)
+}
+
+#' Drop any dplyr grouping from a table the design will store
+#'
+#' Internal (GH #441). A grouped or rowwise tibble keeps its grouping when
+#' stored, and every later dplyr step on it (`distinct()`, `count()`, joins)
+#' then works within groups: counts grouped by a non-stratum column inflated
+#' expanded effort 4.3-fold, and a grouped calendar reported a census (SE 0),
+#' with no message. Applied once at each entry point, so no consumer needs its
+#' own copy. Anything that is not a data frame is returned unchanged for the
+#' caller's own validation to reject.
+#'
+#' @keywords internal
+#' @noRd
+ungroup_input <- function(x) {
+  if (inherits(x, c("grouped_df", "rowwise_df"))) dplyr::ungroup(x) else x
 }
 
 #' Resolve single column from tidy selector
@@ -2212,6 +2233,7 @@ add_counts <- function(
   allow_invalid = FALSE,
   p_period = NULL
 ) {
+  counts <- ungroup_input(counts) # GH #441
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -2842,6 +2864,7 @@ add_sections <- function(
   shoreline_col = NULL,
   shared_count_times = FALSE
 ) {
+  sections <- ungroup_input(sections) # GH #441
   # Guard: design must be creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -3181,6 +3204,7 @@ add_interviews <- function(
   interview_type = c("access", "roving"),
   allow_invalid = FALSE
 ) {
+  interviews <- ungroup_input(interviews) # GH #441
   # Capture missing status before any default resolution
   n_anglers_missing <- missing(n_anglers)
 
@@ -4671,6 +4695,7 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #' @family "Survey Design"
 #' @export
 add_catch <- function(design, data, catch_uid, interview_uid, species, count, catch_type) {
+  data <- ungroup_input(data) # GH #441
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(
@@ -5039,6 +5064,7 @@ add_lengths <- function(
   release_bin_unit = "mm",
   release_bin_width = NULL
 ) {
+  data <- ungroup_input(data) # GH #441
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
@@ -5313,6 +5339,7 @@ add_lengths <- function(
 #' @seealso [add_lengths()]
 #' @export
 add_ages <- function(design, data, age_uid, interview_uid, species, age, age_type) {
+  data <- ungroup_input(data) # GH #441
   if (!inherits(design, "creel_design")) {
     cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
   }
