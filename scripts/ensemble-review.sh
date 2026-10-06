@@ -114,11 +114,26 @@ OUT_DIR=".ai/reviews"
 #   kimi-k2.7-code       no output on two attempts, spending the budget on
 #                        reasoning and not emitting a findings section.
 #   deepseek-v3.2        "no findings" on a diff that had four.
+#
+# Dropped 2026-10-06 on the scoreboard (.ai/reviews/scoreboard.tsv, ~100 runs
+# each since 2026-09-02, every finding verified against the code):
+#   gpt-oss-120b         1 true / 22 false in 97 runs (precision 4%). The ORDER
+#                        catch above was its only true finding in five weeks.
+#   nemotron-3-super     5 true / 21 false in 83 runs (19%).
+# For comparison: codex 67/3 (96%), deepseek-v4-pro 78/16 (83%),
+# nemotron-3-ultra 18/23 (44%, and often a 503).
+#
+# On TRIAL from 2026-10-06 (new vendor families, so a Codex outage still
+# leaves two independent reviewers beside deepseek). Score them like the
+# rest; drop either that does not beat nemotron-3-ultra's precision after
+# ~15 runs. qwen3.8-max is not qwen3-coder (rejected above).
+#   qwen/qwen3.8-max-0902     ~$2 / $6 per M tokens
+#   google/gemini-3.8-flash   ~$0.75 / $3.75 per M tokens
 MODELS=(
-  "openai/gpt-oss-120b"
-  "nvidia/nemotron-3-super-120b-a12b:free"
   "nvidia/nemotron-3-ultra-550b-a55b:free"
   "deepseek/deepseek-v4-pro-0813"
+  "qwen/qwen3.8-max-0902"
+  "google/gemini-3.8-flash"
 )
 
 # The Codex CLI runs as a FIFTH reviewer, and it is a different kind of reviewer:
