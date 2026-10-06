@@ -45,6 +45,27 @@
   (28 hours a day) are caught. It is a warning, not an error, because unequal
   shifts drawn unevenly can pass 24 by chance.
 
+* New `daylight_shifts()` gives each date's shifts when they are bounded by
+  sunrise and sunset (#368): AM from sunrise to a clock cutoff (default
+  13:30) and PM from the cutoff to sunset, or more shifts with more cutoffs,
+  in local clock time. Sunrise and sunset come from NOAA's solar equations
+  (about a minute from the US Naval Observatory at mid-latitudes), and need
+  latitude, longitude and the time zone, because where a clock cutoff falls
+  within the day depends on all three, including daylight saving time.
+  `hours` is the exact length of each rounded window. A cutoff outside
+  daylight on any date, or a date with no sunrise, is an error naming the
+  dates. `day_length()` is unchanged (a different model, for simulation).
+
+  `generate_schedule(periods = )` now accepts a table with a `date` column
+  -- such as `daylight_shifts()` output -- so each day's drawn shift carries
+  that day's window. `attach_count_times()` then draws count times inside it
+  -- a shift need not divide evenly by `n_windows`: instants are drawn
+  continuously over equal strata and rounded down to the minute, so every
+  minute has the same chance -- and `add_counts()` checks the period length
+  against it. A date-specific table must cover every worked date (unsampled
+  days of an `include_all` schedule need none). Zones across the date line
+  get their own local day; a sunset at or after midnight is refused (#407).
+
 * `attach_count_times()` draws new count windows for each sampled day (#385).
   Pass `n_windows`, `window_size` and `min_gap` (and optionally `strategy`
   and `seed`) instead of a template, and every day gets its own windows,

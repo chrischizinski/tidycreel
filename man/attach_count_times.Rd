@@ -27,8 +27,11 @@ this or the drawing arguments, not both.}
 
 \item{n_windows, window_size, min_gap}{Number of windows per day (or shift),
 window length and minimum gap between windows, in minutes. Required to
-draw windows. The span (shift or \code{start_time}--\code{end_time}) must divide
-evenly by \code{n_windows}, and each of the equal strata must hold
+draw windows. The span (shift or \code{start_time}--\code{end_time}) is split into
+\code{n_windows} strata of equal length, which need not be whole minutes (a
+sunrise-bounded shift from \code{\link[=daylight_shifts]{daylight_shifts()}} rarely divides evenly):
+count instants are drawn continuously and rounded down to the minute, so
+every minute has the same chance. Each stratum must hold
 \code{window_size + min_gap}. \code{min_gap} is guaranteed between windows only
 with \code{"systematic"} (see \code{strategy}).}
 
@@ -104,6 +107,7 @@ attach_count_times(sched2, ct)
 }
 \seealso{
 Other "Scheduling":
+\code{\link{daylight_shifts}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},
 \code{\link{generate_progressive_start}()},

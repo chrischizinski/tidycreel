@@ -72,6 +72,7 @@ generate_bus_schedule(sched, frame, site = site, p_site = p_site, crew = 2)
 \seealso{
 Other "Scheduling":
 \code{\link{attach_count_times}()},
+\code{\link{daylight_shifts}()},
 \code{\link{generate_count_times}()},
 \code{\link{generate_progressive_start}()},
 \code{\link{generate_schedule}()},
