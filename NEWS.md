@@ -173,12 +173,32 @@
   release totals built on that effort) no longer counts calendar *rows* as
   population days (#436). A calendar with
   several rows per date -- any `generate_schedule()` output with more than
-  one period, used as the design calendar, as the shift workflow does --
-  inflated the within-day SE by the square root of the rows per date (two
-  periods: 80.1 became 113 in a test design), with no message. The
-  between-day part already counted distinct dates; both now use one
-  definition. Estimates were not affected; `sampled_days` targets were not
-  affected.
+  one period, or a schedule with count windows from `attach_count_times()`,
+  used as the design calendar, as the shift workflow does -- inflated the
+  within-day SE by the square root of the rows per date (two periods: 80.1
+  became 113 in a test design; one shift with three count windows: 138.8),
+  with no message. The between-day part already counted distinct dates; both
+  now use one definition. Estimates were not affected; `sampled_days` targets
+  were not affected.
+
+* `audit_strata()` had its own copy of the same rule and counted calendar
+  rows as each stratum's population days N_h (#440). With two rows per date
+  N_h doubled, so the finite-population correction was wrong: a fully
+  sampled stratum reported a non-zero RSE, and DEFF moved. It also joined
+  multi-column strata with no separator, so two different strata (`"a"` +
+  `"bc"` and `"ab"` + `"c"`) were audited as one; they are now kept apart and
+  labelled `"a / bc"`, as `plot_design()` labels them; strata whose labels
+  would still coincide are refused (`creel_error_strata_label_collision`), as
+  is a calendar day with a missing stratum value (`creel_error_strata_missing`),
+  which the old key merged with a real `"NA"` value.
+  Its sample side counted unit rows too: with `unit_cols` (e.g. bank and boat
+  counts on one day) or a site-day `psu`, n_h counted units, not days, and
+  could report a census (RSE 0) for a half-sampled stratum. A day's distinct
+  units are now summed into its day total, and repeat looks at one unit
+  (e.g. aerial flights kept for the GLMM) are averaged first. `plot_design()`'s `n_days` bars for a
+  design without counts also counted rows, and now count days; their axis
+  reads "Calendar days", not "Sampled days". Estimates and
+  their SEs were not affected.
 
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` on a sectioned design with no `by` multiplied
