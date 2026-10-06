@@ -269,6 +269,27 @@
   count days; their axis reads “Calendar days”, not “Sampled days”.
   Estimates and their SEs were not affected.
 
+- A grouped (or `rowwise()`) tibble passed to
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+  [`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md),
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  or
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)
+  kept its grouping when stored, and every later dplyr step on that
+  table worked within groups
+  ([\#441](https://github.com/chrischizinski/tidycreel/issues/441)).
+  Counts grouped by a column that is not a stratum inflated stratum and
+  period effort totals 4.3-fold in a test design (358.6 became 1532.3),
+  a calendar grouped the same way reported a census (SE 0), and grouping
+  by date – what `group_by(date, ...) |> summarise()` leaves behind –
+  failed with `invalid type (closure) for variable 'date'`. None of it
+  warned. Every table is now ungrouped when it enters the design.
+  `sampled_days` effort and the rate-based totals were not affected; the
+  `prep_*()` helpers were checked and were not affected either.
+
 - [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
   [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
   and
