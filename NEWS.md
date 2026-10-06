@@ -71,11 +71,14 @@
   period). One crew cannot run two counts at once, so a random day whose
   slots would overlap -- including the last slot of one shift and the first
   count of the next shift that day -- is redrawn; instants just after a
-  stratum boundary are slightly less likely as a result. Systematic slots
-  never overlap. The last slot of a day can end after the span. A template
-  or fixed window must now start inside each day's shift rather than fit
-  inside it. A slot past midnight is refused (#407). Windows for a given
-  seed change.
+  stratum boundary are slightly less likely as a result. Dense days (slots
+  that nearly fill their strata, where a feasible draw is rare by chance)
+  are drawn from the same distribution with a Gibbs sampler instead of
+  being refused. Systematic slots never overlap. The last slot of a day can
+  end after the span. A template or fixed window must now start inside each
+  day's shift rather than fit inside it, and fixed windows that overlap
+  across a day's shifts are an error. A slot past midnight is refused
+  (#407). Windows for a given seed change.
 
 * `generate_count_times()` no longer stops with an internal error when a
   window exactly fills its stratum (`window_size` equal to the stratum

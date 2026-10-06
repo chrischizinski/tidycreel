@@ -313,3 +313,24 @@ test_that("#432: a slot that would cross midnight is refused", {
     "midnight"
   )
 })
+
+test_that("#432 review: dense random days are drawn, not refused", {
+  # Ten one-hour slots in ten hours: feasible, but independent draws are
+  # feasible about once in 2 million tries, so pure rejection refused it.
+  for (seed in 1:5) {
+    ct <- generate_count_times(start_time = "06:00", end_time = "16:00", strategy = "random",
+                               n_windows = 10, window_size = 60, min_gap = 0, seed = seed)
+    expect_true(all(diff(pdc_min(ct$start_time)) >= 60L), info = as.character(seed))
+  }
+})
+
+test_that("#432 review: fixed windows that overlap across adjacent shifts are refused", {
+  periods <- data.frame(period_id = 1:2, start_time = c("06:00", "08:00"), end_time = c("08:00", "10:00"))
+  sched <- generate_schedule(start_date = "2024-06-01", end_date = "2024-06-10", n_periods = 2,
+                             sampling_rate = 0.5, periods_per_day = 2, periods = periods, seed = 1)
+  fw <- data.frame(period_id = 1:2, start_time = c("07:50", "08:00"), end_time = c("08:20", "08:30"))
+  expect_error(attach_count_times(sched, strategy = "fixed", fixed_windows = fw), "overlap across shifts")
+  fw$start_time[2] <- "08:30"
+  fw$end_time[2] <- "09:00"
+  expect_no_error(attach_count_times(sched, strategy = "fixed", fixed_windows = fw))
+})
