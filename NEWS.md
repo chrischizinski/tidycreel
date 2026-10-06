@@ -200,6 +200,19 @@
   reads "Calendar days", not "Sampled days". Estimates and
   their SEs were not affected.
 
+* A grouped (or `rowwise()`) tibble passed to `creel_design()`,
+  `add_counts()`, `add_sections()`, `add_interviews()`, `add_catch()`,
+  `add_lengths()` or `add_ages()` kept its grouping when stored, and every
+  later dplyr step on that table worked within groups (#441). Counts grouped
+  by a column that is not a stratum inflated stratum and period effort
+  totals 4.3-fold in a test design (358.6 became 1532.3), a calendar grouped
+  the same way reported a census (SE 0), and grouping by date -- what
+  `group_by(date, ...) |> summarise()` leaves behind -- failed with
+  `invalid type (closure) for variable 'date'`. None of it warned. Every
+  table is now ungrouped when it enters the design. `sampled_days` effort
+  and the rate-based totals were not affected; the `prep_*()` helpers were
+  checked and were not affected either.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` on a sectioned design with no `by` multiplied
   each section's whole effort by **one rate pooled across its strata** (#409).
