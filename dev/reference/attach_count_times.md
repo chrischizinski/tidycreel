@@ -48,19 +48,20 @@ attach_count_times(
 
 - strategy:
 
-  `"random"` (default; one window placed uniformly where it fits in each
-  equal stratum – neighbouring windows can be closer than `min_gap`),
-  `"systematic"` (a random start in the first stratum, then every
-  stratum length, so gaps are at least `min_gap`; a fresh start each
-  day, as in Pollock et al. 1994), or `"fixed"` (the clock times in
-  `fixed_windows`).
+  `"random"` (default; one count start uniform over each equal stratum –
+  neighbouring counts can be closer than `min_gap`; a day whose slots
+  would overlap is redrawn, checked across all of that day's shifts
+  because one crew works the day), `"systematic"` (a random start in the
+  first stratum, then every stratum length, so gaps are at least
+  `min_gap`; a fresh start each day, as in Pollock et al. 1994), or
+  `"fixed"` (the clock times in `fixed_windows`).
 
 - fixed_windows:
 
   For `strategy = "fixed"`: a data frame of `start_time` and `end_time`
   (`"HH:MM"`). With shift times in the schedule it must also carry
   `period_id`, giving each shift its own windows, and every window must
-  fall inside its shift.
+  start inside its shift.
 
 - start_time, end_time:
 
@@ -94,7 +95,8 @@ with missing windows when windows are drawn.
 - **Copy one template to every day** (pass `count_times` from
   [`generate_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/generate_count_times.md)):
   the same windows on every day, for fixed-time protocols. With shift
-  times in the schedule, every window must fall inside each day's shift.
+  times in the schedule, every window must start inside each day's shift
+  (the start is the count instant; the slot may run past the shift end).
 
 ## See also
 

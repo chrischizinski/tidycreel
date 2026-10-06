@@ -131,11 +131,11 @@ minutes. Required for <code>strategy = "random"</code> and <code>"systematic"</c
 <code>strategy = "random"</code> and <code>"systematic"</code>. <code>window_size + min_gap</code> must
 not exceed the stratum width (<code>total_span / n_windows</code>). With
 <code>"systematic"</code> every gap is then at least <code>min_gap</code>. With <code>"random"</code> it is
-only this fit check: each window's start is drawn uniformly from every
-position where the window fits in its stratum, without holding back room
-for the gap (which would leave parts of the span no count could reach),
-so neighbouring windows can be closer than <code>min_gap</code>. Use <code>"systematic"</code>
-when spacing must be guaranteed.</p></dd>
+only this fit check: each count's start is drawn uniformly over its whole
+stratum, without holding back room for the gap (which would leave parts
+of the span no count could reach), so neighbouring counts can be closer
+than <code>min_gap</code> (but never so close that their slots overlap). Use
+<code>"systematic"</code> when spacing must be guaranteed.</p></dd>
 
 
 <dt id="arg-fixed-windows">fixed_windows<a class="anchor" aria-label="anchor" href="#arg-fixed-windows"></a></dt>
@@ -159,14 +159,24 @@ Has no effect for <code>"fixed"</code> strategy.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Output is a <code>creel_schedule</code> data frame compatible with <code><a href="write_schedule.html">write_schedule()</a></code>.</p>
+<p>The start of each window is the count instant: crews count at the start of
+the slot, and <code>window_size</code> is how long the count keeps them busy. Starts are
+drawn over the whole of each stratum, so every minute of the span is
+close to equally likely to be counted. One crew cannot run two counts at
+once, so a random draw whose slots overlap is redrawn (delaying the second
+count instead would move its instant and bias effort); this makes instants
+just after a stratum boundary slightly less likely than elsewhere.
+Systematic starts never overlap. A start late in the last stratum makes the
+last slot end after the span, which is fine: the count instant is inside
+it. Before #432 starts were drawn only where the whole slot fitted, so the
+last <code>window_size</code> minutes of each stratum were never counted.</p>
 <p><strong>Random strategy:</strong> Each of the <code>n_windows</code> strata of equal length
 <code>k = total_span / n_windows</code> receives one window with a uniformly random
-start within <code>[stratum_start, stratum_start + k - window_size]</code>.</p>
+start within <code>[stratum_start, stratum_start + k)</code>.</p>
 <p><strong>Systematic strategy (recommended):</strong> A single random start <code>t1</code> is drawn
-from <code>[start_min, start_min + k - window_size]</code>; all subsequent windows
-begin at <code>t1 + (i-1) * k</code> for <code>i = 1, ..., n_windows</code>. This is the
-design described in Pollock et al. (1994) and recommended by Colorado CPW
-(2012).</p>
+from <code>[start_min, start_min + k)</code>; all subsequent windows begin at
+<code>t1 + (i-1) * k</code> for <code>i = 1, ..., n_windows</code>. This is the design described
+in Pollock et al. (1994) and recommended by Colorado CPW (2012).</p>
 <p><strong>Fixed strategy:</strong> Windows are taken exactly as supplied after sorting by
 start time. Overlapping windows trigger an error.</p>
     </div>

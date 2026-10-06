@@ -85,6 +85,31 @@
   outside a day’s shift is now an error. A schedule that draws shifts
   but has no shift times is an error at attach time.
 
+- Count windows from
+  [`generate_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/generate_count_times.md)
+  and
+  [`attach_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/attach_count_times.md)
+  are now started anywhere in their stratum, not only where the whole
+  window fits
+  ([\#432](https://github.com/chrischizinski/tidycreel/issues/432)).
+  Crews count at the start of the slot, so the start is the count
+  instant, and it was never drawn in the last `window_size` minutes of
+  any stratum: with four 30-minute windows in an 8-hour day, two hours
+  could never be counted (Pollock et al. 1994, ch. 11, draw over the
+  whole period). One crew cannot run two counts at once, so a random day
+  whose slots would overlap – including the last slot of one shift and
+  the first count of the next shift that day – is redrawn; instants just
+  after a stratum boundary are slightly less likely as a result. Dense
+  days (slots that nearly fill their strata, where a feasible draw is
+  rare by chance) are drawn from the same distribution with a Gibbs
+  sampler instead of being refused. Systematic slots never overlap. The
+  last slot of a day can end after the span. A template or fixed window
+  must now start inside each day’s shift rather than fit inside it, and
+  fixed windows that overlap across a day’s shifts are an error. A slot
+  past midnight is refused
+  ([\#407](https://github.com/chrischizinski/tidycreel/issues/407)).
+  Windows for a given seed change.
+
 - [`generate_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/generate_count_times.md)
   no longer stops with an internal error when a window exactly fills its
   stratum (`window_size` equal to the stratum length, `min_gap = 0`),
@@ -94,9 +119,10 @@
   ([\#385](https://github.com/chrischizinski/tidycreel/issues/385)). Its
   documentation now says what `min_gap` guarantees: a minimum gap with
   `"systematic"`; with `"random"`, only that window and gap fit the
-  stratum. Each random window is placed uniformly where it fits in its
-  stratum, so neighbours can be closer than `min_gap`; holding back room
-  for the gap instead would leave parts of the day no count could reach.
+  stratum. Each random count is started uniformly over its stratum
+  ([\#432](https://github.com/chrischizinski/tidycreel/issues/432)), so
+  neighbours can be closer than `min_gap`; holding back room for the gap
+  instead would leave parts of the day no count could reach.
 
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   reads `p_period` from a shift schedule
