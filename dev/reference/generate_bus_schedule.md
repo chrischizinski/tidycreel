@@ -72,6 +72,7 @@ A tibble: `sampling_frame` columns plus `p_period` and `inclusion_prob`.
 
 Other "Scheduling":
 [`attach_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/attach_count_times.md),
+[`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md),
 [`generate_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/generate_count_times.md),
 [`generate_progressive_start()`](https://chrischizinski.com/tidycreel/dev/reference/generate_progressive_start.md),
 [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md),

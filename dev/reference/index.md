@@ -236,6 +236,8 @@ Generate, validate, read, and write creel survey schedules.
 
 - [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
   : Generate a creel survey sampling schedule
+- [`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md)
+  : Shift times bounded by sunrise and sunset
 - [`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_bus_schedule.md)
   : Generate a bus-route sampling frame
 - [`generate_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/generate_count_times.md)

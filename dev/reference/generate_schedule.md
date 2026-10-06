@@ -121,8 +121,11 @@ generate_schedule(
   Optional data frame of shift times: `period_id` (one row per period,
   matching `period_labels`, or 1 to `n_periods`), `start_time` and
   `end_time` as `"HH:MM"`. Adds `shift_start` and `shift_end` to every
-  row. A shift that ends at or before it starts (crossing midnight) is
-  not yet supported.
+  row. With a `date` column the times vary by day – one row per date and
+  period, covering every worked date – as returned by
+  [`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md)
+  for shifts bounded by sunrise and sunset. A shift that ends at or
+  before it starts (crossing midnight) is not yet supported.
 
 ## Value
 
@@ -156,6 +159,7 @@ A `creel_schedule` data frame with columns:
 
 Other "Scheduling":
 [`attach_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/attach_count_times.md),
+[`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md),
 [`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_bus_schedule.md),
 [`generate_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/generate_count_times.md),
 [`generate_progressive_start()`](https://chrischizinski.com/tidycreel/dev/reference/generate_progressive_start.md),

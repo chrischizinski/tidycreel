@@ -41,10 +41,13 @@ attach_count_times(
 
   Number of windows per day (or shift), window length and minimum gap
   between windows, in minutes. Required to draw windows. The span (shift
-  or `start_time`–`end_time`) must divide evenly by `n_windows`, and
-  each of the equal strata must hold `window_size + min_gap`. `min_gap`
-  is guaranteed between windows only with `"systematic"` (see
-  `strategy`).
+  or `start_time`–`end_time`) is split into `n_windows` strata of equal
+  length, which need not be whole minutes (a sunrise-bounded shift from
+  [`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md)
+  rarely divides evenly): count instants are drawn continuously and
+  rounded down to the minute, so every minute has the same chance. Each
+  stratum must hold `window_size + min_gap`. `min_gap` is guaranteed
+  between windows only with `"systematic"` (see `strategy`).
 
 - strategy:
 
@@ -101,6 +104,7 @@ with missing windows when windows are drawn.
 ## See also
 
 Other "Scheduling":
+[`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md),
 [`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_bus_schedule.md),
 [`generate_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/generate_count_times.md),
 [`generate_progressive_start()`](https://chrischizinski.com/tidycreel/dev/reference/generate_progressive_start.md),
