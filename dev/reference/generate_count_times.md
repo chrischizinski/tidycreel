@@ -31,7 +31,10 @@ generate_count_times(
 - end_time:
 
   Character. Survey-day end time in `"HH:MM"` format. Required for
-  `strategy = "random"` and `"systematic"`.
+  `strategy = "random"` and `"systematic"`. Must be after `start_time`;
+  for a night that crosses midnight, use
+  [`attach_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/attach_count_times.md)
+  on a schedule built with `generate_schedule(day_start = )`.
 
 - strategy:
 

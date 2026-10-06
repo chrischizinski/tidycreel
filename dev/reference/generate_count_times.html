@@ -106,7 +106,10 @@ Required for <code>strategy = "random"</code> and <code>"systematic"</code>.</p>
 
 <dt id="arg-end-time">end_time<a class="anchor" aria-label="anchor" href="#arg-end-time"></a></dt>
 <dd><p>Character. Survey-day end time in <code>"HH:MM"</code> format.
-Required for <code>strategy = "random"</code> and <code>"systematic"</code>.</p></dd>
+Required for <code>strategy = "random"</code> and <code>"systematic"</code>. Must be after
+<code>start_time</code>; for a night that crosses midnight, use
+<code><a href="attach_count_times.html">attach_count_times()</a></code> on a schedule built with
+<code>generate_schedule(day_start = )</code>.</p></dd>
 
 
 <dt id="arg-strategy">strategy<a class="anchor" aria-label="anchor" href="#arg-strategy"></a></dt>

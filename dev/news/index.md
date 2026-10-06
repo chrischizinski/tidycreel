@@ -4,6 +4,36 @@
 
 ### New features
 
+- Night creels, schedule side
+  ([\#407](https://github.com/chrischizinski/tidycreel/issues/407), part
+  1 of 2).
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  gains `day_start`, the clock time a survey day begins. With
+  `day_start = "12:00"`, shifts that cross midnight are one survey day
+  dated by the evening they start: a single 19:30-06:00 shift, or a
+  split night of 19:30-00:30 and 00:30-06:00. Before this, any shift
+  crossing midnight was refused. The default `"00:00"` leaves day
+  schedules unchanged (no new column). A night schedule must also name
+  its `weekend_days`, because a Friday night is dated Friday and
+  agencies differ on which nights are the weekend.
+  [`attach_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/attach_count_times.md)
+  draws count instants across midnight inside each night shift, and
+  never into the next survey day. `daylight_shifts(night = TRUE)` gives
+  sunset-to-sunrise shifts split at `cutoffs` such as `"00:30"`. Their
+  `hours` are real elapsed time, so a night spanning a daylight-saving
+  change is an hour longer or shorter than its clock length.
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  keeps them as `shift_hours`, and
+  [`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
+  /
+  [`read_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/read_schedule.md)
+  keep `day_start` and `shift_hours`. Matching counts and interviews to
+  night survey days is part 2, so until then
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+  refuses a night schedule as its calendar
+  (`creel_error_night_design_pending`) rather than matching a 02:00
+  count to the wrong day.
+
 - [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
   can draw which shift is worked on each sampled day
   ([\#385](https://github.com/chrischizinski/tidycreel/issues/385)).

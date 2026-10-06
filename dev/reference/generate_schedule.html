@@ -95,7 +95,9 @@ ready to pass to <code><a href="creel_design.html">creel_design()</a></code>.</p
 <span>  special_periods <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  periods_per_day <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  period_allocation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"balanced"</span>, <span class="st">"random"</span><span class="op">)</span>,</span>
-<span>  periods <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  periods <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  day_start <span class="op">=</span> <span class="st">"00:00"</span>,</span>
+<span>  weekend_days <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -195,8 +197,32 @@ period, matching <code>period_labels</code>, or 1 to <code>n_periods</code>), <c
 <code>end_time</code> as <code>"HH:MM"</code>. Adds <code>shift_start</code> and <code>shift_end</code> to every row.
 With a <code>date</code> column the times vary by day – one row per date and period,
 covering every worked date – as returned by <code><a href="daylight_shifts.html">daylight_shifts()</a></code> for
-shifts bounded by sunrise and sunset. A shift that ends at or before it
-starts (crossing midnight) is not yet supported.</p></dd>
+shifts bounded by sunrise and sunset. Times are read on the survey-day
+clock that starts at <code>day_start</code>, and each shift must fall inside one
+survey day. An optional <code>hours</code> column (as <code><a href="daylight_shifts.html">daylight_shifts()</a></code> returns)
+gives each shift's real elapsed length and is kept as <code>shift_hours</code>; it
+differs from the clock length only across a daylight-saving change.</p></dd>
+
+
+<dt id="arg-day-start">day_start<a class="anchor" aria-label="anchor" href="#arg-day-start"></a></dt>
+<dd><p>Clock time (<code>"HH:MM"</code>) at which a survey day begins.
+The default <code>"00:00"</code> is the calendar day, as before. For night creels
+whose shifts cross midnight, choose a time no shift spans, e.g. <code>"12:00"</code>:
+then 19:30-00:30 and 00:30-06:00 are the two halves of one night, dated
+by the date the night starts. A shift time earlier than <code>day_start</code> is on
+the next calendar day. The schedule records it in a <code>day_start</code> column.
+Mapping counts and interviews to night survey days is not available yet
+(#407), so <code><a href="creel_design.html">creel_design()</a></code> refuses such a schedule as its calendar for
+now.</p></dd>
+
+
+<dt id="arg-weekend-days">weekend_days<a class="anchor" aria-label="anchor" href="#arg-weekend-days"></a></dt>
+<dd><p>Day names (full or three-letter English, any case) whose
+survey days form the <code>weekend</code> stratum. <code>NULL</code> (default) means Saturday
+and Sunday, and is only allowed when <code>day_start = "00:00"</code>: a night is
+dated by the day it starts, so with that default a Friday night would be
+a weekday, and agencies differ on which nights are the weekend (e.g.
+<code>c("Friday", "Saturday")</code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -214,6 +240,9 @@ that day: <code>1</code> when every period is worked, <code>periods_per_day / n_
 <code>expand_periods = FALSE</code>.</p></li>
 <li><p><code>shift_start</code>, <code>shift_end</code> (character, "HH:MM"): Present when <code>periods</code>
 is supplied.</p></li>
+<li><p><code>shift_hours</code> (numeric): Present when <code>periods</code> has an <code>hours</code> column.</p></li>
+<li><p><code>day_start</code> (character, "HH:MM"): Present when <code>day_start</code> is not
+<code>"00:00"</code>.</p></li>
 <li><p><code>sampled</code> (logical): Present only when <code>include_all = TRUE</code>.</p></li>
 </ul></div>
     <div class="section level2">

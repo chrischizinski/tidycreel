@@ -29,7 +29,15 @@ simulation; the two can differ by a minute or two.
 ## Usage
 
 ``` r
-daylight_shifts(date, lat, lon, tz, cutoffs = "13:30", horizon = "sunset")
+daylight_shifts(
+  date,
+  lat,
+  lon,
+  tz,
+  cutoffs = if (night) character(0) else "13:30",
+  horizon = "sunset",
+  night = FALSE
+)
 ```
 
 ## Arguments
@@ -57,7 +65,10 @@ daylight_shifts(date, lat, lon, tz, cutoffs = "13:30", horizon = "sunset")
 
   Clock times (`"HH:MM"`, local) that divide the day into shifts. One
   cutoff gives two shifts (AM: sunrise to cutoff; PM: cutoff to sunset);
-  `k` cutoffs give `k + 1`.
+  `k` cutoffs give `k + 1`. With `night = TRUE` they divide the night
+  instead, listed from evening to morning (e.g. `"00:30"`, or
+  `c("22:00", "01:00")`); the default there is none, one shift from
+  sunset to sunrise.
 
 - horizon:
 
@@ -67,11 +78,24 @@ daylight_shifts(date, lat, lon, tz, cutoffs = "13:30", horizon = "sunset")
   number of degrees. `"civil"` adds roughly half an hour at each end,
   for anglers who fish into twilight.
 
+- night:
+
+  `FALSE` (default) for shifts from sunrise to sunset. `TRUE` for night
+  shifts from sunset to the next morning's sunrise, each night dated by
+  the date it starts (#407). Such shifts cross midnight, so pass them to
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  with a `day_start` no shift spans (e.g. `"12:00"`) and with
+  `weekend_days`.
+
 ## Value
 
 A data frame with one row per date and shift: `date`, `period_id` (1 =
 first shift of the day), `start_time` and `end_time` (`"HH:MM"`, local),
-and `hours` (decimal hours).
+and `hours` (decimal hours). For night shifts, `hours` is real elapsed
+time in `tz`, so a night that spans a daylight-saving change is an hour
+longer or shorter than its clock length;
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+keeps it as `shift_hours`.
 
 ## Details
 
@@ -126,7 +150,7 @@ sched <- generate_schedule(
   sampling_rate = 0.3, periods_per_day = 1, periods = shifts, seed = 1
 )
 head(sched)
-#> # A creel_schedule: 6 rows x 6 cols (6 days, 2 periods)
+#> # A creel_schedule: 6 rows x 7 cols (6 days, 2 periods)
 #> June 2024
 #> | Sun      | Mon      | Tue      | Wed      | Thu      | Fri      | Sat      |
 #> |----------|----------|----------|----------|----------|----------|----------|
@@ -136,4 +160,14 @@ head(sched)
 #> | 16       | WEEKD    | 18       | 19       | WEEKD    | 21       | WEEKE    |
 #> | 23       | 24       | 25       | 26       | 27       | 28       | 29       |
 #> | 30       |          |          |          |          |          |          |
+
+# Night shifts, sunset to 00:30 and 00:30 to sunrise, dated by the evening
+nights <- daylight_shifts(as.Date(c("2024-11-01", "2024-11-02")), 40.699, -99.083,
+                          "America/Chicago", cutoffs = "00:30", night = TRUE)
+nights # the second night gains an hour when daylight saving ends
+#>         date period_id start_time end_time    hours
+#> 1 2024-11-01         1      18:33    00:30 5.950000
+#> 2 2024-11-01         2      00:30    08:08 7.633333
+#> 3 2024-11-02         1      18:31    00:30 5.983333
+#> 4 2024-11-02         2      00:30    07:09 7.650000
 ```

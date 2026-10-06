@@ -24,7 +24,9 @@ generate_schedule(
   special_periods = NULL,
   periods_per_day = NULL,
   period_allocation = c("balanced", "random"),
-  periods = NULL
+  periods = NULL,
+  day_start = "00:00",
+  weekend_days = NULL
 )
 ```
 
@@ -124,8 +126,35 @@ generate_schedule(
   row. With a `date` column the times vary by day – one row per date and
   period, covering every worked date – as returned by
   [`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md)
-  for shifts bounded by sunrise and sunset. A shift that ends at or
-  before it starts (crossing midnight) is not yet supported.
+  for shifts bounded by sunrise and sunset. Times are read on the
+  survey-day clock that starts at `day_start`, and each shift must fall
+  inside one survey day. An optional `hours` column (as
+  [`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md)
+  returns) gives each shift's real elapsed length and is kept as
+  `shift_hours`; it differs from the clock length only across a
+  daylight-saving change.
+
+- day_start:
+
+  Clock time (`"HH:MM"`) at which a survey day begins. The default
+  `"00:00"` is the calendar day, as before. For night creels whose
+  shifts cross midnight, choose a time no shift spans, e.g. `"12:00"`:
+  then 19:30-00:30 and 00:30-06:00 are the two halves of one night,
+  dated by the date the night starts. A shift time earlier than
+  `day_start` is on the next calendar day. The schedule records it in a
+  `day_start` column. Mapping counts and interviews to night survey days
+  is not available yet (#407), so
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+  refuses such a schedule as its calendar for now.
+
+- weekend_days:
+
+  Day names (full or three-letter English, any case) whose survey days
+  form the `weekend` stratum. `NULL` (default) means Saturday and
+  Sunday, and is only allowed when `day_start = "00:00"`: a night is
+  dated by the day it starts, so with that default a Friday night would
+  be a weekday, and agencies differ on which nights are the weekend
+  (e.g. `c("Friday", "Saturday")`).
 
 ## Value
 
@@ -152,6 +181,11 @@ A `creel_schedule` data frame with columns:
 
 - `shift_start`, `shift_end` (character, "HH:MM"): Present when
   `periods` is supplied.
+
+- `shift_hours` (numeric): Present when `periods` has an `hours` column.
+
+- `day_start` (character, "HH:MM"): Present when `day_start` is not
+  `"00:00"`.
 
 - `sampled` (logical): Present only when `include_all = TRUE`.
 

@@ -40,6 +40,11 @@ A `creel_schedule` object with columns:
 
 - `shift_start`, `shift_end` (character "HH:MM", if present)
 
+- `shift_hours` (numeric, if present)
+
+- `day_start` (character "HH:MM", if present): when each survey day
+  begins; shift times are read on that clock
+
 - `sampled` (logical, if present)
 
 ## Details
