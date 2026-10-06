@@ -63,6 +63,18 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     count_col = design$count_col
   )
 
+  # n_h, ybar_h and s2_h are per DAY, as N_h is: a day carrying several unit
+  # rows (`unit_cols`, e.g. bank and boat) contributes its total, the PSU total
+  # the estimators use. Counting unit rows made n_h exceed the days sampled
+  # and could report a false census (GH #440). An NA unit keeps its day NA.
+  psu_col <- design$psu_col %||% design$date_col
+  counts_data <- counts_data |>
+    dplyr::ungroup() |>
+    dplyr::summarise(
+      !!count_var := sum(.data[[count_var]]),
+      .by = dplyr::all_of(unique(c(strata_cols, psu_col)))
+    )
+
   counts_data$.strata_key <- strata_key(counts_data)
 
   strata_keys <- unique(counts_data$.strata_key)
@@ -83,6 +95,19 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
   }
 
   strata_labels <- gsub("\u001f", " / ", strata_keys, fixed = TRUE)
+  # Labels name strata downstream (simulate_strata_collapse()), so two strata
+  # must never share one, as ("a / b", "c") and ("a", "b / c") would.
+  if (anyDuplicated(strata_labels)) {
+    dup <- unique(strata_labels[duplicated(strata_labels)]) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "Two different strata would share the label {.val {dup}}.",
+        "x" = "Their values contain {.val  / }, the separator used to label multi-column strata.",
+        "i" = "Rename the strata values so no value contains {.val  / }."
+      ),
+      class = "creel_error_strata_label_collision"
+    )
+  }
   names(n_h_vals) <- strata_labels # nolint: object_name_linter
   names(N_h_vals) <- strata_labels # nolint: object_name_linter
   names(ybar_h_vals) <- strata_labels # nolint: object_name_linter

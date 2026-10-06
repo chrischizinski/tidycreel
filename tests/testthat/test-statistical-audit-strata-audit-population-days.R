@@ -92,3 +92,39 @@ test_that("#440: plot_design()'s n_days counts days, not calendar rows", {
   expect_equal(p$data$n_days[p$data$stratum == "weekday"], 10L)
   expect_equal(p$data$n_days[p$data$stratum == "weekend"], 4L)
 })
+
+test_that("#440: unit rows within a day (bank and boat) are one sampled day, not two", {
+  # 4 of 8 days sampled. Counting unit rows made n_h = 8 = N_h and reported a
+  # census (RSE 0) for a stratum half unsampled.
+  cal <- data.frame(date = as.Date("2024-06-03") + c(0:3, 7:10), day_type = "weekday")
+  cn <- data.frame(date = cal$date[c(1, 2, 5, 6)], count_time = "08:00",
+                   anglers = c(10, 14, 9, 20), hours = 10, day_type = "weekday")
+  cn2 <- rbind(transform(cn, effort_type = "bank"),
+               transform(cn, effort_type = "boat", anglers = anglers + 3))
+  d <- suppressMessages(creel_design(cal, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts( # nolint: object_usage_linter
+    d, cn2, count_col = anglers, count_time_col = count_time, period_length_col = hours,
+    unit_cols = c("date", "effort_type")
+  )))
+  expect_equal(nrow(d$counts), 8L) # two unit rows per sampled day
+  res <- suppressWarnings(audit_strata(d)) # nolint: object_usage_linter
+  expect_equal(res$strata$N_h, 8L)
+  expect_equal(res$strata$n_h, 4L)
+  # the day's effort is its units' total, as the estimator's PSU total is
+  day_tot <- tapply(d$counts[[d$count_col %||% "anglers"]], d$counts$date, sum)
+  expect_equal(unname(res$strata$ybar_h), mean(day_tot))
+  expect_gt(unname(res$strata$RSE), 0)
+})
+
+test_that("#440: strata whose labels would coincide are refused, not merged", {
+  cal <- sapd_cal()
+  cal$g1 <- ifelse(cal$day_type == "weekday", "a / b", "a")
+  cal$g2 <- ifelse(cal$day_type == "weekday", "c", "b / c")
+  cn <- sapd_counts(cal)
+  cn$g1 <- cal$g1[match(cn$date, cal$date)]
+  cn$g2 <- cal$g2[match(cn$date, cal$date)]
+  expect_error(
+    audit_strata(sapd_design(cal, cn, strata = c("g1", "g2"))), # nolint: object_usage_linter
+    class = "creel_error_strata_label_collision"
+  )
+})
