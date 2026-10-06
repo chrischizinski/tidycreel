@@ -40,7 +40,7 @@ not exceed the stratum width (\code{total_span / n_windows}). With
 only this fit check: each count's start is drawn uniformly over its whole
 stratum, without holding back room for the gap (which would leave parts
 of the span no count could reach), so neighbouring counts can be closer
-than \code{min_gap}, and a slot can overlap the next count. Use
+than \code{min_gap} (but never so close that their slots overlap). Use
 \code{"systematic"} when spacing must be guaranteed.}
 
 \item{fixed_windows}{A data frame with \code{start_time} and \code{end_time} columns
@@ -72,13 +72,14 @@ Output is a \code{creel_schedule} data frame compatible with \code{\link[=write_
 The start of each window is the count instant: crews count at the start of
 the slot, and \code{window_size} is how long the count keeps them busy. Starts are
 drawn over the whole of each stratum, so every minute of the span is
-equally likely to be counted. A start late in a stratum makes its slot run
-into the next stratum, which is reported with a warning
-(\code{creel_warning_count_window_overlap}): the crew starts the next count as
-soon as the previous one ends. A start late in the last stratum makes the
-last slot end after the span; that is expected and not warned. Before #432 starts were drawn only
-where the whole slot fitted, so the last \code{window_size} minutes of each
-stratum were never counted.
+close to equally likely to be counted. One crew cannot run two counts at
+once, so a random draw whose slots overlap is redrawn (delaying the second
+count instead would move its instant and bias effort); this makes instants
+just after a stratum boundary slightly less likely than elsewhere.
+Systematic starts never overlap. A start late in the last stratum makes the
+last slot end after the span, which is fine: the count instant is inside
+it. Before #432 starts were drawn only where the whole slot fitted, so the
+last \code{window_size} minutes of each stratum were never counted.
 
 \strong{Random strategy:} Each of the \code{n_windows} strata of equal length
 \code{k = total_span / n_windows} receives one window with a uniformly random

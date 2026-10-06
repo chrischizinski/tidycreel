@@ -67,13 +67,15 @@
   fits (#432). Crews count at the start of the slot, so the start is the
   count instant, and it was never drawn in the last `window_size` minutes of
   any stratum: with four 30-minute windows in an 8-hour day, two hours could
-  never be counted. Every minute of the span is now equally likely to be
-  counted (Pollock et al. 1994, ch. 11). A late start makes its slot run into
-  the next stratum; that is allowed and reported with a warning
-  (`creel_warning_count_window_overlap`) giving the number of days, and the
-  crew starts the next count when the previous one ends. The last slot of a
-  day can end after the span, which is expected and not warned. A slot past
-  midnight is refused (#407). Windows for a given seed change.
+  never be counted (Pollock et al. 1994, ch. 11, draw over the whole
+  period). One crew cannot run two counts at once, so a random day whose
+  slots would overlap -- including the last slot of one shift and the first
+  count of the next shift that day -- is redrawn; instants just after a
+  stratum boundary are slightly less likely as a result. Systematic slots
+  never overlap. The last slot of a day can end after the span. A template
+  or fixed window must now start inside each day's shift rather than fit
+  inside it. A slot past midnight is refused (#407). Windows for a given
+  seed change.
 
 * `generate_count_times()` no longer stops with an internal error when a
   window exactly fills its stratum (`window_size` equal to the stratum

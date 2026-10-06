@@ -33,7 +33,9 @@ evenly by \code{n_windows}, and each of the equal strata must hold
 with \code{"systematic"} (see \code{strategy}).}
 
 \item{strategy}{\code{"random"} (default; one count start uniform over each
-equal stratum -- neighbouring counts can be closer than \code{min_gap}),
+equal stratum -- neighbouring counts can be closer than \code{min_gap}; a day
+whose slots would overlap is redrawn, checked across all of that day's
+shifts because one crew works the day),
 \code{"systematic"} (a random start in the first stratum, then every stratum
 length, so gaps are at least \code{min_gap}; a fresh start each day, as in
 Pollock et al. 1994), or \code{"fixed"} (the clock times in \code{fixed_windows}).}
@@ -41,7 +43,7 @@ Pollock et al. 1994), or \code{"fixed"} (the clock times in \code{fixed_windows}
 \item{fixed_windows}{For \code{strategy = "fixed"}: a data frame of \code{start_time}
 and \code{end_time} (\code{"HH:MM"}). With shift times in the schedule it must also
 carry \code{period_id}, giving each shift its own windows, and every window
-must fall inside its shift.}
+must start inside its shift.}
 
 \item{start_time, end_time}{The day's counting span (\code{"HH:MM"}), used to
 draw windows when the schedule has no shift times. Not allowed when it
@@ -70,8 +72,9 @@ time-of-day pattern in pressure the same way, which never averages out
 and understates the within-day variance (#385).
 \item \strong{Copy one template to every day} (pass \code{count_times} from
 \code{\link[=generate_count_times]{generate_count_times()}}): the same windows on every day, for fixed-time
-protocols. With shift times in the schedule, every window must fall inside
-each day's shift.
+protocols. With shift times in the schedule, every window must start
+inside each day's shift (the start is the count instant; the slot may run
+past the shift end).
 }
 }
 \examples{
