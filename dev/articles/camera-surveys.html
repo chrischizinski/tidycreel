@@ -188,7 +188,10 @@ interviews targeting walleye and bass across eight sampling days.</p>
 </h3>
 <p>Counter-mode surveys require a calendar that covers the sampling
 frame. Here we build one from the unique dates in the counts and
-interview data.</p>
+interview data. The example data treat Friday as part of the weekend, as
+some agencies do, so the calendar does too: <code><a href="../reference/add_counts.html">add_counts()</a></code>
+and <code><a href="../reference/add_interviews.html">add_interviews()</a></code> refuse a record whose stratum
+disagrees with the calendar for its date.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Collect all unique sampling dates across datasets</span></span>
 <span><span class="va">all_dates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
@@ -196,11 +199,12 @@ interview data.</p>
 <span>  <span class="va">example_camera_interviews</span><span class="op">$</span><span class="va">date</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Assign day type for each date (weekday = Mon-Fri, weekend = Sat-Sun)</span></span>
+<span><span class="co"># Assign day type for each date (weekday = Mon-Thu, weekend = Fri-Sun).</span></span>
+<span><span class="co"># format(, "%u") is the ISO day number (Monday = 1), the same in every locale.</span></span>
 <span><span class="va">cam_calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="va">all_dates</span>,</span>
 <span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/weekday.POSIXt.html" class="external-link">weekdays</a></span><span class="op">(</span><span class="va">all_dates</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Saturday"</span>, <span class="st">"Sunday"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="va">all_dates</span>, <span class="st">"%u"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"5"</span>, <span class="st">"6"</span>, <span class="st">"7"</span><span class="op">)</span>,</span>
 <span>    <span class="st">"weekend"</span>, <span class="st">"weekday"</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -211,7 +215,7 @@ interview data.</p>
 <span><span class="co">#&gt; 1 2024-06-03  weekday</span></span>
 <span><span class="co">#&gt; 2 2024-06-04  weekday</span></span>
 <span><span class="co">#&gt; 3 2024-06-05  weekday</span></span>
-<span><span class="co">#&gt; 4 2024-06-07  weekday</span></span>
+<span><span class="co">#&gt; 4 2024-06-07  weekend</span></span>
 <span><span class="co">#&gt; 5 2024-06-08  weekend</span></span>
 <span><span class="co">#&gt; 6 2024-06-10  weekday</span></span></code></pre></div>
 </div>

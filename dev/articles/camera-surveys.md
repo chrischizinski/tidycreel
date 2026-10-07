@@ -81,7 +81,12 @@ interviews targeting walleye and bass across eight sampling days.
 
 Counter-mode surveys require a calendar that covers the sampling frame.
 Here we build one from the unique dates in the counts and interview
-data.
+data. The example data treat Friday as part of the weekend, as some
+agencies do, so the calendar does too:
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+and
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+refuse a record whose stratum disagrees with the calendar for its date.
 
 ``` r
 
@@ -91,11 +96,12 @@ all_dates <- sort(unique(c(
   example_camera_interviews$date
 )))
 
-# Assign day type for each date (weekday = Mon-Fri, weekend = Sat-Sun)
+# Assign day type for each date (weekday = Mon-Thu, weekend = Fri-Sun).
+# format(, "%u") is the ISO day number (Monday = 1), the same in every locale.
 cam_calendar <- data.frame(
   date = all_dates,
   day_type = ifelse(
-    weekdays(all_dates) %in% c("Saturday", "Sunday"),
+    format(all_dates, "%u") %in% c("5", "6", "7"),
     "weekend", "weekday"
   ),
   stringsAsFactors = FALSE
@@ -106,7 +112,7 @@ head(cam_calendar)
 #> 1 2024-06-03  weekday
 #> 2 2024-06-04  weekday
 #> 3 2024-06-05  weekday
-#> 4 2024-06-07  weekday
+#> 4 2024-06-07  weekend
 #> 5 2024-06-08  weekend
 #> 6 2024-06-10  weekday
 ```

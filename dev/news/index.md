@@ -258,6 +258,25 @@
 
 ### Bug fixes
 
+- [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  and
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  check each record against the calendar
+  ([\#449](https://github.com/chrischizinski/tidycreel/issues/449)).
+  They used the date and strata on each row as given, never looking them
+  up, and the calendar is the population of days the estimate is
+  weighted to. A count dated outside the calendar became a sampled day
+  the population does not contain: 4 such weekday counts moved a test
+  effort estimate from 151 to 277, and 12 gave 511 with 20 sampled days
+  in a stratum of 10. A count or interview whose stratum disagreed with
+  the calendar for its date was estimated in the stratum it named (a
+  Monday count labelled “weekend”: SE 6.30 to 13.53). Neither warned.
+  Both are now refused (`creel_error_record_outside_calendar`,
+  `creel_error_record_strata_mismatch`), naming the dates. Only the
+  strata a table carries are compared; missing dates and strata are
+  still reported by the existing checks. Interviews dated outside the
+  calendar were already refused.
+
 - [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
   stores each interview once when the calendar holds more than one row
   per date

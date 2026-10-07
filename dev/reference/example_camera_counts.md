@@ -77,10 +77,11 @@ head(example_camera_counts)
 #> 5 2024-06-08  weekend            85   operational
 #> 6 2024-06-10  weekday            50   operational
 
-# Filter to operational rows before adding to a camera design
-data(example_calendar)
+# Filter to operational rows before adding to a camera design. The
+# calendar takes the data's day types (Friday counts as weekend here).
+cam_cal <- unique(example_camera_counts[, c("date", "day_type")])
 design <- creel_design(
-  example_calendar,
+  cam_cal,
   date = date, strata = day_type,
   survey_type = "camera",
   camera_mode = "counter"
