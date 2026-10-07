@@ -2006,6 +2006,9 @@ validate_interviews_tier1 <- function(
 #' @param trip_duration_col Character name of trip duration column (hours), or NULL
 #' @param trip_start_col Character name of trip start time column (POSIXct), or NULL
 #' @param interview_time_col Character name of interview time column (POSIXct), or NULL
+#' @param night Whether the design is a night design (GH #407). There the
+#'   interview time places the interview on its night and is required, so it
+#'   may come without `trip_start` and alongside `trip_duration`.
 #'
 #' @return invisible(NULL) on success; aborts on validation failure
 #'
@@ -2016,7 +2019,8 @@ validate_trip_metadata <- function(
   trip_status_col,
   trip_duration_col,
   trip_start_col,
-  interview_time_col
+  interview_time_col,
+  night = FALSE
 ) {
   collection <- checkmate::makeAssertCollection()
 
@@ -2057,7 +2061,11 @@ validate_trip_metadata <- function(
   has_start <- !is.null(trip_start_col)
   has_interview_time <- !is.null(interview_time_col)
 
-  if (has_duration && (has_start || has_interview_time)) {
+  # On a night design the interview time only places the interview on its
+  # night (GH #407); effort and duration come from their own columns. A trip
+  # with a break has a clock span longer than its time fishing, so the two must
+  # not be forced to agree.
+  if (has_duration && (has_start || (has_interview_time && !night))) {
     collection$push(
       "Provide either trip_duration or trip_start/interview_time, not both"
     )
@@ -2070,8 +2078,9 @@ validate_trip_metadata <- function(
     )
   }
 
-  # Check 6: interview_time requires trip_start
-  if (has_interview_time && !has_start) {
+  # Check 6: interview_time requires trip_start (except on a night design,
+  # where it is the record's clock time; see check 4)
+  if (has_interview_time && !has_start && !night) {
     collection$push(
       "interview_time requires trip_start to calculate duration"
     )

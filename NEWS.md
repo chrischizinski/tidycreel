@@ -2,6 +2,15 @@
 
 ## New features
 
+* On a night design, `add_interviews()` accepts `interview_time` without
+  `trip_start`, and together with `trip_duration`. The interview time is
+  required there to place each interview on its night, but the trip-metadata
+  check still demanded `trip_start` beside it and refused it next to a
+  recorded duration, so a night survey that records effort directly (start to
+  interview, unless the angler reports a break) could not attach its
+  interviews. A recorded duration is used as given. Day designs are
+  unchanged.
+
 * Night creels, mapping side (#407, part 2 of 2). A calendar whose survey day
   does not start at midnight (a `generate_schedule(day_start = )` schedule,
   or `creel_design(day_start = )` on a hand-built calendar) now makes a

@@ -54,7 +54,9 @@ for downstream incomplete trip estimators.}
 
 \item{trip_duration}{Tidy selector for trip duration column in hours (optional,
 default NULL). Provide either trip_duration OR trip_start + interview_time,
-not both. Duration values must be positive and >= 1/60 hours (1 minute).}
+not both; on a night design \code{interview_time} may accompany it (see
+\code{interview_time}). Duration values must be positive and >= 1/60 hours
+(1 minute).}
 
 \item{trip_start}{Tidy selector for trip start time column (optional, default NULL).
 Must be POSIXct or POSIXlt. Requires interview_time to calculate duration.
@@ -62,7 +64,12 @@ Use when duration needs to be calculated from timestamps.}
 
 \item{interview_time}{Tidy selector for interview time column (optional, default NULL).
 Must be POSIXct or POSIXlt. Requires trip_start to calculate duration.
-Duration is calculated as interview_time - trip_start in hours.}
+Duration is calculated as interview_time - trip_start in hours.
+On a night design (see \code{day_start} in \code{\link[=creel_design]{creel_design()}}) it is required,
+because it places each interview on its night, and it may be given
+without \code{trip_start} or together with \code{trip_duration}: a recorded
+duration (for instance one the angler corrected for a break) is then
+used as given, not recomputed from the clock.}
 
 \item{n_counted}{Tidy selector for the count of all anglers observed at the
 site during the sampling period (required for bus-route designs, ignored
