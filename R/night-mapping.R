@@ -133,8 +133,7 @@ resolve_design_tz <- function(tz, call = rlang::caller_env()) {
 #' survey day that began the previous date.
 #'
 #' A POSIXct time names its own calendar date; it must be the record's date,
-#' or the two disagree about the day. Its time zone, when it names one, must
-#' be the design's.
+#' or the two disagree about the day. It must carry the design's time zone.
 #'
 #' @return The survey dates (Date), one per record.
 #' @keywords internal
@@ -156,7 +155,21 @@ night_survey_dates <- function(dates, times, night, what, time_arg, call = rlang
     times <- as.POSIXct(times)
     zone <- attr(times, "tzone")
     zone <- if (is.null(zone)) "" else zone[1]
-    if (nzchar(zone) && !identical(zone, night$tz)) {
+    # A POSIXct with no zone is read in the computer's zone, which is not the
+    # water's: refused rather than read in either.
+    if (!nzchar(zone)) {
+      cli::cli_abort(
+        c(
+          "The {what} times are POSIXct with no time zone.",
+          "x" = "Their clock would be read in this computer's zone, not the design's \\
+                 ({.val {night$tz}}).",
+          "i" = "Create them with {.code tz = \"{night$tz}\"}, or give the times as {.val HH:MM}."
+        ),
+        class = "creel_error_night_tz_mismatch",
+        call = call
+      )
+    }
+    if (!identical(zone, night$tz)) {
       cli::cli_abort(
         c(
           "The {what} times are in time zone {.val {zone}}, the design's is {.val {night$tz}}.",
@@ -328,7 +341,10 @@ night_shift_hours <- function(cal, date_col, night, call = rlang::caller_env()) 
     s <- local_instants(stamp(st, s_off)[ok], night$tz) # nolint: object_usage_linter
     e <- local_instants(stamp(en, e_off)[ok], night$tz) # nolint: object_usage_linter
     amb <- s$n != 1L | e$n != 1L
-    if (any(amb) && !"shift_hours" %in% names(cal)) {
+    # A row whose shift_hours is given does not need its clock times resolved;
+    # one whose shift_hours is NA does, as if the column were absent.
+    if ("shift_hours" %in% names(cal)) amb <- amb & is.na(cal$shift_hours[ok])
+    if (any(amb)) {
       bad <- unique(format(cal[[date_col]][ok][amb])) # nolint: object_usage_linter
       cli::cli_abort(
         c(

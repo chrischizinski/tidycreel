@@ -134,6 +134,13 @@ test_that("#407: POSIXct count times must agree with the record date and the des
                           period_length_col = hrs),
                class = "creel_error_night_tz_mismatch")
 
+  # No zone at all would be read in the computer's zone (review): refused.
+  no_zone <- cnt
+  attr(no_zone$time, "tzone") <- ""
+  expect_error(add_counts(n4b_design(s), no_zone, count_col = anglers, count_time_col = time,
+                          period_length_col = hrs),
+               class = "creel_error_night_tz_mismatch")
+
   off_date <- cnt
   off_date$date[1] <- off_date$date[1] + 1L
   expect_error(add_counts(n4b_design(s), off_date, count_col = anglers, count_time_col = time,
@@ -241,4 +248,18 @@ test_that("#407: a calendar shift that leaves its survey day is refused on a nig
                     time = "06:00", anglers = 3, hrs = 9)
   expect_error(add_counts(d, cnt, count_col = anglers, count_time_col = time, period_length_col = hrs),
                "does not fit inside one survey day")
+})
+
+test_that("#407: a DST-ambiguous shift bound with shift_hours NA is refused, not crashed on", {
+  # 01:30 on 2024-11-03 happens twice in Chicago. The row has a shift_hours
+  # column but no value for it (review): the clock times must decide, and
+  # cannot.
+  cal <- data.frame(date = as.Date(c("2024-11-01", "2024-11-02")), day_type = "weekend",
+                    period_id = 1L, p_period = 1, shift_start = "19:30",
+                    shift_end = c("06:00", "01:30"), shift_hours = c(10.5, NA))
+  d <- creel_design(cal, date = date, strata = day_type, day_start = "12:00", tz = n4b_tz)
+  cnt <- data.frame(date = as.Date(c("2024-11-01", "2024-11-02")), day_type = "weekend",
+                    time = "22:00", anglers = c(4, 5), hrs = c(10.5, 7))
+  expect_error(add_counts(d, cnt, count_col = anglers, count_time_col = time, period_length_col = hrs),
+               class = "creel_error_period_length_window")
 })
