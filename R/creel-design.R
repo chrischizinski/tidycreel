@@ -1878,6 +1878,51 @@ unit_label <- function(df) {
   do.call(paste, c(lapply(df, as.character), sep = " / "))
 }
 
+#' The calendar at the level an interview is matched to it
+#'
+#' A calendar may hold several rows per date: a schedule with more than one
+#' shift a day, used as the calendar, repeats each day once per shift (#385).
+#' Joined row for row, every interview matched every shift of its day and was
+#' stored once per row, so n doubled and the SE shrank by about sqrt(2) with
+#' nothing reported (GH #447). An interview that names no shift belongs to the
+#' day, so it is matched to one row per joining key: the columns that describe
+#' the day are kept, and the columns that differ within it (the shift's own) are
+#' left out, since they have no single value to give the interview.
+#'
+#' A design stratum that differs within the key cannot be left out the same
+#' way: the interview would lose its stratum. That is refused.
+#'
+#' @keywords internal
+#' @noRd
+interview_day_calendar <- function(design, key_cols, call = rlang::caller_env()) {
+  cal <- design$calendar
+  key <- group_key(cal, key_cols) # nolint: object_usage_linter
+  if (!anyDuplicated(key)) {
+    return(cal)
+  }
+  rows <- split(seq_len(nrow(cal)), key)
+  constant <- vapply(setdiff(names(cal), key_cols), function(nm) {
+    all(vapply(rows, function(idx) length(unique(cal[[nm]][idx])) == 1L, logical(1)))
+  }, logical(1))
+  varying <- names(constant)[!constant]
+  bad_strata <- intersect(design$strata_cols, varying)
+  if (length(bad_strata) > 0L) {
+    cli::cli_abort(
+      c(
+        "The calendar gives more than one value of {.field {bad_strata}} for the same \\
+         {.field {key_cols}}, and the interviews do not say which.",
+        "x" = "An interview would belong to every stratum on its date.",
+        "i" = "Add {.field {bad_strata}} to the interviews, so that each interview \\
+               names its stratum."
+      ),
+      class = "creel_error_interview_calendar_ambiguous",
+      call = call
+    )
+  }
+  cal <- cal[c(key_cols, names(constant)[constant])]
+  cal[!duplicated(key), , drop = FALSE]
+}
+
 #' Apply the schedule's shift probability to the counts
 #'
 #' Internal (GH #385). Every counted day must have a probability in the
@@ -3518,7 +3563,7 @@ add_interviews <- function(
   )
   interviews_joined <- dplyr::left_join(
     interviews,
-    design$calendar,
+    interview_day_calendar(design, unname(cal_join_by)),
     by = cal_join_by,
     suffix = c("", "_cal")
   )
