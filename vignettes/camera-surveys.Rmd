@@ -78,11 +78,12 @@ all_dates <- sort(unique(c(
   example_camera_interviews$date
 )))
 
-# Assign day type for each date (weekday = Mon-Thu, weekend = Fri-Sun)
+# Assign day type for each date (weekday = Mon-Thu, weekend = Fri-Sun).
+# format(, "%u") is the ISO day number (Monday = 1), the same in every locale.
 cam_calendar <- data.frame(
   date = all_dates,
   day_type = ifelse(
-    weekdays(all_dates) %in% c("Friday", "Saturday", "Sunday"),
+    format(all_dates, "%u") %in% c("5", "6", "7"),
     "weekend", "weekday"
   ),
   stringsAsFactors = FALSE

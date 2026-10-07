@@ -10,7 +10,8 @@
 
 rac_data <- function() {
   dates <- seq(as.Date("2024-06-03"), by = 1, length.out = 14)
-  day_type <- ifelse(weekdays(dates) %in% c("Saturday", "Sunday"), "weekend", "weekday")
+  # ISO day number, so the fixture does not depend on the locale.
+  day_type <- ifelse(format(dates, "%u") %in% c("6", "7"), "weekend", "weekday")
   cal <- data.frame(date = dates, day_type = day_type)
   idx <- c(1, 2, 3, 4, 6, 7, 8, 9, 13, 14)
   counts <- data.frame(
@@ -97,8 +98,21 @@ test_that("a missing date is left to the tier-1 check, not reported as outside t
   x <- rac_data()
   cn <- x$counts
   cn$date[1] <- NA
-  err <- tryCatch(suppressWarnings(suppressMessages(add_counts(rac_design(x$cal), cn))), error = identity)
+  d <- rac_design(x$cal)
+  # Refused by tier 1, which names the missing value...
+  err <- tryCatch(suppressWarnings(suppressMessages(add_counts(d, cn))), error = identity)
+  expect_s3_class(err, "error")
   expect_false(inherits(err, "creel_error_record_outside_calendar"))
+  expect_match(conditionMessage(err), "contains 1 NA value", fixed = TRUE)
+  # ...and with allow_invalid = TRUE, where tier 1 only warns, the calendar
+  # check does not turn the missing date into one of its own errors. (The
+  # survey design then fails on the missing PSU, as it did before #449.)
+  err2 <- tryCatch(
+    suppressWarnings(suppressMessages(add_counts(d, cn, allow_invalid = TRUE))),
+    error = identity
+  )
+  expect_false(inherits(err2, "creel_error_record_outside_calendar"))
+  expect_false(inherits(err2, "creel_error_record_strata_mismatch"))
 })
 
 test_that("an interview whose stratum disagrees with the calendar is refused", {

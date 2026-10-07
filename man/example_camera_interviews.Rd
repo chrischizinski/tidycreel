@@ -36,7 +36,7 @@ data(example_camera_counts)
 data(example_camera_interviews)
 
 # Build a calendar that spans all camera dataset dates. The data count
-# Friday as weekend, so the calendar does too.
+# Friday as weekend, so the calendar does too (ISO day 5-7, any locale).
 cam_dates <- sort(unique(c(
   example_camera_counts$date,
   example_camera_interviews$date
@@ -44,7 +44,7 @@ cam_dates <- sort(unique(c(
 cam_cal <- data.frame(
   date = cam_dates,
   day_type = ifelse(
-    weekdays(cam_dates) \%in\% c("Friday", "Saturday", "Sunday"),
+    format(cam_dates, "\%u") \%in\% c("5", "6", "7"),
     "weekend", "weekday"
   ),
   stringsAsFactors = FALSE
