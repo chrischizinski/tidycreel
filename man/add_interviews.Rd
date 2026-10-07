@@ -54,7 +54,9 @@ for downstream incomplete trip estimators.}
 
 \item{trip_duration}{Tidy selector for trip duration column in hours (optional,
 default NULL). Provide either trip_duration OR trip_start + interview_time,
-not both. Duration values must be positive and >= 1/60 hours (1 minute).}
+not both; on a night design \code{interview_time} may accompany it (see
+\code{interview_time}). Duration values must be positive and >= 1/60 hours
+(1 minute).}
 
 \item{trip_start}{Tidy selector for trip start time column (optional, default NULL).
 Must be POSIXct or POSIXlt. Requires interview_time to calculate duration.
