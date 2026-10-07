@@ -28,6 +28,10 @@ argument.
   : Attach age data to a creel design
 - [`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md)
   : Register spatial sections for a creel survey design
+- [`write_design()`](https://chrischizinski.com/tidycreel/dev/reference/write_design.md)
+  : Save a creel design as a bundle that rebuilds it
+- [`read_design()`](https://chrischizinski.com/tidycreel/dev/reference/read_design.md)
+  : Rebuild a creel design from a bundle
 - [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)
   : Extract internal survey design object for advanced use
 - [`est_effort_camera()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera.md)

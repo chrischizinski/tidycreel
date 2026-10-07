@@ -161,6 +161,7 @@
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/print.creel_validation.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/print.creel_validation_report.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/print.creel_variance_comparison.html</loc></url>
+<url><loc>https://chrischizinski.com/tidycreel/dev/reference/read_design.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/read_schedule.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/reallocate_strata.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/season_summary.html</loc></url>
@@ -193,6 +194,7 @@
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/validate_design.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/validation_report.html</loc></url>
+<url><loc>https://chrischizinski.com/tidycreel/dev/reference/write_design.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/write_estimates.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/write_schedule.html</loc></url>
 </urlset>
