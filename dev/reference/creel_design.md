@@ -31,7 +31,10 @@ creel_design(
   visibility_se = NULL,
   angler_ratio = NULL,
   angler_ratio_se = NULL,
-  open_start = NULL
+  open_start = NULL,
+  day_start = NULL,
+  night_date = "start",
+  tz = NULL
 )
 ```
 
@@ -242,6 +245,43 @@ creel_design(
   `open_start` fixes the window across surveys for consistent
   comparisons. Example: `open_start = 5.5` means fishing begins at 5:30
   AM.
+
+- day_start:
+
+  Clock time (`"HH:MM"`) at which a survey day begins, for night creels
+  whose shifts cross midnight. `NULL` (default) takes it from the
+  calendar's `day_start` column, which
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  writes; without the column the survey day is the calendar day. Given
+  both, they must agree. With a `day_start` other than `"00:00"` the
+  design is a **night design**:
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  and
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  then need each record's calendar date and clock time, and map a record
+  timed before `day_start` to the night that began the previous date (a
+  00:45 count on Apr 4 belongs to the night of Apr 3). Only
+  `survey_type = "instantaneous"` supports night designs.
+
+  A night creel tidycreel is not told about cannot always be detected: a
+  calendar with no `day_start` and no shift times, given counts dated by
+  calendar day, is read as a day design, and each night is split across
+  two dates. Declare the night with `day_start`.
+
+- night_date:
+
+  Which date labels a night. Only `"start"` (the date the night begins,
+  as field staff say it and as
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  dates it) is supported.
+
+- tz:
+
+  Time zone of the water, one name from
+  [`OlsonNames()`](https://rdrr.io/r/base/timezones.html). Required for
+  night designs; defaults to `getOption("tidycreel.tz")`, never to the
+  computer's own zone. Shift lengths across a daylight-saving change,
+  and record times given as POSIXct, are read in it.
 
 ## Value
 

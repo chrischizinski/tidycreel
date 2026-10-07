@@ -211,9 +211,8 @@ whose shifts cross midnight, choose a time no shift spans, e.g. <code>"12:00"</c
 then 19:30-00:30 and 00:30-06:00 are the two halves of one night, dated
 by the date the night starts. A shift time earlier than <code>day_start</code> is on
 the next calendar day. The schedule records it in a <code>day_start</code> column.
-Mapping counts and interviews to night survey days is not available yet
-(#407), so <code><a href="creel_design.html">creel_design()</a></code> refuses such a schedule as its calendar for
-now.</p></dd>
+Used as the calendar of <code><a href="creel_design.html">creel_design()</a></code>, it makes a night design, which
+maps counts and interviews to the night they belong to.</p></dd>
 
 
 <dt id="arg-weekend-days">weekend_days<a class="anchor" aria-label="anchor" href="#arg-weekend-days"></a></dt>

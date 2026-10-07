@@ -4,6 +4,48 @@
 
 ### New features
 
+- On a night design,
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  accepts `interview_time` without `trip_start`, and together with
+  `trip_duration`. The interview time is required there to place each
+  interview on its night, but the trip-metadata check still demanded
+  `trip_start` beside it and refused it next to a recorded duration, so
+  a night survey that records effort directly (start to interview,
+  unless the angler reports a break) could not attach its interviews. A
+  recorded duration is used as given. Day designs are unchanged.
+
+- Night creels, mapping side
+  ([\#407](https://github.com/chrischizinski/tidycreel/issues/407), part
+  2 of 2). A calendar whose survey day does not start at midnight (a
+  `generate_schedule(day_start = )` schedule, or
+  `creel_design(day_start = )` on a hand-built calendar) now makes a
+  **night design** instead of being refused.
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  and
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  take each record’s calendar date and clock time (`count_time_col` as
+  `"HH:MM"` or POSIXct; `interview_time`) and move a record timed before
+  `day_start` to the night that began the date before: a 00:45 count on
+  Apr 4 belongs to the night of Apr 3. Its PSU, stratum, within-day
+  group and shift are then the night’s, which is what the estimators
+  already key on. The calendar date is kept (`calendar_date` on
+  interviews, `design$count_calendar_dates` for counts). Night designs
+  need a time zone: `creel_design(tz = )`, else
+  `options(tidycreel.tz = )`, else an error; never the computer’s own
+  zone. A night’s shift length is its real elapsed time, so on the night
+  daylight saving ends a 19:30-06:00 shift is 11.5 h, not its 10.5 h
+  clock length, and `period_length_col` is checked against that. Refused
+  rather than guessed: a night record with no clock time; a POSIXct time
+  on a different date, or in a different zone, from its record; a record
+  that maps to a night or shift the schedule did not work (typically one
+  already dated by its night, which the mapping moves a day too far);
+  `night_date = "end"`; and night designs other than
+  `survey_type = "instantaneous"`. A night creel that is not declared,
+  with no `day_start` and no shift times on its calendar, cannot be
+  detected and is read as a day design; the
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+  docs say so.
+
 - Night creels, schedule side
   ([\#407](https://github.com/chrischizinski/tidycreel/issues/407), part
   1 of 2).
@@ -28,11 +70,7 @@
   /
   [`read_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/read_schedule.md)
   keep `day_start` and `shift_hours`. Matching counts and interviews to
-  night survey days is part 2, so until then
-  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
-  refuses a night schedule as its calendar
-  (`creel_error_night_design_pending`) rather than matching a 02:00
-  count to the wrong day.
+  night survey days is part 2, above.
 
 - [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
   can draw which shift is worked on each sampled day

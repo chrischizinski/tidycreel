@@ -110,7 +110,10 @@ specifying sites, circuits, and their sampling probabilities.</p>
 <span>  visibility_se <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  angler_ratio <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  angler_ratio_se <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  open_start <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  open_start <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  day_start <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  night_date <span class="op">=</span> <span class="st">"start"</span>,</span>
+<span>  tz <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -303,6 +306,35 @@ GLMM estimator derives the window start from the earliest observed flight
 time minus 0.5 hours, with an informational message. Supplying
 <code>open_start</code> fixes the window across surveys for consistent comparisons.
 Example: <code>open_start = 5.5</code> means fishing begins at 5:30 AM.</p></dd>
+
+
+<dt id="arg-day-start">day_start<a class="anchor" aria-label="anchor" href="#arg-day-start"></a></dt>
+<dd><p>Clock time (<code>"HH:MM"</code>) at which a survey day begins, for
+night creels whose shifts cross midnight. <code>NULL</code> (default) takes it from
+the calendar's <code>day_start</code> column, which <code><a href="generate_schedule.html">generate_schedule()</a></code> writes;
+without the column the survey day is the calendar day. Given both, they
+must agree. With a <code>day_start</code> other than <code>"00:00"</code> the design is a
+<strong>night design</strong>: <code><a href="add_counts.html">add_counts()</a></code> and <code><a href="add_interviews.html">add_interviews()</a></code> then need each
+record's calendar date and clock time, and map a record timed before
+<code>day_start</code> to the night that began the previous date (a 00:45 count on
+Apr 4 belongs to the night of Apr 3). Only <code>survey_type = "instantaneous"</code> supports night designs.</p>
+<p>A night creel tidycreel is not told about cannot always be detected: a
+calendar with no <code>day_start</code> and no shift times, given counts dated by
+calendar day, is read as a day design, and each night is split across two
+dates. Declare the night with <code>day_start</code>.</p></dd>
+
+
+<dt id="arg-night-date">night_date<a class="anchor" aria-label="anchor" href="#arg-night-date"></a></dt>
+<dd><p>Which date labels a night. Only <code>"start"</code> (the date the
+night begins, as field staff say it and as <code><a href="generate_schedule.html">generate_schedule()</a></code> dates
+it) is supported.</p></dd>
+
+
+<dt id="arg-tz">tz<a class="anchor" aria-label="anchor" href="#arg-tz"></a></dt>
+<dd><p>Time zone of the water, one name from <code><a href="https://rdrr.io/r/base/timezones.html" class="external-link">OlsonNames()</a></code>. Required
+for night designs; defaults to <code>getOption("tidycreel.tz")</code>, never to the
+computer's own zone. Shift lengths across a daylight-saving change, and
+record times given as POSIXct, are read in it.</p></dd>
 
 </dl></div>
     <div class="section level2">

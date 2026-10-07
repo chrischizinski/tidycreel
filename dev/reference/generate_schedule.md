@@ -142,10 +142,10 @@ generate_schedule(
   then 19:30-00:30 and 00:30-06:00 are the two halves of one night,
   dated by the date the night starts. A shift time earlier than
   `day_start` is on the next calendar day. The schedule records it in a
-  `day_start` column. Mapping counts and interviews to night survey days
-  is not available yet (#407), so
-  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
-  refuses such a schedule as its calendar for now.
+  `day_start` column. Used as the calendar of
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+  it makes a night design, which maps counts and interviews to the night
+  they belong to.
 
 - weekend_days:
 
