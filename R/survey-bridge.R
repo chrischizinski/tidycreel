@@ -2066,9 +2066,12 @@ validate_trip_metadata <- function(
   # with a break has a clock span longer than its time fishing, so the two must
   # not be forced to agree.
   if (has_duration && (has_start || (has_interview_time && !night))) {
-    collection$push(
+    collection$push(if (night) {
+      # interview_time is required on a night design; only trip_start clashes.
+      "Provide either trip_duration or trip_start, not both (keep interview_time: it places the interview on its night)"
+    } else {
       "Provide either trip_duration or trip_start/interview_time, not both"
-    )
+    })
   }
 
   # Check 5: trip_start requires interview_time

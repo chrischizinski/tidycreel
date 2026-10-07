@@ -285,6 +285,14 @@ test_that("#407: a night interview's time places it without forcing a clock dura
   with_dur <- suppressWarnings(add_interviews(d, iv, catch = catch, effort = hours, trip_status = status,
                                               trip_duration = hours, interview_time = itime))
   expect_equal(with_dur$interviews[[with_dur$trip_duration_col]], c(2, 1.5))
+  # trip_start beside trip_duration clashes; the message must not tell a night
+  # user to drop interview_time, which the design requires (review).
+  iv$start <- iv$itime - 3600
+  err <- tryCatch(add_interviews(d, iv, catch = catch, effort = hours, trip_status = status,
+                                 trip_duration = hours, trip_start = start, interview_time = itime),
+                  error = function(e) conditionMessage(e))
+  expect_match(err, "trip_duration or trip_start, not both")
+  expect_no_match(err, "trip_start/interview_time")
   # Day designs keep the old rule: an interview time alone has no use there.
   day <- suppressWarnings(creel_design(data.frame(date = as.Date("2024-06-03") + 0:3, day_type = "weekday"),
                                        date = date, strata = day_type))
