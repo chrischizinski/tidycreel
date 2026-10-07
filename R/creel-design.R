@@ -342,6 +342,28 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   time minus 0.5 hours, with an informational message. Supplying
 #'   `open_start` fixes the window across surveys for consistent comparisons.
 #'   Example: `open_start = 5.5` means fishing begins at 5:30 AM.
+#' @param day_start Clock time (`"HH:MM"`) at which a survey day begins, for
+#'   night creels whose shifts cross midnight. `NULL` (default) takes it from
+#'   the calendar's `day_start` column, which [generate_schedule()] writes;
+#'   without the column the survey day is the calendar day. Given both, they
+#'   must agree. With a `day_start` other than `"00:00"` the design is a
+#'   **night design**: [add_counts()] and [add_interviews()] then need each
+#'   record's calendar date and clock time, and map a record timed before
+#'   `day_start` to the night that began the previous date (a 00:45 count on
+#'   Apr 4 belongs to the night of Apr 3). Only `survey_type =
+#'   "instantaneous"` supports night designs.
+#'
+#'   A night creel tidycreel is not told about cannot always be detected: a
+#'   calendar with no `day_start` and no shift times, given counts dated by
+#'   calendar day, is read as a day design, and each night is split across two
+#'   dates. Declare the night with `day_start`.
+#' @param night_date Which date labels a night. Only `"start"` (the date the
+#'   night begins, as field staff say it and as [generate_schedule()] dates
+#'   it) is supported.
+#' @param tz Time zone of the water, one name from [OlsonNames()]. Required
+#'   for night designs; defaults to `getOption("tidycreel.tz")`, never to the
+#'   computer's own zone. Shift lengths across a daylight-saving change, and
+#'   record times given as POSIXct, are read in it.
 #'
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
@@ -454,36 +476,27 @@ creel_design <- function(
   visibility_se = NULL,
   angler_ratio = NULL,
   angler_ratio_se = NULL,
-  open_start = NULL
+  open_start = NULL,
+  day_start = NULL,
+  night_date = "start",
+  tz = NULL
 ) {
   # A grouped input would carry its grouping into every dplyr step that reads
   # the stored table (GH #441).
   calendar <- ungroup_input(calendar)
   sampling_frame <- ungroup_input(sampling_frame)
 
+  # A survey day that does not start at midnight (night creels, GH #407) is
+  # named by the calendar's day_start column or the argument, which is carried
+  # into the calendar so there is one source to read.
+  calendar <- apply_day_start_arg(calendar, day_start) # nolint: object_usage_linter
+
   # 1. Structural validation (Phase 1 validator)
   validate_calendar_schema(calendar) # nolint: object_usage_linter
 
-  # A schedule whose survey day does not start at midnight (night shifts,
-  # GH #407) dates each night by the day it starts, while counts and
-  # interviews are still matched to the calendar by their own calendar date:
-  # a 02:00 count would join the next day, its stratum and its PSU. Refused
-  # until the mapping exists, rather than estimated wrongly.
-  if ("day_start" %in% names(calendar)) {
-    ds_vals <- unique(as.character(calendar$day_start))
-    if (!identical(ds_vals, "00:00")) {
-      cli::cli_abort(
-        c(
-          "This calendar's survey days start at {.val {ds_vals}}, not midnight (a night schedule).",
-          "x" = "Matching counts and interviews to night survey days is not available yet (#407), \\
-                 so records after midnight would join the wrong day.",
-          "i" = "The schedule can be generated, written and given count times now; estimation \\
-                 from it arrives with #407."
-        ),
-        class = "creel_error_night_design_pending"
-      )
-    }
-  }
+  # A night design: counts and interviews are mapped to the night they belong
+  # to when they are added (GH #407).
+  night <- resolve_night_design(calendar, survey_type, night_date, tz) # nolint: object_usage_linter
 
   # 2. Resolve tidy selectors to column names
   date_col <- resolve_single_col(
@@ -925,6 +938,7 @@ creel_design <- function(
     camera = camera,
     aerial = aerial
   )
+  design$night <- night
   validate_creel_design(design)
 }
 
@@ -1818,6 +1832,9 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
     key_cols <- c(key_cols, design$section_col)
   }
   shift_cols <- intersect(c("period_id", "p_period", "shift_start", "shift_end"), names(cal))
+  # A night's shift length is its real elapsed time (GH #407), which the
+  # schedule may carry as shift_hours.
+  if (!is.null(design$night)) shift_cols <- intersect(c(shift_cols, "shift_hours"), names(cal))
   cal <- unique(cal[c(key_cols, shift_cols)])
   day <- unit_label(cal[key_cols])
 
@@ -1838,24 +1855,29 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
   p <- tapply(cal$p_period, day, `[`, 1L)
 
   window <- NULL
-  if (has_window) {
+  if (has_window && !is.null(design$night)) {
+    # Night design: shifts may cross midnight, and a night across a
+    # daylight-saving change is an hour longer or shorter than its clock times.
+    window <- tapply(night_shift_hours(cal, date_col, design$night, call = call), day, sum) # nolint: object_usage_linter
+  } else if (has_window) {
     start <- vapply(as.character(cal$shift_start), function(t) {
       if (is.na(t)) NA_real_ else parse_hhmm_to_min(t) # nolint: object_usage_linter
     }, numeric(1), USE.NAMES = FALSE)
     end <- vapply(as.character(cal$shift_end), function(t) {
       if (is.na(t)) NA_real_ else parse_hhmm_to_min(t) # nolint: object_usage_linter
     }, numeric(1), USE.NAMES = FALSE)
-    # A shift ending at or before it starts crosses midnight. Its length, and
-    # which date its counts belong to, wait on clock-time handling (#407);
-    # refused rather than guessed.
+    # A shift ending at or before it starts crosses midnight. On a day design
+    # its length and the date of its counts are undefined: refused rather than
+    # guessed. Night designs take the branch above (#407).
     crosses <- !is.na(start) & !is.na(end) & end <= start
     if (any(crosses)) {
       bad <- unique(day[crosses]) # nolint: object_usage_linter
       cli::cli_abort(
         c(
           "The schedule has a shift that crosses midnight on {length(bad)} day{?s}: {.val {bad}}.",
-          "x" = "Shifts that end at or before they start are not supported yet (#407).",
-          "i" = "Split the shift at midnight, or leave out the shift times."
+          "x" = "Shifts that end at or before they start cross midnight, and this design's \\
+                 survey day is the calendar day.",
+          "i" = "For a night creel, declare the survey day with {.code creel_design(day_start = )}."
         ),
         class = "creel_error_period_length_window",
         call = call
@@ -2438,6 +2460,51 @@ add_counts <- function(
     psu <- design$date_col
   }
 
+  # Night design (GH #407): each count moves to the night it belongs to before
+  # anything keys on its date -- the shift lookup below, the calendar check,
+  # the PSU and the within-day key all read the date column.
+  count_calendar_dates <- NULL
+  if (!is.null(design$night)) {
+    if (!identical(psu, design$date_col)) {
+      cli::cli_abort(
+        c(
+          "On a night design the PSU must be the survey day ({.field {design$date_col}}).",
+          "x" = "{.arg psu} is {.field {psu}}, which the mapping to nights does not move."
+        ),
+        class = "creel_error_night_design_unsupported"
+      )
+    }
+    if (counts_from_prep_seam) {
+      cli::cli_abort(
+        c(
+          "Prepared daily effort cannot be added to a night design.",
+          "x" = "Its days were formed before the counts were mapped to nights."
+        ),
+        class = "creel_error_night_design_unsupported"
+      )
+    }
+    night_time_quo <- rlang::enquo(count_time_col)
+    night_time_col <- if (rlang::quo_is_null(night_time_quo)) {
+      NULL
+    } else {
+      names(tidyselect::eval_select(night_time_quo, data = counts, error_call = rlang::current_env()))
+    }
+    survey_dates <- night_survey_dates( # nolint: object_usage_linter
+      counts[[design$date_col]],
+      if (is.null(night_time_col)) NULL else counts[[night_time_col]],
+      design$night, "count", "count_time_col",
+      call = rlang::current_env()
+    )
+    # The calendar date varies within a night, so it cannot ride on the counts
+    # through the within-day aggregation; it is kept beside them instead.
+    count_calendar_dates <- data.frame(
+      survey_date = survey_dates,
+      count_time = counts[[night_time_col]],
+      calendar_date = counts[[design$date_col]]
+    )
+    counts[[design$date_col]] <- survey_dates
+  }
+
   # Validate count_type
   valid_count_types <- c("instantaneous", "progressive")
   if (!count_type %in% valid_count_types) {
@@ -2607,6 +2674,9 @@ add_counts <- function(
   # Validate counts structure (Tier 1)
   validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
   check_records_against_calendar(counts, design, design$date_col, "count") # GH #449
+  if (!is.null(design$night)) {
+    check_night_records_worked(counts, design, design$date_col, "count") # nolint: object_usage_linter
+  }
 
   # One definition of "the same sampling unit" for every check below. These had
   # drifted into three different keys, none carrying the section, so a day
@@ -2852,6 +2922,7 @@ add_counts <- function(
   new_design$count_time_col <- count_time_col_name
   new_design$within_day_var <- within_day_var
   new_design$within_day_counts <- within_day_counts
+  new_design$count_calendar_dates <- count_calendar_dates
   new_design$n_counts_per_psu <- if (!is.null(within_day_var)) {
     within_day_var$k_d
   } else {
@@ -3592,6 +3663,29 @@ add_interviews <- function(
     date_col <- design$date_col
   }
 
+  # Night design (GH #407): each interview moves to the night it belongs to,
+  # by its interview time, before it is checked against or joined to the
+  # calendar. The calendar date is kept beside it.
+  if (!is.null(design$night)) {
+    if ("calendar_date" %in% names(interviews)) {
+      cli::cli_abort(
+        c(
+          "{.arg interviews} already has a {.field calendar_date} column.",
+          "i" = "On a night design it is written by {.fn add_interviews}; rename the existing one."
+        ),
+        class = "creel_error_night_design_unsupported"
+      )
+    }
+    survey_dates <- night_survey_dates( # nolint: object_usage_linter
+      interviews[[date_col]],
+      if (is.null(interview_time_col)) NULL else interviews[[interview_time_col]],
+      design$night, "interview", "interview_time",
+      call = rlang::current_env()
+    )
+    interviews$calendar_date <- interviews[[date_col]]
+    interviews[[date_col]] <- survey_dates
+  }
+
   # Match interview_type
   interview_type <- match.arg(interview_type)
 
@@ -3606,6 +3700,9 @@ add_interviews <- function(
     allow_invalid
   ) # nolint: object_usage_linter
   check_records_against_calendar(interviews, design, date_col, "interview") # GH #449
+  if (!is.null(design$night)) {
+    check_night_records_worked(interviews, design, date_col, "interview") # nolint: object_usage_linter
+  }
 
   # Validate trip metadata
   validate_trip_metadata(
@@ -3855,6 +3952,14 @@ format.creel_design <- function(x, ...) {
     cli::cli_text("Strata: {.field {paste(x$strata_cols, collapse = ', ')}}")
     if (!is.null(x$site_col)) {
       cli::cli_text("Site column: {.field {x$site_col}}")
+    }
+    # The night convention decides each record's day, stratum and season
+    # membership, so it is shown wherever the design is (GH #407).
+    if (!is.null(x$night)) {
+      cli::cli_text(
+        "Night creel: survey days start {x$night$day_start}; nights dated by start \\
+         (before midnight); time zone {.val {x$night$tz}}"
+      )
     }
 
     n_days <- nrow(x$calendar) # nolint: object_usage_linter

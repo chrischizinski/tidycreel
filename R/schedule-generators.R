@@ -676,9 +676,8 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
 #'   then 19:30-00:30 and 00:30-06:00 are the two halves of one night, dated
 #'   by the date the night starts. A shift time earlier than `day_start` is on
 #'   the next calendar day. The schedule records it in a `day_start` column.
-#'   Mapping counts and interviews to night survey days is not available yet
-#'   (#407), so [creel_design()] refuses such a schedule as its calendar for
-#'   now.
+#'   Used as the calendar of [creel_design()], it makes a night design, which
+#'   maps counts and interviews to the night they belong to.
 #' @param weekend_days Day names (full or three-letter English, any case) whose
 #'   survey days form the `weekend` stratum. `NULL` (default) means Saturday
 #'   and Sunday, and is only allowed when `day_start = "00:00"`: a night is

@@ -133,10 +133,14 @@ test_that("#407: a night's hours are elapsed time, an hour off its clock length 
   expect_error(ns_sched(periods = bad), "hours")
 })
 
-test_that("#407: a night schedule is refused as a design calendar until counts can be mapped", {
+test_that("#407: a night schedule makes a night design, which needs a time zone", {
   s <- ns_sched()
+  withr::local_options(tidycreel.tz = NULL)
+  # Without a zone a night design cannot read DST-night lengths: refused.
   expect_error(creel_design(s, date = date, strata = day_type),
-               class = "creel_error_night_design_pending")
+               class = "creel_error_night_tz_required")
+  d <- creel_design(s, date = date, strata = day_type, tz = "America/Chicago")
+  expect_identical(d$night$day_start, "12:00")
   # A day schedule is unaffected.
   day <- generate_schedule("2024-06-03", "2024-06-30", n_periods = 1, sampling_rate = 0.5, seed = 1)
   expect_no_error(suppressWarnings(creel_design(day, date = date, strata = day_type)))

@@ -22,7 +22,10 @@ creel_design(
   visibility_se = NULL,
   angler_ratio = NULL,
   angler_ratio_se = NULL,
-  open_start = NULL
+  open_start = NULL,
+  day_start = NULL,
+  night_date = "start",
+  tz = NULL
 )
 }
 \arguments{
@@ -178,6 +181,30 @@ GLMM estimator derives the window start from the earliest observed flight
 time minus 0.5 hours, with an informational message. Supplying
 \code{open_start} fixes the window across surveys for consistent comparisons.
 Example: \code{open_start = 5.5} means fishing begins at 5:30 AM.}
+
+\item{day_start}{Clock time (\code{"HH:MM"}) at which a survey day begins, for
+night creels whose shifts cross midnight. \code{NULL} (default) takes it from
+the calendar's \code{day_start} column, which \code{\link[=generate_schedule]{generate_schedule()}} writes;
+without the column the survey day is the calendar day. Given both, they
+must agree. With a \code{day_start} other than \code{"00:00"} the design is a
+\strong{night design}: \code{\link[=add_counts]{add_counts()}} and \code{\link[=add_interviews]{add_interviews()}} then need each
+record's calendar date and clock time, and map a record timed before
+\code{day_start} to the night that began the previous date (a 00:45 count on
+Apr 4 belongs to the night of Apr 3). Only \code{survey_type = "instantaneous"} supports night designs.
+
+A night creel tidycreel is not told about cannot always be detected: a
+calendar with no \code{day_start} and no shift times, given counts dated by
+calendar day, is read as a day design, and each night is split across two
+dates. Declare the night with \code{day_start}.}
+
+\item{night_date}{Which date labels a night. Only \code{"start"} (the date the
+night begins, as field staff say it and as \code{\link[=generate_schedule]{generate_schedule()}} dates
+it) is supported.}
+
+\item{tz}{Time zone of the water, one name from \code{\link[=OlsonNames]{OlsonNames()}}. Required
+for night designs; defaults to \code{getOption("tidycreel.tz")}, never to the
+computer's own zone. Shift lengths across a daylight-saving change, and
+record times given as POSIXct, are read in it.}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:

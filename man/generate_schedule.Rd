@@ -100,9 +100,8 @@ whose shifts cross midnight, choose a time no shift spans, e.g. \code{"12:00"}:
 then 19:30-00:30 and 00:30-06:00 are the two halves of one night, dated
 by the date the night starts. A shift time earlier than \code{day_start} is on
 the next calendar day. The schedule records it in a \code{day_start} column.
-Mapping counts and interviews to night survey days is not available yet
-(#407), so \code{\link[=creel_design]{creel_design()}} refuses such a schedule as its calendar for
-now.}
+Used as the calendar of \code{\link[=creel_design]{creel_design()}}, it makes a night design, which
+maps counts and interviews to the night they belong to.}
 
 \item{weekend_days}{Day names (full or three-letter English, any case) whose
 survey days form the \code{weekend} stratum. \code{NULL} (default) means Saturday
