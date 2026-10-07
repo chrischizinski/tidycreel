@@ -535,10 +535,11 @@
 #' data(example_camera_counts)
 #' head(example_camera_counts)
 #'
-#' # Filter to operational rows before adding to a camera design
-#' data(example_calendar)
+#' # Filter to operational rows before adding to a camera design. The
+#' # calendar takes the data's day types (Friday counts as weekend here).
+#' cam_cal <- unique(example_camera_counts[, c("date", "day_type")])
 #' design <- creel_design(
-#'   example_calendar,
+#'   cam_cal,
 #'   date = date, strata = day_type,
 #'   survey_type = "camera",
 #'   camera_mode = "counter"
@@ -616,7 +617,8 @@
 #' data(example_camera_counts)
 #' data(example_camera_interviews)
 #'
-#' # Build a calendar that spans all camera dataset dates
+#' # Build a calendar that spans all camera dataset dates. The data count
+#' # Friday as weekend, so the calendar does too.
 #' cam_dates <- sort(unique(c(
 #'   example_camera_counts$date,
 #'   example_camera_interviews$date
@@ -624,7 +626,7 @@
 #' cam_cal <- data.frame(
 #'   date = cam_dates,
 #'   day_type = ifelse(
-#'     weekdays(cam_dates) %in% c("Saturday", "Sunday"),
+#'     weekdays(cam_dates) %in% c("Friday", "Saturday", "Sunday"),
 #'     "weekend", "weekday"
 #'   ),
 #'   stringsAsFactors = FALSE

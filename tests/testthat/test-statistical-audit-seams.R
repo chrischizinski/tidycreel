@@ -88,10 +88,11 @@ test_that("contract: every design's tidy() carries an `estimate` column (#199)",
       d <- creel_design(cal, date = date, strata = day_type)
       cnt <- data.frame(
         date = sort(unique(cal$date))[1:4],
-        day_type = "weekday",
         anglers = c(10, 20, 30, 40),
         stringsAsFactors = FALSE
       )
+      # Each day's stratum is the calendar's (GH #449).
+      cnt$day_type <- cal$day_type[match(cnt$date, cal$date)]
       suppressWarnings(suppressMessages(
         add_counts(d, cnt, count_col = anglers, psu = "date")
       ))

@@ -7,11 +7,12 @@ make_simple_design <- function(n = 30L, seed = 42L) {
   )
   ints <- data.frame(
     date = sample(dates, n, replace = TRUE),
-    day_type = sample(c("weekday", "weekend"), n, replace = TRUE),
     hours_fished = round(rgamma(n, 2.5, 0.7), 2),
     catch_total = rnbinom(n, mu = 5, size = 0.6),
     trip_status = "complete"
   )
+  # Each interview takes its day's stratum from the calendar (GH #449).
+  ints$day_type <- cal$day_type[match(ints$date, cal$date)]
   creel_design(cal, date = date, strata = day_type) |>
     add_interviews(ints, catch = catch_total, effort = hours_fished, trip_status = trip_status)
 }
