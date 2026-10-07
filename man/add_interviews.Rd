@@ -62,7 +62,12 @@ Use when duration needs to be calculated from timestamps.}
 
 \item{interview_time}{Tidy selector for interview time column (optional, default NULL).
 Must be POSIXct or POSIXlt. Requires trip_start to calculate duration.
-Duration is calculated as interview_time - trip_start in hours.}
+Duration is calculated as interview_time - trip_start in hours.
+On a night design (see \code{day_start} in \code{\link[=creel_design]{creel_design()}}) it is required,
+because it places each interview on its night, and it may be given
+without \code{trip_start} or together with \code{trip_duration}: a recorded
+duration (for instance one the angler corrected for a break) is then
+used as given, not recomputed from the clock.}
 
 \item{n_counted}{Tidy selector for the count of all anglers observed at the
 site during the sampling period (required for bus-route designs, ignored

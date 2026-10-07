@@ -263,3 +263,36 @@ test_that("#407: a DST-ambiguous shift bound with shift_hours NA is refused, not
   expect_error(add_counts(d, cnt, count_col = anglers, count_time_col = time, period_length_col = hrs),
                class = "creel_error_period_length_window")
 })
+
+test_that("#407: a night interview's time places it without forcing a clock duration", {
+  # Field crews record effort as interview minus start unless the angler
+  # reports a break; that recorded value is the duration. On a night design
+  # the interview time is required to place the interview, so it must be
+  # accepted without trip_start and beside trip_duration, and the recorded
+  # duration must not be replaced by the clock span.
+  s <- n4b_sched()
+  d <- suppressWarnings(add_counts(n4b_design(s), n4b_counts(s), count_col = anglers,
+                                   count_time_col = time, period_length_col = hrs))
+  iv <- data.frame(
+    date = as.Date(c("2024-04-04", "2024-04-05")), day_type = "weekday",
+    catch = c(2, 1), hours = c(2, 1.5), status = "complete",
+    # Started 22:30, interviewed 01:30: a 3 h span, but 1.5 h fishing (a break).
+    itime = as.POSIXct(c("2024-04-04 22:00", "2024-04-05 01:30"), tz = n4b_tz)
+  )
+  alone <- suppressWarnings(add_interviews(d, iv, catch = catch, effort = hours, trip_status = status,
+                                           interview_time = itime))
+  expect_true(all(alone$interviews$date == as.Date("2024-04-04")))
+  with_dur <- suppressWarnings(add_interviews(d, iv, catch = catch, effort = hours, trip_status = status,
+                                              trip_duration = hours, interview_time = itime))
+  expect_equal(with_dur$interviews[[with_dur$trip_duration_col]], c(2, 1.5))
+  # Day designs keep the old rule: an interview time alone has no use there.
+  day <- suppressWarnings(creel_design(data.frame(date = as.Date("2024-06-03") + 0:3, day_type = "weekday"),
+                                       date = date, strata = day_type))
+  day <- suppressWarnings(add_counts(day, data.frame(date = as.Date("2024-06-03") + 0:3,
+                                                     day_type = "weekday", anglers = 1:4),
+                                     count_col = anglers))
+  div <- data.frame(date = as.Date("2024-06-03"), day_type = "weekday", catch = 1, hours = 2,
+                    status = "complete", itime = as.POSIXct("2024-06-03 10:00", tz = n4b_tz))
+  expect_error(add_interviews(day, div, catch = catch, effort = hours, trip_status = status,
+                              interview_time = itime), "requires trip_start")
+})

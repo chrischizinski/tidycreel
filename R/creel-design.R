@@ -3253,6 +3253,11 @@ add_sections <- function(
 #' @param interview_time Tidy selector for interview time column (optional, default NULL).
 #'   Must be POSIXct or POSIXlt. Requires trip_start to calculate duration.
 #'   Duration is calculated as interview_time - trip_start in hours.
+#'   On a night design (see `day_start` in [creel_design()]) it is required,
+#'   because it places each interview on its night, and it may be given
+#'   without `trip_start` or together with `trip_duration`: a recorded
+#'   duration (for instance one the angler corrected for a break) is then
+#'   used as given, not recomputed from the clock.
 #' @param n_counted Tidy selector for the count of all anglers observed at the
 #'   site during the sampling period (required for bus-route designs, ignored
 #'   for other designs). Values must be non-negative integers. Must satisfy
@@ -3710,7 +3715,8 @@ add_interviews <- function(
     trip_status_col,
     trip_duration_col,
     trip_start_col,
-    interview_time_col
+    interview_time_col,
+    night = !is.null(design$night)
   ) # nolint: object_usage_linter
 
   # Tier 3: Bus-route specific validation (skip site/circuit checks for ice)
