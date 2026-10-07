@@ -188,6 +188,23 @@
 
 ## Bug fixes
 
+* `add_interviews()` stores each interview once when the calendar holds more
+  than one row per date (#447). It joined interviews to the calendar row for
+  row, so a calendar with several shifts a day -- any multi-period
+  `generate_schedule()` output used as the design calendar, as the shift
+  workflow does -- matched every interview once per shift. The copies were
+  estimated as independent interviews: with two shifts a day, n doubled and
+  the catch-rate SE fell from 0.110 to 0.075 in a test design (total catch SE
+  47.9 to 34.0), the point estimates were unchanged, and a stratum short of
+  the 10-trip minimum could pass it. Nothing warned. Interviews are now
+  matched to the day: calendar columns that describe the day (strata, or a
+  column such as `week`) still reach them, and columns that differ between a
+  day's shifts (`period_id`, `shift_start`, ...), which have no single value
+  for an interview that names no shift, no longer do. A calendar that gives
+  a date more than one stratum the interviews do not carry is refused
+  (`creel_error_interview_calendar_ambiguous`) instead of putting each
+  interview in every stratum.
+
 * The within-day variance component of stratum and period effort totals
   (instantaneous, aerial and camera effort, and the catch, harvest and
   release totals built on that effort) no longer counts calendar *rows* as
