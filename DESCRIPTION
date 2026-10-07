@@ -32,7 +32,10 @@ Imports:
     stats,
     survey,
     tibble,
-    tidyselect (>= 1.2.0)
+    tidyselect (>= 1.2.0),
+    tools,
+    utils,
+    yaml
 Suggests:
     bench,
     covr,
@@ -55,6 +58,7 @@ Suggests:
     testthat (>= 3.0.0),
     withr,
     writexl (>= 1.5.4),
+    zip,
     zipcodeR
 VignetteBuilder: knitr
 Config/testthat/edition: 3
