@@ -549,6 +549,9 @@ run_agy() {
     return 0
   fi
 
+  # The read-only commands named in the brief are the agy allow-list
+  # (~/.gemini/antigravity-cli/settings.json); a command outside it is
+  # auto-denied headless and the whole review is lost (2026-10-07: sed -n).
   # The brief goes in a file the agent reads, not on the command line: a large
   # diff exceeds the per-argument limit (128 KiB on Linux), and agy's print
   # mode does not take a plain prompt on stdin. .ai/reviews is gitignored, so
@@ -560,7 +563,10 @@ b = json.load(open(sys.argv[1]))
 pre = ("You are in a checkout of the repository at the state AFTER this change, on\n"
        "the branch under review. You may read any file to confirm a claim before you\n"
        "report it -- a finding you have checked against the code is worth far more\n"
-       "than one you have not. Do not modify any file and do not run commands.\n\n")
+       "than one you have not. Do not modify any file. To read files, use only\n"
+       "grep, head, tail, cat, ls, wc, or git show / log / diff / grep. Never use\n"
+       "sed, Rscript, python or curl: any other command is refused in this mode\n"
+       "and ends the review with no output.\n\n")
 open(sys.argv[2], "w").write(pre + b["messages"][0]["content"])
 PYA
   local prompt="Read the review brief at $brief and carry it out exactly. Reply with the findings only."
