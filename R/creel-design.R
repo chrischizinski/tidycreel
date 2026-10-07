@@ -1909,8 +1909,8 @@ interview_day_calendar <- function(design, key_cols, call = rlang::caller_env())
   if (length(bad_strata) > 0L) {
     cli::cli_abort(
       c(
-        "The calendar gives more than one value of {.field {bad_strata}} on a date, \\
-         and the interviews do not say which.",
+        "The calendar gives more than one value of {.field {bad_strata}} for the same \\
+         {.field {key_cols}}, and the interviews do not say which.",
         "x" = "An interview would belong to every stratum on its date.",
         "i" = "Add {.field {bad_strata}} to the interviews, so that each interview \\
                names its stratum."
