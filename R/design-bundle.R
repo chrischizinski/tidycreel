@@ -137,16 +137,29 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
     notes = notes
   )
   manifest <- manifest[!vapply(manifest, is.null, logical(1))]
-  yaml::write_yaml(manifest, file.path(dir, "manifest.yml"))
+  # Numbers in the manifest (circuit_time, p_period) must read back exactly:
+  # yaml's default of 7 significant digits turned 2/3 into 0.6666667, which
+  # rebuilt a different design or refused one.
+  yaml::write_yaml(manifest, file.path(dir, "manifest.yml"), handlers = list(numeric = yaml_exact_number))
+  back <- yaml::read_yaml(file.path(dir, "manifest.yml"))
+  same_args <- vapply(seq_along(steps), function(i) {
+    isTRUE(identical(lapply(back$steps[[i]]$args, unlist_scalar), lapply(steps[[i]]$args, unlist_scalar)))
+  }, logical(1))
+  if (!all(same_args)) {
+    cli::cli_abort("The arguments of step{?s} {which(!same_args)} do not survive being written to the manifest.",
+                   class = "creel_error_bundle_table_roundtrip")
+  }
 
+  # The staging folder is removed on exit through its own name; `ready` is what
+  # moves into place (the folder itself, or the zip made from it).
+  ready <- dir
   if (as_zip) {
-    staged <- paste0(dir, ".zip")
-    zip::zip(staged, files = list.files(dir), root = dir)
-    dir <- staged
-    on.exit(unlink(staged), add = TRUE)
+    ready <- paste0(dir, ".zip")
+    zip::zip(ready, files = list.files(dir), root = dir)
+    on.exit(unlink(ready), add = TRUE)
   }
   unlink(path, recursive = TRUE)
-  if (!file.rename(dir, path)) {
+  if (!file.rename(ready, path)) {
     cli::cli_abort("Could not move the new bundle into place at {.path {path}}.")
   }
   invisible(path)
@@ -160,8 +173,8 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
 #'
 #' A manifest written by hand works too: list the steps and their tables, as
 #' [write_design()] does. Without recorded column types, the date column of
-#' the calendar is read as a date and other columns are guessed with
-#' [utils::type.convert()]; tables without a checksum are reported as not
+#' the calendar is read as a date and other columns take the types
+#' [utils::read.csv()] guesses; tables without a checksum are reported as not
 #' verified.
 #'
 #' @param path A bundle folder or `.zip` file.
@@ -230,6 +243,16 @@ bundle_step_fn <- function(fn) {
     cli::cli_abort("The bundle has a step {.fn {fn}}, which this version cannot rebuild.",
                    class = "creel_error_bundle_unsupported")
   )
+}
+
+# The shortest form of each number that reads back exactly: 15 significant
+# digits, 17 when 15 would round it.
+yaml_exact_number <- function(x) {
+  f <- format(x, digits = 15, trim = TRUE)
+  inexact <- !is.na(x) & suppressWarnings(as.numeric(f)) != x
+  f[inexact] <- sprintf("%.17g", x[inexact])
+  f[is.na(x)] <- ".na.real"
+  structure(f, class = "verbatim")
 }
 
 # YAML reads a length-one vector back as a scalar and a longer one as a list.

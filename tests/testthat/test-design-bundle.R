@@ -265,3 +265,27 @@ test_that("#438: p_period is recorded as resolved, not evaluated a second time (
   expect_identical(i, 1L)
   expect_identical(d$steps[[2]]$args$p_period, 0.5)
 })
+
+test_that("#438: numbers in the manifest read back exactly (review)", {
+  # yaml's default 7 digits wrote 2/3 as 0.6666667: p_period changed, and a
+  # progressive design's circuit_time no longer fitted its shift.
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:5, day_type = "weekday")
+  d <- creel_design(cal, date = date, strata = day_type)
+  cnt <- data.frame(date = cal$date, day_type = "weekday", anglers = 1:6, hrs = 2 / 3)
+  d <- bd_quiet(add_counts(d, cnt, count_col = anglers, count_type = "progressive",
+                           circuit_time = 2 / 3, period_length_col = hrs, p_period = 1 / 3))
+  p <- bd_dir("precise")
+  write_design(d, p)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  expect_identical(m$steps[[2]]$args$circuit_time, 2 / 3)
+  expect_identical(m$steps[[2]]$args$p_period, 1 / 3)
+  r <- bd_quiet(read_design(p))
+  bd_same_design(d, r)
+})
+
+test_that("#438: a .zip write leaves no staging copy behind (review)", {
+  skip_if_not_installed("zip")
+  where <- withr::local_tempdir()
+  write_design(bd_plain(), file.path(where, "plain.zip"))
+  expect_identical(list.files(where, all.files = TRUE, no.. = TRUE), "plain.zip")
+})

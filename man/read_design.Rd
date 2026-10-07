@@ -24,8 +24,8 @@ runs the recorded steps with the installed version of tidycreel.
 \details{
 A manifest written by hand works too: list the steps and their tables, as
 \code{\link[=write_design]{write_design()}} does. Without recorded column types, the date column of
-the calendar is read as a date and other columns are guessed with
-\code{\link[utils:type.convert]{utils::type.convert()}}; tables without a checksum are reported as not
+the calendar is read as a date and other columns take the types
+\code{\link[utils:read.table]{utils::read.csv()}} guesses; tables without a checksum are reported as not
 verified.
 }
 \examples{
