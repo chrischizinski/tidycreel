@@ -485,6 +485,10 @@ creel_design <- function(
   # the stored table (GH #441).
   calendar <- ungroup_input(calendar)
   sampling_frame <- ungroup_input(sampling_frame)
+  # Recorded as a step for write_design() (GH #438): the calendar as given and
+  # the arguments the caller supplied.
+  step_supplied <- supplied_arg_names(match.call(), "calendar") # nolint: object_usage_linter
+  step_calendar <- calendar
 
   # A survey day that does not start at midnight (night creels, GH #407) is
   # named by the calendar's day_start column or the argument, which is carried
@@ -939,6 +943,17 @@ creel_design <- function(
     aerial = aerial
   )
   design$night <- night
+  # A night design's zone is recorded even when it came from the tidycreel.tz
+  # option, so the bundle does not depend on the session that reads it.
+  if (!is.null(night)) step_supplied <- union(step_supplied, "tz")
+  design <- record_step( # nolint: object_usage_linter
+    design, "creel_design",
+    list(date = date_col, strata = strata_cols, site = site_col,
+         design_type = survey_type, survey_type = survey_type,
+         day_start = day_start, night_date = night_date,
+         tz = if (is.null(night)) tz else night$tz),
+    step_supplied, "calendar", step_calendar
+  )
   validate_creel_design(design)
 }
 
@@ -2412,6 +2427,8 @@ add_counts <- function(
   p_period = NULL
 ) {
   counts <- ungroup_input(counts) # GH #441
+  step_supplied <- supplied_arg_names(match.call(), c("design", "counts")) # nolint: object_usage_linter
+  step_counts <- counts
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -2974,7 +2991,15 @@ add_counts <- function(
   # Preserve class
   class(new_design) <- "creel_design"
 
-  new_design
+  record_step( # nolint: object_usage_linter
+    new_design, "add_counts",
+    list(count_col = count_col_name, psu = psu, count_time_col = count_time_col_name,
+         count_type = count_type, circuit_time = circuit_time,
+         period_length_col = period_length_col_name, unit_cols = unit_cols,
+         allow_invalid = allow_invalid,
+         p_period = if (is.null(p_period_vals)) NULL else as.vector(attr(p_period_vals, "source"))),
+    step_supplied, "counts", step_counts
+  )
 }
 
 #' Register spatial sections for a creel survey design
@@ -3093,6 +3118,8 @@ add_sections <- function(
   shared_count_times = FALSE
 ) {
   sections <- ungroup_input(sections) # GH #441
+  step_supplied <- supplied_arg_names(match.call(), c("design", "sections")) # nolint: object_usage_linter
+  step_sections <- sections
   # Guard: design must be creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -3210,7 +3237,13 @@ add_sections <- function(
   new_design$section_area_col <- section_area_col
   new_design$section_shoreline_col <- section_shoreline_col
 
-  new_design
+  record_step( # nolint: object_usage_linter
+    new_design, "add_sections",
+    list(section_col = section_col_name, description_col = section_description_col,
+         area_col = section_area_col, shoreline_col = section_shoreline_col,
+         shared_count_times = shared_count_times),
+    step_supplied, "sections", step_sections
+  )
 }
 
 #' Attach interview data to a creel design
@@ -3440,6 +3473,8 @@ add_interviews <- function(
   allow_invalid = FALSE
 ) {
   interviews <- ungroup_input(interviews) # GH #441
+  step_supplied <- supplied_arg_names(match.call(), c("design", "interviews")) # nolint: object_usage_linter
+  step_interviews <- interviews
   # Capture missing status before any default resolution
   n_anglers_missing <- missing(n_anglers)
 
@@ -3669,6 +3704,18 @@ add_interviews <- function(
   if (is.null(date_col)) {
     date_col <- design$date_col
   }
+
+  # Captured here, once every argument is resolved and before any is rewritten
+  # (trip_duration_col becomes a derived column below), for write_design().
+  step_args <- list(
+    catch = catch_col, effort = effort_col, harvest = harvest_col, trip_status = trip_status_col,
+    trip_duration = trip_duration_col, trip_start = trip_start_col, interview_time = interview_time_col,
+    n_counted = n_counted_col, n_interviewed = n_interviewed_col, angler_type = angler_type_col,
+    angler_method = angler_method_col, species_sought = species_sought_col,
+    n_anglers = if (!is.null(n_anglers_col)) n_anglers_col else n_anglers_const,
+    refused = refused_col, date_col = date_col, interview_type = interview_type,
+    allow_invalid = allow_invalid
+  )
 
   # Night design (GH #407): each interview moves to the night it belongs to,
   # by its interview time, before it is checked against or joined to the
@@ -3941,7 +3988,9 @@ add_interviews <- function(
   # Preserve class
   class(new_design) <- "creel_design"
 
-  new_design
+  record_step( # nolint: object_usage_linter
+    new_design, "add_interviews", step_args, step_supplied, "interviews", step_interviews
+  )
 }
 
 #' Format a creel_design object

@@ -2,6 +2,25 @@
 
 ## New features
 
+* `write_design()` and `read_design()` save a creel design and rebuild it
+  later or elsewhere (#438, part 1). The bundle is a recipe, not a snapshot:
+  `creel_design()`, `add_sections()`, `add_counts()` and `add_interviews()`
+  now record the arguments they were given and the table as given, and
+  `read_design()` runs those steps again with the installed tidycreel, so a
+  design saved before a fix is rebuilt with the fix (`saveRDS()` would keep
+  the old numbers). A bundle is a folder, or a `.zip` file (needs the zip
+  package), holding a YAML manifest and one CSV per table, with a checksum
+  and column types (dates, date-times with their zone, factor levels) for
+  each. `include_data = FALSE` writes the design only; supply the tables to
+  `read_design()`. The calendar is the record of the days surveyed; a
+  schedule is never drawn again from its seed. Refused rather than written:
+  a design changed by hand after it was built (the edit would be lost), a
+  design built by an earlier version (no steps), and, until part 2, designs
+  with catch, lengths or ages, bus-route, ice, camera and aerial designs,
+  and counts from `prep_counts_daily_effort()`. A table edited after
+  writing fails its checksum; a newer format version or an unknown manifest
+  field is refused. yaml is a new dependency.
+
 * On a night design, `add_interviews()` accepts `interview_time` without
   `trip_start`, and together with `trip_duration`. The interview time is
   required there to place each interview on its night, but the trip-metadata
