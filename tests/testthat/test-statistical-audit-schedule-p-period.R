@@ -17,7 +17,9 @@ sch_p_calendar <- function(p = 0.5, start = "13:00", end = "20:00") {
 }
 
 sch_p_counts <- function(hours = 7, days = as.Date("2024-06-03") + c(0, 1, 2, 3, 4, 6)) {
-  day_type <- ifelse(format(days, "%d") %in% c("05", "06"), "weekend", "weekday")
+  # Each day's stratum is the calendar's (GH #449).
+  cal <- sch_p_calendar()
+  day_type <- cal$day_type[match(days, cal$date)]
   data.frame(
     date = rep(days, each = 2),
     day_type = rep(day_type, each = 2),

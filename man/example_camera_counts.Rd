@@ -32,10 +32,11 @@ Includes one row with \code{camera_status = "battery_failure"} and
 data(example_camera_counts)
 head(example_camera_counts)
 
-# Filter to operational rows before adding to a camera design
-data(example_calendar)
+# Filter to operational rows before adding to a camera design. The
+# calendar takes the data's day types (Friday counts as weekend here).
+cam_cal <- unique(example_camera_counts[, c("date", "day_type")])
 design <- creel_design(
-  example_calendar,
+  cam_cal,
   date = date, strata = day_type,
   survey_type = "camera",
   camera_mode = "counter"

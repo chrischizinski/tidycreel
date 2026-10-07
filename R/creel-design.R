@@ -1923,6 +1923,96 @@ interview_day_calendar <- function(design, key_cols, call = rlang::caller_env())
   cal[!duplicated(key), , drop = FALSE]
 }
 
+#' Refuse records whose date or stratum the calendar does not have
+#'
+#' The calendar is the population of days: N_h is counted from it. A count or
+#' interview row carries its own date and strata, and these were used as given,
+#' never looked up. A count dated outside the calendar became a sampled day the
+#' population does not contain -- 12 such weekday counts gave n_h = 20 against
+#' N_h = 10 and moved the effort estimate from 151 to 511 -- and a record whose
+#' stratum disagrees with the calendar's for its date was estimated in the
+#' stratum it named (a Monday labelled "weekend": SE 6.30 -> 13.53). Neither
+#' warned (GH #449).
+#'
+#' Only the strata the records carry are compared; a record with a missing date
+#' or stratum is left to the tier-1 checks, which report missing values.
+#'
+#' @param records Count or interview data.
+#' @param date_col The records' date column.
+#' @param what `"count"` or `"interview"`, for the messages.
+#' @keywords internal
+#' @noRd
+check_records_against_calendar <- function(records, design, date_col, what,
+                                           call = rlang::caller_env()) {
+  cal <- design$calendar
+  strata <- intersect(design$strata_cols, names(records))
+  if (!date_col %in% names(records) || nrow(records) == 0L) {
+    return(invisible(NULL))
+  }
+  rec_date <- as.character(records[[date_col]])
+  known <- !is.na(rec_date)
+  for (s in strata) known <- known & !is.na(records[[s]])
+  cal_date <- as.character(cal[[design$date_col]])
+
+  outside <- known & !rec_date %in% cal_date
+  if (any(outside)) {
+    bad <- unique(rec_date[outside]) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{sum(outside)} {what} {cli::qty(sum(outside))}row{?s} {?is/are} dated outside the \\
+         design calendar: \\
+         {.val {utils::head(bad, 5)}}{if (length(bad) > 5) ', ...' else ''}.",
+        "x" = "The calendar is the population of survey days. A day it does not \\
+               contain cannot be weighted against it.",
+        "i" = "Add the {cli::qty(length(bad))}day{?s} to the calendar, or correct the \\
+               {what} {cli::qty(length(bad))}date{?s}."
+      ),
+      class = "creel_error_record_outside_calendar",
+      call = call
+    )
+  }
+
+  if (length(strata) == 0L) {
+    return(invisible(NULL))
+  }
+  rec_key <- group_key( # nolint: object_usage_linter
+    data.frame(.date = rec_date, records[strata], check.names = FALSE),
+    c(".date", strata)
+  )
+  cal_key <- group_key( # nolint: object_usage_linter
+    data.frame(.date = cal_date, cal[strata], check.names = FALSE),
+    c(".date", strata)
+  )
+  mismatch <- known & !rec_key %in% cal_key
+  if (any(mismatch)) {
+    first <- !duplicated(rec_key) & mismatch
+    shown <- utils::head(which(first), 5)
+    lines <- vapply(shown, function(i) {
+      on_cal <- cal[cal_date == rec_date[i], strata, drop = FALSE]
+      sprintf(
+        "%s: %s row says %s, calendar says %s",
+        rec_date[i], what,
+        unit_label(records[i, strata, drop = FALSE]),
+        paste(unique(unit_label(on_cal)), collapse = " or ")
+      )
+    }, character(1))
+    # Labels are data: braces in them would be read as cli markup.
+    lines <- gsub("}", "}}", gsub("{", "{{", lines, fixed = TRUE), fixed = TRUE)
+    cli::cli_abort(
+      c(
+        "{sum(mismatch)} {what} {cli::qty(sum(mismatch))}row{?s} {?has/have} a stratum \\
+         the calendar does not give {?its/their} date.",
+        stats::setNames(lines, rep("x", length(lines))),
+        "i" = "A record is estimated in the stratum it names, so a wrong label moves it \\
+               to another stratum's estimate. Correct the {what} rows or the calendar."
+      ),
+      class = "creel_error_record_strata_mismatch",
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
 #' Apply the schedule's shift probability to the counts
 #'
 #' Internal (GH #385). Every counted day must have a probability in the
@@ -2516,6 +2606,7 @@ add_counts <- function(
 
   # Validate counts structure (Tier 1)
   validation <- validate_counts_tier1(counts, design, psu, allow_invalid) # nolint: object_usage_linter
+  check_records_against_calendar(counts, design, design$date_col, "count") # GH #449
 
   # One definition of "the same sampling unit" for every check below. These had
   # drifted into three different keys, none carrying the section, so a day
@@ -3514,6 +3605,7 @@ add_interviews <- function(
     date_col,
     allow_invalid
   ) # nolint: object_usage_linter
+  check_records_against_calendar(interviews, design, date_col, "interview") # GH #449
 
   # Validate trip metadata
   validate_trip_metadata(
