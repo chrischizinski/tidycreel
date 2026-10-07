@@ -40,24 +40,3 @@ record_step <- function(design, fn, args, supplied, table_arg, table) {
   design$steps <- c(design$steps, list(step))
   design
 }
-
-#' A supplied argument that may be a column or a value, as its plain form
-#'
-#' `p_period = pcol` records the column name; `p_period = 0.5` the number.
-#' The rule add_counts() and add_interviews() use: a bare name or string
-#' naming a column of `data` is a column, anything else is evaluated. Replayed
-#' as a string, a column name is read as the column again.
-#'
-#' @keywords internal
-#' @noRd
-column_or_value <- function(quo, data) {
-  if (rlang::quo_is_null(quo)) {
-    return(NULL)
-  }
-  expr <- rlang::quo_get_expr(quo)
-  if ((is.symbol(expr) || is.character(expr)) && length(expr) == 1L &&
-        as.character(expr) %in% names(data)) {
-    return(as.character(expr))
-  }
-  rlang::eval_tidy(quo)
-}

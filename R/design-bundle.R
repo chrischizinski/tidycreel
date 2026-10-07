@@ -79,14 +79,17 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
 
   as_zip <- grepl("\\.zip$", path, ignore.case = TRUE)
   if (as_zip) rlang::check_installed("zip", reason = "to write a .zip bundle.")
-  if (file.exists(path)) {
-    if (!isTRUE(overwrite)) {
-      cli::cli_abort(c("{.path {path}} already exists.", "i" = "Use {.code overwrite = TRUE} to replace it."))
-    }
-    unlink(path, recursive = TRUE)
+  if (file.exists(path) && !isTRUE(overwrite)) {
+    cli::cli_abort(c("{.path {path}} already exists.", "i" = "Use {.code overwrite = TRUE} to replace it."))
   }
-  dir <- if (as_zip) file.path(tempfile("tidycreel-bundle-"), "bundle") else path
-  dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  # Everything is written and checked in a staging folder; an existing bundle
+  # is replaced only once the new one is complete, so a failed write never
+  # destroys it.
+  parent <- dirname(path)
+  if (!dir.exists(parent)) dir.create(parent, recursive = TRUE)
+  dir <- tempfile(".tidycreel-bundle-", tmpdir = parent)
+  dir.create(dir)
+  on.exit(unlink(dir, recursive = TRUE), add = TRUE)
 
   steps <- list()
   tables <- list()
@@ -96,20 +99,21 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
     data_table <- st$fn %in% c("add_counts", "add_interviews")
     if (include_data || !data_table) {
       file <- sprintf("%02d-%s.csv", i, st$table_arg)
-      write_bundle_table(st$table, file.path(dir, file))
+      write_bundle_table(st$table, file.path(dir, file), na_marker(st$table))
       entry$table <- file
       entry$columns <- column_types(st$table)
       entry$class <- table_class(st$table)
+      na <- na_marker(st$table)
+      if (!identical(na, "NA")) entry$na <- na
       tables[[file]] <- unname(tools::md5sum(file.path(dir, file)))
       # Read back now: a table that does not survive the CSV round trip would
       # rebuild a different design, so it is refused here, not discovered later.
       # Class included -- a schedule read back as a plain data frame rebuilds a
       # different calendar.
-      back <- read_bundle_table(file.path(dir, file), entry$columns, entry$class)
+      back <- read_bundle_table(file.path(dir, file), entry$columns, entry$class, na_marker(st$table))
       given <- st$table
       rownames(given) <- NULL
       if (!isTRUE(all.equal(given, back))) {
-        unlink(if (as_zip) dirname(dir) else dir, recursive = TRUE)
         cli::cli_abort(c(
           "The {st$table_arg} table does not survive being written as CSV.",
           "i" = "Check for list columns or other column types a CSV cannot hold."
@@ -136,8 +140,14 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
   yaml::write_yaml(manifest, file.path(dir, "manifest.yml"))
 
   if (as_zip) {
-    zip::zip(normalizePath(path, mustWork = FALSE), files = list.files(dir), root = dir)
-    unlink(dirname(dir), recursive = TRUE)
+    staged <- paste0(dir, ".zip")
+    zip::zip(staged, files = list.files(dir), root = dir)
+    dir <- staged
+    on.exit(unlink(staged), add = TRUE)
+  }
+  unlink(path, recursive = TRUE)
+  if (!file.rename(dir, path)) {
+    cli::cli_abort("Could not move the new bundle into place at {.path {path}}.")
   }
   invisible(path)
 }
@@ -282,8 +292,11 @@ column_types <- function(df) {
   lapply(df, function(x) {
     if (inherits(x, "Date")) return(list(type = "Date"))
     if (inherits(x, "POSIXct")) {
+      # Written as UTC instants (a local clock repeats in the hour daylight
+      # saving ends, and a zoneless clock would be read in the reader's zone);
+      # the zone the column displays in is restored, absent when it had none.
       tz <- attr(x, "tzone")
-      return(list(type = "POSIXct", tz = if (is.null(tz)) "" else tz[1]))
+      return(if (is.null(tz)) list(type = "POSIXct") else list(type = "POSIXct", tz = tz[1]))
     }
     if (is.factor(x)) return(list(type = "factor", levels = levels(x), ordered = is.ordered(x)))
     if (is.integer(x)) return(list(type = "integer"))
@@ -295,7 +308,20 @@ column_types <- function(df) {
   })
 }
 
-write_bundle_table <- function(df, file) {
+# The marker written for a missing value: "NA", unless a text value is
+# literally "NA", which a CSV reader would turn into a missing value.
+na_marker <- function(df) {
+  text <- unlist(lapply(df, function(x) if (is.character(x) || is.factor(x)) as.character(x)))
+  marker <- "NA"
+  k <- 0L
+  while (marker %in% text) {
+    k <- k + 1L
+    marker <- if (k == 1L) "<NA>" else sprintf("<NA%d>", k)
+  }
+  marker
+}
+
+write_bundle_table <- function(df, file, na = "NA") {
   out <- as.data.frame(df)
   for (nm in names(out)) {
     x <- out[[nm]]
@@ -306,11 +332,10 @@ write_bundle_table <- function(df, file) {
       f[is.na(x)] <- NA
       out[[nm]] <- f
     } else if (inherits(x, "POSIXct")) {
-      tz <- attr(x, "tzone")
-      out[[nm]] <- format(x, "%Y-%m-%d %H:%M:%OS6", tz = if (is.null(tz)) "" else tz[1])
+      out[[nm]] <- format(x, "%Y-%m-%d %H:%M:%OS6", tz = "UTC")
     }
   }
-  utils::write.csv(out, file, row.names = FALSE, na = "NA")
+  utils::write.csv(out, file, row.names = FALSE, na = na)
 }
 
 # The classes a table may carry: what tidycreel builds or accepts, all plain
@@ -326,14 +351,18 @@ table_class <- function(df) {
   cls
 }
 
-read_bundle_table <- function(file, columns, cls = "data.frame") {
-  raw <- utils::read.csv(file, colClasses = "character", na.strings = "NA", check.names = FALSE)
+read_bundle_table <- function(file, columns, cls = "data.frame", na = "NA") {
+  raw <- utils::read.csv(file, colClasses = "character", na.strings = na, check.names = FALSE)
   for (nm in names(columns)) {
     ct <- columns[[nm]]
     x <- raw[[nm]]
     raw[[nm]] <- switch(ct$type,
       Date = as.Date(x),
-      POSIXct = as.POSIXct(x, format = "%Y-%m-%d %H:%M:%OS", tz = ct$tz),
+      POSIXct = {
+        t <- as.POSIXct(x, format = "%Y-%m-%d %H:%M:%OS", tz = "UTC")
+        attr(t, "tzone") <- ct$tz
+        t
+      },
       factor = factor(x, levels = unlist(ct$levels), ordered = isTRUE(ct$ordered)),
       integer = as.integer(x),
       double = as.numeric(x),
@@ -367,7 +396,8 @@ bundle_table <- function(dir, st, manifest, i) {
     ), class = "creel_error_bundle_checksum")
   }
   if (!is.null(st$columns)) {
-    return(read_bundle_table(file, st$columns, if (is.null(st$class)) "data.frame" else st$class))
+    return(read_bundle_table(file, st$columns, if (is.null(st$class)) "data.frame" else st$class,
+                             if (is.null(st$na)) "NA" else st$na))
   }
   # Hand-written manifest: guess types, with the calendar's date column a Date.
   df <- utils::read.csv(file, check.names = FALSE, stringsAsFactors = FALSE)
@@ -400,7 +430,7 @@ check_manifest <- function(m) {
     cli::cli_abort("The manifest's first step must be {.fn creel_design}.",
                    class = "creel_error_bundle_manifest")
   }
-  step_fields <- c("fn", "args", "table", "columns", "class", "table_arg")
+  step_fields <- c("fn", "args", "table", "columns", "class", "na", "table_arg")
   for (i in seq_along(m$steps)) {
     bad <- setdiff(names(m$steps[[i]]), step_fields)
     if (length(bad)) {

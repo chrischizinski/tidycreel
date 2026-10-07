@@ -2429,7 +2429,6 @@ add_counts <- function(
   counts <- ungroup_input(counts) # GH #441
   step_supplied <- supplied_arg_names(match.call(), c("design", "counts")) # nolint: object_usage_linter
   step_counts <- counts
-  step_p_period <- column_or_value(rlang::enquo(p_period), counts) # nolint: object_usage_linter
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -2997,7 +2996,8 @@ add_counts <- function(
     list(count_col = count_col_name, psu = psu, count_time_col = count_time_col_name,
          count_type = count_type, circuit_time = circuit_time,
          period_length_col = period_length_col_name, unit_cols = unit_cols,
-         allow_invalid = allow_invalid, p_period = step_p_period),
+         allow_invalid = allow_invalid,
+         p_period = if (is.null(p_period_vals)) NULL else as.vector(attr(p_period_vals, "source"))),
     step_supplied, "counts", step_counts
   )
 }

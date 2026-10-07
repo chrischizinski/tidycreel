@@ -206,3 +206,62 @@ test_that("#438: a .zip bundle round-trips", {
   bd_same_effort(d, r)
   expect_error(write_design(d, p), "already exists")
 })
+
+test_that("#438: date-times keep their instants: no zone, and the repeated DST hour (review)", {
+  # Written as local clock text, a zoneless time would be read in the reader's
+  # zone, and the two 01:30s of the fall-back night would collapse into one.
+  iv <- example_interviews
+  first <- as.POSIXct("2024-11-03 06:30:00", tz = "UTC")  # 01:30 CDT
+  iv$seen_chicago <- first + c(0, 3600, rep(7200, nrow(iv) - 2))  # 01:30 CDT, 01:30 CST, ...
+  attr(iv$seen_chicago, "tzone") <- "America/Chicago"
+  iv$seen_nozone <- as.POSIXct("2024-06-01 10:00:00", tz = "UTC") + seq_len(nrow(iv))
+  attr(iv$seen_nozone, "tzone") <- NULL
+  d <- creel_design(example_calendar, date = date, strata = day_type)
+  d <- bd_quiet(add_interviews(d, iv, catch = catch_total, effort = hours_fished, trip_status = trip_status))
+  p <- bd_dir("times")
+  write_design(d, p)
+  r <- withr::with_timezone("Asia/Tokyo", bd_quiet(read_design(p)))
+  got <- r$steps[[2]]$table
+  expect_identical(as.numeric(got$seen_chicago), as.numeric(iv$seen_chicago))
+  expect_identical(attr(got$seen_chicago, "tzone"), "America/Chicago")
+  expect_identical(as.numeric(got$seen_nozone), as.numeric(iv$seen_nozone))
+  expect_null(attr(got$seen_nozone, "tzone"))
+})
+
+test_that("#438: a text value that is literally \"NA\" stays a value (review)", {
+  iv <- example_interviews
+  iv$note <- c("NA", NA, rep("ok", nrow(iv) - 2))
+  d <- creel_design(example_calendar, date = date, strata = day_type)
+  d <- bd_quiet(add_interviews(d, iv, catch = catch_total, effort = hours_fished, trip_status = trip_status))
+  p <- bd_dir("na-label")
+  write_design(d, p)
+  got <- bd_quiet(read_design(p))$steps[[2]]$table$note
+  expect_identical(got[1:2], c("NA", NA))
+})
+
+test_that("#438: a failed overwrite leaves the existing bundle intact (review)", {
+  p <- bd_dir("keep")
+  write_design(bd_plain(), p)
+  before <- readLines(file.path(p, "manifest.yml"))
+  cnt <- example_counts
+  cnt$span <- as.difftime(seq_len(nrow(cnt)), units = "hours")  # cannot survive a CSV
+  d <- creel_design(example_calendar, date = date, strata = day_type)
+  d <- bd_quiet(add_counts(d, cnt, count_col = effort_hours))
+  expect_error(write_design(d, p, overwrite = TRUE), class = "creel_error_bundle_table_roundtrip")
+  expect_identical(readLines(file.path(p, "manifest.yml")), before)
+  expect_length(list.files(dirname(p), pattern = "^\\.tidycreel-bundle-", all.files = TRUE), 0L)
+})
+
+test_that("#438: p_period is recorded as resolved, not evaluated a second time (review)", {
+  s <- generate_schedule("2024-06-03", "2024-06-16", n_periods = 1, sampling_rate = 0.5, seed = 3)
+  d <- bd_quiet(creel_design(s, date = date, strata = day_type))
+  cnt <- data.frame(date = s$date[!is.na(s$day_type)], day_type = s$day_type, anglers = 3, hrs = 8)
+  i <- 0L
+  d <- bd_quiet(add_counts(d, cnt, count_col = anglers, period_length_col = hrs,
+                           p_period = {
+                             i <<- i + 1L
+                             c(0.5, 1)[i]
+                           }))
+  expect_identical(i, 1L)
+  expect_identical(d$steps[[2]]$args$p_period, 0.5)
+})
