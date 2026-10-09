@@ -35,7 +35,9 @@
   [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md).
   A table edited after writing fails its checksum; a newer format
   version or an unknown manifest field is refused. yaml is a new
-  dependency.
+  dependency. Whole-valued arguments such as `p_period = 1` keep their
+  type in the manifest, and a relative `.zip` path works
+  ([\#459](https://github.com/chrischizinski/tidycreel/issues/459)).
 
 - On a night design,
   [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
