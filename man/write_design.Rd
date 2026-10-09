@@ -50,10 +50,8 @@ is in no step and would be lost. Make the change in the input table and
 build the design again.
 \item A design built by a version of tidycreel without steps is refused; build
 it again with this version.
-\item Not yet supported, and refused rather than written in part: catch,
-lengths or ages attached (\code{\link[=add_catch]{add_catch()}}, \code{\link[=add_lengths]{add_lengths()}}, \code{\link[=add_ages]{add_ages()}});
-bus-route, ice, camera and aerial designs; counts prepared by
-\code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}}.
+\item Not yet supported, and refused rather than written in part: bus-route and
+ice designs.
 }
 
 Each table is written with a checksum and its column types (dates,

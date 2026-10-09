@@ -40,10 +40,8 @@ design_bundle_version <- 1L
 #'   build the design again.
 #' - A design built by a version of tidycreel without steps is refused; build
 #'   it again with this version.
-#' - Not yet supported, and refused rather than written in part: catch,
-#'   lengths or ages attached ([add_catch()], [add_lengths()], [add_ages()]);
-#'   bus-route, ice, camera and aerial designs; counts prepared by
-#'   [prep_counts_daily_effort()].
+#' - Not yet supported, and refused rather than written in part: bus-route and
+#'   ice designs.
 #'
 #' Each table is written with a checksum and its column types (dates,
 #' date-times with their time zone, factor levels), and is read back and
@@ -99,7 +97,11 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
   for (i in seq_along(design$steps)) {
     st <- design$steps[[i]]
     entry <- list(fn = st$fn, args = st$args)
-    data_table <- st$fn %in% c("add_counts", "add_interviews")
+    # The prep_counts_*() mark is an attribute, which a CSV cannot hold. It is
+    # recorded with or without the table: a table supplied to read_design()
+    # from a CSV has lost it too.
+    if (counts_are_effort(st$table)) entry$counts_are_effort <- TRUE # nolint: object_usage_linter
+    data_table <- st$fn %in% bundle_data_steps
     if (include_data || !data_table) {
       file <- sprintf("%02d-%s.csv", i, st$table_arg)
       write_bundle_table(st$table, file.path(dir, file), na_marker(st$table))
@@ -114,6 +116,7 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
       # Class included -- a schedule read back as a plain data frame rebuilds a
       # different calendar.
       back <- read_bundle_table(file.path(dir, file), entry$columns, entry$class, na_marker(st$table))
+      if (isTRUE(entry$counts_are_effort)) back <- mark_counts_as_effort(back) # nolint: object_usage_linter
       given <- st$table
       rownames(given) <- NULL
       if (!isTRUE(all.equal(given, back))) {
@@ -183,7 +186,8 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
 #' @param path A bundle folder or `.zip` file.
 #' @param ... Tables for steps the bundle does not carry (written with
 #'   `include_data = FALSE`), named by their argument: `counts = `,
-#'   `interviews = `.
+#'   `interviews = `, and `catch = `, `lengths = `, `ages = ` for the tables
+#'   given to [add_catch()], [add_lengths()] and [add_ages()].
 #'
 #' @return A [creel_design()] object.
 #' @seealso [write_design()]
@@ -212,7 +216,7 @@ read_design <- function(path, ...) {
     tbl <- if (!is.null(supplied[[st$table_arg]])) {
       used <- c(used, st$table_arg)
       supplied[[st$table_arg]]
-    } else if (!is.null(st$table)) {
+    } else if (!is.null(st[["table"]])) { # `$` would partial-match table_arg
       bundle_table(dir, st, manifest, i)
     } else {
       cli::cli_abort(c(
@@ -221,12 +225,13 @@ read_design <- function(path, ...) {
                {.code read_design(path, {st$table_arg} = <data frame>)}."
       ), class = "creel_error_bundle_table_missing")
     }
+    if (isTRUE(st$counts_are_effort)) tbl <- mark_counts_as_effort(tbl) # nolint: object_usage_linter
     args <- lapply(st$args, unlist_scalar)
     design <- if (identical(st$fn, "creel_design")) {
       do.call(creel_design, c(list(calendar = tbl), args))
     } else {
       fn <- bundle_step_fn(st$fn)
-      do.call(fn, c(list(design = design), stats::setNames(list(tbl), st$table_arg), args))
+      do.call(fn, c(list(design = design), stats::setNames(list(tbl), step_table_formal(st$fn, st$table_arg)), args))
     }
   }
   unused <- setdiff(names(supplied), used)
@@ -238,11 +243,24 @@ read_design <- function(path, ...) {
 
 # --- internals ---------------------------------------------------------------
 
+# Steps whose table is survey data, left out by include_data = FALSE.
+bundle_data_steps <- c("add_counts", "add_interviews", "add_catch", "add_lengths", "add_ages")
+
+# The argument a step's table is passed to. Catch, lengths and ages all take
+# `data`, so the bundle names their tables apart (and read_design() takes them
+# back by those names).
+step_table_formal <- function(fn, table_arg) {
+  if (fn %in% c("add_catch", "add_lengths", "add_ages")) "data" else table_arg
+}
+
 bundle_step_fn <- function(fn) {
   switch(fn,
     add_sections = add_sections,
     add_counts = add_counts,
     add_interviews = add_interviews,
+    add_catch = add_catch,
+    add_lengths = add_lengths,
+    add_ages = add_ages,
     cli::cli_abort("The bundle has a step {.fn {fn}}, which this version cannot rebuild.",
                    class = "creel_error_bundle_unsupported")
   )
@@ -267,20 +285,15 @@ unlist_scalar <- function(x) if (is.list(x)) unlist(x) else x
 
 check_design_bundleable <- function(design) {
   why <- character(0)
-  if (!identical(design$design_type, "instantaneous")) {
+  # A sampling frame is a second table, which a step cannot carry yet.
+  if (design$design_type %in% c("bus_route", "ice")) {
     why <- c(why, cli::format_inline("a {.val {design$design_type}} design"))
-  }
-  for (slot in c("catch", "lengths", "ages")) {
-    if (!is.null(design[[slot]])) why <- c(why, cli::format_inline("{.fn add_{slot}} data"))
-  }
-  if (isTRUE(design$counts_are_effort)) {
-    why <- c(why, cli::format_inline("counts prepared by {.fn prep_counts_daily_effort}"))
   }
   if (length(why)) {
     cli::cli_abort(c(
       "This design cannot be written as a bundle yet.",
       stats::setNames(why, rep("x", length(why))),
-      "i" = "Bundles carry roving and access designs with sections, counts and interviews (#438)."
+      "i" = "Bundles carry every survey type except bus-route and ice designs (#438)."
     ), class = "creel_error_bundle_unsupported")
   }
   if (length(design$steps) == 0L) {
@@ -302,7 +315,7 @@ check_design_rebuilds <- function(design) {
         do.call(creel_design, c(list(calendar = st$table), st$args))
       } else {
         do.call(bundle_step_fn(st$fn),
-                c(list(design = rebuilt), stats::setNames(list(st$table), st$table_arg), st$args))
+                c(list(design = rebuilt), stats::setNames(list(st$table), step_table_formal(st$fn, st$table_arg)), st$args))
       }
     ))
   }
@@ -460,7 +473,7 @@ check_manifest <- function(m) {
     cli::cli_abort("The manifest's first step must be {.fn creel_design}.",
                    class = "creel_error_bundle_manifest")
   }
-  step_fields <- c("fn", "args", "table", "columns", "class", "na", "table_arg")
+  step_fields <- c("fn", "args", "table", "columns", "class", "na", "table_arg", "counts_are_effort")
   for (i in seq_along(m$steps)) {
     bad <- setdiff(names(m$steps[[i]]), step_fields)
     if (length(bad)) {
@@ -471,7 +484,8 @@ check_manifest <- function(m) {
       m$steps[[i]]$table_arg <- switch(
         m$steps[[i]]$fn,
         creel_design = "calendar", add_sections = "sections", add_counts = "counts",
-        add_interviews = "interviews", NA_character_
+        add_interviews = "interviews", add_catch = "catch", add_lengths = "lengths",
+        add_ages = "ages", NA_character_
       )
     }
   }
