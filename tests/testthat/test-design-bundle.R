@@ -563,3 +563,21 @@ test_that("#438: ice designs round-trip with and without a sampling frame", {
   write_design(d2, p2)
   bd_same_design(d2, bd_quiet(read_design(p2)))
 })
+
+test_that("#438: an ice site selector naming two different columns is refused plainly (review)", {
+  # site = 3 chose `station` in the calendar and `access_point` in the frame; a
+  # step records one name, so the rebuild differed and the design was refused
+  # as hand-edited -- which it was not.
+  isf <- example_ice_sampling_frame
+  cal <- unique(isf[, c("date", "day_type")])
+  rownames(cal) <- NULL
+  cal$station <- "X"
+  isf$access_point <- paste0("A", seq_len(nrow(isf)))
+  isf <- isf[, c("date", "day_type", "access_point", setdiff(names(isf), c("date", "day_type", "access_point")))]
+  d <- bd_quiet(creel_design(cal, date = date, strata = day_type, survey_type = "ice",
+                             effort_type = "time_on_ice", sampling_frame = isf, site = 3,
+                             p_period = p_period))
+  p <- bd_dir("ice-site")
+  expect_error(write_design(d, p), "access_point", class = "creel_error_bundle_unsupported")
+  expect_false(file.exists(p))
+})

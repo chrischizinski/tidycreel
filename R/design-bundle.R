@@ -301,6 +301,20 @@ yaml_exact_number <- function(x) {
 unlist_scalar <- function(x) if (is.list(x)) unlist(x) else x
 
 check_design_bundleable <- function(design) {
+  # On an ice design `site` is resolved against the calendar AND the sampling
+  # frame. A positional selector can choose a different column in each, and a
+  # step records one column name, so the rebuild would differ (#438 review).
+  frame_site <- design$bus_route$site_col
+  if (identical(design$design_type, "ice") && !is.null(design$site_col) && !is.null(frame_site) &&
+        !frame_site %in% c(".ice_site", design$site_col)) {
+    cli::cli_abort(c(
+      "This design cannot be written as a bundle.",
+      "x" = "{.arg site} chose {.field {design$site_col}} in the calendar and \\
+             {.field {frame_site}} in the sampling frame.",
+      "i" = "A bundle records one column name. Select the site by name, with the same \\
+             column name in both tables."
+    ), class = "creel_error_bundle_unsupported")
+  }
   if (length(design$steps) == 0L) {
     cli::cli_abort(c(
       "This design has no recorded steps.",

@@ -18,8 +18,10 @@
   design built by an earlier version (no steps). Every survey type is
   carried: bus-route and ice designs write their `sampling_frame` as a
   further table of the design step, kept even with `include_data = FALSE`
-  (#438, part 2b), and record `site`, `p_site`, `circuit` and `p_period` as
-  resolved. Catch, lengths and ages (`add_catch()`,
+  (#438, part 2b), and record their frame settings as resolved (`site`,
+  `p_site`, `circuit` and `p_period` for bus-route; `p_site`, `p_period` and
+  `effort_type` for ice). An ice design whose `site` selector chose different
+  columns in the calendar and the frame (e.g. `site = 3`) is refused. Catch, lengths and ages (`add_catch()`,
   `add_lengths()`, `add_ages()`), camera and aerial designs, and counts from
   `prep_counts_daily_effort()` are carried (#438, part 2a); the last keep
   their mark as daily effort, which a CSV alone would drop. Written with
