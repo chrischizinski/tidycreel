@@ -19,7 +19,9 @@
   with catch, lengths or ages, bus-route, ice, camera and aerial designs,
   and counts from `prep_counts_daily_effort()`. A table edited after
   writing fails its checksum; a newer format version or an unknown manifest
-  field is refused. yaml is a new dependency.
+  field is refused. yaml is a new dependency. Whole-valued arguments such as
+  `p_period = 1` keep their type in the manifest, and a relative `.zip` path
+  works (#459).
 
 * On a night design, `add_interviews()` accepts `interview_time` without
   `trip_start`, and together with `trip_duration`. The interview time is

@@ -289,3 +289,43 @@ test_that("#438: a .zip write leaves no staging copy behind (review)", {
   write_design(bd_plain(), file.path(where, "plain.zip"))
   expect_identical(list.files(where, all.files = TRUE, no.. = TRUE), "plain.zip")
 })
+
+test_that("#459: whole-valued arguments round-trip instead of being refused", {
+  # "2" in YAML is the integer 2L, not the double 2, so a census p_period = 1 or
+  # an hour-long circuit_time = 2 failed the identical() check and refused a
+  # valid design. The rebuilt design must also carry doubles, not integers.
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:5, day_type = "weekday")
+  d <- creel_design(cal, date = date, strata = day_type)
+  cnt <- data.frame(date = cal$date, day_type = "weekday", anglers = 1:6, hrs = 2)
+  d <- bd_quiet(add_counts(d, cnt, count_col = anglers, count_type = "progressive",
+                           circuit_time = 2, period_length_col = hrs, p_period = 1))
+  p <- bd_dir("whole")
+  write_design(d, p)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  expect_identical(m$steps[[2]]$args$circuit_time, 2)
+  expect_identical(m$steps[[2]]$args$p_period, 1)
+  r <- bd_quiet(read_design(p))
+  bd_same_design(d, r)
+  bd_same_effort(d, r)
+})
+
+test_that("#459: the manifest number format reads back as the same double", {
+  # Exponent forms without a point ("1e+20") read back as strings, not numbers.
+  x <- c(0, 2, -3, 100000, 1e20, -1e20, 1e-20, 2 / 3, 1 / 3)
+  for (v in x) {
+    expect_identical(yaml::yaml.load(paste0("a: ", unclass(yaml_exact_number(v))))$a, v)
+  }
+})
+
+test_that("#459: a relative .zip path writes and reads back", {
+  skip_if_not_installed("zip")
+  # zip::zip() changes into the staging folder, so a relative zip name was
+  # written inside the folder it zipped and could not be moved into place.
+  withr::local_dir(withr::local_tempdir())
+  d <- bd_plain()
+  write_design(d, "design.zip")
+  expect_identical(list.files(".", all.files = TRUE, no.. = TRUE), "design.zip")
+  r <- bd_quiet(read_design("design.zip"))
+  bd_same_design(d, r)
+  bd_same_effort(d, r)
+})

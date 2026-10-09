@@ -87,6 +87,9 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
   # destroys it.
   parent <- dirname(path)
   if (!dir.exists(parent)) dir.create(parent, recursive = TRUE)
+  # Absolute, because zip::zip() changes into the staging folder before it
+  # writes: a relative zip name landed inside the folder it zipped (#459).
+  parent <- normalizePath(parent)
   dir <- tempfile(".tidycreel-bundle-", tmpdir = parent)
   dir.create(dir)
   on.exit(unlink(dir, recursive = TRUE), add = TRUE)
@@ -251,6 +254,10 @@ yaml_exact_number <- function(x) {
   f <- format(x, digits = 15, trim = TRUE)
   inexact <- !is.na(x) & suppressWarnings(as.numeric(f)) != x
   f[inexact] <- sprintf("%.17g", x[inexact])
+  # Without a decimal point YAML reads "2" back as an integer and "1e+20" as a
+  # string, so a whole-valued argument failed the round-trip check (#459).
+  whole <- is.finite(x) & !grepl(".", f, fixed = TRUE)
+  f[whole] <- sub("^(-?[0-9]+)", "\\1.0", f[whole])
   f[is.na(x)] <- ".na.real"
   structure(f, class = "verbatim")
 }
