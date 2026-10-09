@@ -185,15 +185,19 @@ test_that("#438: a design changed by hand is refused, so a bundle cannot lose th
   expect_error(write_design(d, bd_dir("hand")), "calendar", class = "creel_error_bundle_hand_edited")
 })
 
-test_that("#438: designs part 1 cannot carry are refused, not written in part", {
+test_that("#438: designs a bundle cannot carry are refused, not written in part", {
   d <- bd_plain()
   old <- d
   old$steps <- NULL
   expect_error(write_design(old, bd_dir("old")), class = "creel_error_bundle_no_steps")
-  d$catch <- data.frame(x = 1)
-  p <- bd_dir("catch")
-  expect_error(write_design(d, p), "add_catch", class = "creel_error_bundle_unsupported")
-  expect_false(file.exists(p))
+  # Until part 2b a step carries one table, and these designs need a second
+  # (the sampling frame).
+  for (type in c("bus_route", "ice")) {
+    d$design_type <- type
+    p <- bd_dir(type)
+    expect_error(write_design(d, p), type, class = "creel_error_bundle_unsupported")
+    expect_false(file.exists(p))
+  }
 })
 
 test_that("#438: a .zip bundle round-trips", {
@@ -328,4 +332,133 @@ test_that("#459: a relative .zip path writes and reads back", {
   r <- bd_quiet(read_design("design.zip"))
   bd_same_design(d, r)
   bd_same_effort(d, r)
+})
+
+# --- part 2a: catch, lengths, ages, camera, aerial, prepared counts ---------
+
+bd_with_catch <- function() {
+  d <- bd_plain()
+  bd_quiet(add_catch(d, example_catch, catch_uid = interview_id, interview_uid = interview_id,
+                     species = species, count = count, catch_type = catch_type))
+}
+
+test_that("#438: catch and ages round-trip to the same species estimates", {
+  d <- bd_quiet(add_ages(bd_with_catch(), example_ages, age_uid = interview_id,
+                         interview_uid = interview_id, species = species, age = age, age_type = age_type))
+  p <- bd_dir("catch-ages")
+  write_design(d, p)
+  r <- bd_quiet(read_design(p))
+  bd_same_design(d, r)
+  ea <- bd_quiet(estimate_total_catch(d, by = species))$estimates
+  eb <- bd_quiet(estimate_total_catch(r, by = species))$estimates
+  expect_equal(eb, ea)
+  aa <- bd_quiet(est_age_distribution(d, by = species))
+  ab <- bd_quiet(est_age_distribution(r, by = species))
+  expect_equal(ab$estimates, aa$estimates)
+})
+
+test_that("#438: the catch table is recorded as given, not as add_catch() stored it", {
+  # add_catch() lowercases catch_type and makes uids character; replaying the
+  # stored table instead of the given one would hide what the user supplied.
+  ct <- example_catch
+  ct$catch_type <- toupper(ct$catch_type)
+  d <- bd_quiet(add_catch(bd_plain(), ct, catch_uid = interview_id, interview_uid = interview_id,
+                          species = species, count = count, catch_type = catch_type))
+  p <- bd_dir("catch-given")
+  write_design(d, p)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  step <- m$steps[[length(m$steps)]]
+  expect_identical(step$fn, "add_catch")
+  back <- utils::read.csv(file.path(p, step$table))
+  expect_identical(unique(back$catch_type), unique(ct$catch_type))
+  bd_same_design(d, bd_quiet(read_design(p)))
+})
+
+test_that("#438: binned lengths keep their release settings", {
+  d <- bd_quiet(add_lengths(bd_plain(), example_lengths, length_uid = interview_id,
+                            interview_uid = interview_id, species = species, length = length,
+                            length_type = length_type, count = count, release_format = "binned"))
+  p <- bd_dir("lengths")
+  write_design(d, p)
+  r <- bd_quiet(read_design(p))
+  expect_identical(r$lengths_release_format, "binned")
+  bd_same_design(d, r)
+})
+
+test_that("#438: include_data = FALSE leaves out catch, lengths and ages tables", {
+  d <- bd_with_catch()
+  p <- bd_dir("no-catch-data")
+  write_design(d, p, include_data = FALSE)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  fns <- vapply(m$steps, `[[`, "", "fn")
+  expect_null(m$steps[[which(fns == "add_catch")]][["table"]])
+  # `$table` partial-matched `table_arg`, so a table left out by include_data =
+  # FALSE was reported as a missing file instead of asked for.
+  expect_error(bd_quiet(read_design(p, counts = example_counts, interviews = example_interviews)),
+               "include_data = FALSE", class = "creel_error_bundle_table_missing")
+  r <- bd_quiet(read_design(p, counts = example_counts, interviews = example_interviews,
+                            data = example_catch))
+  bd_same_design(d, r)
+})
+
+test_that("#438: an aerial design keeps its correction settings", {
+  cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
+  rownames(cal) <- NULL # row names are not carried; see the PR for #438 part 2a
+  for (vis in list(list(visibility_correction = 0.85, visibility_se = 0.05),
+                   list(visibility_correction = "none"))) {
+    d <- do.call(creel_design, c(list(cal, date = quote(date), strata = quote(day_type),
+                                      survey_type = "aerial", angler_ratio = 1,
+                                      angler_ratio_se = 0, h_open = 14), vis))
+    d <- bd_quiet(add_counts(d, example_aerial_glmm_counts, count_col = n_anglers))
+    p <- bd_dir("aerial")
+    write_design(d, p, overwrite = TRUE)
+    r <- bd_quiet(read_design(p))
+    bd_same_design(d, r)
+    expect_identical(r$aerial, d$aerial)
+    ea <- bd_quiet(estimate_effort_aerial_glmm(d, time_col = time_of_flight))$estimates
+    eb <- bd_quiet(estimate_effort_aerial_glmm(r, time_col = time_of_flight))$estimates
+    expect_equal(eb, ea)
+  }
+})
+
+test_that("#438: a camera design keeps its camera mode", {
+  cal <- data.frame(date = unique(example_camera_counts$date),
+                    day_type = unique(example_camera_counts[, c("date", "day_type")])[["day_type"]])
+  d <- creel_design(cal, date = date, strata = day_type, survey_type = "camera",
+                    camera_mode = "counter")
+  d <- bd_quiet(add_counts(d, example_camera_counts, count_col = ingress_count))
+  p <- bd_dir("camera")
+  write_design(d, p)
+  r <- bd_quiet(read_design(p))
+  expect_identical(r$camera$camera_mode, "counter")
+  bd_same_design(d, r)
+})
+
+test_that("#438: counts from prep_counts_daily_effort() stay marked as effort", {
+  # The mark is an attribute a CSV drops. Without it the rebuilt design would
+  # read the daily effort as raw instantaneous counts.
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:3,
+                    day_type = c("weekday", "weekday", "weekend", "weekend"))
+  raw <- data.frame(sample_date = cal$date, day_type = cal$day_type, kind = "bank",
+                    effort = c(15, 23, 45, 52))
+  ready <- prep_counts_daily_effort(raw, date = sample_date, strata = day_type,
+                                    effort_type = kind, daily_effort = effort)
+  d <- bd_quiet(add_counts(creel_design(cal, date = date, strata = day_type), ready))
+  expect_true(d$counts_are_effort)
+  p <- bd_dir("prep")
+  write_design(d, p)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  expect_true(m$steps[[2]]$counts_are_effort)
+  r <- bd_quiet(read_design(p))
+  expect_true(r$counts_are_effort)
+  bd_same_design(d, r)
+  bd_same_effort(d, r)
+})
+
+test_that("#438: a table left out by include_data = FALSE is asked for, not reported missing", {
+  # `st$table` partial-matched `table_arg`, so the step looked as if it named a
+  # file, and the user was told the bundle had lost one.
+  p <- bd_dir("ask")
+  write_design(bd_plain(), p, include_data = FALSE)
+  expect_error(bd_quiet(read_design(p)), "include_data = FALSE", class = "creel_error_bundle_table_missing")
 })

@@ -951,7 +951,11 @@ creel_design <- function(
     list(date = date_col, strata = strata_cols, site = site_col,
          design_type = survey_type, survey_type = survey_type,
          day_start = day_start, night_date = night_date,
-         tz = if (is.null(night)) tz else night$tz),
+         tz = if (is.null(night)) tz else night$tz,
+         camera_mode = camera_mode, h_open = h_open,
+         visibility_correction = visibility_correction, visibility_se = visibility_se,
+         angler_ratio = angler_ratio, angler_ratio_se = angler_ratio_se,
+         open_start = open_start),
     step_supplied, "calendar", step_calendar
   )
   validate_creel_design(design)
@@ -5016,6 +5020,8 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #' @export
 add_catch <- function(design, data, catch_uid, interview_uid, species, count, catch_type) {
   data <- ungroup_input(data) # GH #441
+  step_supplied <- supplied_arg_names(match.call(), c("design", "data")) # nolint: object_usage_linter
+  step_data <- data
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(
@@ -5281,7 +5287,12 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   new_design$catch_count_col <- count_col
   new_design$catch_type_col <- catch_type_col
   class(new_design) <- "creel_design"
-  new_design
+  record_step( # nolint: object_usage_linter
+    new_design, "add_catch",
+    list(catch_uid = catch_uid_col, interview_uid = interview_uid_col, species = species_col,
+         count = count_col, catch_type = catch_type_col),
+    step_supplied, "data", step_data
+  )
 }
 
 #' Attach fish length frequency data to a creel design
@@ -5385,6 +5396,8 @@ add_lengths <- function(
   release_bin_width = NULL
 ) {
   data <- ungroup_input(data) # GH #441
+  step_supplied <- supplied_arg_names(match.call(), c("design", "data")) # nolint: object_usage_linter
+  step_data <- data
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
     cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
@@ -5609,7 +5622,14 @@ add_lengths <- function(
   new_design$lengths_release_bin_unit <- release_bin_unit
   new_design$lengths_release_bin_width <- release_bin_width
   class(new_design) <- "creel_design"
-  new_design
+  record_step( # nolint: object_usage_linter
+    new_design, "add_lengths",
+    list(length_uid = length_uid_col, interview_uid = interview_uid_col, species = species_col,
+         length = length_col, length_type = type_col, count = count_col,
+         release_format = release_format, release_bin_unit = release_bin_unit,
+         release_bin_width = release_bin_width),
+    step_supplied, "data", step_data
+  )
 }
 
 # Age data attachment ----
@@ -5660,6 +5680,8 @@ add_lengths <- function(
 #' @export
 add_ages <- function(design, data, age_uid, interview_uid, species, age, age_type) {
   data <- ungroup_input(data) # GH #441
+  step_supplied <- supplied_arg_names(match.call(), c("design", "data")) # nolint: object_usage_linter
+  step_data <- data
   if (!inherits(design, "creel_design")) {
     cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
   }
@@ -5758,7 +5780,12 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
   new_design$ages_age_col <- age_col
   new_design$ages_type_col <- type_col
   class(new_design) <- "creel_design"
-  new_design
+  record_step( # nolint: object_usage_linter
+    new_design, "add_ages",
+    list(age_uid = age_uid_col, interview_uid = interview_uid_col, species = species_col,
+         age = age_col, age_type = type_col),
+    step_supplied, "data", step_data
+  )
 }
 
 # Camera preprocessing ----
