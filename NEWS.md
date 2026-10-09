@@ -245,6 +245,17 @@
 
 ## Bug fixes
 
+* On bus-route and ice designs, `creel_design()` read a numeric `p_period`
+  as a column POSITION of `sampling_frame` (#463). `p_period = 1`, a period
+  certain to be sampled, selected the frame's first column: with `p_site`
+  there and constant within a circuit, every check passed and the inclusion
+  probability became `p_site^2`, half its value, so the bus-route effort
+  estimate doubled with no error or warning. On an ice design it made the
+  date column the inclusion probability. A `p_period` is now a column only
+  when it names one, as in `add_counts()`; otherwise it must be one number in
+  (0, 1]. Ice designs now refuse a `p_period` outside (0, 1], and a name that
+  is not a column, both of which passed silently before.
+
 * `add_counts()` and `add_interviews()` check each record against the
   calendar (#449). They used the date and strata on each row as given, never
   looking them up, and the calendar is the population of days the estimate

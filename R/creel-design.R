@@ -588,34 +588,11 @@ creel_design <- function(
     }
 
     # Resolve p_period: either a column in sampling_frame OR a scalar numeric argument
-    p_period_col <- NULL
-    p_period_scalar <- NULL
     p_period_quo <- rlang::enquo(p_period)
     if (!rlang::quo_is_null(p_period_quo)) {
-      # Try as column selector first; if it fails, evaluate as expression (scalar numeric)
-      tryCatch(
-        {
-          p_period_col <- resolve_single_col(
-            p_period_quo,
-            sampling_frame,
-            "p_period",
-            rlang::caller_env()
-          )
-        },
-        error = function(e) {
-          val <- rlang::eval_tidy(p_period_quo)
-          if (!is.numeric(val) || length(val) != 1) {
-            cli::cli_abort(
-              c(
-                "{.arg p_period} must be a column name in {.arg sampling_frame} or a single numeric value.",
-                "x" = "Got {.cls {class(val)[1]}} of length {length(val)}."
-              ),
-              class = "creel_error_invalid_input"
-            )
-          }
-          p_period_scalar <<- val
-        }
-      )
+      pp <- resolve_frame_p_period(p_period_quo, sampling_frame, rlang::caller_env())
+      p_period_col <- pp$col
+      p_period_scalar <- pp$value
     } else {
       cli::cli_abort(
         c(
@@ -705,29 +682,10 @@ creel_design <- function(
     p_period_ice_scalar <- NULL
     p_period_quo_ice <- rlang::enquo(p_period)
     if (!rlang::quo_is_null(p_period_quo_ice)) {
-      if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
-        tryCatch(
-          {
-            p_period_ice_col <- resolve_single_col(
-              p_period_quo_ice,
-              sampling_frame,
-              "p_period",
-              rlang::caller_env()
-            )
-          },
-          error = function(e) {
-            val <- rlang::eval_tidy(p_period_quo_ice)
-            if (is.numeric(val) && length(val) == 1L) {
-              p_period_ice_scalar <<- val
-            }
-          }
-        )
-      } else {
-        val <- rlang::eval_tidy(p_period_quo_ice)
-        if (is.numeric(val) && length(val) == 1L) {
-          p_period_ice_scalar <- val
-        }
-      }
+      frame_ice <- if (is.data.frame(sampling_frame)) sampling_frame else NULL
+      pp <- resolve_frame_p_period(p_period_quo_ice, frame_ice, rlang::caller_env())
+      p_period_ice_col <- pp$col
+      p_period_ice_scalar <- pp$value
     }
 
     # (c) Build a synthetic bus_route slot so add_interviews() can join .pi_i
@@ -1604,6 +1562,50 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #'
 #' @keywords internal
 #' @noRd
+# p_period of a bus-route or ice design: a column of the sampling frame, or one
+# number (#463). As in resolve_count_p_period(), column or number is decided
+# from the expression, never by trying tidyselect first: tidyselect reads a
+# bare whole number as a column POSITION, so `p_period = 1` selected the
+# frame's first column and the inclusion probability silently became p_site^2.
+# Returns list(col, value), exactly one of them non-NULL. `frame` is NULL when
+# there is no sampling frame, and then only a number is possible.
+resolve_frame_p_period <- function(p_period_quo, frame, call) {
+  expr <- rlang::quo_get_expr(p_period_quo)
+  names_a_column <- !is.null(frame) && (is.symbol(expr) || is.character(expr)) &&
+    length(expr) == 1L && as.character(expr) %in% names(frame)
+  if (names_a_column) {
+    col <- resolve_single_col(p_period_quo, frame, "p_period", call)
+    vals <- frame[[col]]
+    value <- NULL
+  } else {
+    value <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) NULL)
+    if (!is.numeric(value) || length(value) != 1L) {
+      cli::cli_abort(
+        c(
+          "{.arg p_period} must be a column of {.arg sampling_frame} or a single number in (0, 1].",
+          "x" = "Got {.cls {class(value)[1]}} of length {length(value)}."
+        ),
+        class = "creel_error_invalid_input",
+        call = call
+      )
+    }
+    col <- NULL
+    vals <- value
+  }
+  if (!is.numeric(vals) || any(is.na(vals) | vals <= 0 | vals > 1)) {
+    cli::cli_abort(
+      c(
+        "{.arg p_period} must be in (0, 1].",
+        "x" = if (is.null(col)) "Got {.val {value}}." else "Column {.field {col}} has values outside (0, 1].",
+        "i" = "It is the probability that the sampled period was selected."
+      ),
+      class = "creel_error_invalid_input",
+      call = call
+    )
+  }
+  list(col = col, value = value)
+}
+
 resolve_count_p_period <- function(p_period_quo, counts, design, period_length_col_name,
                                    period_vals = NULL, counts_are_effort = FALSE,
                                    call = rlang::caller_env()) {
