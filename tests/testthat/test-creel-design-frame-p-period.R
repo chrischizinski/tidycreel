@@ -67,3 +67,23 @@ test_that("#463: ice p_period = 1 is the number one, and a typo is refused", {
     "\\(0, 1\\]", class = "creel_error_invalid_input"
   )
 })
+
+test_that("#463: tidyselect helpers and a variable holding a name still select the column (review)", {
+  # The first fix decided "column" only from a bare name, which dropped the
+  # selector routes the old tidyselect-first code supported.
+  cn <- "ones"
+  expect_identical(fpp_design(p_period = all_of(cn))$bus_route$p_period_col, "ones")
+  expect_identical(fpp_design(p_period = tidyselect::any_of("ones"))$bus_route$p_period_col, "ones")
+  expect_identical(fpp_design(p_period = cn)$bus_route$p_period_col, "ones")
+  # ... and none of them warns (evaluating all_of() outside a selection does).
+  expect_no_warning(creel_design(build_property_calendar(6L), date = date, strata = day_type,
+                                 survey_type = "bus_route", sampling_frame = fpp_frame(),
+                                 site = site, circuit = circuit, p_site = p_site,
+                                 p_period = all_of(cn)))
+  # Arithmetic that gives a number is a number, not a position.
+  expect_identical(fpp_design(p_period = 2 - 1)$bus_route$data$.pi_i, c(0.5, 0.5))
+})
+
+test_that("#463: a p_period that fails to evaluate reports why (review)", {
+  expect_error(fpp_design(p_period = no_such_object), "no_such_object")
+})

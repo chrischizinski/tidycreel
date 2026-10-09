@@ -1573,25 +1573,46 @@ resolve_frame_p_period <- function(p_period_quo, frame, call) {
   expr <- rlang::quo_get_expr(p_period_quo)
   names_a_column <- !is.null(frame) && (is.symbol(expr) || is.character(expr)) &&
     length(expr) == 1L && as.character(expr) %in% names(frame)
-  if (names_a_column) {
+  value <- NULL
+  col <- NULL
+  # A tidyselect helper (all_of(), any_of(), ...) is known by the namespace of
+  # its function, not its name; evaluating one outside a selection is
+  # deprecated, so it goes straight to tidyselect.
+  is_selector <- !is.null(frame) && rlang::is_call(expr) && identical(tryCatch(
+    environmentName(environment(rlang::eval_tidy(expr[[1]], env = rlang::quo_get_env(p_period_quo)))),
+    error = function(e) ""
+  ), "tidyselect")
+  if (names_a_column || is_selector) {
     col <- resolve_single_col(p_period_quo, frame, "p_period", call)
-    vals <- frame[[col]]
-    value <- NULL
   } else {
-    value <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) NULL)
-    if (!is.numeric(value) || length(value) != 1L) {
+    evaluated <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) e)
+    if (is.numeric(evaluated) && length(evaluated) == 1L) {
+      value <- evaluated
+    } else if (is.character(evaluated) && length(evaluated) == 1L) {
+      # A variable holding a column name.
+      if (is.null(frame) || !evaluated %in% names(frame)) {
+        cli::cli_abort(
+          c("{.arg p_period} must be a column of {.arg sampling_frame} or a single number in (0, 1].",
+            "x" = "{.val {evaluated}} is not a column of {.arg sampling_frame}."),
+          class = "creel_error_invalid_input", call = call
+        )
+      }
+      col <- evaluated
+    } else if (!is.null(frame)) {
+      # A tidyselect helper such as all_of(), or an expression that failed to
+      # evaluate: tidyselect resolves it or reports why not. Never reached by a
+      # number, so a number is never a column position.
+      col <- resolve_single_col(p_period_quo, frame, "p_period", call)
+    } else {
       cli::cli_abort(
-        c(
-          "{.arg p_period} must be a column of {.arg sampling_frame} or a single number in (0, 1].",
-          "x" = "Got {.cls {class(value)[1]}} of length {length(value)}."
-        ),
-        class = "creel_error_invalid_input",
-        call = call
+        c("{.arg p_period} must be a single number in (0, 1] when there is no {.arg sampling_frame}.",
+          "x" = if (inherits(evaluated, "error")) conditionMessage(evaluated) else
+            "Got {.cls {class(evaluated)[1]}} of length {length(evaluated)}."),
+        class = "creel_error_invalid_input", call = call
       )
     }
-    col <- NULL
-    vals <- value
   }
+  vals <- if (is.null(col)) value else frame[[col]]
   if (!is.numeric(vals) || any(is.na(vals) | vals <= 0 | vals > 1)) {
     cli::cli_abort(
       c(
