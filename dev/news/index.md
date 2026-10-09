@@ -29,8 +29,15 @@
   The calendar is the record of the days surveyed; a schedule is never
   drawn again from its seed. Refused rather than written: a design
   changed by hand after it was built (the edit would be lost), a design
-  built by an earlier version (no steps), and, until part 2b, bus-route
-  and ice designs. Catch, lengths and ages
+  built by an earlier version (no steps). Every survey type is carried:
+  bus-route and ice designs write their `sampling_frame` as a further
+  table of the design step, kept even with `include_data = FALSE`
+  ([\#438](https://github.com/chrischizinski/tidycreel/issues/438), part
+  2b), and record their frame settings as resolved (`site`, `p_site`,
+  `circuit` and `p_period` for bus-route; `p_site`, `p_period` and
+  `effort_type` for ice). An ice design whose `site` selector chose
+  different columns in the calendar and the frame (e.g. `site = 3`) is
+  refused. Catch, lengths and ages
   ([`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
   [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
   [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)),

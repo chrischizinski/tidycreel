@@ -113,7 +113,7 @@ zip package).</p></dd>
 
 <dt id="arg-include-data">include_data<a class="anchor" aria-label="anchor" href="#arg-include-data"></a></dt>
 <dd><p><code>TRUE</code> (default) writes every table. <code>FALSE</code> writes the
-design only (the calendar and sections) and the arguments of the other
+design only (the calendar, any sampling frame, and sections) and the arguments of the other
 steps, e.g. to share a survey plan or when interviews hold personal data;
 supply those tables to <code><a href="read_design.html">read_design()</a></code>.</p></dd>
 
@@ -140,8 +140,6 @@ is in no step and would be lost. Make the change in the input table and
 build the design again.</p></li>
 <li><p>A design built by a version of tidycreel without steps is refused; build
 it again with this version.</p></li>
-<li><p>Not yet supported, and refused rather than written in part: bus-route and
-ice designs.</p></li>
 </ul><p>Each table is written with a checksum and its column types (dates,
 date-times with their time zone, factor levels), and is read back and
 compared before <code>write_design()</code> returns.</p>

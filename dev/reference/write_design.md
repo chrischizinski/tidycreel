@@ -41,9 +41,9 @@ write_design(
 - include_data:
 
   `TRUE` (default) writes every table. `FALSE` writes the design only
-  (the calendar and sections) and the arguments of the other steps, e.g.
-  to share a survey plan or when interviews hold personal data; supply
-  those tables to
+  (the calendar, any sampling frame, and sections) and the arguments of
+  the other steps, e.g. to share a survey plan or when interviews hold
+  personal data; supply those tables to
   [`read_design()`](https://chrischizinski.com/tidycreel/dev/reference/read_design.md).
 
 - notes:
@@ -71,9 +71,6 @@ rebuilds it from its steps and compares the result with `design`:
 
 - A design built by a version of tidycreel without steps is refused;
   build it again with this version.
-
-- Not yet supported, and refused rather than written in part: bus-route
-  and ice designs.
 
 Each table is written with a checksum and its column types (dates,
 date-times with their time zone, factor levels), and is read back and
