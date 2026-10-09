@@ -397,7 +397,38 @@ test_that("#438: include_data = FALSE leaves out catch, lengths and ages tables"
   expect_error(bd_quiet(read_design(p, counts = example_counts, interviews = example_interviews)),
                "include_data = FALSE", class = "creel_error_bundle_table_missing")
   r <- bd_quiet(read_design(p, counts = example_counts, interviews = example_interviews,
-                            data = example_catch))
+                            catch = example_catch))
+  bd_same_design(d, r)
+})
+
+test_that("#438: catch and ages left out by include_data = FALSE are supplied apart (review)", {
+  # All three take a `data` argument; under that one name the catch table was
+  # handed to add_ages() too, and the rebuild failed on a missing age column.
+  d <- bd_quiet(add_ages(bd_with_catch(), example_ages, age_uid = interview_id,
+                         interview_uid = interview_id, species = species, age = age, age_type = age_type))
+  p <- bd_dir("apart")
+  write_design(d, p, include_data = FALSE)
+  r <- bd_quiet(read_design(p, counts = example_counts, interviews = example_interviews,
+                            catch = example_catch, ages = example_ages))
+  bd_same_design(d, r)
+})
+
+test_that("#438: prepared counts keep their mark when the table is left out (review)", {
+  # The mark was recorded only beside the table, so a bundle written without
+  # data rebuilt the supplied counts as raw instantaneous counts.
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:3,
+                    day_type = c("weekday", "weekday", "weekend", "weekend"))
+  raw <- data.frame(sample_date = cal$date, day_type = cal$day_type, kind = "bank",
+                    effort = c(15, 23, 45, 52))
+  ready <- prep_counts_daily_effort(raw, date = sample_date, strata = day_type,
+                                    effort_type = kind, daily_effort = effort)
+  d <- bd_quiet(add_counts(creel_design(cal, date = date, strata = day_type), ready))
+  p <- bd_dir("prep-nodata")
+  write_design(d, p, include_data = FALSE)
+  from_csv <- ready # the same table, without the mark a CSV cannot carry
+  attr(from_csv, "tidycreel_counts_are_effort") <- NULL
+  r <- bd_quiet(read_design(p, counts = from_csv))
+  expect_true(r$counts_are_effort)
   bd_same_design(d, r)
 })
 

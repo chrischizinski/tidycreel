@@ -5291,7 +5291,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     new_design, "add_catch",
     list(catch_uid = catch_uid_col, interview_uid = interview_uid_col, species = species_col,
          count = count_col, catch_type = catch_type_col),
-    step_supplied, "data", step_data
+    step_supplied, "catch", step_data
   )
 }
 
@@ -5628,7 +5628,7 @@ add_lengths <- function(
          length = length_col, length_type = type_col, count = count_col,
          release_format = release_format, release_bin_unit = release_bin_unit,
          release_bin_width = release_bin_width),
-    step_supplied, "data", step_data
+    step_supplied, "lengths", step_data
   )
 }
 
@@ -5784,7 +5784,7 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
     new_design, "add_ages",
     list(age_uid = age_uid_col, interview_uid = interview_uid_col, species = species_col,
          age = age_col, age_type = type_col),
-    step_supplied, "data", step_data
+    step_supplied, "ages", step_data
   )
 }
 

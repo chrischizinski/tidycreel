@@ -11,7 +11,8 @@ read_design(path, ...)
 
 \item{...}{Tables for steps the bundle does not carry (written with
 \code{include_data = FALSE}), named by their argument: \verb{counts = },
-\verb{interviews = }.}
+\verb{interviews = }, and \verb{catch = }, \verb{lengths = }, \verb{ages = } for the tables
+given to \code{\link[=add_catch]{add_catch()}}, \code{\link[=add_lengths]{add_lengths()}} and \code{\link[=add_ages]{add_ages()}}.}
 }
 \value{
 A \code{\link[=creel_design]{creel_design()}} object.

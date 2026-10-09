@@ -97,6 +97,10 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
   for (i in seq_along(design$steps)) {
     st <- design$steps[[i]]
     entry <- list(fn = st$fn, args = st$args)
+    # The prep_counts_*() mark is an attribute, which a CSV cannot hold. It is
+    # recorded with or without the table: a table supplied to read_design()
+    # from a CSV has lost it too.
+    if (counts_are_effort(st$table)) entry$counts_are_effort <- TRUE # nolint: object_usage_linter
     data_table <- st$fn %in% bundle_data_steps
     if (include_data || !data_table) {
       file <- sprintf("%02d-%s.csv", i, st$table_arg)
@@ -106,8 +110,6 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
       entry$class <- table_class(st$table)
       na <- na_marker(st$table)
       if (!identical(na, "NA")) entry$na <- na
-      # The prep_counts_*() mark is an attribute, which a CSV cannot hold.
-      if (counts_are_effort(st$table)) entry$counts_are_effort <- TRUE # nolint: object_usage_linter
       tables[[file]] <- unname(tools::md5sum(file.path(dir, file)))
       # Read back now: a table that does not survive the CSV round trip would
       # rebuild a different design, so it is refused here, not discovered later.
@@ -184,7 +186,8 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
 #' @param path A bundle folder or `.zip` file.
 #' @param ... Tables for steps the bundle does not carry (written with
 #'   `include_data = FALSE`), named by their argument: `counts = `,
-#'   `interviews = `.
+#'   `interviews = `, and `catch = `, `lengths = `, `ages = ` for the tables
+#'   given to [add_catch()], [add_lengths()] and [add_ages()].
 #'
 #' @return A [creel_design()] object.
 #' @seealso [write_design()]
@@ -228,7 +231,7 @@ read_design <- function(path, ...) {
       do.call(creel_design, c(list(calendar = tbl), args))
     } else {
       fn <- bundle_step_fn(st$fn)
-      do.call(fn, c(list(design = design), stats::setNames(list(tbl), st$table_arg), args))
+      do.call(fn, c(list(design = design), stats::setNames(list(tbl), step_table_formal(st$fn, st$table_arg)), args))
     }
   }
   unused <- setdiff(names(supplied), used)
@@ -242,6 +245,13 @@ read_design <- function(path, ...) {
 
 # Steps whose table is survey data, left out by include_data = FALSE.
 bundle_data_steps <- c("add_counts", "add_interviews", "add_catch", "add_lengths", "add_ages")
+
+# The argument a step's table is passed to. Catch, lengths and ages all take
+# `data`, so the bundle names their tables apart (and read_design() takes them
+# back by those names).
+step_table_formal <- function(fn, table_arg) {
+  if (fn %in% c("add_catch", "add_lengths", "add_ages")) "data" else table_arg
+}
 
 bundle_step_fn <- function(fn) {
   switch(fn,
@@ -305,7 +315,7 @@ check_design_rebuilds <- function(design) {
         do.call(creel_design, c(list(calendar = st$table), st$args))
       } else {
         do.call(bundle_step_fn(st$fn),
-                c(list(design = rebuilt), stats::setNames(list(st$table), st$table_arg), st$args))
+                c(list(design = rebuilt), stats::setNames(list(st$table), step_table_formal(st$fn, st$table_arg)), st$args))
       }
     ))
   }
@@ -474,8 +484,8 @@ check_manifest <- function(m) {
       m$steps[[i]]$table_arg <- switch(
         m$steps[[i]]$fn,
         creel_design = "calendar", add_sections = "sections", add_counts = "counts",
-        add_interviews = "interviews", add_catch = "data", add_lengths = "data",
-        add_ages = "data", NA_character_
+        add_interviews = "interviews", add_catch = "catch", add_lengths = "lengths",
+        add_ages = "ages", NA_character_
       )
     }
   }
