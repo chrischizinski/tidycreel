@@ -588,34 +588,11 @@ creel_design <- function(
     }
 
     # Resolve p_period: either a column in sampling_frame OR a scalar numeric argument
-    p_period_col <- NULL
-    p_period_scalar <- NULL
     p_period_quo <- rlang::enquo(p_period)
     if (!rlang::quo_is_null(p_period_quo)) {
-      # Try as column selector first; if it fails, evaluate as expression (scalar numeric)
-      tryCatch(
-        {
-          p_period_col <- resolve_single_col(
-            p_period_quo,
-            sampling_frame,
-            "p_period",
-            rlang::caller_env()
-          )
-        },
-        error = function(e) {
-          val <- rlang::eval_tidy(p_period_quo)
-          if (!is.numeric(val) || length(val) != 1) {
-            cli::cli_abort(
-              c(
-                "{.arg p_period} must be a column name in {.arg sampling_frame} or a single numeric value.",
-                "x" = "Got {.cls {class(val)[1]}} of length {length(val)}."
-              ),
-              class = "creel_error_invalid_input"
-            )
-          }
-          p_period_scalar <<- val
-        }
-      )
+      pp <- resolve_frame_p_period(p_period_quo, sampling_frame, rlang::caller_env())
+      p_period_col <- pp$col
+      p_period_scalar <- pp$value
     } else {
       cli::cli_abort(
         c(
@@ -705,29 +682,10 @@ creel_design <- function(
     p_period_ice_scalar <- NULL
     p_period_quo_ice <- rlang::enquo(p_period)
     if (!rlang::quo_is_null(p_period_quo_ice)) {
-      if (!is.null(sampling_frame) && is.data.frame(sampling_frame)) {
-        tryCatch(
-          {
-            p_period_ice_col <- resolve_single_col(
-              p_period_quo_ice,
-              sampling_frame,
-              "p_period",
-              rlang::caller_env()
-            )
-          },
-          error = function(e) {
-            val <- rlang::eval_tidy(p_period_quo_ice)
-            if (is.numeric(val) && length(val) == 1L) {
-              p_period_ice_scalar <<- val
-            }
-          }
-        )
-      } else {
-        val <- rlang::eval_tidy(p_period_quo_ice)
-        if (is.numeric(val) && length(val) == 1L) {
-          p_period_ice_scalar <- val
-        }
-      }
+      frame_ice <- if (is.data.frame(sampling_frame)) sampling_frame else NULL
+      pp <- resolve_frame_p_period(p_period_quo_ice, frame_ice, rlang::caller_env())
+      p_period_ice_col <- pp$col
+      p_period_ice_scalar <- pp$value
     }
 
     # (c) Build a synthetic bus_route slot so add_interviews() can join .pi_i
@@ -1604,6 +1562,71 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 #'
 #' @keywords internal
 #' @noRd
+# p_period of a bus-route or ice design: a column of the sampling frame, or one
+# number (#463). As in resolve_count_p_period(), column or number is decided
+# from the expression, never by trying tidyselect first: tidyselect reads a
+# bare whole number as a column POSITION, so `p_period = 1` selected the
+# frame's first column and the inclusion probability silently became p_site^2.
+# Returns list(col, value), exactly one of them non-NULL. `frame` is NULL when
+# there is no sampling frame, and then only a number is possible.
+resolve_frame_p_period <- function(p_period_quo, frame, call) {
+  expr <- rlang::quo_get_expr(p_period_quo)
+  names_a_column <- !is.null(frame) && (is.symbol(expr) || is.character(expr)) &&
+    length(expr) == 1L && as.character(expr) %in% names(frame)
+  value <- NULL
+  col <- NULL
+  # A tidyselect helper (all_of(), any_of(), ...) is known by the namespace of
+  # its function, not its name; evaluating one outside a selection is
+  # deprecated, so it goes straight to tidyselect.
+  is_selector <- !is.null(frame) && rlang::is_call(expr) && identical(tryCatch(
+    environmentName(environment(rlang::eval_tidy(expr[[1]], env = rlang::quo_get_env(p_period_quo)))),
+    error = function(e) ""
+  ), "tidyselect")
+  if (names_a_column || is_selector) {
+    col <- resolve_single_col(p_period_quo, frame, "p_period", call)
+  } else {
+    evaluated <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) e)
+    if (is.numeric(evaluated) && length(evaluated) == 1L) {
+      value <- evaluated
+    } else if (is.character(evaluated) && length(evaluated) == 1L) {
+      # A variable holding a column name.
+      if (is.null(frame) || !evaluated %in% names(frame)) {
+        cli::cli_abort(
+          c("{.arg p_period} must be a column of {.arg sampling_frame} or a single number in (0, 1].",
+            "x" = "{.val {evaluated}} is not a column of {.arg sampling_frame}."),
+          class = "creel_error_invalid_input", call = call
+        )
+      }
+      col <- evaluated
+    } else if (!is.null(frame)) {
+      # A tidyselect helper such as all_of(), or an expression that failed to
+      # evaluate: tidyselect resolves it or reports why not. Never reached by a
+      # number, so a number is never a column position.
+      col <- resolve_single_col(p_period_quo, frame, "p_period", call)
+    } else {
+      cli::cli_abort(
+        c("{.arg p_period} must be a single number in (0, 1] when there is no {.arg sampling_frame}.",
+          "x" = if (inherits(evaluated, "error")) conditionMessage(evaluated) else
+            "Got {.cls {class(evaluated)[1]}} of length {length(evaluated)}."),
+        class = "creel_error_invalid_input", call = call
+      )
+    }
+  }
+  vals <- if (is.null(col)) value else frame[[col]]
+  if (!is.numeric(vals) || any(is.na(vals) | vals <= 0 | vals > 1)) {
+    cli::cli_abort(
+      c(
+        "{.arg p_period} must be in (0, 1].",
+        "x" = if (is.null(col)) "Got {.val {value}}." else "Column {.field {col}} has values outside (0, 1].",
+        "i" = "It is the probability that the sampled period was selected."
+      ),
+      class = "creel_error_invalid_input",
+      call = call
+    )
+  }
+  list(col = col, value = value)
+}
+
 resolve_count_p_period <- function(p_period_quo, counts, design, period_length_col_name,
                                    period_vals = NULL, counts_are_effort = FALSE,
                                    call = rlang::caller_env()) {
