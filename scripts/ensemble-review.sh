@@ -556,6 +556,10 @@ run_agy() {
   # recoverable; without it, a denial still ends the run. With the shell
   # closed, Gemini delegated to subagents and wrote its verdict to a plan
   # file instead of replying (2026-10-09, #460), so the brief forbids both.
+  # No --mode: plan mode (used until #461) is what asked for the plan file,
+  # and a user-level agy rule then sent it to the Desktop. Default mode needs
+  # permission for every write, which print mode cannot grant -- the review
+  # stays read-only. Never accept-edits.
   # The brief goes in a file the agent reads, not on the command line: a large
   # diff exceeds the per-argument limit (128 KiB on Linux), and agy's print
   # mode does not take a plain prompt on stdin. .ai/reviews is gitignored, so
@@ -595,7 +599,7 @@ PYA
   local raw err rc=0
   raw="$(mktemp)"
   err="$(mktemp)"
-  local agy_args=(--print "$prompt" --model "${AGY_MODEL:-gemini-3.1-pro-high}" --mode plan
+  local agy_args=(--print "$prompt" --model "${AGY_MODEL:-gemini-3.1-pro-high}"
                   --print-timeout "${AGY_TIMEOUT:-900}s")
   if [ -n "$timeout_cmd" ]; then
     "$timeout_cmd" "$(( ${AGY_TIMEOUT:-900} + 60 ))" "$agy_bin" "${agy_args[@]}" > "$raw" 2> "$err" || rc=$?
