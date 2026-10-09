@@ -540,6 +540,10 @@ creel_design <- function(
     )
   }
 
+  # Frame settings as resolved, for the design step (#438): a selector is
+  # recorded as the column it chose, and p_period as its column or its number.
+  frame_step <- list()
+
   # --- Bus-Route branch ---
   bus_route <- NULL
   if (identical(survey_type, "bus_route")) {
@@ -603,6 +607,9 @@ creel_design <- function(
       )
     }
 
+    frame_step <- list(site = site_frame_col, p_site = p_site_col, circuit = circuit_col,
+                       p_period = if (is.null(p_period_scalar)) p_period_col else p_period_scalar)
+
     # Build internal bus_route data frame with standardized column names
     br_df <- sampling_frame
 
@@ -664,6 +671,7 @@ creel_design <- function(
       } else if ("p_site" %in% names(sampling_frame)) {
         p_site_col_ice <- "p_site"
       }
+      frame_step$p_site <- p_site_col_ice
       if (!is.null(p_site_col_ice)) {
         p_site_vals_ice <- sampling_frame[[p_site_col_ice]]
         bad <- which(abs(p_site_vals_ice - 1.0) > 1e-9) # nolint: object_usage_linter
@@ -686,6 +694,7 @@ creel_design <- function(
       pp <- resolve_frame_p_period(p_period_quo_ice, frame_ice, rlang::caller_env())
       p_period_ice_col <- pp$col
       p_period_ice_scalar <- pp$value
+      frame_step$p_period <- if (is.null(pp$value)) pp$col else pp$value
     }
 
     # (c) Build a synthetic bus_route slot so add_interviews() can join .pi_i
@@ -906,7 +915,10 @@ creel_design <- function(
   if (!is.null(night)) step_supplied <- union(step_supplied, "tz")
   design <- record_step( # nolint: object_usage_linter
     design, "creel_design",
-    list(date = date_col, strata = strata_cols, site = site_col,
+    list(date = date_col, strata = strata_cols,
+         site = if (is.null(frame_step$site)) site_col else frame_step$site,
+         p_site = frame_step$p_site, circuit = frame_step$circuit,
+         p_period = frame_step$p_period, effort_type = effort_type,
          design_type = survey_type, survey_type = survey_type,
          day_start = day_start, night_date = night_date,
          tz = if (is.null(night)) tz else night$tz,
@@ -914,7 +926,8 @@ creel_design <- function(
          visibility_correction = visibility_correction, visibility_se = visibility_se,
          angler_ratio = angler_ratio, angler_ratio_se = angler_ratio_se,
          open_start = open_start),
-    step_supplied, "calendar", step_calendar
+    step_supplied, "calendar", step_calendar,
+    extra = list(sampling_frame = sampling_frame)
   )
   validate_creel_design(design)
 }

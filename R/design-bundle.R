@@ -23,7 +23,7 @@ design_bundle_version <- 1L
 #' @param path A folder to create, or a file name ending in `.zip` (needs the
 #'   zip package).
 #' @param include_data `TRUE` (default) writes every table. `FALSE` writes the
-#'   design only (the calendar and sections) and the arguments of the other
+#'   design only (the calendar, any sampling frame, and sections) and the arguments of the other
 #'   steps, e.g. to share a survey plan or when interviews hold personal data;
 #'   supply those tables to [read_design()].
 #' @param notes Optional named list written to the manifest as notes, e.g.
@@ -40,8 +40,6 @@ design_bundle_version <- 1L
 #'   build the design again.
 #' - A design built by a version of tidycreel without steps is refused; build
 #'   it again with this version.
-#' - Not yet supported, and refused rather than written in part: bus-route and
-#'   ice designs.
 #'
 #' Each table is written with a checksum and its column types (dates,
 #' date-times with their time zone, factor levels), and is read back and
@@ -104,31 +102,21 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
     data_table <- st$fn %in% bundle_data_steps
     if (include_data || !data_table) {
       file <- sprintf("%02d-%s.csv", i, st$table_arg)
-      write_bundle_table(st$table, file.path(dir, file), na_marker(st$table))
-      entry$table <- file
-      entry$columns <- column_types(st$table)
-      entry$class <- table_class(st$table)
-      na <- na_marker(st$table)
-      if (!identical(na, "NA")) entry$na <- na
-      tables[[file]] <- unname(tools::md5sum(file.path(dir, file)))
-      # Read back now: a table that does not survive the CSV round trip would
-      # rebuild a different design, so it is refused here, not discovered later.
-      # Class included -- a schedule read back as a plain data frame rebuilds a
-      # different calendar.
-      back <- read_bundle_table(file.path(dir, file), entry$columns, entry$class, na_marker(st$table))
-      if (isTRUE(entry$counts_are_effort)) back <- mark_counts_as_effort(back) # nolint: object_usage_linter
-      given <- st$table
-      rownames(given) <- NULL
-      if (!isTRUE(all.equal(given, back))) {
-        cli::cli_abort(c(
-          "The {st$table_arg} table does not survive being written as CSV.",
-          "i" = "Check for list columns or other column types a CSV cannot hold."
-        ), class = "creel_error_bundle_table_roundtrip")
-      }
+      w <- write_step_table(st$table, dir, file, st$table_arg, isTRUE(entry$counts_are_effort))
+      entry <- c(entry, w$fields)
+      tables[[file]] <- w$md5
     } else {
       entry$table <- NULL
     }
     entry$table_arg <- st$table_arg
+    # Further tables a step takes (a bus-route or ice sampling frame). They
+    # describe the design, not the survey data, so include_data never drops them.
+    for (nm in names(st$extra)) {
+      file <- sprintf("%02d-%s.csv", i, nm)
+      w <- write_step_table(st$extra[[nm]], dir, file, nm)
+      entry$extra[[nm]] <- w$fields
+      tables[[file]] <- w$md5
+    }
     steps[[i]] <- entry
   }
 
@@ -226,7 +214,7 @@ read_design <- function(path, ...) {
       ), class = "creel_error_bundle_table_missing")
     }
     if (isTRUE(st$counts_are_effort)) tbl <- mark_counts_as_effort(tbl) # nolint: object_usage_linter
-    args <- lapply(st$args, unlist_scalar)
+    args <- c(lapply(st$args, unlist_scalar), bundle_extra_tables(dir, st, manifest, i))
     design <- if (identical(st$fn, "creel_design")) {
       do.call(creel_design, c(list(calendar = tbl), args))
     } else {
@@ -242,6 +230,35 @@ read_design <- function(path, ...) {
 }
 
 # --- internals ---------------------------------------------------------------
+
+# Write one table of a step, with its column types, and read it back at once:
+# a table that does not survive the CSV round trip would rebuild a different
+# design, so it is refused here, not discovered later. Class included -- a
+# schedule read back as a plain data frame rebuilds a different calendar.
+write_step_table <- function(df, dir, file, label, effort_mark = FALSE) {
+  na <- na_marker(df)
+  write_bundle_table(df, file.path(dir, file), na)
+  fields <- list(table = file, columns = column_types(df), class = table_class(df))
+  if (!identical(na, "NA")) fields$na <- na
+  back <- read_bundle_table(file.path(dir, file), fields$columns, fields$class, na)
+  if (effort_mark) back <- mark_counts_as_effort(back) # nolint: object_usage_linter
+  given <- df
+  rownames(given) <- NULL
+  if (!isTRUE(all.equal(given, back))) {
+    cli::cli_abort(c(
+      "The {label} table does not survive being written as CSV.",
+      "i" = "Check for list columns or other column types a CSV cannot hold."
+    ), class = "creel_error_bundle_table_roundtrip")
+  }
+  list(fields = fields, md5 = unname(tools::md5sum(file.path(dir, file))))
+}
+
+# The extra tables of a manifest step, read and checked like its own table.
+bundle_extra_tables <- function(dir, st, manifest, i) {
+  lapply(st$extra, function(x) {
+    bundle_table(dir, c(list(fn = st$fn), x), manifest, i, guess_date = FALSE)
+  })
+}
 
 # Steps whose table is survey data, left out by include_data = FALSE.
 bundle_data_steps <- c("add_counts", "add_interviews", "add_catch", "add_lengths", "add_ages")
@@ -284,18 +301,6 @@ yaml_exact_number <- function(x) {
 unlist_scalar <- function(x) if (is.list(x)) unlist(x) else x
 
 check_design_bundleable <- function(design) {
-  why <- character(0)
-  # A sampling frame is a second table, which a step cannot carry yet.
-  if (design$design_type %in% c("bus_route", "ice")) {
-    why <- c(why, cli::format_inline("a {.val {design$design_type}} design"))
-  }
-  if (length(why)) {
-    cli::cli_abort(c(
-      "This design cannot be written as a bundle yet.",
-      stats::setNames(why, rep("x", length(why))),
-      "i" = "Bundles carry every survey type except bus-route and ice designs (#438)."
-    ), class = "creel_error_bundle_unsupported")
-  }
   if (length(design$steps) == 0L) {
     cli::cli_abort(c(
       "This design has no recorded steps.",
@@ -312,10 +317,11 @@ check_design_rebuilds <- function(design) {
   for (st in design$steps) {
     rebuilt <- suppressMessages(suppressWarnings(
       if (identical(st$fn, "creel_design")) {
-        do.call(creel_design, c(list(calendar = st$table), st$args))
+        do.call(creel_design, c(list(calendar = st$table), st$args, st$extra))
       } else {
         do.call(bundle_step_fn(st$fn),
-                c(list(design = rebuilt), stats::setNames(list(st$table), step_table_formal(st$fn, st$table_arg)), st$args))
+                c(list(design = rebuilt),
+                  stats::setNames(list(st$table), step_table_formal(st$fn, st$table_arg)), st$args))
       }
     ))
   }
@@ -422,7 +428,7 @@ read_bundle_table <- function(file, columns, cls = "data.frame", na = "NA") {
   raw
 }
 
-bundle_table <- function(dir, st, manifest, i) {
+bundle_table <- function(dir, st, manifest, i, guess_date = TRUE) {
   file <- file.path(dir, st$table)
   if (!file.exists(file)) {
     cli::cli_abort("The bundle is missing {.file {st$table}} (step {i}, {.fn {st$fn}}).",
@@ -444,7 +450,7 @@ bundle_table <- function(dir, st, manifest, i) {
   }
   # Hand-written manifest: guess types, with the calendar's date column a Date.
   df <- utils::read.csv(file, check.names = FALSE, stringsAsFactors = FALSE)
-  if (identical(st$fn, "creel_design") && !is.null(st$args$date)) {
+  if (guess_date && identical(st$fn, "creel_design") && !is.null(st$args$date)) {
     df[[st$args$date]] <- as.Date(df[[st$args$date]])
   }
   df
@@ -473,7 +479,7 @@ check_manifest <- function(m) {
     cli::cli_abort("The manifest's first step must be {.fn creel_design}.",
                    class = "creel_error_bundle_manifest")
   }
-  step_fields <- c("fn", "args", "table", "columns", "class", "na", "table_arg", "counts_are_effort")
+  step_fields <- c("fn", "args", "table", "columns", "class", "na", "table_arg", "counts_are_effort", "extra")
   for (i in seq_along(m$steps)) {
     bad <- setdiff(names(m$steps[[i]]), step_fields)
     if (length(bad)) {

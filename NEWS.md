@@ -15,8 +15,11 @@
   `read_design()`. The calendar is the record of the days surveyed; a
   schedule is never drawn again from its seed. Refused rather than written:
   a design changed by hand after it was built (the edit would be lost), a
-  design built by an earlier version (no steps), and, until part 2b,
-  bus-route and ice designs. Catch, lengths and ages (`add_catch()`,
+  design built by an earlier version (no steps). Every survey type is
+  carried: bus-route and ice designs write their `sampling_frame` as a
+  further table of the design step, kept even with `include_data = FALSE`
+  (#438, part 2b), and record `site`, `p_site`, `circuit` and `p_period` as
+  resolved. Catch, lengths and ages (`add_catch()`,
   `add_lengths()`, `add_ages()`), camera and aerial designs, and counts from
   `prep_counts_daily_effort()` are carried (#438, part 2a); the last keep
   their mark as daily effort, which a CSV alone would drop. Written with

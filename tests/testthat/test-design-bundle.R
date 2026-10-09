@@ -185,19 +185,12 @@ test_that("#438: a design changed by hand is refused, so a bundle cannot lose th
   expect_error(write_design(d, bd_dir("hand")), "calendar", class = "creel_error_bundle_hand_edited")
 })
 
-test_that("#438: designs a bundle cannot carry are refused, not written in part", {
-  d <- bd_plain()
-  old <- d
+test_that("#438: a design built before steps existed is refused, not written in part", {
+  old <- bd_plain()
   old$steps <- NULL
-  expect_error(write_design(old, bd_dir("old")), class = "creel_error_bundle_no_steps")
-  # Until part 2b a step carries one table, and these designs need a second
-  # (the sampling frame).
-  for (type in c("bus_route", "ice")) {
-    d$design_type <- type
-    p <- bd_dir(type)
-    expect_error(write_design(d, p), type, class = "creel_error_bundle_unsupported")
-    expect_false(file.exists(p))
-  }
+  p <- bd_dir("old")
+  expect_error(write_design(old, p), class = "creel_error_bundle_no_steps")
+  expect_false(file.exists(p))
 })
 
 test_that("#438: a .zip bundle round-trips", {
@@ -492,4 +485,81 @@ test_that("#438: a table left out by include_data = FALSE is asked for, not repo
   p <- bd_dir("ask")
   write_design(bd_plain(), p, include_data = FALSE)
   expect_error(bd_quiet(read_design(p)), "include_data = FALSE", class = "creel_error_bundle_table_missing")
+})
+
+# --- part 2b: bus-route and ice (a sampling frame per design) --------------
+
+test_that("#438: a bus-route design round-trips with its sampling frame", {
+  set.seed(1)
+  d <- build_br_design_for_tests(4, 8, 30)
+  p <- bd_dir("bus")
+  write_design(d, p)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  frame <- m$steps[[1]]$extra$sampling_frame
+  expect_true(file.exists(file.path(p, frame$table)))
+  expect_false(is.null(m$tables[[frame$table]]))
+  # site is resolved against the frame on a bus-route design; it was not
+  # recorded at all while only the calendar's site column was.
+  expect_identical(m$steps[[1]]$args$site, "site")
+  r <- bd_quiet(read_design(p))
+  bd_same_design(d, r)
+  bd_same_effort(d, r)
+})
+
+test_that("#438: a bus-route p_period given as a number is recorded as that number", {
+  # Recorded as resolved: the number, not the internal .p_period column.
+  cal <- build_property_calendar(6L)
+  sf <- data.frame(p_site = c(0.5, 0.5), site = c("S1", "S2"), circuit = "C1")
+  d <- creel_design(cal, date = date, strata = day_type, survey_type = "bus_route",
+                    sampling_frame = sf, site = site, circuit = circuit, p_site = p_site,
+                    p_period = 1)
+  p <- bd_dir("bus-scalar")
+  write_design(d, p)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  expect_identical(m$steps[[1]]$args$p_period, 1)
+  r <- bd_quiet(read_design(p))
+  expect_identical(r$bus_route$data$.pi_i, c(0.5, 0.5))
+  bd_same_design(d, r)
+})
+
+test_that("#438: include_data = FALSE still writes the sampling frame", {
+  # The frame is part of the design, like the calendar, not survey data.
+  set.seed(1)
+  d <- build_br_design_for_tests(4, 8, 30)
+  p <- bd_dir("bus-nodata")
+  write_design(d, p, include_data = FALSE)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  expect_true(file.exists(file.path(p, m$steps[[1]]$extra$sampling_frame$table)))
+  expect_error(bd_quiet(read_design(p)), "interviews", class = "creel_error_bundle_table_missing")
+})
+
+test_that("#438: an edited sampling frame fails its checksum", {
+  set.seed(1)
+  d <- build_br_design_for_tests(4, 8, 30)
+  p <- bd_dir("bus-edit")
+  write_design(d, p)
+  m <- yaml::read_yaml(file.path(p, "manifest.yml"))
+  f <- file.path(p, m$steps[[1]]$extra$sampling_frame$table)
+  writeLines(sub("C1", "C2", readLines(f)), f)
+  expect_error(read_design(p), "sampling_frame", class = "creel_error_bundle_checksum")
+})
+
+test_that("#438: ice designs round-trip with and without a sampling frame", {
+  set.seed(2)
+  d <- build_ice_design(8, 30)
+  p <- bd_dir("ice")
+  write_design(d, p)
+  r <- bd_quiet(read_design(p))
+  bd_same_design(d, r)
+  bd_same_effort(d, r)
+
+  isf <- example_ice_sampling_frame
+  cal <- unique(isf[, c("date", "day_type")])
+  rownames(cal) <- NULL # row names are not carried
+  d2 <- suppressWarnings(creel_design(cal, date = date, strata = day_type, survey_type = "ice",
+                                      effort_type = "time_on_ice", sampling_frame = isf,
+                                      p_period = p_period))
+  p2 <- bd_dir("ice-frame")
+  write_design(d2, p2)
+  bd_same_design(d2, bd_quiet(read_design(p2)))
 })
