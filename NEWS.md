@@ -19,8 +19,10 @@
   bus-route and ice designs. Catch, lengths and ages (`add_catch()`,
   `add_lengths()`, `add_ages()`), camera and aerial designs, and counts from
   `prep_counts_daily_effort()` are carried (#438, part 2a); the last keep
-  their mark as daily effort, which a CSV alone would drop. Row names of a
-  table are not carried. A table edited after
+  their mark as daily effort, which a CSV alone would drop. Written with
+  `include_data = FALSE`, their tables are given back to `read_design()` as
+  `catch = `, `lengths = ` and `ages = `. Row names of a table are not
+  carried. A table edited after
   writing fails its checksum; a newer format version or an unknown manifest
   field is refused. yaml is a new dependency. Whole-valued arguments such as
   `p_period = 1` keep their type in the manifest, and a relative `.zip` path
