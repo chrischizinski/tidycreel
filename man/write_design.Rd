@@ -19,7 +19,7 @@ write_design(
 zip package).}
 
 \item{include_data}{\code{TRUE} (default) writes every table. \code{FALSE} writes the
-design only (the calendar and sections) and the arguments of the other
+design only (the calendar, any sampling frame, and sections) and the arguments of the other
 steps, e.g. to share a survey plan or when interviews hold personal data;
 supply those tables to \code{\link[=read_design]{read_design()}}.}
 
@@ -50,8 +50,6 @@ is in no step and would be lost. Make the change in the input table and
 build the design again.
 \item A design built by a version of tidycreel without steps is refused; build
 it again with this version.
-\item Not yet supported, and refused rather than written in part: bus-route and
-ice designs.
 }
 
 Each table is written with a checksum and its column types (dates,

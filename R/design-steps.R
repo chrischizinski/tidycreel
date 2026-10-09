@@ -31,12 +31,17 @@ supplied_arg_names <- function(call, data_args) {
 #' @param supplied Names of the arguments the caller supplied.
 #' @param table_arg Name of the table argument (e.g. `"counts"`).
 #' @param table The table as given (after ungrouping).
+#' @param extra Named list of further tables the step was given, by argument
+#'   name (a bus-route or ice `sampling_frame`); `NULL` when there are none.
 #' @keywords internal
 #' @noRd
-record_step <- function(design, fn, args, supplied, table_arg, table) {
+record_step <- function(design, fn, args, supplied, table_arg, table, extra = NULL) {
   args <- args[intersect(names(args), supplied)]
   args <- args[!vapply(args, is.null, logical(1))]
   step <- list(fn = fn, args = args, table_arg = table_arg, table = table)
+  extra <- extra[intersect(names(extra), supplied)]
+  extra <- extra[!vapply(extra, is.null, logical(1))]
+  if (length(extra)) step$extra <- extra
   design$steps <- c(design$steps, list(step))
   design
 }
