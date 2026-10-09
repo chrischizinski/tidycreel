@@ -72,13 +72,8 @@ rebuilds it from its steps and compares the result with `design`:
 - A design built by a version of tidycreel without steps is refused;
   build it again with this version.
 
-- Not yet supported, and refused rather than written in part: catch,
-  lengths or ages attached
-  ([`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
-  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
-  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md));
-  bus-route, ice, camera and aerial designs; counts prepared by
-  [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md).
+- Not yet supported, and refused rather than written in part: bus-route
+  and ice designs.
 
 Each table is written with a checksum and its column types (dates,
 date-times with their time zone, factor levels), and is read back and

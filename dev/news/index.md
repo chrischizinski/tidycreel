@@ -29,12 +29,22 @@
   The calendar is the record of the days surveyed; a schedule is never
   drawn again from its seed. Refused rather than written: a design
   changed by hand after it was built (the edit would be lost), a design
-  built by an earlier version (no steps), and, until part 2, designs
-  with catch, lengths or ages, bus-route, ice, camera and aerial
-  designs, and counts from
-  [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md).
-  A table edited after writing fails its checksum; a newer format
-  version or an unknown manifest field is refused. yaml is a new
+  built by an earlier version (no steps), and, until part 2b, bus-route
+  and ice designs. Catch, lengths and ages
+  ([`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md),
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)),
+  camera and aerial designs, and counts from
+  [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+  are carried
+  ([\#438](https://github.com/chrischizinski/tidycreel/issues/438), part
+  2a); the last keep their mark as daily effort, which a CSV alone would
+  drop. Written with `include_data = FALSE`, their tables are given back
+  to
+  [`read_design()`](https://chrischizinski.com/tidycreel/dev/reference/read_design.md)
+  as `catch =`, `lengths =` and `ages =`. Row names of a table are not
+  carried. A table edited after writing fails its checksum; a newer
+  format version or an unknown manifest field is refused. yaml is a new
   dependency. Whole-valued arguments such as `p_period = 1` keep their
   type in the manifest, and a relative `.zip` path works
   ([\#459](https://github.com/chrischizinski/tidycreel/issues/459)).

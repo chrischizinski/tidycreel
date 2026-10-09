@@ -22,7 +22,12 @@ read_design(path, ...)
 
   Tables for steps the bundle does not carry (written with
   `include_data = FALSE`), named by their argument: `counts = `,
-  `interviews = `.
+  `interviews = `, and `catch = `, `lengths = `, `ages = ` for the
+  tables given to
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  and
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md).
 
 ## Value
 
