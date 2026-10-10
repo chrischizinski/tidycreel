@@ -1,5 +1,66 @@
 # tidycreel (development version)
 
+## Breaking changes
+
+* Aerial catch, harvest and release totals were computed from the raw
+  instantaneous count instead of effort (#470). `estimate_effort()` scaled
+  an aerial count by `h_open * angler_ratio / visibility_correction`, but
+  `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` reached effort another way that did not, so
+  every aerial total was too small by that factor (14x with
+  `h_open = 14`), and `h_open`, the angler ratio and the visibility
+  correction had no effect on it. Every path is now scaled: pooled,
+  `by`, and by species. The uncertainty of the angler ratio and the
+  visibility correction now enters each total, once, as a multiplier shared
+  by every stratum; under `visibility_correction = "none"` its SE is
+  unknown, so the total's SE is `NA`, as aerial effort's already was.
+  Aerial totals reported before this release should be re-run.
+
+* `estimate_effort(by = )` on an aerial design returned the pooled estimate
+  and dropped `by` without a word (#366). It now returns one row per
+  group, in angler-hours, each group's SE carrying the angler-ratio and
+  visibility terms. On a sectioned design `by` is refused
+  (`creel_error_dispatch_unsupported`) instead of being dropped: sectioned
+  effort is estimated per section. `add_sections()` now refuses an aerial
+  design: aerial effort ignored the sections, and the sectioned totals
+  treated the one visibility correction and angler ratio as independent
+  across sections.
+
+* Counts at several sites inside a day are no longer expanded wrong without
+  an error (#442). The expanded effort targets (`stratum_total`,
+  `period_total`) count population days on the calendar, so:
+  - a PSU finer than a day (`add_counts(psu = <site-day>)`) is refused
+    (`creel_error_psu_finer_than_day`). Each weight was divided by the
+    number of PSUs per day, so two sites per day halved the total. Key the
+    sites inside the day with `unit_cols = c(<date>, <site>)`, which sums
+    them into the day before expanding;
+  - a sampled day missing a unit (a site, an effort type in `unit_cols`, or
+    a site registered with `creel_design(site = )` on a non-bus-route
+    design) that was counted on two or more other days of its stratum is
+    refused
+    (`creel_error_partial_unit_coverage`), here and in `audit_strata()`. The
+    day was expanded as if complete, reading the missing unit's effort as
+    zero. Record a 0 for a unit counted and found empty. Counts expanded
+    with `p_period` are not checked: each row is already its day's effort.
+    Units subsampled
+    within a day need an estimator count designs do not have yet;
+    `target = "sampled_days"` still gives the total over the counted units;
+  - `unit_cols` must include the PSU column: without it the same site on
+    two days read as one unit;
+  - `creel_design()` refuses a calendar day with an `NA` stratum
+    (`creel_error_strata_missing`), which belonged to no stratum and was
+    refused later, with advice to sample it.
+
+* The effort x rate totals now stop, instead of warning and dropping the cell,
+  when a stratum or `by` cell has effort but no rate (#373,
+  `creel_error_missing_rate_strata`). Code that relied on the old result passes
+  `missing_rate = "exclude"`, which reproduces it and records what was excluded.
+
+* An effort total that combines count units whose within-day variance was
+  supplied as a sum of squares (`prep_counts_*()` output with `unit_cols`) is
+  now an error instead of an understated SE (#373). Report `by` the unit
+  column, or attach the raw counts with `count_time_col`.
+
 ## New features
 
 * `write_design()` and `read_design()` save a creel design and rebuild it
@@ -531,65 +592,6 @@
 # tidycreel 8.0.0 "Mooneye"
 
 ## Breaking changes
-
-* Aerial catch, harvest and release totals were computed from the raw
-  instantaneous count instead of effort (#470). `estimate_effort()` scaled
-  an aerial count by `h_open * angler_ratio / visibility_correction`, but
-  `estimate_total_catch()`, `estimate_total_harvest()` and
-  `estimate_total_release()` reached effort another way that did not, so
-  every aerial total was too small by that factor (14x with
-  `h_open = 14`), and `h_open`, the angler ratio and the visibility
-  correction had no effect on it. Every path is now scaled: pooled,
-  `by`, and by species. The uncertainty of the angler ratio and the
-  visibility correction now enters each total, once, as a multiplier shared
-  by every stratum; under `visibility_correction = "none"` its SE is
-  unknown, so the total's SE is `NA`, as aerial effort's already was.
-  Aerial totals reported before this release should be re-run.
-
-* `estimate_effort(by = )` on an aerial design returned the pooled estimate
-  and dropped `by` without a word (#366). It now returns one row per
-  group, in angler-hours, each group's SE carrying the angler-ratio and
-  visibility terms. On a sectioned design `by` is refused
-  (`creel_error_dispatch_unsupported`) instead of being dropped: sectioned
-  effort is estimated per section. `add_sections()` now refuses an aerial
-  design: aerial effort ignored the sections, and the sectioned totals
-  treated the one visibility correction and angler ratio as independent
-  across sections.
-
-* Counts at several sites inside a day are no longer expanded wrong without
-  an error (#442). The expanded effort targets (`stratum_total`,
-  `period_total`) count population days on the calendar, so:
-  - a PSU finer than a day (`add_counts(psu = <site-day>)`) is refused
-    (`creel_error_psu_finer_than_day`). Each weight was divided by the
-    number of PSUs per day, so two sites per day halved the total. Key the
-    sites inside the day with `unit_cols = c(<date>, <site>)`, which sums
-    them into the day before expanding;
-  - a sampled day missing a unit (a site, an effort type in `unit_cols`, or
-    a site registered with `creel_design(site = )` on a non-bus-route
-    design) that was counted on two or more other days of its stratum is
-    refused
-    (`creel_error_partial_unit_coverage`), here and in `audit_strata()`. The
-    day was expanded as if complete, reading the missing unit's effort as
-    zero. Record a 0 for a unit counted and found empty. Counts expanded
-    with `p_period` are not checked: each row is already its day's effort.
-    Units subsampled
-    within a day need an estimator count designs do not have yet;
-    `target = "sampled_days"` still gives the total over the counted units;
-  - `unit_cols` must include the PSU column: without it the same site on
-    two days read as one unit;
-  - `creel_design()` refuses a calendar day with an `NA` stratum
-    (`creel_error_strata_missing`), which belonged to no stratum and was
-    refused later, with advice to sample it.
-
-* The effort x rate totals now stop, instead of warning and dropping the cell,
-  when a stratum or `by` cell has effort but no rate (#373,
-  `creel_error_missing_rate_strata`). Code that relied on the old result passes
-  `missing_rate = "exclude"`, which reproduces it and records what was excluded.
-
-* An effort total that combines count units whose within-day variance was
-  supplied as a sum of squares (`prep_counts_*()` output with `unit_cols`) is
-  now an error instead of an understated SE (#373). Report `by` the unit
-  column, or attach the raw counts with `count_time_col`.
 
 * `estimate_effort_aerial_glmm()` now reports a total across the sampled days,
   the same basis `estimate_effort()` uses, instead of a single average day
