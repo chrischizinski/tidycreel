@@ -384,6 +384,8 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #' - Date column is class Date (not character, numeric, POSIXct)
 #' - Date column contains no NA values
 #' - Strata columns are character or factor (not numeric, logical)
+#' - Strata columns contain no NA values: a day with an unknown stratum
+#'   belongs to no stratum's population of days
 #' - Site column (if provided) is character or factor
 #' - (bus_route only) All `p_site` and `p_period` values are in `(0, 1]`
 #' - (bus_route only) `p_site` values sum to 1.0 within each circuit
@@ -1035,6 +1037,27 @@ validate_creel_design <- function(x) {
         "x" = "Column {.var {col}} is {.cls {class(cal[[col]])[1]}}."
       ))
     }
+  }
+
+  # Tier 1: every calendar day has a known stratum. A day with an NA stratum
+  # belongs to no stratum, so it has no N_h to be counted in; it used to be
+  # accepted here and refused much later with advice to sample it (GH #442).
+  # An unknown stratum is for the surveyor to resolve, not to drop.
+  na_strata <- x$strata_cols[vapply(x$strata_cols, function(col) anyNA(cal[[col]]), logical(1))]
+  if (length(na_strata) > 0L) {
+    na_days <- unique(cal[[x$date_col]][Reduce(`|`, lapply(na_strata, function(col) is.na(cal[[col]])))])
+    n_na <- length(na_days) # nolint: object_usage_linter
+    shown <- format(utils::head(sort(na_days), 5)) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "Every calendar day must have a known stratum.",
+        "x" = "{n_na} calendar {cli::qty(n_na)}day{?s} {?has/have} a missing value in \\
+               {.field {na_strata}}: {shown}{if (n_na > 5) ', ...' else ''}.",
+        "i" = "Assign each day to a stratum, or remove days outside the survey \\
+               period from the calendar."
+      ),
+      class = "creel_error_strata_missing"
+    )
   }
 
   # Tier 1: Site column (if provided) is character/factor
@@ -2234,8 +2257,13 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #'   on the design and used by every downstream estimator.
 #' @param psu Character string naming the PSU (Primary Sampling Unit) column
 #'   in the count data. Defaults to NULL, which uses the design's date_col as
-#'   the PSU (day-as-PSU is the most common creel design). For other designs,
-#'   specify the PSU column explicitly (e.g., "site_day" for day-site PSUs).
+#'   the PSU (day-as-PSU is the most common creel design). A custom PSU column
+#'   must still identify a day (a day id, for example): the expanded effort
+#'   targets count population days on the calendar, so they refuse a PSU that
+#'   puts several PSUs on one date. Units inside a day -- sites, effort types --
+#'   belong in `unit_cols`, which sums them into the day before expanding. A
+#'   site-day PSU drawn from a site-by-day frame is not supported for count
+#'   designs (GH #442).
 #' @param count_time_col Tidy selector for a column that identifies distinct
 #'   sub-PSU count observations (e.g., `count_time_col = count_time` where
 #'   count_time contains "am" / "pm"). When supplied, multiple rows per PSU are
@@ -2403,15 +2431,15 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #' design_with_counts <- add_counts(design, counts_ready)
 #' print(design_with_counts)
 #'
-#' # Compatibility path: raw count rows with a custom PSU column
-#' counts_with_site_psu <- data.frame(
+#' # Compatibility path: raw count rows with a custom PSU column (a day id)
+#' counts_with_day_psu <- data.frame(
 #'   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
 #'   day_type = c("weekday", "weekday", "weekend", "weekend"),
-#'   site_day = paste0("site_", 1:4),
+#'   day_id = paste0("day_", 1:4),
 #'   count = c(15, 23, 45, 52)
 #' )
 #'
-#' design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
+#' design2 <- add_counts(design, counts_with_day_psu, psu = "day_id")
 #'
 #' # Compatibility path: multiple counts per day (within-day variance via count_time_col)
 #' # Two circuits per day: "am" and "pm"
@@ -2760,6 +2788,20 @@ add_counts <- function(
         "x" = "Missing: {.field {missing_unit}}.",
         "i" = "Available: {.field {names(counts)}}."
       ))
+    }
+    # A sampling unit lies inside a PSU, so its key must name the PSU. Without
+    # it, the same site on two different days reads as one unit (GH #442).
+    if (!psu %in% unit_cols) {
+      cli::cli_abort(
+        c(
+          "{.arg unit_cols} must include the PSU column {.field {psu}}.",
+          "x" = "Got {.field {unit_cols}}: the same unit on two different days \\
+                 would read as one sampling unit.",
+          "i" = "{.arg unit_cols} replaces the whole key: \\
+                 {.code unit_cols = c({paste0('\"', unique(c(psu, unit_cols)), '\"', collapse = ', ')})}."
+        ),
+        class = "creel_error_invalid_input"
+      )
     }
   }
   unit_key_cols <- psu_key_cols(design, psu, counts, unit_cols) # nolint: object_usage_linter

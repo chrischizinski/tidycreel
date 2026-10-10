@@ -572,6 +572,7 @@ refuse_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) 
   if (n_dup == 0) {
     return(invisible(NULL))
   }
+  key_list <- paste0('"', key_cols, '"', collapse = ", ") # nolint: object_usage_linter
   cli::cli_abort(
     c(
       "{.arg counts} has {n_dup} repeated sampling {cli::qty(n_dup)}unit{?s}, \\
@@ -592,7 +593,9 @@ refuse_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) 
       ),
       "i" = paste(
         "If they really are distinct sampling units, name what separates them",
-        "-- the section, site, or effort type -- via {.arg unit_cols}."
+        "-- the section, site, or effort type -- via {.arg unit_cols}, together",
+        "with the columns above: {.arg unit_cols} replaces the whole key, so",
+        "{.code unit_cols = c({key_list}, <column>)}."
       )
     ),
     class = "creel_error_repeated_psus",

@@ -195,11 +195,21 @@ test_that("#440: a missing stratum value is refused, not audited as the stratum 
   # paste() turns NA into "NA", which would count an unsampled day of unknown
   # stratum among the population days of a real "NA" stratum. add_counts()
   # already refuses NA strata on count rows, so the NA is on an unsampled day.
+  # Since #442 creel_design() refuses it, before audit_strata() is reached.
   cal <- sapd_cal()
   cal$g1 <- "NA"
   cal$g1[4] <- NA # 2024-06-06, not sampled
   cn <- sapd_counts(cal)
   cn$g1 <- cal$g1[match(cn$date, cal$date)]
-  d <- suppressWarnings(sapd_design(cal, cn, strata = c("day_type", "g1")))
+  expect_error(
+    suppressWarnings(sapd_design(cal, cn, strata = c("day_type", "g1"))),
+    class = "creel_error_strata_missing"
+  )
+  # audit_strata()'s own guard still refuses a design whose calendar was
+  # edited after it was built.
+  ok <- cal
+  ok$g1[4] <- "NA"
+  d <- suppressWarnings(sapd_design(ok, cn, strata = c("day_type", "g1")))
+  d$calendar$g1[4] <- NA
   expect_error(audit_strata(d), class = "creel_error_strata_missing") # nolint: object_usage_linter
 })

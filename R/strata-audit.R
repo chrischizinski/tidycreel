@@ -65,6 +65,10 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     )
   }
 
+  # Day totals below are sums over a day's units; a day missing one is not a
+  # day total, and its RSE would describe effort nobody counted (GH #442).
+  refuse_partial_unit_coverage(design) # nolint: object_usage_linter
+
   # N_h: population days per stratum, from the helper the estimators use.
   # Counting calendar ROWS inflated it whenever the calendar carried several
   # rows per date (a multi-period schedule, or one with count windows

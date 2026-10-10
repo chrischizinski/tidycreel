@@ -5269,6 +5269,161 @@ refuse_unsampled_cells <- function(design, cell_cols) {
   )
 }
 
+#' Refuse a PSU finer than a day for an expanded effort target
+#'
+#' The expansion divides population days (`N_h`, counted from the calendar) by
+#' sampled PSUs (`n_h`). The two only count the same thing when a PSU is a day.
+#' A site-day PSU puts several PSUs on one date, so every weight was divided by
+#' the number of sites per day and the total understated by that factor, with
+#' no error -- the #183 defect again, reached through `psu` (GH #442). The
+#' calendar carries no frame of site-days for `N_h` to count instead.
+#'
+#' @param design A creel_design object with counts attached.
+#'
+#' @return `invisible(NULL)`; aborts with class
+#'   `creel_error_psu_finer_than_day` when a date carries several PSUs.
+#'
+#' @keywords internal
+#' @noRd
+refuse_psu_finer_than_day <- function(design) {
+  psu_col <- design$psu_col
+  date_col <- design$date_col
+  if (identical(psu_col, date_col) || !date_col %in% names(design$counts)) {
+    return(invisible(NULL))
+  }
+  # Per stratum, as the expansion counts them: with the period a stratum, a
+  # date-by-period PSU is one PSU per date in each stratum, and N_h / n_h is
+  # days over days there (Codex, #442 review).
+  day_cols <- unique(c(design$strata_cols, date_col))
+  pairs <- dplyr::distinct(
+    dplyr::ungroup(design$counts),
+    dplyr::across(dplyr::all_of(c(day_cols, psu_col)))
+  )
+  per_date <- table(do.call(paste, c(lapply(pairs[day_cols], as.character), sep = "\u001f")))
+  if (all(per_date <= 1L)) {
+    return(invisible(NULL))
+  }
+  n_dates <- sum(per_date > 1L) # nolint: object_usage_linter
+  max_psu <- max(per_date) # nolint: object_usage_linter
+  cli::cli_abort(
+    c(
+      "Expanded effort cannot be estimated with a PSU finer than a day.",
+      "x" = "{n_dates} sampled {cli::qty(n_dates)}date{?s} {?carries/carry} more than one \\
+             {.field {psu_col}} (up to {max_psu}).",
+      "x" = "The expansion counts calendar days on one side and PSUs on the other, \\
+             so each day would be split among its PSUs and the total understated by \\
+             the number of PSUs per day.",
+      "i" = "Key the units inside the day instead, so they are summed into the day \\
+             before expanding: {.code add_counts(design, counts, unit_cols = \\
+             c(\"{date_col}\", \"<site>\"))}.",
+      "i" = "Or use {.code target = 'sampled_days'} for the total over the counted units."
+    ),
+    class = "creel_error_psu_finer_than_day"
+  )
+}
+
+#' Refuse a sampled day that is missing a unit counted on its stratum's other days
+#'
+#' When counts name units inside a day (sites, effort types: anything in the
+#' unit key beyond the date, strata and section), the day's total is the sum
+#' over its units. A unit absent from a day is unknown -- not counted, or
+#' counted and empty -- and summing without it reads its effort as zero, so a
+#' day with half its sites counted was expanded as a complete day (GH #442).
+#' Units are expected per stratum: a unit seen on two or more sampled days of a
+#' stratum is expected on all of them. A unit seen on one day only is not
+#' expected, since per-day labels are allowed (#373), and a unit never counted
+#' in a stratum cannot be seen at all: the calendar has no site frame.
+#'
+#' @param design A creel_design object with counts attached.
+#'
+#' @return `invisible(NULL)`; aborts with class
+#'   `creel_error_partial_unit_coverage` when a sampled day lacks a unit.
+#'
+#' @keywords internal
+#' @noRd
+refuse_partial_unit_coverage <- function(design) {
+  # With a period probability each row is already its day's effort, expanded
+  # from the period it was counted in: a period absent from a day was not
+  # selected, not lost (Codex, #442 review).
+  if (!is.null(design$p_period)) {
+    return(invisible(NULL))
+  }
+  counts <- dplyr::ungroup(design$counts)
+  date_col <- design$date_col
+  strata_cols <- design$strata_cols
+  unit_key <- psu_key_cols(design, design$psu_col, counts, design$unit_cols) # nolint: object_usage_linter
+  # Sections are estimated one at a time on their own counts, so a section is
+  # never a unit inside another section's day. A bus-route or ice site carries
+  # its own inclusion probability; any other registered site is a unit here.
+  frame_site <- if (isTRUE(design$design_type %in% c("bus_route", "ice"))) design$site_col
+  within_day <- setdiff(
+    unit_key,
+    c(date_col, design$psu_col, strata_cols, design$section_col, frame_site)
+  )
+  if (length(within_day) == 0L) {
+    return(invisible(NULL))
+  }
+  units <- dplyr::distinct(
+    counts,
+    dplyr::across(dplyr::all_of(unique(c(strata_cols, date_col, within_day))))
+  )
+  units <- units[stats::complete.cases(units[within_day]), , drop = FALSE]
+  if (nrow(units) == 0L) {
+    return(invisible(NULL))
+  }
+  sep <- "\u001f"
+  units$.unit <- do.call(paste, c(lapply(units[within_day], as.character), sep = sep))
+  units$.stratum <- do.call(paste, c(lapply(units[strata_cols], as.character), sep = sep))
+  unit_label <- do.call(paste, c(
+    lapply(within_day, function(col) paste0(col, "=", units[[col]])),
+    sep = ", "
+  ))
+  names(unit_label) <- units$.unit
+
+  missing <- lapply(split(units, units$.stratum), function(s) {
+    # Only a unit that recurs is expected. `unit_cols` does not require labels
+    # to recur across days (#373: bank-1 on day 1, bank-2 on day 2), and a label
+    # seen on one day cannot be told from such a per-day label.
+    seen_on <- table(s$.unit)
+    expected <- names(seen_on)[seen_on >= 2L]
+    by_day <- split(s$.unit, as.character(s[[date_col]]))
+    gaps <- lapply(names(by_day), function(day) {
+      absent <- setdiff(expected, by_day[[day]])
+      if (length(absent) == 0L) {
+        return(NULL)
+      }
+      paste0(day, ": no ", paste(unique(unit_label[absent]), collapse = "; "))
+    })
+    unlist(gaps)
+  })
+  missing <- sort(unlist(missing, use.names = FALSE))
+  if (length(missing) == 0L) {
+    return(invisible(NULL))
+  }
+  n_days <- length(missing) # nolint: object_usage_linter
+  shown <- utils::head(missing, 5)
+  # The labels carry user data; a brace must not be read as cli markup.
+  shown <- gsub("([{}])", "\\1\\1", shown)
+  names(shown) <- rep("*", length(shown))
+  cli::cli_abort(
+    c(
+      "Expanded effort cannot be estimated: {n_days} sampled \\
+       {cli::qty(n_days)}day{?s} {?lacks/lack} a unit ({.field {within_day}}) \\
+       counted on other days in the same stratum.",
+      shown,
+      if (n_days > 5) c(" " = "... and {n_days - 5} more."),
+      "x" = "A unit missing from a day is unknown, not zero. The day is summed over \\
+             the units it has and expanded as if complete, so the missing unit's \\
+             effort would be counted as nothing.",
+      "i" = "If the unit was counted and nobody was there, add its row with a count of 0.",
+      "i" = "If units were subsampled within the day, the expansion needs each unit's \\
+             inclusion probability, which count designs do not support yet. Use \\
+             {.code target = 'sampled_days'} for the total over the counted units."
+    ),
+    class = "creel_error_partial_unit_coverage"
+  )
+}
+
 #' Build a target-aware survey design for effort estimation
 #'
 #' @param design A creel_design object with counts attached.
@@ -5310,6 +5465,10 @@ get_effort_target_design <- function(design, target) {
   # stratum left unsampled dropped three days from the season total with no
   # error (GH #421). Its effort is unknown, not zero.
   refuse_unsampled_cells(design, cell_cols = strata_cols)
+  # N_h counts days, so n_h must too, and a day must be complete to stand for
+  # itself (GH #442).
+  refuse_psu_finer_than_day(design)
+  refuse_partial_unit_coverage(design)
 
   available_by_strata <- stratum_population_days(calendar, strata_cols, frame_unit)
   sampled_by_strata <- counts_data |>
