@@ -232,7 +232,11 @@ print(total_catch)
 ```
 
 The delta-method standard error on total catch accounts for variance in both
-the effort estimate and the CPUE estimate.
+the effort estimate and the CPUE estimate, and for the visibility correction
+and angler ratio, which scale every stratum's effort and so enter the total
+once. This design declares `visibility_correction = "none"`, so detection
+uncertainty is unknown and the SE prints as `NA`, as the effort SE does; the
+`design_corr` design above, with `visibility_se`, gives a finite one.
 
 ## Summary
 
