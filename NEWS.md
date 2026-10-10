@@ -540,11 +540,15 @@
     number of PSUs per day, so two sites per day halved the total. Key the
     sites inside the day with `unit_cols = c(<date>, <site>)`, which sums
     them into the day before expanding;
-  - a sampled day missing a unit (a site, an effort type in `unit_cols`)
-    that was counted on other days of its stratum is refused
+  - a sampled day missing a unit (a site, an effort type in `unit_cols`, or
+    a site registered with `creel_design(site = )` on a non-bus-route
+    design) that was counted on two or more other days of its stratum is
+    refused
     (`creel_error_partial_unit_coverage`), here and in `audit_strata()`. The
     day was expanded as if complete, reading the missing unit's effort as
-    zero. Record a 0 for a unit counted and found empty. Units subsampled
+    zero. Record a 0 for a unit counted and found empty. Counts expanded
+    with `p_period` are not checked: each row is already its day's effort.
+    Units subsampled
     within a day need an estimator count designs do not have yet;
     `target = "sampled_days"` still gives the total over the counted units;
   - `unit_cols` must include the PSU column: without it the same site on

@@ -158,3 +158,59 @@ test_that("#442: a unit seen on one day only is not expected on the others", {
   d <- sdp_add(sdp_design(), cn, unit_cols = c("date", "site"))
   expect_equal(sdp_total(d)$estimate, 8 / 4 * sum(cn$count))
 })
+
+test_that("#442: a site registered on a roving design is a unit inside the day", {
+  # creel_design(site = ) is not only for bus routes. Half the lake's sites
+  # counted on each day must be refused there too (deepseek/gemini/agy review).
+  cal <- data.frame(
+    date = rep(as.Date("2024-06-01") + 0:7, each = 2), day_type = "weekday",
+    lake = rep(c("A", "B"), 8)
+  )
+  d <- suppressWarnings(suppressMessages(
+    creel_design(cal, date = date, strata = day_type, site = lake) # nolint: object_usage_linter
+  ))
+  half <- data.frame(
+    date = as.Date("2024-06-01") + 0:3, day_type = "weekday",
+    lake = c("A", "B", "A", "B"), count = c(10, 8, 9, 6)
+  )
+  expect_error(sdp_total(sdp_add(d, half)), class = "creel_error_partial_unit_coverage")
+})
+
+test_that("#442: a date-by-period PSU is one PSU per day when the period is a stratum", {
+  # N_h / n_h is days over days within each (day_type, period) stratum, so this
+  # must give the day-PSU answer rather than be refused (Codex review).
+  cal <- expand.grid(
+    date = as.Date("2024-06-01") + 0:3, period = c("am", "pm"),
+    stringsAsFactors = FALSE
+  )
+  cal$day_type <- "weekday"
+  d <- suppressWarnings(suppressMessages(
+    creel_design(cal, date = date, strata = c(day_type, period)) # nolint: object_usage_linter
+  ))
+  cn <- data.frame(
+    date = as.Date("2024-06-01") + c(0, 1, 0, 2), period = c("am", "am", "pm", "pm"),
+    day_type = "weekday", count = c(5, 7, 9, 3)
+  )
+  by_day <- sdp_total(sdp_add(d, cn))
+  cn$pid <- paste(cn$date, cn$period)
+  by_pid <- sdp_total(sdp_add(d, cn, psu = "pid"))
+  expect_equal(by_pid$estimate, by_day$estimate)
+  expect_equal(by_pid$se, by_day$se)
+})
+
+test_that("#442: a shift drawn with p_period is not a missing unit on the other days", {
+  # One of two shifts drawn per day (p = 0.5): each row is already the day's
+  # effort, expanded from its shift. Naming the shift in unit_cols must not make
+  # an AM-only day read as lacking its PM shift (Codex review).
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:7, day_type = "weekday")
+  cn <- data.frame(
+    date = as.Date("2024-06-01") + 0:3, day_type = "weekday",
+    shift = c("am", "am", "pm", "pm"), count = c(10, 14, 9, 20), hours = 7
+  )
+  d <- sdp_design(cal)
+  with_shift <- sdp_add(d, cn, unit_cols = c("date", "shift"),
+                        period_length_col = hours, p_period = 0.5)
+  without <- sdp_add(d, cn[, names(cn) != "shift"], period_length_col = hours, p_period = 0.5)
+  expect_equal(sdp_total(with_shift)$estimate, sdp_total(without)$estimate)
+  expect_equal(sdp_total(with_shift)$estimate, 8 / 4 * sum(cn$count * 7 / 0.5))
+})

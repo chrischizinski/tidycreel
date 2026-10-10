@@ -5291,11 +5291,15 @@ refuse_psu_finer_than_day <- function(design) {
   if (identical(psu_col, date_col) || !date_col %in% names(design$counts)) {
     return(invisible(NULL))
   }
+  # Per stratum, as the expansion counts them: with the period a stratum, a
+  # date-by-period PSU is one PSU per date in each stratum, and N_h / n_h is
+  # days over days there (Codex, #442 review).
+  day_cols <- unique(c(design$strata_cols, date_col))
   pairs <- dplyr::distinct(
     dplyr::ungroup(design$counts),
-    dplyr::across(dplyr::all_of(c(date_col, psu_col)))
+    dplyr::across(dplyr::all_of(c(day_cols, psu_col)))
   )
-  per_date <- table(pairs[[date_col]])
+  per_date <- table(do.call(paste, c(lapply(pairs[day_cols], as.character), sep = "\u001f")))
   if (all(per_date <= 1L)) {
     return(invisible(NULL))
   }
@@ -5338,13 +5342,23 @@ refuse_psu_finer_than_day <- function(design) {
 #' @keywords internal
 #' @noRd
 refuse_partial_unit_coverage <- function(design) {
+  # With a period probability each row is already its day's effort, expanded
+  # from the period it was counted in: a period absent from a day was not
+  # selected, not lost (Codex, #442 review).
+  if (!is.null(design$p_period)) {
+    return(invisible(NULL))
+  }
   counts <- dplyr::ungroup(design$counts)
   date_col <- design$date_col
   strata_cols <- design$strata_cols
   unit_key <- psu_key_cols(design, design$psu_col, counts, design$unit_cols) # nolint: object_usage_linter
+  # Sections are estimated one at a time on their own counts, so a section is
+  # never a unit inside another section's day. A bus-route or ice site carries
+  # its own inclusion probability; any other registered site is a unit here.
+  frame_site <- if (isTRUE(design$design_type %in% c("bus_route", "ice"))) design$site_col
   within_day <- setdiff(
     unit_key,
-    c(date_col, design$psu_col, strata_cols, design$section_col, design$site_col)
+    c(date_col, design$psu_col, strata_cols, design$section_col, frame_site)
   )
   if (length(within_day) == 0L) {
     return(invisible(NULL))
@@ -5394,8 +5408,8 @@ refuse_partial_unit_coverage <- function(design) {
   cli::cli_abort(
     c(
       "Expanded effort cannot be estimated: {n_days} sampled \\
-       {cli::qty(n_days)}day{?s} {?is/are} missing {.field {within_day}} \\
-       {cli::qty(n_days)}value{?s} counted on other days in the same stratum.",
+       {cli::qty(n_days)}day{?s} {?lacks/lack} a unit ({.field {within_day}}) \\
+       counted on other days in the same stratum.",
       shown,
       if (n_days > 5) c(" " = "... and {n_days - 5} more."),
       "x" = "A unit missing from a day is unknown, not zero. The day is summed over \\
