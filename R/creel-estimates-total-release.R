@@ -638,7 +638,8 @@ estimate_total_release_ungrouped <- function(
     ci_type = ci_type,
     expansion_se = named_expansion_se(effort_result, strata_cols), # nolint: object_usage_linter
     expansion_structure = expansion_group_structure(design), # nolint: object_usage_linter
-    expansion_decomposition = named_expansion_decomposition(effort_result, strata_cols) # nolint: object_usage_linter
+    expansion_decomposition = named_expansion_decomposition(effort_result, strata_cols), # nolint: object_usage_linter
+    calibration_rel_var = effort_result$aerial_calibration_rel_var
   )
 
   result <- new_creel_estimates( # nolint: object_usage_linter
@@ -706,7 +707,8 @@ estimate_total_release_grouped <- function(
     ci_type = ci_type,
     expansion_se = named_expansion_se(effort_result, stratum_by_vars), # nolint: object_usage_linter
     expansion_structure = expansion_group_structure(design), # nolint: object_usage_linter
-    expansion_decomposition = named_expansion_decomposition(effort_result, stratum_by_vars) # nolint: object_usage_linter
+    expansion_decomposition = named_expansion_decomposition(effort_result, stratum_by_vars), # nolint: object_usage_linter
+    calibration_rel_var = effort_result$aerial_calibration_rel_var
   )
 
   new_creel_estimates( # nolint: object_usage_linter
@@ -802,7 +804,8 @@ estimate_total_release_species <- function(
       ci_type = ci_type,
       expansion_se = named_expansion_se(effort_result, stratum_by_vars), # nolint: object_usage_linter
       expansion_structure = expansion_group_structure(design), # nolint: object_usage_linter
-      expansion_decomposition = named_expansion_decomposition(effort_result, stratum_by_vars) # nolint: object_usage_linter
+      expansion_decomposition = named_expansion_decomposition(effort_result, stratum_by_vars), # nolint: object_usage_linter
+      calibration_rel_var = effort_result$aerial_calibration_rel_var
     )
 
     # Read off the product result before anything subsets it. The ungrouped

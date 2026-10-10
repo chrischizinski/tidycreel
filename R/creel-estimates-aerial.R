@@ -203,3 +203,46 @@ estimate_effort_aerial <- function(
     unit = "angler-hours" # nolint: object_usage_linter
   )
 }
+
+#' The count-to-effort multiplier of an aerial design, and its shared uncertainty
+#'
+#' An aerial count is anglers seen at one instant. Effort is that count times
+#' the fishing-day length, times the angler-to-people ratio `a`, over the
+#' visibility correction `v`: `h_open * a / v` (Pollock et al. 1994 sec.
+#' 15.6.1; Smucker et al. 2010). Every effort path has to apply it, not only
+#' `estimate_effort_aerial()`: the totals reached effort through
+#' `estimate_effort_total()` and `estimate_effort_grouped()`, which had no
+#' aerial branch, so every aerial total multiplied the rate by the raw count
+#' (GH #470).
+#'
+#' `a` and `v` are each one estimate dividing every count, so their uncertainty
+#' is shared by every stratum, group and total. It is returned as a relative
+#' variance, `(se_a / a)^2 + (se_v / v)^2`, for the caller to add ONCE to each
+#' reported quantity as `estimate^2 * rel_var` -- never per stratum before a
+#' sum, which would treat a shared multiplier as independent (GH #150). `NULL`
+#' when neither has an SE; `NA` when one is unknown (the declared "none"
+#' opt-out), which makes the reported SE unknown too, as it is for aerial effort.
+#'
+#' @param design A creel_design object.
+#'
+#' @return `NULL` for a non-aerial design; otherwise a list with `multiplier`
+#'   and `rel_var`.
+#'
+#' @keywords internal
+#' @noRd
+aerial_effort_scale <- function(design) {
+  if (!identical(design$design_type, "aerial")) {
+    return(NULL)
+  }
+  ae <- design$aerial
+  v <- ae$visibility_correction
+  a <- ae$angler_ratio
+  rel_var <- NULL
+  if (!is.null(ae$visibility_se)) {
+    rel_var <- (ae$visibility_se / v)^2
+  }
+  if (!is.null(ae$angler_ratio_se)) {
+    rel_var <- (rel_var %||% 0) + (ae$angler_ratio_se / a)^2
+  }
+  list(multiplier = ae$h_open * a / v, rel_var = rel_var)
+}
