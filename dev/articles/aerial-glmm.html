@@ -370,7 +370,7 @@ standard aerial path rather than from the GLMM.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     251.  45.1     160.     341.    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>508.    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p><code>example_aerial_interviews</code> carries no party-size column,
 so <code><a href="../reference/add_interviews.html">add_interviews()</a></code> cannot normalise effort to angler-hours
 and <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> warns that the CPUE it
@@ -381,10 +381,18 @@ right as printed, and with larger parties it is
 <strong>overstated</strong> — by the mean party size, because the
 party-hour rate is multiplied by an effort that already counts every
 angler. Supplying <code>n_anglers = 2</code> on this example halves the
-total, from 250.6 to 125.3. Supply <code>n_anglers</code> from your own
-interview data, or state a constant party size
+total, from 3507.6 to 1753.8. Supply <code>n_anglers</code> from your
+own interview data, or state a constant party size
 (<code>n_anglers = 1</code>) when every interview really is a single
 angler, to remove the ambiguity.</p>
+<p>The total’s standard error prints as <code>NA</code>. This design
+declares <code>visibility_correction = "none"</code>: no detection study
+was done, so the uncertainty of detection is unknown, and a total that
+leaves it out would be a lower bound reported as an SE. The total
+effort’s SE is <code>NA</code> for the same reason. Supply
+<code>visibility_correction</code> with <code>visibility_se</code> from
+a detection study to get a finite SE (see
+<code><a href="../articles/aerial-surveys.html">vignette("aerial-surveys")</a></code>).</p>
 </div>
 <div class="section level2">
 <h2 id="comparison-simple-vs--glmm-estimator">Comparison: Simple vs. GLMM Estimator<a class="anchor" aria-label="anchor" href="#comparison-simple-vs--glmm-estimator"></a>
@@ -448,7 +456,7 @@ large.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   method estimate       target</span></span>
-<span><span class="co">#&gt; 1   GLMM 4728.546 sampled_days</span></span>
+<span><span class="co">#&gt; 1   GLMM 4728.545 sampled_days</span></span>
 <span><span class="co">#&gt; 2 Simple 5092.500 sampled_days</span></span></code></pre></div>
 <p>The <code>target</code> column is worth checking rather than
 assuming. Both estimators report <code>sampled_days</code>, so the two
@@ -546,11 +554,11 @@ understates it.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># SE of the summed total, from the joint covariance</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 581.6951</span></span>
+<span><span class="co">#&gt; [1] 581.6956</span></span>
 <span></span>
 <span><span class="co"># The quadrature sum, shown only to compare -- it understates the SE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 536.0893</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 536.0884</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="custom-formula">Custom Formula<a class="anchor" aria-label="anchor" href="#custom-formula"></a>

@@ -35,7 +35,10 @@ estimate_effort(
   names (e.g., `by = day_type`), multiple columns (e.g.,
   `by = c(day_type, location)`), or tidyselect helpers (e.g.,
   `by = starts_with("day")`). When NULL (default), computes a single
-  total estimate across all observations.
+  total estimate across all observations. On an aerial design each
+  group's effort is scaled to angler-hours and its SE carries the
+  angler-ratio and visibility terms. Not supported for sectioned
+  designs, which are estimated per section.
 
 - variance:
 

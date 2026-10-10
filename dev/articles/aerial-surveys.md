@@ -349,11 +349,16 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     251.  45.1     160.     341.    48
+#> 1    3508.    NA       NA       NA    48
 ```
 
 The delta-method standard error on total catch accounts for variance in
-both the effort estimate and the CPUE estimate.
+both the effort estimate and the CPUE estimate, and for the visibility
+correction and angler ratio, which scale every stratum’s effort and so
+enter the total once. This design declares
+`visibility_correction = "none"`, so detection uncertainty is unknown
+and the SE prints as `NA`, as the effort SE does; the `design_corr`
+design above, with `visibility_se`, gives a finite one.
 
 ## Summary
 

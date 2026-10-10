@@ -431,9 +431,15 @@ period.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     251.  45.1     160.     341.    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>508.    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p>The delta-method standard error on total catch accounts for variance
-in both the effort estimate and the CPUE estimate.</p>
+in both the effort estimate and the CPUE estimate, and for the
+visibility correction and angler ratio, which scale every stratum’s
+effort and so enter the total once. This design declares
+<code>visibility_correction = "none"</code>, so detection uncertainty is
+unknown and the SE prints as <code>NA</code>, as the effort SE does; the
+<code>design_corr</code> design above, with <code>visibility_se</code>,
+gives a finite one.</p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>

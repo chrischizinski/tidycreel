@@ -724,6 +724,38 @@
 
 ### Breaking changes
 
+- Aerial catch, harvest and release totals were computed from the raw
+  instantaneous count instead of effort
+  ([\#470](https://github.com/chrischizinski/tidycreel/issues/470)).
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  scaled an aerial count by
+  `h_open * angler_ratio / visibility_correction`, but
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
+  reached effort another way that did not, so every aerial total was too
+  small by that factor (14x with `h_open = 14`), and `h_open`, the
+  angler ratio and the visibility correction had no effect on it. Every
+  path is now scaled: pooled, `by`, and by species. The uncertainty of
+  the angler ratio and the visibility correction now enters each total,
+  once, as a multiplier shared by every stratum; under
+  `visibility_correction = "none"` its SE is unknown, so the total’s SE
+  is `NA`, as aerial effort’s already was. Aerial totals reported before
+  this release should be re-run.
+
+- `estimate_effort(by = )` on an aerial design returned the pooled
+  estimate and dropped `by` without a word
+  ([\#366](https://github.com/chrischizinski/tidycreel/issues/366)). It
+  now returns one row per group, in angler-hours, each group’s SE
+  carrying the angler-ratio and visibility terms. On a sectioned design
+  `by` is refused (`creel_error_dispatch_unsupported`) instead of being
+  dropped: sectioned effort is estimated per section.
+  [`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md)
+  now refuses an aerial design: aerial effort ignored the sections, and
+  the sectioned totals treated the one visibility correction and angler
+  ratio as independent across sections.
+
 - Counts at several sites inside a day are no longer expanded wrong
   without an error
   ([\#442](https://github.com/chrischizinski/tidycreel/issues/442)). The

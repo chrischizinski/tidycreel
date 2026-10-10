@@ -285,7 +285,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     251.  45.1     160.     341.    48
+#> 1    3508.    NA       NA       NA    48
 ```
 
 `example_aerial_interviews` carries no party-size column, so
@@ -298,10 +298,18 @@ dataset and is left visible rather than suppressed: with one angler per
 party the total is right as printed, and with larger parties it is
 **overstated** — by the mean party size, because the party-hour rate is
 multiplied by an effort that already counts every angler. Supplying
-`n_anglers = 2` on this example halves the total, from 250.6 to 125.3.
+`n_anglers = 2` on this example halves the total, from 3507.6 to 1753.8.
 Supply `n_anglers` from your own interview data, or state a constant
 party size (`n_anglers = 1`) when every interview really is a single
 angler, to remove the ambiguity.
+
+The total’s standard error prints as `NA`. This design declares
+`visibility_correction = "none"`: no detection study was done, so the
+uncertainty of detection is unknown, and a total that leaves it out
+would be a lower bound reported as an SE. The total effort’s SE is `NA`
+for the same reason. Supply `visibility_correction` with `visibility_se`
+from a detection study to get a finite SE (see
+[`vignette("aerial-surveys")`](https://chrischizinski.com/tidycreel/dev/articles/aerial-surveys.md)).
 
 ## Comparison: Simple vs. GLMM Estimator
 
@@ -367,7 +375,7 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.546 sampled_days
+#> 1   GLMM 4728.545 sampled_days
 #> 2 Simple 5092.500 sampled_days
 ```
 
@@ -473,11 +481,11 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 581.6951
+#> [1] 581.6956
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 536.0893
+#> [1] 536.0884
 ```
 
 ## Custom Formula
