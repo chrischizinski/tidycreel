@@ -51,8 +51,11 @@ different effort levels, variances, or sample sizes.
 
 ### PSU (Primary Sampling Unit)
 A **PSU** is the primary unit that is sampled for design-based inference. In
-many tidycreel workflows the PSU is the **day**, but in some designs it may be a
-site-day or another higher-level sampling unit. Variance estimators depend on
+tidycreel count designs the PSU is the **day**: expanded effort counts the
+days in each stratum on the calendar, so a PSU must identify a day. Sites or
+effort types counted within a day are units inside the PSU (`unit_cols` in
+`add_counts()`), summed into the day's total. Bus-route designs carry their own
+site frame with site inclusion probabilities. Variance estimators depend on
 having enough PSUs per stratum.
 
 ### Survey type

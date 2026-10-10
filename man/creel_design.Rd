@@ -239,6 +239,8 @@ The constructor performs fail-fast validation:
 \item Date column is class Date (not character, numeric, POSIXct)
 \item Date column contains no NA values
 \item Strata columns are character or factor (not numeric, logical)
+\item Strata columns contain no NA values: a day with an unknown stratum
+belongs to no stratum's population of days
 \item Site column (if provided) is character or factor
 \item (bus_route only) All \code{p_site} and \code{p_period} values are in \verb{(0, 1]}
 \item (bus_route only) \code{p_site} values sum to 1.0 within each circuit

@@ -41,8 +41,13 @@ on the design and used by every downstream estimator.}
 
 \item{psu}{Character string naming the PSU (Primary Sampling Unit) column
 in the count data. Defaults to NULL, which uses the design's date_col as
-the PSU (day-as-PSU is the most common creel design). For other designs,
-specify the PSU column explicitly (e.g., "site_day" for day-site PSUs).}
+the PSU (day-as-PSU is the most common creel design). A custom PSU column
+must still identify a day (a day id, for example): the expanded effort
+targets count population days on the calendar, so they refuse a PSU that
+puts several PSUs on one date. Units inside a day -- sites, effort types --
+belong in \code{unit_cols}, which sums them into the day before expanding. A
+site-day PSU drawn from a site-by-day frame is not supported for count
+designs (GH #442).}
 
 \item{count_time_col}{Tidy selector for a column that identifies distinct
 sub-PSU count observations (e.g., \code{count_time_col = count_time} where
@@ -247,15 +252,15 @@ counts_ready <- prep_counts_daily_effort(
 design_with_counts <- add_counts(design, counts_ready)
 print(design_with_counts)
 
-# Compatibility path: raw count rows with a custom PSU column
-counts_with_site_psu <- data.frame(
+# Compatibility path: raw count rows with a custom PSU column (a day id)
+counts_with_day_psu <- data.frame(
   date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
   day_type = c("weekday", "weekday", "weekend", "weekend"),
-  site_day = paste0("site_", 1:4),
+  day_id = paste0("day_", 1:4),
   count = c(15, 23, 45, 52)
 )
 
-design2 <- add_counts(design, counts_with_site_psu, psu = "site_day")
+design2 <- add_counts(design, counts_with_day_psu, psu = "day_id")
 
 # Compatibility path: multiple counts per day (within-day variance via count_time_col)
 # Two circuits per day: "am" and "pm"

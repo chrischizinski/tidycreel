@@ -532,6 +532,27 @@
 
 ## Breaking changes
 
+* Counts at several sites inside a day are no longer expanded wrong without
+  an error (#442). The expanded effort targets (`stratum_total`,
+  `period_total`) count population days on the calendar, so:
+  - a PSU finer than a day (`add_counts(psu = <site-day>)`) is refused
+    (`creel_error_psu_finer_than_day`). Each weight was divided by the
+    number of PSUs per day, so two sites per day halved the total. Key the
+    sites inside the day with `unit_cols = c(<date>, <site>)`, which sums
+    them into the day before expanding;
+  - a sampled day missing a unit (a site, an effort type in `unit_cols`)
+    that was counted on other days of its stratum is refused
+    (`creel_error_partial_unit_coverage`), here and in `audit_strata()`. The
+    day was expanded as if complete, reading the missing unit's effort as
+    zero. Record a 0 for a unit counted and found empty. Units subsampled
+    within a day need an estimator count designs do not have yet;
+    `target = "sampled_days"` still gives the total over the counted units;
+  - `unit_cols` must include the PSU column: without it the same site on
+    two days read as one unit;
+  - `creel_design()` refuses a calendar day with an `NA` stratum
+    (`creel_error_strata_missing`), which belonged to no stratum and was
+    refused later, with advice to sample it.
+
 * The effort x rate totals now stop, instead of warning and dropping the cell,
   when a stratum or `by` cell has effort but no rate (#373,
   `creel_error_missing_rate_strata`). Code that relied on the old result passes
