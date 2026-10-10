@@ -475,7 +475,10 @@ print.creel_estimates <- function(x, ...) {
 #'   names (e.g., \code{by = day_type}), multiple columns (e.g.,
 #'   \code{by = c(day_type, location)}), or tidyselect helpers (e.g.,
 #'   \code{by = starts_with("day")}). When NULL (default), computes a single
-#'   total estimate across all observations.
+#'   total estimate across all observations. On an aerial design each group's
+#'   effort is scaled to angler-hours and its SE carries the angler-ratio and
+#'   visibility terms. Not supported for sectioned designs, which are
+#'   estimated per section.
 #' @param variance Character string specifying variance estimation method.
 #'   Options: \code{"taylor"} (default, Taylor linearization),
 #'   \code{"bootstrap"} (bootstrap resampling with 500 replicates), or
@@ -774,7 +777,38 @@ estimate_effort <- function(
         class = "creel_error_missing_data"
       )
     }
+    # `by` used to be dropped here, returning the pooled number as if it
+    # answered the grouped question (GH #366). Grouped aerial effort is the
+    # grouped count total scaled to angler-hours, each group carrying the
+    # shared a and v uncertainty in its own SE.
+    if (!rlang::quo_is_null(by_quo)) {
+      by_vars <- eval_select_count_by( # nolint: object_usage_linter
+        by_quo,
+        design,
+        species_route = FALSE,
+        error_call = rlang::caller_env()
+      )
+      return(estimate_effort_grouped( # nolint: object_usage_linter
+        design, by_vars, variance, conf_level,
+        target = target, include_calibration = TRUE
+      ))
+    }
     return(estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target)) # nolint: object_usage_linter
+  }
+
+  # The sectioned estimator groups by section only; `by` was dropped without
+  # a word, so a per-day-type request came back as per-section rows (GH #366).
+  # Refused before the period-length warning, which would otherwise come first.
+  if (!is.null(design[["sections"]]) && !rlang::quo_is_null(by_quo)) {
+    cli::cli_abort(
+      c(
+        "{.arg by} is not supported for sectioned designs.",
+        "x" = "Sectioned effort is estimated per section, with a lake total.",
+        "i" = "Drop {.arg by}, or filter the counts to the group of interest \\
+               before estimating."
+      ),
+      class = "creel_error_dispatch_unsupported"
+    )
   }
 
   # Finding 13: an instantaneous count with no T_d expands to the season without
@@ -5427,6 +5461,25 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   # `+` and `sqrt()`, so leaving it attached would stamp it onto `total_var`
   # and then onto the reported `se`.
   var_expansion <- if (is.null(var_expansion_raw)) NULL else as.numeric(var_expansion_raw)
+
+  # An aerial count becomes effort only through h_open * a / v (GH #470). The
+  # estimate and every count-scale component scale exactly; the shared a and v
+  # uncertainty is not added here but once by whoever reports the quantity.
+  aerial <- aerial_effort_scale(design) # nolint: object_usage_linter
+  if (!is.null(aerial)) {
+    k <- aerial$multiplier
+    estimate <- estimate * k
+    var_between <- var_between * k^2
+    se_between <- se_between * k
+    var_within <- var_within * k^2
+    se_within <- se_within * k
+    if (!is.null(var_expansion)) {
+      var_expansion <- var_expansion * k^2
+    }
+    if (!is.null(expansion_decomposition)) {
+      expansion_decomposition <- lapply(expansion_decomposition, function(x) x * k)
+    }
+  }
   se_expansion <- if (is.null(var_expansion)) NULL else sqrt(var_expansion)
 
   # Combined SE and CI (recomputed from total variance)
@@ -5454,7 +5507,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   )
 
   # Return creel_estimates object
-  new_creel_estimates(
+  result <- new_creel_estimates(
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = "total",
@@ -5463,10 +5516,14 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
-    unit = design$effort_unit,
+    # An aerial design refuses period_length_col, so its effort_unit is NA;
+    # count x h_open is angler-hours (as estimate_effort_aerial() reports).
+    unit = if (is.null(aerial)) design$effort_unit else "angler-hours",
     se_expansion = se_expansion,
     expansion_decomposition = expansion_decomposition
   )
+  result$aerial_calibration_rel_var <- aerial$rel_var
+  result
 }
 
 #' Grouped total estimation using svyby (Phase 5 logic)
@@ -5478,7 +5535,8 @@ estimate_effort_grouped <- function(
   by_vars,
   variance_method,
   conf_level,
-  target = "sampled_days"
+  target = "sampled_days",
+  include_calibration = FALSE
 ) {
   counts_data <- design$counts
 
@@ -5581,8 +5639,39 @@ estimate_effort_grouped <- function(
     )
   }
 
+  # Aerial counts become effort through h_open * a / v (GH #470); see
+  # estimate_effort_total(). Each group's own SE carries the shared a and v
+  # term only when the groups are themselves the reported quantity
+  # (`include_calibration`, for estimate_effort(by = )). A total built from
+  # these rows adds it once after summing, so here it is left out.
+  aerial <- aerial_effort_scale(design) # nolint: object_usage_linter
+  var_calibration_vec <- 0
+  se_components_grouped <- NULL
+  if (!is.null(aerial)) {
+    k <- aerial$multiplier
+    estimate <- estimate * k
+    se_between_vec <- se_between_vec * k
+    var_between_vec <- var_between_vec * k^2
+    var_within_vec <- var_within_vec * k^2
+    var_expansion_vec <- var_expansion_vec * k^2
+    if (!is.null(se_expansion)) {
+      se_expansion <- se_expansion * k
+    }
+    if (!is.null(expansion_decomposition)) {
+      expansion_decomposition <- lapply(expansion_decomposition, function(x) x * k)
+    }
+    if (include_calibration) {
+      calib <- aerial_calibration_components(design, estimate) # nolint: object_usage_linter
+      var_calibration_vec <- calib$var
+      se_components_grouped <- c(
+        list(count_sampling = se_between_vec, within_day = sqrt(var_within_vec)),
+        calib$components
+      )
+    }
+  }
+
   # Combined SE per group
-  total_var_vec <- var_between_vec + var_within_vec + var_expansion_vec
+  total_var_vec <- var_between_vec + var_within_vec + var_expansion_vec + var_calibration_vec
   se <- sqrt(total_var_vec)
   se_between <- se_between_vec
   se_within <- sqrt(var_within_vec)
@@ -5625,7 +5714,7 @@ estimate_effort_grouped <- function(
   estimates_df <- estimates_df[col_order]
 
   # Return creel_estimates object
-  new_creel_estimates(
+  result <- new_creel_estimates(
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = "total",
@@ -5634,10 +5723,14 @@ estimate_effort_grouped <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     effort_target = target,
-    unit = design$effort_unit,
+    unit = if (is.null(aerial)) design$effort_unit else "angler-hours",
     se_expansion = se_expansion,
-    expansion_decomposition = expansion_decomposition
+    expansion_decomposition = expansion_decomposition,
+    se_components = se_components_grouped
   )
+  # Left for a total to add once after summing; NULL once it is already in `se`.
+  result$aerial_calibration_rel_var <- if (include_calibration) NULL else aerial$rel_var
+  result
 }
 
 #' Ungrouped CPUE estimation (ratio-of-means)
@@ -6050,8 +6143,21 @@ compute_stratum_product_sum <- function(
   ci_type = "symmetric",
   expansion_se = NULL,
   expansion_structure = NULL,
-  expansion_decomposition = NULL
+  expansion_decomposition = NULL,
+  calibration_rel_var = NULL
 ) {
+  # A multiplier shared by every stratum (aerial a and v, GH #470): its relative
+  # variance enters once per reported total, as estimate^2 * rel_var, after the
+  # strata are summed -- never per stratum. NA (unknown) makes the SE unknown.
+  # A known-zero total stays exactly zero whatever a and v are, so its term is
+  # 0 even when their uncertainty is unknown (0 * NA would make it NA).
+  add_calibration <- function(pv, est) {
+    if (is.null(calibration_rel_var)) {
+      return(pv)
+    }
+    pv + ifelse(!is.na(est) & est == 0, 0, est^2 * calibration_rel_var)
+  }
+
   # Vectorized CI builder: log-transform for positive totals, else Wald with clamp
   .ci <- function(est, se_val, z) {
     if (ci_type == "log") {
@@ -6077,7 +6183,7 @@ compute_stratum_product_sum <- function(
     e_se <- effort_df$se
     r_se <- rate_df$se
     est <- e_est * r_est
-    pv <- product_total_variance(e_est, e_se, r_est, r_se, product_variance)
+    pv <- add_calibration(product_total_variance(e_est, e_se, r_est, r_se, product_variance), est)
     se_val <- sqrt(pv)
     ci <- .ci(est, se_val, z)
     return(data.frame(
@@ -6132,6 +6238,7 @@ compute_stratum_product_sum <- function(
       structure = expansion_structure,
       decomposition = expansion_decomposition[merged$.expansion_key]
     )
+    pv <- add_calibration(pv, est)
     n <- sum(merged$.n_sh)
     se_val <- sqrt(pv)
     ci <- .ci(est, se_val, z)
@@ -6199,6 +6306,7 @@ compute_stratum_product_sum <- function(
       },
       numeric(1L)
     )
+    agg$.var_sh <- add_calibration(agg$.var_sh, agg$.est_sh)
 
     sp_result <- tibble::as_tibble(agg[interview_by_vars])
     sp_result$estimate <- agg$.est_sh

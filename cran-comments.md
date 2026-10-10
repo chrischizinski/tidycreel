@@ -1,35 +1,28 @@
-## Resubmission
+## Submission
 
-This is a resubmission of tidycreel 8.0.0, a new package.
+This is a patch release, 8.0.1, submitted shortly after 8.0.0 was published
+(2026-10-10) because it fixes estimates that were wrong.
 
-The pretest on 2026-09-30 reported `Overall checktime 21 min > 10 min` on
-r-devel-windows-x86_64, 14 min of it in tests. The tests now run a core subset
-of 8 files (647 tests) covering the main workflow, unless `NOT_CRAN` is
-`"true"`; the full suite (6,815 tests) still runs in GitHub Actions and
-`devtools::test()`. Locally the test step fell from 203 s to 20 s. On
-win-builder R-devel the overall check time is now 317 s (tests 65 s; win-builder, 2026-09-30).
-No package code changed.
-
-The earlier review of 7.0.0 asked for two changes, both made in 8.0.0:
-commented-out code in examples is now executed code, and `print()` for the
-`validate_incomplete_trips()` result restores `par()` with `on.exit()`. A test
-guards both.
+For aerial survey designs, `estimate_total_catch()`, `estimate_total_harvest()`
+and `estimate_total_release()` multiplied the catch rate by the raw
+instantaneous count instead of by effort in angler-hours, so every aerial total
+was too small by `h_open * angler_ratio / visibility_correction` (a factor of 14
+on the package's example data). `estimate_effort(by = )` on an aerial design
+also ignored `by`. Both are fixed, with tests that fail on 8.0.0. Nothing else
+changed.
 
 ## Test environments
 
 - local: macOS 26.6.2 (aarch64), R 4.6.1
-- win-builder: R Under development (unstable) (2026-09-29 r90598 ucrt)
+- win-builder: R-devel (to be run before submission)
 - GitHub Actions: ubuntu, macOS and Windows, R release
 
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
-* New submission.
-
-  Possibly misspelled words in DESCRIPTION: Hoenig, Kinloch, McGlennon, Nicoll.
-  These are author surnames from the two method references in `Description`,
-  spelled as published.
+* Days since last update: 0. This patch fixes wrong aerial-survey totals in
+  8.0.0; see above.
 
 ## Notes
 
@@ -43,4 +36,4 @@ guards both.
 
 ## Reverse dependencies
 
-There are no reverse dependencies; this is a new package.
+There are no reverse dependencies.
