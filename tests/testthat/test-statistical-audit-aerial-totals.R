@@ -168,3 +168,46 @@ test_that("#366: estimate_effort(by = ) on a sectioned design is refused, not dr
     class = "creel_error_dispatch_unsupported"
   )
 })
+
+test_that("#470: a zero aerial total has SE 0 even when a and v uncertainty is unknown", {
+  # 0 * NA is NA; a total that is exactly zero is zero whatever a and v are.
+  d <- at_quiet(at_design(h_open = 14, v = "none", v_se = NULL))
+  d$interviews$walleye <- 0L
+  d$interviews$kept <- 0L
+  t <- at_quiet(estimate_total_harvest(d))$estimates # nolint: object_usage_linter
+  expect_equal(t$estimate, 0)
+  expect_false(is.na(t$se))
+})
+
+test_that("#366: grouped aerial effort names its components, NA when unknown", {
+  g <- at_quiet(estimate_effort(at_quiet(at_design(h_open = 14, v = "none", v_se = NULL)), by = day_type)) # nolint: object_usage_linter
+  expect_true(all(is.na(g$se_components$visibility)))
+  expect_length(g$se_components$visibility, 2L)
+  g2 <- at_quiet(estimate_effort(at_quiet(at_design(h_open = 14, v = 0.8, v_se = 0.05)), by = day_type)) # nolint: object_usage_linter
+  expect_equal(g2$se_components$visibility, g2$estimates$estimate * 0.05 / 0.8)
+})
+
+test_that("#470: add_sections() refuses an aerial design", {
+  # No sectioned aerial estimator: effort ignored the sections, and totals
+  # treated the shared a and v as independent across them.
+  d <- at_quiet(at_design())
+  expect_error(
+    add_sections(d, data.frame(section = c("N", "S")), section_col = section), # nolint: object_usage_linter
+    class = "creel_error_dispatch_unsupported"
+  )
+})
+
+test_that("#366: the sectioned `by` refusal comes before the period-length warning", {
+  sections_df <- data.frame(section = c("North", "Central", "South"))
+  d <- at_quiet(creel_design(example_sections_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- at_quiet(add_sections(d, sections_df, section_col = section)) # nolint: object_usage_linter
+  d <- at_quiet(add_counts(d, example_sections_counts)) # nolint: object_usage_linter
+  # The warning fires once per session; reset it so this test can see it.
+  rlang::reset_warning_verbosity("tidycreel_effort_without_period_length")
+  expect_no_warning(
+    try(estimate_effort(d, by = day_type), silent = TRUE) # nolint: object_usage_linter
+  )
+  # And it still fires on the call that reaches the estimator.
+  rlang::reset_warning_verbosity("tidycreel_effort_without_period_length")
+  expect_warning(estimate_effort(d), "period length") # nolint: object_usage_linter
+})

@@ -3221,6 +3221,22 @@ add_sections <- function(
     ))
   }
 
+  # Guard: an aerial design has no sectioned estimator. estimate_effort()
+  # returned the pooled aerial estimate and ignored the sections, while the
+  # totals estimated each section and summed their visibility and angler-ratio
+  # terms as if independent, though one a and v scale every section (GH #470).
+  if (identical(design$design_type, "aerial")) {
+    cli::cli_abort(
+      c(
+        "Sections are not supported on aerial designs.",
+        "x" = "Aerial effort is estimated for the whole water body; no estimator \\
+               splits it by section.",
+        "i" = "Estimate the aerial design without sections."
+      ),
+      class = "creel_error_dispatch_unsupported"
+    )
+  }
+
   # Guard: sections must be a data frame
   if (!is.data.frame(sections)) {
     cli::cli_abort(c(

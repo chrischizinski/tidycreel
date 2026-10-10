@@ -45,7 +45,6 @@ estimate_effort_aerial <- function(
   # "none" opt-out to v = 1 with se_v = NA, so a 1 reaching this line is always
   # a stated claim rather than an absent argument (GH #135).
   v <- design$aerial$visibility_correction
-  se_v <- design$aerial$visibility_se
 
   # Angler-to-people ratio (GH #158). An aerial count is a raw observer count
   # and nothing in it separates anglers from other people, so the count is
@@ -54,7 +53,6 @@ estimate_effort_aerial <- function(
   # 2.69 up), so applying only the visibility correction is not conservative --
   # it is biased in the direction of the correction that was kept.
   a <- design$aerial$angler_ratio
-  se_a <- design$aerial$angler_ratio_se
 
   h_over_v <- design$aerial$h_open * a / v
 
@@ -107,14 +105,17 @@ estimate_effort_aerial <- function(
   # GLMM path's cited source, contains no visibility correction and no
   # bootstrap; it does not speak to v at all. Smucker et al. (2010) is the
   # source for v itself, not for this variance composition.
-  var_visibility <- if (is.null(se_v)) NULL else (estimate * se_v / v)^2
-  se_visibility <- if (is.null(var_visibility)) NULL else sqrt(var_visibility)
+  # Through the same helper grouped aerial effort uses, so the two cannot
+  # drift; a zero estimate has a zero term, not an unknown one (GH #470).
+  calibration <- aerial_calibration_components(design, estimate)
+  se_visibility <- calibration$components$visibility
+  var_visibility <- if (is.null(se_visibility)) NULL else se_visibility^2
 
   # The angler-to-people ratio is the same kind of object as v -- one estimate
   # scaling every count -- so it composes the same way and enters once at the
   # total (GH #158).
-  var_angler_ratio <- if (is.null(se_a)) NULL else (estimate * se_a / a)^2
-  se_angler_ratio <- if (is.null(var_angler_ratio)) NULL else sqrt(var_angler_ratio)
+  se_angler_ratio <- calibration$components$angler_ratio
+  var_angler_ratio <- if (is.null(se_angler_ratio)) NULL else se_angler_ratio^2
 
   # Party-size expansion contribution (GH #121/#158).
   #
@@ -245,4 +246,36 @@ aerial_effort_scale <- function(design) {
     rel_var <- (rel_var %||% 0) + (ae$angler_ratio_se / a)^2
   }
   list(multiplier = ae$h_open * a / v, rel_var = rel_var)
+}
+
+#' The visibility and angler-ratio SE components of aerial effort
+#'
+#' One per reported quantity (a scalar for the pooled estimate, a vector for
+#' grouped rows), each `estimate * se / value` -- the delta-method term of a
+#' multiplier shared by everything it scales. A component is omitted when its
+#' SE was not supplied (does not apply), `NA` when it is unknown (the "none"
+#' opt-out), and exactly 0 for a zero estimate, which no multiplier changes.
+#'
+#' @param design An aerial creel_design object.
+#' @param estimate Numeric vector of effort estimates in angler-hours.
+#'
+#' @return A list: `var`, the summed variance per estimate (0 when no component
+#'   applies), and `components`, a named list of SE vectors.
+#'
+#' @keywords internal
+#' @noRd
+aerial_calibration_components <- function(design, estimate) {
+  ae <- design$aerial
+  term <- function(se, value) {
+    ifelse(!is.na(estimate) & estimate == 0, 0, estimate * se / value)
+  }
+  components <- list()
+  if (!is.null(ae$visibility_se)) {
+    components$visibility <- abs(term(ae$visibility_se, ae$visibility_correction))
+  }
+  if (!is.null(ae$angler_ratio_se)) {
+    components$angler_ratio <- abs(term(ae$angler_ratio_se, ae$angler_ratio))
+  }
+  var <- Reduce(`+`, lapply(components, function(x) x^2), 0)
+  list(var = var, components = components)
 }

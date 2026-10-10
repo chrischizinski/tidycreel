@@ -825,6 +825,21 @@ estimate_effort <- function(
     return(estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target)) # nolint: object_usage_linter
   }
 
+  # The sectioned estimator groups by section only; `by` was dropped without
+  # a word, so a per-day-type request came back as per-section rows (GH #366).
+  # Refused before the period-length warning, which would otherwise come first.
+  if (!is.null(design[["sections"]]) && !rlang::quo_is_null(by_quo)) {
+    cli::cli_abort(
+      c(
+        "{.arg by} is not supported for sectioned designs.",
+        "x" = "Sectioned effort is estimated per section, with a lake total.",
+        "i" = "Drop {.arg by}, or filter the counts to the group of interest \\
+               before estimating."
+      ),
+      class = "creel_error_dispatch_unsupported"
+    )
+  }
+
   # Finding 13: an instantaneous count with no T_d expands to the season without
   # ever being multiplied by the length of the period it was randomised within,
   # so the returned quantity is not angler-hours. Fires here, after the dispatches
@@ -840,19 +855,6 @@ estimate_effort <- function(
         "x" = "Got {.arg target = {target}}.",
         "i" = "Use {.code target = 'sampled_days'} for now."
       ))
-    }
-    # The sectioned estimator groups by section only; `by` was dropped without
-    # a word, so a per-day-type request came back as per-section rows (GH #366).
-    if (!rlang::quo_is_null(by_quo)) {
-      cli::cli_abort(
-        c(
-          "{.arg by} is not supported for sectioned designs.",
-          "x" = "Sectioned effort is estimated per section, with a lake total.",
-          "i" = "Drop {.arg by}, or filter the counts to the group of interest \\
-                 before estimating."
-        ),
-        class = "creel_error_dispatch_unsupported"
-      )
     }
     return(estimate_effort_sections(
       # nolint: object_usage_linter
@@ -6213,6 +6215,7 @@ estimate_effort_grouped <- function(
   # these rows adds it once after summing, so here it is left out.
   aerial <- aerial_effort_scale(design) # nolint: object_usage_linter
   var_calibration_vec <- 0
+  se_components_grouped <- NULL
   if (!is.null(aerial)) {
     k <- aerial$multiplier
     estimate <- estimate * k
@@ -6226,8 +6229,13 @@ estimate_effort_grouped <- function(
     if (!is.null(expansion_decomposition)) {
       expansion_decomposition <- lapply(expansion_decomposition, function(x) x * k)
     }
-    if (include_calibration && !is.null(aerial$rel_var)) {
-      var_calibration_vec <- estimate^2 * aerial$rel_var
+    if (include_calibration) {
+      calib <- aerial_calibration_components(design, estimate) # nolint: object_usage_linter
+      var_calibration_vec <- calib$var
+      se_components_grouped <- c(
+        list(count_sampling = se_between_vec, within_day = sqrt(var_within_vec)),
+        calib$components
+      )
     }
   }
 
@@ -6286,7 +6294,8 @@ estimate_effort_grouped <- function(
     effort_target = target,
     unit = if (is.null(aerial)) design$effort_unit else "angler-hours",
     se_expansion = se_expansion,
-    expansion_decomposition = expansion_decomposition
+    expansion_decomposition = expansion_decomposition,
+    se_components = se_components_grouped
   )
   # Left for a total to add once after summing; NULL once it is already in `se`.
   result$aerial_calibration_rel_var <- if (include_calibration) NULL else aerial$rel_var
@@ -6928,8 +6937,13 @@ compute_stratum_product_sum <- function(
   # A multiplier shared by every stratum (aerial a and v, GH #470): its relative
   # variance enters once per reported total, as estimate^2 * rel_var, after the
   # strata are summed -- never per stratum. NA (unknown) makes the SE unknown.
+  # A known-zero total stays exactly zero whatever a and v are, so its term is
+  # 0 even when their uncertainty is unknown (0 * NA would make it NA).
   add_calibration <- function(pv, est) {
-    if (is.null(calibration_rel_var)) pv else pv + est^2 * calibration_rel_var
+    if (is.null(calibration_rel_var)) {
+      return(pv)
+    }
+    pv + ifelse(!is.na(est) & est == 0, 0, est^2 * calibration_rel_var)
   }
 
   # Vectorized CI builder: log-transform for positive totals, else Wald with clamp

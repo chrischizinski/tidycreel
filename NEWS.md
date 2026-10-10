@@ -551,7 +551,10 @@
   group, in angler-hours, each group's SE carrying the angler-ratio and
   visibility terms. On a sectioned design `by` is refused
   (`creel_error_dispatch_unsupported`) instead of being dropped: sectioned
-  effort is estimated per section.
+  effort is estimated per section. `add_sections()` now refuses an aerial
+  design: aerial effort ignored the sections, and the sectioned totals
+  treated the one visibility correction and angler ratio as independent
+  across sections.
 
 * Counts at several sites inside a day are no longer expanded wrong without
   an error (#442). The expanded effort targets (`stratum_total`,
