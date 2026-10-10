@@ -334,6 +334,9 @@ The constructor performs fail-fast validation:
 
 - Strata columns are character or factor (not numeric, logical)
 
+- Strata columns contain no NA values: a day with an unknown stratum
+  belongs to no stratum's population of days
+
 - Site column (if provided) is character or factor
 
 - (bus_route only) All `p_site` and `p_period` values are in `(0, 1]`

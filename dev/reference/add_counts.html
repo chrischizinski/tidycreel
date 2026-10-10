@@ -160,8 +160,13 @@ on the design and used by every downstream estimator.</p></dd>
 <dt id="arg-psu">psu<a class="anchor" aria-label="anchor" href="#arg-psu"></a></dt>
 <dd><p>Character string naming the PSU (Primary Sampling Unit) column
 in the count data. Defaults to NULL, which uses the design's date_col as
-the PSU (day-as-PSU is the most common creel design). For other designs,
-specify the PSU column explicitly (e.g., "site_day" for day-site PSUs).</p></dd>
+the PSU (day-as-PSU is the most common creel design). A custom PSU column
+must still identify a day (a day id, for example): the expanded effort
+targets count population days on the calendar, so they refuse a PSU that
+puts several PSUs on one date. Units inside a day – sites, effort types –
+belong in <code>unit_cols</code>, which sums them into the day before expanding. A
+site-day PSU drawn from a site-by-day frame is not supported for count
+designs (GH #442).</p></dd>
 
 
 <dt id="arg-count-time-col">count_time_col<a class="anchor" aria-label="anchor" href="#arg-count-time-col"></a></dt>
@@ -415,15 +420,15 @@ allows the same creel_design calendar to be used with different PSU structures.<
 <span class="r-out co"><span class="r-pr">#&gt;</span> Interviews: <span style="color: #0000BB;">"none"</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Sections: <span style="color: #0000BB;">"none"</span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Compatibility path: raw count rows with a custom PSU column</span></span></span>
-<span class="r-in"><span><span class="va">counts_with_site_psu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span><span class="co"># Compatibility path: raw count rows with a custom PSU column (a day id)</span></span></span>
+<span class="r-in"><span><span class="va">counts_with_day_psu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span>, <span class="st">"2024-06-03"</span>, <span class="st">"2024-06-04"</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  site_day <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"site_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  day_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"day_"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">23</span>, <span class="fl">45</span>, <span class="fl">52</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">design2</span> <span class="op">&lt;-</span> <span class="fu">add_counts</span><span class="op">(</span><span class="va">design</span>, <span class="va">counts_with_site_psu</span>, psu <span class="op">=</span> <span class="st">"site_day"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design2</span> <span class="op">&lt;-</span> <span class="fu">add_counts</span><span class="op">(</span><span class="va">design</span>, <span class="va">counts_with_day_psu</span>, psu <span class="op">=</span> <span class="st">"day_id"</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>No weights or probabilities supplied, assuming equal probability</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Compatibility path: multiple counts per day (within-day variance via count_time_col)</span></span></span>

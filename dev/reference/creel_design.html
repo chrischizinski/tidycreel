@@ -376,6 +376,8 @@ mappings, or NULL for non-bus-route designs. Contains:
 <p>The constructor performs fail-fast validation:</p><ul><li><p>Date column is class Date (not character, numeric, POSIXct)</p></li>
 <li><p>Date column contains no NA values</p></li>
 <li><p>Strata columns are character or factor (not numeric, logical)</p></li>
+<li><p>Strata columns contain no NA values: a day with an unknown stratum
+belongs to no stratum's population of days</p></li>
 <li><p>Site column (if provided) is character or factor</p></li>
 <li><p>(bus_route only) All <code>p_site</code> and <code>p_period</code> values are in <code>(0, 1]</code></p></li>
 <li><p>(bus_route only) <code>p_site</code> values sum to 1.0 within each circuit
