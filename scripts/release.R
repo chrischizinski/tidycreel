@@ -129,8 +129,10 @@ release_prep <- function(version, name = "", from = "origin/main",
   desc <- sub("^Version: .*$", paste0("Version: ", version), desc)
   writeLines(desc, desc_file)
 
-  # Re-stamped with CRAN's publication date by release_accepted(); today is a
-  # placeholder that is at least not the previous release's date.
+  # The prep date, kept on the release branch and its tag: CITATION.cff is
+  # .Rbuildignore'd, so CRAN never sees it. release_accepted() writes CRAN's
+  # publication date into main's copy, which is the one GitHub's "Cite this
+  # repository" reads.
   cff_file <- file.path(path, "CITATION.cff")
   cff <- readLines(cff_file)
   cff <- sub("^version: .*$", paste0("version: ", version), cff)
@@ -192,6 +194,9 @@ release_check <- function(path = "~/Dev/tidycreel-submit") {
   cat("\n--as-cran:", length(res$errors), "errors |", length(res$warnings), "warnings |",
       length(res$notes), "notes\n")
   for (n in c(res$errors, res$warnings, res$notes)) cat("\n", n, "\n", sep = "")
+  if (length(res$errors) || length(res$warnings)) {
+    release_refuse("R CMD check --as-cran must give 0 errors and 0 warnings.")
+  }
   message("\nEvery NOTE above must be explained in cran-comments.md. Then: devtools::check_win_devel(\"",
           path, "\"), record its result in cran-comments.md, push, and submit with cran_submit().")
   invisible(res)
@@ -274,8 +279,13 @@ release_accepted <- function(version, main_path = ".", notes_file = NULL, main_r
     jsonlite::write_json(list(tag_name = tag, name = title,
                               body = body, draft = FALSE, prerelease = FALSE, make_latest = "true"),
                          json, auto_unbox = TRUE)
-    out <- system2("gh", c("api", "-X", "POST", sprintf("repos/%s/releases", repo), "--input", json,
-                           "--jq", ".html_url"), stdout = TRUE)
+    out <- suppressWarnings(system2("gh", c("api", "-X", "POST", sprintf("repos/%s/releases", repo),
+                                            "--input", json, "--jq", ".html_url"), stdout = TRUE, stderr = TRUE))
+    status <- attr(out, "status")
+    if (!is.null(status) && status != 0L) {
+      release_refuse("GitHub did not create the release; main was not updated. gh said:\n",
+                     paste(out, collapse = "\n"), "\nRe-run once fixed: the tag is kept and is not re-pushed.")
+    }
     message("Published ", out)
   }
 

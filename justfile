@@ -65,7 +65,7 @@ review-update file status notes:
 
 # Cut cran-<version> in ~/Dev/tidycreel-submit and stamp the version.
 release-prep version name="" from="origin/main":
-    Rscript -e 'source("scripts/release.R"); release_prep("{{version}}", "{{name}}", "{{from}}")'
+    Rscript -e 'a <- commandArgs(TRUE); source("scripts/release.R"); release_prep(a[1], a[2], a[3])' {{quote(version)}} {{quote(name)}} {{quote(from)}}
 
 # --as-cran check and submission-guard dry run of the release branch.
 release-check:
@@ -73,4 +73,4 @@ release-check:
 
 # After CRAN publishes: tag, GitHub release, and the post-release PR for main.
 release-accepted version:
-    Rscript -e 'source("scripts/release.R"); release_accepted("{{version}}")'
+    Rscript -e 'a <- commandArgs(TRUE); source("scripts/release.R"); release_accepted(a[1])' {{quote(version)}}
