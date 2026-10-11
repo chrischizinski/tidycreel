@@ -6071,8 +6071,9 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
-    # An aerial design refuses period_length_col, so its effort_unit is NA;
     # count x h_open is angler-hours (as estimate_effort_aerial() reports).
+    # add_counts() records that as effort_unit since GH #478; stated here as
+    # well so a design attached before then still reports it.
     unit = if (is.null(aerial)) design$effort_unit else "angler-hours",
     se_expansion = se_expansion,
     expansion_decomposition = expansion_decomposition

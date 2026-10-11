@@ -1212,6 +1212,12 @@ warn_missing_period_length <- function(design) {
   if (isTRUE(design$counts_are_effort)) {
     return(invisible(NULL))
   }
+  # An aerial design expands its count by h_open, its required period length,
+  # so there is no missing T_d to report. estimate_effort() never reached this
+  # check for aerial; the totals did, and warned on correct angler-hours (GH #478).
+  if (identical(design$design_type, "aerial")) {
+    return(invisible(NULL))
+  }
   cli::cli_warn(
     c(
       "Instantaneous counts were expanded without a period length.",

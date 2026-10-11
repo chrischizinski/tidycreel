@@ -211,3 +211,47 @@ test_that("#366: the sectioned `by` refusal comes before the period-length warni
   rlang::reset_warning_verbosity("tidycreel_effort_without_period_length")
   expect_warning(estimate_effort(d), "period length") # nolint: object_usage_linter
 })
+
+# GH #478: aerial effort and the totals built on it disagreed about what that
+# effort is. estimate_effort() reported angler-hours and no warning; the totals
+# on the same design said the count had been expanded without a period length
+# ("angler-days") and reported their unit as unknown -- while multiplying the
+# rate by the correct h_open-scaled angler-hours. h_open is the period length
+# of an aerial count, so there is nothing missing to warn about, and a rate per
+# angler-hour times angler-hours is fish.
+
+test_that("#478: no aerial total warns that a period length is missing", {
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  d <- at_quiet(at_design())
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    expect_no_warning(fn(d), message = "without a period length")
+    expect_no_warning(fn(d, by = day_type), message = "without a period length")
+  }
+})
+
+test_that("#478: aerial totals are in fish, matching effort in angler-hours", {
+  d <- at_quiet(at_design())
+  expect_identical(at_quiet(estimate_effort(d))$unit, "angler-hours")
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    expect_identical(at_quiet(fn(d))$unit, "fish")
+    expect_identical(at_quiet(fn(d, by = day_type))$unit, "fish")
+  }
+})
+
+test_that("#478: an aerial total over a party-hour rate still reports its unit as unknown", {
+  # Recording the effort unit must not make the product look resolved when the
+  # rate is per party-hour: that pair has no common unit.
+  cal <- unique(example_aerial_counts[, c("date", "day_type")])
+  d <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, survey_type = "aerial",
+    visibility_correction = "none", angler_ratio = 1, angler_ratio_se = 0, h_open = 14
+  )
+  d <- at_quiet(add_counts(d, example_aerial_counts)) # nolint: object_usage_linter
+  d <- at_quiet(add_interviews( # nolint: object_usage_linter
+    d, example_aerial_interviews,
+    catch = walleye_catch, effort = hours_fished, trip_status = trip_status
+  ))
+  expect_warning(estimate_total_catch(d), "different units")
+  expect_true(is.na(at_quiet(estimate_total_catch(d))$unit))
+})
