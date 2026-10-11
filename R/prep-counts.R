@@ -15,8 +15,8 @@
 #'
 #' The returned table always contains canonical columns:
 #' `date`, any selected strata columns, `effort_type`, `daily_effort`, `psu`,
-#' and `correction_factor`. Optional columns `n_counts`, `within_day_var`, and
-#' `source_method` are included when supplied.
+#' and `correction_factor`. Optional columns `n_counts`, `within_day_var`,
+#' `source_method` and the `section` column are included when supplied.
 #'
 #' @param data A data frame containing sampled-day effort rows.
 #' @param date Tidy selector for the Date column.
@@ -289,8 +289,8 @@ prep_counts_daily_effort <- function(
 #'
 #' The returned table always contains canonical columns:
 #' `date`, any selected strata columns, `effort_type`, `daily_effort`, `psu`,
-#' and `correction_factor`. Optional columns `n_counts`, `within_day_var`, and
-#' `source_method` are included when supplied.
+#' and `correction_factor`. Optional columns `n_counts`, `within_day_var`,
+#' `source_method` and the `section` column are included when supplied.
 #'
 #' @param data A data frame containing sampled-day boat-count rows.
 #' @param date Tidy selector for the Date column.
@@ -779,7 +779,8 @@ prep_counts_section_col <- function(section_quo, data, strata_cols) {
     "date", strata_cols, "effort_type", "daily_effort", "psu",
     "correction_factor", "n_counts", "within_day_var", "source_method"
   )
-  if (section_col %in% reserved) {
+  # prep_counts_boat_party() writes the expansion_* carriers after this column.
+  if (section_col %in% reserved || startsWith(section_col, "expansion_")) {
     cli::cli_abort(c(
       "{.arg section} column {.field {section_col}} clashes with an output column.",
       "i" = "Rename it before preparing the counts."

@@ -888,7 +888,9 @@ test_that("#478: the boat-party prep keeps the section column too", {
   direct <- suppressWarnings(
     estimate_effort(add_counts(.sections_design(), example_sections_counts)) # nolint
   )
-  via_prep <- suppressWarnings(estimate_effort(add_counts(.sections_design(), counts)))
+  # Marked as effort like the daily-effort output: no period-length warning.
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  expect_no_warning(via_prep <- estimate_effort(add_counts(.sections_design(), counts)))
   expect_equal(via_prep$estimates$estimate, direct$estimates$estimate)
 })
 
@@ -903,6 +905,13 @@ test_that("#478: a section column must be one column that clashes with no output
   expect_error(
     prep_counts_daily_effort(example_sections_counts, # nolint
       date = date, strata = day_type, daily_effort = effort_hours, section = day_type # nolint
+    ),
+    "clashes"
+  )
+  carrier <- transform(example_sections_counts, expansion_group = section) # nolint
+  expect_error(
+    prep_counts_daily_effort(carrier, # nolint
+      date = date, strata = day_type, daily_effort = effort_hours, section = expansion_group # nolint
     ),
     "clashes"
   )

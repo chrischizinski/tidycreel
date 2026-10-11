@@ -103,8 +103,8 @@ reconstruction outside estimator internals.
 
 The returned table always contains canonical columns:
 \code{date}, any selected strata columns, \code{effort_type}, \code{daily_effort}, \code{psu},
-and \code{correction_factor}. Optional columns \code{n_counts}, \code{within_day_var}, and
-\code{source_method} are included when supplied.
+and \code{correction_factor}. Optional columns \code{n_counts}, \code{within_day_var},
+\code{source_method} and the \code{section} column are included when supplied.
 }
 \examples{
 raw <- data.frame(
