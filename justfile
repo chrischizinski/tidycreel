@@ -15,6 +15,11 @@ check:
 lint:
     Rscript -e 'lintr::lint_package()'
 
+# Vignettes raise only the warnings they explain (GH #480). The allow-list,
+# and which vignettes are checked so far, live in the script.
+vignette-warnings:
+    Rscript scripts/check-vignette-warnings.R
+
 # README.md is a HAND-MAINTAINED mirror of README.Rmd, not a knit artifact --
 # both carry the same `output: github_document` front matter. build_readme() was
 # called here until GH #358: it rewrites vignette("x") with curly quotes,

@@ -217,6 +217,9 @@ reference:
       Simulated datasets illustrating each supported survey type.
       Used in vignettes and function examples.
     contents:
+      - example_season_calendar
+      - example_season_counts
+      - example_season_interviews
       - example_calendar
       - example_counts
       - example_interviews
