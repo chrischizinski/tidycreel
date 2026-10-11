@@ -93,6 +93,7 @@ Lumley, T. 2010. Complex Surveys: A Guide to Analysis Using R. Wiley.
 \seealso{
 Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
+\code{\link{as_tibble.creel_estimates}()},
 \code{\link{check_completeness}()},
 \code{\link{flag_outliers}()},
 \code{\link{season_summary}()},

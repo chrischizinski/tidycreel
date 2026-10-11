@@ -87,6 +87,23 @@ The grouped results show separate estimates for weekday and weekend periods: app
 
 The `by` parameter accepts tidy selectors, so you can group by multiple columns or use tidyselect helpers like `starts_with()`.
 
+## Using Results as Data
+
+An estimate prints with its method, variance method and unit, but it is not
+itself a data frame, so dplyr verbs do not work on it directly. Convert it
+first. `as_tibble()` returns one row per estimate, with that metadata copied
+into columns so it stays attached to every row:
+
+```{r as-tibble}
+effort_tbl <- tibble::as_tibble(result_by_day)
+effort_tbl
+
+effort_tbl[effort_tbl$day_type == "weekend", c("day_type", "estimate", "se", "unit")]
+```
+
+`as.data.frame()` does the same for base R. Use `metadata = FALSE` for the
+estimates table alone.
+
 ## Variance Methods
 
 By default, `estimate_effort()` uses Taylor linearization for variance estimation. The package also supports bootstrap and jackknife methods:

@@ -906,9 +906,16 @@ construct_survey_design <- function(design) {
   # Attempt to construct survey design with error wrapping
   tryCatch(
     {
+      # Unit weights, stated rather than left for survey to assume: this design
+      # totals over the sampled days, and the stratum and period targets build
+      # their own weighted design (get_effort_target_design()). Omitting them
+      # gives the same weights plus a
+      # "No weights or probabilities supplied" warning on every design, which
+      # build_interview_survey() already avoids the same way.
       survey::svydesign(
         ids = psu_formula,
         strata = strata_formula,
+        weights = rep(1, nrow(counts_data)),
         data = counts_data,
         nest = TRUE
       )
