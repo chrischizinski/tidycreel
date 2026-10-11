@@ -193,12 +193,20 @@ test_that("mean-of-ratios results convert through the parent method", {
   expect_identical(unique(tbl$estimator), "mor")
 })
 
-test_that("metadata = FALSE returns the estimates table alone", {
+test_that("metadata = FALSE returns the same table as tidy()", {
   est <- .effort_by_day_type()
-  expect_identical(
-    tibble::as_tibble(est, metadata = FALSE),
-    tibble::as_tibble(est$estimates)
+  expect_identical(tibble::as_tibble(est, metadata = FALSE), tidy(est))
+})
+
+test_that("n is always a column, NA where the estimator reports no sample size", {
+  # A result without n must not lose the column that every other result has,
+  # or binding results together and reading tbl$n breaks on one estimator.
+  est <- new_creel_estimates( # nolint: object_usage_linter
+    estimates = tibble::tibble(estimate = 10, se = 1, ci_lower = 8, ci_upper = 12)
   )
+  tbl <- tibble::as_tibble(est)
+  expect_true("n" %in% names(tbl))
+  expect_identical(tbl$n, NA_integer_)
 })
 
 test_that("as.data.frame() gives the same content as a plain data frame", {

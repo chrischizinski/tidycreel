@@ -22,7 +22,8 @@ below. If \code{FALSE}, return the estimates table alone.}
 \value{
 A tibble (\code{as_tibble()}) or data frame (\code{as.data.frame()}) with one
 row per estimate: the grouping columns, \code{estimate}, \code{se}, \code{ci_lower},
-\code{ci_upper}, \code{n} and any further columns the estimator reports. With
+\code{ci_upper}, \code{n} (\code{NA} where the estimator reports no sample size) and
+any further columns the estimator reports. With
 \code{metadata = TRUE} these columns follow:
 \describe{
 \item{\code{method}}{The estimation method, e.g. \code{"total"}.}

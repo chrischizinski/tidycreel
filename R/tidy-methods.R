@@ -58,7 +58,8 @@ tidy.creel_estimates <- function(x, ...) {
 #'
 #' @return A tibble (`as_tibble()`) or data frame (`as.data.frame()`) with one
 #'   row per estimate: the grouping columns, `estimate`, `se`, `ci_lower`,
-#'   `ci_upper`, `n` and any further columns the estimator reports. With
+#'   `ci_upper`, `n` (`NA` where the estimator reports no sample size) and
+#'   any further columns the estimator reports. With
 #'   `metadata = TRUE` these columns follow:
 #'   \describe{
 #'     \item{`method`}{The estimation method, e.g. `"total"`.}
@@ -98,7 +99,9 @@ NULL
 #' @importFrom tibble as_tibble
 #' @export
 as_tibble.creel_estimates <- function(x, ..., metadata = TRUE) {
-  out <- tibble::as_tibble(x$estimates)
+  # Same guaranteed columns as tidy(): n is NA where the estimator reports no
+  # sample size (mark-recapture harvest, for one).
+  out <- tidy.creel_estimates(x)
   if (!isTRUE(metadata)) {
     return(out)
   }
