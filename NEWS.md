@@ -63,6 +63,16 @@
 
 ## New features
 
+* `prep_counts_daily_effort()` and `prep_counts_boat_party()` gain a
+  `section` argument (#478). Both kept the strata columns and dropped every
+  other one, so effort recorded per section had no way in as effort: on a
+  sectioned design `add_counts()` saw several rows per day with nothing to
+  tell them apart and refused them, and the raw-count route that remained
+  warned that no period length was given. The section column is now carried
+  under its own name, and the estimates equal the raw-count route's, without
+  the warning. The `example_sections_counts` and `example_sections_interviews`
+  examples use it.
+
 * Estimates convert to data (#476). `tibble::as_tibble()` and
   `as.data.frame()` now work on a `creel_estimates` result, which before
   errored with "cannot coerce class". The table has one row per estimate,

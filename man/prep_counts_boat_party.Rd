@@ -16,7 +16,8 @@ prep_counts_boat_party(
   psu = NULL,
   n_counts = NULL,
   within_day_var = NULL,
-  source_method = "boat_count_x_mean_party_size"
+  source_method = "boat_count_x_mean_party_size",
+  section = NULL
 )
 }
 \arguments{
@@ -80,10 +81,17 @@ quantity from raw counts; supplying both is an error.}
 \item{source_method}{Optional source-method values. Defaults to
 \code{"boat_count_x_mean_party_size"}. May be a scalar string/factor or an
 expression that evaluates to one value per row.}
+
+\item{section}{Optional tidy selector for the section column of a design
+with sections (\code{\link[=add_sections]{add_sections()}}). Carried to the output under its own
+name, so \code{\link[=add_counts]{add_counts()}} can match each row to its section. Without it a
+sectioned design sees several rows per day with nothing to tell them
+apart, and refuses them.}
 }
 \value{
 A tibble with canonical sampled-day effort columns. Required columns
-are \code{date}, selected strata columns (if any), \code{effort_type}, \code{daily_effort},
+are \code{date}, selected strata columns (if any), the section column (if
+selected), \code{effort_type}, \code{daily_effort},
 \code{psu}, and \code{correction_factor}. Optional columns are appended when supplied.
 }
 \description{

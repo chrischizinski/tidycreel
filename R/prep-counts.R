@@ -53,8 +53,14 @@
 #'   sampled-day effort estimate was derived (e.g. `"direct_count"`,
 #'   `"boat_count_x_mean_party_size"`, `"camera_count_x_detection_correction"`).
 #'
+#' @param section Optional tidy selector for the section column of a design
+#'   with sections ([add_sections()]). Carried to the output under its own
+#'   name, so [add_counts()] can match each row to its section. Without it a
+#'   sectioned design sees several rows per day with nothing to tell them
+#'   apart, and refuses them.
 #' @return A tibble with canonical sampled-day effort columns. Required columns
-#'   are `date`, selected strata columns (if any), `effort_type`, `daily_effort`,
+#'   are `date`, selected strata columns (if any), the section column (if
+#'   selected), `effort_type`, `daily_effort`,
 #'   `psu`, and `correction_factor`. Optional columns are appended when supplied.
 #'
 #' @examples
@@ -88,7 +94,8 @@ prep_counts_daily_effort <- function(
   psu = NULL,
   n_counts = NULL,
   within_day_var = NULL,
-  source_method = NULL
+  source_method = NULL,
+  section = NULL
 ) {
   date_quo <- rlang::enquo(date)
   strata_quo <- rlang::enquo(strata)
@@ -243,6 +250,10 @@ prep_counts_daily_effort <- function(
   for (col in strata_cols) {
     out[[col]] <- data[[col]]
   }
+  section_col <- prep_counts_section_col(rlang::enquo(section), data, strata_cols)
+  if (!is.null(section_col)) {
+    out[[section_col]] <- data[[section_col]]
+  }
 
   out[["effort_type"]] <- as.character(effort_type_vals)
   out[["daily_effort"]] <- adjusted_daily_effort_vals
@@ -331,8 +342,14 @@ prep_counts_daily_effort <- function(
 #'   `"boat_count_x_mean_party_size"`. May be a scalar string/factor or an
 #'   expression that evaluates to one value per row.
 #'
+#' @param section Optional tidy selector for the section column of a design
+#'   with sections ([add_sections()]). Carried to the output under its own
+#'   name, so [add_counts()] can match each row to its section. Without it a
+#'   sectioned design sees several rows per day with nothing to tell them
+#'   apart, and refuses them.
 #' @return A tibble with canonical sampled-day effort columns. Required columns
-#'   are `date`, selected strata columns (if any), `effort_type`, `daily_effort`,
+#'   are `date`, selected strata columns (if any), the section column (if
+#'   selected), `effort_type`, `daily_effort`,
 #'   `psu`, and `correction_factor`. Optional columns are appended when supplied.
 #'
 #' @examples
@@ -360,7 +377,8 @@ prep_counts_boat_party <- function(
   psu = NULL,
   n_counts = NULL,
   within_day_var = NULL,
-  source_method = "boat_count_x_mean_party_size"
+  source_method = "boat_count_x_mean_party_size",
+  section = NULL
 ) {
   date_quo <- rlang::enquo(date)
   strata_quo <- rlang::enquo(strata)
@@ -582,6 +600,10 @@ prep_counts_boat_party <- function(
   for (col in strata_cols) {
     out[[col]] <- data[[col]]
   }
+  section_col <- prep_counts_section_col(rlang::enquo(section), data, strata_cols)
+  if (!is.null(section_col)) {
+    out[[section_col]] <- data[[section_col]]
+  }
 
   out[["effort_type"]] <- as.character(effort_type_vals)
   out[["daily_effort"]] <- boat_count_vals * mean_party_size_vals * correction_factor_vals
@@ -732,4 +754,36 @@ validate_within_day_inputs <- function(
   }
 
   invisible(NULL)
+}
+
+#' Resolve the section column of a prep_counts_*() call
+#'
+#' One column, kept under its own name. A name that is also a strata column or
+#' one of the canonical output columns would be overwritten or overwrite one,
+#' so it is refused.
+#'
+#' @keywords internal
+#' @noRd
+prep_counts_section_col <- function(section_quo, data, strata_cols) {
+  if (rlang::quo_is_null(section_quo)) {
+    return(NULL)
+  }
+  section_col <- names(tidyselect::eval_select(section_quo, data))
+  if (length(section_col) != 1L) {
+    cli::cli_abort(c(
+      "{.arg section} must select exactly one column.",
+      "x" = "Selected {length(section_col)} columns."
+    ))
+  }
+  reserved <- c(
+    "date", strata_cols, "effort_type", "daily_effort", "psu",
+    "correction_factor", "n_counts", "within_day_var", "source_method"
+  )
+  if (section_col %in% reserved) {
+    cli::cli_abort(c(
+      "{.arg section} column {.field {section_col}} clashes with an output column.",
+      "i" = "Rename it before preparing the counts."
+    ))
+  }
+  section_col
 }

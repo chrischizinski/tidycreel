@@ -331,7 +331,8 @@
 #'
 #' As with [example_counts], the effort column holds angler-hours rather than
 #' raw angler counts; see that dataset for why the distinction matters to
-#' [estimate_effort()].
+#' [estimate_effort()]. Pass it through [prep_counts_daily_effort()] with
+#' `section = section`, as in the example, so it is attached as effort.
 #'
 #' @format A data frame with 36 rows and 4 columns:
 #' \describe{
@@ -355,7 +356,12 @@
 #' )
 #' design <- creel_design(example_sections_calendar, date = date, strata = day_type)
 #' design <- add_sections(design, sections_df, section_col = section)
-#' design <- suppressWarnings(add_counts(design, example_sections_counts))
+#' # effort_hours is already effort per section-day: mark it as such
+#' counts <- prep_counts_daily_effort(example_sections_counts,
+#'   date = date, strata = day_type, daily_effort = effort_hours,
+#'   section = section
+#' )
+#' design <- add_counts(design, counts)
 #' estimate_effort(design)
 #'
 #' @seealso [example_sections_calendar], [example_sections_interviews],
@@ -401,7 +407,12 @@
 #' )
 #' design <- creel_design(example_sections_calendar, date = date, strata = day_type)
 #' design <- add_sections(design, sections_df, section_col = section)
-#' design <- suppressWarnings(add_counts(design, example_sections_counts))
+#' # effort_hours is already effort per section-day: mark it as such
+#' counts <- prep_counts_daily_effort(example_sections_counts,
+#'   date = date, strata = day_type, daily_effort = effort_hours,
+#'   section = section
+#' )
+#' design <- add_counts(design, counts)
 #' design <- suppressWarnings(add_interviews(design, example_sections_interviews,
 #'   catch = catch_total, effort = hours_fished,
 #'   harvest = catch_kept,

@@ -30,7 +30,8 @@ traffic, South the lowest. Use with \code{\link[=add_sections]{add_sections()}} 
 \details{
 As with \link{example_counts}, the effort column holds angler-hours rather than
 raw angler counts; see that dataset for why the distinction matters to
-\code{\link[=estimate_effort]{estimate_effort()}}.
+\code{\link[=estimate_effort]{estimate_effort()}}. Pass it through \code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}} with
+\code{section = section}, as in the example, so it is attached as effort.
 }
 \examples{
 data(example_sections_calendar)
@@ -42,7 +43,12 @@ sections_df <- data.frame(
 )
 design <- creel_design(example_sections_calendar, date = date, strata = day_type)
 design <- add_sections(design, sections_df, section_col = section)
-design <- suppressWarnings(add_counts(design, example_sections_counts))
+# effort_hours is already effort per section-day: mark it as such
+counts <- prep_counts_daily_effort(example_sections_counts,
+  date = date, strata = day_type, daily_effort = effort_hours,
+  section = section
+)
+design <- add_counts(design, counts)
 estimate_effort(design)
 
 }

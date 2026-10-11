@@ -849,3 +849,61 @@ test_that("the README Quick Start runs without a warning and estimates as before
   expect_equal(pooled$estimates$estimate, direct$estimates$estimate)
   expect_equal(pooled$estimates$se, direct$estimates$se)
 })
+
+# GH #478: the prep_counts_*() functions kept the strata and dropped every other
+# column, so daily effort recorded per section had no way in as effort. Without
+# the section column, add_counts() on a sectioned design saw three rows per day
+# with nothing to tell them apart and refused them; the only route left was the
+# raw-count one, which warns that no period length was given.
+
+.sections_design <- function() {
+  creel_design(example_sections_calendar, date = date, strata = day_type) |> # nolint
+    add_sections( # nolint
+      data.frame(section = c("North", "Central", "South")),
+      section_col = section
+    )
+}
+
+test_that("#478: sectioned daily effort goes in as effort, with the raw-count estimates", {
+  direct <- suppressWarnings(
+    estimate_effort(add_counts(.sections_design(), example_sections_counts)) # nolint
+  )
+
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  counts <- prep_counts_daily_effort(example_sections_counts, # nolint
+    date = date, strata = day_type, daily_effort = effort_hours, section = section # nolint
+  )
+  expect_identical(counts$section, example_sections_counts$section) # nolint
+  expect_no_warning(via_prep <- estimate_effort(add_counts(.sections_design(), counts)))
+  expect_equal(via_prep$estimates, direct$estimates)
+})
+
+test_that("#478: the boat-party prep keeps the section column too", {
+  raw <- transform(example_sections_counts, boats = effort_hours / 2, party = 2) # nolint
+  counts <- prep_counts_boat_party(raw, # nolint
+    date = date, strata = day_type, boat_count = boats, mean_party_size = party, # nolint
+    section = section # nolint
+  )
+  expect_identical(counts$section, example_sections_counts$section) # nolint
+  direct <- suppressWarnings(
+    estimate_effort(add_counts(.sections_design(), example_sections_counts)) # nolint
+  )
+  via_prep <- suppressWarnings(estimate_effort(add_counts(.sections_design(), counts)))
+  expect_equal(via_prep$estimates$estimate, direct$estimates$estimate)
+})
+
+test_that("#478: a section column must be one column that clashes with no output column", {
+  two <- transform(example_sections_counts, zone = section) # nolint
+  expect_error(
+    prep_counts_daily_effort(two, # nolint
+      date = date, daily_effort = effort_hours, section = c(section, zone) # nolint
+    ),
+    "exactly one column"
+  )
+  expect_error(
+    prep_counts_daily_effort(example_sections_counts, # nolint
+      date = date, strata = day_type, daily_effort = effort_hours, section = day_type # nolint
+    ),
+    "clashes"
+  )
+})
