@@ -118,7 +118,6 @@ print(result)
 #> ℹ The repeated rows are keyed on date and day_type.
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
-#> Warning: No weights or probabilities supplied, assuming equal probability
 #> Warning: iteration limit reached
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.

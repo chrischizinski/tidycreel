@@ -1039,8 +1039,6 @@ or CPUE estimates.</p>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span>
 <span>  catch        <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>  effort       <span class="op">=</span> <span class="va">hours_fished</span>,</span>

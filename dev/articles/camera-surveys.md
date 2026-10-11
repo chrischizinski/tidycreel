@@ -210,8 +210,6 @@ estimator refuses a camera design for that reason:
 ``` r
 
 design_counter <- add_counts(design_counter, counts_clean)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 estimate_effort(design_counter)
 #> Error in `estimate_effort()`:
 #> ! `estimate_effort()` does not estimate camera designs.
@@ -369,8 +367,6 @@ design_ie <- creel_design(
 )
 
 design_ie <- add_counts(design_ie, daily_effort)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 ```
 
 Ingress-egress counts are already in hours, so the calibration ratio

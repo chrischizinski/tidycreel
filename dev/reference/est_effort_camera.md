@@ -272,7 +272,6 @@ ops <- example_camera_counts[
   example_camera_counts$camera_status == "operational",
 ]
 design <- add_counts(design, ops)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 
 # Ratio calibration using interview hours. `example_camera_interviews` has no
 # party-size column, so this warns and reports an unknown unit: the estimate

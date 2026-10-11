@@ -154,8 +154,6 @@ stratum).</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
@@ -222,8 +220,6 @@ column via <code>count_time_col</code>.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_m</span>, <span class="va">multi_counts</span>, count_time_col <span class="op">=</span> <span class="va">count_time</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="va">result_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_m</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: 2 strata have fewer than 3 observations:</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekday: 2 observations</span></span>
@@ -283,8 +279,6 @@ expansion factor κ = T_d / τ.</p>
 <span>  circuit_time <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  period_length_col <span class="op">=</span> <span class="va">shift_hours</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span></span>
 <span><span class="va">result_p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_p</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: 2 strata have fewer than 3 observations:</span></span>
@@ -329,8 +323,6 @@ equals 1,872 angler-hours directly.</p>
 <span>  circuit_time <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  period_length_col <span class="op">=</span> <span class="va">shift_hours</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span></span>
 <span><span class="co"># Per-day Ê_d values stored in the design (first day = 1,872 angler-hours)</span></span>
 <span><span class="va">design_pope</span><span class="op">$</span><span class="va">counts</span></span>

@@ -60,6 +60,7 @@ A `creel_summary` S3 object (a list) with components:
 
 Other "Reporting & Diagnostics":
 [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md),
+[`as_tibble.creel_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/as_tibble.creel_estimates.md),
 [`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md),
 [`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md),
 [`flag_outliers()`](https://chrischizinski.com/tidycreel/dev/reference/flag_outliers.md),
@@ -95,7 +96,6 @@ data(example_interviews)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status

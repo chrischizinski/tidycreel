@@ -275,8 +275,6 @@ roving_design <- creel_design(
     trip_duration = trip_duration,
     interview_type = "roving"
   )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 
 # Unspecified: routed to all-trip mean-of-ratios
@@ -509,8 +507,6 @@ design <- creel_design(calendar, date = date, strata = day_type) |>
     trip_status = trip_status,
     trip_duration = trip_duration
   )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.
@@ -629,8 +625,6 @@ design_biased <- creel_design(calendar, date = date, strata = day_type) |>
     trip_status = trip_status,
     trip_duration = trip_duration
   )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
 #> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
 #>   normalization.

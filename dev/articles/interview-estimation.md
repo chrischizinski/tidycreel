@@ -33,8 +33,6 @@ data(example_counts)
 # Create design with counts
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 # Estimate total effort
 effort_est <- estimate_effort(design)
@@ -482,8 +480,6 @@ complete_design <- creel_design(example_calendar, date = date, strata = day_type
     trip_status = trip_status,
     trip_duration = trip_duration
   )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 
 # Compute all estimates

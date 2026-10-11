@@ -220,7 +220,6 @@ counts <- data.frame(
 )
 
 design_with_counts <- add_counts(design, counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 result <- estimate_effort(design_with_counts)
 #> Warning: 2 strata have fewer than 3 observations:
 #> • Stratum weekday: 2 observations

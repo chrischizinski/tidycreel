@@ -55,8 +55,6 @@ counts <- data.frame(
 )
 
 design <- add_counts(design, counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 result <- estimate_effort(design)
 #> Warning: Instantaneous counts were expanded without a period length.
 #> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
@@ -126,8 +124,6 @@ multi_counts <- data.frame(
 )
 
 design_m <- add_counts(design_m, multi_counts, count_time_col = count_time)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 result_m <- estimate_effort(design_m)
 #> Warning: 2 strata have fewer than 3 observations:
 #> • Stratum weekday: 2 observations
@@ -192,8 +188,6 @@ design_p <- add_counts(
   circuit_time = 2,
   period_length_col = shift_hours
 )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 result_p <- estimate_effort(design_p)
 #> Warning: 2 strata have fewer than 3 observations:
@@ -245,8 +239,6 @@ design_pope <- add_counts(
   circuit_time = 2,
   period_length_col = shift_hours
 )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 # Per-day Ê_d values stored in the design (first day = 1,872 angler-hours)
 design_pope$counts

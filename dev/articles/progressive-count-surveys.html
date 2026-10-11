@@ -382,8 +382,6 @@ in hours, and the column holding
 <span>  circuit_time <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  period_length_col <span class="op">=</span> <span class="va">shift_hours</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span></span>
 <span><span class="co"># Per-day expanded effort (C × T_d) stored in design$counts</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">design</span><span class="op">$</span><span class="va">counts</span>, <span class="fl">4</span><span class="op">)</span></span>
@@ -518,8 +516,6 @@ open hours.</p>
 <span>  circuit_time <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  period_length_col <span class="op">=</span> <span class="va">shift_hours</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span></span>
 <span><span class="co"># First-day Ê_d = 234 × 8 = 1,872 angler-hours</span></span>
 <span><span class="va">des_pope</span><span class="op">$</span><span class="va">counts</span></span>
@@ -556,8 +552,6 @@ identify the circuit within each day:</p>
 <span></span>
 <span><span class="co"># Note: count_time_col for within-day identification</span></span>
 <span><span class="va">des_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">des_2p</span>, <span class="va">cnt_2p</span>, count_time_col <span class="op">=</span> <span class="va">count_time</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span></span>
 <span><span class="va">est_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">des_2p</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>

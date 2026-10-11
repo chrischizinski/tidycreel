@@ -174,8 +174,6 @@ mini_design <- creel_design(mini_calendar, date = date, strata = day_type) |>
     trip_status   = trip_status,
     trip_duration = trip_duration
   )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 2 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> ℹ Added 10 interviews: 10 complete (100%), 0 incomplete (0%)
@@ -335,8 +333,6 @@ season_design <- creel_design(example_calendar, date = date, strata = day_type) 
     trip_status   = trip_status,
     trip_duration = trip_duration
   )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 
 total <- estimate_total_catch(season_design)

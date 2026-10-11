@@ -39,7 +39,6 @@ data(example_calendar)
 data(example_counts)
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 # Deprecated: as_creel_svydesign() is the current name.
 svy <- suppressWarnings(as_survey_design(design))
 class(svy)

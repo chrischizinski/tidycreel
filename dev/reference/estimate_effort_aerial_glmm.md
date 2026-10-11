@@ -249,7 +249,6 @@ design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 #> ℹ The repeated rows are keyed on date and day_type.
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
-#> Warning: No weights or probabilities supplied, assuming equal probability
 
 # Default Askey quadratic model with delta-method SE
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
@@ -291,7 +290,6 @@ design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_angle
 #> ℹ The repeated rows are keyed on date and day_type.
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
-#> Warning: No weights or probabilities supplied, assuming equal probability
 by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
 #> Warning: iteration limit reached
 #> ℹ BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for

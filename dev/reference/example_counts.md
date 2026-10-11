@@ -79,7 +79,6 @@ data(example_counts)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 result <- estimate_effort(design)
 print(result)
 #> 

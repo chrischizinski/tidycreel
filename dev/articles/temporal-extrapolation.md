@@ -115,8 +115,6 @@ season_design <- creel_design(
   date = date, strata = day_type
 )
 season_design <- add_counts(season_design, sampled_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 season_effort <- estimate_effort(season_design)
 #> Warning: Instantaneous counts were expanded without a period length.
@@ -163,16 +161,6 @@ monthly_effort <- lapply(seq_along(months), function(i) {
 
   cbind(month = month_labels[i], est)
 })
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 do.call(rbind, monthly_effort)
 #>       month estimate       se se_between se_within ci_lower ci_upper  n
@@ -262,8 +250,6 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 
   cbind(month = month_labels[i], catch_est$estimates)
 })
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 5 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
@@ -273,20 +259,12 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 4 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 9 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 
@@ -353,8 +331,6 @@ for (i in seq_along(months)) {
   effort_list[[label]] <- estimate_effort(des_m)
   catch_list[[label]] <- estimate_total_catch(des_m)
 }
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 5 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
@@ -364,20 +340,12 @@ for (i in seq_along(months)) {
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 4 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 9 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 #> Warning: 7 interviews have zero catch.
 #> ℹ Zero catch may be valid (skunked) or indicate missing data.
 

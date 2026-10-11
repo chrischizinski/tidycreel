@@ -273,9 +273,7 @@ the number of sampling days in each stratum.</p>
 <code>n_anglers</code> column is auto-detected as the count
 variable.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_aerial_counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_aerial_counts</span><span class="op">)</span></span></code></pre></div>
 <p>Aerial effort estimation requires interview data to be attached
 before calling <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>, because the estimator
 uses the mean trip duration
@@ -352,8 +350,6 @@ rather than treating 0.85 as exactly known.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_corr</span>, <span class="va">example_aerial_counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="va">design_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design_corr</span>,</span>
 <span>  <span class="va">example_aerial_interviews</span>,</span>

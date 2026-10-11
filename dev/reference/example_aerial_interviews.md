@@ -106,7 +106,6 @@ design <- creel_design(
   h_open = 14
 )
 design <- add_counts(design, example_aerial_counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 design <- suppressWarnings(add_interviews(
   design,
   example_aerial_interviews,

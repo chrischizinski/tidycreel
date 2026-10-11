@@ -61,7 +61,6 @@ plot_design(design)
 
 # With counts — count distribution per stratum
 design_with_counts <- add_counts(design, example_counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 plot_design(design_with_counts)
 #> Warning: Computation failed in `stat_summary()`.
 #> Caused by error in `fun.data()`:

@@ -81,6 +81,27 @@
 
 ### New features
 
+- Estimates convert to data
+  ([\#476](https://github.com/chrischizinski/tidycreel/issues/476)).
+  [`tibble::as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html)
+  and [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) now
+  work on a `creel_estimates` result, which before errored with “cannot
+  coerce class”. The table has one row per estimate, with the result’s
+  `method`, `variance_method`, `conf_level`, `unit` and, where they
+  apply, `estimator` and `effort_target` as columns, so the metadata
+  stays with every row through
+  [`filter()`](https://rdrr.io/r/stats/filter.html), `bind_rows()` and
+  joins. A field that does not apply gives no column, so an `NA` there
+  always means unknown. `metadata = FALSE` returns the estimates table
+  alone. A grouping column with the same name as a metadata column is an
+  error rather than being overwritten.
+
+- Count designs no longer trigger survey’s “No weights or probabilities
+  supplied, assuming equal probability” warning
+  ([\#476](https://github.com/chrischizinski/tidycreel/issues/476)). The
+  unit weights were always the intended design and are now stated;
+  estimates are unchanged.
+
 - [`write_design()`](https://chrischizinski.com/tidycreel/dev/reference/write_design.md)
   and
   [`read_design()`](https://chrischizinski.com/tidycreel/dev/reference/read_design.md)

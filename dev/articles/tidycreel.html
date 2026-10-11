@@ -173,8 +173,6 @@ without converting units, so this design reports angler-hours:</p>
 <span></span>
 <span><span class="co"># Attach counts to the design</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Design</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span></span>
@@ -263,12 +261,39 @@ group by multiple columns or use tidyselect helpers like
 <code>starts_with()</code>.</p>
 </div>
 <div class="section level2">
+<h2 id="using-results-as-data">Using Results as Data<a class="anchor" aria-label="anchor" href="#using-results-as-data"></a>
+</h2>
+<p>An estimate prints with its method, variance method and unit, but it
+is not itself a data frame, so dplyr verbs do not work on it directly.
+Convert it first. <code>as_tibble()</code> returns one row per estimate,
+with that metadata copied into columns so it stays attached to every
+row:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">effort_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">result_by_day</span><span class="op">)</span></span>
+<span><span class="va">effort_tbl</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 13</span></span></span>
+<span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n method</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      171.  9.67       9.67         0     150.     192.    10 total </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      202.  8.95       8.95         0     182.     221.     4 total </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
+<span></span>
+<span><span class="va">effort_tbl</span><span class="op">[</span><span class="va">effort_tbl</span><span class="op">$</span><span class="va">day_type</span> <span class="op">==</span> <span class="st">"weekend"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"day_type"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"unit"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
+<span><span class="co">#&gt;   day_type estimate    se unit </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend      202.  8.95 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<p><code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> does the same for base R. Use
+<code>metadata = FALSE</code> for the estimates table alone.</p>
+</div>
+<div class="section level2">
 <h2 id="variance-methods">Variance Methods<a class="anchor" aria-label="anchor" href="#variance-methods"></a>
 </h2>
 <p>By default, <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> uses Taylor linearization
 for variance estimation. The package also supports bootstrap and
 jackknife methods:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Bootstrap variance estimation (500 replicates)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span> <span class="co"># For reproducibility</span></span>
 <span><span class="va">result_boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
@@ -315,7 +340,7 @@ deterministic (unlike bootstrap). Useful for verification or when
 bootstrap is too slow.</li>
 </ul>
 <p>All three methods work with grouped estimation as well:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Grouped estimation with bootstrap variance</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span><span class="va">result_grouped_boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
@@ -343,7 +368,7 @@ difference is that the schedule may carry a resolved
 <code>final_stratum</code> column from
 <code>generate_schedule(..., special_periods = ...)</code>, and that
 resolved stratum should drive the analysis design.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
 <span>  start_date <span class="op">=</span> <span class="st">"2027-07-24"</span>,</span>
 <span>  end_date <span class="op">=</span> <span class="st">"2027-08-04"</span>,</span>

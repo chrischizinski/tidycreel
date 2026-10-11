@@ -85,8 +85,6 @@ design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 #> ℹ The repeated rows are keyed on date and day_type.
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 print(design)
 #> 
 #> ── Creel Survey Design ─────────────────────────────────────────────────────────
@@ -229,8 +227,6 @@ design_int <- creel_design(
   h_open      = 14
 )
 design_int <- add_counts(design_int, example_aerial_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 design_int <- add_interviews(design_int, example_aerial_interviews,
   catch       = walleye_catch,
   effort      = hours_fished,
@@ -348,8 +344,6 @@ design_daily <- add_counts(
   count_col      = n_anglers,
   count_time_col = time_of_flight
 )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 # Simple aerial estimator — no diurnal correction
 simple_result <- estimate_effort(design_daily)
@@ -427,8 +421,6 @@ design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_angle
 #> ℹ The repeated rows are keyed on date and day_type.
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 glmm_by_day <- estimate_effort_aerial_glmm(
   design_v,

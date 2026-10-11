@@ -222,8 +222,6 @@ design <- add_counts(
   circuit_time = 2,
   period_length_col = shift_hours
 )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 # Per-day expanded effort (C × T_d) stored in design$counts
 head(design$counts, 4)
@@ -367,8 +365,6 @@ des_pope <- add_counts(
   circuit_time = 2,
   period_length_col = shift_hours
 )
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 # First-day Ê_d = 234 × 8 = 1,872 angler-hours
 des_pope$counts
@@ -408,8 +404,6 @@ cnt_2p <- data.frame(
 
 # Note: count_time_col for within-day identification
 des_2p <- add_counts(des_2p, cnt_2p, count_time_col = count_time)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 est_2p <- estimate_effort(des_2p)
 #> Warning: Instantaneous counts were expanded without a period length.

@@ -165,6 +165,9 @@ check data completeness, and inspect estimate output.
   : Summarise creel survey estimates as a formatted table
 - [`tidy(`*`<creel_estimates>`*`)`](https://chrischizinski.com/tidycreel/dev/reference/tidy.creel_estimates.md)
   : Tidy a creel_estimates object into a flat tibble
+- [`as_tibble(`*`<creel_estimates>`*`)`](https://chrischizinski.com/tidycreel/dev/reference/as_tibble.creel_estimates.md)
+  [`as.data.frame(`*`<creel_estimates>`*`)`](https://chrischizinski.com/tidycreel/dev/reference/as_tibble.creel_estimates.md)
+  : Convert estimates to a tibble or data frame
 - [`flag_outliers()`](https://chrischizinski.com/tidycreel/dev/reference/flag_outliers.md)
   : Flag outliers in a creel interview data column
 - [`write_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/write_estimates.md)

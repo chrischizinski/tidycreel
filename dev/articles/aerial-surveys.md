@@ -170,8 +170,6 @@ The `n_anglers` column is auto-detected as the count variable.
 ``` r
 
 design <- add_counts(design, example_aerial_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 ```
 
 Aerial effort estimation requires interview data to be attached before
@@ -260,8 +258,6 @@ design_corr <- creel_design(
 )
 
 design_corr <- add_counts(design_corr, example_aerial_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 design_corr <- suppressWarnings(add_interviews(
   design_corr,
   example_aerial_interviews,

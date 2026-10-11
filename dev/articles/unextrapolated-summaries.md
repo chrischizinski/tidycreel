@@ -45,8 +45,6 @@ design <- creel_design(example_calendar, date = date, strata = day_type)
 
 # Step 2: Attach instantaneous count observations
 design <- add_counts(design, example_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 
 # Step 3: Attach interview records (all extended v0.5.0 fields)
 design <- add_interviews(design, example_interviews,

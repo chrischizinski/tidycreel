@@ -69,6 +69,7 @@ are set to `NA` and no rows are flagged.
 
 Other "Reporting & Diagnostics":
 [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md),
+[`as_tibble.creel_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/as_tibble.creel_estimates.md),
 [`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md),
 [`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md),
 [`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md),

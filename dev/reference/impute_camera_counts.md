@@ -209,5 +209,4 @@ design <- creel_design(cal,
   survey_type = "camera", camera_mode = "counter"
 )
 design <- add_counts(design, imputed)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 ```

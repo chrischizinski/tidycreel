@@ -99,6 +99,7 @@ Society, Bethesda, MD.
 ## See also
 
 Other "Reporting & Diagnostics":
+[`as_tibble.creel_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/as_tibble.creel_estimates.md),
 [`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md),
 [`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md),
 [`flag_outliers()`](https://chrischizinski.com/tidycreel/dev/reference/flag_outliers.md),

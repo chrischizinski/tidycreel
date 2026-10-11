@@ -53,6 +53,7 @@ A creel_completeness_report object (S3 list) with:
 
 Other "Reporting & Diagnostics":
 [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md),
+[`as_tibble.creel_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/as_tibble.creel_estimates.md),
 [`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md),
 [`flag_outliers()`](https://chrischizinski.com/tidycreel/dev/reference/flag_outliers.md),
 [`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md),
@@ -87,7 +88,6 @@ data(example_counts)
 data(example_interviews)
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status

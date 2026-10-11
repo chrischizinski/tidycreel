@@ -92,7 +92,6 @@ counts <- data.frame(
 )
 
 design2 <- add_counts(design, counts)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 
 # Extract survey object for advanced use
 svy <- as_creel_svydesign(design2)

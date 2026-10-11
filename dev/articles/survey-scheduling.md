@@ -718,8 +718,6 @@ data(example_interviews)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 design <- add_interviews(design, example_interviews,
   catch        = catch_total,
   effort       = hours_fished,

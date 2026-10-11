@@ -56,10 +56,8 @@ data(example_calendar)
 data(example_counts)
 d <- creel_design(example_calendar, date = date, strata = day_type)
 d <- add_counts(d, example_counts, count_col = effort_hours)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 path <- file.path(tempdir(), "example-design")
 write_design(d, path, overwrite = TRUE)
 d2 <- read_design(path)
-#> Warning: No weights or probabilities supplied, assuming equal probability
 unlink(path, recursive = TRUE)
 ```

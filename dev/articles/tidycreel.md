@@ -76,8 +76,6 @@ head(example_counts)
 
 # Attach counts to the design
 design <- add_counts(design, example_counts)
-#> Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No
-#> weights or probabilities supplied, assuming equal probability
 print(design)
 #> 
 #> ── Creel Survey Design ─────────────────────────────────────────────────────────
@@ -173,6 +171,35 @@ per weekday.
 
 The `by` parameter accepts tidy selectors, so you can group by multiple
 columns or use tidyselect helpers like `starts_with()`.
+
+## Using Results as Data
+
+An estimate prints with its method, variance method and unit, but it is
+not itself a data frame, so dplyr verbs do not work on it directly.
+Convert it first. `as_tibble()` returns one row per estimate, with that
+metadata copied into columns so it stays attached to every row:
+
+``` r
+
+effort_tbl <- tibble::as_tibble(result_by_day)
+effort_tbl
+#> # A tibble: 2 × 13
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n method
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr> 
+#> 1 weekday      171.  9.67       9.67         0     150.     192.    10 total 
+#> 2 weekend      202.  8.95       8.95         0     182.     221.     4 total 
+#> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
+#> #   effort_target <chr>, unit <chr>
+
+effort_tbl[effort_tbl$day_type == "weekend", c("day_type", "estimate", "se", "unit")]
+#> # A tibble: 1 × 4
+#>   day_type estimate    se unit 
+#>   <chr>       <dbl> <dbl> <chr>
+#> 1 weekend      202.  8.95 NA
+```
+
+[`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) does the
+same for base R. Use `metadata = FALSE` for the estimates table alone.
 
 ## Variance Methods
 

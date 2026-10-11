@@ -241,7 +241,12 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Estimate effort with design-based variance</span></span>
-<span><span class="fu"><a href="reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">effort</span></span>
+<span></span>
+<span><span class="co"># 4. Use the result as data: one row per estimate, with its method,</span></span>
+<span><span class="co">#    confidence level and unit as columns</span></span>
+<span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">effort</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="bus-route-survey">Bus-Route Survey<a class="anchor" aria-label="anchor" href="#bus-route-survey"></a>

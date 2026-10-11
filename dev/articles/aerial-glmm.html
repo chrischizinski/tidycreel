@@ -183,8 +183,6 @@ expansion after the diurnal curve is integrated.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The repeated rows are keyed on <span style="color: #00BB00;">date</span> and <span style="color: #00BB00;">day_type</span>.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span></span>
 <span><span class="co">#&gt;   are repeat counts, or `unit_cols` if they are distinct units.</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Design</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span></span>
@@ -314,8 +312,6 @@ standard aerial path rather than from the GLMM.</p>
 <span>  h_open      <span class="op">=</span> <span class="fl">14</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">design_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_int</span>, <span class="va">example_aerial_counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span><span class="va">design_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design_int</span>, <span class="va">example_aerial_interviews</span>,</span>
 <span>  catch       <span class="op">=</span> <span class="va">walleye_catch</span>,</span>
 <span>  effort      <span class="op">=</span> <span class="va">hours_fished</span>,</span>
@@ -429,8 +425,6 @@ large.</p>
 <span>  count_col      <span class="op">=</span> <span class="va">n_anglers</span>,</span>
 <span>  count_time_col <span class="op">=</span> <span class="va">time_of_flight</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span></span>
 <span><span class="co"># Simple aerial estimator — no diurnal correction</span></span>
 <span><span class="va">simple_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_daily</span><span class="op">)</span></span>
@@ -504,8 +498,6 @@ be <code>NA</code>, as explained above.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The repeated rows are keyed on <span style="color: #00BB00;">date</span> and <span style="color: #00BB00;">day_type</span>.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span></span>
 <span><span class="co">#&gt;   are repeat counts, or `unit_cols` if they are distinct units.</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = psu_formula, strata = strata_formula, : No</span></span>
-<span><span class="co">#&gt; weights or probabilities supplied, assuming equal probability</span></span>
 <span></span>
 <span><span class="va">glmm_by_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm</a></span><span class="op">(</span></span>
 <span>  <span class="va">design_v</span>,</span>
