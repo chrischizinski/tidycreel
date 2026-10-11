@@ -686,7 +686,7 @@ test_that("grouped bus-route effort agrees with the ungrouped total", {
   )
 })
 
-test_that("aerial effort is angler-hours even though the design's unit is unknown", {
+test_that("aerial effort is angler-hours, and the design records it", {
   cal <- data.frame(
     date = as.Date("2024-06-01") + 0:3,
     day_type = c("weekday", "weekday", "weekend", "weekend"),
@@ -712,10 +712,11 @@ test_that("aerial effort is angler-hours even though the design's unit is unknow
 
   est <- suppressWarnings(estimate_effort(d))
 
-  # An aerial design refuses period_length_col (finding 21), so effort_unit is
-  # necessarily NA and the estimator must label from h_open instead. This pairs
-  # the unit with the number that earns it: 1400 = sum(counts) x h_open once.
-  expect_true(is.na(d$effort_unit))
+  # An aerial design refuses period_length_col (finding 21); h_open is its
+  # period length, so add_counts() records angler-hours for the totals to read
+  # (GH #478 -- left NA, they reported an unknown unit). This pairs the unit
+  # with the number that earns it: 1400 = sum(counts) x h_open once.
+  expect_identical(d$effort_unit, "angler-hours")
   expect_identical(est$unit, "angler-hours")
   expect_equal(est$estimates$estimate, 1400)
 })

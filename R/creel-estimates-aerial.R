@@ -198,9 +198,9 @@ estimate_effort_aerial <- function(
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = effort_target,
-    # Unconditional, not design$effort_unit: an aerial design refuses
-    # period_length_col, so its effort_unit is always NA. h_open is the sole
-    # period source here (finding 21), and count x hours is angler-hours.
+    # Unconditional: h_open is the sole period source here (finding 21), and
+    # count x hours is angler-hours. add_counts() records the same unit as
+    # effort_unit (GH #478), but a design attached before then carries NA.
     unit = "angler-hours" # nolint: object_usage_linter
   )
 }

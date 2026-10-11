@@ -3051,11 +3051,16 @@ add_counts <- function(
   # multiplication that produces them. A bare count column with no T_d may be an
   # instantaneous head count or effort the caller already expanded, and nothing
   # here can tell the two apart, so the honest answer is that the unit is
-  # unknown rather than a guess at "angler-days".
-  new_design$effort_unit <- if (is.null(period_length_col_name)) {
-    NA_character_
-  } else {
+  # unknown rather than a guess at "angler-days". An aerial count is the other
+  # known case: creel_design() requires h_open, and every aerial effort path
+  # multiplies the count by it, so the effort is angler-hours. Left NA there,
+  # the totals reported an unknown unit for the effort estimate_effort() calls
+  # angler-hours (GH #478).
+  new_design$effort_unit <- if (!is.null(period_length_col_name) ||
+    identical(design$design_type, "aerial")) {
     "angler-hours"
+  } else {
+    NA_character_
   }
 
   # How the sampling unit was declared, kept so estimate_effort() can rebuild

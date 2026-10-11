@@ -336,6 +336,17 @@
 
 ## Bug fixes
 
+* Aerial catch, harvest and release totals warned that the counts had been
+  "expanded without a period length" (angler-days) and reported their unit
+  as `NA`, while `estimate_effort()` on the same design reported
+  angler-hours and no warning (#478). The totals' numbers were right: they
+  already multiplied the rate by the `h_open`-scaled effort. An aerial
+  design now records its effort as angler-hours when the counts are
+  attached, since `h_open` is its period length, so the totals no longer
+  warn and report `"fish"` when the rate is per angler-hour. With no
+  `n_anglers` the rate is per party-hour and the unit stays `NA`, as on
+  every other design.
+
 * On bus-route and ice designs, `creel_design()` read a numeric `p_period`
   as a column POSITION of `sampling_frame` (#463). `p_period = 1`, a period
   certain to be sampled, selected the frame's first column: with `p_site`
