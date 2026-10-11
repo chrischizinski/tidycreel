@@ -799,3 +799,53 @@ test_that("a scalar party-size SE is accepted alongside a column (GH #143)", {
   )
   expect_equal(unique(prep$expansion_se), 0.1)
 })
+
+# effort_type is optional (#476) ----------------------------------------------
+#
+# Data that are already daily effort, with no bank/boat label, had no way
+# through this seam, so they went to add_counts() directly and drew the
+# instantaneous-count "no period length" warning -- the README Quick Start
+# included. effort_type is a label no estimator reads, so it is optional.
+
+test_that("omitting effort_type gives an NA (not stated) label and changes nothing else", {
+  labelled <- prep_counts_daily_effort(
+    transform(example_counts, kind = "bank"), # nolint
+    date = date, strata = day_type, effort_type = kind, daily_effort = effort_hours # nolint
+  )
+  unlabelled <- prep_counts_daily_effort(
+    example_counts, # nolint
+    date = date, strata = day_type, daily_effort = effort_hours # nolint
+  )
+
+  expect_identical(names(unlabelled), names(labelled))
+  expect_identical(unlabelled$effort_type, rep(NA_character_, nrow(example_counts))) # nolint
+  expect_identical(
+    unlabelled[setdiff(names(unlabelled), "effort_type")],
+    labelled[setdiff(names(labelled), "effort_type")]
+  )
+})
+
+test_that("the README Quick Start runs without a warning and estimates as before", {
+  # The direct path treats the angler-hours as instantaneous counts: same
+  # number, plus a warning that no period length was given.
+  direct <- suppressWarnings(
+    creel_design(example_calendar, date = date, strata = day_type) |> # nolint
+      add_counts(example_counts) |> # nolint
+      estimate_effort()
+  )
+
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  expect_no_warning({
+    design <- creel_design(example_calendar, date = date, strata = day_type) # nolint
+    counts <- prep_counts_daily_effort(example_counts, # nolint
+      date = date, strata = day_type, daily_effort = effort_hours # nolint
+    )
+    design <- add_counts(design, counts)
+    via_prep <- estimate_effort(design, by = day_type) # nolint
+    pooled <- estimate_effort(design)
+    tibble::as_tibble(via_prep)
+  })
+
+  expect_equal(pooled$estimates$estimate, direct$estimates$estimate)
+  expect_equal(pooled$estimates$se, direct$estimates$se)
+})

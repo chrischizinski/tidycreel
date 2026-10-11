@@ -8,7 +8,7 @@ prep_counts_daily_effort(
   data,
   date,
   strata = NULL,
-  effort_type,
+  effort_type = NULL,
   daily_effort,
   correction_factor = 1,
   psu = NULL,
@@ -24,8 +24,9 @@ prep_counts_daily_effort(
 
 \item{strata}{Optional tidy selector for one or more strata columns.}
 
-\item{effort_type}{Tidy selector for the effort-type column. Common values
-are \code{"bank"} and \code{"boat"}.}
+\item{effort_type}{Optional tidy selector for the effort-type column.
+Common values are \code{"bank"} and \code{"boat"}. A label only: no estimator reads
+it. When omitted, the output's \code{effort_type} column is \code{NA} (not stated).}
 
 \item{daily_effort}{Tidy selector for the numeric sampled-day effort column.}
 
@@ -74,6 +75,11 @@ section probabilities, boat-party-size adjustments, camera multipliers, or
 similar count-side corrections have already been resolved outside the core
 estimator.
 
+Use it whenever the column you would give \code{\link[=add_counts]{add_counts()}} is already effort
+for the sampled day (angler-hours, say) rather than an instantaneous count.
+The output is marked as effort, so the estimators expand it as it stands
+and do not warn that no count period length was supplied.
+
 The returned table always contains canonical columns:
 \code{date}, any selected strata columns, \code{effort_type}, \code{daily_effort}, \code{psu},
 and \code{correction_factor}. Optional columns \code{n_counts}, \code{within_day_var}, and
@@ -88,6 +94,14 @@ raw_counts <- data.frame(
 )
 prep_counts_daily_effort(raw_counts, date = sample_date, strata = day_type,
                          effort_type = effort_kind, daily_effort = effort_value)
+
+# example_counts already holds angler-hours per sampled day
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- creel_design(example_calendar, date = date, strata = day_type)
+design <- add_counts(design, counts)
+estimate_effort(design)
 
 }
 \seealso{

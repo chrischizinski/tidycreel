@@ -8,6 +8,11 @@
 #' similar count-side corrections have already been resolved outside the core
 #' estimator.
 #'
+#' Use it whenever the column you would give [add_counts()] is already effort
+#' for the sampled day (angler-hours, say) rather than an instantaneous count.
+#' The output is marked as effort, so the estimators expand it as it stands
+#' and do not warn that no count period length was supplied.
+#'
 #' The returned table always contains canonical columns:
 #' `date`, any selected strata columns, `effort_type`, `daily_effort`, `psu`,
 #' and `correction_factor`. Optional columns `n_counts`, `within_day_var`, and
@@ -16,8 +21,9 @@
 #' @param data A data frame containing sampled-day effort rows.
 #' @param date Tidy selector for the Date column.
 #' @param strata Optional tidy selector for one or more strata columns.
-#' @param effort_type Tidy selector for the effort-type column. Common values
-#'   are `"bank"` and `"boat"`.
+#' @param effort_type Optional tidy selector for the effort-type column.
+#'   Common values are `"bank"` and `"boat"`. A label only: no estimator reads
+#'   it. When omitted, the output's `effort_type` column is `NA` (not stated).
 #' @param daily_effort Tidy selector for the numeric sampled-day effort column.
 #' @param correction_factor Optional multiplicative correction applied to
 #'   `daily_effort`. May be a scalar (defaults to `1`) or an expression that
@@ -61,6 +67,14 @@
 #' prep_counts_daily_effort(raw_counts, date = sample_date, strata = day_type,
 #'                          effort_type = effort_kind, daily_effort = effort_value)
 #'
+#' # example_counts already holds angler-hours per sampled day
+#' counts <- prep_counts_daily_effort(example_counts,
+#'   date = date, strata = day_type, daily_effort = effort_hours
+#' )
+#' design <- creel_design(example_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, counts)
+#' estimate_effort(design)
+#'
 #' @seealso [add_counts()]
 #' @family "Survey Design"
 #' @export
@@ -68,7 +82,7 @@ prep_counts_daily_effort <- function(
   data,
   date,
   strata = NULL,
-  effort_type,
+  effort_type = NULL,
   daily_effort,
   correction_factor = 1,
   psu = NULL,
@@ -100,8 +114,12 @@ prep_counts_daily_effort <- function(
     names(tidyselect::eval_select(strata_quo, data))
   }
 
-  effort_type_col <- names(tidyselect::eval_select(effort_type_quo, data))
-  if (length(effort_type_col) != 1L) {
+  effort_type_col <- if (rlang::quo_is_null(effort_type_quo)) {
+    NULL
+  } else {
+    names(tidyselect::eval_select(effort_type_quo, data))
+  }
+  if (!is.null(effort_type_col) && length(effort_type_col) != 1L) {
     cli::cli_abort(c(
       "{.arg effort_type} must select exactly one column.",
       "x" = "Selected {length(effort_type_col)} columns."
@@ -171,7 +189,11 @@ prep_counts_daily_effort <- function(
     ))
   }
 
-  effort_type_vals <- data[[effort_type_col]]
+  effort_type_vals <- if (is.null(effort_type_col)) {
+    rep(NA_character_, nrow(data))
+  } else {
+    data[[effort_type_col]]
+  }
   if (!(is.character(effort_type_vals) || is.factor(effort_type_vals))) {
     cli::cli_abort(c(
       "{.field {effort_type_col}} must be character or factor.",

@@ -46,16 +46,22 @@ The `creel_design()` function uses tidy selectors, so you can specify columns by
 
 Next, we attach the daily effort observations to the design. The `effort_hours`
 column holds angler-hours already accumulated over each day, not the raw angler
-count seen at a single moment — `estimate_effort()` expands whatever column it
-is given without converting units, so this design reports angler-hours:
+count seen at a single moment. `prep_counts_daily_effort()` says so: it marks
+the column as sampled-day effort, so `estimate_effort()` expands it as it
+stands and the estimates are in angler-hours. (Raw instantaneous counts would instead
+go straight to `add_counts()` with the length of the period each count
+represents, `period_length_col`.)
 
 ```{r counts}
 # Load example count data
 data(example_counts)
 head(example_counts)
 
-# Attach counts to the design
-design <- add_counts(design, example_counts)
+# Mark the column as daily effort, then attach it to the design
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- add_counts(design, counts)
 print(design)
 ```
 

@@ -74,6 +74,15 @@
   alone. A grouping column with the same name as a metadata column is an
   error rather than being overwritten.
 
+* `prep_counts_daily_effort()` no longer requires `effort_type` (#476). It
+  is a label no estimator reads; when omitted the output's `effort_type` is
+  `NA` (not stated). Data that are already effort per sampled day, such as
+  `example_counts`, can now be marked as effort without inventing a label,
+  so the estimators expand them as they stand instead of treating them as
+  instantaneous counts and warning that no period length was given. The
+  README Quick Start and Getting Started use this route and run without
+  warnings; the estimates are unchanged.
+
 * Count designs no longer trigger survey's "No weights or probabilities
   supplied, assuming equal probability" warning (#476). The unit weights
   were always the intended design and are now stated; estimates are

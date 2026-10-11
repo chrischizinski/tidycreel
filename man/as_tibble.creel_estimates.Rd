@@ -60,7 +60,10 @@ every row and is visible if it is dropped.
 }
 \examples{
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- add_counts(design, counts)
 est <- estimate_effort(design, by = day_type)
 
 tibble::as_tibble(est)
