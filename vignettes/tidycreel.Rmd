@@ -47,8 +47,8 @@ The `creel_design()` function uses tidy selectors, so you can specify columns by
 Next, we attach the daily effort observations to the design. The `effort_hours`
 column holds angler-hours already accumulated over each day, not the raw angler
 count seen at a single moment. `prep_counts_daily_effort()` says so: it marks
-the column as sampled-day effort, so `add_counts()` expands it as it stands
-and the estimates are in angler-hours. (Raw instantaneous counts would instead
+the column as sampled-day effort, so `estimate_effort()` expands it as it
+stands and the estimates are in angler-hours. (Raw instantaneous counts would instead
 go straight to `add_counts()` with the length of the period each count
 represents, `period_length_col`.)
 

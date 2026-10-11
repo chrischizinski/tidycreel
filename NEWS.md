@@ -78,7 +78,7 @@
   is a label no estimator reads; when omitted the output's `effort_type` is
   `NA` (not stated). Data that are already effort per sampled day, such as
   `example_counts`, can now be marked as effort without inventing a label,
-  so `add_counts()` expands them as they stand instead of treating them as
+  so the estimators expand them as they stand instead of treating them as
   instantaneous counts and warning that no period length was given. The
   README Quick Start and Getting Started use this route and run without
   warnings; the estimates are unchanged.

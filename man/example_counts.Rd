@@ -25,9 +25,9 @@ survey date, suitable for use with \code{\link[=add_counts]{add_counts()}} and \
 \details{
 The effort column holds angler-hours, not raw angler counts. Pass it
 through \code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}} before \code{\link[=add_counts]{add_counts()}}, as in the
-example, so it is expanded as daily effort; given to \code{\link[=add_counts]{add_counts()}}
-directly it is treated as an instantaneous count and draws a warning that
-no count period length was supplied.
+example, so it is expanded as daily effort. Given to \code{\link[=add_counts]{add_counts()}}
+directly it is treated as an instantaneous count, and \code{\link[=estimate_effort]{estimate_effort()}}
+warns that no count period length was supplied.
 }
 \examples{
 # Load and use with a creel design

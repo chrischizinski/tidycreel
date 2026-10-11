@@ -10,8 +10,8 @@
 #'
 #' Use it whenever the column you would give [add_counts()] is already effort
 #' for the sampled day (angler-hours, say) rather than an instantaneous count.
-#' The output is marked as effort, so [add_counts()] expands it as it stands
-#' and does not ask for a count period length.
+#' The output is marked as effort, so the estimators expand it as it stands
+#' and do not warn that no count period length was supplied.
 #'
 #' The returned table always contains canonical columns:
 #' `date`, any selected strata columns, `effort_type`, `daily_effort`, `psu`,

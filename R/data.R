@@ -33,9 +33,9 @@
 #'
 #' The effort column holds angler-hours, not raw angler counts. Pass it
 #' through [prep_counts_daily_effort()] before [add_counts()], as in the
-#' example, so it is expanded as daily effort; given to [add_counts()]
-#' directly it is treated as an instantaneous count and draws a warning that
-#' no count period length was supplied.
+#' example, so it is expanded as daily effort. Given to [add_counts()]
+#' directly it is treated as an instantaneous count, and [estimate_effort()]
+#' warns that no count period length was supplied.
 #'
 #' @format A data frame with 14 rows and 3 columns:
 #' \describe{
