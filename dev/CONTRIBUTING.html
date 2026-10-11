@@ -294,6 +294,38 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="releases">Releases<a class="anchor" aria-label="anchor" href="#releases"></a></h2>
+<p>tidycreel is on CRAN. <code>main</code> is the development version (<code>x.y.z.9000</code>). What CRAN has lives on a <code>cran-x.y.z</code> branch, and each released commit is tagged <code>vx.y.z</code>.</p>
+<div class="section level3">
+<h3 id="cadence">Cadence<a class="anchor" aria-label="anchor" href="#cadence"></a></h3>
+<ul><li>
+<strong>A planned release about every two months.</strong> That is the most often CRAN policy allows, and everything merged to <code>main</code> rides the next one. Version numbers follow semver, so a release whose NEWS carries <code>## Breaking changes</code> is a major version, however small the rest of it is.</li>
+<li>
+<strong>A patch between planned releases only for two things:</strong> estimates that are silently wrong, or a fix CRAN asks for. The patch is cut from the current <code>cran-*</code> branch and contains only that fix, cherry-picked from <code>main</code>. 8.0.1 is the example: aerial totals were too small by the fishing-day length.</li>
+<li>Every other fix, however welcome, waits for the planned release.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="steps">Steps<a class="anchor" aria-label="anchor" href="#steps"></a></h3>
+<p>The helpers are in <code>scripts/release.R</code>. They do only the deterministic parts, and they refuse when something a person has to do is undone.</p>
+<ol style="list-style-type: decimal"><li>
+<code>just release-prep 9.0.0 "Fish Name"</code>. This cuts <code>cran-9.0.0</code> from <code>origin/main</code> in the submit worktree (<code>~/Dev/tidycreel-submit</code>). It sets <code>DESCRIPTION</code>, the NEWS heading and <code>CITATION.cff</code>. It refuses if the newest released NEWS section no longer matches its tag: an entry filed there after release would ship as history instead of news. For a patch, pass the CRAN branch: <code>just release-prep 8.0.2 "" origin/cran-8.0.1</code>, then cherry-pick the fix.</li>
+<li>By hand:
+<ul><li>write <code>cran-comments.md</code>, which is the one document CRAN reads;</li>
+<li>merge any repeated NEWS headings;</li>
+<li>commit, and push the branch.</li>
+</ul></li>
+<li>
+<code>just release-check</code>. This runs the submission guard’s dry run and <code>R CMD check --as-cran</code>. Every NOTE it reports must be explained in <code>cran-comments.md</code>. Then run <code>devtools::check_win_devel()</code> and record its result in <code>cran-comments.md</code>.</li>
+<li>Submit, interactively: <code>source("scripts/cran-submit.R"); cran_submit("~/Dev/tidycreel-submit")</code>. Never use the CRAN web form, and never submit from <code>main</code>.</li>
+<li>Once CRAN shows the version as published, run <code>just release-accepted 9.0.0</code>.
+<ul><li>It tags the submitted commit and publishes the GitHub release from the NEWS section.</li>
+<li>It opens a <code>chore/post-release-9.0.0</code> branch on <code>main</code>, with the released NEWS entries moved out of the development section, the version set to <code>9.0.0.9000</code>, and <code>CITATION.cff</code> and <code>CRAN-SUBMISSION</code> updated.</li>
+<li>Review that branch and open its PR.</li>
+</ul></li>
+</ol><p><code>.github/workflows/cran-checks.yaml</code> reads CRAN’s own check results every Monday. If any platform is not OK, or CRAN has set a deadline, it opens an issue titled “CRAN checks are not all OK”, or updates the one already open. Close the issue once CRAN shows OK.</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="recognition">Recognition<a class="anchor" aria-label="anchor" href="#recognition"></a></h2>
 <p>Contributors are recognized in: - Package DESCRIPTION file - NEWS.md release notes - Annual contributor acknowledgments</p>
 <p>Thank you for contributing to tidycreel!</p>

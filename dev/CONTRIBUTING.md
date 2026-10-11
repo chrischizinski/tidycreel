@@ -268,6 +268,65 @@ programming tools
 **Suggested dependencies** (for specific features): - `cli` - user
 messaging - `lifecycle` - deprecation management
 
+## Releases
+
+tidycreel is on CRAN. `main` is the development version (`x.y.z.9000`).
+What CRAN has lives on a `cran-x.y.z` branch, and each released commit
+is tagged `vx.y.z`.
+
+### Cadence
+
+- **A planned release about every two months.** That is the most often
+  CRAN policy allows, and everything merged to `main` rides the next
+  one. Version numbers follow semver, so a release whose NEWS carries
+  `## Breaking changes` is a major version, however small the rest of it
+  is.
+- **A patch between planned releases only for two things:** estimates
+  that are silently wrong, or a fix CRAN asks for. The patch is cut from
+  the current `cran-*` branch and contains only that fix, cherry-picked
+  from `main`. 8.0.1 is the example: aerial totals were too small by the
+  fishing-day length.
+- Every other fix, however welcome, waits for the planned release.
+
+### Steps
+
+The helpers are in `scripts/release.R`. They do only the deterministic
+parts, and they refuse when something a person has to do is undone.
+
+1.  `just release-prep 9.0.0 "Fish Name"`. This cuts `cran-9.0.0` from
+    `origin/main` in the submit worktree (`~/Dev/tidycreel-submit`). It
+    sets `DESCRIPTION`, the NEWS heading and `CITATION.cff`. It refuses
+    if the newest released NEWS section no longer matches its tag: an
+    entry filed there after release would ship as history instead of
+    news. For a patch, pass the CRAN branch:
+    `just release-prep 8.0.2 "" origin/cran-8.0.1`, then cherry-pick the
+    fix.
+2.  By hand:
+    - write `cran-comments.md`, which is the one document CRAN reads;
+    - merge any repeated NEWS headings;
+    - commit, and push the branch.
+3.  `just release-check`. This runs the submission guard’s dry run and
+    `R CMD check --as-cran`. Every NOTE it reports must be explained in
+    `cran-comments.md`. Then run `devtools::check_win_devel()` and
+    record its result in `cran-comments.md`.
+4.  Submit, interactively:
+    `source("scripts/cran-submit.R"); cran_submit("~/Dev/tidycreel-submit")`.
+    Never use the CRAN web form, and never submit from `main`.
+5.  Once CRAN shows the version as published, run
+    `just release-accepted 9.0.0`.
+    - It tags the submitted commit and publishes the GitHub release from
+      the NEWS section.
+    - It opens a `chore/post-release-9.0.0` branch on `main`, with the
+      released NEWS entries moved out of the development section, the
+      version set to `9.0.0.9000`, and `CITATION.cff` and
+      `CRAN-SUBMISSION` updated.
+    - Review that branch and open its PR.
+
+`.github/workflows/cran-checks.yaml` reads CRAN’s own check results
+every Monday. If any platform is not OK, or CRAN has set a deadline, it
+opens an issue titled “CRAN checks are not all OK”, or updates the one
+already open. Close the issue once CRAN shows OK.
+
 ## Recognition
 
 Contributors are recognized in: - Package DESCRIPTION file - NEWS.md
