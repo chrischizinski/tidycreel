@@ -46,6 +46,10 @@ As with
 the effort column holds angler-hours rather than raw angler counts; see
 that dataset for why the distinction matters to
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md).
+Pass it through
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+with `section = section`, as in the example, so it is attached as
+effort.
 
 ## See also
 
@@ -87,7 +91,12 @@ sections_df <- data.frame(
 )
 design <- creel_design(example_sections_calendar, date = date, strata = day_type)
 design <- add_sections(design, sections_df, section_col = section)
-design <- suppressWarnings(add_counts(design, example_sections_counts))
+# effort_hours is already effort per section-day: mark it as such
+counts <- prep_counts_daily_effort(example_sections_counts,
+  date = date, strata = day_type, daily_effort = effort_hours,
+  section = section
+)
+design <- add_counts(design, counts)
 estimate_effort(design)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

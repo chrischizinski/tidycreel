@@ -9,8 +9,8 @@ source-specific reconstruction outside estimator internals.
 
 The returned table always contains canonical columns: `date`, any
 selected strata columns, `effort_type`, `daily_effort`, `psu`, and
-`correction_factor`. Optional columns `n_counts`, `within_day_var`, and
-`source_method` are included when supplied.
+`correction_factor`. Optional columns `n_counts`, `within_day_var`,
+`source_method` and the `section` column are included when supplied.
 
 ## Usage
 
@@ -27,7 +27,8 @@ prep_counts_boat_party(
   psu = NULL,
   n_counts = NULL,
   within_day_var = NULL,
-  source_method = "boat_count_x_mean_party_size"
+  source_method = "boat_count_x_mean_party_size",
+  section = NULL
 )
 ```
 
@@ -123,12 +124,23 @@ prep_counts_boat_party(
   `"boat_count_x_mean_party_size"`. May be a scalar string/factor or an
   expression that evaluates to one value per row.
 
+- section:
+
+  Optional tidy selector for the section column of a design with
+  sections
+  ([`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md)).
+  Carried to the output under its own name, so
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  can match each row to its section. Without it a sectioned design sees
+  several rows per day with nothing to tell them apart, and refuses
+  them.
+
 ## Value
 
 A tibble with canonical sampled-day effort columns. Required columns are
-`date`, selected strata columns (if any), `effort_type`, `daily_effort`,
-`psu`, and `correction_factor`. Optional columns are appended when
-supplied.
+`date`, selected strata columns (if any), the section column (if
+selected), `effort_type`, `daily_effort`, `psu`, and
+`correction_factor`. Optional columns are appended when supplied.
 
 ## See also
 

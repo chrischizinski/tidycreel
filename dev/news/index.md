@@ -81,6 +81,21 @@
 
 ### New features
 
+- [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+  and
+  [`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md)
+  gain a `section` argument
+  ([\#478](https://github.com/chrischizinski/tidycreel/issues/478)).
+  Both kept the strata columns and dropped every other one, so effort
+  recorded per section had no way in as effort: on a sectioned design
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  saw several rows per day with nothing to tell them apart and refused
+  them, and the raw-count route that remained warned that no period
+  length was given. The section column is now carried under its own
+  name, and the estimates equal the raw-count route’s, without the
+  warning. The `example_sections_counts` and
+  `example_sections_interviews` examples use it.
+
 - Estimates convert to data
   ([\#476](https://github.com/chrischizinski/tidycreel/issues/476)).
   [`tibble::as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html)
