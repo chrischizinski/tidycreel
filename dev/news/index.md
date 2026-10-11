@@ -457,6 +457,19 @@
 
 ### Bug fixes
 
+- Aerial catch, harvest and release totals warned that the counts had
+  been “expanded without a period length” (angler-days) and reported
+  their unit as `NA`, while
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  on the same design reported angler-hours and no warning
+  ([\#478](https://github.com/chrischizinski/tidycreel/issues/478)). The
+  totals’ numbers were right: they already multiplied the rate by the
+  `h_open`-scaled effort. An aerial design now records its effort as
+  angler-hours when the counts are attached, since `h_open` is its
+  period length, so the totals no longer warn and report `"fish"` when
+  the rate is per angler-hour. With no `n_anglers` the rate is per
+  party-hour and the unit stays `NA`, as on every other design.
+
 - On bus-route and ice designs,
   [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
   read a numeric `p_period` as a column POSITION of `sampling_frame`

@@ -262,14 +262,6 @@ total_catch <- estimate_total_catch(design_int)
 #>   count-derived effort is per angler.
 #> ℹ The product is correct only if every party is one angler. Pass
 #>   `add_interviews(n_anglers = <col>)` to normalise.
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
 print(total_catch)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -369,7 +361,7 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.545 sampled_days
+#> 1   GLMM 4728.546 sampled_days
 #> 2 Simple 5092.500 sampled_days
 ```
 
@@ -473,11 +465,11 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 581.6956
+#> [1] 581.6951
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 536.0884
+#> [1] 536.0893
 ```
 
 ## Custom Formula
