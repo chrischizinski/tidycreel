@@ -25,7 +25,8 @@ package.
 
 This tutorial analyses one complete season, start to finish. A clerk worked a
 lake for 120 days, from May 1 to August 28. On 36 of those days the clerk made
-an instantaneous count of anglers and interviewed parties as they left. The
+an instantaneous count of anglers and interviewed angling parties, both those
+that had finished fishing and some still fishing. The
 questions are the usual ones: how much fishing happened over the season, how
 many fish were caught, and how many were kept.
 
@@ -105,8 +106,11 @@ of days in that stratum, then the strata are added. For a season total, ask for
 `target = "period_total"`.
 
 The standard error comes from the day-to-day variation among the sampled days
-within each stratum. One count per day cannot show variation within a day,
-so `se_within` is 0 here.
+within each stratum. With one count per day there is no separate within-day
+term: the error in each day's single count is already part of the variation
+between days, so `se_within` is 0 by construction, not because activity was
+steady through the day. It becomes non-zero when a day has several counts
+(`vignette("effort-pipeline")`).
 
 Estimates can be broken down by any column in the design with `by`:
 
@@ -128,7 +132,6 @@ design <- add_interviews(design, example_season_interviews,
   harvest = catch_kept,
   effort = hours_fished,
   trip_status = trip_status,
-  trip_duration = trip_duration,
   n_anglers = n_anglers
 )
 ```
@@ -155,9 +158,10 @@ estimate_harvest_rate(design)
 
 The catch rate is about 0.22 fish per angler-hour, and the harvest rate about
 0.06. Both are ratio-of-means estimates, total catch divided by total effort
-across the interviews. By default they use only the 172 complete trips:
-complete trips give an unbiased catch rate, while incomplete ones are prone to
-length-of-stay bias. `vignette("incomplete-trips")` covers when and how
+across the interviews. By default they use only the 172 complete trips.
+A party interviewed while still fishing is more likely to be met the longer it
+stays, so incomplete trips over-represent long trips (length-of-stay bias) and
+give a biased catch rate unless the rate is steady through a trip. `vignette("incomplete-trips")` covers when and how
 incomplete trips can be used.
 
 ## Total catch and harvest

@@ -63,19 +63,19 @@
 #' Example season interviews for a creel survey
 #'
 #' Access-point interviews from the 36 sampled days in
-#' [example_season_calendar], one row per angling party. Most parties caught
-#' nothing, as on most real fisheries, and about a quarter of the trips were
-#' still under way when interviewed.
+#' [example_season_calendar], one row per angling party. Most parties had
+#' finished fishing (complete trips); about a quarter were still fishing when
+#' interviewed (incomplete trips). Most parties caught nothing, as on most
+#' real fisheries.
 #'
-#' @format A data frame with 231 rows and 9 columns:
+#' @format A data frame with 231 rows and 8 columns:
 #' \describe{
 #'   \item{date}{Interview date (Date class), a sampled day in the calendar}
 #'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
 #'   \item{interview_id}{Integer interview identifier, 1 to 231}
 #'   \item{trip_status}{"complete" or "incomplete"}
-#'   \item{hours_fished}{Hours the party had fished when interviewed}
-#'   \item{trip_duration}{Hours of the whole trip, or of the trip so far if
-#'     incomplete}
+#'   \item{hours_fished}{Hours the party had fished when interviewed: the
+#'     whole trip if complete, the time so far if incomplete}
 #'   \item{n_anglers}{Integer number of anglers in the party}
 #'   \item{catch_total}{Integer fish caught by the party, kept and released}
 #'   \item{catch_kept}{Integer fish kept (harvest), never more than
@@ -96,8 +96,7 @@
 #' )
 #' design <- add_interviews(design, example_season_interviews,
 #'   catch = catch_total, harvest = catch_kept, effort = hours_fished,
-#'   trip_status = trip_status, trip_duration = trip_duration,
-#'   n_anglers = n_anglers
+#'   trip_status = trip_status, n_anglers = n_anglers
 #' )
 #' estimate_total_catch(design, target = "period_total")
 #'

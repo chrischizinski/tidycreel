@@ -10,6 +10,9 @@
 ## random from the stratum proportions and uses it only as a label, so it is
 ## replaced here with the real day of the week: a reader checking a date
 ## against a calendar should find a weekend on a Saturday or Sunday.
+## simulate_creel_data()'s trip_duration is left out: for an incomplete trip it
+## holds the full simulated trip length, which no clerk could observe, where
+## add_interviews() reads trip_duration as the time so far.
 
 devtools::load_all()
 
@@ -52,7 +55,6 @@ example_season_interviews <- data.frame(
   interview_id = seq_len(nrow(interviews)),
   trip_status = interviews$trip_status,
   hours_fished = round(interviews$hours_fished, 2),
-  trip_duration = round(interviews$trip_duration, 2),
   n_anglers = as.integer(interviews$n_anglers),
   catch_total = as.integer(interviews$catch_total),
   catch_kept = as.integer(interviews$catch_kept),

@@ -71,8 +71,7 @@ test_that("the tutorial's totals are in fish", {
   expect_warning(
     design <- suppressMessages(add_interviews(design, example_season_interviews,
       catch = catch_total, harvest = catch_kept, effort = hours_fished,
-      trip_status = trip_status, trip_duration = trip_duration,
-      n_anglers = n_anglers
+      trip_status = trip_status, n_anglers = n_anglers
     )),
     "zero catch"
   )
@@ -81,4 +80,15 @@ test_that("the tutorial's totals are in fish", {
   ))
   expect_identical(total$unit, "fish")
   expect_equal(nrow(total$estimates), 2L)
+
+  # A season total is that stratum's season effort times its catch rate, so a
+  # total that ignored `target` would equal the smaller sampled-day product.
+  effort <- estimate_effort(design, by = day_type, target = "period_total")
+  rate <- suppressMessages(estimate_catch_rate(design, by = day_type))
+  expect_equal(
+    total$estimates$estimate,
+    effort$estimates$estimate * rate$estimates$estimate
+  )
+  sampled <- suppressMessages(estimate_total_catch(design, by = day_type))
+  expect_true(all(total$estimates$estimate > sampled$estimates$estimate))
 })

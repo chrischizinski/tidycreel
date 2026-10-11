@@ -2,13 +2,15 @@
 #
 # A warning in a rendered vignette is either a defect in the example or a
 # deliberate teaching point, and a reader cannot tell which. Each vignette
-# listed in `allowed` below is run expression by expression, and the check
+# listed in `allowed` below is run expression by expression, printing visible
+# values as knitr does (so print and plot methods run), and the check
 # fails on:
 #   - an error;
 #   - a warning matching none of the vignette's allowed patterns;
 #   - an allowed pattern that never fires, so a stale entry cannot linger
 #     after the warning it explained is gone.
-# Every allowed pattern must be explained in the vignette's text.
+# Every allowed pattern must be explained in the vignette's text. That part is
+# a review rule, not something this script can check.
 #
 # Vignettes join the list as #480 restructures them, one pkgdown section at a
 # time; a vignette not listed is not checked yet.
@@ -22,6 +24,7 @@ allowed <- list(
 
 suppressMessages(devtools::load_all(quiet = TRUE))
 options(rlib_warning_verbosity = "verbose")
+grDevices::pdf(NULL) # plots are drawn, to raise their warnings, then discarded
 
 check_vignette <- function(name, patterns) {
   r_file <- file.path(tempdir(), paste0(name, ".R"))
@@ -38,7 +41,10 @@ check_vignette <- function(name, patterns) {
   for (i in seq_along(exprs)) {
     tryCatch(
       withCallingHandlers(
-        utils::capture.output(eval(exprs[[i]], env)),
+        utils::capture.output({
+          res <- withVisible(eval(exprs[[i]], env))
+          if (res$visible) print(res$value)
+        }),
         warning = function(w) {
           msg <- conditionMessage(w)
           hit <- patterns[vapply(patterns, grepl, logical(1), x = msg)]
