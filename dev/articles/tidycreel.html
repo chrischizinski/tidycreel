@@ -156,9 +156,13 @@ the survey structure: 14 days with weekday/weekend stratification.</p>
 </h2>
 <p>Next, we attach the daily effort observations to the design. The
 <code>effort_hours</code> column holds angler-hours already accumulated
-over each day, not the raw angler count seen at a single moment —
-<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> expands whatever column it is given
-without converting units, so this design reports angler-hours:</p>
+over each day, not the raw angler count seen at a single moment.
+<code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code> says so: it marks the column as
+sampled-day effort, so <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> expands it as it
+stands and the estimates are in angler-hours. (Raw instantaneous counts
+would instead go straight to <code><a href="../reference/add_counts.html">add_counts()</a></code> with the length
+of the period each count represents,
+<code>period_length_col</code>.)</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load example count data</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
@@ -171,8 +175,11 @@ without converting units, so this design reports angler-hours:</p>
 <span><span class="co">#&gt; 5 2024-06-05  weekday         15.7</span></span>
 <span><span class="co">#&gt; 6 2024-06-06  weekday         22.1</span></span>
 <span></span>
-<span><span class="co"># Attach counts to the design</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
+<span><span class="co"># Mark the column as daily effort, then attach it to the design</span></span>
+<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Design</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span></span>
@@ -183,7 +190,7 @@ without converting units, so this design reports angler-hours:</p>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">14</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">effort_hours</span></span></span>
+<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">daily_effort</span></span></span>
 <span><span class="co">#&gt; Party-size term: not carried</span></span>
 <span><span class="co">#&gt; Count type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Survey: <span style="color: #0000BB;">&lt;survey.design2&gt;</span> (constructed)</span></span>
@@ -202,14 +209,6 @@ entire survey period:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Estimate total effort</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>

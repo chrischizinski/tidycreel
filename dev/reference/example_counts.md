@@ -37,11 +37,16 @@ Simulated data for package examples
 
 ## Details
 
-The effort column holds angler-hours, not raw angler counts.
+The effort column holds angler-hours, not raw angler counts. Pass it
+through
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+before
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+as in the example, so it is expanded as daily effort. Given to
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+directly it is treated as an instantaneous count, and
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-expands whichever column it is given to the season without converting
-units, so a design built on these data reports angler-hours. Supplying
-raw instantaneous counts instead would give a total in angler-days.
+warns that no count period length was supplied.
 
 ## See also
 
@@ -78,7 +83,10 @@ data(example_calendar)
 data(example_counts)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- add_counts(design, counts)
 result <- estimate_effort(design)
 print(result)
 #> 

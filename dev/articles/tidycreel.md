@@ -56,10 +56,15 @@ weekday/weekend stratification.
 
 Next, we attach the daily effort observations to the design. The
 `effort_hours` column holds angler-hours already accumulated over each
-day, not the raw angler count seen at a single moment —
+day, not the raw angler count seen at a single moment.
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+says so: it marks the column as sampled-day effort, so
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-expands whatever column it is given without converting units, so this
-design reports angler-hours:
+expands it as it stands and the estimates are in angler-hours. (Raw
+instantaneous counts would instead go straight to
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+with the length of the period each count represents,
+`period_length_col`.)
 
 ``` r
 
@@ -74,8 +79,11 @@ head(example_counts)
 #> 5 2024-06-05  weekday         15.7
 #> 6 2024-06-06  weekday         22.1
 
-# Attach counts to the design
-design <- add_counts(design, example_counts)
+# Mark the column as daily effort, then attach it to the design
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- add_counts(design, counts)
 print(design)
 #> 
 #> ── Creel Survey Design ─────────────────────────────────────────────────────────
@@ -86,7 +94,7 @@ print(design)
 #> day_type: 2 levels
 #> Counts: 14 observations
 #> PSU column: date
-#> Count column: effort_hours
+#> Count column: daily_effort
 #> Party-size term: not carried
 #> Count type: "instantaneous"
 #> Survey: <survey.design2> (constructed)
@@ -109,14 +117,6 @@ survey period:
 
 # Estimate total effort
 result <- estimate_effort(design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
 print(result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

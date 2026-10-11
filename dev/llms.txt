@@ -118,8 +118,12 @@ library(tidycreel)
 # 1. Define survey structure with tidy selectors
 design <- creel_design(example_calendar, date = date, strata = day_type)
 
-# 2. Attach count observations
-design <- add_counts(design, example_counts)
+# 2. Attach the counts. example_counts already holds angler-hours per day,
+#    so mark it as daily effort rather than instantaneous counts
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- add_counts(design, counts)
 
 # 3. Estimate effort with design-based variance
 effort <- estimate_effort(design, by = day_type)

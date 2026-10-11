@@ -183,16 +183,11 @@ every row and is visible if it is dropped.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   angler-days, not angler-hours.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   counts, period_length_col = &lt;col&gt;)`.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #555555;">This warning is displayed once per session.</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">est</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 13</span></span>

@@ -237,8 +237,12 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <span><span class="co"># 1. Define survey structure with tidy selectors</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Attach count observations</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
+<span><span class="co"># 2. Attach the counts. example_counts already holds angler-hours per day,</span></span>
+<span><span class="co">#    so mark it as daily effort rather than instantaneous counts</span></span>
+<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Estimate effort with design-based variance</span></span>
 <span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>

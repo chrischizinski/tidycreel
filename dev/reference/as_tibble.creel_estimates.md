@@ -124,16 +124,11 @@ Other "Reporting & Diagnostics":
 
 ``` r
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- add_counts(design, counts)
 est <- estimate_effort(design, by = day_type)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
 
 tibble::as_tibble(est)
 #> # A tibble: 2 × 13

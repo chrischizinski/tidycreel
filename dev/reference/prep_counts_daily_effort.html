@@ -5,6 +5,10 @@ preferred seam for count-based workflows where raw within-day count schedules,
 section probabilities, boat-party-size adjustments, camera multipliers, or
 similar count-side corrections have already been resolved outside the core
 estimator.
+Use it whenever the column you would give add_counts() is already effort
+for the sampled day (angler-hours, say) rather than an instantaneous count.
+The output is marked as effort, so the estimators expand it as it stands
+and do not warn that no count period length was supplied.
 The returned table always contains canonical columns:
 date, any selected strata columns, effort_type, daily_effort, psu,
 and correction_factor. Optional columns n_counts, within_day_var, and
@@ -14,6 +18,10 @@ preferred seam for count-based workflows where raw within-day count schedules,
 section probabilities, boat-party-size adjustments, camera multipliers, or
 similar count-side corrections have already been resolved outside the core
 estimator.
+Use it whenever the column you would give add_counts() is already effort
+for the sampled day (angler-hours, say) rather than an instantaneous count.
+The output is marked as effort, so the estimators expand it as it stands
+and do not warn that no count period length was supplied.
 The returned table always contains canonical columns:
 date, any selected strata columns, effort_type, daily_effort, psu,
 and correction_factor. Optional columns n_counts, within_day_var, and
@@ -90,6 +98,10 @@ preferred seam for count-based workflows where raw within-day count schedules,
 section probabilities, boat-party-size adjustments, camera multipliers, or
 similar count-side corrections have already been resolved outside the core
 estimator.</p>
+<p>Use it whenever the column you would give <code><a href="add_counts.html">add_counts()</a></code> is already effort
+for the sampled day (angler-hours, say) rather than an instantaneous count.
+The output is marked as effort, so the estimators expand it as it stands
+and do not warn that no count period length was supplied.</p>
 <p>The returned table always contains canonical columns:
 <code>date</code>, any selected strata columns, <code>effort_type</code>, <code>daily_effort</code>, <code>psu</code>,
 and <code>correction_factor</code>. Optional columns <code>n_counts</code>, <code>within_day_var</code>, and
@@ -102,7 +114,7 @@ and <code>correction_factor</code>. Optional columns <code>n_counts</code>, <cod
 <span>  <span class="va">data</span>,</span>
 <span>  <span class="va">date</span>,</span>
 <span>  strata <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">effort_type</span>,</span>
+<span>  effort_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">daily_effort</span>,</span>
 <span>  correction_factor <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  psu <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -129,8 +141,9 @@ and <code>correction_factor</code>. Optional columns <code>n_counts</code>, <cod
 
 
 <dt id="arg-effort-type">effort_type<a class="anchor" aria-label="anchor" href="#arg-effort-type"></a></dt>
-<dd><p>Tidy selector for the effort-type column. Common values
-are <code>"bank"</code> and <code>"boat"</code>.</p></dd>
+<dd><p>Optional tidy selector for the effort-type column.
+Common values are <code>"bank"</code> and <code>"boat"</code>. A label only: no estimator reads
+it. When omitted, the output's <code>effort_type</code> column is <code>NA</code> (not stated).</p></dd>
 
 
 <dt id="arg-daily-effort">daily_effort<a class="anchor" aria-label="anchor" href="#arg-daily-effort"></a></dt>
@@ -227,6 +240,25 @@ are <code>date</code>, selected strata columns (if any), <code>effort_type</code
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> 2024-06-02 weekday  bank                  23 2024-06-02                 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> 2024-06-08 weekend  bank                  45 2024-06-08                 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> 2024-06-09 weekend  bank                  52 2024-06-09                 1</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># example_counts already holds angler-hours per sampled day</span></span></span>
+<span class="r-in"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu">prep_counts_daily_effort</span><span class="op">(</span><span class="va">example_counts</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Method: Total</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Taylor linearization</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     372.  13.2       13.2         0     344.     401.    14</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
