@@ -19,8 +19,9 @@ Every design-based analysis has the same shape:
 
 ```r
 design <- creel_design(calendar, date = date, strata = day_type) |>  # 1. structure
-  add_counts(counts) |>                                              # 2. data
-  add_interviews(interviews, catch = catch_total, effort = hours)
+  add_counts(counts, count_col = n_anglers) |>                       # 2. data
+  add_interviews(interviews, catch = catch_total, effort = hours,
+                 trip_status = trip_status)
 
 est <- estimate_effort(design, by = day_type)                        # 3. estimate
 est |> tibble::as_tibble()                                           # 4. use (#476)
@@ -58,28 +59,31 @@ is the same kind of object.
 | `get_*()` | Read a component out of a design | `design` | data frame |
 | `as_*()` | Convert a design to another package's object | `design` | that object |
 | `write_*()`, `read_*()` | Files | the object / the path | — |
-| `autoplot()`, `theme_creel()`, `creel_palette()` | Plotting | the result | ggplot |
+| `autoplot()` | Plot a result | the result | ggplot |
+| `theme_creel()`, `creel_palette()` | Plot styling | style settings | a theme / colours |
 
 Spelling: `summarize`, not `summarise`, in function names.
 
 A few `estimate_*()` functions are calculators: they take summary numbers
-(`estimate_angler_n()`, `estimate_exploitation_rate()`,
-`estimate_mr_harvest()`) or another estimate (`estimate_angler_trips()`,
+(`estimate_angler_n()`, `estimate_exploitation_rate()`) or another estimate
+(`estimate_mr_harvest()`, `estimate_angler_trips()`,
 `estimate_effort_per_acre()`) rather than a design. They are listed as
 exceptions in the test so that a new calculator is a deliberate choice.
 
-Known gaps, tracked and listed in the test:
+Known gaps. The first three are listed as exceptions in the test; the last
+is a mismatch of meaning that a name check cannot see, and is recorded here
+only:
 
 - `est_*()` and `estimate_*()` coexist (#477).
 - Planning functions use several patterns besides `creel_n_*()`:
   `creel_power()` and `power_creel()`, `optimal_n()`, `cv_from_n()`,
   `reallocate_strata()`.
-- `validate_design()` plans a sample size; it does not validate a
-  `creel_design`.
 - About twenty data-preparation, scheduling and diagnostic helpers sit outside
   any family (`compute_effort()`, `standardize_species()`,
   `attach_count_times()`, `audit_strata()`, ...). Each is listed in the test
   with its reason.
+- `validate_design()` plans a sample size; it does not validate a
+  `creel_design`.
 
 ## Arguments
 
@@ -109,8 +113,12 @@ The rule for new arguments is open (#479). Until it is settled, match the
 function you are extending.
 
 **Column names are never assumed.** The package ships no organisation's field
-names. A column is either named by the user through an argument or
-`creel_schema()`, or it is a column the package created.
+names. A column is named by the user through an argument or `creel_schema()`,
+inferred from the data's structure where only one column can qualify (as
+`add_counts()` does when `count_col` is omitted and exactly one non-design
+numeric column remains; with two or more it refuses rather than pick), or
+created by the package. Examples name the column
+anyway, so the reader sees which one is used.
 
 ## Results
 

@@ -43,14 +43,14 @@ counts <- data.frame(
   n_anglers = c(12, NA, 5, 7)
 )
 
-# The failing call
+# The call that misbehaves
 design <- creel_design(calendar, date = date, strata = day_type) |>
-  add_counts(counts)
+  add_counts(counts, count_col = n_anglers)
 estimate_effort(design)
-#> Error in ...
+#> (paste the error, or the result you think is wrong)
 ```
 
-The snippet should be copy-paste runnable and produce the error without any additional setup. Avoid including your full dataset; reduce to the smallest example that still fails.
+The snippet should be copy-paste runnable and show the problem without any additional setup. Avoid including your full dataset; reduce to the smallest example that still fails.
 
 ### Feature Requests
 
@@ -80,8 +80,8 @@ Click **Feature request** on the [New Issue](https://github.com/chrischizinski/t
 effort_total <- sum(design_data$effort * design_data$weights, na.rm = TRUE)
 
 # Good: Grouped vectorized approach
-strata_totals <- design_data %>%
-  group_by(stratum_id) %>%
+strata_totals <- design_data |>
+  group_by(stratum_id) |>
   summarise(effort = sum(effort * weights, na.rm = TRUE))
 
 # Avoid: Explicit loops
