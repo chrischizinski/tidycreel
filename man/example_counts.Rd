@@ -23,11 +23,11 @@ Sample daily effort observations matching \link{example_calendar}. One row per
 survey date, suitable for use with \code{\link[=add_counts]{add_counts()}} and \code{\link[=estimate_effort]{estimate_effort()}}.
 }
 \details{
-The effort column holds angler-hours, not raw angler counts.
-\code{\link[=estimate_effort]{estimate_effort()}} expands whichever column it is given to the season
-without converting units, so a design built on these data reports
-angler-hours. Supplying raw instantaneous counts instead would give a total
-in angler-days.
+The effort column holds angler-hours, not raw angler counts. Pass it
+through \code{\link[=prep_counts_daily_effort]{prep_counts_daily_effort()}} before \code{\link[=add_counts]{add_counts()}}, as in the
+example, so it is expanded as daily effort; given to \code{\link[=add_counts]{add_counts()}}
+directly it is treated as an instantaneous count and draws a warning that
+no count period length was supplied.
 }
 \examples{
 # Load and use with a creel design
@@ -35,7 +35,10 @@ data(example_calendar)
 data(example_counts)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
+counts <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+design <- add_counts(design, counts)
 result <- estimate_effort(design)
 print(result)
 
