@@ -57,3 +57,20 @@ review-update file status notes:
     today=$(date +%Y-%m-%d)
     echo "Updating {{file}} -> {{status}} (reviewed $today)"
     python3 scripts/review_update.py "{{file}}" "{{status}}" "{{notes}}" "$sha" "$rdate" "$today"
+
+# CRAN release helpers -- scripts/release.R; the process is in CONTRIBUTING.md
+# under "Releases". Submission itself stays interactive: cran_submit().
+#   minor/major: just release-prep 9.0.0 "Fish Name"
+#   patch:       just release-prep 8.0.2 "" origin/cran-8.0.1
+
+# Cut cran-<version> in ~/Dev/tidycreel-submit and stamp the version.
+release-prep version name="" from="origin/main":
+    Rscript -e 'a <- commandArgs(TRUE); source("scripts/release.R"); release_prep(a[1], a[2], a[3])' {{quote(version)}} {{quote(name)}} {{quote(from)}}
+
+# --as-cran check and submission-guard dry run of the release branch.
+release-check:
+    Rscript -e 'source("scripts/release.R"); release_check()'
+
+# After CRAN publishes: tag, GitHub release, and the post-release PR for main.
+release-accepted version:
+    Rscript -e 'a <- commandArgs(TRUE); source("scripts/release.R"); release_accepted(a[1])' {{quote(version)}}

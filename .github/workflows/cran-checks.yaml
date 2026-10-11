@@ -1,0 +1,48 @@
+# Weekly read of CRAN's own check results for the published package. Opens an
+# issue (or updates the open one) when any flavour is not OK, an additional
+# issue is listed, or CRAN has set a deadline. See scripts/cran-checks.R.
+name: cran-checks
+
+on:
+  schedule:
+    - cron: "17 13 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  cran-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Read CRAN check results
+        id: read
+        shell: bash
+        run: |
+          set -euo pipefail
+          Rscript scripts/cran-checks.R cran-checks-report.md | tee cran-checks.log
+          tail -n 1 cran-checks.log >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the issue
+        if: steps.read.outputs.problems == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="CRAN checks are not all OK"
+          num=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" \
+            --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)
+          if [ -n "$num" ]; then
+            gh issue edit "$num" -R "$GITHUB_REPOSITORY" --body-file cran-checks-report.md
+            echo "Updated #$num"
+          else
+            gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body-file cran-checks-report.md
+          fi

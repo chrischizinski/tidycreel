@@ -10,6 +10,8 @@ output: github_document
 </p>
 
 <!-- badges: start -->
+[![CRAN status](https://img.shields.io/cran/v/tidycreel?label=CRAN)](https://CRAN.R-project.org/package=tidycreel)
+[![CRAN checks](https://badges.cranchecks.info/worst/tidycreel.svg)](https://cran.r-project.org/web/checks/check_results_tidycreel.html)
 [![R-CMD-check](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chrischizinski/tidycreel/actions/workflows/R-CMD-check.yaml)
 [![pkgdown](https://img.shields.io/badge/pkgdown-live-1B4F72)](https://chrischizinski.com/tidycreel/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
