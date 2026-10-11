@@ -828,6 +828,13 @@ Technical equation derivations for advanced users.
 - [Bus-Route Survey: Equation
   Traceability](https://chrischizinski.com/tidycreel/dev/articles/bus-route-equations.md):
 
+### Package Conventions
+
+How functions are named, what they take and what they return.
+
+- [API
+  Conventions](https://chrischizinski.com/tidycreel/dev/articles/api-conventions.md):
+
 ### Ecosystem
 
 Companion packages that extend tidycreel for database integration and

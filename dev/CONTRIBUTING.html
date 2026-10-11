@@ -97,16 +97,22 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Minimal data that triggers the problem</span></span>
-<span><span class="va">trips</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  trip_id   <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,</span>
-<span>  effort_hr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2.5</span>, <span class="cn">NA</span>, <span class="fl">1.0</span><span class="op">)</span>,</span>
-<span>  catch     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4L</span>, <span class="fl">2L</span>, <span class="fl">0L</span><span class="op">)</span></span>
+<span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-01"</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0</span><span class="op">:</span><span class="fl">3</span>,</span>
+<span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekend"</span>, <span class="st">"weekend"</span>, <span class="st">"weekday"</span>, <span class="st">"weekday"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  date      <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">date</span>,</span>
+<span>  day_type  <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">day_type</span>,</span>
+<span>  n_anglers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12</span>, <span class="cn">NA</span>, <span class="fl">5</span>, <span class="fl">7</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># The failing call</span></span>
-<span><span class="fu">estimate_catch</span><span class="op">(</span><span class="va">trips</span>, survey_type <span class="op">=</span> <span class="st">"instantaneous"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error in ...</span></span></code></pre></div>
-<p>The snippet should be copy-paste runnable and produce the error without any additional setup. Avoid including your full dataset; reduce to the smallest example that still fails.</p>
+<span><span class="co"># The call that misbehaves</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">counts</span>, count_col <span class="op">=</span> <span class="va">n_anglers</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; (paste the error, or the result you think is wrong)</span></span></code></pre></div>
+<p>The snippet should be copy-paste runnable and show the problem without any additional setup. Avoid including your full dataset; reduce to the smallest example that still fails.</p>
 </div>
 <div class="section level3">
 <h3 id="feature-requests">Feature Requests<a class="anchor" aria-label="anchor" href="#feature-requests"></a></h3>
@@ -142,8 +148,8 @@
 <span><span class="va">effort_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">design_data</span><span class="op">$</span><span class="va">effort</span> <span class="op">*</span> <span class="va">design_data</span><span class="op">$</span><span class="va">weights</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Good: Grouped vectorized approach</span></span>
-<span><span class="va">strata_totals</span> <span class="op">&lt;-</span> <span class="va">design_data</span> <span class="op">%&gt;%</span></span>
-<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">stratum_id</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
+<span><span class="va">strata_totals</span> <span class="op">&lt;-</span> <span class="va">design_data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">group_by</span><span class="op">(</span><span class="va">stratum_id</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">summarise</span><span class="op">(</span>effort <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">effort</span> <span class="op">*</span> <span class="va">weights</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Avoid: Explicit loops</span></span>
@@ -167,19 +173,10 @@
 <strong>Favor design-based estimators</strong> over model-based approaches as defaults</li>
 </ul></div>
 <div class="section level3">
-<h3 id="tidyverse-style">Tidyverse Style<a class="anchor" aria-label="anchor" href="#tidyverse-style"></a></h3>
-<p><strong>Follow the <a href="https://style.tidyverse.org" class="external-link">tidyverse style guide</a> completely:</strong></p>
-<ul><li>
-<strong>Function names:</strong> <code>snake_case</code> with descriptive verbs (<code>estimate_effort</code>, not <code>effort_est</code>)</li>
-<li>
-<strong>Variable names:</strong> <code>snake_case</code> with clear meaning (<code>party_size</code>, not <code>ps</code>)</li>
-<li>
-<strong>File names:</strong> <code>kebab-case</code> for multi-word concepts (<code>design-constructors.R</code>)</li>
-<li>
-<strong>Documentation:</strong> Complete roxygen2 docs with examples</li>
-<li>
-<strong>Pipes:</strong> Use <code>%&gt;%</code> for multi-step data transformations</li>
-</ul></div>
+<h3 id="api-conventions">API conventions<a class="anchor" aria-label="anchor" href="#api-conventions"></a></h3>
+<p>Function families, argument names and order, return types, units and messages are set out in the <a href="https://chrischizinski.github.io/tidycreel/articles/api-conventions.html" class="external-link">API Conventions</a> article (<code>vignettes/articles/api-conventions.Rmd</code>). Its checkable rules are enforced by <code>tests/testthat/test-api-conventions.R</code>; a new export that fits no family, or breaks the shared argument order, fails that test until the PR adds a reasoned exception.</p>
+<p>Code follows the <a href="https://style.tidyverse.org" class="external-link">tidyverse style guide</a> and uses the base pipe <code>|&gt;</code>.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="technical-standards">Technical Standards<a class="anchor" aria-label="anchor" href="#technical-standards"></a></h2>
@@ -208,9 +205,9 @@
 <span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="co"># Assert</span></span>
-<span>  <span class="fu">expect_s3_class</span><span class="op">(</span><span class="va">result</span>, <span class="st">"tbl_df"</span><span class="op">)</span></span>
-<span>  <span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"effort_estimate"</span>, <span class="st">"se"</span>, <span class="st">"cv"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">effort_estimate</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">expect_s3_class</span><span class="op">(</span><span class="va">result</span>, <span class="st">"creel_estimates"</span><span class="op">)</span></span>
+<span>  <span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"ci_lower"</span>, <span class="st">"ci_upper"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">expect_true</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">&gt;=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Test edge cases explicitly:</strong> - Zero effort/catch scenarios - Empty strata - Missing data patterns - Single-observation groups - Date/time boundary conditions (DST, leap years)</p>
 </div>
@@ -263,35 +260,7 @@
 </div>
 <div class="section level2">
 <h2 id="package-architecture">Package Architecture<a class="anchor" aria-label="anchor" href="#package-architecture"></a></h2>
-<div class="section level3">
-<h3 id="file-organization">File Organization<a class="anchor" aria-label="anchor" href="#file-organization"></a></h3>
-<pre><code>R/
-├── data-schemas.R      # Schema definitions and validation
-├── design-constructors.R  # Survey design object creation
-├── estimators.R        # Core estimation functions
-├── legacy-*.R          # Legacy API compatibility
-└── utils.R             # Internal helper functions</code></pre>
-</div>
-<div class="section level3">
-<h3 id="naming-conventions">Naming Conventions<a class="anchor" aria-label="anchor" href="#naming-conventions"></a></h3>
-<ul><li>
-<strong>Design functions:</strong> <code>design_*()</code>
-</li>
-<li>
-<strong>Estimation functions:</strong> <code>estimate_*()</code>
-</li>
-<li>
-<strong>Validation functions:</strong> <code>validate_*()</code>
-</li>
-<li>
-<strong>Utility functions:</strong> <code>calculate_*()</code>, <code>create_*()</code>
-</li>
-</ul></div>
-<div class="section level3">
-<h3 id="dependencies">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies"></a></h3>
-<p><strong>Core dependencies</strong> (keep minimal): - <code>survey</code> - design objects and estimation - <code>dplyr</code>, <code>tidyr</code> - data manipulation - <code>rlang</code>, <code>vctrs</code> - programming tools</p>
-<p><strong>Suggested dependencies</strong> (for specific features): - <code>cli</code> - user messaging - <code>lifecycle</code> - deprecation management</p>
-</div>
+<p>Estimators live in <code>R/creel-estimates*.R</code>, the design constructor in <code>R/creel-design.R</code>, and the bridge to the survey package in <code>R/survey-bridge.R</code>. Naming and dependencies follow the API Conventions article above.</p>
 </div>
 <div class="section level2">
 <h2 id="releases">Releases<a class="anchor" aria-label="anchor" href="#releases"></a></h2>

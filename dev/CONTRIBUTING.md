@@ -48,18 +48,24 @@ A good reprex looks like this:
 library(tidycreel)
 
 # Minimal data that triggers the problem
-trips <- data.frame(
-  trip_id   = 1:3,
-  effort_hr = c(2.5, NA, 1.0),
-  catch     = c(4L, 2L, 0L)
+calendar <- data.frame(
+  date     = as.Date("2024-06-01") + 0:3,
+  day_type = c("weekend", "weekend", "weekday", "weekday")
+)
+counts <- data.frame(
+  date      = calendar$date,
+  day_type  = calendar$day_type,
+  n_anglers = c(12, NA, 5, 7)
 )
 
-# The failing call
-estimate_catch(trips, survey_type = "instantaneous")
-#> Error in ...
+# The call that misbehaves
+design <- creel_design(calendar, date = date, strata = day_type) |>
+  add_counts(counts, count_col = n_anglers)
+estimate_effort(design)
+#> (paste the error, or the result you think is wrong)
 ```
 
-The snippet should be copy-paste runnable and produce the error without
+The snippet should be copy-paste runnable and show the problem without
 any additional setup. Avoid including your full dataset; reduce to the
 smallest example that still fails.
 
@@ -102,8 +108,8 @@ performance and scalability:
 effort_total <- sum(design_data$effort * design_data$weights, na.rm = TRUE)
 
 # Good: Grouped vectorized approach
-strata_totals <- design_data %>%
-  group_by(stratum_id) %>%
+strata_totals <- design_data |>
+  group_by(stratum_id) |>
   summarise(effort = sum(effort * weights, na.rm = TRUE))
 
 # Avoid: Explicit loops
@@ -130,19 +136,18 @@ engine:
 - **Favor design-based estimators** over model-based approaches as
   defaults
 
-### Tidyverse Style
+### API conventions
 
-**Follow the [tidyverse style guide](https://style.tidyverse.org)
-completely:**
+Function families, argument names and order, return types, units and
+messages are set out in the [API
+Conventions](https://chrischizinski.github.io/tidycreel/articles/api-conventions.html)
+article (`vignettes/articles/api-conventions.Rmd`). Its checkable rules
+are enforced by `tests/testthat/test-api-conventions.R`; a new export
+that fits no family, or breaks the shared argument order, fails that
+test until the PR adds a reasoned exception.
 
-- **Function names:** `snake_case` with descriptive verbs
-  (`estimate_effort`, not `effort_est`)
-- **Variable names:** `snake_case` with clear meaning (`party_size`, not
-  `ps`)
-- **File names:** `kebab-case` for multi-word concepts
-  (`design-constructors.R`)
-- **Documentation:** Complete roxygen2 docs with examples
-- **Pipes:** Use `%>%` for multi-step data transformations
+Code follows the [tidyverse style guide](https://style.tidyverse.org)
+and uses the base pipe `|>`.
 
 ## Technical Standards
 
@@ -168,9 +173,9 @@ test_that("estimate_effort returns proper structure", {
   result <- estimate_effort(design)
 
   # Assert
-  expect_s3_class(result, "tbl_df")
-  expect_true(all(c("effort_estimate", "se", "cv") %in% names(result)))
-  expect_true(all(result$effort_estimate >= 0))
+  expect_s3_class(result, "creel_estimates")
+  expect_true(all(c("estimate", "se", "ci_lower", "ci_upper") %in% names(result$estimates)))
+  expect_true(all(result$estimates$estimate >= 0))
 })
 ```
 
@@ -243,30 +248,10 @@ new features
 
 ## Package Architecture
 
-### File Organization
-
-    R/
-    ├── data-schemas.R      # Schema definitions and validation
-    ├── design-constructors.R  # Survey design object creation
-    ├── estimators.R        # Core estimation functions
-    ├── legacy-*.R          # Legacy API compatibility
-    └── utils.R             # Internal helper functions
-
-### Naming Conventions
-
-- **Design functions:** `design_*()`
-- **Estimation functions:** `estimate_*()`
-- **Validation functions:** `validate_*()`
-- **Utility functions:** `calculate_*()`, `create_*()`
-
-### Dependencies
-
-**Core dependencies** (keep minimal): - `survey` - design objects and
-estimation - `dplyr`, `tidyr` - data manipulation - `rlang`, `vctrs` -
-programming tools
-
-**Suggested dependencies** (for specific features): - `cli` - user
-messaging - `lifecycle` - deprecation management
+Estimators live in `R/creel-estimates*.R`, the design constructor in
+`R/creel-design.R`, and the bridge to the survey package in
+`R/survey-bridge.R`. Naming and dependencies follow the API Conventions
+article above.
 
 ## Releases
 
