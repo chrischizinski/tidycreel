@@ -301,6 +301,12 @@ articles:
   contents:
   - bus-route-equations
 
+- title: "Package Conventions"
+  desc: >
+    How functions are named, what they take and what they return.
+  contents:
+  - articles/api-conventions
+
 - title: "Ecosystem"
   desc: >
     Companion packages that extend tidycreel for database integration and
