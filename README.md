@@ -111,7 +111,12 @@ design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 
 # 3. Estimate effort with design-based variance
-estimate_effort(design)
+effort <- estimate_effort(design, by = day_type)
+effort
+
+# 4. Use the result as data: one row per estimate, with its method,
+#    confidence level and unit as columns
+tibble::as_tibble(effort)
 ```
 
 ### Bus-Route Survey

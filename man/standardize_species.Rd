@@ -89,6 +89,7 @@ standardize_species(
 \seealso{
 Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
+\code{\link{as_tibble.creel_estimates}()},
 \code{\link{check_completeness}()},
 \code{\link{compare_variance}()},
 \code{\link{flag_outliers}()},
