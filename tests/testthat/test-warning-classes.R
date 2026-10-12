@@ -90,3 +90,50 @@ test_that("a classed warning can be handled alone, leaving the others", {
   ))
   expect_identical(handled, 1L)
 })
+
+test_that("the catch rate and the harvest rate truncate through one implementation", {
+  # estimate_catch_rate() and truncate_interviews_for_mor() (harvest and
+  # release rates, totals) each carried their own copy of the truncation
+  # warnings until GH #496. One shared helper means a change to either cannot
+  # leave the other behind: same trips dropped, same warnings, on both routes.
+  # add_interviews() refuses a missing duration, so three are blanked
+  # afterwards, as in the #272 tests, to reach the missing-duration branch.
+  iv <- example_roving_interviews
+  iv$duration <- iv$hours_fished
+  design <- creel_design(example_season_calendar, date = date, strata = day_type)
+  design <- add_counts(design, example_season_counts,
+    count_col = total_anglers, period_length_col = daylight_hours
+  )
+  design <- suppressMessages(add_interviews(design, iv,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    trip_status = trip_status, trip_duration = duration,
+    n_anglers = n_anglers, interview_type = "roving"
+  ))
+  iv <- design$interviews
+  iv$duration[1:3] <- NA_real_
+  design <- rebuild_interview_survey(design, iv)
+  classes_of <- function(expr) {
+    seen <- character()
+    value <- withCallingHandlers(
+      suppressMessages(expr),
+      creel_warning = function(w) {
+        seen <<- c(seen, grep("^creel_warning_", class(w), value = TRUE))
+        invokeRestart("muffleWarning")
+      }
+    )
+    list(value = value, classes = seen)
+  }
+  catch <- classes_of(estimate_catch_rate(design))
+  harvest <- classes_of(estimate_harvest_rate(design))
+  expect_true("creel_warning_trip_duration_excluded" %in% catch$classes)
+  expect_setequal(
+    intersect(catch$classes, c(
+      "creel_warning_trip_duration_excluded", "creel_warning_mor_truncation"
+    )),
+    intersect(harvest$classes, c(
+      "creel_warning_trip_duration_excluded", "creel_warning_mor_truncation"
+    ))
+  )
+  expect_equal(catch$value$mor_n_truncated, harvest$value$mor_n_truncated)
+  expect_gt(catch$value$mor_n_truncated, 0)
+})
