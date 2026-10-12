@@ -15,7 +15,7 @@ example_ice_interviews
 
 ## Format
 
-A data frame with 72 rows and 11 columns:
+A data frame with 72 rows and 12 columns:
 
 - date:
 
@@ -66,6 +66,12 @@ A data frame with 72 rows and 11 columns:
   Character shelter type used by the angler party: `"open"` (no shelter)
   or `"dark_house"` (enclosed shelter). Used to stratify effort
   estimates by shelter type.
+
+- n_anglers:
+
+  Integer number of anglers in the party (1-4). Pass it to
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  so effort is in angler-hours rather than party-hours.
 
 ## Source
 
@@ -126,24 +132,20 @@ design <- suppressMessages(add_interviews(
   harvest = walleye_kept,
   trip_status = trip_status,
   n_counted = n_counted,
-  n_interviewed = n_interviewed
+  n_interviewed = n_interviewed,
+  n_anglers = n_anglers
 ))
-#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
-#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
-#>   that and silence this warning.
-suppressWarnings(estimate_effort(design))
+estimate_effort(design)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> Unit: party-hours
+#> Unit: angler-hours
 #> 
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    2406.  74.6    2260.    2552.    72                  2406.
+#> 1    3819.  261.    3308.    4330.    72                  3819.
 ```

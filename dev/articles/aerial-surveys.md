@@ -5,20 +5,20 @@
 Aerial creel surveys estimate total angler effort by conducting an
 instantaneous count of anglers on the water from a low-flying aircraft.
 Because the aircraft captures a snapshot of angler activity at a single
-moment, the count must be expanded to total effort using the hours the
-fishery is open (`h_open`) and the mean trip duration of anglers on the
-water (`L_bar`). The basic estimator is:
+moment, the count must be expanded to a day’s effort using the hours the
+fishery is open (`h_open`). The basic estimator for a day is:
 
 ``` math
-\hat{E} = N_{obs} \times \frac{h_{open}}{v}
+\hat{E} = N_{obs} \times h_{open} \times \frac{a}{v}
 ```
 
-where $`N_{obs}`$ is the observed (instantaneous) angler count,
-$`h_{open}`$ is the number of hours the fishery is open per day, and
-$`v`$ is the **detection probability** — the proportion of anglers
-present that are detected from the aircraft. The mean trip duration
-$`\bar{L}`$ is estimated from ground interviews and enters the catch
-rate estimation step rather than the effort expansion step.
+where $`N_{obs}`$ is the observed (instantaneous) count, $`h_{open}`$ is
+the number of hours the fishery is open per day, $`a`$ is the angler
+ratio (the proportion of people counted who are anglers; 1 when every
+person counted is fishing), and $`v`$ is the **detection probability** —
+the proportion of anglers present that are detected from the aircraft.
+Effort comes from the counts alone; ground interviews supply the catch
+rate.
 
 When not all anglers are visible from the air — for example, anglers
 fishing under tree cover or in enclosed shelters — a **visibility
@@ -94,13 +94,13 @@ head(example_aerial_interviews)
 #> 4 2024-06-05  weekday    complete          4.9             1            0
 #> 5 2024-06-05  weekday    complete          2.2             1            0
 #> 6 2024-06-05  weekday    complete          2.3             1            0
-#>   bass_catch bass_kept
-#> 1          0         0
-#> 2          0         0
-#> 3          0         0
-#> 4          1         0
-#> 5          0         0
-#> 6          1         1
+#>   bass_catch bass_kept n_anglers
+#> 1          0         0         2
+#> 2          0         0         2
+#> 3          0         0         2
+#> 4          1         0         2
+#> 5          0         0         1
+#> 6          1         1         3
 ```
 
 `example_aerial_counts` contains 16 sampling days (one overflight per
@@ -172,24 +172,23 @@ The `n_anglers` column is auto-detected as the count variable.
 design <- add_counts(design, example_aerial_counts)
 ```
 
-Aerial effort estimation requires interview data to be attached before
-calling
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
-because the estimator uses the mean trip duration ($`\bar{L}`$) from
-ground interviews to confirm the expansion factor. Attach the interview
-data with
-[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
-then estimate total effort.
+Aerial effort comes from the counts alone: each day’s count times
+`h_open`, scaled by the angler ratio and the visibility correction.
+Interviews are not needed for effort; they supply the catch rate later
+on. They are attached here so the same design serves both. Each row is a
+party, so `n_anglers` gives its size and the catch rate comes out per
+angler-hour, the unit of aerial effort.
 
 ``` r
 
-design <- suppressWarnings(add_interviews(
+design <- add_interviews(
   design,
   example_aerial_interviews,
   catch       = walleye_catch,
   effort      = hours_fished,
-  trip_status = trip_status
-))
+  trip_status = trip_status,
+  n_anglers   = n_anglers
+)
 #> ℹ 15 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
@@ -197,7 +196,7 @@ design <- suppressWarnings(add_interviews(
 
 ``` r
 
-effort <- suppressWarnings(estimate_effort(design))
+effort <- estimate_effort(design)
 print(effort)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -217,9 +216,15 @@ print(effort)
 #> 1     8918    NA       658.         0       NA       NA    16
 ```
 
-The `estimate` column is the projected total angler-hours over the full
-survey period, and `se_between` quantifies between-day variability in
-the instantaneous counts.
+The `estimate` column is the total angler-hours over the calendar given
+to
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+and `se_between` quantifies between-day variability in the instantaneous
+counts. This calendar holds only the 16 flown days, so the total covers
+those days. If your calendar lists every day of the season, flown or
+not, ask for the season total with `target = "period_total"`; the
+default, `"sampled_days"`, totals only the days flown (see
+[`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)).
 
 `se`, `ci_lower` and `ci_upper` are `NA`, and that is the correct output
 for this design rather than a gap in it.
@@ -260,18 +265,19 @@ design_corr <- creel_design(
 )
 
 design_corr <- add_counts(design_corr, example_aerial_counts)
-design_corr <- suppressWarnings(add_interviews(
+design_corr <- add_interviews(
   design_corr,
   example_aerial_interviews,
   catch       = walleye_catch,
   effort      = hours_fished,
-  trip_status = trip_status
-))
+  trip_status = trip_status,
+  n_anglers   = n_anglers
+)
 #> ℹ 15 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
 
-effort_corr <- suppressWarnings(estimate_effort(design_corr))
+effort_corr <- estimate_effort(design_corr)
 print(effort_corr)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -314,7 +320,7 @@ design.
 
 ``` r
 
-catch_rate <- suppressWarnings(estimate_catch_rate(design))
+catch_rate <- estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=48, 100% of 48 interviews) [default]
 print(catch_rate)
@@ -323,12 +329,12 @@ print(catch_rate)
 #> Method: Ratio-of-Means CPUE
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Unit: fish/party-hour
+#> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.413 0.0601    0.295    0.531    48
+#> 1    0.217 0.0339    0.151    0.284    48
 ```
 
 [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
@@ -337,7 +343,7 @@ total walleye catch over the survey period.
 
 ``` r
 
-total_catch <- suppressWarnings(estimate_total_catch(design))
+total_catch <- estimate_total_catch(design)
 print(total_catch)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -345,11 +351,12 @@ print(total_catch)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Effort target: sampled_days
+#> Unit: fish
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    3508.    NA       NA       NA    48
+#> 1    1838.    NA       NA       NA    48
 ```
 
 The delta-method standard error on total catch accounts for variance in
@@ -359,6 +366,26 @@ enter the total once. This design declares
 `visibility_correction = "none"`, so detection uncertainty is unknown
 and the SE prints as `NA`, as the effort SE does; the `design_corr`
 design above, with `visibility_se`, gives a finite one.
+
+## Results as Data
+
+Each estimate converts to a tibble with its method, variance method and
+unit as columns, and plots with its confidence interval:
+
+``` r
+
+tibble::as_tibble(total_catch)
+#> # A tibble: 1 × 11
+#>   estimate    se ci_lower ci_upper     n method        estimator variance_method
+#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>         <chr>     <chr>          
+#> 1    1838.    NA       NA       NA    48 product-tota… ratio-of… taylor         
+#> # ℹ 3 more variables: conf_level <dbl>, effort_target <chr>, unit <chr>
+
+ggplot2::autoplot(effort_corr)
+```
+
+![Visibility-corrected aerial effort estimate with its 95 percent
+confidence interval.](aerial-surveys_files/figure-html/results-1.png)
 
 ## Summary
 

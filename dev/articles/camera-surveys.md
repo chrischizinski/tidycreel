@@ -249,11 +249,11 @@ unknown.
 
 ``` r
 
-effort_counter <- suppressWarnings(est_effort_camera(
+effort_counter <- est_effort_camera(
   design_counter,
   interviews = example_camera_interviews,
   n_anglers  = 1
-))
+)
 print(effort_counter)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -380,11 +380,16 @@ ie_interviews <- example_camera_interviews[
   example_camera_interviews$date %in% daily_effort$date,
 ]
 
-effort_ie <- suppressWarnings(est_effort_camera(
+effort_ie <- est_effort_camera(
   design_ie,
   interviews = ie_interviews,
   n_anglers  = 1
-))
+)
+#> Warning: Stratum "weekend" has one paired interview/count day.
+#> ✖ The calibration ratio's variance cannot be measured from a single pair.
+#> ℹ Its contribution is `NA`, so the reported SE is `NA` rather than falsely
+#>   exact.
+#> ℹ Add a second matched interview day in this stratum to recover an SE.
 print(effort_ie)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -401,14 +406,14 @@ print(effort_ie)
 #> 1     43.6    NA         NA         0       NA       NA     4
 ```
 
-The standard error is `NA` here, and that is the estimator working
-rather than failing. These four sampling days give the `weekend` stratum
-only one day carrying both a count and interviews, and a single paired
-day gives the calibration ratio no measurable spread. Reporting `0` for
-that variance would present the most uncertain calibration as the most
-precise one, so the package carries it as `NA` and says which stratum is
-responsible. A second matched interview day in that stratum recovers a
-standard error.
+The standard error is `NA` here, and the warning above says why; that is
+the estimator working rather than failing. These four sampling days give
+the `weekend` stratum only one day carrying both a count and interviews,
+and a single paired day gives the calibration ratio no measurable
+spread. Reporting `0` for that variance would present the most uncertain
+calibration as the most precise one, so the package carries it as `NA`
+and says which stratum is responsible. A second matched interview day in
+that stratum recovers a standard error.
 
 ## Catch Estimation
 
@@ -427,7 +432,7 @@ design_catch <- suppressMessages(add_interviews(
   trip_status = trip_status,
   n_anglers   = 1
 ))
-catch_rate <- suppressWarnings(estimate_catch_rate(design_catch))
+catch_rate <- estimate_catch_rate(design_catch)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=40, 100% of 40 interviews) [default]
 print(catch_rate)
@@ -480,6 +485,26 @@ does that yet.
 and
 [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
 refuse camera designs for the same reason.
+
+## Results as Data
+
+Each estimate converts to a tibble with its method, variance method and
+unit as columns, and plots with its confidence interval:
+
+``` r
+
+tibble::as_tibble(effort_counter)
+#> # A tibble: 1 × 11
+#>   estimate    se se_between se_within ci_lower ci_upper     n method      
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>       
+#> 1     111.  12.5       12.5         0     81.4     140.     9 camera_ratio
+#> # ℹ 3 more variables: variance_method <chr>, conf_level <dbl>, unit <chr>
+
+ggplot2::autoplot(effort_counter)
+```
+
+![Counter-mode camera effort estimate with its 95 percent confidence
+interval.](camera-surveys_files/figure-html/results-1.png)
 
 ## Summary
 

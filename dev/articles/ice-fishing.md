@@ -84,6 +84,13 @@ head(example_ice_interviews)
 #> 4             3           0            2          0    complete   dark_house
 #> 5             1           4            1          3  incomplete   dark_house
 #> 6             0           6            0          4    complete   dark_house
+#>   n_anglers
+#> 1         2
+#> 2         1
+#> 3         3
+#> 4         1
+#> 5         1
+#> 6         1
 ```
 
 The sampling frame records the survey calendar and the period sampling
@@ -153,7 +160,10 @@ Use
 to attach the survey data to the design. For ice surveys, `n_counted`
 and `n_interviewed` are required — they record how many parties were
 counted at the access point versus how many were actually interviewed
-during each visit, providing the enumeration expansion factor.
+during each visit, providing the enumeration expansion factor. Each row
+is a party, so `n_anglers` gives its size: hours on the ice times party
+size is the party’s angler-hours. Without it, effort would be in
+party-hours.
 
 ``` r
 
@@ -165,13 +175,9 @@ design <- add_interviews(
   harvest       = walleye_kept,
   trip_status   = trip_status,
   n_counted     = n_counted,
-  n_interviewed = n_interviewed
+  n_interviewed = n_interviewed,
+  n_anglers     = n_anglers
 )
-#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
-#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
-#>   that and silence this warning.
 #> ℹ 23 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 72 interviews: 60 complete (83%), 12 incomplete (17%)
@@ -197,12 +203,12 @@ print(effort_est)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> Unit: party-hours
+#> Unit: angler-hours
 #> 
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    2406.  74.6    2260.    2552.    72                  2406.
+#> 1    3819.  261.    3308.    4330.    72                  3819.
 ```
 
 To demonstrate the column-naming distinction, rebuild the design using
@@ -229,13 +235,9 @@ design_aft <- suppressMessages(add_interviews(
   harvest       = walleye_kept,
   trip_status   = trip_status,
   n_counted     = n_counted,
-  n_interviewed = n_interviewed
+  n_interviewed = n_interviewed,
+  n_anglers     = n_anglers
 ))
-#> Warning: ! No `n_anglers` provided — assuming 1 angler per interview.
-#> ℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour
-#>   normalization.
-#> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
-#>   that and silence this warning.
 
 effort_aft <- estimate_effort(design_aft)
 print(effort_aft)
@@ -245,12 +247,12 @@ print(effort_aft)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> Unit: party-hours
+#> Unit: angler-hours
 #> 
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n total_effort_hr_active
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    1990.  69.1    1855.    2126.    72                  1990.
+#> 1    3148.  216.    2725.    3571.    72                  3148.
 ```
 
 Active fishing hours are shorter than time-on-ice because they exclude
@@ -276,13 +278,13 @@ print(effort_by_shelter)
 #> Confidence level: 95%
 #> Grouped by: shelter_mode
 #> Effort target: sampled_days
-#> Unit: party-hours
+#> Unit: angler-hours
 #> 
 #> # A tibble: 2 × 8
 #>   shelter_mode estimate    se ci_lower ci_upper proportion     n
 #>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <int>
-#> 1 dark_house      1250.  56.7    1139.    1361.      0.520    36
-#> 2 open            1156.  23.6    1109.    1202.      0.480    36
+#> 1 dark_house      1867.  122.    1627.    2106.      0.489    36
+#> 2 open            1952.  216.    1529.    2375.      0.511    36
 #> # ℹ 1 more variable: total_effort_hr_on_ice <dbl>
 ```
 
@@ -309,17 +311,17 @@ print(cpue_est)
 #> Method: Ratio-of-Means CPUE
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Unit: fish/party-hour
+#> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.198 0.0121    0.174    0.222    60
+#>   estimate      se ci_lower ci_upper     n
+#>      <dbl>   <dbl>    <dbl>    <dbl> <int>
+#> 1    0.121 0.00828    0.104    0.137    60
 ```
 
-The `estimate` column is walleye per hour-on-ice, with a standard error
-and 95% confidence interval. The `n` column counts the number of
-complete interviews used in the ratio.
+The `estimate` column is walleye per angler-hour on the ice, with a
+standard error and 95% confidence interval. The `n` column counts the
+number of complete interviews used in the ratio.
 
 ## Total Catch Estimation
 
@@ -363,6 +365,28 @@ entire survey period. The standard error and 95% confidence interval
 come from Taylor linearization on the Horvitz-Thompson sum, not from the
 delta method — there is no product of two estimates here whose
 uncertainty would need propagating.
+
+## Results as Data
+
+Each estimate converts to a tibble with its method, variance method and
+unit as columns, and plots with its confidence interval:
+
+``` r
+
+tibble::as_tibble(effort_by_shelter)
+#> # A tibble: 2 × 13
+#>   shelter_mode estimate    se ci_lower ci_upper proportion     n
+#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <int>
+#> 1 dark_house      1867.  122.    1627.    2106.      0.489    36
+#> 2 open            1952.  216.    1529.    2375.      0.511    36
+#> # ℹ 6 more variables: total_effort_hr_on_ice <dbl>, method <chr>,
+#> #   variance_method <chr>, conf_level <dbl>, effort_target <chr>, unit <chr>
+
+ggplot2::autoplot(effort_by_shelter)
+```
+
+![Effort estimates for open and dark-house anglers with 95 percent
+confidence intervals.](ice-fishing_files/figure-html/results-1.png)
 
 ## References
 

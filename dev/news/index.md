@@ -93,6 +93,38 @@
 
 ### New features
 
+- The survey-type articles were checked against what the package reports
+  ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),
+  How-to section). None computed a wrong number; several described their
+  numbers wrongly:
+
+  - [`vignette("bus-route-surveys")`](https://chrischizinski.com/tidycreel/dev/articles/bus-route-surveys.md)
+    presented its example as Malvestuto (1996) Box 20.6 and its total as
+    a published result. Box 20.6 has no bus-route example; the page now
+    says which figure is published (site C’s 287.5) and which are
+    constructed.
+  - The bus-route, ice and aerial pages called party-hours
+    “angler-hours”. `example_ice_interviews` and
+    `example_aerial_interviews` gain an `n_anglers` party-size column
+    (existing columns unchanged), and the pages pass it, so effort and
+    rates are in angler-hours. On the aerial page the total catch is now
+    1838.4 fish, not 3507.6 in an unknown unit.
+    [`vignette("aerial-glmm")`](https://chrischizinski.com/tidycreel/dev/articles/aerial-glmm.md)
+    still leaves party size out, on purpose, to show the warning.
+  - [`vignette("aerial-surveys")`](https://chrischizinski.com/tidycreel/dev/articles/aerial-surveys.md)
+    said aerial effort uses the mean trip duration from interviews. It
+    does not: effort comes from the counts alone. The estimator formula
+    now includes the angler ratio.
+  - [`vignette("aerial-glmm")`](https://chrischizinski.com/tidycreel/dev/articles/aerial-glmm.md)
+    described the integration window and scaling wrongly; it now matches
+    the code. Its convergence warning is explained and open as
+    [\#492](https://github.com/chrischizinski/tidycreel/issues/492).
+  - [`suppressWarnings()`](https://rdrr.io/r/base/warning.html) was
+    removed from the camera and aerial pages: it hid warnings the text
+    explained, or nothing at all.
+  - Every page now ends with `as_tibble()` and a plot, and all five are
+    checked by `just vignette-warnings`.
+
 - [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)
   is now a tutorial that analyses one complete season
   ([\#480](https://github.com/chrischizinski/tidycreel/issues/480)):

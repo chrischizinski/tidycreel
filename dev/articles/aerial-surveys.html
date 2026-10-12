@@ -108,22 +108,22 @@
 <p>Aerial creel surveys estimate total angler effort by conducting an
 instantaneous count of anglers on the water from a low-flying aircraft.
 Because the aircraft captures a snapshot of angler activity at a single
-moment, the count must be expanded to total effort using the hours the
-fishery is open (<code>h_open</code>) and the mean trip duration of
-anglers on the water (<code>L_bar</code>). The basic estimator is:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><msub><mi>N</mi><mrow><mi>o</mi><mi>b</mi><mi>s</mi></mrow></msub><mo>×</mo><mfrac><msub><mi>h</mi><mrow><mi>o</mi><mi>p</mi><mi>e</mi><mi>n</mi></mrow></msub><mi>v</mi></mfrac></mrow><annotation encoding="application/x-tex">\hat{E} = N_{obs} \times \frac{h_{open}}{v}</annotation></semantics></math></p>
+moment, the count must be expanded to a day’s effort using the hours the
+fishery is open (<code>h_open</code>). The basic estimator for a day
+is:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><msub><mi>N</mi><mrow><mi>o</mi><mi>b</mi><mi>s</mi></mrow></msub><mo>×</mo><msub><mi>h</mi><mrow><mi>o</mi><mi>p</mi><mi>e</mi><mi>n</mi></mrow></msub><mo>×</mo><mfrac><mi>a</mi><mi>v</mi></mfrac></mrow><annotation encoding="application/x-tex">\hat{E} = N_{obs} \times h_{open} \times \frac{a}{v}</annotation></semantics></math></p>
 <p>where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>N</mi><mrow><mi>o</mi><mi>b</mi><mi>s</mi></mrow></msub><annotation encoding="application/x-tex">N_{obs}</annotation></semantics></math>
-is the observed (instantaneous) angler count,
+is the observed (instantaneous) count,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>h</mi><mrow><mi>o</mi><mi>p</mi><mi>e</mi><mi>n</mi></mrow></msub><annotation encoding="application/x-tex">h_{open}</annotation></semantics></math>
-is the number of hours the fishery is open per day, and
+is the number of hours the fishery is open per day,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>a</mi><annotation encoding="application/x-tex">a</annotation></semantics></math>
+is the angler ratio (the proportion of people counted who are anglers; 1
+when every person counted is fishing), and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>v</mi><annotation encoding="application/x-tex">v</annotation></semantics></math>
 is the <strong>detection probability</strong> — the proportion of
-anglers present that are detected from the aircraft. The mean trip
-duration
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>L</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar{L}</annotation></semantics></math>
-is estimated from ground interviews and enters the catch rate estimation
-step rather than the effort expansion step.</p>
+anglers present that are detected from the aircraft. Effort comes from
+the counts alone; ground interviews supply the catch rate.</p>
 <p>When not all anglers are visible from the air — for example, anglers
 fishing under tree cover or in enclosed shelters — a <strong>visibility
 correction</strong> adjusts the count upward. If observers detect only
@@ -205,13 +205,13 @@ summer walleye and bass fishery at a Nebraska reservoir in June-July
 <span><span class="co">#&gt; 4 2024-06-05  weekday    complete          4.9             1            0</span></span>
 <span><span class="co">#&gt; 5 2024-06-05  weekday    complete          2.2             1            0</span></span>
 <span><span class="co">#&gt; 6 2024-06-05  weekday    complete          2.3             1            0</span></span>
-<span><span class="co">#&gt;   bass_catch bass_kept</span></span>
-<span><span class="co">#&gt; 1          0         0</span></span>
-<span><span class="co">#&gt; 2          0         0</span></span>
-<span><span class="co">#&gt; 3          0         0</span></span>
-<span><span class="co">#&gt; 4          1         0</span></span>
-<span><span class="co">#&gt; 5          0         0</span></span>
-<span><span class="co">#&gt; 6          1         1</span></span></code></pre></div>
+<span><span class="co">#&gt;   bass_catch bass_kept n_anglers</span></span>
+<span><span class="co">#&gt; 1          0         0         2</span></span>
+<span><span class="co">#&gt; 2          0         0         2</span></span>
+<span><span class="co">#&gt; 3          0         0         2</span></span>
+<span><span class="co">#&gt; 4          1         0         2</span></span>
+<span><span class="co">#&gt; 5          0         0         1</span></span>
+<span><span class="co">#&gt; 6          1         1         3</span></span></code></pre></div>
 <p><code>example_aerial_counts</code> contains 16 sampling days (one
 overflight per day), each recording an instantaneous count of anglers on
 the water. Weekday counts range from 15 to 40 anglers; weekend counts
@@ -274,26 +274,26 @@ the number of sampling days in each stratum.</p>
 variable.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_aerial_counts</span><span class="op">)</span></span></code></pre></div>
-<p>Aerial effort estimation requires interview data to be attached
-before calling <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>, because the estimator
-uses the mean trip duration
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>L</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar{L}</annotation></semantics></math>)
-from ground interviews to confirm the expansion factor. Attach the
-interview data with <code><a href="../reference/add_interviews.html">add_interviews()</a></code>, then estimate total
-effort.</p>
+<p>Aerial effort comes from the counts alone: each day’s count times
+<code>h_open</code>, scaled by the angler ratio and the visibility
+correction. Interviews are not needed for effort; they supply the catch
+rate later on. They are attached here so the same design serves both.
+Each row is a party, so <code>n_anglers</code> gives its size and the
+catch rate comes out per angler-hour, the unit of aerial effort.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design</span>,</span>
 <span>  <span class="va">example_aerial_interviews</span>,</span>
 <span>  catch       <span class="op">=</span> <span class="va">walleye_catch</span>,</span>
 <span>  effort      <span class="op">=</span> <span class="va">hours_fished</span>,</span>
-<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span>
-<span><span class="op">)</span><span class="op">)</span></span>
+<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_anglers   <span class="op">=</span> <span class="va">n_anglers</span></span>
+<span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 15 interviews have zero catch.</span></span>
 <span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 48 interviews: 48 complete (100%), 0 incomplete (0%)</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -311,9 +311,15 @@ effort.</p>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">8</span>918    <span style="color: #BB0000;">NA</span>       658.         0       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16</span></span></code></pre></div>
-<p>The <code>estimate</code> column is the projected total angler-hours
-over the full survey period, and <code>se_between</code> quantifies
-between-day variability in the instantaneous counts.</p>
+<p>The <code>estimate</code> column is the total angler-hours over the
+calendar given to <code><a href="../reference/creel_design.html">creel_design()</a></code>, and
+<code>se_between</code> quantifies between-day variability in the
+instantaneous counts. This calendar holds only the 16 flown days, so the
+total covers those days. If your calendar lists every day of the season,
+flown or not, ask for the season total with
+<code>target = "period_total"</code>; the default,
+<code>"sampled_days"</code>, totals only the days flown (see
+<code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>).</p>
 <p><code>se</code>, <code>ci_lower</code> and <code>ci_upper</code> are
 <code>NA</code>, and that is the correct output for this design rather
 than a gap in it. <code><a href="../reference/creel_design.html">creel_design()</a></code> above was given
@@ -352,18 +358,19 @@ rather than treating 0.85 as exactly known.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_corr</span>, <span class="va">example_aerial_counts</span><span class="op">)</span></span>
-<span><span class="va">design_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
+<span><span class="va">design_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design_corr</span>,</span>
 <span>  <span class="va">example_aerial_interviews</span>,</span>
 <span>  catch       <span class="op">=</span> <span class="va">walleye_catch</span>,</span>
 <span>  effort      <span class="op">=</span> <span class="va">hours_fished</span>,</span>
-<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span>
-<span><span class="op">)</span><span class="op">)</span></span>
+<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_anglers   <span class="op">=</span> <span class="va">n_anglers</span></span>
+<span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 15 interviews have zero catch.</span></span>
 <span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 48 interviews: 48 complete (100%), 0 incomplete (0%)</span></span>
 <span></span>
-<span><span class="va">effort_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_corr</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">effort_corr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_corr</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_corr</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -400,7 +407,7 @@ count to account for undetected anglers.</p>
 (walleye per angler-hour) from the complete-trip interviews already
 attached to the design.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">catch_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">catch_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=48, 100% of 48 interviews) [default]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_rate</span><span class="op">)</span></span>
@@ -409,17 +416,17 @@ attached to the design.</p>
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Unit: fish/party-hour</span></span>
+<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.413 0.060<span style="text-decoration: underline;">1</span>    0.295    0.531    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.217 0.033<span style="text-decoration: underline;">9</span>    0.151    0.284    48</span></span></code></pre></div>
 <p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> multiplies the CPUE estimate by
 the total effort estimate to project total walleye catch over the survey
 period.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -427,11 +434,12 @@ period.</p>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Unit: fish</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>508.    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>838.    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p>The delta-method standard error on total catch accounts for variance
 in both the effort estimate and the CPUE estimate, and for the
 visibility correction and angler ratio, which scale every stratum’s
@@ -440,6 +448,22 @@ effort and so enter the total once. This design declares
 unknown and the SE prints as <code>NA</code>, as the effort SE does; the
 <code>design_corr</code> design above, with <code>visibility_se</code>,
 gives a finite one.</p>
+</div>
+<div class="section level2">
+<h2 id="results-as-data">Results as Data<a class="anchor" aria-label="anchor" href="#results-as-data"></a>
+</h2>
+<p>Each estimate converts to a tibble with its method, variance method
+and unit as columns, and plots with its confidence interval:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">total_catch</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 11</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n method        estimator variance_method</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>838.    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48 product-tota… ratio-of… taylor         </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: conf_level &lt;dbl&gt;, effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
+<span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">effort_corr</span><span class="op">)</span></span></code></pre></div>
+<p><img src="aerial-surveys_files/figure-html/results-1.png" class="r-plt" alt="Visibility-corrected aerial effort estimate with its 95 percent confidence interval." width="576"></p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>

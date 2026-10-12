@@ -14,7 +14,7 @@ example_aerial_interviews
 
 ## Format
 
-A data frame with 48 rows and 8 variables:
+A data frame with 48 rows and 9 variables:
 
 - date:
 
@@ -30,9 +30,10 @@ A data frame with 48 rows and 8 variables:
 
 - hours_fished:
 
-  Numeric trip duration in hours (range 1.0-5.0). This column feeds the
-  mean trip duration (\\\bar{L}\\) used in
+  Numeric hours the party fished (range 1.0-5.0): the effort term of the
+  catch rate in
   [`estimate_catch_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md).
+  Aerial effort itself comes from the counts, not from these hours.
 
 - walleye_catch:
 
@@ -49,6 +50,12 @@ A data frame with 48 rows and 8 variables:
 - bass_kept:
 
   Integer bass harvested; always `<= bass_catch`.
+
+- n_anglers:
+
+  Integer number of anglers in the party (1-4). Pass it to
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  so the catch rate is per angler-hour, the unit of aerial effort.
 
 ## Source
 
@@ -109,17 +116,18 @@ design <- creel_design(
   h_open = 14
 )
 design <- add_counts(design, example_aerial_counts)
-design <- suppressWarnings(add_interviews(
+design <- add_interviews(
   design,
   example_aerial_interviews,
   catch = walleye_catch,
   effort = hours_fished,
-  trip_status = trip_status
-))
+  trip_status = trip_status,
+  n_anglers = n_anglers
+)
 #> ℹ 15 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
-suppressWarnings(estimate_catch_rate(design))
+estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=48, 100% of 48 interviews) [default]
 #> 
@@ -127,10 +135,10 @@ suppressWarnings(estimate_catch_rate(design))
 #> Method: Ratio-of-Means CPUE
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Unit: fish/party-hour
+#> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.413 0.0601    0.295    0.531    48
+#> 1    0.217 0.0339    0.151    0.284    48
 ```

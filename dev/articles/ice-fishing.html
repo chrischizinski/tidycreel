@@ -184,7 +184,14 @@ ice fishing pressure is concentrated on Saturday and Sunday.</p>
 <span><span class="co">#&gt; 3             1           3            1          2    complete         open</span></span>
 <span><span class="co">#&gt; 4             3           0            2          0    complete   dark_house</span></span>
 <span><span class="co">#&gt; 5             1           4            1          3  incomplete   dark_house</span></span>
-<span><span class="co">#&gt; 6             0           6            0          4    complete   dark_house</span></span></code></pre></div>
+<span><span class="co">#&gt; 6             0           6            0          4    complete   dark_house</span></span>
+<span><span class="co">#&gt;   n_anglers</span></span>
+<span><span class="co">#&gt; 1         2</span></span>
+<span><span class="co">#&gt; 2         1</span></span>
+<span><span class="co">#&gt; 3         3</span></span>
+<span><span class="co">#&gt; 4         1</span></span>
+<span><span class="co">#&gt; 5         1</span></span>
+<span><span class="co">#&gt; 6         1</span></span></code></pre></div>
 <p>The sampling frame records the survey calendar and the period
 sampling probability (<code>p_period = 0.5</code> means each day had a
 50% chance of being sampled). The interview data contains 72 interviews
@@ -246,7 +253,9 @@ design. For ice surveys, <code>n_counted</code> and
 <code>n_interviewed</code> are required — they record how many parties
 were counted at the access point versus how many were actually
 interviewed during each visit, providing the enumeration expansion
-factor.</p>
+factor. Each row is a party, so <code>n_anglers</code> gives its size:
+hours on the ice times party size is the party’s angler-hours. Without
+it, effort would be in party-hours.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design</span>,</span>
@@ -256,13 +265,9 @@ factor.</p>
 <span>  harvest       <span class="op">=</span> <span class="va">walleye_kept</span>,</span>
 <span>  trip_status   <span class="op">=</span> <span class="va">trip_status</span>,</span>
 <span>  n_counted     <span class="op">=</span> <span class="va">n_counted</span>,</span>
-<span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span></span>
+<span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span>,</span>
+<span>  n_anglers     <span class="op">=</span> <span class="va">n_anglers</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
-<span><span class="co">#&gt;   normalization.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
-<span><span class="co">#&gt;   that and silence this warning.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 23 interviews have zero catch.</span></span>
 <span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 72 interviews: 60 complete (83%), 12 incomplete (17%)</span></span></code></pre></div>
@@ -286,12 +291,12 @@ with <code>effort_type = "time_on_ice"</code>.</p>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; Unit: party-hours</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>406.  74.6    <span style="text-decoration: underline;">2</span>260.    <span style="text-decoration: underline;">2</span>552.    72                  <span style="text-decoration: underline;">2</span>406.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>819.  261.    <span style="text-decoration: underline;">3</span>308.    <span style="text-decoration: underline;">4</span>330.    72                  <span style="text-decoration: underline;">3</span>819.</span></span></code></pre></div>
 <p>To demonstrate the column-naming distinction, rebuild the design
 using <code>effort_type = "active_fishing_time"</code> and the
 <code>active_fishing_hours</code> column from the interview data. The
@@ -315,13 +320,9 @@ effort-type column is then labeled <code>total_effort_hr_active</code>;
 <span>  harvest       <span class="op">=</span> <span class="va">walleye_kept</span>,</span>
 <span>  trip_status   <span class="op">=</span> <span class="va">trip_status</span>,</span>
 <span>  n_counted     <span class="op">=</span> <span class="va">n_counted</span>,</span>
-<span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span></span>
+<span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span>,</span>
+<span>  n_anglers     <span class="op">=</span> <span class="va">n_anglers</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
-<span><span class="co">#&gt;   normalization.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
-<span><span class="co">#&gt;   that and silence this warning.</span></span>
 <span></span>
 <span><span class="va">effort_aft</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_aft</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_aft</span><span class="op">)</span></span>
@@ -331,12 +332,12 @@ effort-type column is then labeled <code>total_effort_hr_active</code>;
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; Unit: party-hours</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n total_effort_hr_active</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>990.  69.1    <span style="text-decoration: underline;">1</span>855.    <span style="text-decoration: underline;">2</span>126.    72                  <span style="text-decoration: underline;">1</span>990.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>148.  216.    <span style="text-decoration: underline;">2</span>725.    <span style="text-decoration: underline;">3</span>571.    72                  <span style="text-decoration: underline;">3</span>148.</span></span></code></pre></div>
 <p>Active fishing hours are shorter than time-on-ice because they
 exclude travel, setup, and breaks. The difference between the two
 estimates reflects the non-fishing portion of each trip.</p>
@@ -358,13 +359,13 @@ interview data split by the grouping variable.</p>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: shelter_mode</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; Unit: party-hours</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>250.  56.7    <span style="text-decoration: underline;">1</span>139.    <span style="text-decoration: underline;">1</span>361.      0.520    36</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>156.  23.6    <span style="text-decoration: underline;">1</span>109.    <span style="text-decoration: underline;">1</span>202.      0.480    36</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: total_effort_hr_on_ice &lt;dbl&gt;</span></span></span></code></pre></div>
 <p>The <code>proportion</code> column shows each shelter group’s share
 of total effort. Dark-house anglers tend to fish longer hours on
@@ -387,15 +388,16 @@ rates.</p>
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Unit: fish/party-hour</span></span>
+<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.198 0.012<span style="text-decoration: underline;">1</span>    0.174    0.222    60</span></span></code></pre></div>
-<p>The <code>estimate</code> column is walleye per hour-on-ice, with a
-standard error and 95% confidence interval. The <code>n</code> column
-counts the number of complete interviews used in the ratio.</p>
+<span><span class="co">#&gt;   estimate      se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.121 0.008<span style="text-decoration: underline;">28</span>    0.104    0.137    60</span></span></code></pre></div>
+<p>The <code>estimate</code> column is walleye per angler-hour on the
+ice, with a standard error and 95% confidence interval. The
+<code>n</code> column counts the number of complete interviews used in
+the ratio.</p>
 </div>
 <div class="section level2">
 <h2 id="total-catch-estimation">Total Catch Estimation<a class="anchor" aria-label="anchor" href="#total-catch-estimation"></a>
@@ -437,6 +439,24 @@ across the entire survey period. The standard error and 95% confidence
 interval come from Taylor linearization on the Horvitz-Thompson sum, not
 from the delta method — there is no product of two estimates here whose
 uncertainty would need propagating.</p>
+</div>
+<div class="section level2">
+<h2 id="results-as-data">Results as Data<a class="anchor" aria-label="anchor" href="#results-as-data"></a>
+</h2>
+<p>Each estimate converts to a tibble with its method, variance method
+and unit as columns, and plots with its confidence interval:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">effort_by_shelter</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 13</span></span></span>
+<span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 6 more variables: total_effort_hr_on_ice &lt;dbl&gt;, method &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;, effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
+<span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">effort_by_shelter</span><span class="op">)</span></span></code></pre></div>
+<p><img src="ice-fishing_files/figure-html/results-1.png" class="r-plt" alt="Effort estimates for open and dark-house anglers with 95 percent confidence intervals." width="576"></p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

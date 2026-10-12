@@ -164,8 +164,7 @@ interviewed, the expansion factor</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">expansion</mtext><mo>=</mo><mfrac><mrow><mi>n</mi><mi>_</mi><mi>c</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi></mrow><mrow><mi>n</mi><mi>_</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><mi>d</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\text{expansion} = \frac{n\_counted}{n\_interviewed}</annotation></semantics></math></p>
 <p>rescales the interviewed data so it represents all parties. If all
 parties are interviewed (n_counted = n_interviewed), the expansion is 1
-and no adjustment is needed. This is the case in Malvestuto (1996) Box
-20.6 Example 1, used in this vignette.</p>
+and no adjustment is needed, as in the example below.</p>
 </div>
 <div class="section level3">
 <h3 id="horvitz-thompson-estimator">Horvitz-Thompson Estimator<a class="anchor" aria-label="anchor" href="#horvitz-thompson-estimator"></a>
@@ -201,16 +200,22 @@ heterogeneity of site probabilities.</p>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mi>p</mi><mi>_</mi><mi>s</mi><mi>i</mi><mi>t</mi><mi>e</mi><mo>×</mo><mi>p</mi><mi>_</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">\pi_i = p\_site \times p\_period</annotation></semantics></math>
 directly from the sampling frame you supply to
 <code><a href="../reference/creel_design.html">creel_design()</a></code>. This matches the primary source definition
-in Jones &amp; Pollock (2012, p. 912) and the worked example in
-Malvestuto (1996, Box 20.6). The implementation is validated against
-that published example in the package test suite.</p>
+in Jones &amp; Pollock (2012, p. 912). Malvestuto (1996, Box 20.6)
+applies the same rule in its worked access-point and roving examples,
+dividing each observed effort by its selection probability; the package
+test suite reproduces its Example 1 and Example 2 figures.</p>
 </div>
 <div class="section level2">
 <h2 id="step-by-step-example">Step-by-Step Example<a class="anchor" aria-label="anchor" href="#step-by-step-example"></a>
 </h2>
-<p>We demonstrate the full bus-route workflow using the data from
-Malvestuto (1996) Box 20.6, Example 1 — a four-site, single-circuit
-survey with 15 interviews over four days.</p>
+<p>We demonstrate the full bus-route workflow on a small constructed
+example: a four-site, single-circuit survey with 15 interviews over four
+days. Site C borrows its numbers from Malvestuto (1996) Box 20.6,
+Example 1, an access-point example in which six parties of 11 anglers
+fished 57.5 angler-hours at a landing selected with probability 0.20.
+Sites A, B and D are invented so the bus-route sum has several sites to
+add. Box 20.6 contains no bus-route example, so the totals below are
+this example’s own arithmetic, not published figures.</p>
 <div class="section level3">
 <h3 id="step-1-define-the-sampling-design">Step 1: Define the Sampling Design<a class="anchor" aria-label="anchor" href="#step-1-define-the-sampling-design"></a>
 </h3>
@@ -287,6 +292,14 @@ Site D’s (πᵢ = 0.025).</p>
 many parties were at the site vs. how many were actually interviewed. In
 this example both are equal (no expansion needed), but the columns must
 still be supplied for bus-route designs.</p>
+<p>Each party’s effort is recorded here as angler-hours: the hours
+fished times the number of anglers in the party, which is how Box 20.6
+reports it. Because the column already counts every angler,
+<code>n_anglers = 1</code> tells <code><a href="../reference/add_interviews.html">add_interviews()</a></code> to take
+each value as it stands. If your sheet records hours per party and party
+size separately, pass the hours as <code>effort</code> and the party
+size as <code>n_anglers</code> instead, and tidycreel multiplies
+them.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 15 interviews across 4 sites and 4 days</span></span>
 <span><span class="co"># Site A: 4 interviews (all 4 parties interviewed)</span></span>
@@ -312,7 +325,7 @@ still be supplied for bus-route designs.</p>
 <span>    <span class="st">"C"</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  circuit <span class="op">=</span> <span class="st">"circ1"</span>,</span>
-<span>  hours_fished <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  angler_hours <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="fl">7.5</span>, <span class="fl">7.5</span>, <span class="fl">7.5</span>, <span class="fl">7.5</span>, <span class="co"># Site A: 4 x 7.5 = 30 h total</span></span>
 <span>    <span class="fl">20.0</span> <span class="op">/</span> <span class="fl">3</span>, <span class="fl">20.0</span> <span class="op">/</span> <span class="fl">3</span>, <span class="fl">20.0</span> <span class="op">/</span> <span class="fl">3</span>, <span class="co"># Site B: 3 x 6.67 = 20 h total</span></span>
 <span>    <span class="fl">57.5</span> <span class="op">/</span> <span class="fl">6</span>, <span class="fl">57.5</span> <span class="op">/</span> <span class="fl">6</span>, <span class="fl">57.5</span> <span class="op">/</span> <span class="fl">6</span>, <span class="co"># Site C rows 1-3</span></span>
@@ -359,18 +372,14 @@ still be supplied for bus-route designs.</p>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design</span>,</span>
 <span>  <span class="va">interviews_raw</span>,</span>
-<span>  effort        <span class="op">=</span> <span class="va">hours_fished</span>,</span>
+<span>  effort        <span class="op">=</span> <span class="va">angler_hours</span>,</span>
 <span>  catch         <span class="op">=</span> <span class="va">fish_caught</span>,</span>
 <span>  harvest       <span class="op">=</span> <span class="va">fish_kept</span>,</span>
 <span>  n_counted     <span class="op">=</span> <span class="va">n_counted</span>,</span>
 <span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span>,</span>
-<span>  trip_status   <span class="op">=</span> <span class="va">trip_status</span></span>
+<span>  trip_status   <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_anglers     <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
-<span><span class="co">#&gt;   normalization.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
-<span><span class="co">#&gt;   that and silence this warning.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 15 interviews: 15 complete (100%), 0 incomplete (0%)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -384,7 +393,7 @@ still be supplied for bus-route designs.</p>
 <span><span class="co">#&gt; Interviews: <span style="color: #0000BB;">15</span> observations</span></span>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"access"</span></span></span>
 <span><span class="co">#&gt; Catch: <span style="color: #00BB00;">fish_caught</span></span></span>
-<span><span class="co">#&gt; Effort: <span style="color: #00BB00;">hours_fished</span></span></span>
+<span><span class="co">#&gt; Effort: <span style="color: #00BB00;">angler_hours</span></span></span>
 <span><span class="co">#&gt; Harvest: <span style="color: #00BB00;">fish_kept</span></span></span>
 <span><span class="co">#&gt; Trip status: 15 complete, 0 incomplete</span></span>
 <span><span class="co">#&gt; Survey: <span style="color: #0000BB;">&lt;survey.design2&gt;</span> (constructed)</span></span>
@@ -429,7 +438,7 @@ and computes
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; Unit: party-hours</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
@@ -466,31 +475,47 @@ relatively frequent sampling.</p>
 angler-hours. Though Site D has little observed effort, its low sampling
 probability means it represents a much larger population of fishing
 activity.</p>
-<p>The total E_hat = 847.5 angler-hours matches Malvestuto (1996) Box
-20.6 Example 1 exactly.</p>
+<p>Site C’s 287.5 angler-hours is the figure Box 20.6 publishes for its
+Example 1 landing; the total of 847.5 angler-hours adds the three
+constructed sites.</p>
 </div>
 <div class="section level3">
-<h3 id="step-4-estimate-harvest">Step 4: Estimate Harvest<a class="anchor" aria-label="anchor" href="#step-4-estimate-harvest"></a>
+<h3 id="step-4-estimate-catch-and-harvest">Step 4: Estimate Catch and Harvest<a class="anchor" aria-label="anchor" href="#step-4-estimate-catch-and-harvest"></a>
 </h3>
-<p><code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> applies the same
-Horvitz-Thompson logic to fish kept.</p>
+<p><code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> gives fish kept per angler-hour.
+The totals apply the same Horvitz-Thompson logic as effort, dividing
+each party’s fish by its inclusion probability and summing.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Estimate total fish kept (harvest)</span></span>
-<span><span class="va">harvest_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">harvest_est</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Fish kept per angler-hour</span></span>
+<span><span class="va">harvest_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">harvest_rate</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Ratio-of-Means HPUE</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Unit: fish/party-hour</span></span>
+<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.058<span style="text-decoration: underline;">2</span> 0.016<span style="text-decoration: underline;">0</span>   0.026<span style="text-decoration: underline;">9</span>   0.089<span style="text-decoration: underline;">6</span>    15</span></span>
 <span></span>
-<span><span class="co"># Estimate total catch (kept + released)</span></span>
+<span><span class="co"># Total fish kept (harvest) and total fish caught (kept + released)</span></span>
+<span><span class="va">harvest_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">harvest_est</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Total Harvest (Horvitz-Thompson)</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Unit: fish</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     49.3  17.8     14.4     84.3    15</span></span>
+<span></span>
 <span><span class="va">catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -505,15 +530,31 @@ Horvitz-Thompson logic to fish kept.</p>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     180.  30.0     122.     239.    15</span></span></code></pre></div>
 </div>
+<div class="section level3">
+<h3 id="step-5-results-as-data">Step 5: Results as Data<a class="anchor" aria-label="anchor" href="#step-5-results-as-data"></a>
+</h3>
+<p>Each estimate converts to a tibble with its method, variance method
+and unit as columns, ready for <code>dplyr</code> or a report table, and
+plots with its confidence interval:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 9</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n method variance_method conf_level unit </span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     180.  30.0     122.     239.    15 ht-to… taylor                0.95 fish</span></span>
+<span></span>
+<span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span></code></pre></div>
+<p><img src="bus-route-surveys_files/figure-html/results-1.png" class="r-plt" alt="Total catch estimate with its 95 percent confidence interval." width="576"></p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="validation">Validation<a class="anchor" aria-label="anchor" href="#validation"></a>
+<h2 id="checking-the-arithmetic">Checking the Arithmetic<a class="anchor" aria-label="anchor" href="#checking-the-arithmetic"></a>
 </h2>
-<p>The effort estimate above (E_hat = 847.5 angler-hours) reproduces the
-published result from Malvestuto (1996) Box 20.6 Example 1 exactly. This
-agreement is verified by the package test suite in
-<code>tests/testthat/test-primary-source-validation.R</code>. Each of
-the four site contributions matches:</p>
+<p>Each site contributes its observed effort divided by its inclusion
+probability. Site C’s row is the one figure published in Malvestuto
+(1996) Box 20.6 (Example 1); the rest are this example’s own arithmetic.
+<code>tests/testthat/test-primary-source-validation.R</code> checks
+both, and labels which is which.</p>
 <table class="table">
 <thead><tr class="header">
 <th>Site</th>

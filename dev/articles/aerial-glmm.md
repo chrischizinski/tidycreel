@@ -61,8 +61,8 @@ count), and `time_of_flight` (decimal hour of each overflight).
 
 Build an aerial `creel_design` from the survey dates and attach the
 count data. The `h_open = 14` argument specifies the number of hours the
-fishery is open each day — this enters the final expansion after the
-diurnal curve is integrated.
+fishery is open each day; it sets the length of the window over which
+the diurnal curve is integrated.
 
 ``` r
 
@@ -110,6 +110,18 @@ print(design)
 #> Angler ratio SE: 0
 ```
 
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+warns that the 48 rows repeat 12 sampling days with no count time to
+tell them apart. For most estimators that is a mistake, and
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+refuses such a design. Here it is the point: the GLMM needs each
+overflight as its own row, and it models the repeats through the
+day-level random intercept. So the warning is expected on a design built
+for
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md).
+The comparison further down builds a second design with
+`count_time_col`, for the simple estimator.
+
 ## GLMM Effort Estimation
 
 Call
@@ -143,10 +155,22 @@ print(glmm_result)
 ```
 
 The model fits the diurnal count curve over all 48 observations, then
-numerically integrates the predicted mean count across the full
-open-water window (from 0.5 hours before the earliest flight to 0.5
-hours after the latest). The integrated area is scaled by
-`h_open / visibility_correction` to convert counts to angler-hours.
+numerically integrates the predicted mean count over a window `h_open`
+hours long. The window starts at `open_start` if
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+was given one, and otherwise 0.5 hours before the earliest flight. The
+integral is already in people-hours, so it is scaled by the angler ratio
+and the visibility correction (`angler_ratio / visibility_correction`)
+and not by `h_open` again.
+
+The fit also warns `iteration limit reached`. That comes from
+[`lme4::glmer.nb()`](https://rdrr.io/pkg/lme4/man/glmer.nb.html), whose
+estimate of the negative-binomial dispersion did not settle within its
+iteration limit on these 48 counts. It is a convergence warning about
+this example, left visible rather than suppressed, and is open as
+tidycreel issue \#492 along with other points about this estimator.
+Treat the estimate below with that in mind, and check convergence on
+your own data.
 
 ## Variance and Confidence Intervals
 
@@ -276,20 +300,23 @@ print(total_catch)
 #> 1    3508.    NA       NA       NA    48
 ```
 
-`example_aerial_interviews` carries no party-size column, so
+This example leaves out on purpose the party size that
+`example_aerial_interviews` carries (`n_anglers`), to show what happens
+without it.
 [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
-cannot normalise effort to angler-hours and
+warns that it is assuming one angler per interview, and
 [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
 warns that the CPUE it multiplies is per *party*-hour while the
-count-derived effort is angler-hours. The warning is correct for this
-dataset and is left visible rather than suppressed: with one angler per
-party the total is right as printed, and with larger parties it is
-**overstated** — by the mean party size, because the party-hour rate is
-multiplied by an effort that already counts every angler. Supplying
-`n_anglers = 2` on this example halves the total, from 3507.6 to 1753.8.
+count-derived effort is angler-hours. Both warnings are correct and are
+left visible: with one angler per party the total is right as printed,
+and with larger parties it is **overstated**, roughly by the mean party
+size, because a party-hour rate is multiplied by an effort that already
+counts every angler. Here the total is 3507.6 with an unknown unit;
+passing `n_anglers = n_anglers` gives 1838.4 fish, as in
+[`vignette("aerial-surveys")`](https://chrischizinski.com/tidycreel/dev/articles/aerial-surveys.md).
 Supply `n_anglers` from your own interview data, or state a constant
 party size (`n_anglers = 1`) when every interview really is a single
-angler, to remove the ambiguity.
+angler.
 
 The total’s standard error prints as `NA`. This design declares
 `visibility_correction = "none"`: no detection study was done, so the
@@ -361,7 +388,7 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.545 sampled_days
+#> 1   GLMM 4728.546 sampled_days
 #> 2 Simple 5092.500 sampled_days
 ```
 
@@ -465,12 +492,42 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 581.6956
+#> [1] 581.6951
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 536.0884
+#> [1] 536.0893
 ```
+
+## Results as Data
+
+The per-stratum result converts to a tibble with its method and variance
+method as columns, and plots. This design declares
+`visibility_correction = "none"`, so its intervals are `NA` (see above)
+and the plot shows the point estimates alone; a design with
+`visibility_se` draws an interval around each.
+
+``` r
+
+tibble::as_tibble(glmm_by_day)
+#> # A tibble: 2 × 13
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n method   
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
+#> 1 weekday     3603.  436.       436.        NA    2750.    4457.    32 aerial_g…
+#> 2 weekend     1960.  312.       312.        NA    1347.    2572.    16 aerial_g…
+#> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
+#> #   effort_target <chr>, unit <chr>
+
+ggplot2::autoplot(glmm_by_day)
+```
+
+![GLMM effort point estimates for weekdays and weekends; no confidence
+intervals, because the visibility uncertainty is
+unknown.](aerial-glmm_files/figure-html/results-1.png)
+
+The `unit` column reads `NA`: the GLMM estimator does not yet record
+that its effort is in angler-hours, so the plot axis carries no unit
+either. That is also part of \#492.
 
 ## Custom Formula
 
