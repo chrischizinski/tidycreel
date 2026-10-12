@@ -1743,78 +1743,13 @@ estimate_catch_rate <- function(
       }
     }
 
-    # Apply truncation if specified
-    if (!is.null(truncate_at) && !is.null(design$trip_duration_col)) {
-      # NA duration cannot be shown to clear the threshold, so it is dropped
-      # rather than admitted: `>= truncate_at` on NA yields NA, and a logical
-      # index carrying NA subsets to an all-NA row instead of dropping it. That
-      # phantom row reaches svydesign() as a missing stratum and aborts inside
-      # survey. Mirrors truncate_interviews_for_mor(), which the totals use.
-      #
-      # Counted apart from the short trips and reported on its own: a trip
-      # dropped for having no recorded duration is a missing-data loss, not a
-      # truncation decision.
-      duration_col <- design$trip_duration_col
-      n_before_truncation <- nrow(incomplete_interviews)
-      missing_duration <- is.na(incomplete_interviews[[duration_col]])
-      n_missing_duration <- sum(missing_duration)
-      keep <- !missing_duration & incomplete_interviews[[duration_col]] >= truncate_at
-      n_truncated <- n_before_truncation - sum(keep) - n_missing_duration
-
-      if (n_missing_duration > 0) {
-        cli::cli_warn(c(
-          "{n_missing_duration} interview{?s} dropped for missing trip duration.",
-          "i" = paste(
-            "A trip with no recorded duration cannot be shown to meet the",
-            "{.arg truncate_at} threshold, so it is excluded rather than assumed."
-          ),
-          "i" = "Reported separately from the {n_truncated} trip{?s} excluded as too short."
-        ),
-        class = c("creel_warning_trip_duration_excluded", "creel_warning")
-        )
-      }
-
-      # Use truncated data
-      incomplete_interviews <- incomplete_interviews[keep, , drop = FALSE]
-
-      # An empty sample cannot be estimated from, and left to fall through it
-      # aborts inside rowSums() with "all arguments must have the same length",
-      # which names neither the threshold nor the duration column. The bus-route
-      # path already refuses here; this is the same refusal for the standard one.
-      if (nrow(incomplete_interviews) == 0) {
-        cli::cli_abort(c(
-          "No trips remain for mean-of-ratios estimation.",
-          "x" = paste(
-            "All {n_before_truncation} trip{?s} were shorter than the",
-            "threshold or had no recorded duration."
-          ),
-          "i" = paste(
-            "Lower {.arg truncate_at} (currently {.val {truncate_at}}) or check",
-            "{.val {duration_col}}."
-          )
-        ))
-      }
-
-      # Issue truncation message
-      # Share of the trips that *had* a duration to judge: a trip with none was
-      # never eligible to be short, and it is already reported on its own above.
-      mor_truncation_message(
-        n_truncated,
-        n_before_truncation - n_missing_duration,
-        truncate_at
-      )
-    } else {
-      if (!is.null(truncate_at) && is.null(design$trip_duration_col)) {
-        cli::cli_warn(c(
-          "MOR truncation skipped: no trip duration column in design.",
-          "i" = "Supply {.arg trip_duration} in {.fn add_interviews} to enable truncation.",
-          "i" = "All {nrow(incomplete_interviews)} trip{?s} used without truncation."
-        ),
-        class = c("creel_warning_truncation_skipped", "creel_warning")
-        )
-      }
-      n_truncated <- 0
-    }
+    # Apply truncation if specified. Shared with truncate_interviews_for_mor(),
+    # which the totals use, so each warning and the refusal live in one place.
+    truncation <- apply_mor_truncation( # nolint: object_usage_linter
+      incomplete_interviews, design$trip_duration_col, truncate_at
+    )
+    incomplete_interviews <- truncation$interviews
+    n_truncated <- truncation$n_truncated
 
     # Create new interview survey design with incomplete trips only
     design_incomplete <- design
@@ -3439,17 +3374,8 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at, use_trip
   # effective trip set is "all".
   effective_use_trips <- if (is.null(trip_status_col)) "all" else use_trips
 
-  duration_col <- design$trip_duration_col
-  if (is.null(truncate_at) || is.null(duration_col)) {
-    if (!is.null(truncate_at) && is.null(duration_col)) {
-      cli::cli_warn(c(
-        "MOR truncation skipped: no trip duration column in design.",
-        "i" = "Supply {.arg trip_duration} in {.fn add_interviews} to enable truncation.",
-        "i" = "All {n_total} trip{?s} used without truncation."
-      ),
-      class = c("creel_warning_truncation_skipped", "creel_warning")
-      )
-    }
+  truncation <- apply_mor_truncation(interviews, design$trip_duration_col, truncate_at)
+  if (!truncation$applied) {
     design$mor_n_incomplete <- n_incomplete
     design$mor_n_total <- n_total
     design$mor_truncate_at <- truncate_at
@@ -3458,15 +3384,70 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at, use_trip
     return(design)
   }
 
-  # NA duration cannot be shown to clear the threshold, so it is dropped rather
-  # than admitted: `>= truncate_at` on NA yields NA, and a logical index carrying
-  # NA subsets to an all-NA row instead of dropping it.
-  #
-  # Counted apart from the short trips and reported on its own. A trip dropped
-  # for having no recorded duration is a missing-data loss, not a truncation
-  # decision, and rolling the two into one number leaves a caller unable to tell
-  # a threshold that excluded six short trips from a duration column that is
-  # half empty.
+  kept <- truncation$interviews
+  design <- rebuild_interview_survey(design, kept) # nolint: object_usage_linter
+
+  # Recomputed from the trips that survived, not the set that entered. The
+  # counts are the sample behind the estimate, and reporting the pre-truncation
+  # ones put the banner in contradiction with its own truncation line -- "over
+  # all 48 interviews" printed directly above "Truncation: 12 trips excluded",
+  # when 36 ratios were averaged (GH #276).
+  design$mor_n_incomplete <- if (is.null(trip_status_col)) {
+    NA_integer_
+  } else {
+    sum(tolower(kept[[trip_status_col]]) == "incomplete", na.rm = TRUE)
+  }
+  design$mor_n_total <- nrow(kept)
+  design$mor_truncate_at <- truncate_at
+  design$mor_n_truncated <- truncation$n_truncated
+  design$mor_use_trips <- effective_use_trips
+  design
+}
+
+#' Drop incomplete trips too short for the mean-of-ratios estimator
+#'
+#' The one implementation of MOR truncation, used by [estimate_catch_rate()]
+#' and, through [truncate_interviews_for_mor()], by the harvest and release
+#' rates and the totals. Keeping it in one place keeps the warnings, the
+#' refusal and the report identical on every route (GH #496).
+#'
+#' With `truncate_at = NULL` nothing is dropped. With a threshold but no trip
+#' duration column nothing is dropped either, with a warning, because a
+#' silently untruncated MOR is the infinite-variance estimator wearing the
+#' truncated one's name.
+#'
+#' A trip with a missing duration cannot be shown to clear the threshold, so
+#' it is dropped rather than admitted (`>= truncate_at` on `NA` is `NA`, and a
+#' logical index carrying `NA` subsets to an all-`NA` row). It is counted and
+#' reported apart from the short trips: a missing-data loss is not a
+#' truncation decision, and one combined number would hide a duration column
+#' that is half empty.
+#'
+#' @param interviews Interview data frame, already restricted to the trips the
+#'   rate uses.
+#' @param duration_col Name of the trip duration column, or `NULL`.
+#' @param truncate_at Minimum trip duration in hours, or `NULL`.
+#'
+#' @return A list: `interviews`, the trips kept; `n_truncated`, the trips
+#'   dropped as too short; `applied`, whether truncation ran.
+#'
+#' @keywords internal
+#' @noRd
+apply_mor_truncation <- function(interviews, duration_col, truncate_at) {
+  n_total <- nrow(interviews)
+  if (is.null(truncate_at) || is.null(duration_col)) {
+    if (!is.null(truncate_at)) {
+      cli::cli_warn(c(
+        "MOR truncation skipped: no trip duration column in design.",
+        "i" = "Supply {.arg trip_duration} in {.fn add_interviews} to enable truncation.",
+        "i" = "All {n_total} trip{?s} used without truncation."
+      ),
+      class = c("creel_warning_truncation_skipped", "creel_warning")
+      )
+    }
+    return(list(interviews = interviews, n_truncated = 0L, applied = FALSE))
+  }
+
   missing_duration <- is.na(interviews[[duration_col]])
   n_missing_duration <- sum(missing_duration)
   keep <- !missing_duration & interviews[[duration_col]] >= truncate_at
@@ -3485,9 +3466,9 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at, use_trip
     )
   }
 
-  # Same refusal as the rate path: an empty post-truncation sample otherwise
-  # aborts inside rowSums() with a message naming neither the threshold nor the
-  # duration column.
+  # An empty sample cannot be estimated from, and left to fall through it
+  # aborts inside rowSums() with "all arguments must have the same length",
+  # which names neither the threshold nor the duration column.
   if (sum(keep) == 0) {
     cli::cli_abort(c(
       "No trips remain for mean-of-ratios estimation.",
@@ -3502,25 +3483,14 @@ truncate_interviews_for_mor <- function(design, estimator, truncate_at, use_trip
     ))
   }
 
-  kept <- interviews[keep, , drop = FALSE]
-  design <- rebuild_interview_survey(design, kept) # nolint: object_usage_linter
-
-  # Recomputed from the trips that survived, not the set that entered. The
-  # counts are the sample behind the estimate, and reporting the pre-truncation
-  # ones put the banner in contradiction with its own truncation line -- "over
-  # all 48 interviews" printed directly above "Truncation: 12 trips excluded",
-  # when 36 ratios were averaged (GH #276).
-  design$mor_n_incomplete <- if (is.null(trip_status_col)) {
-    NA_integer_
-  } else {
-    sum(tolower(kept[[trip_status_col]]) == "incomplete", na.rm = TRUE)
-  }
-  design$mor_n_total <- nrow(kept)
-  design$mor_truncate_at <- truncate_at
-  design$mor_n_truncated <- n_truncated
-  design$mor_use_trips <- effective_use_trips
+  # Share of the trips that had a duration to judge: a trip with none was never
+  # eligible to be short, and it is reported on its own above.
   mor_truncation_message(n_truncated, n_total - n_missing_duration, truncate_at)
-  design
+  list(
+    interviews = interviews[keep, , drop = FALSE],
+    n_truncated = n_truncated,
+    applied = TRUE
+  )
 }
 
 #' Trip counts for the MOR banner, taken from the interviews actually used
