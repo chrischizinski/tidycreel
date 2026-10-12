@@ -81,6 +81,24 @@
 
 ### New features
 
+- [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)
+  is now a tutorial that analyses one complete season
+  ([\#480](https://github.com/chrischizinski/tidycreel/issues/480)):
+  design, counts, effort, interviews, catch rates, totals, results as
+  data and a plot. It runs on three new datasets,
+  `example_season_calendar`, `example_season_counts` and
+  `example_season_interviews`: a 120-day season with 36 sampled days,
+  raw instantaneous counts with the period each one represents, and 231
+  party interviews. The old 14-day example sampled every day, so it
+  could not show the step from sampled days to a season total. The
+  tutorial teaches that step explicitly:
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  and the totals default to `target = "sampled_days"`, the total over
+  the days counted, and the season total needs
+  `target = "period_total"`. A new check, `just vignette-warnings`,
+  fails when a checked vignette raises a warning its text does not
+  explain.
+
 - [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
   and
   [`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md)

@@ -3,336 +3,448 @@
 ## Introduction
 
 tidycreel gives fisheries biologists a tidy, pipe-friendly way to design
-and analyse creel surveys. You can work with the terms used in the
-field—dates, strata, counts, and effort—without having to work directly
-with the internals of the survey package. The basic workflow has three
-steps:
+and analyse creel surveys. You work with the terms used in the field
+(dates, strata, counts, interviews) without handling the internals of
+the survey package.
 
-1.  Define the survey calendar and its strata.
-2.  Attach count observations to the design.
-3.  Estimate effort and its variance.
+This tutorial analyses one complete season, start to finish. A clerk
+worked a lake for 120 days, from May 1 to August 28. On 36 of those days
+the clerk made an instantaneous count of anglers and interviewed angling
+parties, both those that had finished fishing and some still fishing.
+The questions are the usual ones: how much fishing happened over the
+season, how many fish were caught, and how many were kept.
 
-## Survey Design
+Each answer is built from the one before:
 
-We start by loading the package and the example calendar dataset:
+    calendar -> design
+    counts             -> effort        (angler-hours)
+    interviews         -> catch rate    (fish per angler-hour)
+    effort x rate      -> total catch   (fish)
+
+## The season
 
 ``` r
 
 library(tidycreel)
 
-# Load example calendar data
-data(example_calendar)
-head(example_calendar)
-#>         date day_type
-#> 1 2024-06-01  weekend
-#> 2 2024-06-02  weekend
-#> 3 2024-06-03  weekday
-#> 4 2024-06-04  weekday
-#> 5 2024-06-05  weekday
-#> 6 2024-06-06  weekday
+data(example_season_calendar)
+data(example_season_counts)
+data(example_season_interviews)
 
-# Create a creel design with weekday/weekend strata
-design <- creel_design(example_calendar, date = date, strata = day_type)
-print(design)
+head(example_season_calendar)
+#>         date day_type sampled
+#> 1 2024-05-01  weekday   FALSE
+#> 2 2024-05-02  weekday   FALSE
+#> 3 2024-05-03  weekday   FALSE
+#> 4 2024-05-04  weekend   FALSE
+#> 5 2024-05-05  weekend   FALSE
+#> 6 2024-05-06  weekday    TRUE
+table(example_season_calendar$day_type, example_season_calendar$sampled)
+#>          
+#>           FALSE TRUE
+#>   weekday    58   28
+#>   weekend    26    8
+```
+
+The calendar lists every day of the season, not only the sampled ones,
+and splits them into weekdays and weekends. The clerk sampled 28 of the
+86 weekdays and 8 of the 34 weekend days. That list of every day is what
+lets tidycreel expand from the days that were sampled to the whole
+season.
+
+## Survey design
+
+``` r
+
+design <- creel_design(example_season_calendar, date = date, strata = day_type)
+design
 #> 
 #> ── Creel Survey Design ─────────────────────────────────────────────────────────
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
+#> Calendar: 120 days (2024-05-01 to 2024-08-28)
 #> day_type: 2 levels
 #> Counts: "none"
 #> Interviews: "none"
 #> Sections: "none"
 ```
 
-The
 [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
-function uses tidy selectors, so you can specify columns by name without
-quotes. The design object captures the survey structure: 14 days with
-weekday/weekend stratification.
+uses tidy selectors, so you name columns without quotes. The design
+records the 120-day calendar and its two strata.
 
-## Adding Count Data
-
-Next, we attach the daily effort observations to the design. The
-`effort_hours` column holds angler-hours already accumulated over each
-day, not the raw angler count seen at a single moment.
-[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
-says so: it marks the column as sampled-day effort, so
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-expands it as it stands and the estimates are in angler-hours. (Raw
-instantaneous counts would instead go straight to
-[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
-with the length of the period each count represents,
-`period_length_col`.)
+## Counts
 
 ``` r
 
-# Load example count data
-data(example_counts)
-head(example_counts)
-#>         date day_type effort_hours
-#> 1 2024-06-01  weekend         45.2
-#> 2 2024-06-02  weekend         52.8
-#> 3 2024-06-03  weekday         12.5
-#> 4 2024-06-04  weekday         18.3
-#> 5 2024-06-05  weekday         15.7
-#> 6 2024-06-06  weekday         22.1
+head(example_season_counts)
+#>         date day_type total_anglers daylight_hours
+#> 1 2024-05-06  weekday             5             14
+#> 2 2024-05-07  weekday             5             14
+#> 3 2024-05-09  weekday             9             14
+#> 4 2024-05-21  weekday             3             14
+#> 5 2024-05-22  weekday             7             14
+#> 6 2024-06-01  weekend             2             14
 
-# Mark the column as daily effort, then attach it to the design
-counts <- prep_counts_daily_effort(example_counts,
-  date = date, strata = day_type, daily_effort = effort_hours
+design <- add_counts(design, example_season_counts,
+  count_col = total_anglers,
+  period_length_col = daylight_hours
 )
-design <- add_counts(design, counts)
-print(design)
-#> 
-#> ── Creel Survey Design ─────────────────────────────────────────────────────────
-#> Type: "instantaneous"
-#> Date column: date
-#> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
-#> day_type: 2 levels
-#> Counts: 14 observations
-#> PSU column: date
-#> Count column: daily_effort
-#> Party-size term: not carried
-#> Count type: "instantaneous"
-#> Survey: <survey.design2> (constructed)
-#> Interviews: "none"
-#> Sections: "none"
 ```
 
-The
-[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
-function validates that the count data matches the design structure,
-then constructs the internal survey design object. Notice that the
-design now shows count data attached with 14 observations.
+Each row is one instantaneous count: the number of anglers fishing at
+the moment the clerk looked. A count is a number of anglers, not an
+amount of effort. To turn it into effort, tidycreel needs to know how
+much time the count stands for. Here the single count on each day
+represents the whole 14-hour fishing day, so `daylight_hours` is the
+period length. Effort for a day is the count times that length, in
+angler-hours.
 
-## Estimating Total Effort
+Leaving out `period_length_col` still gives an estimate, but its unit is
+unknown, and
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+warns that no period length was supplied. tidycreel derives units from
+what you give it and never assumes one.
 
-With count data attached, we can estimate total effort across the entire
-survey period:
+## Effort
+
+There are two different questions you can ask of these counts.
 
 ``` r
 
-# Estimate total effort
-result <- estimate_effort(design)
-print(result)
+estimate_effort(design)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Effort target: sampled_days
+#> Unit: angler-hours
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     372.  13.2       13.2         0     344.     401.    14
+#> 1     3066  386.       386.         0    2282.    3850.    36
+estimate_effort(design, target = "period_total")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: period_total
+#> Unit: angler-hours
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1    9994. 1079.      1079.         0    7803.   12186.    36
 ```
 
-The result shows the estimated total effort, standard error, and 95%
-confidence interval. The estimate is 372.5 angler-hours over the 14-day
-period. Every calendar day was sampled here, so the season expansion
-factor is 1 and the estimate is exactly the sum of the attached
-`effort_hours`.
+The first estimate, the default, is the effort **on the 36 days that
+were sampled**: 3,066 angler-hours. The second is the effort **over the
+whole 120-day season**, about 9,994 angler-hours. That season total is
+the number usually reported. Each stratum’s mean daily effort is
+multiplied by the number of days in that stratum, then the strata are
+added. For a season total, ask for `target = "period_total"`.
 
-## Grouped Estimation
+The standard error comes from the day-to-day variation among the sampled
+days within each stratum. With one count per day there is no separate
+within-day term: the error in each day’s single count is already part of
+the variation between days, so `se_within` is 0 by construction, not
+because activity was steady through the day. It becomes non-zero when a
+day has several counts
+([`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)).
 
-We can also compute estimates separately for each stratum or group using
-the `by` parameter:
+Estimates can be broken down by any column in the design with `by`:
 
 ``` r
 
-# Estimate effort by day_type
-result_by_day <- estimate_effort(design, by = day_type)
-print(result_by_day)
+estimate_effort(design, by = day_type, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: day_type
-#> Effort target: sampled_days
+#> Effort target: period_total
+#> Unit: angler-hours
 #> 
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday      171.  9.67       9.67         0     150.     192.    10
-#> 2 weekend      202.  8.95       8.95         0     182.     221.     4
+#> 1 weekday     7912   873.       873.         0    6139.    9685.    28
+#> 2 weekend     2082.  634.       634.         0     794.    3371.     8
 ```
 
-The grouped results show separate estimates for weekday and weekend
-periods: approximately 202 angler-hours on weekends against 171 on
-weekdays. Compare the totals with care — the calendar holds 10 weekdays
-to 4 weekend days, so the modest gap between the totals reflects a much
-larger gap per day, roughly 50 angler-hours per weekend day against 17
-per weekday.
+The 86 weekdays account for most of the season’s effort, about 7,900
+angler-hours to the weekends’ 2,100. Per day, the two are closer: about
+92 angler-hours on an average weekday and 61 on an average weekend day.
 
-The `by` parameter accepts tidy selectors, so you can group by multiple
-columns or use tidyselect helpers like `starts_with()`.
-
-## Using Results as Data
-
-An estimate prints with its method, variance method and unit, but it is
-not itself a data frame, so dplyr verbs do not work on it directly.
-Convert it first. `as_tibble()` returns one row per estimate, with that
-metadata copied into columns so it stays attached to every row:
+## Interviews
 
 ``` r
 
-effort_tbl <- tibble::as_tibble(result_by_day)
-effort_tbl
-#> # A tibble: 2 × 13
-#>   day_type estimate    se se_between se_within ci_lower ci_upper     n method
-#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr> 
-#> 1 weekday      171.  9.67       9.67         0     150.     192.    10 total 
-#> 2 weekend      202.  8.95       8.95         0     182.     221.     4 total 
+head(example_season_interviews)
+#>         date day_type interview_id trip_status hours_fished n_anglers
+#> 1 2024-05-06  weekday            1  incomplete         1.78         2
+#> 2 2024-05-06  weekday            2  incomplete         1.82         1
+#> 3 2024-05-06  weekday            3    complete         4.66         3
+#> 4 2024-05-06  weekday            4    complete         0.77         2
+#> 5 2024-05-07  weekday            5    complete         3.12         1
+#> 6 2024-05-07  weekday            6    complete         2.23         3
+#>   catch_total catch_kept
+#> 1           0          0
+#> 2           3          1
+#> 3           1          0
+#> 4           0          0
+#> 5           5          0
+#> 6           0          0
+
+design <- add_interviews(design, example_season_interviews,
+  catch = catch_total,
+  harvest = catch_kept,
+  effort = hours_fished,
+  trip_status = trip_status,
+  n_anglers = n_anglers
+)
+#> Warning: 153 interviews have zero catch.
+#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ Added 231 interviews: 172 complete (74%), 59 incomplete (26%)
+```
+
+Each row is one party.
+[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+checks the interviews as it attaches them, and here it raises one
+warning: 153 of the 231 parties caught nothing. That is not an error in
+these data. Most anglers on most fisheries go home without a fish, and
+those zeros belong in the catch rate. The warning is there because, on a
+real data sheet, a column of zeros can also mean a catch that was never
+recorded. If your zeros are real, as these are, there is nothing to fix.
+
+`n_anglers` matters. `hours_fished` is how long the party fished, so it
+is in party-hours. A party of three fishing two hours put in six
+angler-hours, and `n_anglers` lets tidycreel make that conversion. The
+catch rate is then in fish per angler-hour, the same footing as the
+counts. Without it the rate would be per party-hour, which cannot be
+multiplied by effort in angler-hours.
+
+## Catch rates
+
+``` r
+
+estimate_catch_rate(design)
+#> ℹ Using complete trips for CPUE estimation
+#>   (n=172, 74.5% of 231 interviews) [default]
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Ratio-of-Means CPUE
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Unit: fish/angler-hour
+#> 
+#> # A tibble: 1 × 5
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1    0.221 0.0415    0.139    0.302   172
+estimate_harvest_rate(design)
+#> ℹ Filtering to complete trips for HPUE estimation
+#>   (n=172, 74.5% of 231 interviews) [default]
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Ratio-of-Means HPUE
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Unit: fish/angler-hour
+#> 
+#> # A tibble: 1 × 5
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1   0.0639 0.0135   0.0375   0.0903   172
+```
+
+The catch rate is about 0.22 fish per angler-hour, and the harvest rate
+about 0.06. Both are ratio-of-means estimates, total catch divided by
+total effort across the interviews. By default they use only the 172
+complete trips. A party interviewed while still fishing is more likely
+to be met the longer it stays, so incomplete trips over-represent long
+trips (length-of-stay bias) and give a biased catch rate unless the rate
+is steady through a trip.
+[`vignette("incomplete-trips")`](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md)
+covers when and how incomplete trips can be used.
+
+## Total catch and harvest
+
+``` r
+
+estimate_total_catch(design, target = "period_total")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total Catch (Effort × CPUE)
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: period_total
+#> Unit: fish
+#> 
+#> # A tibble: 1 × 5
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1    2230.  482.    1278.    3183.   172
+estimate_total_harvest(design, target = "period_total")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total Harvest (Effort × HPUE)
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: period_total
+#> Unit: fish
+#> 
+#> # A tibble: 1 × 5
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1     648.  153.     346.     950.   172
+```
+
+A total is effort times rate, with the uncertainty of both carried into
+its standard error. The unit follows: angler-hours times fish per
+angler-hour is fish. About 2,230 fish were caught over the season, and
+about 650 were kept. These totals take `target` too, and need
+`target = "period_total"` for the season, just as effort does.
+
+Totals break down the same way as effort:
+
+``` r
+
+estimate_total_catch(design, by = day_type, target = "period_total")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total Catch (Effort × CPUE)
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Grouped by: day_type
+#> Effort target: period_total
+#> Unit: fish
+#> 
+#> # A tibble: 2 × 6
+#>   day_type estimate    se ci_lower ci_upper     n
+#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1 weekday     1647.  400.    856.     2438.   138
+#> 2 weekend      583.  270.     34.4    1132.    34
+```
+
+Released fish come from species-level catch records, attached with
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+rather than from the interview totals; see
+[`?estimate_total_release`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md).
+
+## Using results as data
+
+An estimate prints with its method, variance method and unit. It is not
+itself a data frame, so dplyr verbs do not work on it directly. Convert
+it first. `as_tibble()` returns one row per estimate, with the metadata
+copied into columns so it stays attached to every row:
+
+``` r
+
+catch_by_day <- estimate_total_catch(design, by = day_type, target = "period_total")
+catch_tbl <- tibble::as_tibble(catch_by_day)
+catch_tbl
+#> # A tibble: 2 × 12
+#>   day_type estimate    se ci_lower ci_upper     n method              estimator 
+#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int> <chr>               <chr>     
+#> 1 weekday     1647.  400.    856.     2438.   138 product-total-catch ratio-of-…
+#> 2 weekend      583.  270.     34.4    1132.    34 product-total-catch ratio-of-…
 #> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
 #> #   effort_target <chr>, unit <chr>
 
-effort_tbl[effort_tbl$day_type == "weekend", c("day_type", "estimate", "se", "unit")]
+catch_tbl[catch_tbl$day_type == "weekend", c("day_type", "estimate", "se", "unit")]
 #> # A tibble: 1 × 4
 #>   day_type estimate    se unit 
 #>   <chr>       <dbl> <dbl> <chr>
-#> 1 weekend      202.  8.95 NA
+#> 1 weekend      583.  270. fish
 ```
 
 [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) does the
 same for base R. Use `metadata = FALSE` for the estimates table alone.
 
-## Variance Methods
+## Plotting
 
-By default,
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-uses Taylor linearization for variance estimation. The package also
-supports bootstrap and jackknife methods:
+Estimates have an `autoplot()` method that draws each estimate with its
+confidence interval:
 
 ``` r
 
-# Bootstrap variance estimation (500 replicates)
-set.seed(123) # For reproducibility
-result_boot <- estimate_effort(design, variance = "bootstrap")
-print(result_boot)
+ggplot2::autoplot(catch_by_day)
+```
+
+![Point estimates of total catch on weekdays and weekends, with 95
+percent confidence intervals.](tidycreel_files/figure-html/plot-1.png)
+
+[`vignette("visualisation")`](https://chrischizinski.com/tidycreel/dev/articles/visualisation.md)
+covers the other plots.
+
+## Variance methods
+
+Standard errors use Taylor linearization by default. Bootstrap and
+jackknife replicates are also available, for effort and for every
+estimate built on it:
+
+``` r
+
+set.seed(123)
+estimate_effort(design, target = "period_total", variance = "bootstrap")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
 #> Variance: Bootstrap
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
+#> Unit: angler-hours
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     372.  13.5       13.5         0     343.     402.    14
-
-# Jackknife variance estimation
-result_jk <- estimate_effort(design, variance = "jackknife")
-print(result_jk)
+#> 1    9994. 1185.      1185.         0    7585.   12404.    36
+estimate_effort(design, target = "period_total", variance = "jackknife")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
 #> Variance: Jackknife
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
+#> Unit: angler-hours
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     372.  13.2       13.2         0     344.     401.    14
+#> 1    9994. 1079.      1079.         0    7803.   12186.    36
 ```
 
-**When to use each method:**
+- **Taylor linearization** (default) is fast and appropriate for most
+  estimates.
+- **Bootstrap** resamples sampled days. Use it to check the
+  linearization or for statistics that are not smooth.
+- **Jackknife** is deterministic, so it gives the same answer on every
+  run.
 
-- **Taylor linearization** (default): Computationally efficient and
-  appropriate for most smooth statistics. This is the recommended
-  default.
-- **Bootstrap**: Use when working with non-smooth statistics or when you
-  want to verify Taylor linearization assumptions. More computationally
-  intensive.
-- **Jackknife**: Alternative resampling method that is deterministic
-  (unlike bootstrap). Useful for verification or when bootstrap is too
-  slow.
+[`vignette("replicate-designs")`](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md)
+compares them.
 
-All three methods work with grouped estimation as well:
+## Next steps
 
-``` r
+This tutorial used the most common design: instantaneous counts and
+access interviews, with weekday and weekend strata. From here:
 
-# Grouped estimation with bootstrap variance
-set.seed(123)
-result_grouped_boot <- estimate_effort(design, by = day_type, variance = "bootstrap")
-print(result_grouped_boot)
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Total
-#> Variance: Bootstrap
-#> Confidence level: 95%
-#> Grouped by: day_type
-#> Effort target: sampled_days
-#> 
-#> # A tibble: 2 × 8
-#>   day_type estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday      171. 10.3       10.3          0     148.     193.    10
-#> 2 weekend      202.  8.78       8.78         0     183.     221.     4
-```
-
-## Schedule-Defined Special Strata
-
-If your survey calendar includes prospective high-use or other special
-periods, the same three-step workflow still applies. The difference is
-that the schedule may carry a resolved `final_stratum` column from
-`generate_schedule(..., special_periods = ...)`, and that resolved
-stratum should drive the analysis design.
-
-``` r
-
-sched <- generate_schedule(
-  start_date = "2027-07-24",
-  end_date = "2027-08-04",
-  n_periods = 1,
-  sampling_rate = 0.5,
-  include_all = TRUE,
-  special_periods = opener_periods,
-  seed = 42
-)
-
-calendar_for_design <- transform(
-  sched[, c("date", "final_stratum")],
-  analysis_stratum = ifelse(grepl("^high_use", final_stratum), final_stratum, "regular")
-)[, c("date", "analysis_stratum")]
-
-design_special <- creel_design(
-  calendar_for_design,
-  date = date,
-  strata = analysis_stratum
-)
-```
-
-Once counts and interviews are attached,
-`estimate_effort(..., target = "period_total")` and the
-total-catch/product estimators use the declared analysis strata
-directly. If one of those strata is too sparse for variance estimation,
-tidycreel names the sparse stratum in its diagnostic instead of failing
-opaquely.
-
-## Next Steps
-
-This vignette covers the core tidycreel workflow for instantaneous count
-surveys. For more details on specific functions, see their help pages:
-
-- [`?creel_design`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md) -
-  Define survey calendar and stratification
-- [`?add_counts`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md) -
-  Attach count data to a design
-- [`?estimate_effort`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md) -
-  Compute effort estimates with variance
-- [`?as_creel_svydesign`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md) -
-  Extract internal survey object for advanced use
-
-For information on the example datasets:
-
-- [`?example_calendar`](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md) -
-  Example survey calendar
-- [`?example_counts`](https://chrischizinski.com/tidycreel/dev/reference/example_counts.md) -
-  Example count observations
+- [`vignette("survey-scheduling")`](https://chrischizinski.com/tidycreel/dev/articles/survey-scheduling.md)
+  builds the sampling calendar before the season, including high-use
+  periods such as openers.
+- [`vignette("interview-estimation")`](https://chrischizinski.com/tidycreel/dev/articles/interview-estimation.md)
+  and
+  [`vignette("incomplete-trips")`](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md)
+  cover catch-rate estimators in depth.
+- [`vignette("section-estimation")`](https://chrischizinski.com/tidycreel/dev/articles/section-estimation.md)
+  handles lakes split into sections.
+- The **Survey Types** articles cover bus-route, ice, camera, aerial and
+  mark-recapture designs.
+- [`vignette("glossary")`](https://chrischizinski.com/tidycreel/dev/articles/glossary.md)
+  defines the terms used throughout.

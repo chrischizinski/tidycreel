@@ -106,320 +106,416 @@
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>tidycreel gives fisheries biologists a tidy, pipe-friendly way to
-design and analyse creel surveys. You can work with the terms used in
-the field—dates, strata, counts, and effort—without having to work
-directly with the internals of the survey package. The basic workflow
-has three steps:</p>
-<ol style="list-style-type: decimal">
-<li>Define the survey calendar and its strata.</li>
-<li>Attach count observations to the design.</li>
-<li>Estimate effort and its variance.</li>
-</ol>
+design and analyse creel surveys. You work with the terms used in the
+field (dates, strata, counts, interviews) without handling the internals
+of the survey package.</p>
+<p>This tutorial analyses one complete season, start to finish. A clerk
+worked a lake for 120 days, from May 1 to August 28. On 36 of those days
+the clerk made an instantaneous count of anglers and interviewed angling
+parties, both those that had finished fishing and some still fishing.
+The questions are the usual ones: how much fishing happened over the
+season, how many fish were caught, and how many were kept.</p>
+<p>Each answer is built from the one before:</p>
+<pre><code>calendar -&gt; design
+counts             -&gt; effort        (angler-hours)
+interviews         -&gt; catch rate    (fish per angler-hour)
+effort x rate      -&gt; total catch   (fish)</code></pre>
 </div>
 <div class="section level2">
-<h2 id="survey-design">Survey Design<a class="anchor" aria-label="anchor" href="#survey-design"></a>
+<h2 id="the-season">The season<a class="anchor" aria-label="anchor" href="#the-season"></a>
 </h2>
-<p>We start by loading the package and the example calendar dataset:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Load example calendar data</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         date day_type</span></span>
-<span><span class="co">#&gt; 1 2024-06-01  weekend</span></span>
-<span><span class="co">#&gt; 2 2024-06-02  weekend</span></span>
-<span><span class="co">#&gt; 3 2024-06-03  weekday</span></span>
-<span><span class="co">#&gt; 4 2024-06-04  weekday</span></span>
-<span><span class="co">#&gt; 5 2024-06-05  weekday</span></span>
-<span><span class="co">#&gt; 6 2024-06-06  weekday</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_season_calendar</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_season_counts</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_season_interviews</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Create a creel design with weekday/weekend strata</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_season_calendar</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         date day_type sampled</span></span>
+<span><span class="co">#&gt; 1 2024-05-01  weekday   FALSE</span></span>
+<span><span class="co">#&gt; 2 2024-05-02  weekday   FALSE</span></span>
+<span><span class="co">#&gt; 3 2024-05-03  weekday   FALSE</span></span>
+<span><span class="co">#&gt; 4 2024-05-04  weekend   FALSE</span></span>
+<span><span class="co">#&gt; 5 2024-05-05  weekend   FALSE</span></span>
+<span><span class="co">#&gt; 6 2024-05-06  weekday    TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_season_calendar</span><span class="op">$</span><span class="va">day_type</span>, <span class="va">example_season_calendar</span><span class="op">$</span><span class="va">sampled</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          </span></span>
+<span><span class="co">#&gt;           FALSE TRUE</span></span>
+<span><span class="co">#&gt;   weekday    58   28</span></span>
+<span><span class="co">#&gt;   weekend    26    8</span></span></code></pre></div>
+<p>The calendar lists every day of the season, not only the sampled
+ones, and splits them into weekdays and weekends. The clerk sampled 28
+of the 86 weekdays and 8 of the 34 weekend days. That list of every day
+is what lets tidycreel expand from the days that were sampled to the
+whole season.</p>
+</div>
+<div class="section level2">
+<h2 id="survey-design">Survey design<a class="anchor" aria-label="anchor" href="#survey-design"></a>
+</h2>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_season_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">design</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Design</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
 <span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">14</span> days (2024-06-01 to 2024-06-14)</span></span>
+<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">120</span> days (2024-05-01 to 2024-08-28)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">"none"</span></span></span>
 <span><span class="co">#&gt; Interviews: <span style="color: #0000BB;">"none"</span></span></span>
 <span><span class="co">#&gt; Sections: <span style="color: #0000BB;">"none"</span></span></span></code></pre></div>
-<p>The <code><a href="../reference/creel_design.html">creel_design()</a></code> function uses tidy selectors, so you
-can specify columns by name without quotes. The design object captures
-the survey structure: 14 days with weekday/weekend stratification.</p>
+<p><code><a href="../reference/creel_design.html">creel_design()</a></code> uses tidy selectors, so you name columns
+without quotes. The design records the 120-day calendar and its two
+strata.</p>
 </div>
 <div class="section level2">
-<h2 id="adding-count-data">Adding Count Data<a class="anchor" aria-label="anchor" href="#adding-count-data"></a>
+<h2 id="counts">Counts<a class="anchor" aria-label="anchor" href="#counts"></a>
 </h2>
-<p>Next, we attach the daily effort observations to the design. The
-<code>effort_hours</code> column holds angler-hours already accumulated
-over each day, not the raw angler count seen at a single moment.
-<code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code> says so: it marks the column as
-sampled-day effort, so <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> expands it as it
-stands and the estimates are in angler-hours. (Raw instantaneous counts
-would instead go straight to <code><a href="../reference/add_counts.html">add_counts()</a></code> with the length
-of the period each count represents,
-<code>period_length_col</code>.)</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Load example count data</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         date day_type effort_hours</span></span>
-<span><span class="co">#&gt; 1 2024-06-01  weekend         45.2</span></span>
-<span><span class="co">#&gt; 2 2024-06-02  weekend         52.8</span></span>
-<span><span class="co">#&gt; 3 2024-06-03  weekday         12.5</span></span>
-<span><span class="co">#&gt; 4 2024-06-04  weekday         18.3</span></span>
-<span><span class="co">#&gt; 5 2024-06-05  weekday         15.7</span></span>
-<span><span class="co">#&gt; 6 2024-06-06  weekday         22.1</span></span>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_season_counts</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         date day_type total_anglers daylight_hours</span></span>
+<span><span class="co">#&gt; 1 2024-05-06  weekday             5             14</span></span>
+<span><span class="co">#&gt; 2 2024-05-07  weekday             5             14</span></span>
+<span><span class="co">#&gt; 3 2024-05-09  weekday             9             14</span></span>
+<span><span class="co">#&gt; 4 2024-05-21  weekday             3             14</span></span>
+<span><span class="co">#&gt; 5 2024-05-22  weekday             7             14</span></span>
+<span><span class="co">#&gt; 6 2024-06-01  weekend             2             14</span></span>
 <span></span>
-<span><span class="co"># Mark the column as daily effort, then attach it to the design</span></span>
-<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span>
-<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Design</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
-<span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">14</span> days (2024-06-01 to 2024-06-14)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
-<span><span class="co">#&gt; Counts: <span style="color: #0000BB;">14</span> observations</span></span>
-<span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">daily_effort</span></span></span>
-<span><span class="co">#&gt; Party-size term: not carried</span></span>
-<span><span class="co">#&gt; Count type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
-<span><span class="co">#&gt; Survey: <span style="color: #0000BB;">&lt;survey.design2&gt;</span> (constructed)</span></span>
-<span><span class="co">#&gt; Interviews: <span style="color: #0000BB;">"none"</span></span></span>
-<span><span class="co">#&gt; Sections: <span style="color: #0000BB;">"none"</span></span></span></code></pre></div>
-<p>The <code><a href="../reference/add_counts.html">add_counts()</a></code> function validates that the count data
-matches the design structure, then constructs the internal survey design
-object. Notice that the design now shows count data attached with 14
-observations.</p>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_counts</span>,</span>
+<span>  count_col <span class="op">=</span> <span class="va">total_anglers</span>,</span>
+<span>  period_length_col <span class="op">=</span> <span class="va">daylight_hours</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Each row is one instantaneous count: the number of anglers fishing at
+the moment the clerk looked. A count is a number of anglers, not an
+amount of effort. To turn it into effort, tidycreel needs to know how
+much time the count stands for. Here the single count on each day
+represents the whole 14-hour fishing day, so <code>daylight_hours</code>
+is the period length. Effort for a day is the count times that length,
+in angler-hours.</p>
+<p>Leaving out <code>period_length_col</code> still gives an estimate,
+but its unit is unknown, and <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> warns that
+no period length was supplied. tidycreel derives units from what you
+give it and never assumes one.</p>
 </div>
 <div class="section level2">
-<h2 id="estimating-total-effort">Estimating Total Effort<a class="anchor" aria-label="anchor" href="#estimating-total-effort"></a>
+<h2 id="effort">Effort<a class="anchor" aria-label="anchor" href="#effort"></a>
 </h2>
-<p>With count data attached, we can estimate total effort across the
-entire survey period:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Estimate total effort</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
+<p>There are two different questions you can ask of these counts.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     372.  13.2       13.2         0     344.     401.    14</span></span></code></pre></div>
-<p>The result shows the estimated total effort, standard error, and 95%
-confidence interval. The estimate is 372.5 angler-hours over the 14-day
-period. Every calendar day was sampled here, so the season expansion
-factor is 1 and the estimate is exactly the sum of the attached
-<code>effort_hours</code>.</p>
-</div>
-<div class="section level2">
-<h2 id="grouped-estimation">Grouped Estimation<a class="anchor" aria-label="anchor" href="#grouped-estimation"></a>
-</h2>
-<p>We can also compute estimates separately for each stratum or group
-using the <code>by</code> parameter:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Estimate effort by day_type</span></span>
-<span><span class="va">result_by_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result_by_day</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">3</span>066  386.       386.         0    <span style="text-decoration: underline;">2</span>282.    <span style="text-decoration: underline;">3</span>850.    36</span></span>
+<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Total</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
+<span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>079.      <span style="text-decoration: underline;">1</span>079.         0    <span style="text-decoration: underline;">7</span>803.   <span style="text-decoration: underline;">12</span>186.    36</span></span></code></pre></div>
+<p>The first estimate, the default, is the effort <strong>on the 36 days
+that were sampled</strong>: 3,066 angler-hours. The second is the effort
+<strong>over the whole 120-day season</strong>, about 9,994
+angler-hours. That season total is the number usually reported. Each
+stratum’s mean daily effort is multiplied by the number of days in that
+stratum, then the strata are added. For a season total, ask for
+<code>target = "period_total"</code>.</p>
+<p>The standard error comes from the day-to-day variation among the
+sampled days within each stratum. With one count per day there is no
+separate within-day term: the error in each day’s single count is
+already part of the variation between days, so <code>se_within</code> is
+0 by construction, not because activity was steady through the day. It
+becomes non-zero when a day has several counts
+(<code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>).</p>
+<p>Estimates can be broken down by any column in the design with
+<code>by</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: day_type</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      171.  9.67       9.67         0     150.     192.    10</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      202.  8.95       8.95         0     182.     221.     4</span></span></code></pre></div>
-<p>The grouped results show separate estimates for weekday and weekend
-periods: approximately 202 angler-hours on weekends against 171 on
-weekdays. Compare the totals with care — the calendar holds 10 weekdays
-to 4 weekend days, so the modest gap between the totals reflects a much
-larger gap per day, roughly 50 angler-hours per weekend day against 17
-per weekday.</p>
-<p>The <code>by</code> parameter accepts tidy selectors, so you can
-group by multiple columns or use tidyselect helpers like
-<code>starts_with()</code>.</p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912   873.       873.         0    <span style="text-decoration: underline;">6</span>139.    <span style="text-decoration: underline;">9</span>685.    28</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  634.       634.         0     794.    <span style="text-decoration: underline;">3</span>371.     8</span></span></code></pre></div>
+<p>The 86 weekdays account for most of the season’s effort, about 7,900
+angler-hours to the weekends’ 2,100. Per day, the two are closer: about
+92 angler-hours on an average weekday and 61 on an average weekend
+day.</p>
 </div>
 <div class="section level2">
-<h2 id="using-results-as-data">Using Results as Data<a class="anchor" aria-label="anchor" href="#using-results-as-data"></a>
+<h2 id="interviews">Interviews<a class="anchor" aria-label="anchor" href="#interviews"></a>
 </h2>
-<p>An estimate prints with its method, variance method and unit, but it
-is not itself a data frame, so dplyr verbs do not work on it directly.
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_season_interviews</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         date day_type interview_id trip_status hours_fished n_anglers</span></span>
+<span><span class="co">#&gt; 1 2024-05-06  weekday            1  incomplete         1.78         2</span></span>
+<span><span class="co">#&gt; 2 2024-05-06  weekday            2  incomplete         1.82         1</span></span>
+<span><span class="co">#&gt; 3 2024-05-06  weekday            3    complete         4.66         3</span></span>
+<span><span class="co">#&gt; 4 2024-05-06  weekday            4    complete         0.77         2</span></span>
+<span><span class="co">#&gt; 5 2024-05-07  weekday            5    complete         3.12         1</span></span>
+<span><span class="co">#&gt; 6 2024-05-07  weekday            6    complete         2.23         3</span></span>
+<span><span class="co">#&gt;   catch_total catch_kept</span></span>
+<span><span class="co">#&gt; 1           0          0</span></span>
+<span><span class="co">#&gt; 2           3          1</span></span>
+<span><span class="co">#&gt; 3           1          0</span></span>
+<span><span class="co">#&gt; 4           0          0</span></span>
+<span><span class="co">#&gt; 5           5          0</span></span>
+<span><span class="co">#&gt; 6           0          0</span></span>
+<span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_interviews</span>,</span>
+<span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
+<span>  harvest <span class="op">=</span> <span class="va">catch_kept</span>,</span>
+<span>  effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
+<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: 153 interviews have zero catch.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 231 interviews: 172 complete (74%), 59 incomplete (26%)</span></span></code></pre></div>
+<p>Each row is one party. <code><a href="../reference/add_interviews.html">add_interviews()</a></code> checks the
+interviews as it attaches them, and here it raises one warning: 153 of
+the 231 parties caught nothing. That is not an error in these data. Most
+anglers on most fisheries go home without a fish, and those zeros belong
+in the catch rate. The warning is there because, on a real data sheet, a
+column of zeros can also mean a catch that was never recorded. If your
+zeros are real, as these are, there is nothing to fix.</p>
+<p><code>n_anglers</code> matters. <code>hours_fished</code> is how long
+the party fished, so it is in party-hours. A party of three fishing two
+hours put in six angler-hours, and <code>n_anglers</code> lets tidycreel
+make that conversion. The catch rate is then in fish per angler-hour,
+the same footing as the counts. Without it the rate would be per
+party-hour, which cannot be multiplied by effort in angler-hours.</p>
+</div>
+<div class="section level2">
+<h2 id="catch-rates">Catch rates<a class="anchor" aria-label="anchor" href="#catch-rates"></a>
+</h2>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=172, 74.5% of 231 interviews) [default]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.221 0.041<span style="text-decoration: underline;">5</span>    0.139    0.302   172</span></span>
+<span><span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Filtering to complete trips for HPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=172, 74.5% of 231 interviews) [default]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Ratio-of-Means HPUE</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.063<span style="text-decoration: underline;">9</span> 0.013<span style="text-decoration: underline;">5</span>   0.037<span style="text-decoration: underline;">5</span>   0.090<span style="text-decoration: underline;">3</span>   172</span></span></code></pre></div>
+<p>The catch rate is about 0.22 fish per angler-hour, and the harvest
+rate about 0.06. Both are ratio-of-means estimates, total catch divided
+by total effort across the interviews. By default they use only the 172
+complete trips. A party interviewed while still fishing is more likely
+to be met the longer it stays, so incomplete trips over-represent long
+trips (length-of-stay bias) and give a biased catch rate unless the rate
+is steady through a trip. <code><a href="../articles/incomplete-trips.html">vignette("incomplete-trips")</a></code>
+covers when and how incomplete trips can be used.</p>
+</div>
+<div class="section level2">
+<h2 id="total-catch-and-harvest">Total catch and harvest<a class="anchor" aria-label="anchor" href="#total-catch-and-harvest"></a>
+</h2>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
+<span><span class="co">#&gt; Unit: fish</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  482.    <span style="text-decoration: underline;">1</span>278.    <span style="text-decoration: underline;">3</span>183.   172</span></span>
+<span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Total Harvest (Effort × HPUE)</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
+<span><span class="co">#&gt; Unit: fish</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     648.  153.     346.     950.   172</span></span></code></pre></div>
+<p>A total is effort times rate, with the uncertainty of both carried
+into its standard error. The unit follows: angler-hours times fish per
+angler-hour is fish. About 2,230 fish were caught over the season, and
+about 650 were kept. These totals take <code>target</code> too, and need
+<code>target = "period_total"</code> for the season, just as effort
+does.</p>
+<p>Totals break down the same way as effort:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Grouped by: day_type</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
+<span><span class="co">#&gt; Unit: fish</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">1</span>647.  400.    856.     <span style="text-decoration: underline;">2</span>438.   138</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      583.  270.     34.4    <span style="text-decoration: underline;">1</span>132.    34</span></span></code></pre></div>
+<p>Released fish come from species-level catch records, attached with
+<code><a href="../reference/add_catch.html">add_catch()</a></code>, rather than from the interview totals; see
+<code><a href="../reference/estimate_total_release.html">?estimate_total_release</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="using-results-as-data">Using results as data<a class="anchor" aria-label="anchor" href="#using-results-as-data"></a>
+</h2>
+<p>An estimate prints with its method, variance method and unit. It is
+not itself a data frame, so dplyr verbs do not work on it directly.
 Convert it first. <code>as_tibble()</code> returns one row per estimate,
-with that metadata copied into columns so it stays attached to every
+with the metadata copied into columns so it stays attached to every
 row:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">result_by_day</span><span class="op">)</span></span>
-<span><span class="va">effort_tbl</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 13</span></span></span>
-<span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n method</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      171.  9.67       9.67         0     150.     192.    10 total </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      202.  8.95       8.95         0     182.     221.     4 total </span></span>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">catch_by_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
+<span><span class="va">catch_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">catch_by_day</span><span class="op">)</span></span>
+<span><span class="va">catch_tbl</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 12</span></span></span>
+<span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n method              estimator </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">1</span>647.  400.    856.     <span style="text-decoration: underline;">2</span>438.   138 product-total-catch ratio-of-…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      583.  270.     34.4    <span style="text-decoration: underline;">1</span>132.    34 product-total-catch ratio-of-…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
 <span></span>
-<span><span class="va">effort_tbl</span><span class="op">[</span><span class="va">effort_tbl</span><span class="op">$</span><span class="va">day_type</span> <span class="op">==</span> <span class="st">"weekend"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"day_type"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"unit"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">catch_tbl</span><span class="op">[</span><span class="va">catch_tbl</span><span class="op">$</span><span class="va">day_type</span> <span class="op">==</span> <span class="st">"weekend"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"day_type"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"unit"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se unit </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend      202.  8.95 <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend      583.  270. fish</span></span></code></pre></div>
 <p><code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> does the same for base R. Use
 <code>metadata = FALSE</code> for the estimates table alone.</p>
 </div>
 <div class="section level2">
-<h2 id="variance-methods">Variance Methods<a class="anchor" aria-label="anchor" href="#variance-methods"></a>
+<h2 id="plotting">Plotting<a class="anchor" aria-label="anchor" href="#plotting"></a>
 </h2>
-<p>By default, <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> uses Taylor linearization
-for variance estimation. The package also supports bootstrap and
-jackknife methods:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Bootstrap variance estimation (500 replicates)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span> <span class="co"># For reproducibility</span></span>
-<span><span class="va">result_boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result_boot</span><span class="op">)</span></span>
+<p>Estimates have an <code>autoplot()</code> method that draws each
+estimate with its confidence interval:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">catch_by_day</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tidycreel_files/figure-html/plot-1.png" class="r-plt" alt="Point estimates of total catch on weekdays and weekends, with 95 percent confidence intervals." width="576"></p>
+<p><code><a href="../articles/visualisation.html">vignette("visualisation")</a></code> covers the other plots.</p>
+</div>
+<div class="section level2">
+<h2 id="variance-methods">Variance methods<a class="anchor" aria-label="anchor" href="#variance-methods"></a>
+</h2>
+<p>Standard errors use Taylor linearization by default. Bootstrap and
+jackknife replicates are also available, for effort and for every
+estimate built on it:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Bootstrap</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     372.  13.5       13.5         0     343.     402.    14</span></span>
-<span></span>
-<span><span class="co"># Jackknife variance estimation</span></span>
-<span><span class="va">result_jk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result_jk</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>185.      <span style="text-decoration: underline;">1</span>185.         0    <span style="text-decoration: underline;">7</span>585.   <span style="text-decoration: underline;">12</span>404.    36</span></span>
+<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Jackknife</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     372.  13.2       13.2         0     344.     401.    14</span></span></code></pre></div>
-<p><strong>When to use each method:</strong></p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>079.      <span style="text-decoration: underline;">1</span>079.         0    <span style="text-decoration: underline;">7</span>803.   <span style="text-decoration: underline;">12</span>186.    36</span></span></code></pre></div>
 <ul>
 <li>
-<strong>Taylor linearization</strong> (default): Computationally
-efficient and appropriate for most smooth statistics. This is the
-recommended default.</li>
+<strong>Taylor linearization</strong> (default) is fast and
+appropriate for most estimates.</li>
 <li>
-<strong>Bootstrap</strong>: Use when working with non-smooth
-statistics or when you want to verify Taylor linearization assumptions.
-More computationally intensive.</li>
+<strong>Bootstrap</strong> resamples sampled days. Use it to check
+the linearization or for statistics that are not smooth.</li>
 <li>
-<strong>Jackknife</strong>: Alternative resampling method that is
-deterministic (unlike bootstrap). Useful for verification or when
-bootstrap is too slow.</li>
+<strong>Jackknife</strong> is deterministic, so it gives the same
+answer on every run.</li>
 </ul>
-<p>All three methods work with grouped estimation as well:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Grouped estimation with bootstrap variance</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
-<span><span class="va">result_grouped_boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result_grouped_boot</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Total</span></span>
-<span><span class="co">#&gt; Variance: Bootstrap</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Grouped by: day_type</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
-<span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      171. 10.3       10.3          0     148.     193.    10</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      202.  8.78       8.78         0     183.     221.     4</span></span></code></pre></div>
+<p><code><a href="../articles/replicate-designs.html">vignette("replicate-designs")</a></code> compares them.</p>
 </div>
 <div class="section level2">
-<h2 id="schedule-defined-special-strata">Schedule-Defined Special Strata<a class="anchor" aria-label="anchor" href="#schedule-defined-special-strata"></a>
+<h2 id="next-steps">Next steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
 </h2>
-<p>If your survey calendar includes prospective high-use or other
-special periods, the same three-step workflow still applies. The
-difference is that the schedule may carry a resolved
-<code>final_stratum</code> column from
-<code>generate_schedule(..., special_periods = ...)</code>, and that
-resolved stratum should drive the analysis design.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
-<span>  start_date <span class="op">=</span> <span class="st">"2027-07-24"</span>,</span>
-<span>  end_date <span class="op">=</span> <span class="st">"2027-08-04"</span>,</span>
-<span>  n_periods <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  sampling_rate <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  include_all <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  special_periods <span class="op">=</span> <span class="va">opener_periods</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">42</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">calendar_for_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/transform.html" class="external-link">transform</a></span><span class="op">(</span></span>
-<span>  <span class="va">sched</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"final_stratum"</span><span class="op">)</span><span class="op">]</span>,</span>
-<span>  analysis_stratum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^high_use"</span>, <span class="va">final_stratum</span><span class="op">)</span>, <span class="va">final_stratum</span>, <span class="st">"regular"</span><span class="op">)</span></span>
-<span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"analysis_stratum"</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span><span class="va">design_special</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
-<span>  <span class="va">calendar_for_design</span>,</span>
-<span>  date <span class="op">=</span> <span class="va">date</span>,</span>
-<span>  strata <span class="op">=</span> <span class="va">analysis_stratum</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>Once counts and interviews are attached,
-<code>estimate_effort(..., target = "period_total")</code> and the
-total-catch/product estimators use the declared analysis strata
-directly. If one of those strata is too sparse for variance estimation,
-tidycreel names the sparse stratum in its diagnostic instead of failing
-opaquely.</p>
-</div>
-<div class="section level2">
-<h2 id="next-steps">Next Steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
-</h2>
-<p>This vignette covers the core tidycreel workflow for instantaneous
-count surveys. For more details on specific functions, see their help
-pages:</p>
+<p>This tutorial used the most common design: instantaneous counts and
+access interviews, with weekday and weekend strata. From here:</p>
 <ul>
 <li>
-<code><a href="../reference/creel_design.html">?creel_design</a></code> - Define survey calendar and
-stratification</li>
+<code><a href="../articles/survey-scheduling.html">vignette("survey-scheduling")</a></code> builds the sampling
+calendar before the season, including high-use periods such as
+openers.</li>
 <li>
-<code><a href="../reference/add_counts.html">?add_counts</a></code> - Attach count data to a design</li>
+<code><a href="../articles/interview-estimation.html">vignette("interview-estimation")</a></code> and
+<code><a href="../articles/incomplete-trips.html">vignette("incomplete-trips")</a></code> cover catch-rate estimators in
+depth.</li>
 <li>
-<code><a href="../reference/estimate_effort.html">?estimate_effort</a></code> - Compute effort estimates with
-variance</li>
+<code><a href="../articles/section-estimation.html">vignette("section-estimation")</a></code> handles lakes split into
+sections.</li>
+<li>The <strong>Survey Types</strong> articles cover bus-route, ice,
+camera, aerial and mark-recapture designs.</li>
 <li>
-<code><a href="../reference/as_creel_svydesign.html">?as_creel_svydesign</a></code> - Extract internal survey object
-for advanced use</li>
-</ul>
-<p>For information on the example datasets:</p>
-<ul>
-<li>
-<code><a href="../reference/example_calendar.html">?example_calendar</a></code> - Example survey calendar</li>
-<li>
-<code><a href="../reference/example_counts.html">?example_counts</a></code> - Example count observations</li>
+<code><a href="../articles/glossary.html">vignette("glossary")</a></code> defines the terms used
+throughout.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
