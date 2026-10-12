@@ -87,7 +87,7 @@ test_that("warning for very short trips (effort < 0.1 hours)", {
   )
 })
 
-test_that("warning for zero catch values", {
+test_that("zero catch is reported as a message, not a warning (#490)", {
   design <- make_tier2_test_design()
   zero_catch_interviews <- data.frame(
     date = as.Date(c(
@@ -103,17 +103,22 @@ test_that("warning for zero catch values", {
     stringsAsFactors = FALSE
   )
 
-  expect_warning(
+  # Zero catch is usual on a real fishery, so a warning here fired on almost
+  # every dataset. The count must still be shown, as a message, so a column of
+  # zeros that is really missing data can be noticed.
+  attach <- function() {
     add_interviews(
       design,
       zero_catch_interviews,
       catch = catch_total,
       effort = hours_fished,
       trip_status = trip_status,
-      trip_duration = trip_duration
-    ),
-    "2 interviews have zero catch"
-  )
+      trip_duration = trip_duration,
+      n_anglers = 1
+    )
+  }
+  expect_no_warning(suppressMessages(attach()))
+  expect_message(attach(), "2 interviews have zero catch")
 })
 
 test_that("warning for negative catch values", {

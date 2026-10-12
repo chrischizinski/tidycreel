@@ -18,8 +18,7 @@
 # Usage: Rscript scripts/check-vignette-warnings.R   (or `just vignette-warnings`)
 
 allowed <- list(
-  # add_interviews() flags zero-catch interviews; the tutorial explains them.
-  tidycreel = c("interviews? ha(s|ve) zero catch")
+  tidycreel = character()
 )
 
 suppressMessages(devtools::load_all(quiet = TRUE))

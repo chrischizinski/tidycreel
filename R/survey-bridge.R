@@ -1457,12 +1457,15 @@ warn_tier2_interview_issues <- function(design) {
     }
   }
 
-  # Check for zero catch values
+  # Zero catch is reported, not warned about: most trips on most fisheries
+  # catch nothing, so a warning fired on nearly every real dataset and taught
+  # users to ignore warnings. The count stays visible so a column of zeros that
+  # is really missing data can still be noticed (GH #490).
   n_zero <- sum(interviews[[catch_col]] == 0, na.rm = TRUE)
   if (n_zero > 0) {
-    cli::cli_warn(c(
-      "{n_zero} interview{?s} ha{?s/ve} zero catch.",
-      "i" = "Zero catch may be valid (skunked) or indicate missing data."
+    cli::cli_inform(c(
+      "i" = "{n_zero} interview{?s} ha{?s/ve} zero catch.",
+      " " = "Zero catch is usual; check it is not missing data recorded as 0."
     ))
   }
 
