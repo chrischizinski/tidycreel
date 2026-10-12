@@ -36,7 +36,7 @@ difference in tidycreel is one argument, `interview_type`:
 |---|---|---|
 | Where the clerk is | At the access point, as parties leave | Moving through the fishery |
 | Trips | Mostly complete | All incomplete: the party is still fishing |
-| Catch rate | Ratio of means, complete trips | Mean of ratios, all trips |
+| Catch rate | Ratio of means, complete trips | Mean of ratios, all trips but the shortest |
 | `interview_type` | `"access"` (the default) | `"roving"` |
 
 The counts, and so the effort, are the same either way. This page runs one
