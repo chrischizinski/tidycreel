@@ -220,6 +220,7 @@ reference:
       - example_season_calendar
       - example_season_counts
       - example_season_interviews
+      - example_roving_interviews
       - example_calendar
       - example_counts
       - example_interviews
@@ -254,11 +255,13 @@ articles:
   - tidycreel
   - glossary
 
-- title: "Survey Types"
-  navbar: "Survey Types"
+- title: "How-to: Survey Designs"
+  navbar: "How-to"
   desc: >
-    Workflow vignettes for each supported creel survey design.
+    One page per survey design, each with the same steps: design, data,
+    effort, rates, totals, results as data, and a plot.
   contents:
+  - instantaneous-counts
   - bus-route-surveys
   - ice-fishing
   - camera-surveys
