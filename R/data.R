@@ -104,6 +104,56 @@
 #' @family "Example Datasets"
 "example_season_interviews"
 
+#' Example roving interviews for a creel survey
+#'
+#' Roving interviews from the 36 sampled days in [example_season_calendar],
+#' one row per angling party. A roving clerk meets parties while they fish, so
+#' every trip is incomplete: `hours_fished` and `catch_total` are the hours
+#' fished and the fish caught so far. Pair with [example_season_counts] for
+#' effort.
+#'
+#' The parties were simulated so that the true catch rate is known: 0.22 fish
+#' per angler-hour. A party's chance of being met is proportional to its trip
+#' length, it is met at a random point in its trip, and its catch so far
+#' accrues at the true rate over the time fished so far. Parties that had
+#' fished less than 15 minutes were not interviewed.
+#'
+#' @format A data frame with 212 rows and 8 columns:
+#' \describe{
+#'   \item{date}{Interview date (Date class), a sampled day in the calendar}
+#'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
+#'   \item{interview_id}{Integer interview identifier, 1 to 212}
+#'   \item{trip_status}{Always "incomplete"}
+#'   \item{hours_fished}{Hours the party had fished when interviewed}
+#'   \item{n_anglers}{Integer number of anglers in the party}
+#'   \item{catch_total}{Integer fish caught so far, kept and released}
+#'   \item{catch_kept}{Integer fish kept so far, never more than `catch_total`}
+#' }
+#'
+#' @source Simulated with a fixed seed; see
+#'   `data-raw/example_roving_interviews.R` in the package source.
+#'
+#' @examples
+#' data(example_season_calendar)
+#' data(example_season_counts)
+#' data(example_roving_interviews)
+#'
+#' design <- creel_design(example_season_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, example_season_counts,
+#'   count_col = total_anglers, period_length_col = daylight_hours
+#' )
+#' design <- add_interviews(design, example_roving_interviews,
+#'   catch = catch_total, harvest = catch_kept, effort = hours_fished,
+#'   trip_status = trip_status, trip_duration = hours_fished,
+#'   n_anglers = n_anglers, interview_type = "roving"
+#' )
+#' estimate_catch_rate(design)
+#'
+#' @seealso [example_season_interviews] for access interviews on the same days,
+#'   `vignette("instantaneous-counts")`
+#' @family "Example Datasets"
+"example_roving_interviews"
+
 #' Example calendar data for creel survey
 #'
 #' A sample survey calendar dataset demonstrating the structure required for

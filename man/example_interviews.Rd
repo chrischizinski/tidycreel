@@ -97,6 +97,7 @@ Other "Example Datasets":
 \code{\link{example_ice_interviews}},
 \code{\link{example_ice_sampling_frame}},
 \code{\link{example_lengths}},
+\code{\link{example_roving_interviews}},
 \code{\link{example_season_calendar}},
 \code{\link{example_season_counts}},
 \code{\link{example_season_interviews}},

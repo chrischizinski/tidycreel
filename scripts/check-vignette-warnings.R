@@ -20,6 +20,9 @@
 allowed <- list(
   tidycreel = character(),
   # How-to section (#480).
+  # Roving rates drop trips under half an hour and warn when that is 10% or
+  # more; the page explains why that many is expected on roving data.
+  `instantaneous-counts` = c("MOR truncation"),
   `bus-route-surveys` = character(),
   `ice-fishing` = character(),
   # One paired interview/count day in a stratum: the SE is NA, and the text
