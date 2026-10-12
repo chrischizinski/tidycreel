@@ -563,7 +563,7 @@ perform_tost <- function(
   if (df <= 0L) {
     cli::cli_warn(
       "TOST: insufficient degrees of freedom (df={df}); equivalence cannot be tested.",
-      class = "creel_warn_tost_degenerate"
+      class = c("creel_warning_tost_degenerate", "creel_warn_tost_degenerate", "creel_warning")
     )
     return(list(
       p_lower = NA_real_,

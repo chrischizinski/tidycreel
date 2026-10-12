@@ -110,7 +110,7 @@ estimate_effort_camera <- function(
             "a lower bound."
           )
         ),
-        class = "creel_warning_camera_imputed_counts"
+        class = c("creel_warning_camera_imputed_counts", "creel_warning")
       )
     }
   }
@@ -174,7 +174,7 @@ estimate_effort_camera <- function(
           "design if it was not sampled."
         )
       ),
-      class = "creel_warning_camera_na_counts"
+      class = c("creel_warning_camera_na_counts", "creel_warning")
     )
   }
 
@@ -268,7 +268,9 @@ estimate_effort_camera <- function(
           "party size -- to make the unit derivable."
         ),
         "i" = "The estimate is returned with an unknown unit until then."
-      ))
+      ),
+      class = c("creel_warning_camera_unit_ambiguous", "creel_warning")
+      )
       effort_unit_label <- NA_character_
     }
     # Build calibration ratio per stratum: mean(effort) / mean(camera_count)
@@ -396,7 +398,7 @@ estimate_effort_camera <- function(
             "i" = "Its contribution is {.code NA}, so the reported SE is {.code NA} rather than falsely exact.",
             "i" = "Add a second matched interview day in this stratum to recover an SE."
           ),
-          class = "creel_warning_camera_single_day"
+          class = c("creel_warning_camera_single_day", "creel_warning")
         )
         var_rho <- NA_real_
       }

@@ -64,7 +64,9 @@ label_unknown_group <- function(x, column = NULL) {
       "i" = "Both are reported in one {.val {unknown_group_label()}} row; the counts \
              are pooled and cannot be told apart in the output.",
       "i" = "Rename the recorded category if the two must stay separate."
-    ))
+    ),
+    class = c("creel_warning_unknown_label_collision", "creel_warning")
+    )
     # Pooled for real, not just in the label. Marking the absences with the
     # sentinel would keep them a separate group that merely PRINTS as
     # "Unknown", so one recorded and one unrecorded fish in the same bin came
@@ -312,7 +314,9 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
           "({.field {strata}}) and none is named {.field day_type}."
         ),
         "i" = "Pass {.arg day_type_col} to name the day type column."
-      ), call = call)
+      ), call = call,
+      class = c("creel_warning_day_type_from_stratum", "creel_warning")
+      )
     }
   }
 

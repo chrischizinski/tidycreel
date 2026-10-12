@@ -261,7 +261,9 @@ standardize_species <- function(
         paste0("{.val ", unmatched, "}"),
         rep("*", length(unmatched))
       )
-    ))
+    ),
+    class = c("creel_warning_species_unmatched", "creel_warning")
+    )
   }
 
   if (!keep_original) {

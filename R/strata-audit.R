@@ -234,7 +234,9 @@ audit_strata.default <- function(x, n_h, ybar_h, s2_h, rse_target = 0.20, ...) {
       "Single-day strata cannot estimate variance.",
       "i" = "RSE, DEFF, and {.field meets_target} are {.val NA} for: {.val {single_day}}",
       "i" = "Add at least one more sampled day per affected stratum."
-    ))
+    ),
+    class = c("creel_warning_single_day_strata", "creel_warning")
+    )
   }
 
   N <- sum(N_h) # nolint: object_name_linter

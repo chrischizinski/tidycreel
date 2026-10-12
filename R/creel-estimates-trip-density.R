@@ -136,7 +136,9 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
         " interview(s) have non-positive or missing {.code {dur_col}} values."
       ),
       "i" = "These rows are excluded from the mean trip length calculation."
-    ))
+    ),
+    class = c("creel_warning_trip_duration_excluded", "creel_warning")
+    )
   }
 
   min_n_se <- 2L
@@ -150,7 +152,9 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       cli::cli_warn(c(
         "!" = "Only {n_int} valid trip duration value{?s}; SE of mean trip length is undefined.",
         "i" = "SE and CI will be {.val NA}. Point estimate (trips) is still returned."
-      ))
+      ),
+      class = c("creel_warning_trip_length_se_undefined", "creel_warning")
+      )
       se_L <- NA_real_
     } else {
       se_L <- stats::sd(dur_vals) / sqrt(n_int)
@@ -224,7 +228,9 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       "!" = "{nrow(singleton_strata)} stratum/strata {?has/have} only 1 interview; \\
              SE of mean trip length is undefined.",
       "i" = "SE and CI will be {.val NA} for: {.val {stratum_labels}}. Point estimates are still returned."
-    ))
+    ),
+    class = c("creel_warning_single_interview_strata", "creel_warning")
+    )
   }
 
   # Guard against zero mean trip length

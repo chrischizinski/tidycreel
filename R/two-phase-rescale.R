@@ -379,7 +379,7 @@ warn_two_phase_rescale <- function(measured, reported, what) {
              REPORTED catch, estimated from the measured subsample. Shares
              ({.field percent}) are unaffected."
     ),
-    class = "creel_warn_two_phase_rescale"
+    class = c("creel_warning_two_phase_rescale", "creel_warn_two_phase_rescale", "creel_warning")
   )
   invisible(NULL)
 }

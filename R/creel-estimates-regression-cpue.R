@@ -24,7 +24,9 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
     cli::cli_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from regression CPUE.",
       "i" = "CPUE regression requires effort > 0."
-    ))
+    ),
+    class = c("creel_warning_effort_excluded", "creel_warning")
+    )
     interviews_data <- interviews_data[!zero_eff, , drop = FALSE]
   }
 
@@ -95,7 +97,9 @@ estimate_cpue_reg_grouped <- function(
     cli::cli_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from regression CPUE.",
       "i" = "CPUE regression requires effort > 0."
-    ))
+    ),
+    class = c("creel_warning_effort_excluded", "creel_warning")
+    )
     interviews_data <- interviews_data[!zero_eff, , drop = FALSE]
   }
 
@@ -113,7 +117,9 @@ estimate_cpue_reg_grouped <- function(
       cli::cli_warn(c(
         "Group {.val {gk}}: fewer than 3 interviews; regression CPUE unreliable.",
         "i" = "Only {n_g} interview{?s} in this group."
-      ))
+      ),
+      class = c("creel_warning_regression_small_group", "creel_warning")
+      )
     }
 
     beta_hat <- .ols_slope(catch, effort, force_origin)
@@ -297,7 +303,9 @@ compare_cpue_estimators <- function(
         cli::cli_warn(c(
           "Estimator {.val {est_name}} failed.",
           "x" = conditionMessage(e)
-        ))
+        ),
+        class = c("creel_warning_estimator_failed", "creel_warning")
+        )
         NULL
       }
     )

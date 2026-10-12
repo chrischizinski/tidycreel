@@ -687,7 +687,9 @@ estimate_angler_n <- function(
           "i" = "{.field ci_upper} comes from the continuous Poisson (Ilienko 2013) rather than
                  the data, and is an interpolation between the achievable discrete bounds.",
           "i" = "Treat it as a stand-in for an unbounded upper limit, not as a measured one."
-        ))
+        ),
+        class = c("creel_warning_schnabel_ci_lower_zero", "creel_warning")
+        )
       } else {
         ci_hi <- sum_Mn / lo_m
       }

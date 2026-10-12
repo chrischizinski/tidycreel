@@ -165,7 +165,9 @@ adjust_nonresponse <- function(
         "Nonresponse bias correction relies on the missing-at-random ",
         "assumption. Low response rates may indicate selective refusal."
       )
-    ))
+    ),
+    class = c("creel_warning_low_response_rate", "creel_warning")
+    )
   }
 
   # Build diagnostics tibble
@@ -206,7 +208,9 @@ adjust_nonresponse <- function(
         "Call {.fn add_counts} or {.fn add_interviews} before ",
         "{.fn adjust_nonresponse}."
       )
-    ))
+    ),
+    class = c("creel_warning_no_subdesigns", "creel_warning")
+    )
   }
 
   attr(adjusted_design, "nonresponse_diagnostics") <- diagnostics

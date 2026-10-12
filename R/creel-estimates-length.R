@@ -1062,7 +1062,10 @@ est_mean_length <- function(ld, conf_level = NULL) {
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     n_total <- sum(rows$estimate)
     if (n_total <= 0) {
-      cli::cli_warn("Total estimated fish is zero or negative; mean length cannot be computed.")
+      cli::cli_warn(
+        "Total estimated fish is zero or negative; mean length cannot be computed.",
+        class = c("creel_warning_zero_fish_total", "creel_warning")
+      )
       return(data.frame(
         mean_length = NA_real_,
         mean_length_se = NA_real_,
@@ -1192,7 +1195,7 @@ weighted_bin_var <- function(w, rows, sigma, what) {
         "i" = "Pass the object returned by {.fn est_length_distribution}
                directly, and use {.arg by} rather than subsetting it."
       ),
-      class = "creel_warning_bin_vcov_unavailable"
+      class = c("creel_warning_bin_vcov_unavailable", "creel_warning")
     )
     return(sum(w^2 * rows$se^2))
   }
@@ -1336,7 +1339,10 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
     n_legal <- sum(rows$estimate[legal])
     n_total <- sum(rows$estimate)
     if (n_total <= 0) {
-      cli::cli_warn("Total estimated fish is zero or negative; compliance proportion cannot be computed.")
+      cli::cli_warn(
+        "Total estimated fish is zero or negative; compliance proportion cannot be computed.",
+        class = c("creel_warning_zero_fish_total", "creel_warning")
+      )
       return(data.frame(
         min_length = min_length,
         n_legal_est = NA_real_,
