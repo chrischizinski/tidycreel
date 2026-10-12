@@ -44,4 +44,20 @@ test_that("the aerial total is in fish once party size is passed", {
   # A party-hour rate times angler-hour effort overstates the total by about
   # the mean party size; the angler-hour total must be the smaller one.
   expect_lt(total$estimates$estimate, 3507.6)
+
+  # Each stratum's total is its effort times its angler-hour catch rate. The
+  # 18 weekend interviews draw the n < 30 advisory, which is expected here.
+  expect_warning(
+    by_total <- suppressMessages(estimate_total_catch(design, by = day_type)),
+    "Small sample size"
+  )
+  by_effort <- estimate_effort(design, by = day_type)
+  expect_warning(
+    by_rate <- suppressMessages(estimate_catch_rate(design, by = day_type)),
+    "Small sample size"
+  )
+  expect_equal(
+    by_total$estimates$estimate,
+    by_effort$estimates$estimate * by_rate$estimates$estimate
+  )
 })

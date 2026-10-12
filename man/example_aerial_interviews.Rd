@@ -11,9 +11,9 @@ A data frame with 48 rows and 9 variables:
 \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
 \item{trip_status}{Trip completion status: \code{"complete"} for all 48
 interviews.}
-\item{hours_fished}{Numeric trip duration in hours (range 1.0-5.0).
-This column feeds the mean trip duration (\eqn{\bar{L}}) used in
-\code{\link{estimate_catch_rate}}.}
+\item{hours_fished}{Numeric hours the party fished (range 1.0-5.0): the
+effort term of the catch rate in \code{\link{estimate_catch_rate}}.
+Aerial effort itself comes from the counts, not from these hours.}
 \item{walleye_catch}{Integer total walleye caught (kept + released).}
 \item{walleye_kept}{Integer walleye harvested; always
 \code{<= walleye_catch}.}

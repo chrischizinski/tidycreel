@@ -358,9 +358,11 @@ sqrt(sum(glmm_by_day$estimates$se^2))
 ## Results as Data
 
 The per-stratum result converts to a tibble with its method and variance method
-as columns, and plots with its confidence intervals:
+as columns, and plots. This design declares `visibility_correction = "none"`, so
+its intervals are `NA` (see above) and the plot shows the point estimates
+alone; a design with `visibility_se` draws an interval around each.
 
-```{r results, fig.width = 6, fig.height = 3, fig.alt = "GLMM effort estimates for weekdays and weekends with 95 percent confidence intervals."}
+```{r results, fig.width = 6, fig.height = 3, fig.alt = "GLMM effort point estimates for weekdays and weekends; no confidence intervals, because the visibility uncertainty is unknown."}
 tibble::as_tibble(glmm_by_day)
 
 ggplot2::autoplot(glmm_by_day)
