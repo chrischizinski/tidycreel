@@ -67,14 +67,10 @@ test_that("the tutorial's totals are in fish", {
   design <- add_counts(design, example_season_counts,
     count_col = total_anglers, period_length_col = daylight_hours
   )
-  # The zero-catch advisory is the one warning the tutorial explains.
-  expect_warning(
-    design <- suppressMessages(add_interviews(design, example_season_interviews,
-      catch = catch_total, harvest = catch_kept, effort = hours_fished,
-      trip_status = trip_status, n_anglers = n_anglers
-    )),
-    "zero catch"
-  )
+  design <- expect_no_warning(suppressMessages(add_interviews(design, example_season_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    trip_status = trip_status, n_anglers = n_anglers
+  )))
   total <- expect_no_warning(suppressMessages(
     estimate_total_catch(design, by = day_type, target = "period_total")
   ))
