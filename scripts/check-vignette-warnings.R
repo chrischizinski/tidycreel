@@ -18,7 +18,23 @@
 # Usage: Rscript scripts/check-vignette-warnings.R   (or `just vignette-warnings`)
 
 allowed <- list(
-  tidycreel = character()
+  tidycreel = character(),
+  # How-to section (#480).
+  `bus-route-surveys` = character(),
+  `ice-fishing` = character(),
+  # One paired interview/count day in a stratum: the SE is NA, and the text
+  # says why.
+  `camera-surveys` = c("has one paired interview/count day"),
+  `aerial-surveys` = character(),
+  # The page omits n_anglers on purpose to show the party-hour warning
+  # (decision on #478), keeps the GLMM's one-row-per-flight counts, and shows
+  # the glmer.nb convergence warning open as #492. Each is explained in the text.
+  `aerial-glmm` = c(
+    "repeated sampling units, with no count time",
+    "iteration limit reached",
+    "No `n_anglers` provided",
+    "Rate and effort may be in different units"
+  )
 )
 
 suppressMessages(devtools::load_all(quiet = TRUE))

@@ -116,6 +116,9 @@ Use `add_interviews()` to attach the survey data to the design. For ice
 surveys, `n_counted` and `n_interviewed` are required — they record how many
 parties were counted at the access point versus how many were actually
 interviewed during each visit, providing the enumeration expansion factor.
+Each row is a party, so `n_anglers` gives its size: hours on the ice times
+party size is the party's angler-hours. Without it, effort would be in
+party-hours.
 
 ```{r interviews}
 design <- add_interviews(
@@ -126,7 +129,8 @@ design <- add_interviews(
   harvest       = walleye_kept,
   trip_status   = trip_status,
   n_counted     = n_counted,
-  n_interviewed = n_interviewed
+  n_interviewed = n_interviewed,
+  n_anglers     = n_anglers
 )
 ```
 
@@ -167,7 +171,8 @@ design_aft <- suppressMessages(add_interviews(
   harvest       = walleye_kept,
   trip_status   = trip_status,
   n_counted     = n_counted,
-  n_interviewed = n_interviewed
+  n_interviewed = n_interviewed,
+  n_anglers     = n_anglers
 ))
 
 effort_aft <- estimate_effort(design_aft)
@@ -207,7 +212,7 @@ cpue_est <- estimate_catch_rate(design)
 print(cpue_est)
 ```
 
-The `estimate` column is walleye per hour-on-ice, with a standard error and
+The `estimate` column is walleye per angler-hour on the ice, with a standard error and
 95% confidence interval. The `n` column counts the number of complete
 interviews used in the ratio.
 
@@ -237,6 +242,17 @@ The `estimate` column is the projected total walleye catch across the entire
 survey period. The standard error and 95% confidence interval come from Taylor
 linearization on the Horvitz-Thompson sum, not from the delta method — there is
 no product of two estimates here whose uncertainty would need propagating.
+
+## Results as Data
+
+Each estimate converts to a tibble with its method, variance method and unit as
+columns, and plots with its confidence interval:
+
+```{r results, fig.width = 6, fig.height = 3, fig.alt = "Effort estimates for open and dark-house anglers with 95 percent confidence intervals."}
+tibble::as_tibble(effort_by_shelter)
+
+ggplot2::autoplot(effort_by_shelter)
+```
 
 ## References
 

@@ -67,7 +67,7 @@ The four columns are `date`, `day_type`, `n_anglers` (instantaneous count), and
 
 Build an aerial `creel_design` from the survey dates and attach the count data.
 The `h_open = 14` argument specifies the number of hours the fishery is open
-each day — this enters the final expansion after the diurnal curve is
+each day; it sets the length of the window over which the diurnal curve is
 integrated.
 
 ```{r design}
@@ -89,6 +89,14 @@ design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 print(design)
 ```
 
+`add_counts()` warns that the 48 rows repeat 12 sampling days with no count time
+to tell them apart. For most estimators that is a mistake, and `estimate_effort()`
+refuses such a design. Here it is the point: the GLMM needs each overflight as
+its own row, and it models the repeats through the day-level random intercept.
+So the warning is expected on a design built for `estimate_effort_aerial_glmm()`.
+The comparison further down builds a second design with `count_time_col`, for
+the simple estimator.
+
 ## GLMM Effort Estimation
 
 Call `estimate_effort_aerial_glmm()` with `time_col = time_of_flight`. The
@@ -101,10 +109,18 @@ print(glmm_result)
 ```
 
 The model fits the diurnal count curve over all 48 observations, then
-numerically integrates the predicted mean count across the full open-water
-window (from 0.5 hours before the earliest flight to 0.5 hours after the
-latest). The integrated area is scaled by `h_open / visibility_correction` to
-convert counts to angler-hours.
+numerically integrates the predicted mean count over a window `h_open` hours
+long. The window starts at `open_start` if `creel_design()` was given one, and
+otherwise 0.5 hours before the earliest flight. The integral is already in
+people-hours, so it is scaled by the angler ratio and the visibility correction
+(`angler_ratio / visibility_correction`) and not by `h_open` again.
+
+The fit also warns `iteration limit reached`. That comes from `lme4::glmer.nb()`,
+whose estimate of the negative-binomial dispersion did not settle within its
+iteration limit on these 48 counts. It is a convergence warning about this
+example, left visible rather than suppressed, and is open as tidycreel issue #492
+along with other points about this estimator. Treat the estimate below with that in mind,
+and check convergence on your own data.
 
 ## Variance and Confidence Intervals
 
@@ -187,16 +203,18 @@ total_catch <- estimate_total_catch(design_int)
 print(total_catch)
 ```
 
-`example_aerial_interviews` carries no party-size column, so `add_interviews()`
-cannot normalise effort to angler-hours and `estimate_total_catch()` warns that
-the CPUE it multiplies is per *party*-hour while the count-derived effort is
-angler-hours. The warning is correct for this dataset and is left visible rather
-than suppressed: with one angler per party the total is right as printed, and
-with larger parties it is **overstated** — by the mean party size, because the
-party-hour rate is multiplied by an effort that already counts every angler.
-Supplying `n_anglers = 2` on this example halves the total, from 3507.6 to 1753.8. Supply `n_anglers` from your own
-interview data, or state a constant party size (`n_anglers = 1`) when every
-interview really is a single angler, to remove the ambiguity.
+This example leaves out on purpose the party size that `example_aerial_interviews`
+carries (`n_anglers`), to show what happens without it. `add_interviews()` warns
+that it is assuming one angler per interview, and `estimate_total_catch()` warns
+that the CPUE it multiplies is per *party*-hour while the count-derived effort
+is angler-hours. Both warnings are correct and are left visible: with one angler
+per party the total is right as printed, and with larger parties it is
+**overstated**, roughly by the mean party size, because a party-hour rate is
+multiplied by an effort that already counts every angler. Here the total is
+3507.6 with an unknown unit; passing `n_anglers = n_anglers` gives 1838.4 fish,
+as in `vignette("aerial-surveys")`. Supply `n_anglers` from your own interview
+data, or state a constant party size (`n_anglers = 1`) when every interview
+really is a single angler.
 
 The total's standard error prints as `NA`. This design declares
 `visibility_correction = "none"`: no detection study was done, so the
@@ -336,6 +354,23 @@ sqrt(sum(glmm_by_day$strata_vcov))
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
 ```
+
+## Results as Data
+
+The per-stratum result converts to a tibble with its method and variance method
+as columns, and plots. This design declares `visibility_correction = "none"`, so
+its intervals are `NA` (see above) and the plot shows the point estimates
+alone; a design with `visibility_se` draws an interval around each.
+
+```{r results, fig.width = 6, fig.height = 3, fig.alt = "GLMM effort point estimates for weekdays and weekends; no confidence intervals, because the visibility uncertainty is unknown."}
+tibble::as_tibble(glmm_by_day)
+
+ggplot2::autoplot(glmm_by_day)
+```
+
+The `unit` column reads `NA`: the GLMM estimator does not yet record that its
+effort is in angler-hours, so the plot axis carries no unit either. That is
+also part of #492.
 
 ## Custom Formula
 

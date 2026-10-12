@@ -305,6 +305,12 @@ example_ice_interviews <- data.frame(
   stringsAsFactors = FALSE
 )
 
+# Party size, added for #480: without it effort is in party-hours, not
+# angler-hours. Drawn after every other column, from its own seed, so the
+# columns above are unchanged.
+set.seed(580)
+example_ice_interviews$n_anglers <- pmin(1L + rpois(nrow(example_ice_interviews), 0.8), 4L)
+
 # Data quality assertions
 iv <- example_ice_interviews
 stopifnot(all(iv$n_interviewed <= iv$n_counted))
@@ -314,6 +320,7 @@ stopifnot(all(iv$perch_kept <= iv$perch_catch))
 stopifnot(all(iv$trip_status %in% c("complete", "incomplete")))
 stopifnot(all(iv$shelter_mode %in% c("open", "dark_house")))
 stopifnot(nrow(iv) == 72L)
+stopifnot(all(iv$n_anglers >= 1L & iv$n_anglers <= 4L))
 stopifnot(sum(iv$walleye_kept) >= 5L)
 stopifnot(sum(iv$perch_kept) >= 10L)
 

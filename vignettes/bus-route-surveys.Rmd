@@ -71,8 +71,8 @@ parties are interviewed, the expansion factor
 $$\text{expansion} = \frac{n\_counted}{n\_interviewed}$$
 
 rescales the interviewed data so it represents all parties. If all parties are interviewed
-(n_counted = n_interviewed), the expansion is 1 and no adjustment is needed. This is the
-case in Malvestuto (1996) Box 20.6 Example 1, used in this vignette.
+(n_counted = n_interviewed), the expansion is 1 and no adjustment is needed, as in the
+example below.
 
 ### Horvitz-Thompson Estimator
 
@@ -100,13 +100,18 @@ site probabilities.
 
 tidycreel computes $\pi_i = p\_site \times p\_period$ directly from the sampling frame
 you supply to `creel_design()`. This matches the primary source definition in Jones &
-Pollock (2012, p. 912) and the worked example in Malvestuto (1996, Box 20.6). The
-implementation is validated against that published example in the package test suite.
+Pollock (2012, p. 912). Malvestuto (1996, Box 20.6) applies the same rule in its worked
+access-point and roving examples, dividing each observed effort by its selection
+probability; the package test suite reproduces its Example 1 and Example 2 figures.
 
 ## Step-by-Step Example
 
-We demonstrate the full bus-route workflow using the data from Malvestuto (1996) Box 20.6,
-Example 1 — a four-site, single-circuit survey with 15 interviews over four days.
+We demonstrate the full bus-route workflow on a small constructed example: a four-site,
+single-circuit survey with 15 interviews over four days. Site C borrows its numbers from
+Malvestuto (1996) Box 20.6, Example 1, an access-point example in which six parties of 11
+anglers fished 57.5 angler-hours at a landing selected with probability 0.20. Sites A, B and
+D are invented so the bus-route sum has several sites to add. Box 20.6 contains no bus-route
+example, so the totals below are this example's own arithmetic, not published figures.
 
 ### Step 1: Define the Sampling Design
 
@@ -164,6 +169,12 @@ Each row of interview data represents one interviewed party. The `n_counted` and
 actually interviewed. In this example both are equal (no expansion needed), but the
 columns must still be supplied for bus-route designs.
 
+Each party's effort is recorded here as angler-hours: the hours fished times the number of
+anglers in the party, which is how Box 20.6 reports it. Because the column already counts
+every angler, `n_anglers = 1` tells `add_interviews()` to take each value as it stands. If
+your sheet records hours per party and party size separately, pass the hours as `effort`
+and the party size as `n_anglers` instead, and tidycreel multiplies them.
+
 ```{r interviews}
 # 15 interviews across 4 sites and 4 days
 # Site A: 4 interviews (all 4 parties interviewed)
@@ -189,7 +200,7 @@ interviews_raw <- data.frame(
     "C"
   ),
   circuit = "circ1",
-  hours_fished = c(
+  angler_hours = c(
     7.5, 7.5, 7.5, 7.5, # Site A: 4 x 7.5 = 30 h total
     20.0 / 3, 20.0 / 3, 20.0 / 3, # Site B: 3 x 6.67 = 20 h total
     57.5 / 6, 57.5 / 6, 57.5 / 6, # Site C rows 1-3
@@ -236,12 +247,13 @@ interviews_raw <- data.frame(
 design <- add_interviews(
   design,
   interviews_raw,
-  effort        = hours_fished,
+  effort        = angler_hours,
   catch         = fish_caught,
   harvest       = fish_kept,
   n_counted     = n_counted,
   n_interviewed = n_interviewed,
-  trip_status   = trip_status
+  trip_status   = trip_status,
+  n_anglers     = 1
 )
 print(design)
 ```
@@ -274,29 +286,45 @@ Site D (πᵢ = 0.025, total effort = 5 h) contributes 5 / 0.025 = 200 angler-ho
 Site D has little observed effort, its low sampling probability means it represents a much
 larger population of fishing activity.
 
-The total E_hat = 847.5 angler-hours matches Malvestuto (1996) Box 20.6 Example 1
-exactly.
+Site C's 287.5 angler-hours is the figure Box 20.6 publishes for its Example 1 landing; the
+total of 847.5 angler-hours adds the three constructed sites.
 
-### Step 4: Estimate Harvest
+### Step 4: Estimate Catch and Harvest
 
-`estimate_harvest_rate()` applies the same Horvitz-Thompson logic to fish kept.
+`estimate_harvest_rate()` gives fish kept per angler-hour. The totals apply the same
+Horvitz-Thompson logic as effort, dividing each party's fish by its inclusion probability
+and summing.
 
 ```{r harvest}
-# Estimate total fish kept (harvest)
-harvest_est <- estimate_harvest_rate(design)
+# Fish kept per angler-hour
+harvest_rate <- estimate_harvest_rate(design)
+print(harvest_rate)
+
+# Total fish kept (harvest) and total fish caught (kept + released)
+harvest_est <- estimate_total_harvest(design)
 print(harvest_est)
 
-# Estimate total catch (kept + released)
 catch_est <- estimate_total_catch(design)
 print(catch_est)
 ```
 
-## Validation
+### Step 5: Results as Data
 
-The effort estimate above (E_hat = 847.5 angler-hours) reproduces the published result
-from Malvestuto (1996) Box 20.6 Example 1 exactly. This agreement is verified by the
-package test suite in `tests/testthat/test-primary-source-validation.R`. Each of the four
-site contributions matches:
+Each estimate converts to a tibble with its method, variance method and unit as columns,
+ready for `dplyr` or a report table, and plots with its confidence interval:
+
+```{r results, fig.width = 6, fig.height = 3, fig.alt = "Total catch estimate with its 95 percent confidence interval."}
+tibble::as_tibble(catch_est)
+
+ggplot2::autoplot(catch_est)
+```
+
+## Checking the Arithmetic
+
+Each site contributes its observed effort divided by its inclusion probability. Site C's
+row is the one figure published in Malvestuto (1996) Box 20.6 (Example 1); the rest are this
+example's own arithmetic. `tests/testthat/test-primary-source-validation.R` checks both,
+and labels which is which.
 
 | Site | e_i (h) | πᵢ    | e_i / πᵢ |
 |------|---------|-------|----------|

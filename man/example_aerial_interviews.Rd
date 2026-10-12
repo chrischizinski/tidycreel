@@ -5,20 +5,23 @@
 \alias{example_aerial_interviews}
 \title{Example angler interview data for aerial creel survey}
 \format{
-A data frame with 48 rows and 8 variables:
+A data frame with 48 rows and 9 variables:
 \describe{
 \item{date}{Interview date (Date class), June-July 2024.}
 \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
 \item{trip_status}{Trip completion status: \code{"complete"} for all 48
 interviews.}
-\item{hours_fished}{Numeric trip duration in hours (range 1.0-5.0).
-This column feeds the mean trip duration (\eqn{\bar{L}}) used in
-\code{\link{estimate_catch_rate}}.}
+\item{hours_fished}{Numeric hours the party fished (range 1.0-5.0): the
+effort term of the catch rate in \code{\link{estimate_catch_rate}}.
+Aerial effort itself comes from the counts, not from these hours.}
 \item{walleye_catch}{Integer total walleye caught (kept + released).}
 \item{walleye_kept}{Integer walleye harvested; always
 \code{<= walleye_catch}.}
 \item{bass_catch}{Integer total bass caught (kept + released).}
 \item{bass_kept}{Integer bass harvested; always \code{<= bass_catch}.}
+\item{n_anglers}{Integer number of anglers in the party (1-4). Pass it to
+\code{\link[=add_interviews]{add_interviews()}} so the catch rate is per angler-hour, the unit of
+aerial effort.}
 }
 }
 \source{
@@ -54,14 +57,15 @@ design <- creel_design(
   h_open = 14
 )
 design <- add_counts(design, example_aerial_counts)
-design <- suppressWarnings(add_interviews(
+design <- add_interviews(
   design,
   example_aerial_interviews,
   catch = walleye_catch,
   effort = hours_fished,
-  trip_status = trip_status
-))
-suppressWarnings(estimate_catch_rate(design))
+  trip_status = trip_status,
+  n_anglers = n_anglers
+)
+estimate_catch_rate(design)
 
 }
 \seealso{
