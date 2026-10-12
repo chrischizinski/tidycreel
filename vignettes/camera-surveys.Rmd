@@ -175,11 +175,11 @@ inherits whatever unit the effort column holds, which the package cannot
 identify, and the unit is reported as unknown.
 
 ```{r counter-effort}
-effort_counter <- suppressWarnings(est_effort_camera(
+effort_counter <- est_effort_camera(
   design_counter,
   interviews = example_camera_interviews,
   n_anglers  = 1
-))
+)
 print(effort_counter)
 ```
 
@@ -267,16 +267,16 @@ ie_interviews <- example_camera_interviews[
   example_camera_interviews$date %in% daily_effort$date,
 ]
 
-effort_ie <- suppressWarnings(est_effort_camera(
+effort_ie <- est_effort_camera(
   design_ie,
   interviews = ie_interviews,
   n_anglers  = 1
-))
+)
 print(effort_ie)
 ```
 
-The standard error is `NA` here, and that is the estimator working rather than
-failing. These four sampling days give the `weekend` stratum only one day
+The standard error is `NA` here, and the warning above says why; that is the
+estimator working rather than failing. These four sampling days give the `weekend` stratum only one day
 carrying both a count and interviews, and a single paired day gives the
 calibration ratio no measurable spread. Reporting `0` for that variance would
 present the most uncertain calibration as the most precise one, so the package
@@ -297,7 +297,7 @@ design_catch <- suppressMessages(add_interviews(
   trip_status = trip_status,
   n_anglers   = 1
 ))
-catch_rate <- suppressWarnings(estimate_catch_rate(design_catch))
+catch_rate <- estimate_catch_rate(design_catch)
 print(catch_rate)
 ```
 
@@ -322,6 +322,17 @@ variance and the rate variance combined, and nothing here does that yet.
 
 `estimate_total_harvest()` and `estimate_total_release()` refuse camera designs
 for the same reason.
+
+## Results as Data
+
+Each estimate converts to a tibble with its method, variance method and unit as
+columns, and plots with its confidence interval:
+
+```{r results, fig.width = 6, fig.height = 3, fig.alt = "Counter-mode camera effort estimate with its 95 percent confidence interval."}
+tibble::as_tibble(effort_counter)
+
+ggplot2::autoplot(effort_counter)
+```
 
 
 ## Summary

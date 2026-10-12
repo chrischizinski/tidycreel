@@ -5,7 +5,7 @@
 \alias{example_ice_interviews}
 \title{Example interview data for ice fishing creel survey}
 \format{
-A data frame with 72 rows and 11 columns:
+A data frame with 72 rows and 12 columns:
 \describe{
 \item{date}{Interview date (Date class), matching \link{example_ice_sampling_frame}}
 \item{n_counted}{Integer total number of angler parties counted at the
@@ -25,6 +25,9 @@ travel, setup, and breaks; always \code{<= hours_on_ice}}
 \item{shelter_mode}{Character shelter type used by the angler party:
 \code{"open"} (no shelter) or \code{"dark_house"} (enclosed shelter).
 Used to stratify effort estimates by shelter type.}
+\item{n_anglers}{Integer number of anglers in the party (1-4). Pass it to
+\code{\link[=add_interviews]{add_interviews()}} so effort is in angler-hours rather than
+party-hours.}
 }
 }
 \source{
@@ -61,9 +64,10 @@ design <- suppressMessages(add_interviews(
   harvest = walleye_kept,
   trip_status = trip_status,
   n_counted = n_counted,
-  n_interviewed = n_interviewed
+  n_interviewed = n_interviewed,
+  n_anglers = n_anglers
 ))
-suppressWarnings(estimate_effort(design))
+estimate_effort(design)
 
 }
 \seealso{

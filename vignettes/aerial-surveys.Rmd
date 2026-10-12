@@ -21,16 +21,17 @@ knitr::opts_chunk$set(
 Aerial creel surveys estimate total angler effort by conducting an instantaneous
 count of anglers on the water from a low-flying aircraft. Because the aircraft
 captures a snapshot of angler activity at a single moment, the count must be
-expanded to total effort using the hours the fishery is open (`h_open`) and the
-mean trip duration of anglers on the water (`L_bar`). The basic estimator is:
+expanded to a day's effort using the hours the fishery is open (`h_open`). The
+basic estimator for a day is:
 
-$$\hat{E} = N_{obs} \times \frac{h_{open}}{v}$$
+$$\hat{E} = N_{obs} \times h_{open} \times \frac{a}{v}$$
 
-where $N_{obs}$ is the observed (instantaneous) angler count, $h_{open}$ is the
-number of hours the fishery is open per day, and $v$ is the **detection
-probability** — the proportion of anglers present that are detected from the
-aircraft. The mean trip duration $\bar{L}$ is estimated from ground interviews
-and enters the catch rate estimation step rather than the effort expansion step.
+where $N_{obs}$ is the observed (instantaneous) count, $h_{open}$ is the number
+of hours the fishery is open per day, $a$ is the angler ratio (the proportion
+of people counted who are anglers; 1 when every person counted is fishing), and $v$ is the
+**detection probability** — the proportion of anglers present that are detected
+from the aircraft. Effort comes from the counts alone; ground interviews supply
+the catch rate.
 
 When not all anglers are visible from the air — for example, anglers fishing
 under tree cover or in enclosed shelters — a **visibility correction**
@@ -131,23 +132,25 @@ auto-detected as the count variable.
 design <- add_counts(design, example_aerial_counts)
 ```
 
-Aerial effort estimation requires interview data to be attached before calling
-`estimate_effort()`, because the estimator uses the mean trip duration
-($\bar{L}$) from ground interviews to confirm the expansion factor. Attach the
-interview data with `add_interviews()`, then estimate total effort.
+Aerial effort comes from the counts alone: each day's count times `h_open`,
+scaled by the angler ratio and the visibility correction. Interviews are not
+needed for effort; they supply the catch rate later on. They are attached here
+so the same design serves both. Each row is a party, so `n_anglers` gives its
+size and the catch rate comes out per angler-hour, the unit of aerial effort.
 
 ```{r add-interviews}
-design <- suppressWarnings(add_interviews(
+design <- add_interviews(
   design,
   example_aerial_interviews,
   catch       = walleye_catch,
   effort      = hours_fished,
-  trip_status = trip_status
-))
+  trip_status = trip_status,
+  n_anglers   = n_anglers
+)
 ```
 
 ```{r estimate-effort}
-effort <- suppressWarnings(estimate_effort(design))
+effort <- estimate_effort(design)
 print(effort)
 ```
 
@@ -189,15 +192,16 @@ design_corr <- creel_design(
 )
 
 design_corr <- add_counts(design_corr, example_aerial_counts)
-design_corr <- suppressWarnings(add_interviews(
+design_corr <- add_interviews(
   design_corr,
   example_aerial_interviews,
   catch       = walleye_catch,
   effort      = hours_fished,
-  trip_status = trip_status
-))
+  trip_status = trip_status,
+  n_anglers   = n_anglers
+)
 
-effort_corr <- suppressWarnings(estimate_effort(design_corr))
+effort_corr <- estimate_effort(design_corr)
 print(effort_corr)
 ```
 
@@ -219,7 +223,7 @@ The catch rate estimator computes CPUE (walleye per angler-hour) from the
 complete-trip interviews already attached to the design.
 
 ```{r catch-rate}
-catch_rate <- suppressWarnings(estimate_catch_rate(design))
+catch_rate <- estimate_catch_rate(design)
 print(catch_rate)
 ```
 
@@ -227,7 +231,7 @@ print(catch_rate)
 estimate to project total walleye catch over the survey period.
 
 ```{r total-catch}
-total_catch <- suppressWarnings(estimate_total_catch(design))
+total_catch <- estimate_total_catch(design)
 print(total_catch)
 ```
 
@@ -237,6 +241,17 @@ and angler ratio, which scale every stratum's effort and so enter the total
 once. This design declares `visibility_correction = "none"`, so detection
 uncertainty is unknown and the SE prints as `NA`, as the effort SE does; the
 `design_corr` design above, with `visibility_se`, gives a finite one.
+
+## Results as Data
+
+Each estimate converts to a tibble with its method, variance method and unit as
+columns, and plots with its confidence interval:
+
+```{r results, fig.width = 6, fig.height = 3, fig.alt = "Visibility-corrected aerial effort estimate with its 95 percent confidence interval."}
+tibble::as_tibble(total_catch)
+
+ggplot2::autoplot(effort_corr)
+```
 
 ## Summary
 

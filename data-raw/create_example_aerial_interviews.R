@@ -50,6 +50,12 @@ bass_kept_raw <- vapply(
   integer(1L)
 )
 
+# Party size, added for #480: without it the catch rate is per party-hour and
+# cannot be multiplied by aerial effort in angler-hours. Drawn last, from its
+# own seed, so the columns above are unchanged.
+set.seed(547)
+n_anglers_raw <- pmin(1L + rpois(n_total, 0.8), 4L)
+
 example_aerial_interviews <- data.frame(
   date = dates_vec,
   day_type = day_type_vec,
@@ -59,6 +65,7 @@ example_aerial_interviews <- data.frame(
   walleye_kept = walleye_kept_raw,
   bass_catch = as.integer(bass_raw),
   bass_kept = bass_kept_raw,
+  n_anglers = n_anglers_raw,
   stringsAsFactors = FALSE
 )
 
@@ -70,5 +77,6 @@ stopifnot(all(iv$bass_kept <= iv$bass_catch))
 stopifnot(all(iv$hours_fished > 0))
 stopifnot(all(iv$trip_status == "complete"))
 stopifnot(all(iv$day_type %in% c("weekday", "weekend")))
+stopifnot(all(iv$n_anglers >= 1L & iv$n_anglers <= 4L))
 
 usethis::use_data(example_aerial_interviews, overwrite = TRUE)

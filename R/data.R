@@ -576,7 +576,7 @@
 #' 2024. Anglers fish from both open-air setups and enclosed dark-house shelters,
 #' targeting walleye and yellow perch. Dates match [example_ice_sampling_frame].
 #'
-#' @format A data frame with 72 rows and 11 columns:
+#' @format A data frame with 72 rows and 12 columns:
 #' \describe{
 #'   \item{date}{Interview date (Date class), matching [example_ice_sampling_frame]}
 #'   \item{n_counted}{Integer total number of angler parties counted at the
@@ -596,6 +596,9 @@
 #'   \item{shelter_mode}{Character shelter type used by the angler party:
 #'     \code{"open"} (no shelter) or \code{"dark_house"} (enclosed shelter).
 #'     Used to stratify effort estimates by shelter type.}
+#'   \item{n_anglers}{Integer number of anglers in the party (1-4). Pass it to
+#'     [add_interviews()] so effort is in angler-hours rather than
+#'     party-hours.}
 #' }
 #'
 #' @source Simulated data based on Nebraska ice fishing survey protocols.
@@ -622,9 +625,10 @@
 #'   harvest = walleye_kept,
 #'   trip_status = trip_status,
 #'   n_counted = n_counted,
-#'   n_interviewed = n_interviewed
+#'   n_interviewed = n_interviewed,
+#'   n_anglers = n_anglers
 #' ))
-#' suppressWarnings(estimate_effort(design))
+#' estimate_effort(design)
 #'
 #' @seealso [example_ice_sampling_frame] for the matching sampling frame,
 #'   [creel_design()], [add_interviews()], [estimate_effort()]
@@ -823,20 +827,23 @@
 #' 3 interviews per sampling day. Anglers target walleye and bass. All
 #' interviews are complete trips. Dates match \code{\link{example_aerial_counts}}.
 #'
-#' @format A data frame with 48 rows and 8 variables:
+#' @format A data frame with 48 rows and 9 variables:
 #' \describe{
 #'   \item{date}{Interview date (Date class), June-July 2024.}
 #'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}.}
 #'   \item{trip_status}{Trip completion status: \code{"complete"} for all 48
 #'     interviews.}
-#'   \item{hours_fished}{Numeric trip duration in hours (range 1.0-5.0).
-#'     This column feeds the mean trip duration (\eqn{\bar{L}}) used in
-#'     \code{\link{estimate_catch_rate}}.}
+#'   \item{hours_fished}{Numeric hours the party fished (range 1.0-5.0): the
+#'     effort term of the catch rate in \code{\link{estimate_catch_rate}}.
+#'     Aerial effort itself comes from the counts, not from these hours.}
 #'   \item{walleye_catch}{Integer total walleye caught (kept + released).}
 #'   \item{walleye_kept}{Integer walleye harvested; always
 #'     \code{<= walleye_catch}.}
 #'   \item{bass_catch}{Integer total bass caught (kept + released).}
 #'   \item{bass_kept}{Integer bass harvested; always \code{<= bass_catch}.}
+#'   \item{n_anglers}{Integer number of anglers in the party (1-4). Pass it to
+#'     [add_interviews()] so the catch rate is per angler-hour, the unit of
+#'     aerial effort.}
 #' }
 #'
 #' @source Simulated for package documentation.
@@ -862,14 +869,15 @@
 #'   h_open = 14
 #' )
 #' design <- add_counts(design, example_aerial_counts)
-#' design <- suppressWarnings(add_interviews(
+#' design <- add_interviews(
 #'   design,
 #'   example_aerial_interviews,
 #'   catch = walleye_catch,
 #'   effort = hours_fished,
-#'   trip_status = trip_status
-#' ))
-#' suppressWarnings(estimate_catch_rate(design))
+#'   trip_status = trip_status,
+#'   n_anglers = n_anglers
+#' )
+#' estimate_catch_rate(design)
 #'
 #' @seealso [example_aerial_counts] for matching count data,
 #'   [creel_design()], [add_interviews()], [estimate_catch_rate()],
