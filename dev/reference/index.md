@@ -312,6 +312,8 @@ vignettes and function examples.
   : Example season counts for a creel survey
 - [`example_season_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_season_interviews.md)
   : Example season interviews for a creel survey
+- [`example_roving_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_roving_interviews.md)
+  : Example roving interviews for a creel survey
 - [`example_calendar`](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md)
   : Example calendar data for creel survey
 - [`example_counts`](https://chrischizinski.com/tidycreel/dev/reference/example_counts.md)

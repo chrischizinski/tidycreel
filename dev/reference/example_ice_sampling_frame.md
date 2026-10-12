@@ -56,6 +56,7 @@ Other "Example Datasets":
 [`example_ice_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_ice_interviews.md),
 [`example_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_interviews.md),
 [`example_lengths`](https://chrischizinski.com/tidycreel/dev/reference/example_lengths.md),
+[`example_roving_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_roving_interviews.md),
 [`example_season_calendar`](https://chrischizinski.com/tidycreel/dev/reference/example_season_calendar.md),
 [`example_season_counts`](https://chrischizinski.com/tidycreel/dev/reference/example_season_counts.md),
 [`example_season_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_season_interviews.md),

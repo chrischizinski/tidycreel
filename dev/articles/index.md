@@ -9,10 +9,13 @@ Introduction to creel survey analysis with tidycreel.
 - [Glossary of Creel Survey
   Terms](https://chrischizinski.com/tidycreel/dev/articles/glossary.md):
 
-### Survey Types
+### How-to: Survey Designs
 
-Workflow vignettes for each supported creel survey design.
+One page per survey design, each with the same steps: design, data,
+effort, rates, totals, results as data, and a plot.
 
+- [Instantaneous-Count Surveys: Access and Roving
+  Interviews](https://chrischizinski.com/tidycreel/dev/articles/instantaneous-counts.md):
 - [Bus-Route
   Surveys](https://chrischizinski.com/tidycreel/dev/articles/bus-route-surveys.md):
 - [Ice Fishing Survey

@@ -726,6 +726,8 @@ vignettes and function examples.
   : Example season counts for a creel survey
 - [`example_season_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_season_interviews.md)
   : Example season interviews for a creel survey
+- [`example_roving_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_roving_interviews.md)
+  : Example roving interviews for a creel survey
 - [`example_calendar`](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md)
   : Example calendar data for creel survey
 - [`example_counts`](https://chrischizinski.com/tidycreel/dev/reference/example_counts.md)
@@ -776,10 +778,13 @@ Introduction to creel survey analysis with tidycreel.
 - [Glossary of Creel Survey
   Terms](https://chrischizinski.com/tidycreel/dev/articles/glossary.md):
 
-### Survey Types
+### How-to: Survey Designs
 
-Workflow vignettes for each supported creel survey design.
+One page per survey design, each with the same steps: design, data,
+effort, rates, totals, results as data, and a plot.
 
+- [Instantaneous-Count Surveys: Access and Roving
+  Interviews](https://chrischizinski.com/tidycreel/dev/articles/instantaneous-counts.md):
 - [Bus-Route
   Surveys](https://chrischizinski.com/tidycreel/dev/articles/bus-route-surveys.md):
 - [Ice Fishing Survey

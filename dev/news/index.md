@@ -125,6 +125,27 @@
   - Every page now ends with `as_tibble()` and a plot, and all five are
     checked by `just vignette-warnings`.
 
+- New How-to page,
+  [`vignette("instantaneous-counts")`](https://chrischizinski.com/tidycreel/dev/articles/instantaneous-counts.md)
+  ([\#480](https://github.com/chrischizinski/tidycreel/issues/480)), for
+  the most common design: instantaneous counts with access or roving
+  interviews. The same season’s counts give effort once; the access
+  interviews then give a ratio-of-means rate from complete trips, and
+  the roving interviews a mean-of-ratios rate from trips still in
+  progress, selected by `interview_type = "roving"`. The page explains
+  the one warning it shows, the truncation of trips under half an hour.
+  The pkgdown “Survey Types” group is now “How-to: Survey Designs” and
+  opens with this page.
+
+- New dataset `example_roving_interviews`: 212 roving interviews on the
+  sampled days of `example_season_calendar`, simulated with a known
+  catch rate of 0.22 fish per angler-hour. Each party’s catch is its
+  catch so far.
+  [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/simulate_creel_data.md)
+  could not supply this: it gives an incomplete trip the whole trip’s
+  catch over the hours fished so far, which inflates a roving rate
+  ([\#494](https://github.com/chrischizinski/tidycreel/issues/494)).
+
 - [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)
   is now a tutorial that analyses one complete season
   ([\#480](https://github.com/chrischizinski/tidycreel/issues/480)):

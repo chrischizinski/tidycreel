@@ -14,6 +14,7 @@ articles:
   glossary: glossary.html
   ice-fishing: ice-fishing.html
   incomplete-trips: incomplete-trips.html
+  instantaneous-counts: instantaneous-counts.html
   interview-estimation: interview-estimation.html
   mark-recapture: mark-recapture.html
   progressive-count-surveys: progressive-count-surveys.html
@@ -27,7 +28,7 @@ articles:
   tidycreel: tidycreel.html
   unextrapolated-summaries: unextrapolated-summaries.html
   visualisation: visualisation.html
-last_built: 2026-10-12T03:20Z
+last_built: 2026-10-12T15:14Z
 urls:
   reference: https://chrischizinski.com/tidycreel/reference
   article: https://chrischizinski.com/tidycreel/articles
