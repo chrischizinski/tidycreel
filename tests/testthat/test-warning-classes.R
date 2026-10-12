@@ -33,7 +33,12 @@ warning_class_args <- function() {
 catalogue_classes <- function() {
   src <- test_path("..", "..", "man", "creel_warnings.Rd")
   rd <- if (file.exists(src)) {
-    tools::parse_Rd(src)
+    # A malformed page (an unescaped % ends the line) still contains the class
+    # names, so a parse warning has to fail the test rather than pass quietly.
+    withCallingHandlers(
+      tools::parse_Rd(src),
+      warning = function(w) stop("man/creel_warnings.Rd: ", conditionMessage(w))
+    )
   } else {
     tools::Rd_db("tidycreel")[["creel_warnings.Rd"]]
   }

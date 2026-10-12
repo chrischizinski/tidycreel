@@ -26,10 +26,11 @@
 #' @section Units and scale:
 #' \describe{
 #'   \item{\code{creel_warning_no_period_length}}{Instantaneous counts were
-#'     expanded without a period length, so effort is in counts, not
-#'     angler-hours, and its unit is unknown.}
-#'   \item{\code{creel_warning_no_party_size}}{No party size was given; each
-#'     interview is taken as one angler, so effort and rates are per party.}
+#'     expanded without a period length, so effort is the counts summed over
+#'     days (angler-days for an angler count), not angler-hours.}
+#'   \item{\code{creel_warning_no_party_size}}{No party size was given, so
+#'     each interview counts as one angler. If interviews are parties, rates
+#'     are per party-hour, not per angler-hour.}
 #'   \item{\code{creel_warning_unit_mismatch}}{A rate and an effort may be in
 #'     different units (party-hours and angler-hours), so their product may
 #'     not be a total in fish.}
@@ -60,8 +61,9 @@
 #'     harvest were left out of a harvest rate.}
 #'   \item{\code{creel_warning_trip_duration_excluded}}{Interviews with a
 #'     missing or non-positive trip duration were left out.}
-#'   \item{\code{creel_warning_mor_truncation}}{Incomplete trips shorter than
-#'     `truncate_at` were left out of a mean-of-ratios rate.}
+#'   \item{\code{creel_warning_mor_truncation}}{10 percent or more of incomplete
+#'     trips were shorter than `truncate_at` and left out of a mean-of-ratios
+#'     rate (below 10 percent this is a message).}
 #'   \item{\code{creel_warning_truncation_skipped}}{Mean-of-ratios truncation
 #'     was not applied because the design has no trip duration.}
 #'   \item{\code{creel_warning_truncation_disabled}}{`truncate_at = NULL` turned
@@ -110,8 +112,9 @@
 #'     sampled day, so their variance cannot be estimated.}
 #'   \item{\code{creel_warning_camera_single_day}}{A stratum has one paired
 #'     interview/count day, so its camera calibration SE is `NA`.}
-#'   \item{\code{creel_warning_schnabel_ci_lower_zero}}{The Schnabel Poisson
-#'     interval's lower limit is 0.}
+#'   \item{\code{creel_warning_schnabel_ci_upper_unbounded}}{Too few
+#'     recaptures for a finite Schnabel Poisson upper limit; `ci_upper` is a
+#'     continuous-Poisson stand-in, not a measured bound.}
 #'   \item{\code{creel_warning_tost_degenerate}}{Too few degrees of freedom to
 #'     test equivalence of complete and incomplete trips.}
 #'   \item{\code{creel_warning_se_divergence}}{Variance methods disagree by
@@ -132,7 +135,7 @@
 #'     three interviews for regression CPUE.}
 #'   \item{\code{creel_warning_low_complete_pct}}{Few interviews are complete
 #'     trips.}
-#'   \item{\code{creel_warning_low_response_rate}}{Response rate below 50\% in
+#'   \item{\code{creel_warning_low_response_rate}}{Response rate below 50 percent in
 #'     some strata.}
 #' }
 #'
