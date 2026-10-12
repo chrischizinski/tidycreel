@@ -86,7 +86,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
-<ul><li>
+<ul><li><p>Every warning now has a class (<a href="https://github.com/chrischizinski/tidycreel/issues/496" class="external-link">#496</a>), so one warning can be handled for one call with <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code> instead of hiding all of them with <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code>, which also hides the warnings that mean an estimate may be wrong. Each warning carries <code>creel_warning_&lt;fact&gt;</code> and the parent <code>creel_warning</code>; a fact raised in several places has one class. <code><a href="../reference/creel_warnings.html">?creel_warnings</a></code> lists all 76. No message changed. Before, 12 of 107 warnings had a class. <code>creel_warn_two_phase_rescale</code> and <code>creel_warn_tost_degenerate</code> gain the <code>creel_warning_</code> form and keep their old names.</p></li>
+<li>
 <p>The survey-type articles were checked against what the package reports (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, How-to section). None computed a wrong number; several described their numbers wrongly:</p>
 <ul><li>
 <code><a href="../articles/bus-route-surveys.html">vignette("bus-route-surveys")</a></code> presented its example as Malvestuto (1996) Box 20.6 and its total as a published result. Box 20.6 has no bus-route example; the page now says which figure is published (site C’s 287.5) and which are constructed.</li>

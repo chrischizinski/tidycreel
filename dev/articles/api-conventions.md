@@ -177,6 +177,10 @@ estimator silently.
 - Errors a caller may want to catch carry a class from the
   `creel_error_*` family (`creel_error_invalid_input`,
   `creel_error_schema_validation`, …).
+- Every warning carries a class, `creel_warning_<fact>`, and the parent
+  `creel_warning`, so a caller can handle one warning for one call
+  ([`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
+  lists them). A fact raised in several places uses one class.
 - A warning should be rare enough to read. Advisory warnings that would
   repeat on every call use `.frequency = "once"`.
 - Examples, vignettes and the README run without warnings, unless the

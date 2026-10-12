@@ -197,6 +197,8 @@ check data completeness, and inspect estimate output.
   : Print a creel_validation_report
 - [`as.data.frame(`*`<creel_validation_report>`*`)`](https://chrischizinski.com/tidycreel/dev/reference/as.data.frame.creel_validation_report.md)
   : Coerce a creel_validation_report to a plain data frame
+- [`creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
+  : Warning classes
 
 ## Planning & Sample Size
 

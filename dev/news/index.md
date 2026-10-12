@@ -93,6 +93,20 @@
 
 ### New features
 
+- Every warning now has a class
+  ([\#496](https://github.com/chrischizinski/tidycreel/issues/496)), so
+  one warning can be handled for one call with
+  [`withCallingHandlers()`](https://rdrr.io/r/base/conditions.html)
+  instead of hiding all of them with
+  [`suppressWarnings()`](https://rdrr.io/r/base/warning.html), which
+  also hides the warnings that mean an estimate may be wrong. Each
+  warning carries `creel_warning_<fact>` and the parent `creel_warning`;
+  a fact raised in several places has one class.
+  [`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
+  lists all 76. No message changed. Before, 12 of 107 warnings had a
+  class. `creel_warn_two_phase_rescale` and `creel_warn_tost_degenerate`
+  gain the `creel_warning_` form and keep their old names.
+
 - The survey-type articles were checked against what the package reports
   ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),
   How-to section). None computed a wrong number; several described their

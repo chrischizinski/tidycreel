@@ -391,6 +391,11 @@ back to a different estimator silently.</p>
 <code>creel_error_*</code> family
 (<code>creel_error_invalid_input</code>,
 <code>creel_error_schema_validation</code>, …).</li>
+<li>Every warning carries a class,
+<code>creel_warning_&lt;fact&gt;</code>, and the parent
+<code>creel_warning</code>, so a caller can handle one warning for one
+call (<code><a href="../reference/creel_warnings.html">?creel_warnings</a></code> lists them). A fact raised in several
+places uses one class.</li>
 <li>A warning should be rare enough to read. Advisory warnings that
 would repeat on every call use <code>.frequency = "once"</code>.</li>
 <li>Examples, vignettes and the README run without warnings, unless the
