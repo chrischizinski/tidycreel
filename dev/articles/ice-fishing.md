@@ -172,8 +172,8 @@ design <- add_interviews(
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> Warning: 23 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 23 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 72 interviews: 60 complete (83%), 12 incomplete (17%)
 ```
 
@@ -236,8 +236,6 @@ design_aft <- suppressMessages(add_interviews(
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> Warning: 23 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 
 effort_aft <- estimate_effort(design_aft)
 print(effort_aft)

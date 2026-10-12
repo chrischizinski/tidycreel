@@ -334,7 +334,7 @@ design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
     n_anglers      = "n_anglers",
     interview_type = "roving"
   )
-#> Warning: 72 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 72 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 121 interviews: 97 complete (80%), 24 incomplete (20%)
 ```

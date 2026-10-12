@@ -116,6 +116,8 @@ design <- suppressWarnings(add_interviews(
   effort = hours_fished,
   trip_status = trip_status
 ))
+#> ℹ 15 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
 suppressWarnings(estimate_catch_rate(design))
 #> ℹ Using complete trips for CPUE estimation

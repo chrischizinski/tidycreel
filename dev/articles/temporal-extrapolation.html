@@ -339,8 +339,6 @@ generate synthetic interview data:</p>
 <span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>month <span class="op">=</span> <span class="va">month_labels</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="va">catch_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: 5 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
 <span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=9</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
@@ -348,14 +346,6 @@ generate synthetic interview data:</p>
 <span><span class="co">#&gt;   refuse a group this small.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
 <span><span class="co">#&gt;   (GH #417).</span></span>
-<span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: 4 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: 9 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">monthly_catch</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       month estimate       se  ci_lower ci_upper  n</span></span>
@@ -415,8 +405,6 @@ pass it to <code><a href="../reference/season_summary.html">season_summary()</a>
 <span>  <span class="va">effort_list</span><span class="op">[[</span><span class="va">label</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">des_m</span><span class="op">)</span></span>
 <span>  <span class="va">catch_list</span><span class="op">[[</span><span class="va">label</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">des_m</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Warning: 5 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
 <span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=9</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
@@ -424,14 +412,6 @@ pass it to <code><a href="../reference/season_summary.html">season_summary()</a>
 <span><span class="co">#&gt;   refuse a group this small.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
 <span><span class="co">#&gt;   (GH #417).</span></span>
-<span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: 4 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: 9 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
-<span><span class="co">#&gt; Warning: 7 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
 <span></span>
 <span><span class="co"># Assemble effort report</span></span>
 <span><span class="va">effort_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/season_summary.html">season_summary</a></span><span class="op">(</span><span class="va">effort_list</span><span class="op">)</span></span>

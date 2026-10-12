@@ -294,16 +294,16 @@ day.</p>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
 <span>  n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: 153 interviews have zero catch.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero catch may be valid (skunked) or indicate missing data.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 153 interviews have zero catch.</span></span>
+<span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 231 interviews: 172 complete (74%), 59 incomplete (26%)</span></span></code></pre></div>
 <p>Each row is one party. <code><a href="../reference/add_interviews.html">add_interviews()</a></code> checks the
-interviews as it attaches them, and here it raises one warning: 153 of
-the 231 parties caught nothing. That is not an error in these data. Most
-anglers on most fisheries go home without a fish, and those zeros belong
-in the catch rate. The warning is there because, on a real data sheet, a
-column of zeros can also mean a catch that was never recorded. If your
-zeros are real, as these are, there is nothing to fix.</p>
+interviews as it attaches them and reports what it found: 172 complete
+trips, 59 incomplete, and 153 parties that caught nothing. Most anglers
+on most fisheries go home without a fish, and those zeros belong in the
+catch rate. The count is shown because, on a real data sheet, a column
+of zeros can also mean a catch that was never recorded. If your zeros
+are real, as these are, there is nothing to fix.</p>
 <p><code>n_anglers</code> matters. <code>hours_fished</code> is how long
 the party fished, so it is in party-hours. A party of three fishing two
 hours put in six angler-hours, and <code>n_anglers</code> lets tidycreel

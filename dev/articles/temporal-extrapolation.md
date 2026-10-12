@@ -250,8 +250,6 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 
   cbind(month = month_labels[i], catch_est$estimates)
 })
-#> Warning: 5 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
 #> • day_type=weekend: n=9
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
@@ -259,14 +257,6 @@ monthly_catch <- lapply(seq_along(months), function(i) {
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
-#> Warning: 7 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: 4 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: 9 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: 7 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 
 do.call(rbind, monthly_catch)
 #>       month estimate       se  ci_lower ci_upper  n
@@ -331,8 +321,6 @@ for (i in seq_along(months)) {
   effort_list[[label]] <- estimate_effort(des_m)
   catch_list[[label]] <- estimate_total_catch(des_m)
 }
-#> Warning: 5 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 #> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
 #> • day_type=weekend: n=9
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
@@ -340,14 +328,6 @@ for (i in seq_along(months)) {
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
-#> Warning: 7 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: 4 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: 9 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
-#> Warning: 7 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 
 # Assemble effort report
 effort_summary <- season_summary(effort_list)

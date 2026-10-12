@@ -427,8 +427,6 @@ design_catch <- suppressMessages(add_interviews(
   trip_status = trip_status,
   n_anglers   = 1
 ))
-#> Warning: 14 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 catch_rate <- suppressWarnings(estimate_catch_rate(design_catch))
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=40, 100% of 40 interviews) [default]

@@ -174,8 +174,8 @@ mini_design <- creel_design(mini_calendar, date = date, strata = day_type) |>
     trip_status   = trip_status,
     trip_duration = trip_duration
   )
-#> Warning: 2 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 2 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 10 interviews: 10 complete (100%), 0 incomplete (0%)
 
 # ROM estimate (default estimator for complete trips)

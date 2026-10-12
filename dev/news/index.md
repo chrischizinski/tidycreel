@@ -4,6 +4,18 @@
 
 ### Breaking changes
 
+- [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  reports zero-catch interviews as a message, not a warning
+  ([\#490](https://github.com/chrischizinski/tidycreel/issues/490)).
+  Most trips on most fisheries catch nothing, so the warning fired on
+  nearly every real dataset. The count is still shown, so a column of
+  zeros that is really missing data can be noticed. Code that caught the
+  warning, with `tryCatch(warning = )` or `expect_warning()`, no longer
+  sees it. The other interview checks (very short trips, negative catch
+  or effort) remain warnings, as does
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)’s
+  advice when most trips are zero-catch.
+
 - Aerial catch, harvest and release totals were computed from the raw
   instantaneous count instead of effort
   ([\#470](https://github.com/chrischizinski/tidycreel/issues/470)).

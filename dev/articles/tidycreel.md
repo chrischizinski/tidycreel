@@ -208,19 +208,19 @@ design <- add_interviews(design, example_season_interviews,
   trip_status = trip_status,
   n_anglers = n_anglers
 )
-#> Warning: 153 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 153 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 231 interviews: 172 complete (74%), 59 incomplete (26%)
 ```
 
 Each row is one party.
 [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
-checks the interviews as it attaches them, and here it raises one
-warning: 153 of the 231 parties caught nothing. That is not an error in
-these data. Most anglers on most fisheries go home without a fish, and
-those zeros belong in the catch rate. The warning is there because, on a
-real data sheet, a column of zeros can also mean a catch that was never
-recorded. If your zeros are real, as these are, there is nothing to fix.
+checks the interviews as it attaches them and reports what it found: 172
+complete trips, 59 incomplete, and 153 parties that caught nothing. Most
+anglers on most fisheries go home without a fish, and those zeros belong
+in the catch rate. The count is shown because, on a real data sheet, a
+column of zeros can also mean a catch that was never recorded. If your
+zeros are real, as these are, there is nothing to fix.
 
 `n_anglers` matters. `hours_fished` is how long the party fished, so it
 is in party-hours. A party of three fishing two hours put in six

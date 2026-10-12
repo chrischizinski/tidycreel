@@ -288,8 +288,6 @@ design <- add_interviews(
   n_anglers = 1, # every interview is a single angler
   harvest = catch_kept
 )
-#> Warning: 10 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 ```
 
 ### Catch Rate and Total Catch

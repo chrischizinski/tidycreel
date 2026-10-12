@@ -278,8 +278,8 @@ design_with_interviews <- add_interviews(design, interviews,
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> Warning: 3 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 3 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 40 interviews: 20 complete (50%), 20 incomplete (50%)
 result <- estimate_harvest_rate(design_with_interviews)
 #> ℹ Filtering to complete trips for HPUE estimation

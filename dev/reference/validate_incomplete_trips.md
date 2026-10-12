@@ -199,8 +199,8 @@ design_with_interviews <- add_interviews(design, interviews,
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> Warning: 1 interview has zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 1 interview has zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 100 interviews: 50 complete (50%), 50 incomplete (50%)
 
 # Validate incomplete trips

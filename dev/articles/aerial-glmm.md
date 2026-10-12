@@ -237,8 +237,8 @@ design_int <- add_interviews(design_int, example_aerial_interviews,
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> Warning: 15 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 15 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 48 interviews: 48 complete (100%), 0 incomplete (0%)
 catch_rate <- estimate_catch_rate(design_int)
 #> ℹ Using complete trips for CPUE estimation
@@ -361,7 +361,7 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.546 sampled_days
+#> 1   GLMM 4728.545 sampled_days
 #> 2 Simple 5092.500 sampled_days
 ```
 
@@ -465,11 +465,11 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 581.6951
+#> [1] 581.6956
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 536.0893
+#> [1] 536.0884
 ```
 
 ## Custom Formula

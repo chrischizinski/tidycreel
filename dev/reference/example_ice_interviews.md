@@ -133,8 +133,6 @@ design <- suppressMessages(add_interviews(
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> Warning: 23 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
 suppressWarnings(estimate_effort(design))
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

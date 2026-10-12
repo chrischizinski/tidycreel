@@ -98,8 +98,8 @@ design <- add_interviews(design, example_season_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> Warning: 153 interviews have zero catch.
-#> ℹ Zero catch may be valid (skunked) or indicate missing data.
+#> ℹ 153 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 231 interviews: 172 complete (74%), 59 incomplete (26%)
 estimate_total_catch(design, target = "period_total")
 #> 
