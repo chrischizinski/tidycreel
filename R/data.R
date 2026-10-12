@@ -1,3 +1,109 @@
+#' Example season calendar for a creel survey
+#'
+#' The calendar of one simulated 120-day open-water season, May 1 to
+#' August 28, 2024, used by `vignette("tidycreel")`. Days are stratified into
+#' weekdays and weekends by the real day of the week. The clerk sampled 36 of
+#' the 120 days, so estimates of the season total expand the sampled days to
+#' every day in the calendar.
+#'
+#' @format A data frame with 120 rows and 3 columns:
+#' \describe{
+#'   \item{date}{Calendar date (Date class)}
+#'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
+#'   \item{sampled}{Logical: `TRUE` on the 36 days with counts and interviews}
+#' }
+#'
+#' @source Simulated with [simulate_creel_data()] and a fixed seed; see
+#'   `data-raw/example_season.R` in the package source.
+#'
+#' @examples
+#' data(example_season_calendar)
+#' table(example_season_calendar$day_type, example_season_calendar$sampled)
+#'
+#' design <- creel_design(example_season_calendar, date = date, strata = day_type)
+#' design
+#'
+#' @seealso [example_season_counts], [example_season_interviews]
+#' @family "Example Datasets"
+"example_season_calendar"
+
+#' Example season counts for a creel survey
+#'
+#' One instantaneous angler count on each of the 36 sampled days in
+#' [example_season_calendar]. Each count stands for the whole 14-hour fishing
+#' day, so `daylight_hours` is the length of the period it represents. Pass it
+#' to [add_counts()] as `period_length_col`: effort is then the count times the
+#' period length, in angler-hours.
+#'
+#' @format A data frame with 36 rows and 4 columns:
+#' \describe{
+#'   \item{date}{Survey date (Date class), a sampled day in the calendar}
+#'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
+#'   \item{total_anglers}{Integer number of anglers counted}
+#'   \item{daylight_hours}{Hours in the fishing day the count represents (14)}
+#' }
+#'
+#' @source Simulated with [simulate_creel_data()] and a fixed seed; see
+#'   `data-raw/example_season.R` in the package source.
+#'
+#' @examples
+#' data(example_season_calendar)
+#' data(example_season_counts)
+#'
+#' design <- creel_design(example_season_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, example_season_counts,
+#'   count_col = total_anglers, period_length_col = daylight_hours
+#' )
+#' estimate_effort(design, target = "period_total")
+#'
+#' @seealso [example_season_calendar], [example_season_interviews]
+#' @family "Example Datasets"
+"example_season_counts"
+
+#' Example season interviews for a creel survey
+#'
+#' Access-point interviews from the 36 sampled days in
+#' [example_season_calendar], one row per angling party. Most parties had
+#' finished fishing (complete trips); about a quarter were still fishing when
+#' interviewed (incomplete trips). Most parties caught nothing, as on most
+#' real fisheries.
+#'
+#' @format A data frame with 231 rows and 8 columns:
+#' \describe{
+#'   \item{date}{Interview date (Date class), a sampled day in the calendar}
+#'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
+#'   \item{interview_id}{Integer interview identifier, 1 to 231}
+#'   \item{trip_status}{"complete" or "incomplete"}
+#'   \item{hours_fished}{Hours the party had fished when interviewed: the
+#'     whole trip if complete, the time so far if incomplete}
+#'   \item{n_anglers}{Integer number of anglers in the party}
+#'   \item{catch_total}{Integer fish caught by the party, kept and released}
+#'   \item{catch_kept}{Integer fish kept (harvest), never more than
+#'     `catch_total`}
+#' }
+#'
+#' @source Simulated with [simulate_creel_data()] and a fixed seed; see
+#'   `data-raw/example_season.R` in the package source.
+#'
+#' @examples
+#' data(example_season_calendar)
+#' data(example_season_counts)
+#' data(example_season_interviews)
+#'
+#' design <- creel_design(example_season_calendar, date = date, strata = day_type)
+#' design <- add_counts(design, example_season_counts,
+#'   count_col = total_anglers, period_length_col = daylight_hours
+#' )
+#' design <- add_interviews(design, example_season_interviews,
+#'   catch = catch_total, harvest = catch_kept, effort = hours_fished,
+#'   trip_status = trip_status, n_anglers = n_anglers
+#' )
+#' estimate_total_catch(design, target = "period_total")
+#'
+#' @seealso [example_season_calendar], [example_season_counts]
+#' @family "Example Datasets"
+"example_season_interviews"
+
 #' Example calendar data for creel survey
 #'
 #' A sample survey calendar dataset demonstrating the structure required for
