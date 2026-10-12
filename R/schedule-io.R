@@ -41,7 +41,8 @@ coerce_to_date <- function(x) {
         c(
           "Some date values could not be parsed and were coerced to {.val NA}.",
           "i" = "{sum(new_nas)} value(s) failed date coercion."
-        )
+        ),
+        class = c("creel_warning_dates_coerced_na", "creel_warning")
       )
     }
     return(result)
@@ -54,7 +55,8 @@ coerce_to_date <- function(x) {
       c(
         "Some date values could not be parsed and were coerced to {.val NA}.",
         "i" = "{sum(new_nas)} value(s) failed ISO 8601 coercion."
-      )
+      ),
+      class = c("creel_warning_dates_coerced_na", "creel_warning")
     )
   }
   result
@@ -277,7 +279,7 @@ infer_census_p_period <- function(df, path, call = rlang::caller_env()) {
       "i" = "Every sampled day carries the same periods, so every period was worked every day.",
       "i" = "If the periods were in fact drawn, add the real {.col p_period} to the file."
     ),
-    class = "creel_warning_p_period_inferred"
+    class = c("creel_warning_p_period_inferred", "creel_warning")
   )
   df
 }

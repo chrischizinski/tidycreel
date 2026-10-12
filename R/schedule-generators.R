@@ -886,7 +886,9 @@ generate_schedule <- function(
           "Inspect the {.val special_period_diagnostics} attribute",
           " or print the schedule for details."
         )
-      ))
+      ),
+      class = c("creel_warning_fragile_schedule", "creel_warning")
+      )
     }
   }
 

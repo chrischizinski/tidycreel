@@ -173,7 +173,8 @@ validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
         "{.arg {arg_name}} has {sum(missing_vals)} missing value{?s}.",
         "i" = "Those interviews get {.val NA} angler-hours and drop out of rate estimates."
       ),
-      call = call
+      call = call,
+      class = c("creel_warning_party_size_missing", "creel_warning")
     )
   }
 
@@ -184,7 +185,8 @@ validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
         "{.arg {arg_name}} has {sum(fractional)} non-integer value{?s}.",
         "i" = "Party sizes are counts of anglers; a fractional value suggests a wrong column."
       ),
-      call = call
+      call = call,
+      class = c("creel_warning_party_size_fractional", "creel_warning")
     )
   }
 
@@ -1851,7 +1853,7 @@ p_period_checks <- function(vals, col, counts, design, period_length_col_name, c
                  already divided by the probability, which would apply it twice.",
           "i" = "Unequal shifts drawn unevenly can pass 24 by chance; if so, this can be ignored."
         ),
-        class = "creel_warning_p_period_coverage"
+        class = c("creel_warning_p_period_coverage", "creel_warning")
       )
     }
   }
@@ -2719,7 +2721,9 @@ add_counts <- function(
     cli::cli_warn(c(
       "{.arg circuit_time} is ignored when {.code count_type = 'instantaneous'}.",
       "i" = "Only used with {.val progressive} count type."
-    ))
+    ),
+    class = c("creel_warning_argument_ignored", "creel_warning")
+    )
   }
 
   # Resolve count_time_col tidy selector to character name (or NULL)
@@ -3990,7 +3994,9 @@ add_interviews <- function(
           "!" = "{n_partial} observation{?s} ha{?s/ve} n_counted > 0 but n_interviewed = 0.",
           "i" = "Anglers were counted but none interviewed. These rows contribute no catch data.",
           "i" = "Expansion factor (.expansion) is NA for these rows."
-        ))
+        ),
+        class = c("creel_warning_counted_not_interviewed", "creel_warning")
+        )
       }
     }
   }
@@ -4024,7 +4030,9 @@ add_interviews <- function(
         "If the interviews really are one angler each, pass",
         "{.code n_anglers = 1} to state that and silence this warning."
       )
-    ))
+    ),
+    class = c("creel_warning_no_party_size", "creel_warning")
+    )
   }
 
   # Compute angler effort (effort x n_anglers) -- always set for downstream functions
@@ -5336,7 +5344,9 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
           "{.val released} partition it. Summing {.field count} across all ",
           "{.field catch_type} values double-counts."
         )
-      ))
+      ),
+      class = c("creel_warning_catch_unreconciled", "creel_warning")
+      )
     }
   }
 
@@ -5373,7 +5383,9 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
           "This is advisory. Real creel data may differ legitimately ",
           "(partial species recording)."
         )
-      ))
+      ),
+      class = c("creel_warning_catch_totals_diverge", "creel_warning")
+      )
     }
   }
 
@@ -5689,7 +5701,9 @@ add_lengths <- function(
       cli::cli_warn(c(
         "Release {.field count} has {sum(fractional)} non-integer value{?s}.",
         "i" = "Binned release counts are counts of fish; a fractional value suggests a wrong column."
-      ))
+      ),
+      class = c("creel_warning_release_count_fractional", "creel_warning")
+      )
     }
   }
   if (nrow(release_rows) > 0 && release_format == "individual") {
@@ -5964,7 +5978,9 @@ preprocess_camera_timestamps <- function(timestamps, date_col, ingress_col, egre
       "{n_neg} ingress-egress pair{?s} had negative duration and {?was/were} excluded.",
       "i" = "Negative durations occur when egress precedes ingress.",
       "i" = "Affected rows have been set to {.val NA} and excluded from the daily sum."
-    ))
+    ),
+    class = c("creel_warning_camera_negative_duration", "creel_warning")
+    )
     duration_hours[neg] <- NA_real_
   }
 

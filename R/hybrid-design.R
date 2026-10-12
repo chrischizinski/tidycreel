@@ -498,7 +498,9 @@ as_hybrid_svydesign <- function(
       "Asymmetric date-stratum coverage between count frames.",
       "!" = "Effort estimates may be biased for unmatched combinations.",
       stats::setNames(msgs, rep("i", length(msgs)))
-    ))
+    ),
+    class = c("creel_warning_asymmetric_coverage", "creel_warning")
+    )
   }
 
   # ---- Calendar coverage ---------------------------------------------------

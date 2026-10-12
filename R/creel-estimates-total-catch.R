@@ -958,7 +958,9 @@ estimate_total_catch_sections <- function(
         "{n_absent} missing section(s) in count or interview data.",
         "!" = "Section(s) not found: {.val {not_found_sections}}",
         "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
-      ))
+      ),
+      class = c("creel_warning_missing_sections", "creel_warning")
+      )
     }
   }
 

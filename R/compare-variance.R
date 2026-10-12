@@ -210,7 +210,9 @@ compare_variance <- function(
         "Consider using {.code variance = \"{replicate_method}\"} for ",
         "final estimates."
       )
-    ))
+    ),
+    class = c("creel_warning_se_divergence", "creel_warning")
+    )
   }
 
   result <- structure(

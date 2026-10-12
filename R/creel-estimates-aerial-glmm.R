@@ -589,7 +589,9 @@ estimate_effort_aerial_glmm <- function(
         "!" = "Bootstrap SE ignores design strata ({.val {design$strata_cols}}).",
         "i" = "The default GLMM formula has no stratum term; bootstrap resamples from \\
         a single pooled model. Include strata in {.arg formula} for stratified inference."
-      ))
+      ),
+      class = c("creel_warning_bootstrap_ignores_strata", "creel_warning")
+      )
     }
 
     boot_fn <- function(m) {

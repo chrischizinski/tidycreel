@@ -200,7 +200,9 @@ impute_camera_counts <- function(
       "High missingness detected in {length(high_miss_strata)} stratum{?/a}.",
       "!" = "{.val {high_miss_strata}} {?has/have} > 50% missing camera counts.",
       "i" = "Most of the stratum's counts are model predictions, not observations."
-    ))
+    ),
+    class = c("creel_warning_high_missingness", "creel_warning")
+    )
   }
 
   # 5. Per-stratum imputation loop --------------------------------------------
@@ -265,7 +267,9 @@ impute_camera_counts <- function(
             "GLMM convergence failed for stratum {.val {s}}.",
             "i" = "Falling back to Poisson GLM for this stratum.",
             "!" = "Error: {e$message}"
-          ))
+          ),
+          class = c("creel_warning_imputation_convergence", "creel_warning")
+          )
           NULL
         }
       )

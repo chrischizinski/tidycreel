@@ -793,7 +793,9 @@ br_incomplete_harvest_rate <- function(
       "x" = "The mean-of-ratios estimator has infinite asymptotic variance \\
              without it (Hoenig et al. 1997).",
       "i" = "The reported SE understates the true sampling variability."
-    ))
+    ),
+    class = c("creel_warning_truncation_disabled", "creel_warning")
+    )
   }
 
   # Guard against zero/NA angler-effort (angler intercepted at trip start).
@@ -804,7 +806,8 @@ br_incomplete_harvest_rate <- function(
     n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
     cli::cli_warn(
       "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
-      before computing {quantity} rate."
+      before computing {quantity} rate.",
+      class = c("creel_warning_effort_excluded", "creel_warning")
     )
     interviews <- interviews[valid_effort, , drop = FALSE]
   }
