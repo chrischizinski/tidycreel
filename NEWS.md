@@ -86,7 +86,8 @@
   built with (#496). Every tidycreel warning is now also recorded on the
   object its call returns: an estimate keeps those raised while it was
   computed, including a rate's when a total computes it internally, and a
-  design keeps those from `creel_design()` and each `add_*()` step. A
+  design keeps those from `creel_design()`, each `add_*()` step and
+  `adjust_nonresponse()`. A
   warning muffled with `withCallingHandlers()` is still recorded. Each row
   has the warning's class, its tier (1: the estimate may be wrong; 2: data
   quality or precision; 3: information), the function that raised it and

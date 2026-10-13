@@ -23,7 +23,8 @@ Zero rows when nothing was raised.
 \description{
 Every warning tidycreel raises is also recorded on the object the call
 returns, so it can be read back after it has scrolled past. A design keeps
-the warnings raised by \code{\link[=creel_design]{creel_design()}} and each \verb{add_*()} step; an
+the warnings raised by \code{\link[=creel_design]{creel_design()}}, each \verb{add_*()} step and
+\code{\link[=adjust_nonresponse]{adjust_nonresponse()}}; an
 estimate keeps the warnings raised while it was computed, including those
 from a rate a total computes internally.
 }
@@ -44,6 +45,15 @@ packages (\code{survey}, \code{lme4}) are not recorded.
 \examples{
 design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
+
+# The party-size warning is handled for this one call, so it does not
+# print, but the design still records it.
+design <- withCallingHandlers(
+  add_interviews(design, example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  ),
+  creel_warning_no_party_size = function(w) invokeRestart("muffleWarning")
+)
 get_warnings(design)
 }
 \seealso{

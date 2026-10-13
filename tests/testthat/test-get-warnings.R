@@ -120,3 +120,52 @@ test_that("finished calls do not accumulate in the session log", {
   for (i in 1:5) raised(estimate_catch_rate(design))
   expect_lte(length(tidycreel:::creel_warning_log$records), 1L)
 })
+
+test_that("a design saved in one session keeps new warnings in the next", {
+  # Ids restart at 1 in every session. Matching on id, a design built in one
+  # session and extended in the next dropped any new warning whose id it
+  # already held, so get_warnings() disagreed with the console.
+  design <- creel_design(example_calendar, date = date, strata = day_type)
+  design <- add_counts(design, example_counts)
+  design <- suppressWarnings(suppressMessages(add_interviews(design,
+    example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+  held <- get_warnings(design)$id
+  expect_length(held, 1L)
+  # A new session: the next warning gets the id the design already holds.
+  log <- tidycreel:::creel_warning_log
+  withr::defer(log$seq <- max(log$seq, held))
+  log$seq <- held - 1L
+  rates <- data.frame(
+    day_type = c("weekday", "weekend"), n_sampled = c(10, 10), n_responded = c(4, 9)
+  )
+  adjusted <- raised(adjust_nonresponse(design, rates, stratum_col = "day_type"))
+  expect_true("creel_warning_low_response_rate" %in% adjusted$classes)
+  w <- get_warnings(adjusted$value)
+  expect_true("creel_warning_low_response_rate" %in% w$class)
+  expect_true("creel_warning_no_party_size" %in% w$class)
+})
+
+test_that("adjust_nonresponse() keeps its warnings on the design it returns", {
+  design <- creel_design(example_calendar, date = date, strata = day_type)
+  design <- add_counts(design, example_counts)
+  rates <- data.frame(
+    day_type = c("weekday", "weekend"), n_sampled = c(10, 10), n_responded = c(4, 9)
+  )
+  out <- raised(adjust_nonresponse(design, rates, stratum_col = "day_type"))
+  expect_setequal(get_warnings(out$value)$class, out$classes)
+  expect_gt(length(out$classes), 0)
+})
+
+test_that("the log does not keep a finished call's frame alive", {
+  # The frame holds the design and every intermediate table of the call;
+  # keeping it reachable after the call returns would pin them in memory.
+  design <- roving_design()
+  raised(estimate_catch_rate(design))
+  invisible(gc())
+  frames <- lapply(tidycreel:::creel_warning_log$records, function(r) {
+    rlang::wref_key(r$key)
+  })
+  expect_true(all(vapply(frames, is.null, logical(1))))
+})

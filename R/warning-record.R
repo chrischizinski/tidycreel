@@ -15,6 +15,9 @@
 # call can build several objects (a total builds its rate first) and the one
 # returned is built last. Records of calls that have finished are dropped the
 # next time the log is touched.
+#
+# The key is a weak reference to the frame, so the log never keeps a finished
+# call's frame -- and the design and intermediate tables in it -- alive.
 
 creel_warning_log <- new.env(parent = emptyenv())
 creel_warning_log$records <- list()
@@ -37,13 +40,21 @@ creel_call_frame <- function() {
   NULL
 }
 
+#' The frame a record is keyed to, or NULL once that frame is gone
+#' @keywords internal
+#' @noRd
+record_frame <- function(record) {
+  rlang::wref_key(record$key)
+}
+
 #' Drop records whose call is no longer on the stack
 #' @keywords internal
 #' @noRd
 prune_warning_log <- function() {
   live <- sys.frames()
   keep <- vapply(creel_warning_log$records, function(r) {
-    any(vapply(live, identical, logical(1), r$key))
+    frame <- record_frame(r)
+    !is.null(frame) && any(vapply(live, identical, logical(1), frame))
   }, logical(1))
   creel_warning_log$records <- creel_warning_log$records[keep]
   invisible(NULL)
@@ -70,7 +81,7 @@ creel_warning_tier_of <- function(cls) {
 #' @keywords internal
 #' @noRd
 creel_warn <- function(message, ..., .envir = parent.frame()) {
-  fn <- raising_fn_name(sys.call(-1), sys.function(-1))
+  fn <- raising_fn_name(sys.nframe() - 1L)
   withCallingHandlers(
     cli::cli_warn(message, ..., .envir = .envir),
     creel_warning = function(w) record_creel_warning(w, fn)
@@ -79,23 +90,36 @@ creel_warn <- function(message, ..., .envir = parent.frame()) {
 
 #' Name of the function that raised a warning
 #'
-#' The call head is a name for an ordinary call, `pkg::fn` for a qualified
-#' one, and the function itself under do.call(); the last is looked up in the
-#' namespace so the record names it rather than deparsing its body.
+#' Walks out from the frame that called creel_warn() to the nearest frame
+#' running a named function of this namespace. A warning raised inside an
+#' anonymous function (an lapply() body, whose call reads `FUN(...)`) is named
+#' after the function that holds it, and one reached through do.call(), whose
+#' call head is the function itself, is named by looking it up.
+#'
+#' @param frame Index of the frame that called creel_warn().
 #' @keywords internal
 #' @noRd
-raising_fn_name <- function(call, fun) {
-  head <- if (is.null(call)) NULL else call[[1]]
-  if (is.name(head)) {
-    return(as.character(head))
-  }
-  if (is.call(head) && as.character(head[[1]]) %in% c("::", ":::")) {
-    return(as.character(head[[3]]))
-  }
+raising_fn_name <- function(frame) {
   ns <- topenv(environment(raising_fn_name))
-  for (nm in ls(ns, all.names = TRUE)) {
-    if (identical(get(nm, envir = ns), fun)) {
-      return(nm)
+  for (j in rev(seq_len(frame))) {
+    head <- sys.call(j)[[1]]
+    fun <- sys.function(j)
+    if (is.name(head)) {
+      nm <- as.character(head)
+      if (identical(get0(nm, envir = ns, inherits = FALSE), fun)) {
+        return(nm)
+      }
+    } else if (is.call(head) && as.character(head[[1]])[[1]] %in% c("::", ":::")) {
+      return(as.character(head[[3]]))
+    }
+    # A named namespace function is enclosed by the namespace itself; an
+    # anonymous one by the frame of the function that made it.
+    if (identical(environment(fun), ns)) {
+      for (nm in ls(ns, all.names = TRUE)) {
+        if (identical(get(nm, envir = ns), fun)) {
+          return(nm)
+        }
+      }
     }
   }
   NA_character_
@@ -113,7 +137,10 @@ record_creel_warning <- function(w, fn) {
   cls <- class(w)
   own <- grep("^creel_warning_", cls, value = TRUE)
   creel_warning_log$records[[length(creel_warning_log$records) + 1L]] <- list(
-    key = key,
+    key = rlang::new_weakref(key),
+    # Set once the record is on a design, so a call that runs several add_*()
+    # steps puts each warning on the design once.
+    attached = FALSE,
     row = data.frame(
       id = creel_warning_log$seq,
       class = if (length(own)) own[[1]] else NA_character_,
@@ -136,32 +163,49 @@ empty_warning_table <- function() {
   )
 }
 
+#' Positions in the log of the current call's records
+#' @keywords internal
+#' @noRd
+current_call_records <- function() {
+  key <- creel_call_frame()
+  prune_warning_log()
+  which(vapply(creel_warning_log$records, function(r) {
+    identical(record_frame(r), key)
+  }, logical(1)))
+}
+
+#' Rows of the warnings table for some log positions
+#' @keywords internal
+#' @noRd
+warning_rows <- function(idx) {
+  if (!length(idx)) {
+    return(empty_warning_table())
+  }
+  do.call(rbind, lapply(creel_warning_log$records[idx], `[[`, "row"))
+}
+
 #' The warnings raised so far in the current call
 #'
 #' @return A data frame with the columns of [get_warnings()], possibly empty.
 #' @keywords internal
 #' @noRd
 claim_creel_warnings <- function() {
-  key <- creel_call_frame()
-  prune_warning_log()
-  rows <- lapply(creel_warning_log$records, function(r) {
-    if (identical(r$key, key)) r$row
-  })
-  rows <- rows[!vapply(rows, is.null, logical(1))]
-  if (length(rows)) do.call(rbind, rows) else empty_warning_table()
+  warning_rows(current_call_records())
 }
 
 #' Append the current call's warnings to a design
 #'
-#' A design accumulates: each add_*() adds the warnings its call raised. A
-#' record already on the design is not added twice, which matters when one
-#' call runs several add_*() steps.
+#' A design accumulates: each add_*() adds the warnings its call raised. Each
+#' record goes on a design once, even when one call runs several add_*()
+#' steps. The log marks it rather than the design matching ids, because ids
+#' restart in a new session and a saved design keeps the old ones.
 #' @keywords internal
 #' @noRd
 record_design_warnings <- function(design) {
-  have <- design$warnings %||% empty_warning_table()
-  new <- claim_creel_warnings()
-  design$warnings <- rbind(have, new[!new$id %in% have$id, , drop = FALSE])
+  idx <- current_call_records()
+  idx <- idx[!vapply(creel_warning_log$records[idx], `[[`, logical(1), "attached")]
+  for (i in idx) creel_warning_log$records[[i]]$attached <- TRUE
+  design$warnings <- rbind(design$warnings %||% empty_warning_table(), warning_rows(idx))
   design
 }
 
@@ -169,7 +213,8 @@ record_design_warnings <- function(design) {
 #'
 #' Every warning tidycreel raises is also recorded on the object the call
 #' returns, so it can be read back after it has scrolled past. A design keeps
-#' the warnings raised by [creel_design()] and each `add_*()` step; an
+#' the warnings raised by [creel_design()], each `add_*()` step and
+#' [adjust_nonresponse()]; an
 #' estimate keeps the warnings raised while it was computed, including those
 #' from a rate a total computes internally.
 #'

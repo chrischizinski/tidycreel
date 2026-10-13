@@ -395,6 +395,26 @@ test_that("CEST-22: n_anglers goes through the shared party-size rule", {
 
 # GH #136: single paired calibration day ---------------------------------------
 
+test_that("a warning raised inside the per-stratum loop names its function (#496)", {
+  # The single-day warning is raised in an lapply() body, whose call reads
+  # FUN(...). get_warnings() names the function that holds the loop --
+  # estimate_effort_camera(), which est_effort_camera() calls -- not the loop
+  # variable.
+  d <- make_design_with_counts()
+  mixed <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type = c("weekday", "weekday", "weekend"),
+    hours_fished = c(3.5, 4.0, 2.5),
+    stringsAsFactors = FALSE
+  )
+  result <- suppressWarnings(est_effort_camera(d, interviews = mixed, n_anglers = 1))
+  w <- get_warnings(result)
+  expect_identical(
+    w$fn[w$class == "creel_warning_camera_single_day"],
+    "estimate_effort_camera"
+  )
+})
+
 test_that("CEST-23: one paired day yields an NA SE, not an exact ratio (GH #136)", {
   # With a single matched interview/count day the calibration ratio has no
   # measurable spread: its variance is unknown, not zero. A zero enters the

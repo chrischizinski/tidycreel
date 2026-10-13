@@ -214,7 +214,9 @@ adjust_nonresponse <- function(
   }
 
   attr(adjusted_design, "nonresponse_diagnostics") <- diagnostics
-  adjusted_design
+  # Not a design step (it is not replayed by read_design()), so its warnings
+  # are put on the design here (GH #496).
+  record_design_warnings(adjusted_design) # nolint: object_usage_linter
 }
 
 #' Apply nonresponse weight adjustment to an svydesign
