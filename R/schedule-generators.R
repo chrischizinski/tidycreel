@@ -879,7 +879,7 @@ generate_schedule <- function(
         warnings$final_days,
         ")"
       )
-      cli::cli_warn(c(
+      creel_warn(c(
         "Special-period declarations produced a fragile schedule design.",
         "i" = "Affected strata: {.val {warn_labels}}",
         "i" = paste0(

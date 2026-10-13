@@ -168,7 +168,7 @@ validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
   }
 
   if (any(missing_vals)) {
-    cli::cli_warn(
+    creel_warn(
       c(
         "{.arg {arg_name}} has {sum(missing_vals)} missing value{?s}.",
         "i" = "Those interviews get {.val NA} angler-hours and drop out of rate estimates."
@@ -180,7 +180,7 @@ validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
 
   fractional <- !missing_vals & is.finite(x) & x != round(x)
   if (any(fractional)) {
-    cli::cli_warn(
+    creel_warn(
       c(
         "{.arg {arg_name}} has {sum(fractional)} non-integer value{?s}.",
         "i" = "Party sizes are counts of anglers; a fractional value suggests a wrong column."
@@ -1844,7 +1844,7 @@ p_period_checks <- function(vals, col, counts, design, period_length_col_name, c
       } else {
         paste0(" (", paste0(names(over), collapse = ", "), ")")
       }
-      cli::cli_warn(
+      creel_warn(
         c(
           "The counted shifts cover {round(max(over), 1)} hours a day on average{where}, more than a day.",
           "x" = "Averaged over sampled days, {.field {period_length_col_name}} / {.arg p_period} \\
@@ -2718,11 +2718,11 @@ add_counts <- function(
     }
   }
   if (count_type == "instantaneous" && !is.null(circuit_time)) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "{.arg circuit_time} is ignored when {.code count_type = 'instantaneous'}.",
       "i" = "Only used with {.val progressive} count type."
     ),
-    class = c("creel_warning_argument_ignored", "creel_warning")
+    class = c("creel_warning_circuit_time_ignored", "creel_warning")
     )
   }
 
@@ -3990,7 +3990,7 @@ add_interviews <- function(
       partial_zero <- nc > 0 & ni == 0
       if (any(partial_zero, na.rm = TRUE)) {
         n_partial <- sum(partial_zero, na.rm = TRUE) # nolint: object_usage_linter
-        cli::cli_warn(c(
+        creel_warn(c(
           "!" = "{n_partial} observation{?s} ha{?s/ve} n_counted > 0 but n_interviewed = 0.",
           "i" = "Anglers were counted but none interviewed. These rows contribute no catch data.",
           "i" = "Expansion factor (.expansion) is NA for these rows."
@@ -4020,7 +4020,7 @@ add_interviews <- function(
   # count-derived effort stays angler-hours, so CPUE/HPUE denominators are wrong
   # by the mean party size with no error and a believable number (GH #126).
   if (n_anglers_missing) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "!" = "No {.arg n_anglers} provided \u2014 assuming 1 angler per interview.",
       "i" = paste(
         "Pass {.code n_anglers = <column>} to use actual party sizes",
@@ -5325,7 +5325,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     if (nrow(unreconciled) > 0) {
       n_unrec <- nrow(unreconciled) # nolint: object_usage_linter
       unrec_pairs <- paste0(unreconciled$uid, "/", unreconciled$species) # nolint: object_usage_linter
-      cli::cli_warn(c(
+      creel_warn(c(
         "!" = paste0(
           "harvested + released is less than caught for {n_unrec} ",
           "species-interview pair{?s}:"
@@ -5374,7 +5374,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     diverged <- check[!is.na(check$catch_intv) & check$catch_implied != check$catch_intv, ]
     if (nrow(diverged) > 0) {
       n_div <- nrow(diverged) # nolint: object_usage_linter
-      cli::cli_warn(c(
+      creel_warn(c(
         "!" = paste0(
           "Catch totals in catch data diverge from interview-level ",
           "{.field {design$catch_col}} for {n_div} interview{?s}."
@@ -5698,7 +5698,7 @@ add_lengths <- function(
     count_nums <- suppressWarnings(as.numeric(release_counts))
     fractional <- !is.na(count_nums) & count_nums != round(count_nums)
     if (any(fractional)) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "Release {.field count} has {sum(fractional)} non-integer value{?s}.",
         "i" = "Binned release counts are counts of fish; a fractional value suggests a wrong column."
       ),
@@ -5974,7 +5974,7 @@ preprocess_camera_timestamps <- function(timestamps, date_col, ingress_col, egre
   neg <- !is.na(duration_hours) & duration_hours < 0
   if (any(neg, na.rm = TRUE)) {
     n_neg <- sum(neg) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_neg} ingress-egress pair{?s} had negative duration and {?was/were} excluded.",
       "i" = "Negative durations occur when egress precedes ingress.",
       "i" = "Affected rows have been set to {.val NA} and excluded from the daily sum."

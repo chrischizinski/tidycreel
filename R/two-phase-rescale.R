@@ -369,7 +369,7 @@ warn_two_phase_rescale <- function(measured, reported, what) {
   if (isTRUE(all.equal(measured, reported))) {
     return(invisible(NULL))
   }
-  cli::cli_warn(
+  creel_warn(
     c(
       "!" = "{what} totals were rescaled onto the reported catch.",
       "i" = "Measured fish (weighted): {format(measured, digits = 6)}; reported:

@@ -339,7 +339,9 @@ check_design_rebuilds <- function(design) {
       }
     ))
   }
-  slots <- union(names(design), names(rebuilt))
+  # The warnings record (GH #496) describes the build, not the design: the
+  # rebuild raises the same warnings again, under new session ids.
+  slots <- setdiff(union(names(design), names(rebuilt)), "warnings")
   differ <- slots[!vapply(slots, function(s) isTRUE(all.equal(design[[s]], rebuilt[[s]])), logical(1))]
   if (length(differ)) {
     cli::cli_abort(c(

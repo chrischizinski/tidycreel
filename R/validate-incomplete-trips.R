@@ -561,7 +561,7 @@ perform_tost <- function(
 
   # Guard: df <= 0 (n=1 in one or both groups) → cannot compute t-distribution
   if (df <= 0L) {
-    cli::cli_warn(
+    creel_warn(
       "TOST: insufficient degrees of freedom (df={df}); equivalence cannot be tested.",
       class = c("creel_warning_tost_degenerate", "creel_warn_tost_degenerate", "creel_warning")
     )

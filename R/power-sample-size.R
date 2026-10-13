@@ -493,7 +493,7 @@ creel_power <- function(
   alternative <- match.arg(alternative)
 
   if (delta_pct > 5) {
-    cli::cli_warn(
+    creel_warn(
       "delta_pct > 5 is unusually large; did you mean {delta_pct / 100}?",
       class = c("creel_warning_large_delta_pct", "creel_warning")
     )

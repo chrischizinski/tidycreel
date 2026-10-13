@@ -96,7 +96,7 @@ estimate_effort_camera <- function(
     n_imputed <- sum(as.logical(counts_data[[".imputed"]]), na.rm = TRUE)
     if (n_imputed > 0L) {
       pct_imputed <- round(100 * n_imputed / nrow(counts_data), 1)
-      cli::cli_warn(
+      creel_warn(
         c(
           paste0(
             "{n_imputed} of {nrow(counts_data)} count ",
@@ -153,7 +153,7 @@ estimate_effort_camera <- function(
     } else {
       character()
     }
-    cli::cli_warn(
+    creel_warn(
       c(
         paste0(
           "{sum(na_counts)} of {nrow(counts_data)} count ",
@@ -257,7 +257,7 @@ estimate_effort_camera <- function(
       # Warned rather than silent because the caller can now act on it. Before
       # n_anglers existed this warning would have named a gap with no means to
       # close it.
-      cli::cli_warn(c(
+      creel_warn(c(
         "Camera ratio calibration cannot tell angler-hours from party-hours.",
         "x" = paste(
           "{.field {effort_col}} is a caller-supplied column and nothing on",
@@ -391,7 +391,7 @@ estimate_effort_camera <- function(
         # maximally uncertain calibration as the most precise one. NA is the
         # package's mark for uncertainty it cannot measure (se_of_mean() for
         # n < 2), and it propagates into the combined SE below.
-        cli::cli_warn(
+        creel_warn(
           c(
             "Stratum {.val {s_label}} has one paired interview/count day.",
             "x" = "The calibration ratio's variance cannot be measured from a single pair.",

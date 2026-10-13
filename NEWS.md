@@ -77,10 +77,22 @@
   `suppressWarnings()`, which also hides the warnings that mean an estimate
   may be wrong. Each warning carries `creel_warning_<fact>` and the parent
   `creel_warning`; a fact raised in several places has one class.
-  `?creel_warnings` lists all 76. No message changed. Before, 12 of 107
-  warnings had a class. `creel_warn_two_phase_rescale` and
-  `creel_warn_tost_degenerate` gain the `creel_warning_` form and keep their
-  old names.
+  `?creel_warnings` lists all 77, each with its tier (below). No message
+  changed. Before, 12 of 107 warnings had a class.
+  `creel_warn_two_phase_rescale` and `creel_warn_tost_degenerate` gain the
+  `creel_warning_` form and keep their old names.
+
+* New `get_warnings()` reads back the warnings a design or an estimate was
+  built with (#496). Every tidycreel warning is now also recorded on the
+  object its call returns: an estimate keeps those raised while it was
+  computed, including a rate's when a total computes it internally, and a
+  design keeps those from `creel_design()`, each `add_*()` step and
+  `adjust_nonresponse()`. A
+  warning muffled with `withCallingHandlers()` is still recorded. Each row
+  has the warning's class, its tier (1: the estimate may be wrong; 2: data
+  quality or precision; 3: information), the function that raised it and
+  the message. What prints has not changed. Other results (length and age
+  distributions, summaries) do not keep a record yet.
 
 * The survey-type articles were checked against what the package reports
   (#480, How-to section). None computed a wrong number; several described

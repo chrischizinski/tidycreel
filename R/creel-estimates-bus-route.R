@@ -788,7 +788,7 @@ br_incomplete_harvest_rate <- function(
       ))
     }
   } else {
-    cli::cli_warn(c(
+    creel_warn(c(
       "{.arg truncate_at = NULL} disables short-trip truncation.",
       "x" = "The mean-of-ratios estimator has infinite asymptotic variance \\
              without it (Hoenig et al. 1997).",
@@ -804,7 +804,7 @@ br_incomplete_harvest_rate <- function(
     interviews[[angler_effort_col]] > 0
   if (any(!valid_effort)) {
     n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
-    cli::cli_warn(
+    creel_warn(
       "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
       before computing {quantity} rate.",
       class = c("creel_warning_effort_excluded", "creel_warning")

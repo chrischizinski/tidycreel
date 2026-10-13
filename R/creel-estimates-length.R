@@ -1062,7 +1062,7 @@ est_mean_length <- function(ld, conf_level = NULL) {
     l_mid <- (rows$bin_lower + rows$bin_upper) / 2
     n_total <- sum(rows$estimate)
     if (n_total <= 0) {
-      cli::cli_warn(
+      creel_warn(
         "Total estimated fish is zero or negative; mean length cannot be computed.",
         class = c("creel_warning_zero_fish_total", "creel_warning")
       )
@@ -1183,7 +1183,7 @@ bin_vcov_for <- function(ld, rows, key) {
 #' @noRd
 weighted_bin_var <- function(w, rows, sigma, what) {
   if (is.null(sigma)) {
-    cli::cli_warn(
+    creel_warn(
       c(
         "Cross-bin covariance is unavailable; {.val {what}} assumes the bins
          are independent.",
@@ -1339,7 +1339,7 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
     n_legal <- sum(rows$estimate[legal])
     n_total <- sum(rows$estimate)
     if (n_total <= 0) {
-      cli::cli_warn(
+      creel_warn(
         "Total estimated fish is zero or negative; compliance proportion cannot be computed.",
         class = c("creel_warning_zero_fish_total", "creel_warning")
       )

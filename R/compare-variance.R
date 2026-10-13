@@ -200,7 +200,7 @@ compare_variance <- function(
   n_diverge <- sum(diverges_flag, na.rm = TRUE)
   if (n_diverge > 0) {
     thresh_pct <- round(divergence_threshold * 100) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       paste0(
         "{n_diverge} row{?s} show SE divergence > {thresh_pct}% ",
         "between Taylor and {replicate_method} variance."

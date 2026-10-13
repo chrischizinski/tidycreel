@@ -73,7 +73,7 @@ as_creel_svydesign <- function(design) {
   # Issue once-per-session warning
   # cli_warn(), not rlang::warn(): the latter does not evaluate cli markup, so
   # the {.fn} field printed literally to the user.
-  cli::cli_warn(
+  creel_warn(
     c(
       "Accessing internal survey design object.",
       "i" = "This is an advanced feature. Most users should use {.fn estimate_effort} instead.",
@@ -439,7 +439,7 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
     } else {
       # Warn but continue
       for (msg in msgs) {
-        cli::cli_warn(msg, class = c("creel_warning_count_validation", "creel_warning"))
+        creel_warn(msg, class = c("creel_warning_count_validation", "creel_warning"))
       }
     }
   } else {
@@ -517,7 +517,7 @@ detect_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) 
   if (n_dup == 0) {
     return(invisible(NULL))
   }
-  cli::cli_warn(
+  creel_warn(
     c(
       "{.arg counts} has {n_dup} repeated sampling {cli::qty(n_dup)}unit{?s}, \\
        with no count time to tell them apart.",
@@ -1220,7 +1220,7 @@ warn_missing_period_length <- function(design) {
   if (identical(design$design_type, "aerial")) {
     return(invisible(NULL))
   }
-  cli::cli_warn(
+  creel_warn(
     c(
       "Instantaneous counts were expanded without a period length.",
       "i" = paste(
@@ -1277,7 +1277,7 @@ warn_tier2_issues <- function(design) {
     # check below, since a negative derivative is still an error.
     n_zero <- if (count_var %in% expansion_carrier_cols()) 0L else sum(values == 0, na.rm = TRUE) # nolint: object_usage_linter
     if (n_zero > 0) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "Count variable {.field {count_var}} contains {n_zero} zero value{?s}.",
         "i" = "Zero values may indicate days with no fishing activity or data collection issues.",
         "i" = "Consider whether zeros are true zeros or missing data."
@@ -1289,7 +1289,7 @@ warn_tier2_issues <- function(design) {
     # Check for negative values
     n_negative <- sum(values < 0, na.rm = TRUE)
     if (n_negative > 0) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "Count variable {.field {count_var}} contains {n_negative} negative value{?s}.",
         "!" = "Negative values indicate data entry errors or incorrect calculations.",
         "i" = "Review and correct negative values before estimation."
@@ -1327,7 +1327,7 @@ warn_tier2_issues <- function(design) {
     }
     names(bullet_items) <- rep("*", length(sparse_strata))
 
-    cli::cli_warn(c(
+    creel_warn(c(
       "{length(sparse_strata)} strat{?um/a} ha{?s/ve} fewer than 3 observations:",
       bullet_items,
       "!" = "Sparse strata produce unstable variance estimates.",
@@ -1388,7 +1388,7 @@ warn_tier2_group_issues <- function(design, by_vars) {
     }
     names(bullet_items) <- rep("*", length(bullet_items))
 
-    cli::cli_warn(c(
+    creel_warn(c(
       "{nrow(sparse_groups)} group{?s} ha{?s/ve} fewer than 3 observations:",
       bullet_items,
       "!" = "Sparse groups produce unstable variance estimates.",
@@ -1434,7 +1434,7 @@ warn_party_hours_product <- function(design, call = rlang::caller_env()) {
     return(invisible(FALSE))
   }
 
-  cli::cli_warn(
+  creel_warn(
     c(
       "Rate and effort may be in different units.",
       "x" = paste(
@@ -1462,7 +1462,7 @@ warn_tier2_interview_issues <- function(design) {
   if (!is.null(effort_col)) {
     n_short <- sum(interviews[[effort_col]] < 0.1, na.rm = TRUE)
     if (n_short > 0) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_short} interview{?s} ha{?s/ve} effort < 0.1 hours (6 minutes).",
         "i" = "Very short trips may indicate data entry errors."
       ),
@@ -1486,7 +1486,7 @@ warn_tier2_interview_issues <- function(design) {
   # Check for negative catch values
   n_neg_catch <- sum(interviews[[catch_col]] < 0, na.rm = TRUE)
   if (n_neg_catch > 0) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_neg_catch} interview{?s} ha{?s/ve} negative catch values.",
       "!" = "Negative catch indicates data entry errors.",
       "i" = "Review and correct before estimation."
@@ -1499,7 +1499,7 @@ warn_tier2_interview_issues <- function(design) {
   if (!is.null(effort_col)) {
     n_neg_effort <- sum(interviews[[effort_col]] < 0, na.rm = TRUE)
     if (n_neg_effort > 0) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_neg_effort} interview{?s} ha{?s/ve} negative effort values.",
         "!" = "Negative effort indicates data entry errors.",
         "i" = "Review and correct before estimation."
@@ -1513,7 +1513,7 @@ warn_tier2_interview_issues <- function(design) {
   if (!is.null(effort_col)) {
     n_na_effort <- sum(is.na(interviews[[effort_col]]))
     if (n_na_effort > 0) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_na_effort} interview{?s} ha{?s/ve} missing effort values.",
         "i" = "Missing effort limits CPUE estimation."
       ),
@@ -1550,7 +1550,7 @@ warn_tier2_interview_issues <- function(design) {
     }
     names(bullet_items) <- rep("*", length(bullet_items))
 
-    cli::cli_warn(c(
+    creel_warn(c(
       "{length(sparse_strata)} strat{?um/a} ha{?s/ve} fewer than 3 interviews:",
       bullet_items,
       "!" = "Sparse strata produce unstable variance estimates.",
@@ -1617,7 +1617,7 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
     }
 
     if (n >= 10 && n < 30) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "Small sample size for {estimation_type} estimation.",
         "!" = "Sample size is {n}. Ratio estimates are more stable with n >= 30.",
         "i" = "Variance estimates may be unstable with n < 30."
@@ -1689,7 +1689,7 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
       }
       names(bullet_items) <- rep("*", length(bullet_items))
 
-      cli::cli_warn(c(
+      creel_warn(c(
         "Small sample size in {nrow(medium_groups)} group{?s}:",
         bullet_items,
         "!" = "Ratio estimates are more stable with n >= 30 per group.",
@@ -1792,7 +1792,7 @@ warn_thin_rate_cells <- function(design, stratum_by_vars, context, floor = 10L) 
   more <- if (n_cells > length(shown)) {
     c("i" = paste0("... and ", n_cells - length(shown), " more."))
   }
-  cli::cli_warn(
+  creel_warn(
     c(
       "{n_cells} rate cell{?s} in {.val {context}} rest{?s/} on fewer than {floor} trips.",
       shown,
@@ -1864,7 +1864,7 @@ validate_mor_availability <- function(design) {
 #' @keywords internal
 #' @noRd
 mor_estimation_warning <- function(n_incomplete, n_total) {
-  cli::cli_warn(c(
+  creel_warn(c(
     "!" = "MOR estimator for incomplete trips. Complete trips preferred.",
     "i" = "Using MOR with n={n_incomplete} incomplete of {n_total} total interviews.",
     "i" = "Incomplete trips may have length-of-stay bias (Pollock et al.).",
@@ -2020,7 +2020,7 @@ validate_interviews_tier1 <- function(
     } else {
       # Warn but continue
       for (msg in msgs) {
-        cli::cli_warn(msg, class = c("creel_warning_interview_validation", "creel_warning"))
+        creel_warn(msg, class = c("creel_warning_interview_validation", "creel_warning"))
       }
     }
   } else {
@@ -2188,7 +2188,7 @@ validate_trip_metadata <- function(
         # Warn if any values > 48 hours
         if (any(duration_vals > 48, na.rm = TRUE)) {
           n_long <- sum(duration_vals > 48, na.rm = TRUE) # nolint: object_usage_linter
-          cli::cli_warn(c(
+          creel_warn(c(
             # nolint: line_length_linter
             "!" = "Trip duration column '{trip_duration_col}' contains {n_long} value{?s} > 48 hours",
             "i" = "Multi-day trips are valid, but verify these are not data entry errors"
@@ -2323,7 +2323,7 @@ validate_trip_metadata <- function(
         # Warn if any > 48 hours
         if (any(computed_duration > 48, na.rm = TRUE)) {
           n_long <- sum(computed_duration > 48, na.rm = TRUE) # nolint: object_usage_linter
-          cli::cli_warn(c(
+          creel_warn(c(
             # nolint: line_length_linter
             "!" = "Computed duration (interview_time - trip_start) > 48 hours for {n_long} interview{?s}",
             "i" = "Multi-day trips are valid, but verify these are not data entry errors"
@@ -2669,7 +2669,7 @@ warn_pooled_domain_mix <- function(design, fn_label, num_col = NULL) {
     return(invisible(NULL))
   }
 
-  cli::cli_warn(
+  creel_warn(
     c(
       paste(
         "{.fn {fn_label}} is pooling over {cli::qty(flagged)}{?a domain/domains}",
@@ -2915,7 +2915,7 @@ mor_truncation_message <- function(n_truncated, n_with_duration, truncate_at) {
   } else if (pct_truncated >= 0.10) {
     # >=10% truncated - data quality warning
     pct_label <- sprintf("%.1f%%", pct_truncated * 100) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "!" = "MOR truncation: {n_truncated} trip{?s} excluded ({pct_label})",
       "i" = "Trips < {truncate_at} hours excluded to prevent unstable variance",
       "!" = "High truncation rate may indicate data quality issues",
@@ -2975,7 +2975,7 @@ warn_low_complete_pct <- function(n_complete, n_total, threshold = NULL) {
   threshold_display <- sprintf("%.0f", threshold * 100) # nolint: object_usage_linter
 
   # Issue warning with scientific rationale and guidance
-  cli::cli_warn(c(
+  creel_warn(c(
     "!" = "Only {pct_complete_display}% of interviews are complete trips (threshold: {threshold_display}%)",
     "i" = "Pollock et al. recommends >=10% complete trips for valid estimation",
     "i" = "Consider use_trips='diagnostic' to validate incomplete trip estimates"

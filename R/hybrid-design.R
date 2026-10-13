@@ -494,7 +494,7 @@ as_hybrid_svydesign <- function(
       },
       character(1)
     )
-    cli::cli_warn(c(
+    creel_warn(c(
       "Asymmetric date-stratum coverage between count frames.",
       "!" = "Effort estimates may be biased for unmatched combinations.",
       stats::setNames(msgs, rep("i", length(msgs)))

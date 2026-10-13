@@ -254,7 +254,7 @@ standardize_species <- function(
 
   unmatched <- unique(raw[is.na(codes) & !is.na(raw)])
   if (length(unmatched) > 0L) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "{length(unmatched)} species value(s) could not be matched to an ",
       "AFS code and will be {.val NA}:",
       stats::setNames(

@@ -885,7 +885,7 @@ estimate_total_release_sections <- function(
         "i" = "All registered sections must have both count and interview data, or use {.arg missing_sections = 'warn'}." # nolint: line_length_linter
       ))
     } else {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_absent} missing section(s) in count or interview data.",
         "!" = "Section(s) not found: {.val {not_found_sections}}",
         "i" = "Inserting NA row(s) with {.field data_available = FALSE}."

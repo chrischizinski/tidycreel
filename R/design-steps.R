@@ -43,5 +43,7 @@ record_step <- function(design, fn, args, supplied, table_arg, table, extra = NU
   extra <- extra[!vapply(extra, is.null, logical(1))]
   if (length(extra)) step$extra <- extra
   design$steps <- c(design$steps, list(step))
-  design
+  # Every design-building call ends here, so this is where the warnings it
+  # raised are kept on the design (GH #496).
+  record_design_warnings(design) # nolint: object_usage_linter
 }

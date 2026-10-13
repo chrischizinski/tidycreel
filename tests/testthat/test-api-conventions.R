@@ -84,7 +84,8 @@ design_first_exceptions <- c(
   estimate_exploitation_rate = "calculator",
   estimate_mr_harvest = "calculator",
   as_hybrid_svydesign = "builds a design from count frames",
-  get_site_contributions = "reads a creel_estimates result"
+  get_site_contributions = "reads a creel_estimates result",
+  get_warnings = "reads a design or a creel_estimates result (#496)"
 )
 
 # Exports whose shared arguments are not in the shared relative order.

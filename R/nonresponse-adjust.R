@@ -155,7 +155,7 @@ adjust_nonresponse <- function(
   if (any(low_resp, na.rm = TRUE)) {
     low_strata <- strata_vals[low_resp] # nolint: object_usage_linter
     pcts <- round(100 * response_rate[low_resp]) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       paste0(
         "Low response rate (<50%) in {sum(low_resp)} ",
         "strat{?um/a}: {.val {low_strata}} ",
@@ -202,7 +202,7 @@ adjust_nonresponse <- function(
   }
 
   if (is.null(design$counts_survey) && is.null(design$interview_survey)) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "No survey sub-designs found to adjust.",
       "i" = paste0(
         "Call {.fn add_counts} or {.fn add_interviews} before ",
@@ -214,7 +214,9 @@ adjust_nonresponse <- function(
   }
 
   attr(adjusted_design, "nonresponse_diagnostics") <- diagnostics
-  adjusted_design
+  # Not a design step (it is not replayed by read_design()), so its warnings
+  # are put on the design here (GH #496).
+  record_design_warnings(adjusted_design) # nolint: object_usage_linter
 }
 
 #' Apply nonresponse weight adjustment to an svydesign

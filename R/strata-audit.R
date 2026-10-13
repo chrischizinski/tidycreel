@@ -230,7 +230,7 @@ audit_strata.default <- function(x, n_h, ybar_h, s2_h, rse_target = 0.20, ...) {
   # nolint: object_name_linter
   single_day <- names(n_h)[n_h == 1L] # nolint: object_name_linter
   if (length(single_day) > 0) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "Single-day strata cannot estimate variance.",
       "i" = "RSE, DEFF, and {.field meets_target} are {.val NA} for: {.val {single_day}}",
       "i" = "Add at least one more sampled day per affected stratum."
