@@ -103,9 +103,29 @@
   warning carries `creel_warning_<fact>` and the parent `creel_warning`;
   a fact raised in several places has one class.
   [`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
-  lists all 76. No message changed. Before, 12 of 107 warnings had a
-  class. `creel_warn_two_phase_rescale` and `creel_warn_tost_degenerate`
-  gain the `creel_warning_` form and keep their old names.
+  lists all 77, each with its tier (below). No message changed. Before,
+  12 of 107 warnings had a class. `creel_warn_two_phase_rescale` and
+  `creel_warn_tost_degenerate` gain the `creel_warning_` form and keep
+  their old names.
+
+- New
+  [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md)
+  reads back the warnings a design or an estimate was built with
+  ([\#496](https://github.com/chrischizinski/tidycreel/issues/496)).
+  Every tidycreel warning is now also recorded on the object its call
+  returns: an estimate keeps those raised while it was computed,
+  including a rate’s when a total computes it internally, and a design
+  keeps those from
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+  each `add_*()` step and
+  [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md).
+  A warning muffled with
+  [`withCallingHandlers()`](https://rdrr.io/r/base/conditions.html) is
+  still recorded. Each row has the warning’s class, its tier (1: the
+  estimate may be wrong; 2: data quality or precision; 3: information),
+  the function that raised it and the message. What prints has not
+  changed. Other results (length and age distributions, summaries) do
+  not keep a record yet.
 
 - The survey-type articles were checked against what the package reports
   ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),

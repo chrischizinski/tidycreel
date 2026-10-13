@@ -613,6 +613,8 @@ check data completeness, and inspect estimate output.
   : Coerce a creel_validation_report to a plain data frame
 - [`creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
   : Warning classes
+- [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md)
+  : The warnings recorded on a design or an estimate
 
 ## Planning & Sample Size
 

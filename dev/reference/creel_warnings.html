@@ -116,40 +116,58 @@ matching family, <code>creel_error_*</code>.</p>
 
 
     <div class="section level2">
+    <h2 id="tiers">Tiers<a class="anchor" aria-label="anchor" href="#tiers"></a></h2>
+
+
+<p>Each entry starts with its tier, which <code><a href="get_warnings.html">get_warnings()</a></code> also reports:</p><dl><dt>Tier 1</dt>
+<dd><p>The estimate may be wrong.</p></dd>
+
+<dt>Tier 2</dt>
+<dd><p>Data quality or precision: worth a look.</p></dd>
+
+<dt>Tier 3</dt>
+<dd><p>Information.</p></dd>
+
+
+</dl><p>Every warning is also recorded on the design or estimate the call returns;
+<code><a href="get_warnings.html">get_warnings()</a></code> lists them.</p>
+    </div>
+    <div class="section level2">
     <h2 id="units-and-scale">Units and scale<a class="anchor" aria-label="anchor" href="#units-and-scale"></a></h2>
 
 
 <dl><dt><code>creel_warning_no_period_length</code></dt>
-<dd><p>Instantaneous counts were
-expanded without a period length, so effort is the counts summed over
-days (angler-days for an angler count), not angler-hours.</p></dd>
+<dd><p>Tier 1. Instantaneous counts
+were expanded without a period length, so effort is the counts summed
+over days (angler-days for an angler count), not angler-hours.</p></dd>
 
 <dt><code>creel_warning_no_party_size</code></dt>
-<dd><p>No party size was given, so
-each interview counts as one angler. If interviews are parties, rates
+<dd><p>Tier 1. No party size was given,
+so each interview counts as one angler. If interviews are parties, rates
 are per party-hour, not per angler-hour.</p></dd>
 
 <dt><code>creel_warning_unit_mismatch</code></dt>
-<dd><p>A rate and an effort may be in
-different units (party-hours and angler-hours), so their product may
-not be a total in fish.</p></dd>
+<dd><p>Tier 1. A rate and an effort may
+be in different units (party-hours and angler-hours), so their product
+may not be a total in fish.</p></dd>
 
 <dt><code>creel_warning_camera_unit_ambiguous</code></dt>
-<dd><p>Camera ratio
+<dd><p>Tier 1. Camera ratio
 calibration cannot tell angler-hours from party-hours.</p></dd>
 
 <dt><code>creel_warning_catch_is_stratum_total</code></dt>
-<dd><p>A catch total supplied
-to an exploitation rate is a stratum total.</p></dd>
+<dd><p>Tier 1. A catch total
+supplied to an exploitation rate is a stratum total.</p></dd>
 
 <dt><code>creel_warning_p_period_coverage</code></dt>
-<dd><p>The period lengths divided
-by <code>p_period</code> add to more than 24 hours a day; the period lengths may
-already include the probability, which would then be applied twice.</p></dd>
+<dd><p>Tier 1. The period lengths
+divided by <code>p_period</code> add to more than 24 hours a day; the period lengths
+may already include the probability, which would then be applied twice.</p></dd>
 
 <dt><code>creel_warning_p_period_inferred</code></dt>
-<dd><p>A schedule had periods but no
-<code>p_period</code> column, so the period sampling probability was inferred.</p></dd>
+<dd><p>Tier 1. A schedule had
+periods but no <code>p_period</code> column, so the period sampling probability was
+inferred.</p></dd>
 
 
 </dl></div>
@@ -158,53 +176,54 @@ already include the probability, which would then be applied twice.</p></dd>
 
 
 <dl><dt><code>creel_warning_missing_sections</code></dt>
-<dd><p>One or more sections are
-missing from the count or interview data and are not in the estimate.</p></dd>
+<dd><p>Tier 1. One or more sections
+are missing from the count or interview data and are not in the
+estimate.</p></dd>
 
 <dt><code>creel_warning_missing_rate_strata</code></dt>
-<dd><p>Effort cells with no
-catch rate were left out of a total.</p></dd>
+<dd><p>Tier 1. Effort cells with
+no catch rate were left out of a total.</p></dd>
 
 <dt><code>creel_warning_pooled_domain_mix</code></dt>
-<dd><p>A total pools over domains
-the counts do not classify.</p></dd>
+<dd><p>Tier 1. A total pools over
+domains the counts do not classify.</p></dd>
 
 <dt><code>creel_warning_zero_catch_excluded</code></dt>
-<dd><p>Trips that caught none of
-a species were left out, so the rate is among trips that caught it.</p></dd>
+<dd><p>Tier 1. Trips that caught
+none of a species were left out, so the rate is among trips that caught
+it.</p></dd>
 
 <dt><code>creel_warning_effort_excluded</code></dt>
-<dd><p>Interviews with missing or
-zero effort were left out of a rate.</p></dd>
+<dd><p>Tier 2. Interviews with missing
+or zero effort were left out of a rate.</p></dd>
 
 <dt><code>creel_warning_harvest_excluded</code></dt>
-<dd><p>Interviews with missing
-harvest were left out of a harvest rate.</p></dd>
+<dd><p>Tier 2. Interviews with
+missing harvest were left out of a harvest rate.</p></dd>
 
 <dt><code>creel_warning_trip_duration_excluded</code></dt>
-<dd><p>Interviews with a
-missing or non-positive trip duration were left out.</p></dd>
+<dd><p>Tier 2. Interviews with
+a missing or non-positive trip duration were left out.</p></dd>
 
 <dt><code>creel_warning_mor_truncation</code></dt>
-<dd><p>10 percent or more of incomplete
-trips were shorter than <code>truncate_at</code> and left out of a mean-of-ratios
-rate (below 10 percent this is a message).</p></dd>
+<dd><p>Tier 2. 10 percent or more of
+incomplete trips were shorter than <code>truncate_at</code> and left out of a
+mean-of-ratios rate (below 10 percent this is a message).</p></dd>
 
 <dt><code>creel_warning_truncation_skipped</code></dt>
-<dd><p>Mean-of-ratios truncation
-was not applied because the design has no trip duration.</p></dd>
+<dd><p>Tier 3. Mean-of-ratios
+truncation was not applied because the design has no trip duration.</p></dd>
 
 <dt><code>creel_warning_truncation_disabled</code></dt>
-<dd><p><code>truncate_at = NULL</code> turned
-short-trip truncation off.</p></dd>
+<dd><p>Tier 3. <code>truncate_at = NULL</code> turned short-trip truncation off.</p></dd>
 
 <dt><code>creel_warning_two_phase_rescale</code></dt>
-<dd><p>Two-phase totals were
+<dd><p>Tier 1. Two-phase totals were
 rescaled onto the reported catch.</p></dd>
 
 <dt><code>creel_warning_asymmetric_coverage</code></dt>
-<dd><p>Count frames in a hybrid
-design cover different date-stratum cells.</p></dd>
+<dd><p>Tier 1. Count frames in a
+hybrid design cover different date-stratum cells.</p></dd>
 
 
 </dl></div>
@@ -213,35 +232,36 @@ design cover different date-stratum cells.</p></dd>
 
 
 <dl><dt><code>creel_warning_all_counts_na</code></dt>
-<dd><p>Every value in the count column
-is <code>NA</code>.</p></dd>
+<dd><p>Tier 1. Every value in the count
+column is <code>NA</code>.</p></dd>
 
 <dt><code>creel_warning_zero_fish_total</code></dt>
-<dd><p>The estimated number of fish
-is zero or negative, so a mean or proportion cannot be computed.</p></dd>
+<dd><p>Tier 1. The estimated number of
+fish is zero or negative, so a mean or proportion cannot be computed.</p></dd>
 
 <dt><code>creel_warning_no_recaptures</code></dt>
-<dd><p>No tagged fish were recovered,
-overall or in a stratum, so the exploitation rate is estimated as 0.</p></dd>
+<dd><p>Tier 1. No tagged fish were
+recovered, overall or in a stratum, so the exploitation rate is estimated
+as 0.</p></dd>
 
 <dt><code>creel_warning_exploitation_out_of_range</code></dt>
-<dd><p>The exploitation
-rate is outside 0 to 1; its interval is clamped.</p></dd>
+<dd><p>Tier 1. The
+exploitation rate is outside 0 to 1; its interval is clamped.</p></dd>
 
 <dt><code>creel_warning_estimator_failed</code></dt>
-<dd><p>One of the estimators being
-compared failed.</p></dd>
+<dd><p>Tier 1. One of the estimators
+being compared failed.</p></dd>
 
 <dt><code>creel_warning_imputation_convergence</code></dt>
-<dd><p>The camera-count
+<dd><p>Tier 1. The camera-count
 imputation model did not converge in a stratum.</p></dd>
 
 <dt><code>creel_warning_nonstandard_estimator</code></dt>
-<dd><p>An unusual combination
-of <code>use_trips</code> and <code>estimator</code> was requested.</p></dd>
+<dd><p>Tier 3. An unusual
+combination of <code>use_trips</code> and <code>estimator</code> was requested.</p></dd>
 
 <dt><code>creel_warning_mor_incomplete_trips</code></dt>
-<dd><p>A rate uses the
+<dd><p>Tier 3. A rate uses the
 mean-of-ratios estimator on incomplete trips; complete trips are
 preferred where available.</p></dd>
 
@@ -252,46 +272,46 @@ preferred where available.</p></dd>
 
 
 <dl><dt><code>creel_warning_bootstrap_ignores_strata</code></dt>
-<dd><p>A bootstrap SE does
-not resample within the design strata.</p></dd>
+<dd><p>Tier 1. A bootstrap SE
+does not resample within the design strata.</p></dd>
 
 <dt><code>creel_warning_bin_vcov_unavailable</code></dt>
-<dd><p>Covariance between
+<dd><p>Tier 1. Covariance between
 length bins is unavailable, so bins are treated as independent.</p></dd>
 
 <dt><code>creel_warning_expansion_structure_unknown</code></dt>
-<dd><p>Party-size
-expansion groups straddle the estimation cells unevenly, so the SE of
-the total cannot be combined from per-cell components.</p></dd>
+<dd><p>Tier 1. Party-size
+expansion groups straddle the estimation cells unevenly, so the SE of the
+total cannot be combined from per-cell components.</p></dd>
 
 <dt><code>creel_warning_trip_length_se_undefined</code></dt>
-<dd><p>Too few trip
+<dd><p>Tier 2. Too few trip
 durations to give an SE for the mean trip length.</p></dd>
 
 <dt><code>creel_warning_single_interview_strata</code></dt>
-<dd><p>Some strata have one
-interview, so their SE is undefined.</p></dd>
+<dd><p>Tier 2. Some strata
+have one interview, so their SE is undefined.</p></dd>
 
 <dt><code>creel_warning_single_day_strata</code></dt>
-<dd><p>Some strata have one
+<dd><p>Tier 2. Some strata have one
 sampled day, so their variance cannot be estimated.</p></dd>
 
 <dt><code>creel_warning_camera_single_day</code></dt>
-<dd><p>A stratum has one paired
-interview/count day, so its camera calibration SE is <code>NA</code>.</p></dd>
+<dd><p>Tier 2. A stratum has one
+paired interview/count day, so its camera calibration SE is <code>NA</code>.</p></dd>
 
 <dt><code>creel_warning_schnabel_ci_upper_unbounded</code></dt>
-<dd><p>Too few
+<dd><p>Tier 2. Too few
 recaptures for a finite Schnabel Poisson upper limit; <code>ci_upper</code> is a
 continuous-Poisson stand-in, not a measured bound.</p></dd>
 
 <dt><code>creel_warning_tost_degenerate</code></dt>
-<dd><p>Too few degrees of freedom to
-test equivalence of complete and incomplete trips.</p></dd>
+<dd><p>Tier 2. Too few degrees of
+freedom to test equivalence of complete and incomplete trips.</p></dd>
 
 <dt><code>creel_warning_se_divergence</code></dt>
-<dd><p>Variance methods disagree by
-more than the threshold.</p></dd>
+<dd><p>Tier 2. Variance methods disagree
+by more than the threshold.</p></dd>
 
 
 </dl></div>
@@ -300,32 +320,32 @@ more than the threshold.</p></dd>
 
 
 <dl><dt><code>creel_warning_small_sample</code></dt>
-<dd><p>Few interviews behind a rate,
-overall or in some groups.</p></dd>
+<dd><p>Tier 2. Few interviews behind a
+rate, overall or in some groups.</p></dd>
 
 <dt><code>creel_warning_thin_rate_cells</code></dt>
-<dd><p>Rate cells in a total rest on
-few trips.</p></dd>
+<dd><p>Tier 2. Rate cells in a total
+rest on few trips.</p></dd>
 
 <dt><code>creel_warning_sparse_strata</code></dt>
-<dd><p>Strata have fewer than three
-counts or interviews.</p></dd>
+<dd><p>Tier 2. Strata have fewer than
+three counts or interviews.</p></dd>
 
 <dt><code>creel_warning_sparse_groups</code></dt>
-<dd><p>Groups in a <code>by</code> breakdown have
-fewer than three observations.</p></dd>
+<dd><p>Tier 2. Groups in a <code>by</code>
+breakdown have fewer than three observations.</p></dd>
 
 <dt><code>creel_warning_regression_small_group</code></dt>
-<dd><p>A group has fewer than
-three interviews for regression CPUE.</p></dd>
+<dd><p>Tier 2. A group has
+fewer than three interviews for regression CPUE.</p></dd>
 
 <dt><code>creel_warning_low_complete_pct</code></dt>
-<dd><p>Few interviews are complete
-trips.</p></dd>
+<dd><p>Tier 2. Few interviews are
+complete trips.</p></dd>
 
 <dt><code>creel_warning_low_response_rate</code></dt>
-<dd><p>Response rate below 50 percent in
-some strata.</p></dd>
+<dd><p>Tier 2. Response rate below
+50 percent in some strata.</p></dd>
 
 
 </dl></div>
@@ -334,103 +354,104 @@ some strata.</p></dd>
 
 
 <dl><dt><code>creel_warning_count_validation</code></dt>
-<dd><p>Count data failed a check
-and estimation continued.</p></dd>
-
-<dt><code>creel_warning_interview_validation</code></dt>
-<dd><p>Interview data failed a
+<dd><p>Tier 2. Count data failed a
 check and estimation continued.</p></dd>
 
+<dt><code>creel_warning_interview_validation</code></dt>
+<dd><p>Tier 2. Interview data
+failed a check and estimation continued.</p></dd>
+
 <dt><code>creel_warning_repeated_sampling_units</code></dt>
-<dd><p>Counts have repeated
-sampling units with no count time to tell them apart.</p></dd>
+<dd><p>Tier 1. Counts have
+repeated sampling units with no count time to tell them apart.</p></dd>
 
 <dt><code>creel_warning_zero_counts</code></dt>
-<dd><p>The count column has zeros.</p></dd>
+<dd><p>Tier 3. The count column has
+zeros.</p></dd>
 
 <dt><code>creel_warning_negative_counts</code></dt>
-<dd><p>The count column has negative
-values.</p></dd>
+<dd><p>Tier 2. The count column has
+negative values.</p></dd>
 
 <dt><code>creel_warning_negative_catch</code></dt>
-<dd><p>Interviews have negative
+<dd><p>Tier 2. Interviews have negative
 catch.</p></dd>
 
 <dt><code>creel_warning_negative_effort</code></dt>
-<dd><p>Interviews have negative
-effort.</p></dd>
+<dd><p>Tier 2. Interviews have
+negative effort.</p></dd>
 
 <dt><code>creel_warning_missing_effort</code></dt>
-<dd><p>Interviews have missing
+<dd><p>Tier 2. Interviews have missing
 effort.</p></dd>
 
 <dt><code>creel_warning_short_trips</code></dt>
-<dd><p>Interviews have effort under six
-minutes.</p></dd>
+<dd><p>Tier 2. Interviews have effort
+under six minutes.</p></dd>
 
 <dt><code>creel_warning_long_trip_duration</code></dt>
-<dd><p>Trip durations over 48
-hours.</p></dd>
+<dd><p>Tier 2. Trip durations over
+48 hours.</p></dd>
 
 <dt><code>creel_warning_high_zero_catch</code></dt>
-<dd><p>A high share of trips caught
-nothing, overall or of a species.</p></dd>
+<dd><p>Tier 3. A high share of trips
+caught nothing, overall or of a species.</p></dd>
 
 <dt><code>creel_warning_counted_not_interviewed</code></dt>
-<dd><p>Parties were counted
-but none interviewed.</p></dd>
+<dd><p>Tier 2. Parties were
+counted but none interviewed.</p></dd>
 
 <dt><code>creel_warning_party_size_missing</code></dt>
-<dd><p>Party size has missing
-values.</p></dd>
+<dd><p>Tier 2. Party size has
+missing values.</p></dd>
 
 <dt><code>creel_warning_party_size_fractional</code></dt>
-<dd><p>Party size has
+<dd><p>Tier 2. Party size has
 non-integer values.</p></dd>
 
 <dt><code>creel_warning_release_count_fractional</code></dt>
-<dd><p>A release count has
-non-integer values.</p></dd>
+<dd><p>Tier 2. A release
+count has non-integer values.</p></dd>
 
 <dt><code>creel_warning_catch_unreconciled</code></dt>
-<dd><p>Harvested plus released is
-less than caught for some species-interview pairs.</p></dd>
+<dd><p>Tier 2. Harvested plus
+released is less than caught for some species-interview pairs.</p></dd>
 
 <dt><code>creel_warning_catch_totals_diverge</code></dt>
-<dd><p>Catch-table totals
+<dd><p>Tier 3. Catch-table totals
 differ from the interview catch column.</p></dd>
 
 <dt><code>creel_warning_camera_negative_duration</code></dt>
-<dd><p>Camera
+<dd><p>Tier 2. Camera
 ingress-egress pairs with negative duration were dropped.</p></dd>
 
 <dt><code>creel_warning_camera_imputed_counts</code></dt>
-<dd><p>Some camera counts
-were imputed.</p></dd>
+<dd><p>Tier 2. Some camera
+counts were imputed.</p></dd>
 
 <dt><code>creel_warning_camera_na_counts</code></dt>
-<dd><p>Some camera counts are
+<dd><p>Tier 2. Some camera counts are
 <code>NA</code>.</p></dd>
 
 <dt><code>creel_warning_high_missingness</code></dt>
-<dd><p>High missingness in camera
-counts in some strata.</p></dd>
+<dd><p>Tier 2. High missingness in
+camera counts in some strata.</p></dd>
 
 <dt><code>creel_warning_dates_coerced_na</code></dt>
-<dd><p>Some dates could not be
-parsed and became <code>NA</code>.</p></dd>
+<dd><p>Tier 1. Some dates could not
+be parsed and became <code>NA</code>.</p></dd>
 
 <dt><code>creel_warning_species_unmatched</code></dt>
-<dd><p>Some species values match
-no known species.</p></dd>
+<dd><p>Tier 2. Some species values
+match no known species.</p></dd>
 
 <dt><code>creel_warning_species_column_missing</code></dt>
-<dd><p>The species column is
-missing, so the species coverage check was skipped.</p></dd>
+<dd><p>Tier 3. The species
+column is missing, so the species coverage check was skipped.</p></dd>
 
 <dt><code>creel_warning_unknown_label_collision</code></dt>
-<dd><p>A column holds both
-unrecorded values and the literal label used for them.</p></dd>
+<dd><p>Tier 1. A column holds
+both unrecorded values and the literal label used for them.</p></dd>
 
 
 </dl></div>
@@ -439,32 +460,37 @@ unrecorded values and the literal label used for them.</p></dd>
 
 
 <dl><dt><code>creel_warning_argument_ignored</code></dt>
-<dd><p>An argument has no effect in
-this call.</p></dd>
+<dd><p>Tier 3. An argument has no
+effect in this call.</p></dd>
+
+<dt><code>creel_warning_circuit_time_ignored</code></dt>
+<dd><p>Tier 1. <code>circuit_time</code> was
+given for instantaneous counts and is ignored; if the counts are
+progressive, effort is computed the wrong way.</p></dd>
 
 <dt><code>creel_warning_design_type_mismatch</code></dt>
-<dd><p>The design is not the
-type this function expects.</p></dd>
+<dd><p>Tier 1. The design is not
+the type this function expects.</p></dd>
 
 <dt><code>creel_warning_day_type_from_stratum</code></dt>
-<dd><p>A stratum column is used
-as the day type.</p></dd>
+<dd><p>Tier 3. A stratum column
+is used as the day type.</p></dd>
 
 <dt><code>creel_warning_internal_svydesign</code></dt>
-<dd><p>The internal survey design
-was accessed; changing it can give wrong variances.</p></dd>
+<dd><p>Tier 3. The internal survey
+design was accessed; changing it can give wrong variances.</p></dd>
 
 <dt><code>creel_warning_no_subdesigns</code></dt>
-<dd><p>No survey sub-designs were
-found to adjust.</p></dd>
+<dd><p>Tier 3. No survey sub-designs
+were found to adjust.</p></dd>
 
 <dt><code>creel_warning_large_delta_pct</code></dt>
-<dd><p><code>delta_pct</code> looks like a
-percentage given as a whole number.</p></dd>
+<dd><p>Tier 3. <code>delta_pct</code> looks like
+a percentage given as a whole number.</p></dd>
 
 <dt><code>creel_warning_fragile_schedule</code></dt>
-<dd><p>Special-period declarations
-produced a fragile schedule.</p></dd>
+<dd><p>Tier 2. Special-period
+declarations produced a fragile schedule.</p></dd>
 
 
 </dl></div>
