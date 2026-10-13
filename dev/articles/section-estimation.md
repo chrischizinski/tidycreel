@@ -100,7 +100,7 @@ effort_est <- estimate_effort(design)
 #>   angler-days, not angler-hours.
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(effort_est$estimates)
 #> # A tibble: 4 × 11
 #>   section     estimate    se se_between se_within ci_lower ci_upper     n
@@ -309,6 +309,14 @@ design_missing <- add_sections(design_missing, sections_df, section_col = sectio
 design_missing <- suppressWarnings(add_counts(design_missing, north_central_counts))
 
 estimate_effort(design_missing, missing_sections = "warn")$estimates
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 missing section(s) in count data.
 #> ! Section(s) not found: "South"
 #> ℹ Inserting NA row(s) with data_available = FALSE.

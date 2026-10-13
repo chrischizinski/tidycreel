@@ -137,6 +137,7 @@ sched_high_use <- generate_schedule(
 #> ℹ Affected strata: "weekend (baseline=2, final=0)"
 #> ℹ Inspect the "special_period_diagnostics" attribute or print the schedule for
 #>   details.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 
 sched_high_use[, c("date", "day_type", "final_stratum", "special_period_reason", "sampled")]
 ```

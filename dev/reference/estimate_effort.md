@@ -221,11 +221,20 @@ counts <- data.frame(
 
 design_with_counts <- add_counts(design, counts)
 result <- estimate_effort(design_with_counts)
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 2 strata have fewer than 3 observations:
 #> • Stratum weekday: 2 observations
 #> • Stratum weekend: 2 observations
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -241,16 +250,12 @@ print(result)
 
 # Grouped by day_type
 result_grouped <- estimate_effort(design_with_counts, by = day_type)
-#> Warning: 2 strata have fewer than 3 observations:
-#> • Stratum weekday: 2 observations
-#> • Stratum weekend: 2 observations
-#> ! Sparse strata produce unstable variance estimates.
-#> ℹ Consider combining sparse strata or collecting more data.
 #> Warning: 2 groups have fewer than 3 observations:
 #> • Group day_type=weekday: 2 observations
 #> • Group day_type=weekend: 2 observations
 #> ! Sparse groups produce unstable variance estimates.
 #> ℹ Consider combining sparse groups or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result_grouped)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -270,19 +275,9 @@ print(result_grouped)
 
 # Custom confidence level
 result_90 <- estimate_effort(design_with_counts, conf_level = 0.90)
-#> Warning: 2 strata have fewer than 3 observations:
-#> • Stratum weekday: 2 observations
-#> • Stratum weekend: 2 observations
-#> ! Sparse strata produce unstable variance estimates.
-#> ℹ Consider combining sparse strata or collecting more data.
 
 # Bootstrap variance estimation
 result_boot <- estimate_effort(design_with_counts, variance = "bootstrap")
-#> Warning: 2 strata have fewer than 3 observations:
-#> • Stratum weekday: 2 observations
-#> • Stratum weekend: 2 observations
-#> ! Sparse strata produce unstable variance estimates.
-#> ℹ Consider combining sparse strata or collecting more data.
 print(result_boot)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -298,11 +293,6 @@ print(result_boot)
 
 # Jackknife variance estimation
 result_jk <- estimate_effort(design_with_counts, variance = "jackknife")
-#> Warning: 2 strata have fewer than 3 observations:
-#> • Stratum weekday: 2 observations
-#> • Stratum weekend: 2 observations
-#> ! Sparse strata produce unstable variance estimates.
-#> ℹ Consider combining sparse strata or collecting more data.
 print(result_jk)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -318,22 +308,7 @@ print(result_jk)
 
 # Grouped estimation with bootstrap variance
 result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")
-#> Warning: 2 strata have fewer than 3 observations:
-#> • Stratum weekday: 2 observations
-#> • Stratum weekend: 2 observations
-#> ! Sparse strata produce unstable variance estimates.
-#> ℹ Consider combining sparse strata or collecting more data.
-#> Warning: 2 groups have fewer than 3 observations:
-#> • Group day_type=weekday: 2 observations
-#> • Group day_type=weekend: 2 observations
-#> ! Sparse groups produce unstable variance estimates.
-#> ℹ Consider combining sparse groups or collecting more data.
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
 result_verbose <- estimate_effort(design_with_counts, verbose = TRUE)
-#> Warning: 2 strata have fewer than 3 observations:
-#> • Stratum weekday: 2 observations
-#> • Stratum weekend: 2 observations
-#> ! Sparse strata produce unstable variance estimates.
-#> ℹ Consider combining sparse strata or collecting more data.
 ```

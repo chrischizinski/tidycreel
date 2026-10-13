@@ -3,13 +3,13 @@
 for advanced analysis using survey package functions. This is an escape hatch
 for workflows not yet wrapped by tidycreel. Most users should use
 estimate_effort() instead.
-The function issues a once-per-session warning to educate users that this is
-an advanced feature with risks if the returned object is modified incorrectly."><meta property="og:description" content="Provides power users with direct access to the internal survey.design2 object
+The function warns, once per design, that this is an advanced feature with
+risks if the returned object is modified incorrectly."><meta property="og:description" content="Provides power users with direct access to the internal survey.design2 object
 for advanced analysis using survey package functions. This is an escape hatch
 for workflows not yet wrapped by tidycreel. Most users should use
 estimate_effort() instead.
-The function issues a once-per-session warning to educate users that this is
-an advanced feature with risks if the returned object is modified incorrectly."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
+The function warns, once per design, that this is an advanced feature with
+risks if the returned object is modified incorrectly."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -81,8 +81,8 @@ an advanced feature with risks if the returned object is modified incorrectly.">
 for advanced analysis using survey package functions. This is an escape hatch
 for workflows not yet wrapped by tidycreel. Most users should use
 <code><a href="estimate_effort.html">estimate_effort()</a></code> instead.</p>
-<p>The function issues a once-per-session warning to educate users that this is
-an advanced feature with risks if the returned object is modified incorrectly.</p>
+<p>The function warns, once per design, that this is an advanced feature with
+risks if the returned object is modified incorrectly.</p>
     </div>
 
     <div class="section level2">
@@ -108,7 +108,7 @@ affect the internal design$survey object.</p>
     <h2 id="warning">Warning<a class="anchor" aria-label="anchor" href="#warning"></a></h2>
 
 
-<p>This function issues a once-per-session warning explaining:</p><ul><li><p>This is an advanced feature for power users</p></li>
+<p>This function warns, once per design (see <a href="creel_warnings.html">creel_warnings</a>), explaining:</p><ul><li><p>This is an advanced feature for power users</p></li>
 <li><p>Most users should use <code><a href="estimate_effort.html">estimate_effort()</a></code> instead</p></li>
 <li><p>Modifying the survey design may produce incorrect variance estimates</p></li>
 </ul></div>
@@ -169,7 +169,6 @@ affect the internal design$survey object.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> This is an advanced feature. Most users should use `estimate_effort()`</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   instead.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Modifying the survey design may produce incorrect variance estimates.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #555555;">This warning is displayed once per session.</span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Use with survey package functions</span></span></span>
 <span class="r-in"><span><span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">count</span>, <span class="va">svy</span><span class="op">)</span></span></span>

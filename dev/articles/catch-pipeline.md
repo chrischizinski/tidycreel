@@ -185,6 +185,7 @@ rom_est <- estimate_catch_rate(mini_design)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 10. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(rom_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -343,7 +344,7 @@ total <- estimate_total_catch(season_design)
 #>   angler-days, not angler-hours.
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:
 #> angler_method and species_sought.
 #> ! The rate differs across their levels in these interviews (angler_method:
@@ -357,7 +358,7 @@ total <- estimate_total_catch(season_design)
 #>   against, so it cannot be verified from the data.
 #> ℹ Classifying angler_method and species_sought in the count data removes the
 #>   assumption -- the total becomes `sum(E_h * rate_h)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
 #> • day_type=weekend: n=7
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
@@ -365,6 +366,7 @@ total <- estimate_total_catch(season_design)
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(total)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

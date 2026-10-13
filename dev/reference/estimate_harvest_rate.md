@@ -287,6 +287,7 @@ result <- estimate_harvest_rate(design_with_interviews)
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -304,10 +305,6 @@ print(result)
 result_grouped <- estimate_harvest_rate(design_with_interviews, by = day_type)
 #> ℹ Filtering to complete trips for HPUE estimation
 #>   (n=20, 50% of 40 interviews) [default]
-#> Warning: Small sample size in 1 group:
-#> • Group day_type=weekday: n=20
-#> ! Ratio estimates are more stable with n >= 30 per group.
-#> ℹ Variance estimates may be unstable with n < 30.
 print(result_grouped)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -326,23 +323,14 @@ print(result_grouped)
 result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)
 #> ℹ Filtering to complete trips for HPUE estimation
 #>   (n=20, 50% of 40 interviews) [default]
-#> Warning: Small sample size for harvest estimation.
-#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 
 # Bootstrap variance estimation
 result_boot <- estimate_harvest_rate(design_with_interviews, variance = "bootstrap")
 #> ℹ Filtering to complete trips for HPUE estimation
 #>   (n=20, 50% of 40 interviews) [default]
-#> Warning: Small sample size for harvest estimation.
-#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 
 # Verbose dispatch message (shows which estimator was used for bus-route designs)
 result_verbose <- estimate_harvest_rate(design_with_interviews, verbose = TRUE)
 #> ℹ Filtering to complete trips for HPUE estimation
 #>   (n=20, 50% of 40 interviews) [default]
-#> Warning: Small sample size for harvest estimation.
-#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 ```

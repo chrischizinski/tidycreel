@@ -63,12 +63,13 @@ result <- estimate_effort(design)
 #>   angler-days, not angler-hours.
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 2 strata have fewer than 3 observations:
 #> • Stratum weekday: 2 observations
 #> • Stratum weekend: 2 observations
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 result$estimates
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -125,11 +126,20 @@ multi_counts <- data.frame(
 
 design_m <- add_counts(design_m, multi_counts, count_time_col = count_time)
 result_m <- estimate_effort(design_m)
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 2 strata have fewer than 3 observations:
 #> • Stratum weekday: 2 observations
 #> • Stratum weekend: 2 observations
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 result_m$estimates
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
@@ -195,6 +205,7 @@ result_p <- estimate_effort(design_p)
 #> • Stratum weekend: 2 observations
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 result_p$estimates
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n

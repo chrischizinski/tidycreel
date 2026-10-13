@@ -106,6 +106,14 @@ design <- add_interviews(design, example_interviews,
 # Two estimates from the same design: overall, and split by stratum. In
 # practice these would come from designs built on different survey types.
 est_all <- estimate_effort(design)
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 est_grp <- estimate_effort(design, by = day_type)
 
 compare_designs(list(overall = est_all, by_day_type = est_grp))

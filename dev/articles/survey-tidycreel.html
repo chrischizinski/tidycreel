@@ -365,7 +365,7 @@ labelled columns.</p>
 <span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
 <span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">effort_est</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -409,6 +409,7 @@ the complete-trip subset of the interview frame:</p>
 <span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">cpue_est</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -431,6 +432,14 @@ the complete-trip subset of the interview frame:</p>
 combine the effort and CPUE estimates, exactly as in Part 1c:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span>.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> The rate differs across their levels in these interviews (angler_method:</span></span>
@@ -444,7 +453,7 @@ combine the effort and CPUE estimates, exactly as in Part 1c:</p>
 <span><span class="co">#&gt;   against, so it cannot be verified from the data.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Classifying <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span> in the count data removes the</span></span>
 <span><span class="co">#&gt;   assumption -- the total becomes `sum(E_h * rate_h)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
@@ -452,6 +461,7 @@ combine the effort and CPUE estimates, exactly as in Part 1c:</p>
 <span><span class="co">#&gt;   refuse a group this small.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
 <span><span class="co">#&gt;   (GH #417).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">total_catch</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>

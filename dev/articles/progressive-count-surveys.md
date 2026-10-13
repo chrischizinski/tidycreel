@@ -411,12 +411,13 @@ est_2p <- estimate_effort(des_2p)
 #>   angler-days, not angler-hours.
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 2 strata have fewer than 3 observations:
 #> • Stratum weekday: 2 observations
 #> • Stratum weekend: 2 observations
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 est_2p$estimates
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n

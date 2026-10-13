@@ -238,6 +238,7 @@ result_grouped <- validate_incomplete_trips(design_with_interviews,
 #> Warning: ! Only 0.0% of interviews are complete trips (threshold: 10%)
 #> ℹ Pollock et al. recommends >=10% complete trips for valid estimation
 #> ℹ Consider use_trips='diagnostic' to validate incomplete trip estimates
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result_grouped)
 #> 
 #> ── TOST Equivalence Validation Results ─────────────────────────────────────────

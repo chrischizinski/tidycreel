@@ -308,6 +308,7 @@ result <- estimate_catch_rate(design_with_interviews)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -326,12 +327,9 @@ result_grouped <- estimate_catch_rate(design_with_interviews, by = day_type)
 #> Warning: ! Only 0.0% of interviews are complete trips (threshold: 10%)
 #> ℹ Pollock et al. recommends >=10% complete trips for valid estimation
 #> ℹ Consider use_trips='diagnostic' to validate incomplete trip estimates
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=20, 50% of 40 interviews) [default]
-#> Warning: Small sample size in 1 group:
-#> • Group day_type=weekday: n=20
-#> ! Ratio estimates are more stable with n >= 30 per group.
-#> ℹ Variance estimates may be unstable with n < 30.
 print(result_grouped)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -350,17 +348,11 @@ print(result_grouped)
 result_90 <- estimate_catch_rate(design_with_interviews, conf_level = 0.90)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=20, 50% of 40 interviews) [default]
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 
 # Bootstrap variance estimation
 result_boot <- estimate_catch_rate(design_with_interviews, variance = "bootstrap")
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=20, 50% of 40 interviews) [default]
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 
 # Mean-of-ratios for incomplete trips
 result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
@@ -371,9 +363,6 @@ result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
 #> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
 #> ℹ MOR truncation: 0 trips excluded (all >= 0.5 hours)
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 
 # Mean-of-ratios with custom truncation threshold
 result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
@@ -384,7 +373,4 @@ result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", 
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
 #> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
 #> ℹ MOR truncation: 0 trips excluded (all >= 1 hours)
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 ```

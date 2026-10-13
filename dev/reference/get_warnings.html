@@ -132,8 +132,12 @@ trips, thin cells.</p></dd>
 <dd><p>Information: an argument with no effect, an estimator choice.</p></dd>
 
 
-</dl><p>A warning is recorded even when the caller handles or muffles it, and is
-not recorded when it was not raised at all. Warnings raised by other
+</dl><p>A warning is recorded even when the caller handles or muffles it. A
+data-quality warning (tier 2) prints only the first time it is raised on a
+design; its repeats are recorded here without printing (see
+<a href="creel_warnings.html">creel_warnings</a>). A first occurrence the caller muffles, with
+<code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code> or a handler, still counts as that one print: later
+calls on the same design do not print it. Warnings raised by other
 packages (<code>survey</code>, <code>lme4</code>) are not recorded.</p>
     </div>
     <div class="section level2">
@@ -157,7 +161,7 @@ packages (<code>survey</code>, <code>lme4</code>) are not recorded.</p>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
 <span class="r-in"><span><span class="fu">get_warnings</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    id                       class tier             fn</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 102 creel_warning_no_party_size    1 add_interviews</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 124 creel_warning_no_party_size    1 add_interviews</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                                                                                                                                                                                                    message</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 ! No `n_anglers` provided — assuming 1 angler per interview.\nℹ Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour\n  normalization.\nℹ If the interviews really are one angler each, pass `n_anglers = 1` to state\n  that and silence this warning.</span>
 </code></pre></div>

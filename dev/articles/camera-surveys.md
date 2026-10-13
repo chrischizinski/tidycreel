@@ -390,6 +390,7 @@ effort_ie <- est_effort_camera(
 #> ℹ Its contribution is `NA`, so the reported SE is `NA` rather than falsely
 #>   exact.
 #> ℹ Add a second matched interview day in this stratum to recover an SE.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(effort_ie)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

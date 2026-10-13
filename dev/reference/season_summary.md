@@ -93,11 +93,20 @@ result <- season_summary(list(
   effort     = estimate_effort(design),
   catch_rate = estimate_catch_rate(design)
 ))
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 result$table
 #> # A tibble: 1 × 12
 #>   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower

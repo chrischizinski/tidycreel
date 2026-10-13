@@ -121,6 +121,7 @@ compare_cpue_estimators(design)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews)
 #> Warning: Non-standard combination: use_trips='complete' with estimator='mor'
@@ -130,9 +131,6 @@ compare_cpue_estimators(design)
 #> Warning: MOR truncation skipped: no trip duration column in design.
 #> ℹ Supply `trip_duration` in `add_interviews()` to enable truncation.
 #> ℹ All 17 trips used without truncation.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews)
 #> # A tibble: 3 × 6

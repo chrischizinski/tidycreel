@@ -125,6 +125,7 @@ standardize_species(interviews)
 #> Warning: 1 species value(s) could not be matched to an
 #> AFS code and will be "NA":
 #> • "UNKNOWN"
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #>         date         species kept species_code
 #> 1 2024-06-01         walleye    2          WAE
 #> 2 2024-06-02 Largemouth Bass    1          LMB

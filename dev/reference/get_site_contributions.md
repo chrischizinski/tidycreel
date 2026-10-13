@@ -108,6 +108,7 @@ design_br <- add_interviews(
 #> • Stratum weekday: 2 interviews
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Added 2 interviews: 2 complete (100%), 0 incomplete (0%)
 result <- estimate_effort(design_br)
 get_site_contributions(result)

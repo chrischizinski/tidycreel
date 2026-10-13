@@ -295,6 +295,7 @@ below.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Trips &lt; 0.5 hours excluded to prevent unstable variance</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> High truncation rate may indicate data quality issues</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider reviewing trip duration data for errors</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; ── MOR Estimator (All Trips) ───────────────────────────────────────────────────</span></span>
 <span><span class="co">#&gt; Averages per-trip CPUE ratios over 183 interviews (183 incomplete).</span></span>
 <span><span class="co">#&gt; Truncation: 29 trips excluded (&lt; 0.5 hours)</span></span>
@@ -332,10 +333,6 @@ catch rate of 0.22 fish per angler-hour, inside the 95% confidence
 interval of 0.15 to 0.24.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">roving_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">roving</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> MOR truncation: 29 trips excluded (13.7%)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Trips &lt; 0.5 hours excluded to prevent unstable variance</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> High truncation rate may indicate data quality issues</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider reviewing trip duration data for errors</span></span>
 <span><span class="va">roving_catch</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -350,10 +347,6 @@ interval of 0.15 to 0.24.</p>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>957.  314.    <span style="text-decoration: underline;">1</span>337.    <span style="text-decoration: underline;">2</span>577.   183</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">roving</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> MOR truncation: 29 trips excluded (13.7%)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Trips &lt; 0.5 hours excluded to prevent unstable variance</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> High truncation rate may indicate data quality issues</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider reviewing trip duration data for errors</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total Harvest (Effort × HPUE)</span></span>
@@ -368,7 +361,9 @@ interval of 0.15 to 0.24.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     628.  148.     335.     921.   183</span></span></code></pre></div>
 <p>The totals multiply the same season effort by the roving rates: about
 1,960 fish caught and 630 kept. Each estimate built on a roving rate
-drops the short trips again, and warns again.</p>
+drops the short trips again. The warning printed once for this design;
+each estimate still records it, and
+<code>get_warnings(roving_catch)</code> lists it.</p>
 </div>
 <div class="section level2">
 <h2 id="results-as-data">Results as data<a class="anchor" aria-label="anchor" href="#results-as-data"></a>
@@ -401,11 +396,7 @@ describe the same fishery.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">roving</span>, by <span class="op">=</span> <span class="va">day_type</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> MOR truncation: 29 trips excluded (13.7%)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Trips &lt; 0.5 hours excluded to prevent unstable variance</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> High truncation rate may indicate data quality issues</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider reviewing trip duration data for errors</span></span></code></pre></div>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="instantaneous-counts_files/figure-html/plot-1.png" class="r-plt" alt="Total catch on weekdays and weekends from the roving interviews, with 95 percent confidence intervals." width="576"></p>
 </div>
 <div class="section level2">

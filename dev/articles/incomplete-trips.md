@@ -286,15 +286,13 @@ estimate_catch_rate(roving_design)$method
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 22. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> [1] "mean-of-ratios-cpue"
 
 # Named explicitly: complete trips, ratio-of-means
 estimate_catch_rate(roving_design, use_trips = "complete")$method
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews)
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> [1] "ratio-of-means-cpue"
 ```
 

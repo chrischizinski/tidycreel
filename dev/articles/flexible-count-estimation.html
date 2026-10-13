@@ -163,12 +163,13 @@ stratum).</p>
 <span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
 <span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 2 strata have fewer than 3 observations:</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekday: 2 observations</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekend: 2 observations</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sparse strata produce unstable variance estimates.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider combining sparse strata or collecting more data.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">result</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -222,11 +223,20 @@ column via <code>count_time_col</code>.</p>
 <span></span>
 <span><span class="va">design_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_m</span>, <span class="va">multi_counts</span>, count_time_col <span class="op">=</span> <span class="va">count_time</span><span class="op">)</span></span>
 <span><span class="va">result_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_m</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 2 strata have fewer than 3 observations:</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekday: 2 observations</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekend: 2 observations</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sparse strata produce unstable variance estimates.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider combining sparse strata or collecting more data.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">result_m</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -287,6 +297,7 @@ expansion factor κ = T_d / τ.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekend: 2 observations</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sparse strata produce unstable variance estimates.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider combining sparse strata or collecting more data.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">result_p</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>

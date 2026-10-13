@@ -131,6 +131,14 @@ matching family, <code>creel_error_*</code>.</p>
 
 </dl><p>Every warning is also recorded on the design or estimate the call returns;
 <code><a href="get_warnings.html">get_warnings()</a></code> lists them.</p>
+<p>Tier 1 warnings print on every call. Tier 2 warnings print once per design:
+the first time one is raised on a design it prints, and later repeats on
+that design are recorded but not printed. A design is new each time
+<code><a href="creel_design.html">creel_design()</a></code>, an <code>add_*()</code> step or <code><a href="adjust_nonresponse.html">adjust_nonresponse()</a></code> returns it,
+so new data print again. Three facts about the design also print once per
+design although their tier is not 2: <code>creel_warning_no_period_length</code>,
+<code>creel_warning_pooled_domain_mix</code> and
+<code>creel_warning_internal_svydesign</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="units-and-scale">Units and scale<a class="anchor" aria-label="anchor" href="#units-and-scale"></a></h2>

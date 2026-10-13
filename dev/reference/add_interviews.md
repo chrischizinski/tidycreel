@@ -380,6 +380,7 @@ design_with_interviews <- add_interviews(
 #> • Stratum weekend: 2 interviews
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Added 4 interviews: 3 complete (75%), 1 incomplete (25%)
 print(design_with_interviews)
 #> 
@@ -434,5 +435,6 @@ design2 <- add_interviews(
 #> • Stratum weekend: 2 interviews
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Added 4 interviews: 3 complete (75%), 1 incomplete (25%)
 ```

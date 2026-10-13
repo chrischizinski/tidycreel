@@ -181,8 +181,16 @@ estimator silently.
   `creel_warning`, so a caller can handle one warning for one call
   ([`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
   lists them). A fact raised in several places uses one class.
-- A warning should be rare enough to read. Advisory warnings that would
-  repeat on every call use `.frequency = "once"`.
+- A warning should be rare enough to read. Every warning has a tier
+  ([`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)).
+  A data-quality warning (tier 2) prints once per design: later repeats
+  on the same design are recorded on the result, readable with
+  [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md),
+  but not printed. A warning that the estimate may be wrong (tier 1)
+  prints every time. Raise warnings with the internal `creel_warn()`,
+  which records them and handles the repeats; do not use `.frequency`,
+  which hid repeats on a different design for the rest of the session. A
+  test fails if either rule is broken.
 - Examples, vignettes and the README run without warnings, unless the
   page is demonstrating the warning. A documentation page that warns
   teaches readers to ignore warnings.

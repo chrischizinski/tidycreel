@@ -243,6 +243,7 @@ rpue <- estimate_release_rate(design)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(rpue)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -260,15 +261,6 @@ print(rpue)
 rpue_by_species <- estimate_release_rate(design, by = species)
 #> ℹ Filtering to complete trips for RPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 print(rpue_by_species)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

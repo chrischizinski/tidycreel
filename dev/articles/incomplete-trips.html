@@ -400,15 +400,13 @@ difference is visible rather than silent:</p>
 <span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 22. Ratio estimates are more stable with n &gt;= 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; [1] "mean-of-ratios-cpue"</span></span>
 <span></span>
 <span><span class="co"># Named explicitly: complete trips, ratio-of-means</span></span>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">roving_design</span>, use_trips <span class="op">=</span> <span class="st">"complete"</span><span class="op">)</span><span class="op">$</span><span class="va">method</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews)</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; [1] "ratio-of-means-cpue"</span></span></code></pre></div>
 <p>The two answers differ, and on a roving design the routed one is
 usually the one you want. The point is that <strong>“the default” is not

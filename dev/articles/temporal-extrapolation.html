@@ -225,7 +225,7 @@ estimated total angler-hours for the entire May–September season.</p>
 <span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
 <span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">season_effort</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -260,6 +260,46 @@ later.</p>
 <span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>month <span class="op">=</span> <span class="va">month_labels</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="va">est</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">monthly_effort</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       month estimate       se se_between se_within ci_lower ci_upper  n</span></span>
@@ -340,6 +380,14 @@ generate synthetic interview data:</p>
 <span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>month <span class="op">=</span> <span class="va">month_labels</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="va">catch_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=9</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
@@ -347,6 +395,39 @@ generate synthetic interview data:</p>
 <span><span class="co">#&gt;   refuse a group this small.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
 <span><span class="co">#&gt;   (GH #417).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">monthly_catch</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       month estimate       se  ci_lower ci_upper  n</span></span>
@@ -406,6 +487,14 @@ pass it to <code><a href="../reference/season_summary.html">season_summary()</a>
 <span>  <span class="va">effort_list</span><span class="op">[[</span><span class="va">label</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">des_m</span><span class="op">)</span></span>
 <span>  <span class="va">catch_list</span><span class="op">[[</span><span class="va">label</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">des_m</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=9</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
@@ -413,6 +502,39 @@ pass it to <code><a href="../reference/season_summary.html">season_summary()</a>
 <span><span class="co">#&gt;   refuse a group this small.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
 <span><span class="co">#&gt;   (GH #417).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span></span>
 <span><span class="co"># Assemble effort report</span></span>
 <span><span class="va">effort_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/season_summary.html">season_summary</a></span><span class="op">(</span><span class="va">effort_list</span><span class="op">)</span></span>

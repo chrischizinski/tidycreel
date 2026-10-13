@@ -4,6 +4,32 @@
 
 ### Breaking changes
 
+- Data-quality warnings (tier 2 in
+  [`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md))
+  print once per design
+  ([\#496](https://github.com/chrischizinski/tidycreel/issues/496)). The
+  first time one is raised on a design it prints; later repeats on the
+  same design are recorded on the result, where
+  [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md)
+  lists them, but not printed. A season script that drew the same
+  small-sample warning 216 times now shows it once. A design gets a new
+  identity each time
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+  an `add_*()` step or
+  [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md)
+  returns it, so new data, or adding a corrected table to the same
+  design, prints again. Warnings that the estimate may be wrong (tier 1)
+  still print on every call. The missing-period-length and pooled-domain
+  warnings, and
+  [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)’s
+  note, printed once per session; they now print once per design, so a
+  second design hears them too. A warning that prints once per design
+  ends with a line saying so. Code that expected a warning on every
+  call, with `expect_warning()` or `tryCatch(warning = )`, sees it only
+  on the first call per design. A first occurrence hidden with
+  [`suppressWarnings()`](https://rdrr.io/r/base/warning.html) or a
+  handler still counts as its one print for that design.
+
 - [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
   reports zero-catch interviews as a message, not a warning
   ([\#490](https://github.com/chrischizinski/tidycreel/issues/490)).
@@ -123,9 +149,8 @@
   [`withCallingHandlers()`](https://rdrr.io/r/base/conditions.html) is
   still recorded. Each row has the warning’s class, its tier (1: the
   estimate may be wrong; 2: data quality or precision; 3: information),
-  the function that raised it and the message. What prints has not
-  changed. Other results (length and age distributions, summaries) do
-  not keep a record yet.
+  the function that raised it and the message. Other results (length and
+  age distributions, summaries) do not keep a record yet.
 
 - The survey-type articles were checked against what the package reports
   ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),

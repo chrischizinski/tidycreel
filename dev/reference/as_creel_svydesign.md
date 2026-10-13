@@ -7,9 +7,8 @@ should use
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
 instead.
 
-The function issues a once-per-session warning to educate users that
-this is an advanced feature with risks if the returned object is
-modified incorrectly.
+The function warns, once per design, that this is an advanced feature
+with risks if the returned object is modified incorrectly.
 
 ## Usage
 
@@ -32,7 +31,9 @@ affect the internal design\$survey object.
 
 ## Warning
 
-This function issues a once-per-session warning explaining:
+This function warns, once per design (see
+[creel_warnings](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)),
+explaining:
 
 - This is an advanced feature for power users
 
@@ -99,7 +100,6 @@ svy <- as_creel_svydesign(design2)
 #> ℹ This is an advanced feature. Most users should use `estimate_effort()`
 #>   instead.
 #> ! Modifying the survey design may produce incorrect variance estimates.
-#> This warning is displayed once per session.
 
 # Use with survey package functions
 survey::svytotal(~count, svy)

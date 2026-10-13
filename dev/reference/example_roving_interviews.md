@@ -120,6 +120,7 @@ estimate_catch_rate(design)
 #> ℹ Trips < 0.5 hours excluded to prevent unstable variance
 #> ! High truncation rate may indicate data quality issues
 #> ℹ Consider reviewing trip duration data for errors
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ── MOR Estimator (All Trips) ───────────────────────────────────────────────────
 #> Averages per-trip CPUE ratios over 183 interviews (183 incomplete).
 #> Truncation: 29 trips excluded (< 0.5 hours)

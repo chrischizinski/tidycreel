@@ -195,7 +195,7 @@ below).</p>
 <span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
 <span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This warning is displayed once per session.</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 11</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -384,6 +384,14 @@ silent omission of sections that should have been observed.</p>
 <span><span class="va">design_missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_missing</span>, <span class="va">north_central_counts</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_missing</span>, missing_sections <span class="op">=</span> <span class="st">"warn"</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
+<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
+<span><span class="co">#&gt;   count column summed over days.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
+<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
+<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 1 missing section(s) in count data.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Section(s) not found: <span style="color: #0000BB;">"South"</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Inserting NA row(s) with <span style="color: #00BB00;">data_available = FALSE</span>.</span></span>

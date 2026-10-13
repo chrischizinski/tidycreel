@@ -174,6 +174,7 @@ estimate_catch_rate(roving)
 #> ℹ Trips < 0.5 hours excluded to prevent unstable variance
 #> ! High truncation rate may indicate data quality issues
 #> ℹ Consider reviewing trip duration data for errors
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ── MOR Estimator (All Trips) ───────────────────────────────────────────────────
 #> Averages per-trip CPUE ratios over 183 interviews (183 incomplete).
 #> Truncation: 29 trips excluded (< 0.5 hours)
@@ -216,10 +217,6 @@ interval of 0.15 to 0.24.
 ``` r
 
 roving_catch <- estimate_total_catch(roving, target = "period_total")
-#> Warning: ! MOR truncation: 29 trips excluded (13.7%)
-#> ℹ Trips < 0.5 hours excluded to prevent unstable variance
-#> ! High truncation rate may indicate data quality issues
-#> ℹ Consider reviewing trip duration data for errors
 roving_catch
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -234,10 +231,6 @@ roving_catch
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
 #> 1    1957.  314.    1337.    2577.   183
 estimate_total_harvest(roving, target = "period_total")
-#> Warning: ! MOR truncation: 29 trips excluded (13.7%)
-#> ℹ Trips < 0.5 hours excluded to prevent unstable variance
-#> ! High truncation rate may indicate data quality issues
-#> ℹ Consider reviewing trip duration data for errors
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total Harvest (Effort × HPUE)
@@ -254,7 +247,9 @@ estimate_total_harvest(roving, target = "period_total")
 
 The totals multiply the same season effort by the roving rates: about
 1,960 fish caught and 630 kept. Each estimate built on a roving rate
-drops the short trips again, and warns again.
+drops the short trips again. The warning printed once for this design;
+each estimate still records it, and `get_warnings(roving_catch)` lists
+it.
 
 ## Results as data
 
@@ -291,10 +286,6 @@ describe the same fishery.
 ggplot2::autoplot(
   estimate_total_catch(roving, by = day_type, target = "period_total")
 )
-#> Warning: ! MOR truncation: 29 trips excluded (13.7%)
-#> ℹ Trips < 0.5 hours excluded to prevent unstable variance
-#> ! High truncation rate may indicate data quality issues
-#> ℹ Consider reviewing trip duration data for errors
 ```
 
 ![Total catch on weekdays and weekends from the roving interviews, with

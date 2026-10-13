@@ -401,6 +401,14 @@ factor (GH #213).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimate total catch</span></span></span>
 <span class="r-in"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_catch</span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   angler-days, not angler-hours.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   counts, period_length_col = &lt;col&gt;)`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`estimate_total_catch()` is pooling over domains the counts do not classify:</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span>.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> The rate differs across their levels in these interviews (angler_method:</span>
@@ -414,7 +422,7 @@ factor (GH #213).</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   against, so it cannot be verified from the data.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Classifying <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span> in the count data removes the</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   assumption -- the total becomes `sum(E_h * rate_h)`.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #555555;">This warning is displayed once per session.</span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span>
@@ -422,6 +430,7 @@ factor (GH #213).</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   refuse a group this small.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   (GH #417).</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
@@ -443,6 +452,7 @@ factor (GH #213).</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Small sample size for CPUE estimation.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
 <span class="r-in"><span><span class="co"># The total is close to, but not exactly, effort times CPUE</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  total <span class="op">=</span> <span class="va">total_catch</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span>,</span></span>
@@ -460,13 +470,6 @@ factor (GH #213).</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Verbose dispatch message (shows which estimator was used for bus-route designs)</span></span></span>
 <span class="r-in"><span><span class="va">result_verbose</span> <span class="op">&lt;-</span> <span class="fu">estimate_total_catch</span><span class="op">(</span><span class="va">design</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   trips alone; a ratio from so few trips is unstable, and the rate functions</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   refuse a group this small.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   (GH #417).</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

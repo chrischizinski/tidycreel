@@ -66,9 +66,15 @@ Each warning has a tier, as listed in
 
   Information: an argument with no effect, an estimator choice.
 
-A warning is recorded even when the caller handles or muffles it, and is
-not recorded when it was not raised at all. Warnings raised by other
-packages (`survey`, `lme4`) are not recorded.
+A warning is recorded even when the caller handles or muffles it. A
+data-quality warning (tier 2) prints only the first time it is raised on
+a design; its repeats are recorded here without printing (see
+[creel_warnings](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)).
+A first occurrence the caller muffles, with
+[`suppressWarnings()`](https://rdrr.io/r/base/warning.html) or a
+handler, still counts as that one print: later calls on the same design
+do not print it. Warnings raised by other packages (`survey`, `lme4`)
+are not recorded.
 
 ## See also
 
@@ -92,7 +98,7 @@ design <- withCallingHandlers(
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 get_warnings(design)
 #>    id                       class tier             fn
-#> 1 102 creel_warning_no_party_size    1 add_interviews
+#> 1 124 creel_warning_no_party_size    1 add_interviews
 #>                                                                                                                                                                                                                                                                    message
 #> 1 ! No `n_anglers` provided — assuming 1 angler per interview.\nℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour\n  normalization.\nℹ If the interviews really are one angler each, pass `n_anglers = 1` to state\n  that and silence this warning.
 ```

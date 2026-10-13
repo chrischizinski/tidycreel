@@ -133,22 +133,7 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
-#> Warning: 2 rate cells in "estimate_total_catch" rests on fewer than 10 trips.
-#> • section=Central, day_type=weekday: n=6
-#> • section=Central, day_type=weekend: n=3
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
-#> Warning: 2 rate cells in "estimate_total_catch" rests on fewer than 10 trips.
-#> • section=South, day_type=weekday: n=6
-#> • section=South, day_type=weekend: n=3
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: product-total-catch-sections

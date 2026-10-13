@@ -343,6 +343,14 @@ design <- add_interviews(design, example_interviews,
 
 # Estimate total harvest
 total_harvest <- estimate_total_harvest(design)
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: `estimate_total_harvest()` is pooling over a domain the counts do not classify:
 #> angler_method.
 #> ! The rate differs across its levels in these interviews (angler_method:
@@ -355,7 +363,7 @@ total_harvest <- estimate_total_harvest(design)
 #>   against, so it cannot be verified from the data.
 #> ℹ Classifying angler_method in the count data removes the assumption -- the
 #>   total becomes `sum(E_h * rate_h)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 rate cell in "estimate_total_harvest" rests on fewer than 10 trips.
 #> • day_type=weekend: n=7
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
@@ -363,6 +371,7 @@ total_harvest <- estimate_total_harvest(design)
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(total_harvest)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -384,6 +393,7 @@ hpue_est <- estimate_harvest_rate(design)
 #> Warning: Small sample size for harvest estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 # The total is close to, but not exactly, effort times HPUE
 c(
   total = total_harvest$estimates$estimate,

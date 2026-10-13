@@ -317,6 +317,14 @@ design <- add_catch(design, example_catch,
 
 # Total releases (all species combined)
 total_rel <- estimate_total_release(design)
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: `estimate_total_release()` is pooling over domains the counts do not classify:
 #> angler_type, angler_method, and species_sought.
 #> ! The rate differs across their levels in these interviews (angler_type: bank
@@ -330,7 +338,7 @@ total_rel <- estimate_total_release(design)
 #>   against, so it cannot be verified from the data.
 #> ℹ Classifying angler_type, angler_method, and species_sought in the count data
 #>   removes the assumption -- the total becomes `sum(E_h * rate_h)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 rate cell in "estimate_total_release" rests on fewer than 10 trips.
 #> • day_type=weekend: n=7
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
@@ -338,6 +346,7 @@ total_rel <- estimate_total_release(design)
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(total_rel)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -353,13 +362,6 @@ print(total_rel)
 
 # Total releases by species
 total_rel_sp <- estimate_total_release(design, by = species)
-#> Warning: 1 rate cell in "species total release" rests on fewer than 10 trips.
-#> • day_type=weekend: n=7
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
 print(total_rel_sp)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

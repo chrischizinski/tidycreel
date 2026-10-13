@@ -111,6 +111,7 @@ standardize_species(creel_interviews_toy, species_col = "species")
 #> AFS code and will be "NA":
 #> • ""
 #> • "UNKNOWN FISH"
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #>         date day_type         species fish_kept trip_hours species_code
 #> 1 2024-06-01  weekday         walleye         2        3.5          WAE
 #> 2 2024-06-01  weekday Largemouth Bass         0        2.0          LMB

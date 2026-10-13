@@ -45,6 +45,18 @@ returns;
 [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md)
 lists them.
 
+Tier 1 warnings print on every call. Tier 2 warnings print once per
+design: the first time one is raised on a design it prints, and later
+repeats on that design are recorded but not printed. A design is new
+each time
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+an `add_*()` step or
+[`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md)
+returns it, so new data print again. Three facts about the design also
+print once per design although their tier is not 2:
+`creel_warning_no_period_length`, `creel_warning_pooled_domain_mix` and
+`creel_warning_internal_svydesign`.
+
 ## Units and scale
 
 - `creel_warning_no_period_length`:

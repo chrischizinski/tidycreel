@@ -376,12 +376,7 @@ estimate_catch_rate(design, by = species)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: ratio-of-means-cpue-species
@@ -410,7 +405,7 @@ estimate_total_catch(design, by = species)
 #>   angler-days, not angler-hours.
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
-#> This warning is displayed once per session.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 rate cell in "species total catch" rests on fewer than 10 trips.
 #> • day_type=weekend: n=7
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's
@@ -418,6 +413,7 @@ estimate_total_catch(design, by = species)
 #>   refuse a group this small.
 #> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
 #>   (GH #417).
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total Catch (Effort × CPUE)
@@ -439,13 +435,6 @@ estimate_total_catch(design, by = species)
 ``` r
 
 estimate_total_harvest(design, by = species)
-#> Warning: 1 rate cell in "species total harvest" rests on fewer than 10 trips.
-#> • day_type=weekend: n=7
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total Harvest (Effort × HPUE)
@@ -467,15 +456,6 @@ estimate_total_harvest(design, by = species)
 ``` r
 
 estimate_release_rate(design, by = species)
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: ratio-of-means-rpue
@@ -491,13 +471,6 @@ estimate_release_rate(design, by = species)
 #> 2 panfish   0.0186 0.0104 -0.00173   0.0389    17
 #> 3 walleye   0.140  0.0385  0.0640    0.215     17
 estimate_total_release(design, by = species)
-#> Warning: 1 rate cell in "species total release" rests on fewer than 10 trips.
-#> • day_type=weekend: n=7
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: product-total-release
