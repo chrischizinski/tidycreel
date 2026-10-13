@@ -3091,19 +3091,27 @@ test_that("grouped estimation respects package option threshold", {
 
 # Warning behavior tests ----
 
-test_that("warning fires every time condition is met", {
-  # Create design with low complete trip percentage
+test_that("the complete-trip warning prints once per design and is always recorded", {
+  # A data-quality warning (tier 2) is a fact about the design: repeating it on
+  # every estimate buries the warnings about the estimate (GH #496).
   design <- make_small_cpue_design(n = 120, n_incomplete = 110)
 
-  # First call - should warn
   expect_warning(
     estimate_catch_rate(design),
     "Only.*% of interviews are complete trips"
   )
 
-  # Second call - should also warn (not suppressed)
-  expect_warning(
+  second <- withCallingHandlers(
     estimate_catch_rate(design),
+    creel_warning_low_complete_pct = function(w) {
+      stop("printed again on the same design")
+    }
+  ) |> suppressWarnings()
+  expect_true("creel_warning_low_complete_pct" %in% get_warnings(second)$class)
+
+  # A new design, even from the same data, is heard again.
+  expect_warning(
+    estimate_catch_rate(make_small_cpue_design(n = 120, n_incomplete = 110)),
     "Only.*% of interviews are complete trips"
   )
 })
@@ -4093,8 +4101,9 @@ test_that("the truncation percentage is a share of the set that was truncated", 
   )
 
   # All-trip MOR: the share is of every interview, not of the incomplete ones.
+  # A second truncation warning on one design prints only on a new one (#496).
   all_msg <- capture_truncation_warning(
-    estimate_catch_rate(design, use_trips = "all", estimator = "mor", truncate_at = 2.0)
+    estimate_catch_rate(as_new_design(design), use_trips = "all", estimator = "mor", truncate_at = 2.0)
   )
   expect_match(
     all_msg,

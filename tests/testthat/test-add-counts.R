@@ -929,9 +929,8 @@ test_that("grouped effort inherits T_d, so strata do not need equal day lengths"
 
 test_that("estimate_effort() warns when instantaneous counts carry no T_d", {
   # The gap is the point of finding 13: without T_d the estimator returns the
-  # counts summed over days, which is not angler-hours. Once per session, so
-  # force it rather than depending on test order.
-  withr::local_options(rlib_warning_verbosity = "verbose")
+  # counts summed over days, which is not angler-hours. It prints once per
+  # design (GH #496), and this design is new.
 
   design <- creel_design(make_test_calendar(), date = date, strata = day_type)
   cnt <- make_instantaneous_counts_varying_td()
@@ -941,8 +940,6 @@ test_that("estimate_effort() warns when instantaneous counts carry no T_d", {
 })
 
 test_that("estimate_effort() does not warn once T_d is supplied", {
-  withr::local_options(rlib_warning_verbosity = "verbose")
-
   design <- creel_design(make_test_calendar(), date = date, strata = day_type)
   d <- add_counts(
     design, make_instantaneous_counts_varying_td(),
@@ -954,8 +951,6 @@ test_that("estimate_effort() does not warn once T_d is supplied", {
 
 test_that("estimate_effort() does not warn on progressive designs", {
   # Progressive always carries T_d, so the warning must not fire there.
-  withr::local_options(rlib_warning_verbosity = "verbose")
-
   design <- creel_design(make_test_calendar(), date = date, strata = day_type)
   d <- add_counts(
     design, make_progressive_counts(),

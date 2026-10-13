@@ -33,6 +33,15 @@
 #' Every warning is also recorded on the design or estimate the call returns;
 #' [get_warnings()] lists them.
 #'
+#' Tier 1 warnings print on every call. Tier 2 warnings print once per design:
+#' the first time one is raised on a design it prints, and later repeats on
+#' that design are recorded but not printed. A design is new each time
+#' [creel_design()], an `add_*()` step or [adjust_nonresponse()] returns it,
+#' so new data print again. Three facts about the design also print once per
+#' design although their tier is not 2: \code{creel_warning_no_period_length},
+#' \code{creel_warning_pooled_domain_mix} and
+#' \code{creel_warning_internal_svydesign}.
+#'
 #' @section Units and scale:
 #' \describe{
 #'   \item{\code{creel_warning_no_period_length}}{Tier 1. Instantaneous counts
@@ -315,4 +324,26 @@ creel_warning_tiers <- c(
   creel_warning_truncation_disabled = 3L,
   creel_warning_truncation_skipped = 3L,
   creel_warning_zero_counts = 3L
+)
+
+# Classes that print once per design rather than on every call (GH #496): all
+# of tier 2, plus the three design facts that used `.frequency = "once"`. A
+# period length, a domain missing from the counts, or reaching into the survey
+# object is true of the design, not of one estimate, so repeating it on every
+# estimate adds nothing; once per session hid it on a different design.
+creel_warning_once_per_design <- c(
+  names(creel_warning_tiers)[creel_warning_tiers == 2L],
+  "creel_warning_no_period_length",
+  "creel_warning_pooled_domain_mix",
+  "creel_warning_internal_svydesign"
+)
+
+# The functions that build or rebuild a design. A warning raised inside one
+# is about the data it is attaching, so it is not checked against the input
+# design's record: adding new data to the same design must print again. A test
+# in test-get-warnings.R keeps this list equal to the functions that record a
+# design.
+creel_design_builders <- c(
+  "creel_design", "add_counts", "add_sections", "add_interviews",
+  "add_catch", "add_lengths", "add_ages", "adjust_nonresponse"
 )

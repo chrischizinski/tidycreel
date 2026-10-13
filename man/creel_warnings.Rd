@@ -35,6 +35,15 @@ Each entry starts with its tier, which \code{\link[=get_warnings]{get_warnings()
 }
 Every warning is also recorded on the design or estimate the call returns;
 \code{\link[=get_warnings]{get_warnings()}} lists them.
+
+Tier 1 warnings print on every call. Tier 2 warnings print once per design:
+the first time one is raised on a design it prints, and later repeats on
+that design are recorded but not printed. A design is new each time
+\code{\link[=creel_design]{creel_design()}}, an \verb{add_*()} step or \code{\link[=adjust_nonresponse]{adjust_nonresponse()}} returns it,
+so new data print again. Three facts about the design also print once per
+design although their tier is not 2: \code{creel_warning_no_period_length},
+\code{creel_warning_pooled_domain_mix} and
+\code{creel_warning_internal_svydesign}.
 }
 
 \section{Units and scale}{

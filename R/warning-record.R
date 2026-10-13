@@ -18,10 +18,22 @@
 #
 # The key is a weak reference to the frame, so the log never keeps a finished
 # call's frame -- and the design and intermediate tables in it -- alive.
+#
+# Printing. A tier-2 warning, and the few design facts listed in
+# creel_warning_once_per_design, print once per design: the first time a class
+# is raised on a design it prints, and later repeats are recorded but not
+# printed. A design carries a warning_id, renewed each time a build step
+# returns it, so new data print again. Inside a build step the input design is
+# not the one the warning describes, so the step only drops repeats within its
+# own call, then marks what it printed against the design it returns. A design
+# without an id (saved before ids existed) drops repeats within one call.
 
 creel_warning_log <- new.env(parent = emptyenv())
 creel_warning_log$records <- list()
 creel_warning_log$seq <- 0L
+# Design ids already printed, per class: names are "<warning_id> <class>".
+creel_warning_log$printed <- new.env(parent = emptyenv())
+creel_warning_log$design_seq <- 0L
 
 #' The frame of the user's call into tidycreel
 #'
@@ -30,11 +42,19 @@ creel_warning_log$seq <- 0L
 #' @keywords internal
 #' @noRd
 creel_call_frame <- function() {
-  ns <- topenv(environment(creel_call_frame))
+  i <- creel_call_index()
+  if (is.null(i)) NULL else sys.frame(i)
+}
+
+#' Stack index of the user's call into tidycreel, or NULL
+#' @keywords internal
+#' @noRd
+creel_call_index <- function() {
+  ns <- topenv(environment(creel_call_index))
   for (i in seq_len(sys.nframe())) {
     env <- environment(sys.function(i))
     if (!is.null(env) && identical(topenv(env), ns)) {
-      return(sys.frame(i))
+      return(i)
     }
   }
   NULL
@@ -74,18 +94,111 @@ creel_warning_tier_of <- function(cls) {
 
 #' Raise a tidycreel warning and record it
 #'
-#' Takes exactly the arguments of [cli::cli_warn()]. The record is made from
-#' the condition as raised, so a warning that is not raised (one suppressed by
-#' `.frequency`) is not recorded, and a warning a caller muffles still is.
+#' Takes exactly the arguments of [cli::cli_warn()]. Every warning raised is
+#' recorded, including one a caller muffles. A repeat of a once-per-design
+#' warning is recorded and then muffled here, so it neither prints nor reaches
+#' an outer handler.
 #'
 #' @keywords internal
 #' @noRd
 creel_warn <- function(message, ..., .envir = parent.frame()) {
   fn <- raising_fn_name(sys.nframe() - 1L)
+  if (any(list(...)$class %in% creel_warning_once_per_design)) {
+    # Without this a reader cannot know a repeat was recorded, not printed.
+    message <- c(message, "i" = paste(
+      "Repeats on this design are recorded, not printed:",
+      "see {.fn get_warnings}."
+    ))
+  }
   withCallingHandlers(
     cli::cli_warn(message, ..., .envir = .envir),
-    creel_warning = function(w) record_creel_warning(w, fn)
+    creel_warning = function(w) {
+      # Decided before recording: the per-call check looks for an earlier
+      # record of the same class, and this one must not count.
+      quiet <- is_repeat_warning(w)
+      record_creel_warning(w, fn)
+      if (quiet) invokeRestart("muffleWarning")
+    }
   )
+}
+
+#' A fresh design id
+#'
+#' Unique across sessions without touching the random-number stream: the
+#' process id and the session's temporary directory, which R names afresh in
+#' every session, plus a counter.
+#' @keywords internal
+#' @noRd
+new_warning_id <- function() {
+  creel_warning_log$design_seq <- creel_warning_log$design_seq + 1L
+  paste(Sys.getpid(), basename(tempdir()), creel_warning_log$design_seq, sep = "-")
+}
+
+#' Has this once-per-design warning already printed?
+#'
+#' Marks it printed when it has not. Classes outside
+#' creel_warning_once_per_design always print.
+#' @keywords internal
+#' @noRd
+is_repeat_warning <- function(w) {
+  own <- grep("^creel_warning_", class(w), value = TRUE)
+  if (!length(own) || !own[[1]] %in% creel_warning_once_per_design) {
+    return(FALSE)
+  }
+  own <- own[[1]]
+  i <- creel_call_index()
+  if (is.null(i)) {
+    return(FALSE)
+  }
+  id <- if (!building_design(i)) design_warning_id(sys.frame(i))
+  if (is.null(id)) {
+    prior <- vapply(creel_warning_log$records[current_call_records()], function(r) {
+      r$row$class
+    }, character(1))
+    return(own %in% prior)
+  }
+  key <- paste(id, own)
+  if (exists(key, envir = creel_warning_log$printed, inherits = FALSE)) {
+    return(TRUE)
+  }
+  assign(key, TRUE, envir = creel_warning_log$printed)
+  FALSE
+}
+
+#' Is a design builder running, at or inside the user's call?
+#'
+#' Looks at every frame from the user's call inward, not only the outermost:
+#' in `estimate_effort(add_counts(design, counts))` the builder runs while
+#' the estimator's `design` argument is being evaluated.
+#' @param from Stack index of the user's call.
+#' @keywords internal
+#' @noRd
+building_design <- function(from) {
+  ns <- topenv(environment(building_design))
+  builders <- lapply(creel_design_builders, get, envir = ns)
+  for (j in seq.int(from, sys.nframe())) {
+    fun <- sys.function(j)
+    if (any(vapply(builders, identical, logical(1), fun))) {
+      return(TRUE)
+    }
+  }
+  FALSE
+}
+
+#' The warning_id of the design a call works on, or NULL
+#'
+#' Reads the call's `design` argument only once it has been evaluated:
+#' forcing it from a warning handler would evaluate it a second time, or
+#' fail when the warning is raised while it is being evaluated.
+#' @keywords internal
+#' @noRd
+design_warning_id <- function(frame) {
+  bound <- exists("design", envir = frame, inherits = FALSE)
+  if (!bound || rlang::env_binding_are_lazy(frame, "design")) {
+    return(NULL)
+  }
+  design <- get("design", envir = frame, inherits = FALSE)
+  if (inherits(design, "creel_design")) design$warning_id
 }
 
 #' Name of the function that raised a warning
@@ -199,13 +312,22 @@ claim_creel_warnings <- function() {
 #' record goes on a design once, even when one call runs several add_*()
 #' steps. The log marks it rather than the design matching ids, because ids
 #' restart in a new session and a saved design keeps the old ones.
+#'
+#' The design returned is new data, so it gets a new warning_id; what this
+#' call printed is marked printed against it, so an estimate from it does not
+#' repeat what the user has just seen.
 #' @keywords internal
 #' @noRd
 record_design_warnings <- function(design) {
   idx <- current_call_records()
   idx <- idx[!vapply(creel_warning_log$records[idx], `[[`, logical(1), "attached")]
   for (i in idx) creel_warning_log$records[[i]]$attached <- TRUE
-  design$warnings <- rbind(design$warnings %||% empty_warning_table(), warning_rows(idx))
+  rows <- warning_rows(idx)
+  design$warnings <- rbind(design$warnings %||% empty_warning_table(), rows)
+  design$warning_id <- new_warning_id()
+  for (cls in intersect(rows$class, creel_warning_once_per_design)) {
+    assign(paste(design$warning_id, cls), TRUE, envir = creel_warning_log$printed)
+  }
   design
 }
 
@@ -227,8 +349,10 @@ record_design_warnings <- function(design) {
 #'   \item{3}{Information: an argument with no effect, an estimator choice.}
 #' }
 #'
-#' A warning is recorded even when the caller handles or muffles it, and is
-#' not recorded when it was not raised at all. Warnings raised by other
+#' A warning is recorded even when the caller handles or muffles it. A
+#' data-quality warning (tier 2) prints only the first time it is raised on a
+#' design; its repeats are recorded here without printing (see
+#' [creel_warnings]). Warnings raised by other
 #' packages (`survey`, `lme4`) are not recorded.
 #'
 #' @param x A `creel_design` or a `creel_estimates` object.

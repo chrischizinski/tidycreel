@@ -2310,7 +2310,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #'   \eqn{\hat{E}_d = \bar{C}_d \times T_d} (Hoenig et al. 1993). Without it,
 #'   `estimate_effort()`
 #'   expands the counts to the season and returns them unmultiplied, and warns
-#'   once per session that it has done so.
+#'   once per design that it has done so.
 #'
 #'   Not accepted on aerial designs, which carry their period length as
 #'   `h_open` and scale the count by `h_open / v` when estimating. Supplying

@@ -834,7 +834,6 @@ test_that("the README Quick Start runs without a warning and estimates as before
       estimate_effort()
   )
 
-  withr::local_options(rlib_warning_verbosity = "verbose")
   expect_no_warning({
     design <- creel_design(example_calendar, date = date, strata = day_type) # nolint
     counts <- prep_counts_daily_effort(example_counts, # nolint
@@ -869,7 +868,6 @@ test_that("#478: sectioned daily effort goes in as effort, with the raw-count es
     estimate_effort(add_counts(.sections_design(), example_sections_counts)) # nolint
   )
 
-  withr::local_options(rlib_warning_verbosity = "verbose")
   counts <- prep_counts_daily_effort(example_sections_counts, # nolint
     date = date, strata = day_type, daily_effort = effort_hours, section = section # nolint
   )
@@ -889,7 +887,6 @@ test_that("#478: the boat-party prep keeps the section column too", {
     estimate_effort(add_counts(.sections_design(), example_sections_counts)) # nolint
   )
   # Marked as effort like the daily-effort output: no period-length warning.
-  withr::local_options(rlib_warning_verbosity = "verbose")
   expect_no_warning(via_prep <- estimate_effort(add_counts(.sections_design(), counts)))
   expect_equal(via_prep$estimates$estimate, direct$estimates$estimate)
 })

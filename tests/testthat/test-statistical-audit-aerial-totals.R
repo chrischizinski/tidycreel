@@ -221,7 +221,6 @@ test_that("#366: the sectioned `by` refusal comes before the period-length warni
 # angler-hour times angler-hours is fish.
 
 test_that("#478: no aerial total warns that a period length is missing", {
-  withr::local_options(rlib_warning_verbosity = "verbose")
   d <- at_quiet(at_design())
   for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
     expect_no_warning(fn(d), message = "without a period length")

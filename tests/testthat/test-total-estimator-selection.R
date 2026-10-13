@@ -434,7 +434,8 @@ test_that("a trip with no recorded duration is dropped apart from the short trip
   # raised first.
   expect_warning(
     suppressMessages(withCallingHandlers(
-      truncate_interviews_for_mor(design, "mor", 2.0, "all"),
+      # with_na above already printed it for this design (#496).
+      truncate_interviews_for_mor(as_new_design(design), "mor", 2.0, "all"),
       warning = function(w) {
         if (!grepl("missing trip duration", conditionMessage(w))) {
           invokeRestart("muffleWarning")

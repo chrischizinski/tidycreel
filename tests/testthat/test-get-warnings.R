@@ -169,3 +169,139 @@ test_that("the log does not keep a finished call's frame alive", {
   })
   expect_true(all(vapply(frames, is.null, logical(1))))
 })
+
+# Once per design (GH #496, step 3b) ---------------------------------------
+# A season script calls the estimators dozens of times on one design. A data
+# warning repeated on every call buries the warnings that mean an estimate may
+# be wrong, and teaches users to silence everything. Tier-2 warnings therefore
+# print the first time they are raised on a design and are recorded every time.
+
+counts_design <- function() {
+  design <- creel_design(example_calendar, date = date, strata = day_type)
+  add_counts(design, example_counts)
+}
+
+test_that("a data warning prints once per design and is recorded every time", {
+  design <- roving_design()
+  first <- raised(estimate_catch_rate(design))
+  second <- raised(estimate_catch_rate(design))
+  expect_true("creel_warning_mor_truncation" %in% first$classes)
+  expect_false("creel_warning_mor_truncation" %in% second$classes)
+  # Not printed is not forgotten: the second estimate still carries it.
+  expect_true("creel_warning_mor_truncation" %in% get_warnings(second$value)$class)
+})
+
+test_that("an estimate warning prints on every call", {
+  # Tier 1 means this estimate may be wrong; it is never quietened.
+  design <- suppressWarnings(suppressMessages(add_interviews(counts_design(),
+    example_interviews,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status
+  )))
+  first <- raised(estimate_total_catch(design))
+  second <- raised(estimate_total_catch(design))
+  expect_true("creel_warning_unit_mismatch" %in% first$classes)
+  expect_true("creel_warning_unit_mismatch" %in% second$classes)
+  # The thin-cell warning in the same call is tier 2, and goes quiet.
+  expect_true("creel_warning_thin_rate_cells" %in% first$classes)
+  expect_false("creel_warning_thin_rate_cells" %in% second$classes)
+})
+
+test_that("the period-length warning prints once per design, not once per session", {
+  # Once per session (the old .frequency = "once") hid it on every later
+  # design, including one built from different counts.
+  first <- counts_design()
+  a <- raised(estimate_effort(first))
+  b <- raised(estimate_effort(first))
+  expect_true("creel_warning_no_period_length" %in% a$classes)
+  expect_false("creel_warning_no_period_length" %in% b$classes)
+  c <- raised(estimate_effort(counts_design()))
+  expect_true("creel_warning_no_period_length" %in% c$classes)
+})
+
+test_that("attaching data gives a new design, which prints again", {
+  design <- roving_design()
+  raised(estimate_catch_rate(design))
+  # The same steps run again: new data as far as anyone can tell.
+  again <- roving_design()
+  expect_false(identical(again$warning_id, design$warning_id))
+  expect_true("creel_warning_mor_truncation" %in%
+    raised(estimate_catch_rate(again))$classes)
+})
+
+test_that("adding different data to the same design prints its data warning again", {
+  # Interactive work re-runs add_interviews() on one input after fixing the
+  # data. Checked against the input design, the second, still-wrong table
+  # would be silent.
+  base <- counts_design()
+  iv <- example_interviews
+  iv$hours_fished[1] <- 0.05
+  add <- function(data) {
+    raised(add_interviews(base, data,
+      catch = catch_total, effort = hours_fished, trip_status = trip_status,
+      n_anglers = n_anglers
+    ))
+  }
+  first <- add(iv)
+  iv$hours_fished[2] <- 0.05
+  second <- add(iv)
+  expect_true("creel_warning_short_trips" %in% first$classes)
+  expect_true("creel_warning_short_trips" %in% second$classes)
+  expect_false(identical(first$value$warning_id, second$value$warning_id))
+})
+
+test_that("what a build step printed is not printed again by an estimate", {
+  # The step has just shown the warning; the first estimate from the design
+  # it returned must not repeat it.
+  base <- counts_design()
+  iv <- example_interviews
+  iv$hours_fished[1] <- 0.05
+  design <- raised(add_interviews(base, iv,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status,
+    n_anglers = n_anglers
+  ))$value
+  key <- paste(design$warning_id, "creel_warning_short_trips")
+  expect_true(exists(key, envir = tidycreel:::creel_warning_log$printed))
+})
+
+test_that("a design without an id drops repeats within one call only", {
+  # A design saved before ids existed has none; it must still print on every
+  # call rather than go silent for the session.
+  design <- roving_design()
+  design$warning_id <- NULL
+  expect_true("creel_warning_mor_truncation" %in%
+    raised(estimate_catch_rate(design))$classes)
+  expect_true("creel_warning_mor_truncation" %in%
+    raised(estimate_catch_rate(design))$classes)
+})
+
+test_that("design ids do not touch the random-number stream", {
+  # A user's set.seed() must give the same draws whether or not a design was
+  # built in between.
+  set.seed(1)
+  expected <- stats::runif(1)
+  set.seed(1)
+  counts_design()
+  expect_identical(stats::runif(1), expected)
+})
+
+test_that("the design builders are exactly the functions that record a design", {
+  # A builder missing from the list would check its warnings against the
+  # input design and silence a warning about new data.
+  ns <- asNamespace("tidycreel")
+  calls_record <- function(x) {
+    if (!is.call(x)) {
+      return(FALSE)
+    }
+    if (identical(x[[1]], quote(record_step)) ||
+      identical(x[[1]], quote(record_design_warnings))) {
+      return(TRUE)
+    }
+    any(vapply(as.list(x)[-1], function(el) !missing(el) && calls_record(el), logical(1)))
+  }
+  helpers <- c("record_step", "record_design_warnings")
+  found <- Filter(function(nm) {
+    f <- get(nm, envir = ns)
+    is.function(f) && !is.primitive(f) && !nm %in% helpers && calls_record(body(f))
+  }, ls(ns, all.names = TRUE))
+  expect_setequal(tidycreel:::creel_design_builders, found)
+})

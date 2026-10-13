@@ -52,10 +52,10 @@ test_that("the aerial total is in fish once party size is passed", {
     "Small sample size"
   )
   by_effort <- estimate_effort(design, by = day_type)
-  expect_warning(
-    by_rate <- suppressMessages(estimate_catch_rate(design, by = day_type)),
-    "Small sample size"
-  )
+  # The total has just printed the advisory for this design; the rate
+  # records it without printing it again (GH #496).
+  by_rate <- expect_no_warning(suppressMessages(estimate_catch_rate(design, by = day_type)))
+  expect_true("creel_warning_small_sample" %in% get_warnings(by_rate)$class)
   expect_equal(
     by_total$estimates$estimate,
     by_effort$estimates$estimate * by_rate$estimates$estimate

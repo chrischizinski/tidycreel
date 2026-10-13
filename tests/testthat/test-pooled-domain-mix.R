@@ -188,7 +188,8 @@ test_that("PDM-07: harvest and release totals raise it on the same footing", {
   # The three totals are near-twins; a seam warning belonging to one belongs to
   # all three, and harvest screens on the harvest column rather than catch.
   expect_false(is.null(catch_mix_warning(estimate_total_harvest(design)))) # nolint: object_usage_linter
-  expect_false(is.null(catch_mix_warning(estimate_total_release(design)))) # nolint: object_usage_linter
+  # A new design id: the harvest total has already printed it for this one (#496).
+  expect_false(is.null(catch_mix_warning(estimate_total_release(as_new_design(design))))) # nolint: object_usage_linter
 })
 
 test_that("PDM-08: the crude screen survives what the survey-weighted rate cannot", {
