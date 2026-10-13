@@ -130,7 +130,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   durations_all <- design$interviews[[dur_col]]
   bad_dur <- is.na(durations_all) | durations_all <= 0
   if (any(bad_dur)) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "!" = paste0(
         sum(bad_dur),
         " interview(s) have non-positive or missing {.code {dur_col}} values."
@@ -149,7 +149,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     n_int <- length(dur_vals)
     L <- mean(dur_vals)
     if (n_int < min_n_se) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "!" = "Only {n_int} valid trip duration value{?s}; SE of mean trip length is undefined.",
         "i" = "SE and CI will be {.val NA}. Point estimate (trips) is still returned."
       ),
@@ -224,7 +224,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       paste,
       collapse = " / "
     )
-    cli::cli_warn(c(
+    creel_warn(c(
       "!" = "{nrow(singleton_strata)} stratum/strata {?has/have} only 1 interview; \\
              SE of mean trip length is undefined.",
       "i" = "SE and CI will be {.val NA} for: {.val {stratum_labels}}. Point estimates are still returned."

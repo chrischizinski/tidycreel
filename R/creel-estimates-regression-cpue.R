@@ -21,7 +21,7 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
   zero_eff <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_eff)) {
     n_zero <- sum(zero_eff) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from regression CPUE.",
       "i" = "CPUE regression requires effort > 0."
     ),
@@ -94,7 +94,7 @@ estimate_cpue_reg_grouped <- function(
   zero_eff <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_eff)) {
     n_zero <- sum(zero_eff) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from regression CPUE.",
       "i" = "CPUE regression requires effort > 0."
     ),
@@ -114,7 +114,7 @@ estimate_cpue_reg_grouped <- function(
     n_g <- length(catch)
 
     if (n_g < 3L) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "Group {.val {gk}}: fewer than 3 interviews; regression CPUE unreliable.",
         "i" = "Only {n_g} interview{?s} in this group."
       ),
@@ -300,7 +300,7 @@ compare_cpue_estimators <- function(
         df
       },
       error = function(e) {
-        cli::cli_warn(c(
+        creel_warn(c(
           "Estimator {.val {est_name}} failed.",
           "x" = conditionMessage(e)
         ),

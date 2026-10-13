@@ -682,7 +682,7 @@ estimate_angler_n <- function(
         # rather than a change of method. See finding 30.
         lo_cont <- .continuous_poisson_q(alpha / 2, sum_m)
         ci_hi <- sum_Mn / lo_cont
-        cli::cli_warn(c(
+        creel_warn(c(
           "Schnabel Poisson CI: the discrete lower quantile is 0 at {.code sum(m) = {sum_m}}.",
           "i" = "{.field ci_upper} comes from the continuous Poisson (Ilienko 2013) rather than
                  the data, and is an interpolation between the achievable discrete bounds.",

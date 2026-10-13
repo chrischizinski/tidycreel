@@ -5,7 +5,7 @@
 # missing from the help page, or a help-page entry no code raises any more all
 # fail here, so the catalogue cannot drift from the code.
 
-# Each cli_warn() call in the namespace, as the character vector its `class`
+# Each creel_warn() / cli_warn() call in the namespace, as the character vector its `class`
 # argument evaluates to (NULL when it has none). Walks function bodies, so it
 # works on the installed package as well as under load_all().
 warning_class_args <- function() {
@@ -14,7 +14,10 @@ warning_class_args <- function() {
   walk <- function(x, where) {
     if (is.call(x)) {
       head <- x[[1]]
-      is_warn <- identical(head, quote(cli_warn)) ||
+      # creel_warn() is cli_warn() plus a record (GH #496); a bare cli_warn()
+      # would raise a warning get_warnings() never sees, so both are walked.
+      is_warn <- identical(head, quote(creel_warn)) ||
+        identical(head, quote(cli_warn)) ||
         identical(head, quote(cli::cli_warn))
       if (is_warn) {
         cls <- if ("class" %in% names(x)) eval(x[["class"]], baseenv()) else NULL
@@ -23,7 +26,8 @@ warning_class_args <- function() {
       for (el in as.list(x)[-1]) if (!missing(el)) walk(el, where)
     }
   }
-  for (nm in ls(ns, all.names = TRUE)) {
+  # creel_warn() passes its caller's class through; it raises nothing itself.
+  for (nm in setdiff(ls(ns, all.names = TRUE), "creel_warn")) {
     f <- get(nm, envir = ns)
     if (is.function(f) && !is.primitive(f)) walk(body(f), nm)
   }
@@ -136,4 +140,54 @@ test_that("the catch rate and the harvest rate truncate through one implementati
   )
   expect_equal(catch$value$mor_n_truncated, harvest$value$mor_n_truncated)
   expect_gt(catch$value$mor_n_truncated, 0)
+})
+
+test_that("every raise goes through creel_warn(), so every warning is recorded", {
+  # A cli::cli_warn() raised directly would print but never reach
+  # get_warnings(): the record and the console would disagree.
+  ns <- asNamespace("tidycreel")
+  direct <- character()
+  walk <- function(x, where) {
+    if (is.call(x)) {
+      if (identical(x[[1]], quote(cli::cli_warn)) || identical(x[[1]], quote(cli_warn))) {
+        direct <<- c(direct, where)
+      }
+      for (el in as.list(x)[-1]) if (!missing(el)) walk(el, where)
+    }
+  }
+  for (nm in setdiff(ls(ns, all.names = TRUE), "creel_warn")) {
+    f <- get(nm, envir = ns)
+    if (is.function(f) && !is.primitive(f)) walk(body(f), nm)
+  }
+  expect_identical(direct, character())
+})
+
+test_that("every class raised has a tier, and the registry lists nothing else", {
+  # get_warnings() reports the tier; a class without one would report NA,
+  # and a registry entry no code raises is a stale judgment.
+  raised <- unique(unlist(lapply(warning_class_args(), function(cl) {
+    grep("^creel_warning_", cl$class, value = TRUE)
+  })))
+  tiers <- tidycreel:::creel_warning_tiers
+  expect_setequal(names(tiers), raised)
+  expect_true(all(tiers %in% 1:3))
+})
+
+test_that("?creel_warnings states the tier the registry holds", {
+  # The help page is where a reader learns what a warning means; a tier
+  # printed there that disagrees with get_warnings() would mislead.
+  src <- test_path("..", "..", "man", "creel_warnings.Rd")
+  skip_if_not(file.exists(src))
+  txt <- paste(readLines(src), collapse = " ")
+  txt <- gsub("\\s+", " ", txt)
+  hits <- regmatches(txt, gregexpr(
+    "creel_warning_[a-z_]+\\}\\}\\{Tier [123]", txt
+  ))[[1]]
+  doc <- stats::setNames(
+    as.integer(sub(".*Tier ", "", hits)),
+    sub("\\}.*", "", hits)
+  )
+  tiers <- tidycreel:::creel_warning_tiers
+  expect_setequal(names(doc), names(tiers))
+  expect_identical(doc[names(tiers)], tiers)
 })

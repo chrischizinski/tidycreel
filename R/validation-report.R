@@ -131,7 +131,7 @@ validation_report <- function(
 
 .species_coverage_row <- function(interviews, species_col) {
   if (!species_col %in% names(interviews)) {
-    cli::cli_warn(
+    creel_warn(
       "Column {.field {species_col}} not found in {.arg interviews}; skipping species coverage check.",
       class = c("creel_warning_species_column_missing", "creel_warning")
     )

@@ -148,6 +148,7 @@ reference:
       - print.creel_validation_report
       - as.data.frame.creel_validation_report
       - creel_warnings
+      - get_warnings
 
   - title: "Planning & Sample Size"
     desc: >

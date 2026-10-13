@@ -218,7 +218,10 @@ new_creel_estimates <- function(
       # Named contributions to `se`. A name is absent when the path has no such
       # component, so absence and "unknown" stay distinguishable: an entry that
       # applies but cannot be measured is NA_real_ and still prints (GH #141).
-      se_components = se_components
+      se_components = se_components,
+      # The warnings raised so far in this call, read by get_warnings() (GH
+      # #496). Built last in the call, the returned estimate has them all.
+      warnings = claim_creel_warnings() # nolint: object_usage_linter
     ),
     class = "creel_estimates"
   )
@@ -1635,7 +1638,7 @@ estimate_catch_rate <- function(
     # Non-standard case: use_trips='complete' + estimator='mor'
     # Warn but allow (valid but unusual choice)
     if (use_trips_was_complete) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "Non-standard combination: use_trips='complete' with estimator='mor'",
         "i" = "MOR typically used with incomplete trips",
         "i" = paste(
@@ -1698,7 +1701,7 @@ estimate_catch_rate <- function(
       incomplete_interviews <- incomplete_interviews[!zero_catch_rows, ]
       if (n_zero > 0) {
         pct_excluded <- round(100 * n_zero / n_before_target) # nolint: object_usage_linter
-        cli::cli_warn(c(
+        creel_warn(c(
           "{n_zero} zero-catch trip{?s} excluded ({pct_excluded}% of trips).",
           "i" = "Set {.code targeted = TRUE} to include zero-catch trips."
         ),
@@ -1726,7 +1729,7 @@ estimate_catch_rate <- function(
         )
         high_zero_rate <- n_total_trips > 0 && (n_zero_catch / n_total_trips) > 0.70
         if (high_zero_rate) {
-          cli::cli_warn(c(
+          creel_warn(c(
             paste0(
               round(100 * n_zero_catch / n_total_trips),
               "% of trips have zero catch."
@@ -2374,7 +2377,7 @@ estimate_harvest_rate <- function(
   has_trip_status <- !is.null(design$trip_status_col)
 
   if (!has_trip_status && use_trips == "complete") {
-    cli::cli_warn(c(
+    creel_warn(c(
       "{.arg use_trips} = 'complete' has no effect: no trip_status column available.",
       "i" = "Provide {.arg trip_status} in {.fn add_interviews} to enable trip filtering."
     ),
@@ -2854,7 +2857,7 @@ estimate_release_rate <- function(
   has_trip_status <- !is.null(design$trip_status_col)
 
   if (!has_trip_status && use_trips == "complete") {
-    cli::cli_warn(c(
+    creel_warn(c(
       "{.arg use_trips} = 'complete' has no effect: no trip_status column available.",
       "i" = "Provide {.arg trip_status} in {.fn add_interviews} to enable trip filtering."
     ),
@@ -3437,7 +3440,7 @@ apply_mor_truncation <- function(interviews, duration_col, truncate_at) {
   n_total <- nrow(interviews)
   if (is.null(truncate_at) || is.null(duration_col)) {
     if (!is.null(truncate_at)) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "MOR truncation skipped: no trip duration column in design.",
         "i" = "Supply {.arg trip_duration} in {.fn add_interviews} to enable truncation.",
         "i" = "All {n_total} trip{?s} used without truncation."
@@ -3454,7 +3457,7 @@ apply_mor_truncation <- function(interviews, duration_col, truncate_at) {
   n_truncated <- n_total - sum(keep) - n_missing_duration
 
   if (n_missing_duration > 0) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_missing_duration} interview{?s} dropped for missing trip duration.",
       "i" = paste(
         "A trip with no recorded duration cannot be shown to meet the",
@@ -4434,7 +4437,7 @@ add_expansion_covariance <- function(
     # group-by-part decomposition that a per-part standard error no longer
     # carries. Quadrature would understate and the linear sum would overstate;
     # either would be a plausible number concealing a structural assumption.
-    cli::cli_warn(
+    creel_warn(
       c(
         "Party-size expansion groups straddle {partition} unevenly.",
         "x" = "The standard error of the total cannot be combined from per-{part} components.",
@@ -5676,7 +5679,7 @@ estimate_effort_sections <- function(
         "i" = "All registered sections must have count observations, or use {.arg missing_sections = 'warn'}."
       ))
     } else {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_absent} missing section(s) in count data.",
         "!" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
@@ -5948,7 +5951,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
 
   # Warn (not abort) if all count values are NA — result will be NA
   if (all(is.na(counts_data[[count_var]]))) {
-    cli::cli_warn(c(
+    creel_warn(c(
       "All values in count column {.field {count_var}} are {.val NA}.",
       "i" = "The effort estimate will be {.val NA}.",
       "i" = paste0(
@@ -6308,7 +6311,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
   na_effort <- is.na(interviews_data[[effort_col]])
   if (any(na_effort)) {
     n_na <- sum(na_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_na} interview{?s} with missing effort excluded from CPUE estimation.",
       "i" = "Interviews must have non-NA effort values for CPUE estimation."
     ),
@@ -6321,7 +6324,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
     n_zero <- sum(zero_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from CPUE estimation.",
       "i" = "CPUE requires effort > 0 (catch/effort is undefined for effort = 0)."
     ),
@@ -6457,7 +6460,7 @@ estimate_cpue_grouped <- function(
   na_effort <- is.na(interviews_data[[effort_col]])
   if (any(na_effort)) {
     n_na <- sum(na_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_na} interview{?s} with missing effort excluded from CPUE estimation.",
       "i" = "Interviews must have non-NA effort values for CPUE estimation."
     ),
@@ -6470,7 +6473,7 @@ estimate_cpue_grouped <- function(
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
     n_zero <- sum(zero_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from CPUE estimation.",
       "i" = "CPUE requires effort > 0 (catch/effort is undefined for effort = 0)."
     ),
@@ -6756,7 +6759,7 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
     design$total_excluded$rows <- c(design$total_excluded$rows, list(excluded))
   }
 
-  cli::cli_warn(
+  creel_warn(
     c(
       "{n_cells} effort cell{?s} with no rate excluded from {.val {context}}.",
       "!" = "Excluded: {cells} ({omitted_text}, {omitted_pct_text}).",
@@ -7273,7 +7276,7 @@ apply_species_targeted_filter <- function(
     sp_data <- sp_data[!is_zero, , drop = FALSE]
     if (n_zero > 0L) {
       pct_excluded <- round(100 * n_zero / n_before) # nolint: object_usage_linter
-      cli::cli_warn(c(
+      creel_warn(c(
         # qty() re-anchors the plural to n_zero: the {label} interpolation sits
         # between the count and {?s}, and cli would otherwise take that
         # length-1 string as the quantity and always print "trip".
@@ -7301,7 +7304,7 @@ apply_species_targeted_filter <- function(
     n_zero <- sum(is_zero, na.rm = TRUE)
     if (n_total_trips > 0L && (n_zero / n_total_trips) > 0.70) {
       pct_zero <- round(100 * n_zero / n_total_trips) # nolint: object_usage_linter
-      cli::cli_warn(c(
+      creel_warn(c(
         "{.val {sp}}: {pct_zero}% of trips {verb} none of this species.",
         "i" = paste(
           "For a non-targeted species, consider",
@@ -7597,7 +7600,7 @@ estimate_harvest_total <- function(
   na_effort <- is.na(interviews_data[[effort_col]])
   if (any(na_effort)) {
     n_na <- sum(na_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_na} interview{?s} with missing effort excluded from harvest estimation.",
       "i" = "Interviews must have non-NA effort values for HPUE estimation."
     ),
@@ -7610,7 +7613,7 @@ estimate_harvest_total <- function(
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
     n_zero <- sum(zero_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from harvest estimation.",
       "i" = "HPUE requires effort > 0 (harvest/effort is undefined for effort = 0)."
     ),
@@ -7623,7 +7626,7 @@ estimate_harvest_total <- function(
   na_harvest <- is.na(interviews_data[[harvest_col]])
   if (any(na_harvest)) {
     n_na <- sum(na_harvest) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_na} interview{?s} with missing harvest excluded from harvest estimation.",
       "i" = "Interviews must have non-NA harvest values for HPUE estimation."
     ),
@@ -7774,7 +7777,7 @@ estimate_harvest_grouped <- function(
   na_effort <- is.na(interviews_data[[effort_col]])
   if (any(na_effort)) {
     n_na <- sum(na_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_na} interview{?s} with missing effort excluded from harvest estimation.",
       "i" = "Interviews must have non-NA effort values for HPUE estimation."
     ),
@@ -7787,7 +7790,7 @@ estimate_harvest_grouped <- function(
   zero_effort <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
   if (any(zero_effort)) {
     n_zero <- sum(zero_effort) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_zero} interview{?s} with zero effort excluded from harvest estimation.",
       "i" = "HPUE requires effort > 0 (harvest/effort is undefined for effort = 0)."
     ),
@@ -7800,7 +7803,7 @@ estimate_harvest_grouped <- function(
   na_harvest <- is.na(interviews_data[[harvest_col]])
   if (any(na_harvest)) {
     n_na <- sum(na_harvest) # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{n_na} interview{?s} with missing harvest excluded from harvest estimation.",
       "i" = "Interviews must have non-NA harvest values for HPUE estimation."
     ),
@@ -8011,7 +8014,7 @@ estimate_catch_rate_sections <- function(
         "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
       ))
     } else {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_absent} missing section(s) in interview data.",
         "!" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
@@ -8199,7 +8202,7 @@ estimate_harvest_rate_sections <- function(
         "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
       ))
     } else {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_absent} missing section(s) in interview data.",
         "!" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "Inserting NA row(s) with {.field data_available = FALSE}."
@@ -8361,7 +8364,7 @@ estimate_release_rate_sections <- function(
         "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
       ))
     } else {
-      cli::cli_warn(c(
+      creel_warn(c(
         "{n_absent} missing section(s) in interview data.",
         "!" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "Inserting NA row(s) with {.field data_available = FALSE}."

@@ -37,7 +37,7 @@ coerce_to_date <- function(x) {
     was_na_before <- is.na(x)
     new_nas <- is.na(result) & !was_na_before
     if (any(new_nas)) {
-      cli::cli_warn(
+      creel_warn(
         c(
           "Some date values could not be parsed and were coerced to {.val NA}.",
           "i" = "{sum(new_nas)} value(s) failed date coercion."
@@ -51,7 +51,7 @@ coerce_to_date <- function(x) {
   was_na_before <- is.na(x)
   new_nas <- is.na(result) & !was_na_before
   if (any(new_nas)) {
-    cli::cli_warn(
+    creel_warn(
       c(
         "Some date values could not be parsed and were coerced to {.val NA}.",
         "i" = "{sum(new_nas)} value(s) failed ISO 8601 coercion."
@@ -273,7 +273,7 @@ infer_census_p_period <- function(df, path, call = rlang::caller_env()) {
     )
   }
   df$p_period <- ifelse(worked, 1, NA_real_)
-  cli::cli_warn(
+  creel_warn(
     c(
       "{.path {basename(path)}} has periods but no {.col p_period} column; set {.code p_period = 1}.",
       "i" = "Every sampled day carries the same periods, so every period was worked every day.",

@@ -505,7 +505,7 @@ est_mean_age <- function(ad, conf_level = NULL) {
     a <- as.numeric(rows$age)
     n_total <- sum(rows$estimate)
     if (n_total <= 0) {
-      cli::cli_warn(
+      creel_warn(
         "Total estimated fish is zero or negative; mean age cannot be computed.",
         class = c("creel_warning_zero_fish_total", "creel_warning")
       )

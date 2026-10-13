@@ -18,9 +18,17 @@ bd_plain <- function() {
 }
 
 bd_same_design <- function(a, b) {
-  slots <- union(names(a), names(b))
+  slots <- setdiff(union(names(a), names(b)), "warnings")
   differ <- slots[!vapply(slots, function(s) isTRUE(all.equal(a[[s]], b[[s]])), logical(1))]
   expect_identical(differ, character(0))
+  # A design read back carries the warnings it was built with (GH #496); only
+  # the session ids differ, because the rebuild raised them again.
+  no_id <- function(d) {
+    w <- get_warnings(d)
+    w$id <- NULL
+    w
+  }
+  expect_identical(no_id(b), no_id(a))
 }
 
 bd_same_effort <- function(a, b) {

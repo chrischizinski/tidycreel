@@ -228,7 +228,7 @@ est_effort_camera <- function(
   bad_type <- !is.null(design$design_type) &&
     !identical(design$design_type, "camera")
   if (bad_type) {
-    cli::cli_warn(
+    creel_warn(
       "{.arg design} has {.field design_type} = {.val {design$design_type}}, not {.val camera}. Proceeding anyway.",
       class = c("creel_warning_design_type_mismatch", "creel_warning")
     )

@@ -58,7 +58,7 @@ label_unknown_group <- function(x, column = NULL) {
   }
   if (any(as.character(x) == unknown_group_label(), na.rm = TRUE)) {
     where <- if (is.null(column)) "A grouping column" else column # nolint: object_usage_linter
-    cli::cli_warn(c(
+    creel_warn(c(
       "{.field {where}} contains both unrecorded values \
        and the literal value {.val {unknown_group_label()}}.",
       "i" = "Both are reported in one {.val {unknown_group_label()}} row; the counts \
@@ -307,7 +307,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
   } else {
     col <- strata[1L]
     if (length(strata) > 1L) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "Using stratum {.field {col}} as the day type.",
         "x" = paste(
           "The design declares {length(strata)} strata",

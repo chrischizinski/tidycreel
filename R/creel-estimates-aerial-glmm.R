@@ -585,7 +585,7 @@ estimate_effort_aerial_glmm <- function(
     cli::cli_inform("Running {nboot} bootstrap replicates via lme4::bootMer...")
 
     if (length(design$strata_cols) > 0L) {
-      cli::cli_warn(c(
+      creel_warn(c(
         "!" = "Bootstrap SE ignores design strata ({.val {design$strata_cols}}).",
         "i" = "The default GLMM formula has no stratum term; bootstrap resamples from \\
         a single pooled model. Include strata in {.arg formula} for stratified inference."
