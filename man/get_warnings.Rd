@@ -41,7 +41,9 @@ trips, thin cells.}
 A warning is recorded even when the caller handles or muffles it. A
 data-quality warning (tier 2) prints only the first time it is raised on a
 design; its repeats are recorded here without printing (see
-\link{creel_warnings}). Warnings raised by other
+\link{creel_warnings}). A first occurrence the caller muffles, with
+\code{\link[=suppressWarnings]{suppressWarnings()}} or a handler, still counts as that one print: later
+calls on the same design do not print it. Warnings raised by other
 packages (\code{survey}, \code{lme4}) are not recorded.
 }
 \examples{

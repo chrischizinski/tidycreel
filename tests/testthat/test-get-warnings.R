@@ -305,3 +305,32 @@ test_that("the design builders are exactly the functions that record a design", 
   }, ls(ns, all.names = TRUE))
   expect_setequal(tidycreel:::creel_design_builders, found)
 })
+
+test_that("a once-per-design warning says its repeats are recorded", {
+  # Without the line a reader has no way to know a later silence is a record,
+  # not an absence.
+  w <- tryCatch(estimate_catch_rate(roving_design()) |> suppressMessages(),
+    creel_warning_mor_truncation = function(w) w
+  )
+  expect_match(conditionMessage(w), "get_warnings()", fixed = TRUE)
+})
+
+test_that("as_creel_svydesign() does not point at a record it does not keep", {
+  # It returns a survey object, not a design or estimate: get_warnings() has
+  # nothing to read, so the note must not send the reader there.
+  w <- tryCatch(as_creel_svydesign(counts_design()),
+    creel_warning_internal_svydesign = function(w) w
+  )
+  expect_false(grepl("get_warnings", conditionMessage(w), fixed = TRUE))
+})
+
+test_that("a first occurrence the caller muffles counts as its one print", {
+  # Documented limitation: a calling handler cannot see whether a later
+  # handler muffles the warning, so the first raise is the print. The record
+  # still holds every occurrence.
+  design <- roving_design()
+  raised(estimate_catch_rate(design))
+  second <- raised(estimate_catch_rate(design))
+  expect_false("creel_warning_mor_truncation" %in% second$classes)
+  expect_true("creel_warning_mor_truncation" %in% get_warnings(second$value)$class)
+})

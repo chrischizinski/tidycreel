@@ -15,7 +15,9 @@
   per session; they now print once per design, so a second design hears
   them too. A warning that prints once per design ends with a line saying
   so. Code that expected a warning on every call, with `expect_warning()`
-  or `tryCatch(warning = )`, sees it only on the first call per design.
+  or `tryCatch(warning = )`, sees it only on the first call per design. A
+  first occurrence hidden with `suppressWarnings()` or a handler still
+  counts as its one print for that design.
 
 * `add_interviews()` reports zero-catch interviews as a message, not a
   warning (#490). Most trips on most fisheries catch nothing, so the warning

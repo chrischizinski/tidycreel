@@ -103,7 +103,12 @@ creel_warning_tier_of <- function(cls) {
 #' @noRd
 creel_warn <- function(message, ..., .envir = parent.frame()) {
   fn <- raising_fn_name(sys.nframe() - 1L)
-  if (any(list(...)$class %in% creel_warning_once_per_design)) {
+  cls <- list(...)[["class"]]
+  # as_creel_svydesign() returns a survey object, which keeps no record, so
+  # pointing its reader at get_warnings() would be false.
+  footer <- any(cls %in% creel_warning_once_per_design) &&
+    !"creel_warning_internal_svydesign" %in% cls
+  if (footer) {
     # Without this a reader cannot know a repeat was recorded, not printed.
     message <- c(message, "i" = paste(
       "Repeats on this design are recorded, not printed:",
@@ -352,7 +357,9 @@ record_design_warnings <- function(design) {
 #' A warning is recorded even when the caller handles or muffles it. A
 #' data-quality warning (tier 2) prints only the first time it is raised on a
 #' design; its repeats are recorded here without printing (see
-#' [creel_warnings]). Warnings raised by other
+#' [creel_warnings]). A first occurrence the caller muffles, with
+#' [suppressWarnings()] or a handler, still counts as that one print: later
+#' calls on the same design do not print it. Warnings raised by other
 #' packages (`survey`, `lme4`) are not recorded.
 #'
 #' @param x A `creel_design` or a `creel_estimates` object.
