@@ -8,8 +8,8 @@
 #' for workflows not yet wrapped by tidycreel. Most users should use
 #' [estimate_effort()] instead.
 #'
-#' The function issues a once-per-session warning to educate users that this is
-#' an advanced feature with risks if the returned object is modified incorrectly.
+#' The function warns, once per design, that this is an advanced feature with
+#' risks if the returned object is modified incorrectly.
 #'
 #' @param design A creel_design object with counts attached via \code{\link{add_counts}}
 #'
@@ -18,7 +18,7 @@
 #'   affect the internal design$survey object.
 #'
 #' @section Warning:
-#' This function issues a once-per-session warning explaining:
+#' This function warns, once per design (see [creel_warnings]), explaining:
 #' \itemize{
 #'   \item This is an advanced feature for power users
 #'   \item Most users should use \code{estimate_effort()} instead
@@ -70,7 +70,7 @@ as_creel_svydesign <- function(design) {
     ))
   }
 
-  # Issue once-per-session warning
+  # Prints once per design (GH #496).
   # cli_warn(), not rlang::warn(): the latter does not evaluate cli markup, so
   # the {.fn} field printed literally to the user.
   creel_warn(
@@ -79,8 +79,6 @@ as_creel_svydesign <- function(design) {
       "i" = "This is an advanced feature. Most users should use {.fn estimate_effort} instead.",
       "!" = "Modifying the survey design may produce incorrect variance estimates."
     ),
-    .frequency = "once",
-    .frequency_id = "tidycreel_as_creel_svydesign",
     class = c("creel_warning_internal_svydesign", "creel_warning")
   )
 
@@ -1191,8 +1189,8 @@ check_product_units <- function(design, call = rlang::caller_env()) {
 #' angler-hours; both arrive as a numeric column. It states the reading and lets
 #' the caller decide which case they are in.
 #'
-#' Once per session, so a script that estimates repeatedly is told once. Tests
-#' force it with `rlib_warning_verbosity = "verbose"`.
+#' Once per design (GH #496), so a script that estimates repeatedly from one
+#' design is told once, and a second design is told again.
 #'
 #' @param design A creel_design object
 #'
@@ -1236,8 +1234,6 @@ warn_missing_period_length <- function(design) {
         "{.code add_counts(design, counts, period_length_col = <col>)}."
       )
     ),
-    .frequency = "once",
-    .frequency_id = "tidycreel_effort_without_period_length",
     class = c("creel_warning_no_period_length", "creel_warning")
   )
   invisible(NULL)
@@ -2695,14 +2691,8 @@ warn_pooled_domain_mix <- function(design, fn_label, num_col = NULL) {
         "assumption -- the total becomes {.code sum(E_h * rate_h)}."
       )
     ),
-    class = c("creel_warning_pooled_domain_mix", "creel_warning"),
-    .frequency = "once",
-    # Keyed by the domain as well as the estimator: a later design with a
-    # different unclassified domain is a different risk and must still be heard,
-    # which a per-function key would silently swallow.
-    .frequency_id = paste0(
-      "tidycreel_pooled_domain_mix_", fn_label, "_", paste(flagged, collapse = "+")
-    )
+    # Once per design (GH #496): a later design, or new data, is heard again.
+    class = c("creel_warning_pooled_domain_mix", "creel_warning")
   )
 
   invisible(NULL)

@@ -308,8 +308,6 @@ test_that("prep_counts_daily_effort() output does not trip the T_d warning", {
   # This is the documented preferred workflow: counts are resolved into
   # sampled-day effort before add_counts() sees them, so there is no
   # instantaneous count left to expand and no T_d to ask for.
-  withr::local_options(rlib_warning_verbosity = "verbose")
-
   raw <- data.frame(
     date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
     day_type = c("weekday", "weekday", "weekend", "weekend"),

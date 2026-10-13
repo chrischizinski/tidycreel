@@ -142,14 +142,15 @@ test_that("SPS-07: the pooled-domain warning still reaches sectioned totals", {
   d_catch$interviews$catch_kept[bass] <- d_catch$interviews$catch_kept[bass] * 4L
   expect_true(fired(estimate_total_catch(d_catch))) # nolint: object_usage_linter
 
-  d_harvest <- d_catch
+  # Each edited copy is new data, so it gets its own design id (GH #496).
+  d_harvest <- as_new_design(d_catch)
   names(d_harvest$interviews)[names(d_harvest$interviews) == "sought_sps07"] <- "sought_sps07h"
   expect_true(fired(estimate_total_harvest(d_harvest))) # nolint: object_usage_linter
 
   # Release screens .release_count, so its domain difference has to be in the
   # released rows -- scaling the interview catch column would leave it silent,
   # correctly.
-  d_release <- design
+  d_release <- as_new_design(design)
   d_release$interviews$sought_sps07r <- rep_len(c("bass", "bluegill"), nrow(d_release$interviews))
   uid <- d_release$catch_interview_uid_col
   domain_of <- stats::setNames(d_release$interviews$sought_sps07r, d_release$interviews$interview_id)

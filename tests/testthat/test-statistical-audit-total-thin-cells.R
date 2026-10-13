@@ -88,7 +88,8 @@ ttc_totals <- list(
 test_that("#417: an ungrouped total warns once, naming the thin stratum and its n", {
   d <- ttc_example_design()
   for (nm in names(ttc_totals)) {
-    got <- ttc_thin_warnings(ttc_totals[[nm]](d))
+    # Each total on a new design id: tier 2 prints once per design (#496).
+    got <- ttc_thin_warnings(ttc_totals[[nm]](as_new_design(d)))
     # One warning per call, however many paths the call passes through.
     expect_length(got, 1L)
     msg <- conditionMessage(got[[1]])
@@ -108,7 +109,7 @@ test_that("#417: it is a warning, not a refusal: the total is still returned", {
 test_that("#417: the species path reports its thin strata too", {
   d <- ttc_example_design(with_catch = TRUE)
   for (nm in names(ttc_totals)) {
-    got <- ttc_thin_warnings(ttc_totals[[nm]](d, by = species)) # nolint: object_usage_linter
+    got <- ttc_thin_warnings(ttc_totals[[nm]](as_new_design(d), by = species)) # nolint: object_usage_linter
     expect_length(got, 1L)
     expect_match(conditionMessage(got[[1]]), "day_type=weekend: n=7", fixed = TRUE, info = nm)
   }
@@ -122,9 +123,13 @@ test_that("#417: a grouped total warns on thin cells whose BY-GROUP clears the f
   d <- make_sectioned_species_design(n_interviews = 36L) # nolint: object_usage_linter
   for (nm in names(ttc_totals)) {
     res <- NULL
-    got <- ttc_thin_warnings(res <- ttc_totals[[nm]](d, by = day_type))
+    got <- ttc_thin_warnings(res <- ttc_totals[[nm]](as_new_design(d), by = day_type))
     expect_s3_class(res, "creel_estimates")
-    msgs <- vapply(got, conditionMessage, character(1))
+    expect_gte(length(got), 1L)
+    # One section's warning prints; the other is a repeat of the class on this
+    # design, recorded on the estimate rather than printed (GH #496).
+    w <- get_warnings(res)
+    msgs <- w$message[w$class == "creel_warning_thin_rate_cells"]
     expect_true(any(grepl("section=North, day_type=", msgs, fixed = TRUE)), info = nm)
     expect_true(any(grepl("section=South, day_type=", msgs, fixed = TRUE)), info = nm)
   }
@@ -139,7 +144,8 @@ test_that("#409: an ungrouped sectioned total checks each section x stratum rate
   # named by section and day type, and the old pooled form never appears.
   d <- make_sectioned_species_design(n_interviews = 36L) # nolint: object_usage_linter
   for (nm in names(ttc_totals)) {
-    msgs <- vapply(ttc_thin_warnings(ttc_totals[[nm]](d)), conditionMessage, character(1))
+    # Each total on a new design id: tier 2 prints once per design (#496).
+    msgs <- vapply(ttc_thin_warnings(ttc_totals[[nm]](as_new_design(d))), conditionMessage, character(1))
     expect_gt(length(msgs), 0L)
     expect_true(all(grepl("section=(North|South), day_type=", msgs)), info = nm)
     expect_false(any(grepl("section=(North|South): n=", msgs)), info = nm)

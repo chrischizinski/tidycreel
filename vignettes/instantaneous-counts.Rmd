@@ -146,7 +146,8 @@ estimate_total_harvest(roving, target = "period_total")
 
 The totals multiply the same season effort by the roving rates: about 1,960
 fish caught and 630 kept. Each estimate built on a roving rate drops the short
-trips again, and warns again.
+trips again. The warning printed once for this design; each estimate still
+records it, and `get_warnings(roving_catch)` lists it.
 
 ## Results as data
 

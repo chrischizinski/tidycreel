@@ -2,6 +2,23 @@
 
 ## Breaking changes
 
+* Data-quality warnings (tier 2 in `?creel_warnings`) print once per design
+  (#496). The first time one is raised on a design it prints; later repeats
+  on the same design are recorded on the result, where `get_warnings()`
+  lists them, but not printed. A season script that drew the same
+  small-sample warning 216 times now shows it once. A design gets a new
+  identity each time `creel_design()`, an `add_*()` step or
+  `adjust_nonresponse()` returns it, so new data, or adding a corrected
+  table to the same design, prints again. Warnings that the estimate may be
+  wrong (tier 1) still print on every call. The missing-period-length and
+  pooled-domain warnings, and `as_creel_svydesign()`'s note, printed once
+  per session; they now print once per design, so a second design hears
+  them too. A warning that prints once per design ends with a line saying
+  so. Code that expected a warning on every call, with `expect_warning()`
+  or `tryCatch(warning = )`, sees it only on the first call per design. A
+  first occurrence hidden with `suppressWarnings()` or a handler still
+  counts as its one print for that design.
+
 * `add_interviews()` reports zero-catch interviews as a message, not a
   warning (#490). Most trips on most fisheries catch nothing, so the warning
   fired on nearly every real dataset. The count is still shown, so a column
@@ -91,7 +108,7 @@
   warning muffled with `withCallingHandlers()` is still recorded. Each row
   has the warning's class, its tier (1: the estimate may be wrong; 2: data
   quality or precision; 3: information), the function that raised it and
-  the message. What prints has not changed. Other results (length and age
+  the message. Other results (length and age
   distributions, summaries) do not keep a record yet.
 
 * The survey-type articles were checked against what the package reports

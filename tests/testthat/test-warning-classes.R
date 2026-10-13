@@ -128,7 +128,9 @@ test_that("the catch rate and the harvest rate truncate through one implementati
     list(value = value, classes = seen)
   }
   catch <- classes_of(estimate_catch_rate(design))
-  harvest <- classes_of(estimate_harvest_rate(design))
+  # A new design id, so the harvest rate prints what the catch rate just
+  # printed for this one (tier 2 prints once per design, #496).
+  harvest <- classes_of(estimate_harvest_rate(as_new_design(design)))
   expect_true("creel_warning_trip_duration_excluded" %in% catch$classes)
   expect_setequal(
     intersect(catch$classes, c(
@@ -190,4 +192,25 @@ test_that("?creel_warnings states the tier the registry holds", {
   tiers <- tidycreel:::creel_warning_tiers
   expect_setequal(names(doc), names(tiers))
   expect_identical(doc[names(tiers)], tiers)
+})
+
+test_that("no warning uses .frequency, which hides repeats on different data", {
+  # .frequency = "once" printed a warning once per session: every later
+  # design, whatever its data, stayed silent. Repeats are handled once per
+  # design instead (GH #496).
+  uses <- character()
+  ns <- asNamespace("tidycreel")
+  walk <- function(x, where) {
+    if (is.call(x)) {
+      if (any(c(".frequency", ".frequency_id") %in% names(x))) {
+        uses <<- c(uses, where)
+      }
+      for (el in as.list(x)[-1]) if (!missing(el)) walk(el, where)
+    }
+  }
+  for (nm in ls(ns, all.names = TRUE)) {
+    f <- get(nm, envir = ns)
+    if (is.function(f) && !is.primitive(f)) walk(body(f), nm)
+  }
+  expect_identical(uses, character())
 })

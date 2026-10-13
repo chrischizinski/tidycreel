@@ -18,7 +18,8 @@ bd_plain <- function() {
 }
 
 bd_same_design <- function(a, b) {
-  slots <- setdiff(union(names(a), names(b)), "warnings")
+  # warning_id (GH #496) names this build of the design; a rebuild is a new one.
+  slots <- setdiff(union(names(a), names(b)), c("warnings", "warning_id"))
   differ <- slots[!vapply(slots, function(s) isTRUE(all.equal(a[[s]], b[[s]])), logical(1))]
   expect_identical(differ, character(0))
   # A design read back carries the warnings it was built with (GH #496); only

@@ -20,12 +20,12 @@ for advanced analysis using survey package functions. This is an escape hatch
 for workflows not yet wrapped by tidycreel. Most users should use
 \code{\link[=estimate_effort]{estimate_effort()}} instead.
 
-The function issues a once-per-session warning to educate users that this is
-an advanced feature with risks if the returned object is modified incorrectly.
+The function warns, once per design, that this is an advanced feature with
+risks if the returned object is modified incorrectly.
 }
 \section{Warning}{
 
-This function issues a once-per-session warning explaining:
+This function warns, once per design (see \link{creel_warnings}), explaining:
 \itemize{
 \item This is an advanced feature for power users
 \item Most users should use \code{estimate_effort()} instead
