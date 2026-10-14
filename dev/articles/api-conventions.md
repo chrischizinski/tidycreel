@@ -180,11 +180,16 @@ estimator silently.
 - Every warning carries a class, `creel_warning_<fact>`, and the parent
   `creel_warning`, so a caller can handle one warning for one call
   ([`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
-  lists them). A fact raised in several places uses one class.
+  lists them). A fact raised in several places uses one class. A tier-3
+  message carries `creel_message_<fact>` and the parent `creel_message`
+  in the same way.
 - A warning should be rare enough to read. Every warning has a tier
   ([`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)).
-  A data-quality warning (tier 2) prints once per design: later repeats
-  on the same design are recorded on the result, readable with
+  Information (tier 3) is not a warning: raise it with the internal
+  `creel_inform()`, as a message with a `creel_message_<fact>` class,
+  and it is recorded like a warning. A data-quality warning (tier 2)
+  prints once per design: later repeats on the same design are recorded
+  on the result, readable with
   [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md),
   but not printed. A warning that the estimate may be wrong (tier 1)
   prints every time. Raise warnings with the internal `creel_warn()`,

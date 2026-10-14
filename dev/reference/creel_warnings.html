@@ -14,7 +14,10 @@ mean an estimate may be wrong: missing period length, rate and effort in
 different units, sections or cells left out of a total. Errors have a
 matching family, creel_error_*.
 Two classes were renamed to this pattern and keep their old names as well:
-creel_warn_two_phase_rescale and creel_warn_tost_degenerate.'><meta property="og:description" content='Every warning tidycreel raises has a class, so one warning can be handled
+creel_warn_two_phase_rescale and creel_warn_tost_degenerate.
+Information that is not a warning (tier 3) is raised as a message, with a
+class from the matching family creel_message_&amp;lt;fact&amp;gt; and the parent
+creel_message; see the Messages section below.'><meta property="og:description" content='Every warning tidycreel raises has a class, so one warning can be handled
 in one call without silencing the others. Each carries its own class,
 creel_warning_&amp;lt;fact&amp;gt;, and the parent class creel_warning. A fact raised
 in several places has one class wherever it is raised.
@@ -29,7 +32,10 @@ mean an estimate may be wrong: missing period length, rate and effort in
 different units, sections or cells left out of a total. Errors have a
 matching family, creel_error_*.
 Two classes were renamed to this pattern and keep their old names as well:
-creel_warn_two_phase_rescale and creel_warn_tost_degenerate.'><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
+creel_warn_two_phase_rescale and creel_warn_tost_degenerate.
+Information that is not a warning (tier 3) is raised as a message, with a
+class from the matching family creel_message_&amp;lt;fact&amp;gt; and the parent
+creel_message; see the Messages section below.'><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -112,6 +118,9 @@ different units, sections or cells left out of a total. Errors have a
 matching family, <code>creel_error_*</code>.</p>
 <p>Two classes were renamed to this pattern and keep their old names as well:
 <code>creel_warn_two_phase_rescale</code> and <code>creel_warn_tost_degenerate</code>.</p>
+<p>Information that is not a warning (tier 3) is raised as a message, with a
+class from the matching family <code>creel_message_&lt;fact&gt;</code> and the parent
+<code>creel_message</code>; see the Messages section below.</p>
     </div>
 
 
@@ -126,19 +135,20 @@ matching family, <code>creel_error_*</code>.</p>
 <dd><p>Data quality or precision: worth a look.</p></dd>
 
 <dt>Tier 3</dt>
-<dd><p>Information.</p></dd>
+<dd><p>Information, raised as a message rather than a warning.</p></dd>
 
 
-</dl><p>Every warning is also recorded on the design or estimate the call returns;
-<code><a href="get_warnings.html">get_warnings()</a></code> lists them.</p>
+</dl><p>Every warning and tier-3 message is also recorded on the design or estimate
+the call returns; <code><a href="get_warnings.html">get_warnings()</a></code> lists them.</p>
 <p>Tier 1 warnings print on every call. Tier 2 warnings print once per design:
 the first time one is raised on a design it prints, and later repeats on
 that design are recorded but not printed. A design is new each time
 <code><a href="creel_design.html">creel_design()</a></code>, an <code>add_*()</code> step or <code><a href="adjust_nonresponse.html">adjust_nonresponse()</a></code> returns it,
 so new data print again. Three facts about the design also print once per
 design although their tier is not 2: <code>creel_warning_no_period_length</code>,
-<code>creel_warning_pooled_domain_mix</code> and
-<code>creel_warning_internal_svydesign</code>.</p>
+<code>creel_warning_pooled_domain_mix</code> and the message
+<code>creel_message_internal_svydesign</code>. Other tier-3 messages print on
+every call.</p>
     </div>
     <div class="section level2">
     <h2 id="units-and-scale">Units and scale<a class="anchor" aria-label="anchor" href="#units-and-scale"></a></h2>
@@ -218,13 +228,6 @@ a missing or non-positive trip duration were left out.</p></dd>
 incomplete trips were shorter than <code>truncate_at</code> and left out of a
 mean-of-ratios rate (below 10 percent this is a message).</p></dd>
 
-<dt><code>creel_warning_truncation_skipped</code></dt>
-<dd><p>Tier 3. Mean-of-ratios
-truncation was not applied because the design has no trip duration.</p></dd>
-
-<dt><code>creel_warning_truncation_disabled</code></dt>
-<dd><p>Tier 3. <code>truncate_at = NULL</code> turned short-trip truncation off.</p></dd>
-
 <dt><code>creel_warning_two_phase_rescale</code></dt>
 <dd><p>Tier 1. Two-phase totals were
 rescaled onto the reported catch.</p></dd>
@@ -263,15 +266,6 @@ being compared failed.</p></dd>
 <dt><code>creel_warning_imputation_convergence</code></dt>
 <dd><p>Tier 1. The camera-count
 imputation model did not converge in a stratum.</p></dd>
-
-<dt><code>creel_warning_nonstandard_estimator</code></dt>
-<dd><p>Tier 3. An unusual
-combination of <code>use_trips</code> and <code>estimator</code> was requested.</p></dd>
-
-<dt><code>creel_warning_mor_incomplete_trips</code></dt>
-<dd><p>Tier 3. A rate uses the
-mean-of-ratios estimator on incomplete trips; complete trips are
-preferred where available.</p></dd>
 
 
 </dl></div>
@@ -373,10 +367,6 @@ failed a check and estimation continued.</p></dd>
 <dd><p>Tier 1. Counts have
 repeated sampling units with no count time to tell them apart.</p></dd>
 
-<dt><code>creel_warning_zero_counts</code></dt>
-<dd><p>Tier 3. The count column has
-zeros.</p></dd>
-
 <dt><code>creel_warning_negative_counts</code></dt>
 <dd><p>Tier 2. The count column has
 negative values.</p></dd>
@@ -401,10 +391,6 @@ under six minutes.</p></dd>
 <dd><p>Tier 2. Trip durations over
 48 hours.</p></dd>
 
-<dt><code>creel_warning_high_zero_catch</code></dt>
-<dd><p>Tier 3. A high share of trips
-caught nothing, overall or of a species.</p></dd>
-
 <dt><code>creel_warning_counted_not_interviewed</code></dt>
 <dd><p>Tier 2. Parties were
 counted but none interviewed.</p></dd>
@@ -424,10 +410,6 @@ count has non-integer values.</p></dd>
 <dt><code>creel_warning_catch_unreconciled</code></dt>
 <dd><p>Tier 2. Harvested plus
 released is less than caught for some species-interview pairs.</p></dd>
-
-<dt><code>creel_warning_catch_totals_diverge</code></dt>
-<dd><p>Tier 3. Catch-table totals
-differ from the interview catch column.</p></dd>
 
 <dt><code>creel_warning_camera_negative_duration</code></dt>
 <dd><p>Tier 2. Camera
@@ -453,13 +435,13 @@ be parsed and became <code>NA</code>.</p></dd>
 <dd><p>Tier 2. Some species values
 match no known species.</p></dd>
 
-<dt><code>creel_warning_species_column_missing</code></dt>
-<dd><p>Tier 3. The species
-column is missing, so the species coverage check was skipped.</p></dd>
-
 <dt><code>creel_warning_unknown_label_collision</code></dt>
 <dd><p>Tier 1. A column holds
 both unrecorded values and the literal label used for them.</p></dd>
+
+<dt><code>creel_warning_catch_totals_diverge</code></dt>
+<dd><p>Tier 2. Catch-table totals
+differ from the interview catch column.</p></dd>
 
 
 </dl></div>
@@ -467,11 +449,7 @@ both unrecorded values and the literal label used for them.</p></dd>
     <h2 id="arguments-and-calls">Arguments and calls<a class="anchor" aria-label="anchor" href="#arguments-and-calls"></a></h2>
 
 
-<dl><dt><code>creel_warning_argument_ignored</code></dt>
-<dd><p>Tier 3. An argument has no
-effect in this call.</p></dd>
-
-<dt><code>creel_warning_circuit_time_ignored</code></dt>
+<dl><dt><code>creel_warning_circuit_time_ignored</code></dt>
 <dd><p>Tier 1. <code>circuit_time</code> was
 given for instantaneous counts and is ignored; if the counts are
 progressive, effort is computed the wrong way.</p></dd>
@@ -480,25 +458,71 @@ progressive, effort is computed the wrong way.</p></dd>
 <dd><p>Tier 1. The design is not
 the type this function expects.</p></dd>
 
-<dt><code>creel_warning_day_type_from_stratum</code></dt>
-<dd><p>Tier 3. A stratum column
-is used as the day type.</p></dd>
-
-<dt><code>creel_warning_internal_svydesign</code></dt>
-<dd><p>Tier 3. The internal survey
-design was accessed; changing it can give wrong variances.</p></dd>
-
-<dt><code>creel_warning_no_subdesigns</code></dt>
-<dd><p>Tier 3. No survey sub-designs
-were found to adjust.</p></dd>
-
-<dt><code>creel_warning_large_delta_pct</code></dt>
-<dd><p>Tier 3. <code>delta_pct</code> looks like
-a percentage given as a whole number.</p></dd>
-
 <dt><code>creel_warning_fragile_schedule</code></dt>
 <dd><p>Tier 2. Special-period
 declarations produced a fragile schedule.</p></dd>
+
+
+</dl></div>
+    <div class="section level2">
+    <h2 id="messages-tier-">Messages (tier 3)<a class="anchor" aria-label="anchor" href="#messages-tier-"></a></h2>
+
+
+<p>Information is raised as a message, not a warning. Each carries its own
+class, <code>creel_message_&lt;fact&gt;</code>, and the parent class <code>creel_message</code>, and is
+recorded like a warning, with tier 3. Silence one for one call with
+<code>invokeRestart("muffleMessage")</code> in a <code>creel_message_&lt;fact&gt;</code> handler.</p><dl><dt><code>creel_message_argument_ignored</code></dt>
+<dd><p>Tier 3. An argument has no
+effect in this call.</p></dd>
+
+<dt><code>creel_message_day_type_from_stratum</code></dt>
+<dd><p>Tier 3. A stratum column
+is used as the day type.</p></dd>
+
+<dt><code>creel_message_high_zero_catch</code></dt>
+<dd><p>Tier 3. A high share of trips
+caught nothing, overall or of a species.</p></dd>
+
+<dt><code>creel_message_internal_svydesign</code></dt>
+<dd><p>Tier 3. The internal survey
+design was accessed; changing it can give wrong variances.</p></dd>
+
+<dt><code>creel_message_large_delta_pct</code></dt>
+<dd><p>Tier 3. <code>delta_pct</code> looks like
+a percentage given as a whole number.</p></dd>
+
+<dt><code>creel_message_mor_incomplete_trips</code></dt>
+<dd><p>Tier 3. A rate uses the
+mean-of-ratios estimator on incomplete trips; complete trips are
+preferred where available.</p></dd>
+
+<dt><code>creel_message_no_subdesigns</code></dt>
+<dd><p>Tier 3. No survey sub-designs
+were found to adjust.</p></dd>
+
+<dt><code>creel_message_nonstandard_estimator</code></dt>
+<dd><p>Tier 3. An unusual
+combination of <code>use_trips</code> and <code>estimator</code> was requested.</p></dd>
+
+<dt><code>creel_message_species_column_missing</code></dt>
+<dd><p>Tier 3. The species
+column is missing, so the species coverage check was skipped.</p></dd>
+
+<dt><code>creel_message_truncation_disabled</code></dt>
+<dd><p>Tier 3. <code>truncate_at = NULL</code> turned short-trip truncation off.</p></dd>
+
+<dt><code>creel_message_truncation_skipped</code></dt>
+<dd><p>Tier 3. Mean-of-ratios
+truncation was not applied because the design has no trip duration.</p></dd>
+
+<dt><code>creel_message_zero_counts</code></dt>
+<dd><p>Tier 3. The count column has
+zeros.</p></dd>
+
+<dt><code>creel_message_within_day_independent</code></dt>
+<dd><p>Tier 3. Some units on
+a day were not counted at the same known occasions, so their within-day
+components are added as independent.</p></dd>
 
 
 </dl></div>

@@ -62,7 +62,7 @@ where `delta` is the fractional effect size (`delta_pct`), `n` is the
 number of interviews per season, and `CV_historical` is the pilot CV of
 CPUE.
 
-A warning is issued when `delta_pct > 5` because values greater than 5
+A message is given when `delta_pct > 5` because values greater than 5
 are almost certainly input in percentage-point form rather than
 fractional form (e.g., 20 instead of 0.20).
 

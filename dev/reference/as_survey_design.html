@@ -120,6 +120,10 @@ internal <code>survey</code> object rather than constructing a design.</p>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># Deprecated: as_creel_svydesign() is the current name.</span></span></span>
 <span class="r-in"><span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu">as_survey_design</span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Accessing internal survey design object.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> This is an advanced feature. Most users should use `estimate_effort()`</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   instead.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Modifying the survey design may produce incorrect variance estimates.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">svy</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "survey.design2" "survey.design" </span>
 <span class="r-in"><span></span></span>

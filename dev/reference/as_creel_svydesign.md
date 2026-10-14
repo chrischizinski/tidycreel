@@ -7,7 +7,7 @@ should use
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
 instead.
 
-The function warns, once per design, that this is an advanced feature
+The function notes, once per design, that this is an advanced feature
 with risks if the returned object is modified incorrectly.
 
 ## Usage
@@ -29,9 +29,9 @@ A survey.design2 object (from survey::svydesign). Due to R's
 copy-on-modify semantics, modifications to the returned object will not
 affect the internal design\$survey object.
 
-## Warning
+## Note
 
-This function warns, once per design (see
+This function gives a message, once per design (see
 [creel_warnings](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)),
 explaining:
 
@@ -96,7 +96,7 @@ design2 <- add_counts(design, counts)
 
 # Extract survey object for advanced use
 svy <- as_creel_svydesign(design2)
-#> Warning: Accessing internal survey design object.
+#> Accessing internal survey design object.
 #> ℹ This is an advanced feature. Most users should use `estimate_effort()`
 #>   instead.
 #> ! Modifying the survey design may produce incorrect variance estimates.

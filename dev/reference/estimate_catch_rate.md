@@ -358,7 +358,7 @@ result_boot <- estimate_catch_rate(design_with_interviews, variance = "bootstrap
 result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 #> ℹ Using incomplete trips for CPUE estimation
 #>   (n=20, 50% of 40 interviews)
-#> Warning: ! MOR estimator for incomplete trips. Complete trips preferred.
+#> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=20 incomplete of 20 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
 #> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
@@ -368,7 +368,7 @@ result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", truncate_at = 1.0)
 #> ℹ Using incomplete trips for CPUE estimation
 #>   (n=20, 50% of 40 interviews)
-#> Warning: ! MOR estimator for incomplete trips. Complete trips preferred.
+#> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=20 incomplete of 20 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
 #> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).

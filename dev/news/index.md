@@ -4,6 +4,31 @@
 
 ### Breaking changes
 
+- Information that is not a warning (tier 3 in
+  [`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md))
+  is now a message
+  ([\#496](https://github.com/chrischizinski/tidycreel/issues/496)): an
+  argument with no effect, an estimator choice such as the
+  mean-of-ratios note, the day type taken from a stratum, a high share
+  of zero-catch trips, zero counts, and
+  [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)’s
+  note. Each has a class `creel_message_<fact>` and the parent
+  `creel_message`, and is still recorded, with tier 3, on the design or
+  estimate the call returns, where
+  [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md)
+  lists it.
+  [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)
+  returns a survey object, which keeps no record. Code that caught one
+  with `expect_warning()`, `tryCatch(warning = )` or
+  [`suppressWarnings()`](https://rdrr.io/r/base/warning.html) now needs
+  `expect_message()`, `tryCatch(message = )` or
+  [`suppressMessages()`](https://rdrr.io/r/base/message.html). These 12
+  classes were named `creel_warning_*` only in the development version
+  and never released.
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)’s
+  catch-totals check stays a warning: a mismatch between the catch table
+  and the interview column is data to look at (tier 2).
+
 - Data-quality warnings (tier 2 in
   [`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md))
   print once per design
@@ -129,10 +154,10 @@
   warning carries `creel_warning_<fact>` and the parent `creel_warning`;
   a fact raised in several places has one class.
   [`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
-  lists all 77, each with its tier (below). No message changed. Before,
-  12 of 107 warnings had a class. `creel_warn_two_phase_rescale` and
-  `creel_warn_tost_degenerate` gain the `creel_warning_` form and keep
-  their old names.
+  lists all 78 (65 warnings and 13 tier-3 messages), each with its tier
+  (below). No message changed. Before, 12 of 107 warnings had a class.
+  `creel_warn_two_phase_rescale` and `creel_warn_tost_degenerate` gain
+  the `creel_warning_` form and keep their old names.
 
 - New
   [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md)

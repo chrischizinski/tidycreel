@@ -395,16 +395,21 @@ back to a different estimator silently.</p>
 <code>creel_warning_&lt;fact&gt;</code>, and the parent
 <code>creel_warning</code>, so a caller can handle one warning for one
 call (<code><a href="../reference/creel_warnings.html">?creel_warnings</a></code> lists them). A fact raised in several
-places uses one class.</li>
+places uses one class. A tier-3 message carries
+<code>creel_message_&lt;fact&gt;</code> and the parent
+<code>creel_message</code> in the same way.</li>
 <li>A warning should be rare enough to read. Every warning has a tier
-(<code><a href="../reference/creel_warnings.html">?creel_warnings</a></code>). A data-quality warning (tier 2) prints
-once per design: later repeats on the same design are recorded on the
-result, readable with <code><a href="../reference/get_warnings.html">get_warnings()</a></code>, but not printed. A
-warning that the estimate may be wrong (tier 1) prints every time. Raise
-warnings with the internal <code>creel_warn()</code>, which records them
-and handles the repeats; do not use <code>.frequency</code>, which hid
-repeats on a different design for the rest of the session. A test fails
-if either rule is broken.</li>
+(<code><a href="../reference/creel_warnings.html">?creel_warnings</a></code>). Information (tier 3) is not a warning:
+raise it with the internal <code>creel_inform()</code>, as a message
+with a <code>creel_message_&lt;fact&gt;</code> class, and it is recorded
+like a warning. A data-quality warning (tier 2) prints once per design:
+later repeats on the same design are recorded on the result, readable
+with <code><a href="../reference/get_warnings.html">get_warnings()</a></code>, but not printed. A warning that the
+estimate may be wrong (tier 1) prints every time. Raise warnings with
+the internal <code>creel_warn()</code>, which records them and handles
+the repeats; do not use <code>.frequency</code>, which hid repeats on a
+different design for the rest of the session. A test fails if either
+rule is broken.</li>
 <li>Examples, vignettes and the README run without warnings, unless the
 page is demonstrating the warning. A documentation page that warns
 teaches readers to ignore warnings.</li>

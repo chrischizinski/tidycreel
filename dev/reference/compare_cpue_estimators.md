@@ -124,11 +124,11 @@ compare_cpue_estimators(design)
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews)
-#> Warning: Non-standard combination: use_trips='complete' with estimator='mor'
+#> Non-standard combination: use_trips='complete' with estimator='mor'
 #> ℹ MOR typically used with incomplete trips
 #> ℹ You are using MOR on 17 complete trips - consider `estimator =
 #>   'ratio-of-means'` for standard complete trip estimation
-#> Warning: MOR truncation skipped: no trip duration column in design.
+#> MOR truncation skipped: no trip duration column in design.
 #> ℹ Supply `trip_duration` in `add_interviews()` to enable truncation.
 #> ℹ All 17 trips used without truncation.
 #> ℹ Using complete trips for CPUE estimation

@@ -104,7 +104,8 @@ from a rate a total computes internally.</p>
 <dd><p>Position in the session's sequence of tidycreel warnings.</p></dd>
 
 <dt>class</dt>
-<dd><p>The warning's own class, <code>creel_warning_&lt;fact&gt;</code>.</p></dd>
+<dd><p>Its own class: <code>creel_warning_&lt;fact&gt;</code>, or for a tier-3
+message <code>creel_message_&lt;fact&gt;</code>.</p></dd>
 
 <dt>tier</dt>
 <dd><p>1, 2 or 3, as above.</p></dd>
@@ -113,7 +114,7 @@ from a rate a total computes internally.</p>
 <dd><p>The function that raised it.</p></dd>
 
 <dt>message</dt>
-<dd><p>The warning text, without formatting.</p></dd>
+<dd><p>The text of the warning or message, without formatting.</p></dd>
 
 
 </dl><p>Zero rows when nothing was raised.</p>
@@ -129,7 +130,8 @@ sections or cells left out of a total, an SE that ignores the design.</p></dd>
 trips, thin cells.</p></dd>
 
 <dt>3</dt>
-<dd><p>Information: an argument with no effect, an estimator choice.</p></dd>
+<dd><p>Information: an argument with no effect, an estimator choice.
+Raised as a message, not a warning, and recorded all the same.</p></dd>
 
 
 </dl><p>A warning is recorded even when the caller handles or muffles it. A

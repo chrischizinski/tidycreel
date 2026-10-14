@@ -41,6 +41,10 @@ design <- creel_design(example_calendar, date = date, strata = day_type)
 design <- add_counts(design, example_counts)
 # Deprecated: as_creel_svydesign() is the current name.
 svy <- suppressWarnings(as_survey_design(design))
+#> Accessing internal survey design object.
+#> ℹ This is an advanced feature. Most users should use `estimate_effort()`
+#>   instead.
+#> ! Modifying the survey design may produce incorrect variance estimates.
 class(svy)
 #> [1] "survey.design2" "survey.design" 
 ```

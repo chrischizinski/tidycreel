@@ -22,6 +22,10 @@ of a total. Errors have a matching family, `creel_error_*`.
 Two classes were renamed to this pattern and keep their old names as
 well: `creel_warn_two_phase_rescale` and `creel_warn_tost_degenerate`.
 
+Information that is not a warning (tier 3) is raised as a message, with
+a class from the matching family `creel_message_<fact>` and the parent
+`creel_message`; see the Messages section below.
+
 ## Tiers
 
 Each entry starts with its tier, which
@@ -38,10 +42,10 @@ also reports:
 
 - Tier 3:
 
-  Information.
+  Information, raised as a message rather than a warning.
 
-Every warning is also recorded on the design or estimate the call
-returns;
+Every warning and tier-3 message is also recorded on the design or
+estimate the call returns;
 [`get_warnings()`](https://chrischizinski.com/tidycreel/dev/reference/get_warnings.md)
 lists them.
 
@@ -55,7 +59,8 @@ an `add_*()` step or
 returns it, so new data print again. Three facts about the design also
 print once per design although their tier is not 2:
 `creel_warning_no_period_length`, `creel_warning_pooled_domain_mix` and
-`creel_warning_internal_svydesign`.
+the message `creel_message_internal_svydesign`. Other tier-3 messages
+print on every call.
 
 ## Units and scale
 
@@ -138,15 +143,6 @@ print once per design although their tier is not 2:
   `truncate_at` and left out of a mean-of-ratios rate (below 10 percent
   this is a message).
 
-- `creel_warning_truncation_skipped`:
-
-  Tier 3. Mean-of-ratios truncation was not applied because the design
-  has no trip duration.
-
-- `creel_warning_truncation_disabled`:
-
-  Tier 3. `truncate_at = NULL` turned short-trip truncation off.
-
 - `creel_warning_two_phase_rescale`:
 
   Tier 1. Two-phase totals were rescaled onto the reported catch.
@@ -185,16 +181,6 @@ print once per design although their tier is not 2:
 
   Tier 1. The camera-count imputation model did not converge in a
   stratum.
-
-- `creel_warning_nonstandard_estimator`:
-
-  Tier 3. An unusual combination of `use_trips` and `estimator` was
-  requested.
-
-- `creel_warning_mor_incomplete_trips`:
-
-  Tier 3. A rate uses the mean-of-ratios estimator on incomplete trips;
-  complete trips are preferred where available.
 
 ## Standard errors and intervals
 
@@ -290,10 +276,6 @@ print once per design although their tier is not 2:
   Tier 1. Counts have repeated sampling units with no count time to tell
   them apart.
 
-- `creel_warning_zero_counts`:
-
-  Tier 3. The count column has zeros.
-
 - `creel_warning_negative_counts`:
 
   Tier 2. The count column has negative values.
@@ -318,10 +300,6 @@ print once per design although their tier is not 2:
 
   Tier 2. Trip durations over 48 hours.
 
-- `creel_warning_high_zero_catch`:
-
-  Tier 3. A high share of trips caught nothing, overall or of a species.
-
 - `creel_warning_counted_not_interviewed`:
 
   Tier 2. Parties were counted but none interviewed.
@@ -342,10 +320,6 @@ print once per design although their tier is not 2:
 
   Tier 2. Harvested plus released is less than caught for some
   species-interview pairs.
-
-- `creel_warning_catch_totals_diverge`:
-
-  Tier 3. Catch-table totals differ from the interview catch column.
 
 - `creel_warning_camera_negative_duration`:
 
@@ -372,21 +346,16 @@ print once per design although their tier is not 2:
 
   Tier 2. Some species values match no known species.
 
-- `creel_warning_species_column_missing`:
-
-  Tier 3. The species column is missing, so the species coverage check
-  was skipped.
-
 - `creel_warning_unknown_label_collision`:
 
   Tier 1. A column holds both unrecorded values and the literal label
   used for them.
 
+- `creel_warning_catch_totals_diverge`:
+
+  Tier 2. Catch-table totals differ from the interview catch column.
+
 ## Arguments and calls
-
-- `creel_warning_argument_ignored`:
-
-  Tier 3. An argument has no effect in this call.
 
 - `creel_warning_circuit_time_ignored`:
 
@@ -398,23 +367,71 @@ print once per design although their tier is not 2:
 
   Tier 1. The design is not the type this function expects.
 
-- `creel_warning_day_type_from_stratum`:
+- `creel_warning_fragile_schedule`:
+
+  Tier 2. Special-period declarations produced a fragile schedule.
+
+## Messages (tier 3)
+
+Information is raised as a message, not a warning. Each carries its own
+class, `creel_message_<fact>`, and the parent class `creel_message`, and
+is recorded like a warning, with tier 3. Silence one for one call with
+`invokeRestart("muffleMessage")` in a `creel_message_<fact>` handler.
+
+- `creel_message_argument_ignored`:
+
+  Tier 3. An argument has no effect in this call.
+
+- `creel_message_day_type_from_stratum`:
 
   Tier 3. A stratum column is used as the day type.
 
-- `creel_warning_internal_svydesign`:
+- `creel_message_high_zero_catch`:
+
+  Tier 3. A high share of trips caught nothing, overall or of a species.
+
+- `creel_message_internal_svydesign`:
 
   Tier 3. The internal survey design was accessed; changing it can give
   wrong variances.
 
-- `creel_warning_no_subdesigns`:
-
-  Tier 3. No survey sub-designs were found to adjust.
-
-- `creel_warning_large_delta_pct`:
+- `creel_message_large_delta_pct`:
 
   Tier 3. `delta_pct` looks like a percentage given as a whole number.
 
-- `creel_warning_fragile_schedule`:
+- `creel_message_mor_incomplete_trips`:
 
-  Tier 2. Special-period declarations produced a fragile schedule.
+  Tier 3. A rate uses the mean-of-ratios estimator on incomplete trips;
+  complete trips are preferred where available.
+
+- `creel_message_no_subdesigns`:
+
+  Tier 3. No survey sub-designs were found to adjust.
+
+- `creel_message_nonstandard_estimator`:
+
+  Tier 3. An unusual combination of `use_trips` and `estimator` was
+  requested.
+
+- `creel_message_species_column_missing`:
+
+  Tier 3. The species column is missing, so the species coverage check
+  was skipped.
+
+- `creel_message_truncation_disabled`:
+
+  Tier 3. `truncate_at = NULL` turned short-trip truncation off.
+
+- `creel_message_truncation_skipped`:
+
+  Tier 3. Mean-of-ratios truncation was not applied because the design
+  has no trip duration.
+
+- `creel_message_zero_counts`:
+
+  Tier 3. The count column has zeros.
+
+- `creel_message_within_day_independent`:
+
+  Tier 3. Some units on a day were not counted at the same known
+  occasions, so their within-day components are added as independent.

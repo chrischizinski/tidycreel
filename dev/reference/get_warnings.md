@@ -31,7 +31,8 @@ A data frame with one row per warning, in the order raised:
 
 - class:
 
-  The warning's own class, `creel_warning_<fact>`.
+  Its own class: `creel_warning_<fact>`, or for a tier-3 message
+  `creel_message_<fact>`.
 
 - tier:
 
@@ -43,7 +44,7 @@ A data frame with one row per warning, in the order raised:
 
 - message:
 
-  The warning text, without formatting.
+  The text of the warning or message, without formatting.
 
 Zero rows when nothing was raised.
 
@@ -64,7 +65,8 @@ Each warning has a tier, as listed in
 
 - 3:
 
-  Information: an argument with no effect, an estimator choice.
+  Information: an argument with no effect, an estimator choice. Raised
+  as a message, not a warning, and recorded all the same.
 
 A warning is recorded even when the caller handles or muffles it. A
 data-quality warning (tier 2) prints only the first time it is raised on
