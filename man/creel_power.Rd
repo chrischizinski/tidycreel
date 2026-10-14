@@ -49,7 +49,7 @@ For \code{alternative = "one.sided"}:
 where \code{delta} is the fractional effect size (\code{delta_pct}), \code{n} is the number
 of interviews per season, and \code{CV_historical} is the pilot CV of CPUE.
 
-A warning is issued when \code{delta_pct > 5} because values greater than 5 are
+A message is given when \code{delta_pct > 5} because values greater than 5 are
 almost certainly input in percentage-point form rather than fractional form
 (e.g., 20 instead of 0.20).
 }

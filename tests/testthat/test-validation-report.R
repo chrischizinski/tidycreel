@@ -94,7 +94,7 @@ test_that("VRPT-09: species coverage detail contains percentage", {
 })
 
 test_that("VRPT-10: missing species_col warns and skips species row", {
-  expect_warning(
+  expect_message(
     rpt <- validation_report(
       interviews = make_interviews(),
       species_col = "nonexistent"

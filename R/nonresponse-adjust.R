@@ -202,14 +202,14 @@ adjust_nonresponse <- function(
   }
 
   if (is.null(design$counts_survey) && is.null(design$interview_survey)) {
-    creel_warn(c(
+    creel_inform(c(
       "No survey sub-designs found to adjust.",
       "i" = paste0(
         "Call {.fn add_counts} or {.fn add_interviews} before ",
         "{.fn adjust_nonresponse}."
       )
     ),
-    class = c("creel_warning_no_subdesigns", "creel_warning")
+    class = c("creel_message_no_subdesigns", "creel_message")
     )
   }
 

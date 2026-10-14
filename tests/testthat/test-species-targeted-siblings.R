@@ -146,16 +146,16 @@ test_that("SIBLING-TARGETED-04: warnings name the species and use the right verb
 
 test_that("SIBLING-TARGETED-05: the 70% warning fires per species on the siblings", {
   design <- make_sibling_targeted_design()
-  expect_warning(
-    suppressMessages(
+  expect_message(
+    suppressWarnings(
       estimate_harvest_rate(design, by = species, estimator = "mor", targeted = TRUE, use_trips = "all")
     ),
     regexp = "bass.*76% of trips harvested none of this species"
   )
   # Release too: the verb is the only thing separating the two messages, so
   # testing one does not cover the other.
-  expect_warning(
-    suppressMessages(
+  expect_message(
+    suppressWarnings(
       estimate_release_rate(design, by = species, estimator = "mor", targeted = TRUE, use_trips = "all")
     ),
     regexp = "bass.*76% of trips released none of this species"

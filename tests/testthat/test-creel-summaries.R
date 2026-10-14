@@ -623,11 +623,11 @@ test_that("summarize_by_day_type() warns and names the column when it must guess
 
   # Neither stratum is named day_type. Falling back is defensible; doing it
   # silently is not, because the output is indistinguishable from a real one.
-  expect_warning(
+  expect_message(
     summarize_by_day_type(d),
     "Using stratum.*site.*as the day type"
   )
-  expect_warning(summarize_by_day_type(d), "none is named")
+  expect_message(summarize_by_day_type(d), "none is named")
 })
 
 test_that("summarize_by_day_type() still uses the first stratum when it guesses", {

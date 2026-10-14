@@ -19,15 +19,20 @@ warning_class_args <- function() {
       is_warn <- identical(head, quote(creel_warn)) ||
         identical(head, quote(cli_warn)) ||
         identical(head, quote(cli::cli_warn))
-      if (is_warn) {
+      # Tier 3 is raised as a message through creel_inform() (GH #496, 3c).
+      is_note <- identical(head, quote(creel_inform))
+      if (is_warn || is_note) {
         cls <- if ("class" %in% names(x)) eval(x[["class"]], baseenv()) else NULL
-        found[[length(found) + 1]] <<- list(where = where, class = cls)
+        found[[length(found) + 1]] <<- list(
+          where = where, class = cls, kind = if (is_warn) "warning" else "message"
+        )
       }
       for (el in as.list(x)[-1]) if (!missing(el)) walk(el, where)
     }
   }
-  # creel_warn() passes its caller's class through; it raises nothing itself.
-  for (nm in setdiff(ls(ns, all.names = TRUE), "creel_warn")) {
+  # creel_warn() and creel_inform() pass their caller's class through; they
+  # raise nothing themselves.
+  for (nm in setdiff(ls(ns, all.names = TRUE), c("creel_warn", "creel_inform"))) {
     f <- get(nm, envir = ns)
     if (is.function(f) && !is.primitive(f)) walk(body(f), nm)
   }
@@ -47,17 +52,18 @@ catalogue_classes <- function() {
     tools::Rd_db("tidycreel")[["creel_warnings.Rd"]]
   }
   txt <- paste(as.character(rd), collapse = "")
-  unique(regmatches(txt, gregexpr("creel_warning_[a-z_]+", txt))[[1]])
+  unique(regmatches(txt, gregexpr("creel_(warning|message)_[a-z_]+", txt))[[1]])
 }
 
-test_that("every warning has its own class and the parent creel_warning", {
+test_that("every warning and note has its own class and its family's parent", {
   calls <- warning_class_args()
   # Sanity: the walker found the package's warnings, not an empty list.
   expect_gt(length(calls), 100)
   for (cl in calls) {
-    own <- grep("^creel_warning_", cl$class, value = TRUE)
+    family <- paste0("creel_", cl$kind)
+    own <- grep(paste0("^", family, "_"), cl$class, value = TRUE)
     expect_true(
-      "creel_warning" %in% cl$class && length(own) == 1,
+      family %in% cl$class && length(own) == 1,
       info = paste0(cl$where, "(): class = ", paste(cl$class, collapse = ", "))
     )
   }
@@ -65,7 +71,7 @@ test_that("every warning has its own class and the parent creel_warning", {
 
 test_that("?creel_warnings lists exactly the classes the code raises", {
   raised <- unique(unlist(lapply(warning_class_args(), function(cl) {
-    grep("^creel_warning_", cl$class, value = TRUE)
+    grep("^creel_(warning|message)_", cl$class, value = TRUE)
   })))
   listed <- catalogue_classes()
   expect_setequal(listed, raised)
@@ -168,7 +174,7 @@ test_that("every class raised has a tier, and the registry lists nothing else", 
   # get_warnings() reports the tier; a class without one would report NA,
   # and a registry entry no code raises is a stale judgment.
   raised <- unique(unlist(lapply(warning_class_args(), function(cl) {
-    grep("^creel_warning_", cl$class, value = TRUE)
+    grep("^creel_(warning|message)_", cl$class, value = TRUE)
   })))
   tiers <- tidycreel:::creel_warning_tiers
   expect_setequal(names(tiers), raised)
@@ -183,7 +189,7 @@ test_that("?creel_warnings states the tier the registry holds", {
   txt <- paste(readLines(src), collapse = " ")
   txt <- gsub("\\s+", " ", txt)
   hits <- regmatches(txt, gregexpr(
-    "creel_warning_[a-z_]+\\}\\}\\{Tier [123]", txt
+    "creel_(warning|message)_[a-z_]+\\}\\}\\{Tier [123]", txt
   ))[[1]]
   doc <- stats::setNames(
     as.integer(sub(".*Tier ", "", hits)),
@@ -213,4 +219,20 @@ test_that("no warning uses .frequency, which hides repeats on different data", {
     if (is.function(f) && !is.primitive(f)) walk(body(f), nm)
   }
   expect_identical(uses, character())
+})
+
+test_that("tier 3 is exactly the classes raised as messages", {
+  # Information is a message, not a warning (GH #496): a tier-3 warning, or a
+  # message whose record claims a higher tier, would undo the split.
+  tiers <- tidycreel:::creel_warning_tiers
+  is_message <- startsWith(names(tiers), "creel_message_")
+  expect_identical(unname(tiers[is_message]), rep(3L, sum(is_message)))
+  expect_true(all(tiers[!is_message] %in% 1:2))
+  for (cl in warning_class_args()) {
+    own <- grep("^creel_(warning|message)_", cl$class, value = TRUE)
+    expect_identical(
+      startsWith(own, "creel_message_"), cl$kind == "message",
+      info = paste0(cl$where, "(): ", own)
+    )
+  }
 })

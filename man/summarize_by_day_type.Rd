@@ -22,7 +22,7 @@ A \code{data.frame} with class \code{c("creel_summary_day_type",
 Counts the number of interviews in each day type stratum (e.g., weekday,
 weekend) within each calendar month. The day type column is resolved from
 the design's strata: a stratum named \code{day_type} when the design
-declares one, otherwise the first stratum column, which warns when the
+declares one, otherwise the first stratum column, with a message when the
 design declares more than one. Pass \code{day_type_col} to state the
 column outright. An inferred column whose values each occur in a single
 month of the year (a composite stratum such as \code{"04_weekday"}) is

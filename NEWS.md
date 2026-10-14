@@ -2,6 +2,18 @@
 
 ## Breaking changes
 
+* Information that is not a warning (tier 3 in `?creel_warnings`) is now a
+  message (#496): an argument with no effect, an estimator choice such as
+  the mean-of-ratios note, the day type taken from a stratum, a high share
+  of zero-catch trips, zero counts, catch-table totals that differ from the
+  interview column, and `as_creel_svydesign()`'s note. Each has a class
+  `creel_message_<fact>` and the parent `creel_message`, and is still
+  recorded, with tier 3, where `get_warnings()` lists it. Code that caught
+  one with `expect_warning()`, `tryCatch(warning = )` or
+  `suppressWarnings()` now needs `expect_message()`, `tryCatch(message = )`
+  or `suppressMessages()`. These 13 classes were named `creel_warning_*` only
+  in the development version and never released.
+
 * Data-quality warnings (tier 2 in `?creel_warnings`) print once per design
   (#496). The first time one is raised on a design it prints; later repeats
   on the same design are recorded on the result, where `get_warnings()`

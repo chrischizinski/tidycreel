@@ -478,7 +478,7 @@ test_that("add_catch() warns when catch totals diverge from interview-level catc
     catch_type = "caught",
     stringsAsFactors = FALSE
   )
-  expect_warning(
+  expect_message(
     add_catch(
       d,
       diverged,

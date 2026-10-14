@@ -1863,17 +1863,17 @@ test_that("estimator='mor' matches manual survey::svymean calculation", {
 
 # MOR warning tests ----
 
-test_that("MOR estimator warns on every call", {
+test_that("the MOR note is given on every call", {
   design <- make_small_cpue_design(n = 30, n_incomplete = 30)
 
   # First call warns
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor"),
     "MOR estimator.*incomplete trips"
   )
 
-  # Second call ALSO warns (not once-per-session)
-  expect_warning(
+  # Second call says it again: a note is not once per design (GH #496)
+  expect_message(
     estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor"),
     "MOR estimator.*incomplete trips"
   )
@@ -1882,7 +1882,7 @@ test_that("MOR estimator warns on every call", {
 test_that("MOR warning includes trip counts", {
   design <- make_small_cpue_design(n = 40, n_incomplete = 25)
 
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor"),
     "n=25.*25 total"
   )
@@ -1891,7 +1891,7 @@ test_that("MOR warning includes trip counts", {
 test_that("MOR warning emphasizes complete trip preference", {
   design <- make_small_cpue_design(n = 30, n_incomplete = 30)
 
-  expect_warning(
+  expect_message(
     result <- estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor"),
     "Complete trips preferred"
   )
@@ -1900,7 +1900,7 @@ test_that("MOR warning emphasizes complete trip preference", {
 test_that("MOR warning references validation function", {
   design <- make_small_cpue_design(n = 30, n_incomplete = 30)
 
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor"),
     "validate_incomplete_trips"
   )
@@ -2486,7 +2486,7 @@ test_that("use_trips='incomplete' with n_incomplete < 10 (post-truncation) error
 test_that("use_trips='complete' with estimator='mor' warns about non-standard choice", {
   design <- make_use_trips_design(n_complete = 30, n_incomplete = 10)
 
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, use_trips = "complete", estimator = "mor"),
     "complete.*mor|non-standard"
   )
@@ -3678,7 +3678,7 @@ test_that("M013-TARGETED-02: targeted=FALSE emits cli_warn with exclusion count"
 
 test_that("M013-TARGETED-03: targeted=TRUE (default) emits warn when >70% zero-catch", {
   design <- make_mortr_design(n_incomplete = 40, zero_catch_fraction = 0.8)
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, estimator = "mor", truncate_at = NULL, targeted = TRUE),
     regexp = "non-targeted|zero catch"
   )

@@ -389,7 +389,7 @@ test_that("summarize_boat_composition() warns and names the column when it must 
   d <- make_two_strata_boat_design(strata_second = "period")
   s <- make_boat_composition_schema()
 
-  expect_warning(
+  expect_message(
     summarize_boat_composition(d, s),
     "Using stratum.*site.*as the day type"
   )

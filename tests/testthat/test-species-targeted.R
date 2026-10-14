@@ -231,7 +231,7 @@ test_that("SPECIES-TARGETED-04: targeted=TRUE warns on a species that is mostly 
   design <- make_species_targeted_design()
   # Never fired before #304: total catch was non-zero on all 50 trips, so the
   # rate it measured was 0%, not bass's 76%.
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, by = species, estimator = "mor", targeted = TRUE),
     regexp = "bass.*76% of trips caught none of this species"
   )
@@ -373,7 +373,7 @@ test_that("SPECIES-TARGETED-11: mortr behaves as mor on the species path", {
   expect_equal(res_mortr$estimates$n, res_mor$estimates$n)
 
   # ... and the mis-specification warning reaches mortr too.
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, by = species, estimator = "mortr", targeted = TRUE),
     regexp = "bass.*76% of trips caught none of this species"
   )
