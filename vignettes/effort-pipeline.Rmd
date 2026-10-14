@@ -105,7 +105,8 @@ N_h^2 \left(1 - \frac{n_h}{N_h}\right) \frac{s_b^2}{n_h}$$
 where $s_b^2$ is the sample variance of the daily efforts $\hat{e}_i$. The
 factor $1 - n_h/N_h$ is the **finite-population correction**: days are drawn
 without replacement, so sampling half the stratum removes part of the
-uncertainty, and sampling all of it would remove all of it.
+day-to-day uncertainty, and sampling all of it would remove all of it. (Not
+the uncertainty from when in each day a count fell; see the next section.)
 
 For the stratum above, $s_b^2 = 16{,}667$, so
 
@@ -118,11 +119,23 @@ which is the `se` and `se_between` printed above.
 
 With one count per day, `se_within` is reported as 0. That does **not** mean
 the number of anglers was steady through the day. Each day's single count
-landed at one moment out of many, and that chance is already part of why the
-sampled days differ: the between-day variance above contains it. The total
-`se` is right. What cannot be done with one count per day is splitting it into
-a day-to-day part and a within-day part. The 0 is a placeholder for "not
-separable"; #504 proposes reporting `NA` there instead.
+landed at one moment out of many, and that chance is part of why the sampled
+days differ, so $s_b^2$ contains it. With one count per day it cannot be
+separated out: the 0 is a placeholder for "not estimated", and #504 proposes
+reporting `NA` there instead.
+
+It also means the standard error is **too small** when a large share of the
+days is sampled. The finite-population correction is right for the
+day-to-day part of $s_b^2$: sampling more of the days leaves less of that to
+chance. It is wrong for the within-day part: even if every day is sampled,
+when in the day each count fell is still chance. With all days sampled the
+correction is 0 and tidycreel reports an SE of 0, although a count at another
+moment would have given a different total. The size of the shortfall grows
+with $n_h / N_h$ and with how much activity varies within a day; it cannot be
+estimated from one count per day. The two-stage formula below puts the
+missing part back when there are several counts per day. #505 is open to fix
+the one-count case; until then, read the SE from a single count per day as a
+lower bound when a large share of the days was sampled.
 
 ## Several counts per day: two-stage variance
 
@@ -247,7 +260,8 @@ estimate_effort(design_p, target = "period_total")
 `add_counts()` stores each day's $C_d \times T_d$: 120, 160 and 200
 angler-hours. The total is $6 \times 160 = 960$ angler-hours. One circuit a day
 gives one estimate a day, so the variance is the between-day term alone, as for
-one instantaneous count a day.
+one instantaneous count a day, and it is too small in the same way when a large
+share of the days is sampled (#505).
 
 The estimate is unbiased only when the circuit's start time, start point and
 direction were randomised and the observer moved faster than the anglers.
@@ -258,9 +272,9 @@ None of that can be checked from the counts table;
 
 | Data | Day's effort | Variance terms | `se_within` |
 |---|---|---|---|
-| One instantaneous count per day | $c_i T_i$ | between days | 0: not separable (#504) |
+| One instantaneous count per day | $c_i T_i$ | between days only; too small when $n_h/N_h$ is large (#505) | 0: not estimated (#504) |
 | $k$ instantaneous counts per day | mean of $c_{ij} T_i$ | between days + within days | estimated |
-| One progressive circuit per day | $C_d T_d$ | between days | 0: not separable (#504) |
+| One progressive circuit per day | $C_d T_d$ | between days only; too small when $n_h/N_h$ is large (#505) | 0: not estimated (#504) |
 
 In every case the stratum total is $N_h$ times the mean daily effort, the
 between-day term carries the finite-population correction, and strata are

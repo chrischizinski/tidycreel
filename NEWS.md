@@ -163,7 +163,11 @@
     season, so the expansion they explain is not 1. A rule of thumb about
     `se_within / se` with no source is replaced by the cost-based optimum,
     and `se_within = 0` with one count per day is explained as "not
-    separable", not "no within-day variation" (#504 proposes `NA`).
+    estimated", not "no within-day variation" (#504 proposes `NA`). The page
+    and `vignette("tidycreel")` now say that with one count per day the SE is
+    too small when a large share of the days is sampled: the finite-population
+    correction also removes the within-day randomness it should not. The
+    estimator is unchanged here; the fix is open as #505.
   - `vignette("flexible-count-estimation")` is merged into
     `vignette("effort-pipeline")`; its old address redirects there. Its unit
     section said instantaneous counts give "angler-days" and are never
