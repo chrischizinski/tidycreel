@@ -37,7 +37,13 @@ allowed <- list(
     "iteration limit reached",
     "No `n_anglers` provided",
     "Rate and effort may be in different units"
-  )
+  ),
+  # Explanation section (#480).
+  `effort-pipeline` = character(),
+  `catch-pipeline` = character(),
+  # The single-PSU example attaches counts to strata of two days and one day;
+  # add_counts() warns, and the text says the refusal follows from it.
+  `replicate-designs` = c("fewer than 3 observations")
 )
 
 suppressMessages(devtools::load_all(quiet = TRUE))

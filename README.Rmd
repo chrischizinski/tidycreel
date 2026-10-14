@@ -213,7 +213,6 @@ All vignettes ship with the package — open one with
 | Interview Estimation (`vignette("interview-estimation")`) | CPUE, catch, and harvest from interview data |
 | Mark-Recapture and Exploitation Rate (`vignette("mark-recapture")`) | Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns |
 | Incomplete Trips (`vignette("incomplete-trips")`) | When and how to use mean-of-ratios and TOST validation |
-| Flexible Count Estimation (`vignette("flexible-count-estimation")`) | Non-standard count configurations and custom time windows |
 | Progressive Count Surveys (`vignette("progressive-count-surveys")`) | Rolling and progressive count workflows |
 | Section Estimation (`vignette("section-estimation")`) | Spatial section-level effort and catch estimation |
 | Temporal Extrapolation (`vignette("temporal-extrapolation")`) | Extrapolating partial-season data to full-season estimates |
@@ -227,13 +226,13 @@ All vignettes ship with the package — open one with
 | Survey Scheduling (`vignette("survey-scheduling")`) | Count windows, schedules, validation, and completeness checks |
 | Visualisation (`vignette("visualisation")`) | Plotting patterns and output styling with `theme_creel()` |
 
-### Statistical Methods
+### Explanation
 
 | Vignette | Description |
 |---|---|
-| Effort Pipeline (`vignette("effort-pipeline")`) | Statistical mechanics of the effort estimation pipeline |
-| Catch Pipeline (`vignette("catch-pipeline")`) | Statistical mechanics of the catch estimation pipeline |
-| Replicate Designs (`vignette("replicate-designs")`) | Variance workflows and replicate-design reasoning |
+| Counts to Effort (`vignette("effort-pipeline")`) | How effort and its between-day and within-day variance are built; progressive counts |
+| Interviews to Catch (`vignette("catch-pipeline")`) | Why access and roving interviews get different rate estimators; totals and their variance |
+| Variance Methods (`vignette("replicate-designs")`) | Taylor, bootstrap and jackknife: what they share and when they differ |
 | Bus-Route Equations (`vignette("bus-route-equations")`) | Technical equation derivations for bus-route estimators |
 
 ### Ecosystem

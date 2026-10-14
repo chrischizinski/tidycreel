@@ -152,6 +152,37 @@
   - Every page now ends with `as_tibble()` and a plot, and all five are
     checked by `just vignette-warnings`.
 
+* The statistical articles were checked against the code and their sources
+  (#480, Explanation section, part 1). None computed a wrong number; several
+  gave formulas, reasons or citations that were wrong:
+  - `vignette("effort-pipeline")` gave two within-day variance formulas as
+    "equivalent"; they agree only when every day is sampled, and the package
+    uses the one that matches Cochran (1977, ch. 10) and Pope et al.'s
+    Chapter 17. It said the between-day term has no finite-population
+    correction; on season totals it does. Its examples now sample part of the
+    season, so the expansion they explain is not 1. A rule of thumb about
+    `se_within / se` with no source is replaced by the cost-based optimum,
+    and `se_within = 0` with one count per day is explained as "not
+    separable", not "no within-day variation" (#504 proposes `NA`).
+  - `vignette("flexible-count-estimation")` is merged into
+    `vignette("effort-pipeline")`; its old address redirects there. Its unit
+    section said instantaneous counts give "angler-days" and are never
+    multiplied by hours, which is no longer true.
+  - `vignette("catch-pipeline")` said ratio-of-means is chosen for
+    instantaneous-count surveys; the choice follows the interview type
+    (access or roving), for the length-biased-sampling reason in Pollock et
+    al. (1997). It showed the total as one effort times one rate with the
+    two-term delta method; the package sums stratum products and uses
+    Goodman's (1960) unbiased variance. Zero covariance between effort and
+    rate is now stated as an assumption.
+  - `vignette("replicate-designs")` said Taylor linearization can handle one
+    sampled day in a stratum; it refuses, as the other two do (#503).
+  - A "Rasmussen (1994)" that could not be found, a Su and Liu (2025)
+    citation with the wrong title and journal, and an unrelated alewife
+    paper were removed from the reference lists.
+  - The pkgdown group "Statistical Methods" is now "Explanation", and all
+    three pages are checked by `just vignette-warnings`.
+
 * New How-to page, `vignette("instantaneous-counts")` (#480), for the most
   common design: instantaneous counts with access or roving interviews. The
   same season's counts give effort once; the access interviews then give a
