@@ -48,8 +48,9 @@ wrap_survey_call <- function(expr) {
             "x" = "A stratum must have at least 2 PSUs (e.g., 2 sampled days) \\
               for variance estimation, unless every sampled day has two or more \\
               counts and the stratum was fully sampled.",
-            "i" = "Increase the sampling rate, count more than once a day, or \\
-              combine sparse strata before estimation."
+            "i" = "Increase the sampling rate, combine sparse strata before \\
+              estimation, or, for a stratum of a single day that was sampled, \\
+              count that day more than once."
           ),
           class = "creel_error_single_psu"
         )
@@ -5554,8 +5555,10 @@ get_effort_target_design <- function(design, target) {
   # to correct is how `survey` reads "no correction" for one stratum.
   identified <- within_day_identified_strata(design, counts_data, strata_cols)
   stratum_key <- group_key(expanded_counts, strata_cols) # nolint: object_usage_linter
+  # Matched by position, not by name: a stratum labelled "" is accepted, and R
+  # never matches an empty name, so `identified[""]` is NA.
   expanded_counts$.fpc_days <- ifelse(
-    identified[stratum_key],
+    identified[match(stratum_key, names(identified))],
     expanded_counts$.N_avail,
     no_fpc_population
   )

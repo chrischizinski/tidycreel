@@ -117,9 +117,11 @@
 #'   named by the frame labels in `frame_col`.  Each element gives the
 #'   **within-day** sampling fraction per stratum for that frame: the proportion
 #'   of the frame the count enumerated on each sampled day, in (0, 1].  Expands
-#'   a sampled day to a whole day; it is not a fraction of the season and does
-#'   not drive the finite-population correction.  Names of each element must
-#'   match the stratum values that frame carries.
+#'   a sampled day to a whole day; it is not a fraction of the season, and the
+#'   finite-population correction is never taken against it.  It does decide
+#'   whether that correction applies: a fraction below 1 means part of the day
+#'   was sampled, so by default the correction is left out (see `fpc`).  Names
+#'   of each element must match the stratum values that frame carries.
 #' @param trips_disjoint Logical scalar.  Required: the `NULL` default is
 #'   rejected, and exists only so the error can say what is missing.  Set to
 #'   `TRUE` to affirm that the frames sample disjoint sets of angler trips, the

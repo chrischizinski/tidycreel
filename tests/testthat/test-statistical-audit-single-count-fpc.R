@@ -157,3 +157,17 @@ test_that("a one-day census stratum with one count refuses its variance instead 
     class = "creel_error_single_psu"
   )
 })
+
+test_that("a stratum labelled with the empty string still gets its correction rule", {
+  # The rule is looked up per stratum. A name lookup never matches "", which
+  # left the FPC population NA and aborted the estimate (ensemble review).
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:5, day_type = "")
+  counts <- data.frame(
+    date = as.Date("2024-06-03") + 0:2, day_type = "",
+    n_anglers = c(10L, 12L, 14L), hours = 10
+  )
+  design <- q(add_counts(creel_design(cal, date = date, strata = day_type), counts,
+    period_length_col = hours
+  ))
+  expect_equal(effort_se(design)[["se"]], sqrt(6^2 * var(c(100, 120, 140)) / 3))
+})
