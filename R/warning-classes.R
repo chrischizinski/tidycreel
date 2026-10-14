@@ -202,6 +202,8 @@
 #'     match no known species.}
 #'   \item{\code{creel_warning_unknown_label_collision}}{Tier 1. A column holds
 #'     both unrecorded values and the literal label used for them.}
+#'   \item{\code{creel_warning_catch_totals_diverge}}{Tier 2. Catch-table totals
+#'     differ from the interview catch column.}
 #' }
 #'
 #' @section Arguments and calls:
@@ -223,8 +225,6 @@
 #' \describe{
 #'   \item{\code{creel_message_argument_ignored}}{Tier 3. An argument has no
 #'     effect in this call.}
-#'   \item{\code{creel_message_catch_totals_diverge}}{Tier 3. Catch-table totals
-#'     differ from the interview catch column.}
 #'   \item{\code{creel_message_day_type_from_stratum}}{Tier 3. A stratum column
 #'     is used as the day type.}
 #'   \item{\code{creel_message_high_zero_catch}}{Tier 3. A high share of trips
@@ -293,6 +293,7 @@ creel_warning_tiers <- c(
   creel_warning_camera_na_counts = 2L,
   creel_warning_camera_negative_duration = 2L,
   creel_warning_camera_single_day = 2L,
+  creel_warning_catch_totals_diverge = 2L,
   creel_warning_catch_unreconciled = 2L,
   creel_warning_count_validation = 2L,
   creel_warning_counted_not_interviewed = 2L,
@@ -328,7 +329,6 @@ creel_warning_tiers <- c(
   creel_warning_trip_length_se_undefined = 2L,
   # Tier 3
   creel_message_argument_ignored = 3L,
-  creel_message_catch_totals_diverge = 3L,
   creel_message_day_type_from_stratum = 3L,
   creel_message_high_zero_catch = 3L,
   creel_message_internal_svydesign = 3L,

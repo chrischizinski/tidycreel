@@ -5374,7 +5374,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     diverged <- check[!is.na(check$catch_intv) & check$catch_implied != check$catch_intv, ]
     if (nrow(diverged) > 0) {
       n_div <- nrow(diverged) # nolint: object_usage_linter
-      creel_inform(c(
+      creel_warn(c(
         "!" = paste0(
           "Catch totals in catch data diverge from interview-level ",
           "{.field {design$catch_col}} for {n_div} interview{?s}."
@@ -5384,7 +5384,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
           "(partial species recording)."
         )
       ),
-      class = c("creel_message_catch_totals_diverge", "creel_message")
+      class = c("creel_warning_catch_totals_diverge", "creel_warning")
       )
     }
   }

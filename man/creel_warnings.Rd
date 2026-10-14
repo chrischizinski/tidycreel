@@ -217,6 +217,8 @@ be parsed and became \code{NA}.}
 match no known species.}
 \item{\code{creel_warning_unknown_label_collision}}{Tier 1. A column holds
 both unrecorded values and the literal label used for them.}
+\item{\code{creel_warning_catch_totals_diverge}}{Tier 2. Catch-table totals
+differ from the interview catch column.}
 }
 }
 
@@ -242,8 +244,6 @@ recorded like a warning, with tier 3. Silence one for one call with
 \describe{
 \item{\code{creel_message_argument_ignored}}{Tier 3. An argument has no
 effect in this call.}
-\item{\code{creel_message_catch_totals_diverge}}{Tier 3. Catch-table totals
-differ from the interview catch column.}
 \item{\code{creel_message_day_type_from_stratum}}{Tier 3. A stratum column
 is used as the day type.}
 \item{\code{creel_message_high_zero_catch}}{Tier 3. A high share of trips

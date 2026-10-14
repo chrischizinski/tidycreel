@@ -478,8 +478,10 @@ test_that("add_catch() warns when catch totals diverge from interview-level catc
     catch_type = "caught",
     stringsAsFactors = FALSE
   )
-  expect_message(
-    add_catch(
+  # A mismatch in the data is worth a look (tier 2), so it is a warning, not a
+  # tier-3 note (decision on GH #496), and the design records it.
+  expect_warning(
+    out <- add_catch(
       d,
       diverged,
       catch_uid = interview_id,
@@ -488,8 +490,11 @@ test_that("add_catch() warns when catch totals diverge from interview-level catc
       count = count,
       catch_type = catch_type # nolint: object_usage_linter
     ),
-    regexp = "diverge"
+    regexp = "diverge",
+    class = "creel_warning_catch_totals_diverge"
   )
+  w <- get_warnings(out)
+  expect_identical(w$tier[w$class == "creel_warning_catch_totals_diverge"], 2L)
 })
 
 # An unknown count is not a zero one (CATCH-07, GH #324) ----
