@@ -17,7 +17,7 @@ A data frame with one row per warning, in the order raised:
 message \verb{creel_message_<fact>}.}
 \item{tier}{1, 2 or 3, as above.}
 \item{fn}{The function that raised it.}
-\item{message}{The warning text, without formatting.}
+\item{message}{The text of the warning or message, without formatting.}
 }
 Zero rows when nothing was raised.
 }

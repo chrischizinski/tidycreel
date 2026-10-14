@@ -405,7 +405,7 @@ record_design_warnings <- function(design) {
 #'       message `creel_message_<fact>`.}
 #'     \item{tier}{1, 2 or 3, as above.}
 #'     \item{fn}{The function that raised it.}
-#'     \item{message}{The warning text, without formatting.}
+#'     \item{message}{The text of the warning or message, without formatting.}
 #'   }
 #'   Zero rows when nothing was raised.
 #'

@@ -8,7 +8,9 @@
   of zero-catch trips, zero counts, catch-table totals that differ from the
   interview column, and `as_creel_svydesign()`'s note. Each has a class
   `creel_message_<fact>` and the parent `creel_message`, and is still
-  recorded, with tier 3, where `get_warnings()` lists it. Code that caught
+  recorded, with tier 3, on the design or estimate the call returns, where
+  `get_warnings()` lists it. `as_creel_svydesign()` returns a survey object,
+  which keeps no record. Code that caught
   one with `expect_warning()`, `tryCatch(warning = )` or
   `suppressWarnings()` now needs `expect_message()`, `tryCatch(message = )`
   or `suppressMessages()`. These 13 classes were named `creel_warning_*` only

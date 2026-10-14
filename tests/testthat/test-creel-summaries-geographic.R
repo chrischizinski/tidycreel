@@ -414,5 +414,6 @@ test_that("summarize_boat_composition() is silent for a single-stratum design", 
   s <- make_boat_composition_schema()
 
   # Inertness control — the documented single-stratum workflow must not warn.
-  expect_no_warning(summarize_boat_composition(d, s))
+  # A message since GH #496, so a no-warning check would pass regardless.
+  expect_no_message(summarize_boat_composition(d, s), class = "creel_message_day_type_from_stratum")
 })
