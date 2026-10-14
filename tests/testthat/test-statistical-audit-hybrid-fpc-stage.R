@@ -90,8 +90,23 @@ fpc_design <- function(access_fraction = c(weekday = 0.5, weekend = 0.5),
   )
 }
 
+# The population each stratum's correction is taken against. Read from the
+# recorded `.pop_days` rather than `design$fpc`: since #505 the correction is
+# applied only when every frame covers the whole day, but the population it
+# would use has to be right either way.
 popsizes <- function(design) {
-  tapply(design$fpc$popsize, as.character(design$strata[, 1]), unique)
+  vars <- design$variables
+  tapply(vars$.pop_days, as.character(vars$.hybrid_stratum), unique)
+}
+
+# Every frame covers the whole of each sampled day, so the correction applies
+# (#505); the tests below that inspect the applied correction use it.
+whole_day_design <- function(...) {
+  fpc_design(
+    access_fraction = c(weekday = 1, weekend = 1),
+    roving_fraction = c(weekday = 1, weekend = 1),
+    ...
+  )
 }
 
 # Consequence 1: the fpc runs against the calendar, not the within-day fraction
@@ -127,7 +142,7 @@ test_that("HYBFPC-03: the calendar does move the population, one day for one day
 test_that("HYBFPC-04: the fpc is a fraction of days and never leaves (0, 1]", {
   # Pre-fix nothing bounded it: n_h / (n_h / f) is f, so it was in range by
   # accident, for a quantity that was not a day fraction at all.
-  design <- fpc_design()
+  design <- whole_day_design()
   vars <- design$variables
   sampled <- design$fpc$sampsize[, 1]
   popsize <- design$fpc$popsize[, 1]
@@ -192,30 +207,29 @@ test_that("HYBFPC-09: halving a within-day fraction doubles that component's con
 # The correction is real, and it is the only thing fpc = FALSE removes
 
 test_that("HYBFPC-10: fpc = FALSE leaves the total alone and raises the SE", {
-  with_fpc <- survey::svytotal(~count, fpc_design())
-  without <- survey::svytotal(~count, fpc_design(fpc = FALSE))
+  with_fpc <- survey::svytotal(~count, whole_day_design())
+  without <- survey::svytotal(~count, whole_day_design(fpc = FALSE))
   expect_equal(unname(coef(with_fpc)), unname(coef(without)))
   expect_lt(unname(survey::SE(with_fpc)), unname(survey::SE(without)))
 })
 
-test_that("HYBFPC-11: a fully sampled calendar is a census and carries no stage-1 variance", {
-  # The metamorphic end point. When every day in the stratum was sampled the
-  # fpc is 1 and the between-day term vanishes. Pre-fix this was unreachable:
-  # the population was the sample over a within-day fraction, so it could only
-  # equal the sample when that fraction was exactly 1, which is a statement
-  # about access points and not about the calendar.
-  census <- fpc_design(calendar = fpc_calendar(n_weekday = 2L, n_weekend = 2L))
+test_that("HYBFPC-11: a fully sampled calendar is a census only when each day was covered whole", {
+  # The metamorphic end point. When every day in the stratum was sampled and
+  # every frame covered the whole of each day, nothing was left to chance: the
+  # correction is 1 and the SE is 0.
+  census <- whole_day_design(calendar = fpc_calendar(n_weekday = 2L, n_weekend = 2L))
   expect_true(all(census$fpc$sampsize[, 1] == census$fpc$popsize[, 1]))
   total <- survey::svytotal(~count, census)
   expect_equal(as.numeric(survey::SE(total)), 0)
-  # and with every day enumerated the total is just the within-day expansion
-  acc <- fpc_access()
-  rov <- fpc_roving()
-  expect_equal(
-    unname(coef(total)),
-    sum(acc$count / c(weekday = 0.5, weekend = 0.5)[acc$day_type]) +
-      sum(rov$count / c(weekday = 0.4, weekend = 0.4)[rov$day_type])
-  )
+  # and with every day enumerated in full the total is the counts themselves
+  expect_equal(unname(coef(total)), sum(fpc_access()$count) + sum(fpc_roving()$count))
+
+  # With part of each day covered, the same fully sampled calendar is not a
+  # census: which part was covered is still chance. Until #505 the correction
+  # was applied here too and this SE was 0.
+  partial <- fpc_design(calendar = fpc_calendar(n_weekday = 2L, n_weekend = 2L))
+  expect_null(partial$fpc$popsize)
+  expect_gt(as.numeric(survey::SE(survey::svytotal(~count, partial))), 0)
 })
 
 # The preconditions the day expansion needs

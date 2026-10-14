@@ -38,6 +38,22 @@ wrap_survey_call <- function(expr) {
           class = "creel_error_single_psu"
         )
       }
+      # svyby() words the same condition without naming the stratum. Since
+      # #505 it is reached by a census stratum of one day with one count, which
+      # the correction used to report with an SE of 0.
+      if (grepl("contains only one PSU at stage", msg, fixed = TRUE)) {
+        cli::cli_abort(
+          c(
+            "A stratum has only 1 PSU \u2014 variance cannot be estimated.",
+            "x" = "A stratum must have at least 2 PSUs (e.g., 2 sampled days) \\
+              for variance estimation, unless every sampled day has two or more \\
+              counts and the stratum was fully sampled.",
+            "i" = "Increase the sampling rate, count more than once a day, or \\
+              combine sparse strata before estimation."
+          ),
+          class = "creel_error_single_psu"
+        )
+      }
       stop(e)
     }
   )
@@ -523,7 +539,12 @@ print.creel_estimates <- function(x, ...) {
 #'   use the same weighted expansion engine; the distinction is semantic and is
 #'   recorded on the returned object as \code{effort_target}. Expanded targets
 #'   are currently limited to the standard count-design path and are not yet
-#'   supported for bus-route, ice, aerial, or sectioned designs.
+#'   supported for bus-route, ice, aerial, or sectioned designs. On an expanded
+#'   target a stratum's between-day variance takes the finite-population
+#'   correction only when every sampled day in it has two or more counts: with
+#'   one count per day the correction would also remove the variation from when
+#'   in the day the count fell, which nothing then restores, so it is left out
+#'   and the variance is conservative (GH #505).
 #' @param verbose Logical. If TRUE, prints an informational message identifying
 #'   which estimator path was used. Default FALSE for transparent dispatch.
 #' @param aggregate_sections Logical. If TRUE (default), a \code{.lake_total}
@@ -5521,6 +5542,24 @@ get_effort_target_design <- function(design, target) {
 
   expanded_counts$.expansion_weight <- expanded_counts$.N_avail / expanded_counts$.n_sampled
 
+  # The finite-population correction is taken only where the within-day
+  # variance is estimated (GH #505). A day's estimate varies for two reasons:
+  # which day was drawn, and when in the day its counts fell. The FPC shrinks
+  # the between-day term for the first, but that term also carries the second,
+  # which sampling more days does not remove; with every day sampled the FPC is
+  # 0 and the SE was reported as 0. The within-day term puts the second back
+  # (Cochran 1977, ch. 10) -- but only for a day with two or more counts. A
+  # stratum with any one-count day therefore gets no FPC (the conservative
+  # with-replacement variance, Cochran eq. 10.42); a population too large
+  # to correct is how `survey` reads "no correction" for one stratum.
+  identified <- within_day_identified_strata(design, counts_data, strata_cols)
+  stratum_key <- group_key(expanded_counts, strata_cols) # nolint: object_usage_linter
+  expanded_counts$.fpc_days <- ifelse(
+    identified[stratum_key],
+    expanded_counts$.N_avail,
+    no_fpc_population
+  )
+
   # Say when a day carries more than one row, because the expansion is then
   # summing those rows into a day before expanding, and the reader should know
   # that is the quantity being expanded rather than a per-row one.
@@ -5546,10 +5585,44 @@ get_effort_target_design <- function(design, target) {
     ids = stats::reformulate(design$psu_col),
     strata = key$strata,
     weights = ~.expansion_weight,
-    fpc = ~.N_avail,
+    fpc = ~.fpc_days,
     data = key$data,
     nest = TRUE
   )
+}
+
+# The population size that means "no finite-population correction" for one
+# stratum (GH #505). Not `Inf`: survey's jackknife takes (N - n) / N, which is
+# NaN at Inf. At 1e300, n / N is exactly 0 in double precision. The bootstrap
+# cannot take it at all -- it builds a pseudo-population of N units -- so
+# get_variance_design() leaves these strata out of the bootstrap's fpc.
+no_fpc_population <- 1e300
+
+#' Strata whose sampled days all carry a within-day variance estimate
+#'
+#' Internal (GH #505). A day's within-day variance is estimated only when it was
+#' counted at least twice: `add_counts()` records `k_d` per sampling unit in
+#' `design$within_day_var`, and a unit absent from that table was counted once.
+#' A stratum qualifies only when every one of its count rows has `k_d >= 2`.
+#'
+#' @param design A creel_design with counts attached.
+#' @param counts_data The design's count rows.
+#' @param strata_cols Character vector of strata columns.
+#' @return Named logical, one element per stratum, named by `group_key()`.
+#' @keywords internal
+#' @noRd
+within_day_identified_strata <- function(design, counts_data, strata_cols) {
+  stratum_key <- group_key(counts_data, strata_cols) # nolint: object_usage_linter
+  wdv <- design$within_day_var
+  if (is.null(wdv)) {
+    k_d <- rep(1L, nrow(counts_data))
+  } else {
+    key_cols <- within_day_key_cols(wdv) # nolint: object_usage_linter
+    row_key <- group_key(counts_data, key_cols) # nolint: object_usage_linter
+    k_d <- wdv$k_d[match(row_key, group_key(wdv, key_cols))] # nolint: object_usage_linter
+    k_d[is.na(k_d)] <- 1L
+  }
+  vapply(split(k_d >= 2L, stratum_key), all, logical(1))
 }
 
 #' The lake total's within-day SE when the sections share their count times

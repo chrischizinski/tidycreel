@@ -235,16 +235,25 @@ test_that("#421: section IDs typed differently in calendar and counts are one se
 
 test_that("#421: the hinted month-as-stratum design reproduces a fully sampled split exactly", {
   # The refusal points at strata = c(day_type, month). With every Labor Day
-  # day sampled each piece is a census: August 100 + 90, September 50, no
-  # between-day error. This only holds with multi-column strata stratifying by
-  # the cells (#422).
+  # day sampled each piece is a census of days: August 100 + 90, September 50,
+  # no between-day error. This only holds with multi-column strata stratifying
+  # by the cells (#422).
+  #
+  # Each day carries two counts (a day's effort -/+ 5, mean unchanged). With one
+  # count per day the census would still leave the within-day error unknown, so
+  # no correction applies and the one-day September cell has no variance at all
+  # (#505); two counts estimate it, and the between-day term is then exactly 0.
   cal <- uc_calendar()
   d <- suppressMessages(creel_design(cal, date = date, strata = c(day_type, month))) # nolint: object_usage_linter
   base <- uc_design(c("2025-08-30", "2025-08-31", "2025-09-01"))
-  d <- suppressWarnings(suppressMessages(add_counts(d, base$counts)))
+  two <- rbind(base$counts, base$counts)
+  two$count_time <- rep(c("am", "pm"), each = nrow(base$counts))
+  two$effort_hours <- two$effort_hours + rep(c(-5, 5), each = nrow(base$counts))
+  d <- suppressWarnings(suppressMessages(add_counts(d, two, count_time_col = count_time)))
   r <- as.data.frame(uc_effort(d, by = c(day_type, month), target = "period_total")$estimates)
   ld <- r[r$day_type == "labor_day", ]
   expect_equal(ld$estimate[ld$month == "08"], 190)
   expect_equal(ld$estimate[ld$month == "09"], 50)
-  expect_equal(ld$se, c(0, 0))
+  expect_equal(ld$se_between, c(0, 0))
+  expect_true(all(ld$se_within > 0))
 })

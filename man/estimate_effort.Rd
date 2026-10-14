@@ -46,7 +46,12 @@ stratified count designs, \code{"stratum_total"} and \code{"period_total"}
 use the same weighted expansion engine; the distinction is semantic and is
 recorded on the returned object as \code{effort_target}. Expanded targets
 are currently limited to the standard count-design path and are not yet
-supported for bus-route, ice, aerial, or sectioned designs.}
+supported for bus-route, ice, aerial, or sectioned designs. On an expanded
+target a stratum's between-day variance takes the finite-population
+correction only when every sampled day in it has two or more counts: with
+one count per day the correction would also remove the variation from when
+in the day the count fell, which nothing then restores, so it is left out
+and the variance is conservative (GH #505).}
 
 \item{verbose}{Logical. If TRUE, prints an informational message identifying
 which estimator path was used. Default FALSE for transparent dispatch.}

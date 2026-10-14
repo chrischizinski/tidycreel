@@ -2,6 +2,29 @@
 
 ## Breaking changes
 
+* Effort standard errors on `target = "stratum_total"` or `"period_total"`
+  were too small whenever a sampled day had a single count (#505). The
+  finite-population correction (1 - n/N) removed, along with the day-to-day
+  uncertainty, the uncertainty from when in the day each count fell, which
+  sampling more days does not remove; with every day of a stratum sampled the
+  SE was exactly 0. A stratum now takes the correction only when every sampled
+  day in it has two or more counts, where the within-day term restores that
+  part (Cochran 1977, ch. 10); otherwise its variance is the conservative
+  with-replacement one. Point estimates are unchanged. On the season example
+  the effort SE rises from 1,079 to 1,286 angler-hours, and every total built
+  on effort (catch, harvest, release) inherits the change. Taylor, jackknife
+  and bootstrap all follow the rule; the bootstrap draws corrected and
+  uncorrected strata separately. Progressive counts (one circuit a day) take
+  no correction. One consequence: a stratum of a single day, sampled and
+  counted once, used to report an SE of 0 as a "census"; its variance cannot
+  be estimated, and it is now refused (`creel_error_single_psu`), as any
+  one-day stratum already was on the default target.
+* `as_hybrid_svydesign()` now applies its day-level correction by default only
+  when every frame covers the whole of each sampled day (every `fraction` is
+  1), for the same reason (#505). With partial coverage it is left out, and an
+  explicit `fpc = TRUE` is refused with class
+  `creel_error_hybrid_fpc_partial_day`.
+
 * Information that is not a warning (tier 3 in `?creel_warnings`) is now a
   message (#496): an argument with no effect, an estimator choice such as
   the mean-of-ratios note, the day type taken from a stratum, a high share

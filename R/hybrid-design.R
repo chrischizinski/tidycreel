@@ -127,9 +127,13 @@
 #'   verify this from the data; see the "Disjointness precondition" section
 #'   above.
 #' @param fpc Logical scalar.  Apply the day-level finite-population correction
-#'   \eqn{n_h / N_h}?  Default `TRUE`.  Set to `FALSE` for the conservative
-#'   with-replacement variance.  `NA` and vectors of length other than one are
-#'   refused.
+#'   \eqn{n_h / N_h}?  By default it is applied only when every frame covers the
+#'   whole of each sampled day (every `fraction` is 1), and otherwise left out:
+#'   with part of a day sampled, the correction would also remove the
+#'   within-day variation, and the standard error would be too small (GH #505).
+#'   `fpc = TRUE` given explicitly with partial coverage is refused.  Set to
+#'   `FALSE` for the conservative with-replacement variance in every case.  `NA`
+#'   and vectors of length other than one are refused.
 #'
 #' @return A `survey::svydesign` object with an additional class attribute
 #'   `"creel_hybrid_svydesign"`.  The design data carries the `frame_col`
@@ -418,6 +422,7 @@ as_hybrid_svydesign <- function(
   if (!is.logical(fpc) || length(fpc) != 1L || is.na(fpc)) {
     cli::cli_abort("{.arg fpc} must be {.code TRUE} or {.code FALSE}.")
   }
+  fpc_requested <- !missing(fpc) && fpc
   if (!trips_disjoint) {
     cli::cli_abort(c(
       "{.arg trips_disjoint} is {.code FALSE}, so the frames may not be summed.",
@@ -659,7 +664,31 @@ as_hybrid_svydesign <- function(
   strata_formula <- stats::as.formula("~.hybrid_stratum")
   weights_formula <- stats::as.formula("~weight")
 
-  if (fpc) {
+  # The day-level correction is right only where nothing was sampled within
+  # the day (GH #505). A frame covering part of a day contributes count /
+  # fraction, which varies with which part was covered; sampling more days does
+  # not remove that, but the correction would, and there is no within-day term
+  # to put it back. So the correction needs every frame to cover the whole day.
+  # By default it is then applied and otherwise left out (the conservative
+  # with-replacement variance); asked for explicitly with partial coverage, it
+  # is refused rather than quietly dropped.
+  whole_day <- all(within_day == 1)
+  if (fpc_requested && !whole_day) {
+    cli::cli_abort(
+      c(
+        "{.code fpc = TRUE} needs every frame to cover the whole of each sampled day.",
+        "x" = "Some frame-stratum {.arg fraction} values are below 1.",
+        "i" = paste(
+          "Part of each day was sampled, so a day's value varies with which part",
+          "was covered. The finite-population correction would remove that",
+          "variation too, and the standard error would be too small."
+        ),
+        "i" = "Leave {.arg fpc} at its default, or set {.code fpc = FALSE}."
+      ),
+      class = "creel_error_hybrid_fpc_partial_day"
+    )
+  }
+  if (fpc && whole_day) {
     design <- survey::svydesign(
       ids = ids_formula,
       strata = strata_formula,

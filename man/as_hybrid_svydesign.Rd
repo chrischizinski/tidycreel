@@ -75,9 +75,13 @@ verify this from the data; see the "Disjointness precondition" section
 above.}
 
 \item{fpc}{Logical scalar.  Apply the day-level finite-population correction
-\eqn{n_h / N_h}?  Default \code{TRUE}.  Set to \code{FALSE} for the conservative
-with-replacement variance.  \code{NA} and vectors of length other than one are
-refused.}
+\eqn{n_h / N_h}?  By default it is applied only when every frame covers the
+whole of each sampled day (every \code{fraction} is 1), and otherwise left out:
+with part of a day sampled, the correction would also remove the
+within-day variation, and the standard error would be too small (GH #505).
+\code{fpc = TRUE} given explicitly with partial coverage is refused.  Set to
+\code{FALSE} for the conservative with-replacement variance in every case.  \code{NA}
+and vectors of length other than one are refused.}
 }
 \value{
 A \code{survey::svydesign} object with an additional class attribute
