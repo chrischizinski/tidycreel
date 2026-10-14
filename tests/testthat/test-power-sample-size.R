@@ -171,7 +171,7 @@ test_that("creel_power errors on n < 1", {
 })
 
 test_that("creel_power warns when delta_pct > 5", {
-  expect_warning(
+  expect_message(
     creel_power(n = 100, cv_historical = 0.5, delta_pct = 6),
     regexp = "delta_pct > 5"
   )

@@ -2246,10 +2246,9 @@ test_that("bus-route incomplete HPUE warns when truncation is disabled (GH #108)
   # Disabling truncation is allowed but the reported SE then understates the
   # true sampling variability, which the user has to be told.
   d <- make_br_incomplete()
-  expect_warning(
-    suppressMessages(
-      estimate_harvest_rate(d, use_trips = "incomplete", truncate_at = NULL)
-    ),
+  # A note since GH #496; suppressMessages() would swallow it.
+  expect_message(
+    estimate_harvest_rate(d, use_trips = "incomplete", truncate_at = NULL),
     "infinite asymptotic variance"
   )
 })

@@ -13,10 +13,11 @@ get_warnings(x)
 A data frame with one row per warning, in the order raised:
 \describe{
 \item{id}{Position in the session's sequence of tidycreel warnings.}
-\item{class}{The warning's own class, \verb{creel_warning_<fact>}.}
+\item{class}{Its own class: \verb{creel_warning_<fact>}, or for a tier-3
+message \verb{creel_message_<fact>}.}
 \item{tier}{1, 2 or 3, as above.}
 \item{fn}{The function that raised it.}
-\item{message}{The warning text, without formatting.}
+\item{message}{The text of the warning or message, without formatting.}
 }
 Zero rows when nothing was raised.
 }
@@ -35,7 +36,8 @@ Each warning has a tier, as listed in \link{creel_warnings}:
 sections or cells left out of a total, an SE that ignores the design.}
 \item{2}{Data quality or precision: small samples, exclusions, short
 trips, thin cells.}
-\item{3}{Information: an argument with no effect, an estimator choice.}
+\item{3}{Information: an argument with no effect, an estimator choice.
+Raised as a message, not a warning, and recorded all the same.}
 }
 
 A warning is recorded even when the caller handles or muffles it. A

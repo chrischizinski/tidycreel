@@ -405,7 +405,7 @@ test_that("estimate_effort warns when count data has zero values", {
   counts$effort_hours[1] <- 0
   design2 <- add_counts(design, counts) # nolint: object_usage_linter
 
-  expect_warning(
+  expect_message(
     estimate_effort(design2), # nolint: object_usage_linter
     "zero"
   )
@@ -429,9 +429,10 @@ test_that("the zero-value screen skips the party-size carriers but still screens
   warns <- character(0)
   withCallingHandlers(
     invisible(estimate_effort(design)), # nolint: object_usage_linter
-    warning = function(w) {
+    # The zero-value note is a message since GH #496.
+    message = function(w) {
       warns <<- c(warns, conditionMessage(w))
-      invokeRestart("muffleWarning")
+      invokeRestart("muffleMessage")
     }
   )
   zero_warns <- grep("zero value", warns, value = TRUE)

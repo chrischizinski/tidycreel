@@ -788,13 +788,13 @@ br_incomplete_harvest_rate <- function(
       ))
     }
   } else {
-    creel_warn(c(
+    creel_inform(c(
       "{.arg truncate_at = NULL} disables short-trip truncation.",
       "x" = "The mean-of-ratios estimator has infinite asymptotic variance \\
              without it (Hoenig et al. 1997).",
       "i" = "The reported SE understates the true sampling variability."
     ),
-    class = c("creel_warning_truncation_disabled", "creel_warning")
+    class = c("creel_message_truncation_disabled", "creel_message")
     )
   }
 

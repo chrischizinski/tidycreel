@@ -231,7 +231,7 @@ test_that("SPECIES-TARGETED-04: targeted=TRUE warns on a species that is mostly 
   design <- make_species_targeted_design()
   # Never fired before #304: total catch was non-zero on all 50 trips, so the
   # rate it measured was 0%, not bass's 76%.
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, by = species, estimator = "mor", targeted = TRUE),
     regexp = "bass.*76% of trips caught none of this species"
   )
@@ -239,12 +239,15 @@ test_that("SPECIES-TARGETED-04: targeted=TRUE warns on a species that is mostly 
 
 test_that("SPECIES-TARGETED-05: no mis-specification warning for a species with no zeros", {
   design <- make_species_targeted_design()
+  # The note is a message since GH #496; listening only for warnings would
+  # let a false alarm through.
   warns <- character(0)
   withCallingHandlers(
     estimate_catch_rate(design, by = species, estimator = "mor", targeted = TRUE),
-    warning = function(w) {
-      warns <<- c(warns, conditionMessage(w))
-      invokeRestart("muffleWarning")
+    warning = function(w) invokeRestart("muffleWarning"),
+    message = function(m) {
+      warns <<- c(warns, conditionMessage(m))
+      invokeRestart("muffleMessage")
     }
   )
   # panfish is caught on every trip; warning it would be a false alarm.
@@ -373,7 +376,7 @@ test_that("SPECIES-TARGETED-11: mortr behaves as mor on the species path", {
   expect_equal(res_mortr$estimates$n, res_mor$estimates$n)
 
   # ... and the mis-specification warning reaches mortr too.
-  expect_warning(
+  expect_message(
     estimate_catch_rate(design, by = species, estimator = "mortr", targeted = TRUE),
     regexp = "bass.*76% of trips caught none of this species"
   )

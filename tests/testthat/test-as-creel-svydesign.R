@@ -107,9 +107,10 @@ test_that("as_creel_svydesign warning names the function it redirects users to",
   seen <- character()
   withCallingHandlers(
     as_creel_svydesign(design), # nolint: object_usage_linter
-    warning = function(e) {
+    # A note (tier 3), raised as a message since GH #496.
+    message = function(e) {
       seen <<- c(seen, conditionMessage(e))
-      invokeRestart("muffleWarning")
+      invokeRestart("muffleMessage")
     }
   )
 

@@ -270,7 +270,7 @@ summarize_refusals <- function(design) {
 #' header with no warning (GH #221).
 #'
 #' Resolution order: an explicit `day_type_col`; then a stratum actually named
-#' `day_type`; then the first stratum, which warns when there is more than one
+#' `day_type`; then the first stratum, with a message when there is more than one
 #' so the assumption is visible at the point of use. A single-stratum design
 #' resolves silently, because there is nothing to choose between -- unless the
 #' inferred column's every value is confined to one month of the year and at
@@ -307,7 +307,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
   } else {
     col <- strata[1L]
     if (length(strata) > 1L) {
-      creel_warn(c(
+      creel_inform(c(
         "Using stratum {.field {col}} as the day type.",
         "x" = paste(
           "The design declares {length(strata)} strata",
@@ -315,7 +315,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
         ),
         "i" = "Pass {.arg day_type_col} to name the day type column."
       ), call = call,
-      class = c("creel_warning_day_type_from_stratum", "creel_warning")
+      class = c("creel_message_day_type_from_stratum", "creel_message")
       )
     }
   }
@@ -378,7 +378,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
 #' Counts the number of interviews in each day type stratum (e.g., weekday,
 #' weekend) within each calendar month. The day type column is resolved from
 #' the design's strata: a stratum named \code{day_type} when the design
-#' declares one, otherwise the first stratum column, which warns when the
+#' declares one, otherwise the first stratum column, with a message when the
 #' design declares more than one. Pass \code{day_type_col} to state the
 #' column outright. An inferred column whose values each occur in a single
 #' month of the year (a composite stratum such as \code{"04_weekday"}) is
@@ -2204,7 +2204,7 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 #' \code{mean(angler_boats / (angler_boats + non_ang_boats))} per group. The
 #' day type column is resolved from the design's strata: a stratum named
 #' \code{day_type} when the design declares one, otherwise the first stratum
-#' column, which warns when the design declares more than one. An inferred
+#' column, with a message when the design declares more than one. An inferred
 #' column whose values each fall in one month of the year (a composite stratum
 #' such as \code{"04_weekday"}) is refused when at least two months each hold
 #' two or more of its values; pass \code{day_type_col} to name the day type.

@@ -623,11 +623,11 @@ test_that("summarize_by_day_type() warns and names the column when it must guess
 
   # Neither stratum is named day_type. Falling back is defensible; doing it
   # silently is not, because the output is indistinguishable from a real one.
-  expect_warning(
+  expect_message(
     summarize_by_day_type(d),
     "Using stratum.*site.*as the day type"
   )
-  expect_warning(summarize_by_day_type(d), "none is named")
+  expect_message(summarize_by_day_type(d), "none is named")
 })
 
 test_that("summarize_by_day_type() still uses the first stratum when it guesses", {
@@ -644,7 +644,8 @@ test_that("summarize_by_day_type() is silent for a single-stratum design", {
 
   # Inertness control: with one stratum there is nothing to choose between, so
   # the warning must not fire on the ordinary documented workflow.
-  expect_no_warning(summarize_by_day_type(d))
+  # A message since GH #496, so a no-warning check would pass regardless.
+  expect_no_message(summarize_by_day_type(d), class = "creel_message_day_type_from_stratum")
 })
 
 test_that("summarize_by_day_type() rejects a day_type_col that is not one column name", {

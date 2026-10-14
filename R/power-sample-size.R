@@ -460,7 +460,7 @@ creel_n_camera <- function(cv_target, N_h, ybar_h, s2_h) {
 #' where `delta` is the fractional effect size (`delta_pct`), `n` is the number
 #' of interviews per season, and `CV_historical` is the pilot CV of CPUE.
 #'
-#' A warning is issued when `delta_pct > 5` because values greater than 5 are
+#' A message is given when `delta_pct > 5` because values greater than 5 are
 #' almost certainly input in percentage-point form rather than fractional form
 #' (e.g., 20 instead of 0.20).
 #'
@@ -493,9 +493,9 @@ creel_power <- function(
   alternative <- match.arg(alternative)
 
   if (delta_pct > 5) {
-    creel_warn(
+    creel_inform(
       "delta_pct > 5 is unusually large; did you mean {delta_pct / 100}?",
-      class = c("creel_warning_large_delta_pct", "creel_warning")
+      class = c("creel_message_large_delta_pct", "creel_message")
     )
   }
 

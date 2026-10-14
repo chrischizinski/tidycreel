@@ -17,16 +17,21 @@ roving_design <- function(n_anglers = TRUE) {
   suppressMessages(do.call(add_interviews, args))
 }
 
-# The creel_warning classes a call raises, with the value it returned.
+# The creel_warning and creel_message classes a call raises, with the value
+# it returned. Tier-3 notes are messages (GH #496) and are recorded too.
 raised <- function(expr) {
   seen <- character()
   value <- withCallingHandlers(
-    suppressMessages(expr),
+    expr,
     creel_warning = function(w) {
       seen <<- c(seen, grep("^creel_warning_", class(w), value = TRUE)[1])
       invokeRestart("muffleWarning")
+    },
+    creel_message = function(m) {
+      seen <<- c(seen, grep("^creel_message_", class(m), value = TRUE)[1])
+      invokeRestart("muffleMessage")
     }
-  )
+  ) |> suppressMessages()
   list(value = value, classes = seen)
 }
 
@@ -319,7 +324,7 @@ test_that("as_creel_svydesign() does not point at a record it does not keep", {
   # It returns a survey object, not a design or estimate: get_warnings() has
   # nothing to read, so the note must not send the reader there.
   w <- tryCatch(as_creel_svydesign(counts_design()),
-    creel_warning_internal_svydesign = function(w) w
+    creel_message_internal_svydesign = function(w) w
   )
   expect_false(grepl("get_warnings", conditionMessage(w), fixed = TRUE))
 })

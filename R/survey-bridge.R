@@ -8,7 +8,7 @@
 #' for workflows not yet wrapped by tidycreel. Most users should use
 #' [estimate_effort()] instead.
 #'
-#' The function warns, once per design, that this is an advanced feature with
+#' The function notes, once per design, that this is an advanced feature with
 #' risks if the returned object is modified incorrectly.
 #'
 #' @param design A creel_design object with counts attached via \code{\link{add_counts}}
@@ -17,8 +17,9 @@
 #'   copy-on-modify semantics, modifications to the returned object will not
 #'   affect the internal design$survey object.
 #'
-#' @section Warning:
-#' This function warns, once per design (see [creel_warnings]), explaining:
+#' @section Note:
+#' This function gives a message, once per design (see [creel_warnings]),
+#' explaining:
 #' \itemize{
 #'   \item This is an advanced feature for power users
 #'   \item Most users should use \code{estimate_effort()} instead
@@ -73,13 +74,13 @@ as_creel_svydesign <- function(design) {
   # Prints once per design (GH #496).
   # cli_warn(), not rlang::warn(): the latter does not evaluate cli markup, so
   # the {.fn} field printed literally to the user.
-  creel_warn(
+  creel_inform(
     c(
       "Accessing internal survey design object.",
       "i" = "This is an advanced feature. Most users should use {.fn estimate_effort} instead.",
       "!" = "Modifying the survey design may produce incorrect variance estimates."
     ),
-    class = c("creel_warning_internal_svydesign", "creel_warning")
+    class = c("creel_message_internal_svydesign", "creel_message")
   )
 
   # Return design$survey
@@ -1242,8 +1243,8 @@ warn_missing_period_length <- function(design) {
 #' Validate data quality (Tier 2)
 #'
 #' Internal function that checks for data quality issues in a creel_design with
-#' attached counts. Issues warnings (not errors) for zero/negative count values
-#' and sparse strata (< 3 observations). These are Tier 2 checks - data quality
+#' attached counts. Notes zero count values (a message) and warns on negative
+#' values and sparse strata (< 3 observations). These are Tier 2 checks - data quality
 #' issues that should be investigated but don't prevent estimation.
 #'
 #' @param design A creel_design object with counts attached
@@ -1273,12 +1274,12 @@ warn_tier2_issues <- function(design) {
     # check below, since a negative derivative is still an error.
     n_zero <- if (count_var %in% expansion_carrier_cols()) 0L else sum(values == 0, na.rm = TRUE) # nolint: object_usage_linter
     if (n_zero > 0) {
-      creel_warn(c(
+      creel_inform(c(
         "Count variable {.field {count_var}} contains {n_zero} zero value{?s}.",
         "i" = "Zero values may indicate days with no fishing activity or data collection issues.",
         "i" = "Consider whether zeros are true zeros or missing data."
       ),
-      class = c("creel_warning_zero_counts", "creel_warning")
+      class = c("creel_message_zero_counts", "creel_message")
       )
     }
 
@@ -1849,9 +1850,9 @@ validate_mor_availability <- function(design) {
   invisible(TRUE)
 }
 
-#' Issue warning about MOR estimator assumptions
+#' Note the MOR estimator's assumptions
 #'
-#' Every MOR estimation call warns user about incomplete trip assumptions
+#' Every MOR estimation call tells the user, as a message, about incomplete trip assumptions
 #' and complete trip preference per CONTEXT.md locked decisions.
 #'
 #' @param n_incomplete Number of incomplete trips
@@ -1860,13 +1861,13 @@ validate_mor_availability <- function(design) {
 #' @keywords internal
 #' @noRd
 mor_estimation_warning <- function(n_incomplete, n_total) {
-  creel_warn(c(
+  creel_inform(c(
     "!" = "MOR estimator for incomplete trips. Complete trips preferred.",
     "i" = "Using MOR with n={n_incomplete} incomplete of {n_total} total interviews.",
     "i" = "Incomplete trips may have length-of-stay bias (Pollock et al.).",
     "i" = "Validate incomplete estimates with {.fn validate_incomplete_trips} (Phase 19)."
   ),
-  class = c("creel_warning_mor_incomplete_trips", "creel_warning")
+  class = c("creel_message_mor_incomplete_trips", "creel_message")
   )
 }
 

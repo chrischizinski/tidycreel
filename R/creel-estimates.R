@@ -1638,7 +1638,7 @@ estimate_catch_rate <- function(
     # Non-standard case: use_trips='complete' + estimator='mor'
     # Warn but allow (valid but unusual choice)
     if (use_trips_was_complete) {
-      creel_warn(c(
+      creel_inform(c(
         "Non-standard combination: use_trips='complete' with estimator='mor'",
         "i" = "MOR typically used with incomplete trips",
         "i" = paste(
@@ -1646,7 +1646,7 @@ estimate_catch_rate <- function(
           "consider {.code estimator = 'ratio-of-means'} for standard complete trip estimation"
         )
       ),
-      class = c("creel_warning_nonstandard_estimator", "creel_warning")
+      class = c("creel_message_nonstandard_estimator", "creel_message")
       )
     } else if (!use_trips_was_all) {
       # Standard MOR usage (incomplete or no-status) - validate incomplete trips available
@@ -1729,7 +1729,7 @@ estimate_catch_rate <- function(
         )
         high_zero_rate <- n_total_trips > 0 && (n_zero_catch / n_total_trips) > 0.70
         if (high_zero_rate) {
-          creel_warn(c(
+          creel_inform(c(
             paste0(
               round(100 * n_zero_catch / n_total_trips),
               "% of trips have zero catch."
@@ -1740,7 +1740,7 @@ estimate_catch_rate <- function(
               "before MOR estimation."
             )
           ),
-          class = c("creel_warning_high_zero_catch", "creel_warning")
+          class = c("creel_message_high_zero_catch", "creel_message")
           )
         }
       }
@@ -2377,11 +2377,11 @@ estimate_harvest_rate <- function(
   has_trip_status <- !is.null(design$trip_status_col)
 
   if (!has_trip_status && use_trips == "complete") {
-    creel_warn(c(
+    creel_inform(c(
       "{.arg use_trips} = 'complete' has no effect: no trip_status column available.",
       "i" = "Provide {.arg trip_status} in {.fn add_interviews} to enable trip filtering."
     ),
-    class = c("creel_warning_argument_ignored", "creel_warning")
+    class = c("creel_message_argument_ignored", "creel_message")
     )
   }
 
@@ -2857,11 +2857,11 @@ estimate_release_rate <- function(
   has_trip_status <- !is.null(design$trip_status_col)
 
   if (!has_trip_status && use_trips == "complete") {
-    creel_warn(c(
+    creel_inform(c(
       "{.arg use_trips} = 'complete' has no effect: no trip_status column available.",
       "i" = "Provide {.arg trip_status} in {.fn add_interviews} to enable trip filtering."
     ),
-    class = c("creel_warning_argument_ignored", "creel_warning")
+    class = c("creel_message_argument_ignored", "creel_message")
     )
   }
 
@@ -3440,12 +3440,12 @@ apply_mor_truncation <- function(interviews, duration_col, truncate_at) {
   n_total <- nrow(interviews)
   if (is.null(truncate_at) || is.null(duration_col)) {
     if (!is.null(truncate_at)) {
-      creel_warn(c(
+      creel_inform(c(
         "MOR truncation skipped: no trip duration column in design.",
         "i" = "Supply {.arg trip_duration} in {.fn add_interviews} to enable truncation.",
         "i" = "All {n_total} trip{?s} used without truncation."
       ),
-      class = c("creel_warning_truncation_skipped", "creel_warning")
+      class = c("creel_message_truncation_skipped", "creel_message")
       )
     }
     return(list(interviews = interviews, n_truncated = 0L, applied = FALSE))
@@ -5141,14 +5141,14 @@ within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, 
   }
 
   if (n_unpaired > 0L) {
-    cli::cli_inform(
+    creel_inform(
       c(
         "i" = "Within-day variance: on {n_unpaired} day{?s} the {.field {extra_cols}} \\
                units were not counted at the same known occasions, so they cannot be \\
                paired.",
         "i" = "Their within-day components are added as independent on those days."
       ),
-      class = "creel_message_within_day_independent"
+      class = c("creel_message_within_day_independent", "creel_message")
     )
   }
   if (n_unpaired == length(days)) {
@@ -7304,7 +7304,7 @@ apply_species_targeted_filter <- function(
     n_zero <- sum(is_zero, na.rm = TRUE)
     if (n_total_trips > 0L && (n_zero / n_total_trips) > 0.70) {
       pct_zero <- round(100 * n_zero / n_total_trips) # nolint: object_usage_linter
-      creel_warn(c(
+      creel_inform(c(
         "{.val {sp}}: {pct_zero}% of trips {verb} none of this species.",
         "i" = paste(
           "For a non-targeted species, consider",
@@ -7312,7 +7312,7 @@ apply_species_targeted_filter <- function(
           "that {verb} it."
         )
       ),
-      class = c("creel_warning_high_zero_catch", "creel_warning")
+      class = c("creel_message_high_zero_catch", "creel_message")
       )
     }
   }

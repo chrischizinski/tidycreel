@@ -102,12 +102,42 @@ creel_warning_tier_of <- function(cls) {
 #' @keywords internal
 #' @noRd
 creel_warn <- function(message, ..., .envir = parent.frame()) {
+  # Named here, not in creel_signal(): the frame count is only right in the
+  # function the caller called.
   fn <- raising_fn_name(sys.nframe() - 1L)
+  creel_signal(cli::cli_warn, "creel_warning", "muffleWarning", fn, message, ..., .envir = .envir)
+}
+
+#' Raise a tidycreel note (tier 3) as a message and record it
+#'
+#' Takes exactly the arguments of [cli::cli_inform()]. Information is not a
+#' warning (GH #496): an argument with no effect, an estimator choice, a fact
+#' worth knowing. It is recorded like a warning, with tier 3.
+#'
+#' @keywords internal
+#' @noRd
+creel_inform <- function(message, ..., .envir = parent.frame()) {
+  # Named here, not in creel_signal(): the frame count is only right in the
+  # function the caller called.
+  fn <- raising_fn_name(sys.nframe() - 1L)
+  creel_signal(cli::cli_inform, "creel_message", "muffleMessage", fn, message, ..., .envir = .envir)
+}
+
+#' Raise, record, and drop repeats: shared by creel_warn() and creel_inform()
+#'
+#' @param raise `cli::cli_warn` or `cli::cli_inform`.
+#' @param parent The parent class of the condition, `"creel_warning"` or
+#'   `"creel_message"`.
+#' @param restart The restart that silences it.
+#' @param fn Name of the function that raised it.
+#' @keywords internal
+#' @noRd
+creel_signal <- function(raise, parent, restart, fn, message, ..., .envir) {
   cls <- list(...)[["class"]]
   # as_creel_svydesign() returns a survey object, which keeps no record, so
   # pointing its reader at get_warnings() would be false.
   footer <- any(cls %in% creel_warning_once_per_design) &&
-    !"creel_warning_internal_svydesign" %in% cls
+    !"creel_message_internal_svydesign" %in% cls
   if (footer) {
     # Without this a reader cannot know a repeat was recorded, not printed.
     message <- c(message, "i" = paste(
@@ -116,13 +146,16 @@ creel_warn <- function(message, ..., .envir = parent.frame()) {
     ))
   }
   withCallingHandlers(
-    cli::cli_warn(message, ..., .envir = .envir),
-    creel_warning = function(w) {
+    raise(message, ..., .envir = .envir),
+    condition = function(cnd) {
+      if (!inherits(cnd, parent)) {
+        return()
+      }
       # Decided before recording: the per-call check looks for an earlier
       # record of the same class, and this one must not count.
-      quiet <- is_repeat_warning(w)
-      record_creel_warning(w, fn)
-      if (quiet) invokeRestart("muffleWarning")
+      quiet <- is_repeat_warning(cnd)
+      record_creel_warning(cnd, fn)
+      if (quiet) invokeRestart(restart)
     }
   )
 }
@@ -146,7 +179,7 @@ new_warning_id <- function() {
 #' @keywords internal
 #' @noRd
 is_repeat_warning <- function(w) {
-  own <- grep("^creel_warning_", class(w), value = TRUE)
+  own <- grep("^creel_(warning|message)_", class(w), value = TRUE)
   if (!length(own) || !own[[1]] %in% creel_warning_once_per_design) {
     return(FALSE)
   }
@@ -253,7 +286,7 @@ record_creel_warning <- function(w, fn) {
   prune_warning_log()
   creel_warning_log$seq <- creel_warning_log$seq + 1L
   cls <- class(w)
-  own <- grep("^creel_warning_", cls, value = TRUE)
+  own <- grep("^creel_(warning|message)_", cls, value = TRUE)
   creel_warning_log$records[[length(creel_warning_log$records) + 1L]] <- list(
     key = rlang::new_weakref(key),
     # Set once the record is on a design, so a call that runs several add_*()
@@ -351,7 +384,8 @@ record_design_warnings <- function(design) {
 #'     sections or cells left out of a total, an SE that ignores the design.}
 #'   \item{2}{Data quality or precision: small samples, exclusions, short
 #'     trips, thin cells.}
-#'   \item{3}{Information: an argument with no effect, an estimator choice.}
+#'   \item{3}{Information: an argument with no effect, an estimator choice.
+#'     Raised as a message, not a warning, and recorded all the same.}
 #' }
 #'
 #' A warning is recorded even when the caller handles or muffles it. A
@@ -367,10 +401,11 @@ record_design_warnings <- function(design) {
 #' @return A data frame with one row per warning, in the order raised:
 #'   \describe{
 #'     \item{id}{Position in the session's sequence of tidycreel warnings.}
-#'     \item{class}{The warning's own class, `creel_warning_<fact>`.}
+#'     \item{class}{Its own class: `creel_warning_<fact>`, or for a tier-3
+#'       message `creel_message_<fact>`.}
 #'     \item{tier}{1, 2 or 3, as above.}
 #'     \item{fn}{The function that raised it.}
-#'     \item{message}{The warning text, without formatting.}
+#'     \item{message}{The text of the warning or message, without formatting.}
 #'   }
 #'   Zero rows when nothing was raised.
 #'
