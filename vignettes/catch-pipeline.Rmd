@@ -214,9 +214,9 @@ data.frame(
 )
 ```
 
-In both strata the rate part is the larger: about four times the effort part
-on weekdays, and half as much again on weekends. This says where the
-uncertainty comes from. It
+In both strata the rate part is the larger: about two and a half times the
+effort part on weekdays, and only slightly larger on weekends. This says where
+the uncertainty comes from. It
 does not by itself say whether to collect more counts or more interviews:
 that also depends on what each costs, and on the fact that more sampled days
 improve both.

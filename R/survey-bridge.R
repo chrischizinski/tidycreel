@@ -148,6 +148,9 @@ get_variance_design <- function(design, variance_method) {
   if (variance_method == "taylor") {
     design
   } else if (variance_method == "bootstrap") {
+    if (has_uncorrected_strata(design)) {
+      return(bootstrap_mixed_fpc(design, replicates = 500))
+    }
     suppressWarnings(
       survey::as.svrepdesign(design, type = "bootstrap", replicates = 500)
     )
@@ -192,6 +195,69 @@ get_variance_design <- function(design, variance_method) {
       }
     )
   }
+}
+
+#' Does a design leave some strata without a finite-population correction?
+#'
+#' Internal (GH #505). get_effort_target_design() marks such a stratum with the
+#' population `no_fpc_population`.
+#'
+#' @keywords internal
+#' @noRd
+has_uncorrected_strata <- function(design) {
+  pop <- design$fpc$popsize
+  !is.null(pop) && any(pop[, 1] >= no_fpc_population) # nolint: object_usage_linter
+}
+
+#' Bootstrap replicates when only some strata take the FPC
+#'
+#' Internal (GH #505). survey's Canty-Davison bootstrap resamples a stratum
+#' either with a finite population (`fpc` given) or without one (`fpc = NULL`),
+#' but takes one choice for the whole design, and a population of
+#' `no_fpc_population` units cannot be built. Strata are resampled
+#' independently, so the two groups are drawn separately -- each with
+#' `survey::bootweights()`, exactly as `as.svrepdesign()` would draw it -- and
+#' their weights put back in row order. The scale is the one `bootweights()`
+#' computes, taken over all strata together.
+#'
+#' @param design A `survey.design2` from get_effort_target_design().
+#' @param replicates Number of bootstrap replicates.
+#' @return A `svyrep.design`.
+#' @keywords internal
+#' @noRd
+bootstrap_mixed_fpc <- function(design, replicates) {
+  strata <- design$strata[, 1]
+  psu <- design$cluster[, 1]
+  pop <- design$fpc$popsize[, 1]
+  corrected <- pop < no_fpc_population # nolint: object_usage_linter
+
+  repweights <- matrix(NA_real_, nrow = length(psu), ncol = replicates)
+  for (with_fpc in c(TRUE, FALSE)) {
+    rows <- which(corrected == with_fpc)
+    if (length(rows) == 0L) {
+      next
+    }
+    r <- survey::bootweights(
+      strata[rows], psu[rows],
+      replicates = replicates,
+      fpc = if (with_fpc) pop[rows] else NULL,
+      fpctype = "population",
+      compress = FALSE
+    )
+    repweights[rows, ] <- as.matrix(r$repweights)
+  }
+
+  ustrata <- strata[!duplicated(psu)]
+  psu_per_stratum <- 1 / mean(1 / table(ustrata))
+  survey::svrepdesign(
+    variables = design$variables,
+    repweights = repweights,
+    weights = 1 / design$prob,
+    type = "bootstrap",
+    scale = psu_per_stratum / ((psu_per_stratum - 1) * (replicates - 1)),
+    rscales = rep(1, replicates),
+    combined.weights = FALSE
+  )
 }
 
 #' One stratum key for survey::svydesign()

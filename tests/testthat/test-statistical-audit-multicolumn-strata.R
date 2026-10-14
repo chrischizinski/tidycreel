@@ -61,20 +61,22 @@ test_that("#422: an expanded effort total on two strata columns takes its SE ove
   d <- mcs_design()
   r <- suppressWarnings(estimate_effort(d, target = "period_total"))$estimates
 
-  # Reference: the same weights and FPC on an explicit cell stratum.
+  # Reference: the same weights and FPC on an explicit cell stratum. The FPC
+  # population is the design's own: one count per day, so no correction (#505).
   td <- get_effort_target_design(d, "period_total") # nolint: object_usage_linter
   ref_data <- td$variables
   ref_data$.cell <- paste(ref_data$day_type, ref_data$month)
   ref <- survey::svydesign(
     ids = ~date, strata = ~.cell, weights = ~.expansion_weight,
-    fpc = ~.N_avail, data = ref_data, nest = TRUE
+    fpc = ~.fpc_days, data = ref_data, nest = TRUE
   )
   ref_total <- survey::svytotal(~effort_hours, ref)
 
   expect_equal(r$estimate, as.numeric(coef(ref_total)))
   expect_equal(r$se, as.numeric(survey::SE(ref_total)), tolerance = 1e-8)
-  # The day_type-only stratification gave 147.7; the cells give 187.9.
-  expect_equal(r$se, 187.851, tolerance = 1e-4)
+  # The day_type-only stratification gives 206.8; the cells give 215.7.
+  # (147.7 and 187.9 before #505, when the FPC was applied to one-count days.)
+  expect_equal(r$se, 215.6757, tolerance = 1e-4)
 })
 
 test_that("#422: the sampled-day effort total on two strata columns is unchanged", {

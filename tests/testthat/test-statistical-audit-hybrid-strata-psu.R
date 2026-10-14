@@ -87,23 +87,31 @@ hy_counts <- function(access = hy_access(), roving = hy_roving()) {
 
 hy_fraction <- list(access = fr_access, roving = fr_roving)
 
-hy_design <- function(..., repeat_count = FALSE) {
+hy_design <- function(..., repeat_count = FALSE, fraction = hy_fraction) {
   as_hybrid_svydesign(
     hy_counts(access = hy_access(repeat_count = repeat_count)),
     frame_col = "component",
     calendar = hy_calendar(),
-    fraction = hy_fraction,
+    fraction = fraction,
     trips_disjoint = TRUE,
     ...
   )
 }
+
+# Every frame covers the whole of each sampled day. Since #505 the day-level
+# correction is applied only then, so the seam 1 tests, which inspect the
+# applied correction, use it.
+hy_whole_day <- list(
+  access = c(weekday = 1, weekend = 1),
+  roving = c(weekday = 1, weekend = 1)
+)
 
 # Seam 1: each component carries its own population size ----------------------
 
 test_that("HYBAUD-01: constructing with fpc does not warn that fpc varies within strata", {
   # Pre-fix this emitted `fpc' varies within strata: stratum weekday at stage 1
   # from survey::as.fpc(), uncaught and undocumented.
-  expect_no_warning(hy_design())
+  expect_no_warning(hy_design(fraction = hy_whole_day))
 })
 
 test_that("HYBAUD-02: strata are the stratum-by-component interaction, not the stratum alone", {
@@ -118,7 +126,7 @@ test_that("HYBAUD-02: strata are the stratum-by-component interaction, not the s
 })
 
 test_that("HYBAUD-03: every stratum carries exactly one population size", {
-  design <- hy_design()
+  design <- hy_design(fraction = hy_whole_day)
   by_stratum <- split(design$fpc$popsize, as.character(design$strata[, 1]))
   n_distinct <- vapply(by_stratum, function(x) length(unique(x)), integer(1))
   # Pre-fix weekday held 10 AND 12.5 simultaneously: one stratum, two frames.
@@ -129,7 +137,7 @@ test_that("HYBAUD-03: every stratum carries exactly one population size", {
 })
 
 test_that("HYBAUD-04: each stratum's population is its calendar days, not a fraction of its sample", {
-  design <- hy_design()
+  design <- hy_design(fraction = hy_whole_day)
   pop <- tapply(design$fpc$popsize, as.character(design$strata[, 1]), unique)
   cal <- hy_calendar()
   n_cal <- function(stratum) {
@@ -149,14 +157,14 @@ test_that("HYBAUD-04b: both components agree on how many days the stratum holds"
   # The consequence #246 named second: access and roving derived their
   # population from their own within-day fraction, so weekday was 4 days to one
   # component and 5 to the other, in the same survey.
-  design <- hy_design()
+  design <- hy_design(fraction = hy_whole_day)
   pop <- tapply(design$fpc$popsize, as.character(design$strata[, 1]), unique)
   expect_equal(unname(pop[["weekday.access"]]), unname(pop[["weekday.roving"]]))
   expect_equal(unname(pop[["weekend.access"]]), unname(pop[["weekend.roving"]]))
 })
 
 test_that("HYBAUD-04c: the fpc is a fraction of days and stays in range", {
-  design <- hy_design()
+  design <- hy_design(fraction = hy_whole_day)
   strata <- as.character(design$strata[, 1])
   frac <- design$fpc$sampsize[, 1] / design$fpc$popsize[, 1]
   expect_true(all(frac > 0 & frac <= 1))

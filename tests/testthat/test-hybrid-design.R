@@ -328,6 +328,55 @@ test_that("HYBR-18: fpc = FALSE produces a valid design", {
   expect_s3_class(design, "creel_hybrid_svydesign")
 })
 
+# fpc and within-day coverage (GH #505) ---------------------------------------
+#
+# A frame covering part of a day contributes count / fraction, which varies
+# with which part was covered. The day-level correction would remove that
+# variation too, and the hybrid design has no within-day term to restore it.
+
+hybrid_with <- function(frac, ...) {
+  as_hybrid_svydesign(
+    make_counts(),
+    frame_col = "component",
+    calendar = make_calendar(),
+    fraction = frac,
+    trips_disjoint = TRUE,
+    ...
+  )
+}
+whole_day <- list(
+  access = c(weekday = 1, weekend = 1),
+  roving = c(weekday = 1, weekend = 1)
+)
+
+test_that("HYBR-33: by default, partial-day coverage gets no fpc", {
+  # Before #505 the default applied the correction whatever the coverage.
+  design <- hybrid_with(fractions)
+  expect_null(design$fpc$popsize)
+  expect_equal(
+    survey::SE(survey::svytotal(~count, design)),
+    survey::SE(survey::svytotal(~count, hybrid_with(fractions, fpc = FALSE)))
+  )
+})
+
+test_that("HYBR-34: by default, whole-day coverage keeps the fpc", {
+  # Nothing was sampled within the day, so the correction is right and must
+  # still shrink the variance.
+  design <- hybrid_with(whole_day)
+  expect_false(is.null(design$fpc$popsize))
+  expect_lt(
+    as.numeric(survey::SE(survey::svytotal(~count, design))),
+    as.numeric(survey::SE(survey::svytotal(~count, hybrid_with(whole_day, fpc = FALSE))))
+  )
+})
+
+test_that("HYBR-35: fpc = TRUE with partial-day coverage is refused, not dropped", {
+  # The caller asked for a correction the design cannot support; building
+  # without it silently would ignore the argument.
+  expect_error(hybrid_with(fractions, fpc = TRUE), class = "creel_error_hybrid_fpc_partial_day")
+  expect_no_error(hybrid_with(whole_day, fpc = TRUE))
+})
+
 # Custom column names ---------------------------------------------------------
 
 test_that("HYBR-19: custom column names work", {
@@ -472,13 +521,13 @@ test_that("HYBR-25: a non-scalar or missing fpc is refused", {
     )
   }
 
-  # The two valid values still build.
+  # The two valid values still build. TRUE needs whole-day coverage (#505).
   for (good in c(TRUE, FALSE)) {
     design <- as_hybrid_svydesign(
       make_counts(),
       frame_col = "component",
       calendar = make_calendar(),
-      fraction = fractions,
+      fraction = whole_day,
       trips_disjoint = TRUE,
       fpc = good
     )
