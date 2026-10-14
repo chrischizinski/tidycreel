@@ -280,7 +280,6 @@ articles:
   - interview-estimation
   - mark-recapture
   - incomplete-trips
-  - flexible-count-estimation
   - progressive-count-surveys
   - section-estimation
   - temporal-extrapolation
@@ -295,10 +294,11 @@ articles:
   - survey-design-toolbox
   - visualisation
 
-- title: "Statistical Methods"
-  navbar: "Statistical Methods"
+- title: "Explanation"
+  navbar: "Explanation"
   desc: >
-    Conceptual walkthroughs of the statistical mechanics behind effort and catch estimation pipelines.
+    Why the estimates are built the way they are: effort and its two-stage
+    variance, catch rates and totals, and the variance methods.
   contents:
   - effort-pipeline
   - catch-pipeline
@@ -326,3 +326,7 @@ articles:
 news:
   one_page: true
   cran_dates: false
+
+# Pages merged or moved by the #480 restructure keep their old address.
+redirects:
+  - ["articles/flexible-count-estimation.html", "articles/effort-pipeline.html"]
