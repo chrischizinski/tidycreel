@@ -58,7 +58,6 @@
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
@@ -69,9 +68,9 @@
     <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
     <li><a class="dropdown-item" href="../articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
-    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: Statistical Pipeline</a></li>
-    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: Statistical Pipeline</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Explanation</h6></li>
+    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: How the Estimate and its Error Are Built</a></li>
+    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: How the Rate and the Total Are Built</a></li>
     <li><a class="dropdown-item" href="../articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
@@ -239,12 +238,14 @@ stratum’s mean daily effort is multiplied by the number of days in that
 stratum, then the strata are added. For a season total, ask for
 <code>target = "period_total"</code>.</p>
 <p>The standard error comes from the day-to-day variation among the
-sampled days within each stratum. With one count per day there is no
-separate within-day term: the error in each day’s single count is
-already part of the variation between days, so <code>se_within</code> is
-0 by construction, not because activity was steady through the day. It
-becomes non-zero when a day has several counts
-(<code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>).</p>
+sampled days within each stratum. With one count per day the within-day
+variation (when in the day each count happened to fall) cannot be
+estimated separately, so <code>se_within</code> is 0 as a placeholder,
+not because activity was steady through the day. It becomes non-zero
+when a day has several counts. With one count per day the standard error
+is also somewhat too small when a large share of the days was sampled,
+as here (#505); <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains
+why.</p>
 <p>Estimates can be broken down by any column in the design with
 <code>by</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">

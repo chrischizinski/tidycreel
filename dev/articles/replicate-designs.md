@@ -1,173 +1,156 @@
 # Variance Methods: Taylor, Bootstrap, and Jackknife
 
-tidycreel exposes three variance estimation methods through the
-`variance` argument of
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
-[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
-and related functions:
-
-| `variance =` | Description | Requires |
-|----|----|----|
-| `"taylor"` | Taylor linearization (default) | ≥ 2 PSUs per stratum recommended |
-| `"bootstrap"` | Bootstrap resampling (500 replicates) | ≥ 2 PSUs per stratum |
-| `"jackknife"` | Delete-one jackknife | ≥ 2 PSUs per stratum |
+Every estimator in tidycreel takes a `variance` argument with three
+choices: `"taylor"` (the default), `"bootstrap"` and `"jackknife"`. This
+page explains what the three have in common, how each one works, and
+when they can disagree.
 
 ``` r
 
 library(tidycreel)
 ```
 
-------------------------------------------------------------------------
+## What all three estimate
 
-## 1 Building a design for the examples
+All three estimate the same thing: how much the estimate would vary if a
+different set of days had been sampled under the same design. That is a
+**design-based** variance. None of the three assumes the counts or the
+catch follow any particular distribution; they differ only in how they
+compute it.
 
-All three methods work on the same `creel_design` object. Here we use
-the bundled `example_counts` and `example_interviews` datasets, which
-have 10 sampled weekdays and 4 sampled weekends.
+- **Taylor linearization** uses formulas. For a total these are the
+  between-day and within-day terms of
+  [`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md);
+  for a rate or a product of estimates, the estimate is approximated by
+  a linear function of totals (a first-order Taylor series) and the
+  variance of that is computed.
+- **Jackknife** drops one sampled day from a stratum, re-computes the
+  estimate, puts the day back, and repeats for every sampled day. The
+  variance comes from how much the re-computed estimates spread.
+  tidycreel uses the stratified delete-one jackknife (JKn) from the
+  survey package.
+- **Bootstrap** draws sampled days with replacement within each stratum,
+  500 times, re-computing the estimate each time, using Canty and
+  Davison’s (1999) bootstrap from the survey package. It is random, so
+  set a seed for a reproducible standard error.
+
+All three resample or vary **days**, the primary sampling unit, never
+single counts or interviews.
+
+## Same season, three methods
+
+The season from
+[`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md):
+120 days, 36 of them sampled, 28 weekdays and 8 weekend days.
 
 ``` r
 
-data("example_counts")
-data("example_interviews")
-
-cal <- unique(example_counts[, c("date", "day_type")])
-design <- creel_design(cal, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
-design <- add_interviews(
-  design, example_interviews,
+design <- creel_design(example_season_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_season_counts,
+  count_col = total_anglers,
+  period_length_col = daylight_hours
+)
+design <- add_interviews(design, example_season_interviews,
   catch = catch_total,
   effort = hours_fished,
-  trip_status = trip_status
+  trip_status = trip_status,
+  n_anglers = n_anglers
 )
-#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 ```
-
-------------------------------------------------------------------------
-
-## 2 Comparing the three variance methods
-
-Pass `variance = "..."` to any estimator. The point estimate is
-identical across methods; only the SE and CI change.
 
 ``` r
 
-eff_taylor <- estimate_effort(design, variance = "taylor")
-eff_bootstrap <- estimate_effort(design, variance = "bootstrap")
-eff_jackknife <- estimate_effort(design, variance = "jackknife")
-
-# Summarise all three for comparison
-rbind(
-  as.data.frame(summary(eff_taylor)),
-  as.data.frame(summary(eff_bootstrap)),
-  as.data.frame(summary(eff_jackknife))
+set.seed(2031)
+methods <- c("taylor", "bootstrap", "jackknife")
+data.frame(
+  variance = methods,
+  effort_se = sapply(methods, function(v) {
+    estimate_effort(design, target = "period_total", variance = v)$estimates$se
+  }),
+  rate_se = sapply(methods, function(v) {
+    estimate_catch_rate(design, variance = v)$estimates$se
+  }),
+  total_catch_se = sapply(methods, function(v) {
+    estimate_total_catch(design, target = "period_total", variance = v)$estimates$se
+  }),
+  row.names = NULL
 )
-#>   Estimate    SE CI Lower CI Upper  N
-#> 1    372.5 13.18    343.8    401.2 14
-#> 2    372.5 13.20    343.7    401.3 14
-#> 3    372.5 13.18    343.8    401.2 14
+#>    variance effort_se    rate_se total_catch_se
+#> 1    taylor  1078.580 0.04148304       482.4044
+#> 2 bootstrap  1050.756 0.04183849       490.0571
+#> 3 jackknife  1078.580 0.04155117       483.8294
 ```
 
-With 10–14 PSUs per stratum the three methods produce very similar
-standard errors. This convergence is expected: bootstrap and jackknife
-are asymptotically equivalent to Taylor linearization for simple
-probability samples.
+The point estimates are identical; only the standard errors change, and
+here by no more than a few percent. For effort, a total, the jackknife
+reproduces the Taylor value exactly. The bootstrap differs a little, and
+would differ a little again with another seed.
 
-------------------------------------------------------------------------
+## When they can disagree
 
-## 3 When to use each method
+Taylor linearization for a rate or a product rests on a first-order
+approximation. Wolter (2007, chapter 6) reports that with enough sampled
+units it is usually reliable, but that it may not be for highly skewed
+populations, and catch data often are: most parties catch nothing and a
+few catch many. When the three methods disagree noticeably on your data,
+treat that as a finding: the standard error is less certain than any one
+of them suggests.
 
-### Taylor linearization (`"taylor"`, default)
+There is no rule that one method is always better. Taylor is the default
+because it is fast and deterministic; the replicate methods are a check
+on it.
 
-- Use Taylor linearization when between-day variability dominates within
-  strata and the design is a straightforward stratified random sample of
-  days. It is fast, uses a closed-form variance formula, and introduces
-  no additional randomness. It relies on large-sample approximations,
-  however, so it can be less reliable for highly skewed counts or very
-  small strata.
+## One sampled day in a stratum
 
-### Bootstrap (`"bootstrap"`)
-
-- Bootstrap is useful for highly skewed count distributions or complex
-  designs, and when you want variance estimates that do not depend on a
-  distributional assumption. It captures nonlinear variance propagation,
-  but is stochastic: set a seed for reproducibility. It is also slower
-  (500 replicates by default) and requires at least two PSUs per
-  stratum.
-
-### Jackknife (`"jackknife"`)
-
-- Choose the jackknife when you prefer a deterministic delete-one
-  estimate that is slightly more conservative than Taylor for small
-  samples. It is often more stable than bootstrap with few PSUs, but
-  still needs at least two PSUs per stratum. For unequal inclusion
-  probabilities, use the appropriate jackknife weights.
-
-------------------------------------------------------------------------
-
-## 4 Grouped estimates
-
-All three methods work with the `by` argument.
+With one sampled day in a stratum there is no day-to-day variation to
+measure, so no method can estimate that stratum’s variance. All three
+refuse:
 
 ``` r
 
-eff_grp_taylor <- estimate_effort(design, by = day_type, variance = "taylor")
-eff_grp_bootstrap <- estimate_effort(design, by = day_type, variance = "bootstrap")
-
-rbind(
-  cbind(method = "taylor", as.data.frame(summary(eff_grp_taylor))),
-  cbind(method = "bootstrap", as.data.frame(summary(eff_grp_bootstrap)))
+one_day <- creel_design(
+  data.frame(
+    date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type = c("weekday", "weekday", "weekend")
+  ),
+  date = date, strata = day_type
 )
-#>      method day_type Estimate     SE CI Lower CI Upper  N
-#> 1    taylor  weekday    170.6  9.674    149.5    191.7 10
-#> 2    taylor  weekend    201.9  8.946    182.4    221.4  4
-#> 3 bootstrap  weekday    170.6 10.230    148.3    192.9 10
-#> 4 bootstrap  weekend    201.9  8.604    183.2    220.6  4
-```
-
-------------------------------------------------------------------------
-
-## 5 Single-PSU diagnostic
-
-All three variance methods require at least **2 PSUs (sampled days) per
-stratum**. When a stratum has only 1 sampled day, tidycreel raises a
-structured error naming the stratum:
-
-``` r
-
-# Build a minimal design with 1 sampled day per stratum
-dates_1psu <- c(as.Date("2024-06-03"), as.Date("2024-06-08"))
-cal_1psu <- data.frame(date = dates_1psu, day_type = c("weekday", "weekend"))
-d_1psu <- creel_design(cal_1psu, date = date, strata = day_type)
-counts_1psu <- data.frame(
-  date     = dates_1psu,
-  day_type = c("weekday", "weekend"),
-  count    = c(10L, 15L)
+one_day <- add_counts(one_day,
+  data.frame(
+    date      = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type  = c("weekday", "weekday", "weekend"),
+    n_anglers = c(10L, 14L, 15L),
+    hours     = 10
+  ),
+  period_length_col = hours
 )
-d_1psu <- add_counts(d_1psu, counts_1psu)
 
-# Taylor linearization raises an error when variance cannot be estimated
-estimate_effort(d_1psu, variance = "jackknife")
+estimate_effort(one_day, variance = "taylor")
+#> Warning: 2 strata have fewer than 3 observations:
+#> • Stratum weekday: 2 observations
+#> • Stratum weekend: 1 observation
+#> ! Sparse strata produce unstable variance estimates.
+#> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Error in `value[[3L]]()`:
-#> ! Stratum "weekday" has only 1 PSU — jackknife variance cannot be
-#>   estimated.
-#> ✖ A stratum must have at least 2 PSUs for jackknife resampling.
-#> ℹ Increase the sampling rate for stratum "weekday", or use `variance =
-#>   'taylor'`.
+#> ! Stratum "weekend" has only 1 PSU — variance cannot be estimated.
+#> ✖ A stratum must have at least 2 PSUs (e.g., 2 sampled days) for variance
+#>   estimation.
+#> ℹ Increase the sampling rate for stratum "weekend", or combine sparse strata
+#>   before estimation.
 ```
 
-The error message names the problematic stratum (`"weekday"`) and
-suggests either increasing the sampling rate or switching to
-`variance = "taylor"` which can still produce a point estimate via the
-lonely-PSU adjustment.
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+already warned, when the counts were attached, that both strata have
+fewer than three sampled days; the estimate is where the weekend’s
+single day becomes a refusal. The remedies are the ones the error gives:
+sample more days in that stratum, or merge it with a similar stratum
+before estimating. (The jackknife and bootstrap errors currently suggest
+switching to Taylor, which refuses the same design; that is \#503.)
 
-------------------------------------------------------------------------
+## References
 
-## 6 Summary
-
-| Method | Deterministic | Min PSUs | Speed | When to prefer |
-|:---|:---|:---|:---|:---|
-| taylor | Yes | 1 (with lonely-PSU adjust) | Fast | Default; simple designs |
-| bootstrap | No (stochastic) | 2 | Slow (500 replicates) | Skewed counts; complex designs |
-| jackknife | Yes | 2 | Moderate | Small samples; deterministic alternative to bootstrap |
-
-Variance method comparison {.table}
+- Canty, A. J., and Davison, A. C. (1999). Resampling-based variance
+  estimation for labour force surveys. *The Statistician*, 48, 379–391.
+- Wolter, K. M. (2007). *Introduction to Variance Estimation*, 2nd
+  edition. Springer, New York.

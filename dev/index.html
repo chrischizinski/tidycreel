@@ -61,7 +61,6 @@
     <li><a class="dropdown-item" href="articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
-    <li><a class="dropdown-item" href="articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
@@ -72,9 +71,9 @@
     <li><a class="dropdown-item" href="articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
     <li><a class="dropdown-item" href="articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
-    <li><a class="dropdown-item" href="articles/effort-pipeline.html">Counts to Effort: Statistical Pipeline</a></li>
-    <li><a class="dropdown-item" href="articles/catch-pipeline.html">Interviews to Catch: Statistical Pipeline</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Explanation</h6></li>
+    <li><a class="dropdown-item" href="articles/effort-pipeline.html">Counts to Effort: How the Estimate and its Error Are Built</a></li>
+    <li><a class="dropdown-item" href="articles/catch-pipeline.html">Interviews to Catch: How the Rate and the Total Are Built</a></li>
     <li><a class="dropdown-item" href="articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
@@ -471,10 +470,6 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <td>When and how to use mean-of-ratios and TOST validation</td>
 </tr>
 <tr>
-<td>Flexible Count Estimation (<code><a href="articles/flexible-count-estimation.html">vignette("flexible-count-estimation")</a></code>)</td>
-<td>Non-standard count configurations and custom time windows</td>
-</tr>
-<tr>
 <td>Progressive Count Surveys (<code><a href="articles/progressive-count-surveys.html">vignette("progressive-count-surveys")</a></code>)</td>
 <td>Rolling and progressive count workflows</td>
 </tr>
@@ -523,7 +518,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 </table>
 </div>
 <div class="section level3">
-<h3 id="statistical-methods">Statistical Methods<a class="anchor" aria-label="anchor" href="#statistical-methods"></a>
+<h3 id="explanation">Explanation<a class="anchor" aria-label="anchor" href="#explanation"></a>
 </h3>
 <table class="table">
 <colgroup>
@@ -536,16 +531,16 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 </tr></thead>
 <tbody>
 <tr>
-<td>Effort Pipeline (<code><a href="articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>)</td>
-<td>Statistical mechanics of the effort estimation pipeline</td>
+<td>Counts to Effort (<code><a href="articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>)</td>
+<td>How effort and its between-day and within-day variance are built; progressive counts</td>
 </tr>
 <tr>
-<td>Catch Pipeline (<code><a href="articles/catch-pipeline.html">vignette("catch-pipeline")</a></code>)</td>
-<td>Statistical mechanics of the catch estimation pipeline</td>
+<td>Interviews to Catch (<code><a href="articles/catch-pipeline.html">vignette("catch-pipeline")</a></code>)</td>
+<td>Why access and roving interviews get different rate estimators; totals and their variance</td>
 </tr>
 <tr>
-<td>Replicate Designs (<code><a href="articles/replicate-designs.html">vignette("replicate-designs")</a></code>)</td>
-<td>Variance workflows and replicate-design reasoning</td>
+<td>Variance Methods (<code><a href="articles/replicate-designs.html">vignette("replicate-designs")</a></code>)</td>
+<td>Taylor, bootstrap and jackknife: what they share and when they differ</td>
 </tr>
 <tr>
 <td>Bus-Route Equations (<code><a href="articles/bus-route-equations.html">vignette("bus-route-equations")</a></code>)</td>

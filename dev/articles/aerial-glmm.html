@@ -58,7 +58,6 @@
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
@@ -69,9 +68,9 @@
     <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
     <li><a class="dropdown-item" href="../articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
-    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: Statistical Pipeline</a></li>
-    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: Statistical Pipeline</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Explanation</h6></li>
+    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: How the Estimate and its Error Are Built</a></li>
+    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: How the Rate and the Total Are Built</a></li>
     <li><a class="dropdown-item" href="../articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
@@ -464,7 +463,7 @@ large.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   method estimate       target</span></span>
-<span><span class="co">#&gt; 1   GLMM 4728.546 sampled_days</span></span>
+<span><span class="co">#&gt; 1   GLMM 4728.545 sampled_days</span></span>
 <span><span class="co">#&gt; 2 Simple 5092.500 sampled_days</span></span></code></pre></div>
 <p>The <code>target</code> column is worth checking rather than
 assuming. Both estimators report <code>sampled_days</code>, so the two
@@ -560,11 +559,11 @@ understates it.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># SE of the summed total, from the joint covariance</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 581.6951</span></span>
+<span><span class="co">#&gt; [1] 581.6956</span></span>
 <span></span>
 <span><span class="co"># The quadrature sum, shown only to compare -- it understates the SE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 536.0893</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 536.0884</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="results-as-data">Results as Data<a class="anchor" aria-label="anchor" href="#results-as-data"></a>

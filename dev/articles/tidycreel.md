@@ -149,12 +149,15 @@ multiplied by the number of days in that stratum, then the strata are
 added. For a season total, ask for `target = "period_total"`.
 
 The standard error comes from the day-to-day variation among the sampled
-days within each stratum. With one count per day there is no separate
-within-day term: the error in each day’s single count is already part of
-the variation between days, so `se_within` is 0 by construction, not
-because activity was steady through the day. It becomes non-zero when a
-day has several counts
-([`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)).
+days within each stratum. With one count per day the within-day
+variation (when in the day each count happened to fall) cannot be
+estimated separately, so `se_within` is 0 as a placeholder, not because
+activity was steady through the day. It becomes non-zero when a day has
+several counts. With one count per day the standard error is also
+somewhat too small when a large share of the days was sampled, as here
+(#505);
+[`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)
+explains why.
 
 Estimates can be broken down by any column in the design with `by`:
 

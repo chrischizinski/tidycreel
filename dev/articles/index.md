@@ -40,8 +40,6 @@ spatially stratified estimation techniques.
   Estimation](https://chrischizinski.com/tidycreel/dev/articles/mark-recapture.md):
 - [Incomplete Trip
   Estimation](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md):
-- [Flexible Count
-  Estimation](https://chrischizinski.com/tidycreel/dev/articles/flexible-count-estimation.md):
 - [Progressive Count
   Surveys](https://chrischizinski.com/tidycreel/dev/articles/progressive-count-surveys.md):
 - [Spatially Stratified Estimation with
@@ -63,15 +61,15 @@ planning.
 - [Visualising Creel Survey Designs and
   Results](https://chrischizinski.com/tidycreel/dev/articles/visualisation.md):
 
-### Statistical Methods
+### Explanation
 
-Conceptual walkthroughs of the statistical mechanics behind effort and
-catch estimation pipelines.
+Why the estimates are built the way they are: effort and its two-stage
+variance, catch rates and totals, and the variance methods.
 
-- [Counts to Effort: Statistical
-  Pipeline](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md):
-- [Interviews to Catch: Statistical
-  Pipeline](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md):
+- [Counts to Effort: How the Estimate and its Error Are
+  Built](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md):
+- [Interviews to Catch: How the Rate and the Total Are
+  Built](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md):
 - [Variance Methods: Taylor, Bootstrap, and
   Jackknife](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md):
 

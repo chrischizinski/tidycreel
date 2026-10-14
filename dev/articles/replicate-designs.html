@@ -58,7 +58,6 @@
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
@@ -69,9 +68,9 @@
     <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
     <li><a class="dropdown-item" href="../articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
-    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: Statistical Pipeline</a></li>
-    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: Statistical Pipeline</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Explanation</h6></li>
+    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: How the Estimate and its Error Are Built</a></li>
+    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: How the Rate and the Total Are Built</a></li>
     <li><a class="dropdown-item" href="../articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
@@ -103,225 +102,154 @@
 
     
     
-<p>tidycreel exposes three variance estimation methods through the
-<code>variance</code> argument of <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>,
-<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>, and related functions:</p>
-<table class="table">
-<colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
-</colgroup>
-<thead><tr class="header">
-<th><code>variance =</code></th>
-<th>Description</th>
-<th>Requires</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>"taylor"</code></td>
-<td>Taylor linearization (default)</td>
-<td>≥ 2 PSUs per stratum recommended</td>
-</tr>
-<tr class="even">
-<td><code>"bootstrap"</code></td>
-<td>Bootstrap resampling (500 replicates)</td>
-<td>≥ 2 PSUs per stratum</td>
-</tr>
-<tr class="odd">
-<td><code>"jackknife"</code></td>
-<td>Delete-one jackknife</td>
-<td>≥ 2 PSUs per stratum</td>
-</tr>
-</tbody>
-</table>
+<p>Every estimator in tidycreel takes a <code>variance</code> argument
+with three choices: <code>"taylor"</code> (the default),
+<code>"bootstrap"</code> and <code>"jackknife"</code>. This page
+explains what the three have in common, how each one works, and when
+they can disagree.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span></code></pre></div>
-<hr>
 <div class="section level2">
-<h2 id="building-a-design-for-the-examples">1 Building a design for the examples<a class="anchor" aria-label="anchor" href="#building-a-design-for-the-examples"></a>
+<h2 id="what-all-three-estimate">What all three estimate<a class="anchor" aria-label="anchor" href="#what-all-three-estimate"></a>
 </h2>
-<p>All three methods work on the same <code>creel_design</code> object.
-Here we use the bundled <code>example_counts</code> and
-<code>example_interviews</code> datasets, which have 10 sampled weekdays
-and 4 sampled weekends.</p>
+<p>All three estimate the same thing: how much the estimate would vary
+if a different set of days had been sampled under the same design. That
+is a <strong>design-based</strong> variance. None of the three assumes
+the counts or the catch follow any particular distribution; they differ
+only in how they compute it.</p>
+<ul>
+<li>
+<strong>Taylor linearization</strong> uses formulas. For a total
+these are the between-day and within-day terms of
+<code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>; for a rate or a product of
+estimates, the estimate is approximated by a linear function of totals
+(a first-order Taylor series) and the variance of that is computed.</li>
+<li>
+<strong>Jackknife</strong> drops one sampled day from a stratum,
+re-computes the estimate, puts the day back, and repeats for every
+sampled day. The variance comes from how much the re-computed estimates
+spread. tidycreel uses the stratified delete-one jackknife (JKn) from
+the survey package.</li>
+<li>
+<strong>Bootstrap</strong> draws sampled days with replacement
+within each stratum, 500 times, re-computing the estimate each time,
+using Canty and Davison’s (1999) bootstrap from the survey package. It
+is random, so set a seed for a reproducible standard error.</li>
+</ul>
+<p>All three resample or vary <strong>days</strong>, the primary
+sampling unit, never single counts or interviews.</p>
+</div>
+<div class="section level2">
+<h2 id="same-season-three-methods">Same season, three methods<a class="anchor" aria-label="anchor" href="#same-season-three-methods"></a>
+</h2>
+<p>The season from <code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>: 120 days, 36 of
+them sampled, 28 weekdays and 8 weekend days.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_counts"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_interviews"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
-<span>  <span class="va">design</span>, <span class="va">example_interviews</span>,</span>
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_season_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_counts</span>,</span>
+<span>  count_col <span class="op">=</span> <span class="va">total_anglers</span>,</span>
+<span>  period_length_col <span class="op">=</span> <span class="va">daylight_hours</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_interviews</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>  effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
-<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="comparing-the-three-variance-methods">2 Comparing the three variance methods<a class="anchor" aria-label="anchor" href="#comparing-the-three-variance-methods"></a>
-</h2>
-<p>Pass <code>variance = "..."</code> to any estimator. The point
-estimate is identical across methods; only the SE and CI change.</p>
+<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">eff_taylor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"taylor"</span><span class="op">)</span></span>
-<span><span class="va">eff_bootstrap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
-<span><span class="va">eff_jackknife</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Summarise all three for comparison</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">eff_taylor</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">eff_bootstrap</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">eff_jackknife</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2031</span><span class="op">)</span></span>
+<span><span class="va">methods</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"taylor"</span>, <span class="st">"bootstrap"</span>, <span class="st">"jackknife"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  variance <span class="op">=</span> <span class="va">methods</span>,</span>
+<span>  effort_se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">methods</span>, <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span>, variance <span class="op">=</span> <span class="va">v</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span></span>
+<span>  <span class="op">}</span><span class="op">)</span>,</span>
+<span>  rate_se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">methods</span>, <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="va">v</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span></span>
+<span>  <span class="op">}</span><span class="op">)</span>,</span>
+<span>  total_catch_se <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">methods</span>, <span class="kw">function</span><span class="op">(</span><span class="va">v</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span>, variance <span class="op">=</span> <span class="va">v</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span></span>
+<span>  <span class="op">}</span><span class="op">)</span>,</span>
+<span>  row.names <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Estimate    SE CI Lower CI Upper  N</span></span>
-<span><span class="co">#&gt; 1    372.5 13.18    343.8    401.2 14</span></span>
-<span><span class="co">#&gt; 2    372.5 13.20    343.7    401.3 14</span></span>
-<span><span class="co">#&gt; 3    372.5 13.18    343.8    401.2 14</span></span></code></pre></div>
-<p>With 10–14 PSUs per stratum the three methods produce very similar
-standard errors. This convergence is expected: bootstrap and jackknife
-are asymptotically equivalent to Taylor linearization for simple
-probability samples.</p>
-<hr>
+<span><span class="co">#&gt;    variance effort_se    rate_se total_catch_se</span></span>
+<span><span class="co">#&gt; 1    taylor  1078.580 0.04148304       482.4044</span></span>
+<span><span class="co">#&gt; 2 bootstrap  1050.756 0.04183849       490.0571</span></span>
+<span><span class="co">#&gt; 3 jackknife  1078.580 0.04155117       483.8294</span></span></code></pre></div>
+<p>The point estimates are identical; only the standard errors change,
+and here by no more than a few percent. For effort, a total, the
+jackknife reproduces the Taylor value exactly. The bootstrap differs a
+little, and would differ a little again with another seed.</p>
 </div>
 <div class="section level2">
-<h2 id="when-to-use-each-method">3 When to use each method<a class="anchor" aria-label="anchor" href="#when-to-use-each-method"></a>
+<h2 id="when-they-can-disagree">When they can disagree<a class="anchor" aria-label="anchor" href="#when-they-can-disagree"></a>
 </h2>
-<div class="section level3">
-<h3 id="taylor-linearization-taylor-default">Taylor linearization (<code>"taylor"</code>, default)<a class="anchor" aria-label="anchor" href="#taylor-linearization-taylor-default"></a>
-</h3>
-<ul>
-<li>Use Taylor linearization when between-day variability dominates
-within strata and the design is a straightforward stratified random
-sample of days. It is fast, uses a closed-form variance formula, and
-introduces no additional randomness. It relies on large-sample
-approximations, however, so it can be less reliable for highly skewed
-counts or very small strata.</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="bootstrap-bootstrap">Bootstrap (<code>"bootstrap"</code>)<a class="anchor" aria-label="anchor" href="#bootstrap-bootstrap"></a>
-</h3>
-<ul>
-<li>Bootstrap is useful for highly skewed count distributions or complex
-designs, and when you want variance estimates that do not depend on a
-distributional assumption. It captures nonlinear variance propagation,
-but is stochastic: set a seed for reproducibility. It is also slower
-(500 replicates by default) and requires at least two PSUs per
-stratum.</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="jackknife-jackknife">Jackknife (<code>"jackknife"</code>)<a class="anchor" aria-label="anchor" href="#jackknife-jackknife"></a>
-</h3>
-<ul>
-<li>Choose the jackknife when you prefer a deterministic delete-one
-estimate that is slightly more conservative than Taylor for small
-samples. It is often more stable than bootstrap with few PSUs, but still
-needs at least two PSUs per stratum. For unequal inclusion
-probabilities, use the appropriate jackknife weights.</li>
-</ul>
-<hr>
-</div>
+<p>Taylor linearization for a rate or a product rests on a first-order
+approximation. Wolter (2007, chapter 6) reports that with enough sampled
+units it is usually reliable, but that it may not be for highly skewed
+populations, and catch data often are: most parties catch nothing and a
+few catch many. When the three methods disagree noticeably on your data,
+treat that as a finding: the standard error is less certain than any one
+of them suggests.</p>
+<p>There is no rule that one method is always better. Taylor is the
+default because it is fast and deterministic; the replicate methods are
+a check on it.</p>
 </div>
 <div class="section level2">
-<h2 id="grouped-estimates">4 Grouped estimates<a class="anchor" aria-label="anchor" href="#grouped-estimates"></a>
+<h2 id="one-sampled-day-in-a-stratum">One sampled day in a stratum<a class="anchor" aria-label="anchor" href="#one-sampled-day-in-a-stratum"></a>
 </h2>
-<p>All three methods work with the <code>by</code> argument.</p>
+<p>With one sampled day in a stratum there is no day-to-day variation to
+measure, so no method can estimate that stratum’s variance. All three
+refuse:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">eff_grp_taylor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span>, variance <span class="op">=</span> <span class="st">"taylor"</span><span class="op">)</span></span>
-<span><span class="va">eff_grp_bootstrap</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"taylor"</span>, <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">eff_grp_taylor</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"bootstrap"</span>, <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">eff_grp_bootstrap</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">one_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-06-04"</span>, <span class="st">"2024-06-08"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;      method day_type Estimate     SE CI Lower CI Upper  N</span></span>
-<span><span class="co">#&gt; 1    taylor  weekday    170.6  9.674    149.5    191.7 10</span></span>
-<span><span class="co">#&gt; 2    taylor  weekend    201.9  8.946    182.4    221.4  4</span></span>
-<span><span class="co">#&gt; 3 bootstrap  weekday    170.6 10.230    148.3    192.9 10</span></span>
-<span><span class="co">#&gt; 4 bootstrap  weekend    201.9  8.604    183.2    220.6  4</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="single-psu-diagnostic">5 Single-PSU diagnostic<a class="anchor" aria-label="anchor" href="#single-psu-diagnostic"></a>
-</h2>
-<p>All three variance methods require at least <strong>2 PSUs (sampled
-days) per stratum</strong>. When a stratum has only 1 sampled day,
-tidycreel raises a structured error naming the stratum:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Build a minimal design with 1 sampled day per stratum</span></span>
-<span><span class="va">dates_1psu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-03"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-08"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">cal_1psu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>date <span class="op">=</span> <span class="va">dates_1psu</span>, day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">d_1psu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal_1psu</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="va">counts_1psu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  date     <span class="op">=</span> <span class="va">dates_1psu</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span>
-<span>  count    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10L</span>, <span class="fl">15L</span><span class="op">)</span></span>
+<span><span class="va">one_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">one_day</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    date      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-06-04"</span>, <span class="st">"2024-06-08"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    day_type  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span>
+<span>    n_anglers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10L</span>, <span class="fl">14L</span>, <span class="fl">15L</span><span class="op">)</span>,</span>
+<span>    hours     <span class="op">=</span> <span class="fl">10</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  period_length_col <span class="op">=</span> <span class="va">hours</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">d_1psu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">d_1psu</span>, <span class="va">counts_1psu</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Taylor linearization raises an error when variance cannot be estimated</span></span>
-<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">d_1psu</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">one_day</span>, variance <span class="op">=</span> <span class="st">"taylor"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: 2 strata have fewer than 3 observations:</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekday: 2 observations</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekend: 1 observation</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sparse strata produce unstable variance estimates.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider combining sparse strata or collecting more data.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `value[[3L]]()`:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Stratum <span style="color: #0000BB;">"weekday"</span> has only 1 PSU — jackknife variance cannot be</span></span>
-<span><span class="co">#&gt;   estimated.</span></span>
-<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> A stratum must have at least 2 PSUs for jackknife resampling.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Increase the sampling rate for stratum <span style="color: #0000BB;">"weekday"</span>, or use `variance =</span></span>
-<span><span class="co">#&gt;   'taylor'`.</span></span></code></pre></div>
-<p>The error message names the problematic stratum
-(<code>"weekday"</code>) and suggests either increasing the sampling
-rate or switching to <code>variance = "taylor"</code> which can still
-produce a point estimate via the lonely-PSU adjustment.</p>
-<hr>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Stratum <span style="color: #0000BB;">"weekend"</span> has only 1 PSU — variance cannot be estimated.</span></span>
+<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> A stratum must have at least 2 PSUs (e.g., 2 sampled days) for variance</span></span>
+<span><span class="co">#&gt;   estimation.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Increase the sampling rate for stratum <span style="color: #0000BB;">"weekend"</span>, or combine sparse strata</span></span>
+<span><span class="co">#&gt;   before estimation.</span></span></code></pre></div>
+<p><code><a href="../reference/add_counts.html">add_counts()</a></code> already warned, when the counts were
+attached, that both strata have fewer than three sampled days; the
+estimate is where the weekend’s single day becomes a refusal. The
+remedies are the ones the error gives: sample more days in that stratum,
+or merge it with a similar stratum before estimating. (The jackknife and
+bootstrap errors currently suggest switching to Taylor, which refuses
+the same design; that is #503.)</p>
 </div>
 <div class="section level2">
-<h2 id="summary">6 Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<table class="table">
-<caption>Variance method comparison</caption>
-<colgroup>
-<col width="7%">
-<col width="12%">
-<col width="20%">
-<col width="17%">
-<col width="41%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">Method</th>
-<th align="left">Deterministic</th>
-<th align="left">Min PSUs</th>
-<th align="left">Speed</th>
-<th align="left">When to prefer</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">taylor</td>
-<td align="left">Yes</td>
-<td align="left">1 (with lonely-PSU adjust)</td>
-<td align="left">Fast</td>
-<td align="left">Default; simple designs</td>
-</tr>
-<tr class="even">
-<td align="left">bootstrap</td>
-<td align="left">No (stochastic)</td>
-<td align="left">2</td>
-<td align="left">Slow (500 replicates)</td>
-<td align="left">Skewed counts; complex designs</td>
-</tr>
-<tr class="odd">
-<td align="left">jackknife</td>
-<td align="left">Yes</td>
-<td align="left">2</td>
-<td align="left">Moderate</td>
-<td align="left">Small samples; deterministic alternative to
-bootstrap</td>
-</tr>
-</tbody>
-</table>
+<ul>
+<li>Canty, A. J., and Davison, A. C. (1999). Resampling-based variance
+estimation for labour force surveys. <em>The Statistician</em>, 48,
+379–391.</li>
+<li>Wolter, K. M. (2007). <em>Introduction to Variance Estimation</em>,
+2nd edition. Springer, New York.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

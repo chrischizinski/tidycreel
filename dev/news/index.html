@@ -33,7 +33,6 @@
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/flexible-count-estimation.html">Flexible Count Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
@@ -44,9 +43,9 @@
     <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
     <li><a class="dropdown-item" href="../articles/visualisation.html">Visualising Creel Survey Designs and Results</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Statistical Methods</h6></li>
-    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: Statistical Pipeline</a></li>
-    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: Statistical Pipeline</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Explanation</h6></li>
+    <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: How the Estimate and its Error Are Built</a></li>
+    <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: How the Rate and the Total Are Built</a></li>
     <li><a class="dropdown-item" href="../articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
@@ -102,6 +101,19 @@
 <li>
 <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code> was removed from the camera and aerial pages: it hid warnings the text explained, or nothing at all.</li>
 <li>Every page now ends with <code>as_tibble()</code> and a plot, and all five are checked by <code>just vignette-warnings</code>.</li>
+</ul></li>
+<li>
+<p>The statistical articles were checked against the code and their sources (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, Explanation section, part 1). None computed a wrong number; several gave formulas, reasons or citations that were wrong:</p>
+<ul><li>
+<code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> gave two within-day variance formulas as “equivalent”; they agree only when every day is sampled, and the package uses the one that matches Cochran (1977, ch. 10) and Pope et al.’s Chapter 17. It said the between-day term has no finite-population correction; on season totals it does. Its examples now sample part of the season, so the expansion they explain is not 1. A rule of thumb about <code>se_within / se</code> with no source is replaced by the cost-based optimum, and <code>se_within = 0</code> with one count per day is explained as “not estimated”, not “no within-day variation” (<a href="https://github.com/chrischizinski/tidycreel/issues/504" class="external-link">#504</a> proposes <code>NA</code>). The page and <code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code> now say that with one count per day the SE is too small when a large share of the days is sampled: the finite-population correction also removes the within-day randomness it should not. The estimator is unchanged here; the fix is open as <a href="https://github.com/chrischizinski/tidycreel/issues/505" class="external-link">#505</a>.</li>
+<li>
+<code>vignette("flexible-count-estimation")</code> is merged into <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>; its old address redirects there. Its unit section said instantaneous counts give “angler-days” and are never multiplied by hours, which is no longer true.</li>
+<li>
+<code><a href="../articles/catch-pipeline.html">vignette("catch-pipeline")</a></code> said ratio-of-means is chosen for instantaneous-count surveys; the choice follows the interview type (access or roving), for the length-biased-sampling reason in Pollock et al. (1997). It showed the total as one effort times one rate with the two-term delta method; the package sums stratum products and uses Goodman’s (1960) unbiased variance. Zero covariance between effort and rate is now stated as an assumption.</li>
+<li>
+<code><a href="../articles/replicate-designs.html">vignette("replicate-designs")</a></code> said Taylor linearization can handle one sampled day in a stratum; it refuses, as the other two do (<a href="https://github.com/chrischizinski/tidycreel/issues/503" class="external-link">#503</a>).</li>
+<li>A “Rasmussen (1994)” that could not be found, a Su and Liu (2025) citation with the wrong title and journal, and an unrelated alewife paper were removed from the reference lists.</li>
+<li>The pkgdown group “Statistical Methods” is now “Explanation”, and all three pages are checked by <code>just vignette-warnings</code>.</li>
 </ul></li>
 <li><p>New How-to page, <code><a href="../articles/instantaneous-counts.html">vignette("instantaneous-counts")</a></code> (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>), for the most common design: instantaneous counts with access or roving interviews. The same season’s counts give effort once; the access interviews then give a ratio-of-means rate from complete trips, and the roving interviews a mean-of-ratios rate from trips still in progress, selected by <code>interview_type = "roving"</code>. The page explains the one warning it shows, the truncation of trips under half an hour. The pkgdown “Survey Types” group is now “How-to: Survey Designs” and opens with this page.</p></li>
 <li><p>New dataset <code>example_roving_interviews</code>: 212 roving interviews on the sampled days of <code>example_season_calendar</code>, simulated with a known catch rate of 0.22 fish per angler-hour. Each party’s catch is its catch so far. <code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> could not supply this: it gives an incomplete trip the whole trip’s catch over the hours fished so far, which inflates a roving rate (<a href="https://github.com/chrischizinski/tidycreel/issues/494" class="external-link">#494</a>).</p></li>

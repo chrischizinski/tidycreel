@@ -283,7 +283,6 @@ All vignettes ship with the package — open one with
 | Interview Estimation ([`vignette("interview-estimation")`](https://chrischizinski.com/tidycreel/dev/articles/interview-estimation.md)) | CPUE, catch, and harvest from interview data |
 | Mark-Recapture and Exploitation Rate ([`vignette("mark-recapture")`](https://chrischizinski.com/tidycreel/dev/articles/mark-recapture.md)) | Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns |
 | Incomplete Trips ([`vignette("incomplete-trips")`](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md)) | When and how to use mean-of-ratios and TOST validation |
-| Flexible Count Estimation ([`vignette("flexible-count-estimation")`](https://chrischizinski.com/tidycreel/dev/articles/flexible-count-estimation.md)) | Non-standard count configurations and custom time windows |
 | Progressive Count Surveys ([`vignette("progressive-count-surveys")`](https://chrischizinski.com/tidycreel/dev/articles/progressive-count-surveys.md)) | Rolling and progressive count workflows |
 | Section Estimation ([`vignette("section-estimation")`](https://chrischizinski.com/tidycreel/dev/articles/section-estimation.md)) | Spatial section-level effort and catch estimation |
 | Temporal Extrapolation ([`vignette("temporal-extrapolation")`](https://chrischizinski.com/tidycreel/dev/articles/temporal-extrapolation.md)) | Extrapolating partial-season data to full-season estimates |
@@ -297,13 +296,13 @@ All vignettes ship with the package — open one with
 | Survey Scheduling ([`vignette("survey-scheduling")`](https://chrischizinski.com/tidycreel/dev/articles/survey-scheduling.md)) | Count windows, schedules, validation, and completeness checks |
 | Visualisation ([`vignette("visualisation")`](https://chrischizinski.com/tidycreel/dev/articles/visualisation.md)) | Plotting patterns and output styling with [`theme_creel()`](https://chrischizinski.com/tidycreel/dev/reference/theme_creel.md) |
 
-### Statistical Methods
+### Explanation
 
 | Vignette | Description |
 |----|----|
-| Effort Pipeline ([`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)) | Statistical mechanics of the effort estimation pipeline |
-| Catch Pipeline ([`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md)) | Statistical mechanics of the catch estimation pipeline |
-| Replicate Designs ([`vignette("replicate-designs")`](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md)) | Variance workflows and replicate-design reasoning |
+| Counts to Effort ([`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)) | How effort and its between-day and within-day variance are built; progressive counts |
+| Interviews to Catch ([`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md)) | Why access and roving interviews get different rate estimators; totals and their variance |
+| Variance Methods ([`vignette("replicate-designs")`](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md)) | Taylor, bootstrap and jackknife: what they share and when they differ |
 | Bus-Route Equations ([`vignette("bus-route-equations")`](https://chrischizinski.com/tidycreel/dev/articles/bus-route-equations.md)) | Technical equation derivations for bus-route estimators |
 
 ### Ecosystem
