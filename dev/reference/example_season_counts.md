@@ -91,5 +91,5 @@ estimate_effort(design, target = "period_total")
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1079.      1079.         0    7803.   12186.    36
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36
 ```

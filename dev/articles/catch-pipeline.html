@@ -239,8 +239,8 @@ strata, instantaneous counts, and access interviews.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912   873.       873.         0    <span style="text-decoration: underline;">6</span>139.    <span style="text-decoration: underline;">9</span>685.    28</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  634.       634.         0     794.    <span style="text-decoration: underline;">3</span>371.     8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912  <span style="text-decoration: underline;">1</span>063.      <span style="text-decoration: underline;">1</span>063.         0    <span style="text-decoration: underline;">5</span>753.   <span style="text-decoration: underline;">10</span>071.    28</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  725.       725.         0     609.    <span style="text-decoration: underline;">3</span>556.     8</span></span>
 <span><span class="va">rate</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -273,7 +273,7 @@ stratum</strong> and then added:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  482.    <span style="text-decoration: underline;">1</span>278.    <span style="text-decoration: underline;">3</span>183.   172</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  506.    <span style="text-decoration: underline;">1</span>231.    <span style="text-decoration: underline;">3</span>230.   172</span></span>
 <span></span>
 <span><span class="va">E</span> <span class="op">&lt;-</span> <span class="va">effort</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="va">R</span> <span class="op">&lt;-</span> <span class="va">rate</span><span class="op">$</span><span class="va">estimates</span></span>
@@ -326,7 +326,7 @@ independently, so their variances add:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">e</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_r</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="va">r</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_e</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="va">se_e</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_r</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">v_goodman</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 482.4044</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 506.2577</span></span></code></pre></div>
 <p>which is the <code>se</code> printed for the total. The familiar
 two-term delta method leaves the subtraction out; it is available as
 <code>product_variance = "first_order"</code> and is slightly larger, so
@@ -335,7 +335,7 @@ conservative:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  target <span class="op">=</span> <span class="st">"period_total"</span>, product_variance <span class="op">=</span> <span class="st">"first_order"</span></span>
 <span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span></span>
-<span><span class="co">#&gt; [1] 488.3561</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 513.9317</span></span></code></pre></div>
 <p>When both estimates are very imprecise the subtraction can make the
 variance negative; tidycreel then falls back to the first-order
 value.</p>
@@ -364,13 +364,14 @@ and a rate part,
 <span>  from_rate <span class="op">=</span> <span class="va">E</span><span class="op">$</span><span class="va">estimate</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">R</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;   day_type from_effort from_rate</span></span>
-<span><span class="co">#&gt; 1  weekday    33003.87 128469.82</span></span>
-<span><span class="co">#&gt; 2  weekend    31528.94  45489.06</span></span></code></pre></div>
-<p>In both strata the rate part is the larger: about four times the
-effort part on weekdays, and half as much again on weekends. This says
-where the uncertainty comes from. It does not by itself say whether to
-collect more counts or more interviews: that also depends on what each
-costs, and on the fact that more sampled days improve both.</p>
+<span><span class="co">#&gt; 1  weekday    48936.77 128469.82</span></span>
+<span><span class="co">#&gt; 2  weekend    41230.16  45489.06</span></span></code></pre></div>
+<p>In both strata the rate part is the larger: about two and a half
+times the effort part on weekdays, and only slightly larger on weekends.
+This says where the uncertainty comes from. It does not by itself say
+whether to collect more counts or more interviews: that also depends on
+what each costs, and on the fact that more sampled days improve
+both.</p>
 </div>
 </div>
 <div class="section level2">

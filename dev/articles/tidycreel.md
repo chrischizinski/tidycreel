@@ -138,7 +138,7 @@ estimate_effort(design, target = "period_total")
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1079.      1079.         0    7803.   12186.    36
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36
 ```
 
 The first estimate, the default, is the effort **on the 36 days that
@@ -153,9 +153,8 @@ days within each stratum. With one count per day the within-day
 variation (when in the day each count happened to fall) cannot be
 estimated separately, so `se_within` is 0 as a placeholder, not because
 activity was steady through the day. It becomes non-zero when a day has
-several counts. With one count per day the standard error is also
-somewhat too small when a large share of the days was sampled, as here
-(#505);
+several counts. With one count per day the standard error also leaves
+out the finite-population correction, so it is slightly conservative;
 [`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)
 explains why.
 
@@ -176,8 +175,8 @@ estimate_effort(design, by = day_type, target = "period_total")
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     7912   873.       873.         0    6139.    9685.    28
-#> 2 weekend     2082.  634.       634.         0     794.    3371.     8
+#> 1 weekday     7912  1063.      1063.         0    5753.   10071.    28
+#> 2 weekend     2082.  725.       725.         0     609.    3556.     8
 ```
 
 The 86 weekdays account for most of the season’s effort, about 7,900
@@ -292,7 +291,7 @@ estimate_total_catch(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2230.  482.    1278.    3183.   172
+#> 1    2230.  506.    1231.    3230.   172
 estimate_total_harvest(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -305,7 +304,7 @@ estimate_total_harvest(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     648.  153.     346.     950.   172
+#> 1     648.  159.     334.     962.   172
 ```
 
 A total is effort times rate, with the uncertainty of both carried into
@@ -331,8 +330,8 @@ estimate_total_catch(design, by = day_type, target = "period_total")
 #> # A tibble: 2 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     1647.  400.    856.     2438.   138
-#> 2 weekend      583.  270.     34.4    1132.    34
+#> 1 weekday     1647.  418.   820.      2475.   138
+#> 2 weekend      583.  285.     3.56    1163.    34
 ```
 
 Released fish come from species-level catch records, attached with
@@ -355,8 +354,8 @@ catch_tbl
 #> # A tibble: 2 × 12
 #>   day_type estimate    se ci_lower ci_upper     n method              estimator 
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int> <chr>               <chr>     
-#> 1 weekday     1647.  400.    856.     2438.   138 product-total-catch ratio-of-…
-#> 2 weekend      583.  270.     34.4    1132.    34 product-total-catch ratio-of-…
+#> 1 weekday     1647.  418.   820.      2475.   138 product-total-catch ratio-of-…
+#> 2 weekend      583.  285.     3.56    1163.    34 product-total-catch ratio-of-…
 #> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
 #> #   effort_target <chr>, unit <chr>
 
@@ -364,7 +363,7 @@ catch_tbl[catch_tbl$day_type == "weekend", c("day_type", "estimate", "se", "unit
 #> # A tibble: 1 × 4
 #>   day_type estimate    se unit 
 #>   <chr>       <dbl> <dbl> <chr>
-#> 1 weekend      583.  270. fish
+#> 1 weekend      583.  285. fish
 ```
 
 [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) does the
@@ -407,7 +406,7 @@ estimate_effort(design, target = "period_total", variance = "bootstrap")
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1185.      1185.         0    7585.   12404.    36
+#> 1    9994. 1342.      1342.         0    7267.   12722.    36
 estimate_effort(design, target = "period_total", variance = "jackknife")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -420,7 +419,7 @@ estimate_effort(design, target = "period_total", variance = "jackknife")
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1079.      1079.         0    7803.   12186.    36
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36
 ```
 
 - **Taylor linearization** (default) is fast and appropriate for most

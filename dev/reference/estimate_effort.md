@@ -63,7 +63,13 @@ estimate_effort(
   the same weighted expansion engine; the distinction is semantic and is
   recorded on the returned object as `effort_target`. Expanded targets
   are currently limited to the standard count-design path and are not
-  yet supported for bus-route, ice, aerial, or sectioned designs.
+  yet supported for bus-route, ice, aerial, or sectioned designs. On an
+  expanded target a stratum's between-day variance takes the
+  finite-population correction only when every sampled day in it has two
+  or more counts: with one count per day the correction would also
+  remove the variation from when in the day the count fell, which
+  nothing then restores, so it is left out and the variance is
+  conservative (GH \#505).
 
 - verbose:
 

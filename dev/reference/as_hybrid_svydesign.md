@@ -80,9 +80,12 @@ as_hybrid_svydesign(
   the frame labels in `frame_col`. Each element gives the **within-day**
   sampling fraction per stratum for that frame: the proportion of the
   frame the count enumerated on each sampled day, in (0, 1\]. Expands a
-  sampled day to a whole day; it is not a fraction of the season and
-  does not drive the finite-population correction. Names of each element
-  must match the stratum values that frame carries.
+  sampled day to a whole day; it is not a fraction of the season, and
+  the finite-population correction is never taken against it. It does
+  decide whether that correction applies: a fraction below 1 means part
+  of the day was sampled, so by default the correction is left out (see
+  `fpc`). Names of each element must match the stratum values that frame
+  carries.
 
 - trips_disjoint:
 
@@ -95,9 +98,13 @@ as_hybrid_svydesign(
 - fpc:
 
   Logical scalar. Apply the day-level finite-population correction \\n_h
-  / N_h\\? Default `TRUE`. Set to `FALSE` for the conservative
-  with-replacement variance. `NA` and vectors of length other than one
-  are refused.
+  / N_h\\? By default it is applied only when every frame covers the
+  whole of each sampled day (every `fraction` is 1), and otherwise left
+  out: with part of a day sampled, the correction would also remove the
+  within-day variation, and the standard error would be too small (GH
+  \#505). `fpc = TRUE` given explicitly with partial coverage is
+  refused. Set to `FALSE` for the conservative with-replacement variance
+  in every case. `NA` and vectors of length other than one are refused.
 
 ## Value
 
@@ -253,5 +260,5 @@ design <- as_hybrid_svydesign(
 # estimate_effort() does not accept this object; use survey directly
 survey::svytotal(~count, design)
 #>        total     SE
-#> count 2157.5 83.277
+#> count 2157.5 88.917
 ```

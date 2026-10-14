@@ -145,9 +145,11 @@ Default <code>"count"</code>.</p></dd>
 named by the frame labels in <code>frame_col</code>.  Each element gives the
 <strong>within-day</strong> sampling fraction per stratum for that frame: the proportion
 of the frame the count enumerated on each sampled day, in (0, 1].  Expands
-a sampled day to a whole day; it is not a fraction of the season and does
-not drive the finite-population correction.  Names of each element must
-match the stratum values that frame carries.</p></dd>
+a sampled day to a whole day; it is not a fraction of the season, and the
+finite-population correction is never taken against it.  It does decide
+whether that correction applies: a fraction below 1 means part of the day
+was sampled, so by default the correction is left out (see <code>fpc</code>).  Names
+of each element must match the stratum values that frame carries.</p></dd>
 
 
 <dt id="arg-trips-disjoint">trips_disjoint<a class="anchor" aria-label="anchor" href="#arg-trips-disjoint"></a></dt>
@@ -161,9 +163,13 @@ above.</p></dd>
 
 <dt id="arg-fpc">fpc<a class="anchor" aria-label="anchor" href="#arg-fpc"></a></dt>
 <dd><p>Logical scalar.  Apply the day-level finite-population correction
-\(n_h / N_h\)?  Default <code>TRUE</code>.  Set to <code>FALSE</code> for the conservative
-with-replacement variance.  <code>NA</code> and vectors of length other than one are
-refused.</p></dd>
+\(n_h / N_h\)?  By default it is applied only when every frame covers the
+whole of each sampled day (every <code>fraction</code> is 1), and otherwise left out:
+with part of a day sampled, the correction would also remove the
+within-day variation, and the standard error would be too small (GH #505).
+<code>fpc = TRUE</code> given explicitly with partial coverage is refused.  Set to
+<code>FALSE</code> for the conservative with-replacement variance in every case.  <code>NA</code>
+and vectors of length other than one are refused.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -301,7 +307,7 @@ the condition that makes their sum valid, not a source of bias.</p>
 <span class="r-in"><span><span class="co"># estimate_effort() does not accept this object; use survey directly</span></span></span>
 <span class="r-in"><span><span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">count</span>, <span class="va">design</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        total     SE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> count 2157.5 83.277</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> count 2157.5 88.917</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

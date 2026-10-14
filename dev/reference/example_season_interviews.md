@@ -114,5 +114,5 @@ estimate_total_catch(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2230.  482.    1278.    3183.   172
+#> 1    2230.  506.    1231.    3230.   172
 ```

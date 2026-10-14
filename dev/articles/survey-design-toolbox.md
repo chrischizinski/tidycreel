@@ -256,10 +256,9 @@ hybrid_design
 #> ── Hybrid Creel Survey Design ──────────────────────────────────────────────────
 #> Frames: bank (4 obs) and boat (4 obs)
 #> 
-#> Stratified Independent Sampling design
+#> Stratified Independent Sampling design (with replacement)
 #> survey::svydesign(ids = ids_formula, strata = strata_formula, 
-#>     weights = weights_formula, fpc = ~.pop_days, data = combined, 
-#>     nest = TRUE)
+#>     weights = weights_formula, data = combined, nest = TRUE)
 ```
 
 The returned object is a `survey` design rather than a `creel_design`,
@@ -270,8 +269,8 @@ does not accept it; estimate from it with `survey` directly.
 ``` r
 
 survey::svytotal(~count, hybrid_design)
-#>       total    SE
-#> count  1520 78.23
+#>       total     SE
+#> count  1520 83.666
 ```
 
 That total is a season total: 20 weekday days and 10 weekend days in the

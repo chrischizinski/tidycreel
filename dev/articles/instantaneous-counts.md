@@ -64,7 +64,7 @@ estimate_effort(design, target = "period_total")
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1079.      1079.         0    7803.   12186.    36
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36
 ```
 
 About 9,994 angler-hours over the 120-day season.
@@ -114,7 +114,7 @@ access_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2230.  482.    1278.    3183.   172
+#> 1    2230.  506.    1231.    3230.   172
 ```
 
 `interview_type` is left at `"access"`. The catch rate is a ratio of
@@ -229,7 +229,7 @@ roving_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1957.  314.    1337.    2577.   183
+#> 1    1957.  342.    1281.    2633.   183
 estimate_total_harvest(roving, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -242,7 +242,7 @@ estimate_total_harvest(roving, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     628.  148.     335.     921.   183
+#> 1     628.  154.     324.     932.   183
 ```
 
 The totals multiply the same season effort by the roving rates: about
@@ -271,8 +271,8 @@ totals <- rbind(
 )
 totals[, c("interviews", "estimate", "se", "estimator", "unit")]
 #>   interviews estimate       se      estimator unit
-#> 1     access 2230.484 482.4044 ratio-of-means fish
-#> 2     roving 1956.962 314.0075            mor fish
+#> 1     access 2230.484 506.2577 ratio-of-means fish
+#> 2     roving 1956.962 342.3899            mor fish
 ```
 
 The two are different sets of interviews from the same days, so their

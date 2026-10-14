@@ -229,7 +229,7 @@ give it and never assumes one.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>079.      <span style="text-decoration: underline;">1</span>079.         0    <span style="text-decoration: underline;">7</span>803.   <span style="text-decoration: underline;">12</span>186.    36</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36</span></span></code></pre></div>
 <p>The first estimate, the default, is the effort <strong>on the 36 days
 that were sampled</strong>: 3,066 angler-hours. The second is the effort
 <strong>over the whole 120-day season</strong>, about 9,994
@@ -243,9 +243,8 @@ variation (when in the day each count happened to fall) cannot be
 estimated separately, so <code>se_within</code> is 0 as a placeholder,
 not because activity was steady through the day. It becomes non-zero
 when a day has several counts. With one count per day the standard error
-is also somewhat too small when a large share of the days was sampled,
-as here (#505); <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains
-why.</p>
+also leaves out the finite-population correction, so it is slightly
+conservative; <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains why.</p>
 <p>Estimates can be broken down by any column in the design with
 <code>by</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -262,8 +261,8 @@ why.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912   873.       873.         0    <span style="text-decoration: underline;">6</span>139.    <span style="text-decoration: underline;">9</span>685.    28</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  634.       634.         0     794.    <span style="text-decoration: underline;">3</span>371.     8</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912  <span style="text-decoration: underline;">1</span>063.      <span style="text-decoration: underline;">1</span>063.         0    <span style="text-decoration: underline;">5</span>753.   <span style="text-decoration: underline;">10</span>071.    28</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  725.       725.         0     609.    <span style="text-decoration: underline;">3</span>556.     8</span></span></code></pre></div>
 <p>The 86 weekdays account for most of the season’s effort, about 7,900
 angler-hours to the weekends’ 2,100. Per day, the two are closer: about
 92 angler-hours on an average weekday and 61 on an average weekend
@@ -370,7 +369,7 @@ covers when and how incomplete trips can be used.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  482.    <span style="text-decoration: underline;">1</span>278.    <span style="text-decoration: underline;">3</span>183.   172</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  506.    <span style="text-decoration: underline;">1</span>231.    <span style="text-decoration: underline;">3</span>230.   172</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -383,7 +382,7 @@ covers when and how incomplete trips can be used.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     648.  153.     346.     950.   172</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     648.  159.     334.     962.   172</span></span></code></pre></div>
 <p>A total is effort times rate, with the uncertainty of both carried
 into its standard error. The unit follows: angler-hours times fish per
 angler-hour is fish. About 2,230 fish were caught over the season, and
@@ -405,8 +404,8 @@ does.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">1</span>647.  400.    856.     <span style="text-decoration: underline;">2</span>438.   138</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      583.  270.     34.4    <span style="text-decoration: underline;">1</span>132.    34</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">1</span>647.  418.   820.      <span style="text-decoration: underline;">2</span>475.   138</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      583.  285.     3.56    <span style="text-decoration: underline;">1</span>163.    34</span></span></code></pre></div>
 <p>Released fish come from species-level catch records, attached with
 <code><a href="../reference/add_catch.html">add_catch()</a></code>, rather than from the interview totals; see
 <code><a href="../reference/estimate_total_release.html">?estimate_total_release</a></code>.</p>
@@ -426,8 +425,8 @@ row:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 12</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n method              estimator </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">1</span>647.  400.    856.     <span style="text-decoration: underline;">2</span>438.   138 product-total-catch ratio-of-…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      583.  270.     34.4    <span style="text-decoration: underline;">1</span>132.    34 product-total-catch ratio-of-…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">1</span>647.  418.   820.      <span style="text-decoration: underline;">2</span>475.   138 product-total-catch ratio-of-…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      583.  285.     3.56    <span style="text-decoration: underline;">1</span>163.    34 product-total-catch ratio-of-…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
 <span></span>
@@ -435,7 +434,7 @@ row:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se unit </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend      583.  270. fish</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend      583.  285. fish</span></span></code></pre></div>
 <p><code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> does the same for base R. Use
 <code>metadata = FALSE</code> for the estimates table alone.</p>
 </div>
@@ -469,7 +468,7 @@ estimate built on it:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>185.      <span style="text-decoration: underline;">1</span>185.         0    <span style="text-decoration: underline;">7</span>585.   <span style="text-decoration: underline;">12</span>404.    36</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>342.      <span style="text-decoration: underline;">1</span>342.         0    <span style="text-decoration: underline;">7</span>267.   <span style="text-decoration: underline;">12</span>722.    36</span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -482,7 +481,7 @@ estimate built on it:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>079.      <span style="text-decoration: underline;">1</span>079.         0    <span style="text-decoration: underline;">7</span>803.   <span style="text-decoration: underline;">12</span>186.    36</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36</span></span></code></pre></div>
 <ul>
 <li>
 <strong>Taylor linearization</strong> (default) is fast and

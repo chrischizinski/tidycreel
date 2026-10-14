@@ -337,17 +337,16 @@ date first.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Hybrid Creel Survey Design</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Frames: bank (4 obs) and boat (4 obs)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Stratified Independent Sampling design</span></span>
+<span><span class="co">#&gt; Stratified Independent Sampling design (with replacement)</span></span>
 <span><span class="co">#&gt; survey::svydesign(ids = ids_formula, strata = strata_formula, </span></span>
-<span><span class="co">#&gt;     weights = weights_formula, fpc = ~.pop_days, data = combined, </span></span>
-<span><span class="co">#&gt;     nest = TRUE)</span></span></code></pre></div>
+<span><span class="co">#&gt;     weights = weights_formula, data = combined, nest = TRUE)</span></span></code></pre></div>
 <p>The returned object is a <code>survey</code> design rather than a
 <code>creel_design</code>, so <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> does not
 accept it; estimate from it with <code>survey</code> directly.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">count</span>, <span class="va">hybrid_design</span><span class="op">)</span></span>
-<span><span class="co">#&gt;       total    SE</span></span>
-<span><span class="co">#&gt; count  1520 78.23</span></span></code></pre></div>
+<span><span class="co">#&gt;       total     SE</span></span>
+<span><span class="co">#&gt; count  1520 83.666</span></span></code></pre></div>
 <p>That total is a season total: 20 weekday days and 10 weekend days in
 the June calendar, expanded from the two of each that were sampled.</p>
 <p>This small example is intentionally self-contained, but the same

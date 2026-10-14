@@ -188,7 +188,7 @@ per day on a 10-hour fishing day:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>400  365.       365.         0    <span style="text-decoration: underline;">1</span>238.    <span style="text-decoration: underline;">3</span>562.     4</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>400  516.       516.         0     757.    <span style="text-decoration: underline;">4</span>043.     4</span></span></code></pre></div>
 <p>By hand: daily effort is 150, 250, 350 and 450 angler-hours, a mean
 of 300, and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><mn>8</mn><mo>×</mo><mn>300</mn><mo>=</mo><mn>2</mn><mo>,</mo><mn>400</mn></mrow><annotation encoding="application/x-tex">\hat{E} = 8 \times 300 = 2{,}400</annotation></semantics></math>
@@ -203,54 +203,57 @@ shows the two side by side.</p>
 </h2>
 <p>The estimate is uncertain because a different draw of days would have
 given a different mean. That uncertainty is estimated from how much the
-sampled days differ from each other:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mtext mathvariant="normal">between</mtext></msub><mo stretchy="false" form="prefix">(</mo><msub><mover><mi>E</mi><mo accent="true">̂</mo></mover><mi>h</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msubsup><mi>N</mi><mi>h</mi><mn>2</mn></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><mfrac><msub><mi>n</mi><mi>h</mi></msub><msub><mi>N</mi><mi>h</mi></msub></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mfrac><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><msub><mi>n</mi><mi>h</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\widehat{\text{Var}}_{\text{between}}(\hat{E}_h) =
-N_h^2 \left(1 - \frac{n_h}{N_h}\right) \frac{s_b^2}{n_h}</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">s_b^2</annotation></semantics></math>
-is the sample variance of the daily efforts
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>e</mi><mo accent="true">̂</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\hat{e}_i</annotation></semantics></math>.
-The factor
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><msub><mi>n</mi><mi>h</mi></msub><mi>/</mi><msub><mi>N</mi><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">1 - n_h/N_h</annotation></semantics></math>
-is the <strong>finite-population correction</strong>: days are drawn
-without replacement, so sampling half the stratum removes part of the
-day-to-day uncertainty, and sampling all of it would remove all of it.
-(Not the uncertainty from when in each day a count fell; see the next
-section.)</p>
+sampled days differ from each other.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">s_b^2</annotation></semantics></math>,
+the sample variance of the daily efforts
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mover><mi>e</mi><mo accent="true">̂</mo></mover><mi>i</mi></msub><annotation encoding="application/x-tex">\hat{e}_i</annotation></semantics></math>,
+measures it, and with one count per day the variance of the stratum
+total is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mtext mathvariant="normal">between</mtext></msub><mo stretchy="false" form="prefix">(</mo><msub><mover><mi>E</mi><mo accent="true">̂</mo></mover><mi>h</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msubsup><mi>N</mi><mi>h</mi><mn>2</mn></msubsup><mspace width="0.167em"></mspace><mfrac><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><msub><mi>n</mi><mi>h</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\widehat{\text{Var}}_{\text{between}}(\hat{E}_h) = N_h^2 \, \frac{s_b^2}{n_h}</annotation></semantics></math></p>
 <p>For the stratum above,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><mo>=</mo><mn>16</mn><mo>,</mo><mn>667</mn></mrow><annotation encoding="application/x-tex">s_b^2 = 16{,}667</annotation></semantics></math>,
 so</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mo>=</mo><mn>64</mn><mo>×</mo><mn>0.5</mn><mo>×</mo><mfrac><mrow><mn>16</mn><mo>,</mo><mn>667</mn></mrow><mn>4</mn></mfrac><mo>=</mo><mn>133</mn><mo>,</mo><mn>333</mn><mo>,</mo><mspace width="2.0em"></mspace><mtext mathvariant="normal">SE</mtext><mo>=</mo><mn>365.1</mn></mrow><annotation encoding="application/x-tex">\widehat{\text{Var}} = 64 \times 0.5 \times \frac{16{,}667}{4} = 133{,}333,
-\qquad \text{SE} = 365.1</annotation></semantics></math></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">Var</mtext><mo accent="true">̂</mo></mover><mo>=</mo><mn>64</mn><mo>×</mo><mfrac><mrow><mn>16</mn><mo>,</mo><mn>667</mn></mrow><mn>4</mn></mfrac><mo>=</mo><mn>266</mn><mo>,</mo><mn>667</mn><mo>,</mo><mspace width="2.0em"></mspace><mtext mathvariant="normal">SE</mtext><mo>=</mo><mn>516.4</mn></mrow><annotation encoding="application/x-tex">\widehat{\text{Var}} = 64 \times \frac{16{,}667}{4} = 266{,}667,
+\qquad \text{SE} = 516.4</annotation></semantics></math></p>
 <p>which is the <code>se</code> and <code>se_between</code> printed
 above.</p>
+<div class="section level3">
+<h3 id="why-there-is-no-finite-population-correction-here">Why there is no finite-population correction here<a class="anchor" aria-label="anchor" href="#why-there-is-no-finite-population-correction-here"></a>
+</h3>
+<p>Days are drawn without replacement, and survey texts usually multiply
+this variance by the <strong>finite-population correction</strong>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><msub><mi>n</mi><mi>h</mi></msub><mi>/</mi><msub><mi>N</mi><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">1 - n_h/N_h</annotation></semantics></math>:
+sample half the stratum and half the day-to-day uncertainty is gone;
+sample all of it and none is left. That reasoning covers only one of the
+two reasons a day’s estimate is uncertain. The other is <strong>when in
+the day the count fell</strong>: a count at another moment would have
+given a different number, and sampling more days does nothing about
+that.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">s_b^2</annotation></semantics></math>
+carries both. Multiplying it by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><msub><mi>n</mi><mi>h</mi></msub><mi>/</mi><msub><mi>N</mi><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">1 - n_h/N_h</annotation></semantics></math>
+shrinks both, and with every day sampled it would report an SE of 0
+although each count still fell at a random moment.</p>
+<p>The two-stage variance below puts the within-day part back, but it
+needs at least two counts on a day to estimate it. So tidycreel applies
+the correction to a stratum only when every sampled day in it has two or
+more counts. With one count per day it leaves the correction out, which
+is conservative: the standard error is somewhat too large rather than
+too small (Cochran 1977, equation 10.42). Up to tidycreel 8.0.0 the
+correction was applied in every case, and single-count standard errors
+were too small (#505).</p>
+</div>
 <div class="section level3">
 <h3 id="one-count-per-day-se_within-is-0-and-what-that-means">One count per day: <code>se_within</code> is 0, and what that
 means<a class="anchor" aria-label="anchor" href="#one-count-per-day-se_within-is-0-and-what-that-means"></a>
 </h3>
 <p>With one count per day, <code>se_within</code> is reported as 0. That
 does <strong>not</strong> mean the number of anglers was steady through
-the day. Each day’s single count landed at one moment out of many, and
-that chance is part of why the sampled days differ, so
+the day:
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">s_b^2</annotation></semantics></math>
-contains it. With one count per day it cannot be separated out: the 0 is
-a placeholder for “not estimated”, and #504 proposes reporting
-<code>NA</code> there instead.</p>
-<p>It also means the standard error is <strong>too small</strong> when a
-large share of the days is sampled. The finite-population correction is
-right for the day-to-day part of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">s_b^2</annotation></semantics></math>:
-sampling more of the days leaves less of that to chance. It is wrong for
-the within-day part: even if every day is sampled, when in the day each
-count fell is still chance. With all days sampled the correction is 0
-and tidycreel reports an SE of 0, although a count at another moment
-would have given a different total. The size of the shortfall grows with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mi>h</mi></msub><mi>/</mi><msub><mi>N</mi><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">n_h / N_h</annotation></semantics></math>
-and with how much activity varies within a day; it cannot be estimated
-from one count per day. The two-stage formula below puts the missing
-part back when there are several counts per day. #505 is open to fix the
-one-count case; until then, read the SE from a single count per day as a
-lower bound when a large share of the days was sampled.</p>
+contains the within-day variation, but with one count per day it cannot
+be separated out. The 0 is a placeholder for “not estimated”; #504
+proposes reporting <code>NA</code> there instead.</p>
 </div>
 </div>
 <div class="section level2">
@@ -421,15 +424,15 @@ is the legitimate all-day circuit of Robson (1961).</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>      960  98.0       98.0         0     538.    <span style="text-decoration: underline;">1</span>382.     3</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>      960  139.       139.         0     364.    <span style="text-decoration: underline;">1</span>556.     3</span></span></code></pre></div>
 <p><code><a href="../reference/add_counts.html">add_counts()</a></code> stores each day’s
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mi>d</mi></msub><mo>×</mo><msub><mi>T</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">C_d \times T_d</annotation></semantics></math>:
 120, 160 and 200 angler-hours. The total is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn><mo>×</mo><mn>160</mn><mo>=</mo><mn>960</mn></mrow><annotation encoding="application/x-tex">6 \times 160 = 960</annotation></semantics></math>
 angler-hours. One circuit a day gives one estimate a day, so the
 variance is the between-day term alone, as for one instantaneous count a
-day, and it is too small in the same way when a large share of the days
-is sampled (#505).</p>
+day, and for the same reason it carries no finite-population
+correction.</p>
 <p>The estimate is unbiased only when the circuit’s start time, start
 point and direction were randomised and the observer moved faster than
 the anglers. None of that can be checked from the counts table;
@@ -456,9 +459,7 @@ conditions.</p>
 <tr class="odd">
 <td>One instantaneous count per day</td>
 <td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>c</mi><mi>i</mi></msub><msub><mi>T</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">c_i T_i</annotation></semantics></math></td>
-<td>between days only; too small when
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mi>h</mi></msub><mi>/</mi><msub><mi>N</mi><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">n_h/N_h</annotation></semantics></math>
-is large (#505)</td>
+<td>between days, no FPC</td>
 <td>0: not estimated (#504)</td>
 </tr>
 <tr class="even">
@@ -474,17 +475,17 @@ instantaneous counts per day</td>
 <tr class="odd">
 <td>One progressive circuit per day</td>
 <td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mi>d</mi></msub><msub><mi>T</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">C_d T_d</annotation></semantics></math></td>
-<td>between days only; too small when
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mi>h</mi></msub><mi>/</mi><msub><mi>N</mi><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">n_h/N_h</annotation></semantics></math>
-is large (#505)</td>
+<td>between days, no FPC</td>
 <td>0: not estimated (#504)</td>
 </tr>
 </tbody>
 </table>
 <p>In every case the stratum total is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>N</mi><mi>h</mi></msub><annotation encoding="application/x-tex">N_h</annotation></semantics></math>
-times the mean daily effort, the between-day term carries the
-finite-population correction, and strata are added.</p>
+times the mean daily effort and strata are added. The between-day term
+carries the finite-population correction only when every sampled day in
+the stratum has two or more counts, because only then is the within-day
+variation it would remove put back.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

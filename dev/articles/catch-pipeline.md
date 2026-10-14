@@ -127,8 +127,8 @@ effort
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     7912   873.       873.         0    6139.    9685.    28
-#> 2 weekend     2082.  634.       634.         0     794.    3371.     8
+#> 1 weekday     7912  1063.      1063.         0    5753.   10071.    28
+#> 2 weekend     2082.  725.       725.         0     609.    3556.     8
 rate
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ total
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2230.  482.    1278.    3183.   172
+#> 1    2230.  506.    1231.    3230.   172
 
 E <- effort$estimates
 R <- rate$estimates
@@ -225,7 +225,7 @@ v_goodman <- with(
   sum(e^2 * se_r^2 + r^2 * se_e^2 - se_e^2 * se_r^2)
 )
 sqrt(v_goodman)
-#> [1] 482.4044
+#> [1] 506.2577
 ```
 
 which is the `se` printed for the total. The familiar two-term delta
@@ -238,7 +238,7 @@ conservative:
 estimate_total_catch(design,
   target = "period_total", product_variance = "first_order"
 )$estimates$se
-#> [1] 488.3561
+#> [1] 513.9317
 ```
 
 When both estimates are very imprecise the subtraction can make the
@@ -268,15 +268,15 @@ data.frame(
   from_rate = E$estimate^2 * R$se^2
 )
 #>   day_type from_effort from_rate
-#> 1  weekday    33003.87 128469.82
-#> 2  weekend    31528.94  45489.06
+#> 1  weekday    48936.77 128469.82
+#> 2  weekend    41230.16  45489.06
 ```
 
-In both strata the rate part is the larger: about four times the effort
-part on weekdays, and half as much again on weekends. This says where
-the uncertainty comes from. It does not by itself say whether to collect
-more counts or more interviews: that also depends on what each costs,
-and on the fact that more sampled days improve both.
+In both strata the rate part is the larger: about two and a half times
+the effort part on weekdays, and only slightly larger on weekends. This
+says where the uncertainty comes from. It does not by itself say whether
+to collect more counts or more interviews: that also depends on what
+each costs, and on the fact that more sampled days improve both.
 
 ## References
 
