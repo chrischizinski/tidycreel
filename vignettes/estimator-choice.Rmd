@@ -73,7 +73,8 @@ The survey type says what a count is, and so what turns it into effort.
 
 - An **instantaneous count** is the number of anglers present at one moment.
   Multiplied by the length of the period it was taken in, it estimates that
-  period's effort, and the sampled days are expanded to the stratum.
+  period's effort. With an expanded `target`, the sampled days are then
+  expanded to every day of the stratum.
 - An **aerial count** is an instantaneous count from the air, covering the
   whole water. It becomes effort through the hours open, the ratio of
   anglers to people seen, and the share of anglers the observer can see.
@@ -100,7 +101,10 @@ differently, and so they need different estimators (Pollock et al. 1997):
 - **Roving:** the mean of the individual catch rates, on all trips. A roving
   clerk meets a party in proportion to how long it fishes, and under that
   selection it is the mean of ratios that estimates total catch over total
-  effort (Hoenig et al. 1997). Trips shorter than half an hour are left out by
+  effort (Hoenig et al. 1997). That result is derived for individual
+  anglers. tidycreel averages over interviewed parties with equal weight, so
+  when party sizes vary, the rate per angler-hour leans toward the rates of
+  small parties; this is open as issue #513. Trips shorter than half an hour are left out by
   default: their rates are mostly noise and inflate the variance.
 
 Why each of these is right, and when, is the subject of

@@ -50,8 +50,11 @@ design <- add_interviews(design, example_season_interviews,
 ```
 
 The message is a prompt to check the data, not a sign that anything was
-changed. A count of 0 anglers on a sampled day is the same: a day with no
-fishing, which the effort estimate includes.
+changed. A count of 0 anglers is also an observation, but of one moment: no
+one was fishing when the count was made. It belongs in the estimate as a 0,
+like any other count. On its own it does not say that nobody fished that day;
+the expansion from counts to effort is what accounts for the rest of the
+day.
 
 ## Unknown is not zero
 
