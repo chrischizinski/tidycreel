@@ -210,6 +210,18 @@
   - The pkgdown group "Statistical Methods" is now "Explanation", and all
     three pages are checked by `just vignette-warnings`.
 
+* Three new Explanation pages (#480, Explanation section, part 2), each
+  expanding a rule the API conventions article states in a line:
+  - `vignette("estimator-choice")`: which estimator runs for effort, rate and
+    total, decided by the survey type and the interview type, and how to read
+    which one ran from `method` and `estimator`.
+  - `vignette("unit-rules")`: units are derived where the package did the
+    multiplication, otherwise `NA`. On the season data, the same interviews
+    give a total of 674 fish with party size and 1,134 (unit `NA`, with a
+    warning) without it.
+  - `vignette("refusals-and-na")`: zero, `NA` and refusal; the three states of
+    a standard-error component (absent, `NA`, 0); and the kinds of refusal.
+
 * New How-to page, `vignette("instantaneous-counts")` (#480), for the most
   common design: instantaneous counts with access or roving interviews. The
   same season's counts give effort once; the access interviews then give a

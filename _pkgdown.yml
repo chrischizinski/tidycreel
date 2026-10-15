@@ -298,11 +298,15 @@ articles:
   navbar: "Explanation"
   desc: >
     Why the estimates are built the way they are: effort and its two-stage
-    variance, catch rates and totals, and the variance methods.
+    variance, catch rates and totals, the variance methods, how an estimator
+    is chosen, where units come from, and when the package refuses.
   contents:
   - effort-pipeline
   - catch-pipeline
   - replicate-designs
+  - estimator-choice
+  - unit-rules
+  - refusals-and-na
 
 - title: "Reference & Equations"
   desc: >

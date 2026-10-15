@@ -1,0 +1,242 @@
+---
+title: "Refusals, NA, NULL and Zero"
+output:
+  rmarkdown::html_vignette:
+    highlight: null
+vignette: >
+  %\VignetteIndexEntry{Refusals, NA, NULL and Zero}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+The most damaging error a creel estimate can carry is not a crash. It is a
+believable number that quietly treats something unknown as zero: a stratum
+nobody sampled counted as no effort, a standard error that was never
+propagated shown as 0. This page explains the rules tidycreel follows to keep
+those apart, and why it sometimes refuses to give an answer at all.
+
+Three rules:
+
+```
+zero      a measurement: none was seen. It counts.
+NA        unknown: a value exists but was not measured. It is never read as zero.
+refusal   the data cannot support the estimate asked for. No number is returned.
+```
+
+```{r load, message = FALSE}
+library(tidycreel)
+```
+
+## Zero is a measurement
+
+A party that fished and caught nothing has a catch of 0, and that 0 belongs in
+every rate. Dropping zero-catch trips would make the rate an average over
+successful trips only, and too high. So tidycreel keeps them, and says how many
+there are, in case a missing value was recorded as 0:
+
+```{r zero-catch}
+design <- creel_design(example_season_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_season_counts,
+  period_length_col = daylight_hours
+)
+design <- add_interviews(design, example_season_interviews,
+  catch = catch_total, harvest = catch_kept, effort = hours_fished,
+  trip_status = trip_status, n_anglers = n_anglers
+)
+```
+
+The message is a prompt to check the data, not a sign that anything was
+changed. A count of 0 anglers is also an observation, but of one moment: no
+one was fishing when the count was made. It belongs in the estimate as a 0,
+like any other count. On its own it does not say that nobody fished that day;
+the expansion from counts to effort is what accounts for the rest of the
+day.
+
+## Unknown is not zero
+
+A value that was never measured is a different thing, and the danger is that
+arithmetic treats it as zero without saying so. Leaving a stratum out of a sum
+is the same as adding 0 for it. tidycreel refuses at the points where that
+would happen.
+
+### A stratum with no sampled days
+
+Here the weekend counts are removed, so no weekend day was counted:
+
+```{r unsampled-stratum, error = TRUE}
+weekday_counts <- example_season_counts[
+  example_season_counts$day_type == "weekday",
+]
+weekday_only <- creel_design(example_season_calendar,
+  date = date, strata = day_type
+)
+weekday_only <- add_counts(weekday_only, weekday_counts,
+  period_length_col = daylight_hours
+)
+
+estimate_effort(weekday_only, target = "period_total")
+```
+
+A season total needs the weekend's effort, and there is no information about
+it. Summing the weekday strata alone would report the 34 weekend days as zero
+effort. The default target asks a smaller question, the effort on the days
+that were counted, and that one has an answer:
+
+```{r unsampled-sampled-days}
+estimate_effort(weekday_only)
+```
+
+### A stratum with no catch rate
+
+A total multiplies each stratum's effort by its rate. If one stratum has
+effort but no interviews, its catch is unknown:
+
+```{r missing-rate, error = TRUE}
+weekday_interviews <- example_season_interviews[
+  example_season_interviews$day_type == "weekday",
+]
+no_weekend_rate <- creel_design(example_season_calendar,
+  date = date, strata = day_type
+)
+no_weekend_rate <- add_counts(no_weekend_rate, example_season_counts,
+  period_length_col = daylight_hours
+)
+no_weekend_rate <- add_interviews(no_weekend_rate, weekday_interviews,
+  catch = catch_total, harvest = catch_kept, effort = hours_fished,
+  trip_status = trip_status, n_anglers = n_anglers
+)
+
+estimate_total_catch(no_weekend_rate)
+```
+
+The refusal says how much effort has no rate, so you can judge whether it
+matters. If a total over the covered strata is what you want, ask for it.
+The result says what it left out, and keeps a record of it:
+
+```{r missing-rate-exclude}
+weekday_total <- estimate_total_catch(no_weekend_rate,
+  missing_rate = "exclude"
+)
+weekday_total
+weekday_total$excluded_strata
+```
+
+The warning is the point: this total is the weekday catch, not the season's,
+and nothing about the number says so except the warning and the record.
+
+### Other unknowns that are refused
+
+- **A missing catch count.** `add_catch()` refuses a species row whose count is
+  `NA`. Dropping the row is not neutral: a missing `"harvested"` row means 0
+  harvested, and a missing `"caught"` row changes how total catch is derived.
+  You decide whether to fill the value or drop the row.
+- **An ambiguous column.** Given two numeric columns and no `count_col`,
+  `add_counts()` refuses rather than pick one, because expanding the wrong
+  column into effort would give a confident wrong answer.
+- **Units that cannot be told apart.** These are not refused: the estimate is
+  returned with an unknown unit, `NA`. `vignette("unit-rules")` explains why.
+
+## NULL, NA and zero in a standard error
+
+The standard error of an aerial effort estimate has parts: the variation
+between sampled days, and the uncertainty in each correction applied to the
+counts. Each part is recorded in `se_components`, and each can be in one of
+three states:
+
+| State | Meaning | Effect on `se` |
+|---|---|---|
+| absent | not propagated: it does not apply, or no standard error was supplied | `se` leaves it out |
+| `NA` | applies, and is unknown | `se` is `NA` |
+| `0` | known to be exactly zero | included, as zero |
+
+The three are kept apart because a zero is otherwise indistinguishable from a
+part nobody propagated. The aerial visibility correction shows all three:
+
+```{r aerial-calendar}
+aerial_calendar <- unique(data.frame(
+  date = example_aerial_counts$date,
+  day_type = example_aerial_counts$day_type
+))
+
+aerial_effort <- function(...) {
+  design <- creel_design(aerial_calendar,
+    date = date, strata = day_type,
+    survey_type = "aerial", h_open = 14, angler_ratio = 1,
+    angler_ratio_se = 0, ...
+  )
+  estimate_effort(add_counts(design, example_aerial_counts))
+}
+```
+
+A correction was measured, but its standard error was not supplied. The
+visibility part is absent, and the standard error covers the count sampling
+only:
+
+```{r se-absent}
+aerial_effort(visibility_correction = 0.85)
+```
+
+The correction's standard error is supplied, so it is propagated:
+
+```{r se-known}
+aerial_effort(visibility_correction = 0.85, visibility_se = 0.04)
+```
+
+No correction was studied (`"none"`). The point estimate divides by 1, but how
+many anglers the observer missed is unknown, so the standard error is too:
+
+```{r se-unknown}
+aerial_effort(visibility_correction = "none")
+```
+
+The same counts give a standard error of 774, then 918, then `NA`. In the
+first, the visibility correction is a measured number whose uncertainty was
+not supplied, so 774 understates the total uncertainty by whatever that part
+would add (918 once it is supplied). In the third there is no measurement at
+all, and no honest standard error. In all three, `angler_ratio: 0` is the third
+state: `angler_ratio_se = 0` states that every person counted is an angler,
+exactly. A correction known exactly
+must be said to be: `visibility_correction = 1, visibility_se = 0`, for
+example, where every angler can be seen.
+
+### One exception: `se_within` with one count per day
+
+With one count per day, `estimate_effort()` reports `se_within = 0`. It is not
+a measured zero: with a single count the variation within a day cannot be
+separated from the variation between days, and both are in `se_between`. So
+`se` is right, and only the split is not identified. `vignette("effort-pipeline")`
+explains this, and reporting it as `NA` instead is proposed for the next major
+release (issue #504).
+
+## Kinds of refusal
+
+| What is wrong | Example | What to do |
+|---|---|---|
+| a stratum or cell has no data | no sampled day in a stratum; effort with no rate; one sampled day in a stratum, so no variance | sample it, merge strata, or ask a narrower question |
+| the input is ambiguous | two candidate count columns; repeated rows for one sampling unit | name the column; give the count time, or fix the rows |
+| a required value is unknown | an `NA` catch count; an aerial design without `h_open` or `angler_ratio` | supply it, or state `"none"` where that is allowed |
+| the estimator does not apply | `estimate_effort()` on a camera design; a mean-of-ratios total on a bus route | use the function the message names |
+
+A rate and an effort in different units are not on this list. A rate per
+party-hour times effort in angler-hours returns a total with a warning and
+unit `NA`, because the number may still be what you want if every party is
+one angler; `vignette("unit-rules")` shows it.
+
+A refusal says what was wrong and, where there is a remedy, what to do. Many
+also carry a condition
+class beginning `creel_error_` (`creel_error_unsampled_cell`,
+`creel_error_missing_rate_strata`, `creel_error_single_psu`, ...), so that code
+can catch a particular refusal by name. Warnings, which return an estimate
+but say something about it, are listed in `?creel_warnings`.
+
+## Why refuse rather than warn
+
+A warning still returns a number, and a number travels: into a table, a
+report, a management decision, long after the warning has scrolled away. When
+the data cannot support the estimate, tidycreel does not return one. When they
+can support a narrower one, the refusal says how to ask for it, and that
+estimate is labelled as narrower.
