@@ -43,7 +43,21 @@ allowed <- list(
   `catch-pipeline` = character(),
   # The single-PSU example attaches counts to strata of two days and one day;
   # add_counts() warns, and the text says the refusal follows from it.
-  `replicate-designs` = c("fewer than 3 observations")
+  `replicate-designs` = c("fewer than 3 observations"),
+  # The page shows each unit rule failing on purpose: counts without a period
+  # length, interviews without a party size, and the product of the two. The
+  # text explains each warning where it appears.
+  # The roving example drops trips under half an hour, and the text explains
+  # why that many is expected on roving data.
+  `estimator-choice` = c("MOR truncation"),
+  # The missing_rate = "exclude" example is there to show its warning: the
+  # total covers the weekday stratum only, and the text says so.
+  `refusals-and-na` = c("with no rate excluded"),
+  `unit-rules` = c(
+    "Instantaneous counts were expanded without a period length",
+    "No `n_anglers` provided",
+    "Rate and effort may be in different units"
+  )
 )
 
 suppressMessages(devtools::load_all(quiet = TRUE))

@@ -233,6 +233,9 @@ All vignettes ship with the package — open one with
 | Counts to Effort (`vignette("effort-pipeline")`) | How effort and its between-day and within-day variance are built; progressive counts |
 | Interviews to Catch (`vignette("catch-pipeline")`) | Why access and roving interviews get different rate estimators; totals and their variance |
 | Variance Methods (`vignette("replicate-designs")`) | Taylor, bootstrap and jackknife: what they share and when they differ |
+| Choosing an Estimator (`vignette("estimator-choice")`) | Which estimator runs for effort, rates and totals, and what decides it |
+| Units (`vignette("unit-rules")`) | Where an estimate's unit comes from, and why it is sometimes `NA` |
+| Refusals and NA (`vignette("refusals-and-na")`) | Zero, `NA` and refusal; absent, `NA` and zero standard-error parts |
 | Bus-Route Equations (`vignette("bus-route-equations")`) | Technical equation derivations for bus-route estimators |
 
 ### Ecosystem
