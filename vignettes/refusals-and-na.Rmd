@@ -217,7 +217,11 @@ release (issue #504).
 | the input is ambiguous | two candidate count columns; repeated rows for one sampling unit | name the column; give the count time, or fix the rows |
 | a required value is unknown | an `NA` catch count; an aerial design without `h_open` or `angler_ratio` | supply it, or state `"none"` where that is allowed |
 | the estimator does not apply | `estimate_effort()` on a camera design; a mean-of-ratios total on a bus route | use the function the message names |
-| units that cannot combine | a rate and an effort in two different known units | re-attach the data in matching units |
+
+A rate and an effort in different units are not on this list. A rate per
+party-hour times effort in angler-hours returns a total with a warning and
+unit `NA`, because the number may still be what you want if every party is
+one angler; `vignette("unit-rules")` shows it.
 
 A refusal says what was wrong and, where there is a remedy, what to do. Many
 also carry a condition

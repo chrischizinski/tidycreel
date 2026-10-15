@@ -37,7 +37,7 @@ library(tidycreel)
 
 | `survey_type` | Effort | Catch rate | Total catch |
 |---|---|---|---|
-| `"instantaneous"` | counts × period length, expanded from sampled days to the stratum, summed over strata | by `interview_type` (below) | per stratum, effort × rate, summed over strata |
+| `"instantaneous"` | counts × period length, summed over the sampled days, or expanded to every day of the stratum with `target` | by `interview_type` (below) | per stratum, effort × rate, summed over strata |
 | `"aerial"` | counts × hours open × angler ratio ÷ visibility | by `interview_type` | per stratum, effort × rate, summed over strata |
 | `"bus_route"` | Horvitz-Thompson: each interviewed trip's effort over its inclusion probability | ratio of the Horvitz-Thompson catch and effort totals | Horvitz-Thompson catch total |
 | `"ice"` | as bus route, with every site's `p_site` = 1 | as bus route | as bus route |
@@ -45,6 +45,15 @@ library(tidycreel)
 
 Sectioned instantaneous designs (`add_sections()`) estimate each section
 separately and add a lake total.
+
+Whether the effort covers only the days counted or every day in the season is
+a separate choice, `target`, not a different estimator. The default,
+`"sampled_days"`, is the effort on the days counted; `"period_total"` expands
+each stratum to all its days. On the season data used below, that is 3,066
+angler-hours against about 9,994. Totals follow the effort they are given, so
+a catch total on the default target is the catch on the sampled days.
+`vignette("effort-pipeline")` explains the expansion, and the expanded targets
+are not yet available for bus-route, ice, aerial or sectioned designs.
 
 The pages that explain each estimator in full:
 
@@ -150,13 +159,14 @@ clerk meets many parties early in their trips, and the warning fires whenever
 
 ## Overriding the choice
 
-The defaults follow the design, but the rate estimator can be named. Each
-override is an argument of the rate and total functions:
+The defaults follow the design, but the rate estimator can be named:
 
 - `estimator`: `"ratio-of-means"`, `"mor"` (mean of ratios), or `"mortr"`
   (mean of ratios with trips under `truncate_at` hours removed);
-- `use_trips`: `"complete"`, `"incomplete"`, `"all"`, or `"diagnostic"`, which
-  estimates from complete and incomplete trips separately and compares them;
+- `use_trips`: `"complete"` or `"all"`; the rate functions also take
+  `"incomplete"`, and `"diagnostic"`, which estimates from complete and
+  incomplete trips separately and compares them. A total accepts only
+  `"complete"` and `"all"`;
 - `truncate_at`: the shortest trip, in hours, a mean of ratios keeps.
 
 Naming either `estimator` or `use_trips` turns off the roving default, so the

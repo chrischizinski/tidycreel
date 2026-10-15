@@ -154,11 +154,14 @@ total, so any other combination comes out `NA`:
 | Effort unit  | Rate unit         | Total unit |
 |--------------|-------------------|------------|
 | angler-hours | fish/angler-hour  | fish       |
+| party-hours  | fish/party-hour   | fish       |
 | angler-hours | fish/party-hour   | `NA`       |
 | `NA`         | fish/angler-hour  | `NA`       |
 | `NA`         | fish/party-hour   | `NA`       |
 
-Only the first is a catch:
+The first two are catches. The second is the bus-route or ice case without
+`n_anglers`: effort and rate both come from the interviews, both in
+party-hours, and the party-hours cancel. Here is the first:
 
 ```{r total-cancels}
 estimate_total_catch(with_party)
