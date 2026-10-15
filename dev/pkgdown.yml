@@ -10,6 +10,7 @@ articles:
   camera-surveys: camera-surveys.html
   catch-pipeline: catch-pipeline.html
   effort-pipeline: effort-pipeline.html
+  estimator-choice: estimator-choice.html
   glossary: glossary.html
   ice-fishing: ice-fishing.html
   incomplete-trips: incomplete-trips.html
@@ -17,6 +18,7 @@ articles:
   interview-estimation: interview-estimation.html
   mark-recapture: mark-recapture.html
   progressive-count-surveys: progressive-count-surveys.html
+  refusals-and-na: refusals-and-na.html
   replicate-designs: replicate-designs.html
   section-estimation: section-estimation.html
   survey-design-toolbox: survey-design-toolbox.html
@@ -26,8 +28,9 @@ articles:
   tidycreel-connect: tidycreel-connect.html
   tidycreel: tidycreel.html
   unextrapolated-summaries: unextrapolated-summaries.html
+  unit-rules: unit-rules.html
   visualisation: visualisation.html
-last_built: 2026-10-14T21:25Z
+last_built: 2026-10-15T21:00Z
 urls:
   reference: https://chrischizinski.com/tidycreel/reference
   article: https://chrischizinski.com/tidycreel/articles

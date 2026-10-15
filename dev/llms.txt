@@ -303,6 +303,9 @@ All vignettes ship with the package — open one with
 | Counts to Effort ([`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)) | How effort and its between-day and within-day variance are built; progressive counts |
 | Interviews to Catch ([`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md)) | Why access and roving interviews get different rate estimators; totals and their variance |
 | Variance Methods ([`vignette("replicate-designs")`](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md)) | Taylor, bootstrap and jackknife: what they share and when they differ |
+| Choosing an Estimator ([`vignette("estimator-choice")`](https://chrischizinski.com/tidycreel/dev/articles/estimator-choice.md)) | Which estimator runs for effort, rates and totals, and what decides it |
+| Units ([`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)) | Where an estimate’s unit comes from, and why it is sometimes `NA` |
+| Refusals and NA ([`vignette("refusals-and-na")`](https://chrischizinski.com/tidycreel/dev/articles/refusals-and-na.md)) | Zero, `NA` and refusal; absent, `NA` and zero standard-error parts |
 | Bus-Route Equations ([`vignette("bus-route-equations")`](https://chrischizinski.com/tidycreel/dev/articles/bus-route-equations.md)) | Technical equation derivations for bus-route estimators |
 
 ### Ecosystem
@@ -836,7 +839,8 @@ planning.
 ### Explanation
 
 Why the estimates are built the way they are: effort and its two-stage
-variance, catch rates and totals, and the variance methods.
+variance, catch rates and totals, the variance methods, how an estimator
+is chosen, where units come from, and when the package refuses.
 
 - [Counts to Effort: How the Estimate and its Error Are
   Built](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md):
@@ -844,6 +848,12 @@ variance, catch rates and totals, and the variance methods.
   Built](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md):
 - [Variance Methods: Taylor, Bootstrap, and
   Jackknife](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md):
+- [How tidycreel Chooses an
+  Estimator](https://chrischizinski.com/tidycreel/dev/articles/estimator-choice.md):
+- [Where Units Come
+  From](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md):
+- [Refusals, NA, NULL and
+  Zero](https://chrischizinski.com/tidycreel/dev/articles/refusals-and-na.md):
 
 ### Reference & Equations
 

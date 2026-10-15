@@ -47,6 +47,9 @@
     <li><a class="dropdown-item" href="../articles/effort-pipeline.html">Counts to Effort: How the Estimate and its Error Are Built</a></li>
     <li><a class="dropdown-item" href="../articles/catch-pipeline.html">Interviews to Catch: How the Rate and the Total Are Built</a></li>
     <li><a class="dropdown-item" href="../articles/replicate-designs.html">Variance Methods: Taylor, Bootstrap, and Jackknife</a></li>
+    <li><a class="dropdown-item" href="../articles/estimator-choice.html">How tidycreel Chooses an Estimator</a></li>
+    <li><a class="dropdown-item" href="../articles/unit-rules.html">Where Units Come From</a></li>
+    <li><a class="dropdown-item" href="../articles/refusals-and-na.html">Refusals, NA, NULL and Zero</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
@@ -116,6 +119,15 @@
 <code><a href="../articles/replicate-designs.html">vignette("replicate-designs")</a></code> said Taylor linearization can handle one sampled day in a stratum; it refuses, as the other two do (<a href="https://github.com/chrischizinski/tidycreel/issues/503" class="external-link">#503</a>).</li>
 <li>A “Rasmussen (1994)” that could not be found, a Su and Liu (2025) citation with the wrong title and journal, and an unrelated alewife paper were removed from the reference lists.</li>
 <li>The pkgdown group “Statistical Methods” is now “Explanation”, and all three pages are checked by <code>just vignette-warnings</code>.</li>
+</ul></li>
+<li>
+<p>Three new Explanation pages (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, Explanation section, part 2), each expanding a rule the API conventions article states in a line:</p>
+<ul><li>
+<code><a href="../articles/estimator-choice.html">vignette("estimator-choice")</a></code>: which estimator runs for effort, rate and total, decided by the survey type and the interview type, and how to read which one ran from <code>method</code> and <code>estimator</code>.</li>
+<li>
+<code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code>: units are derived where the package did the multiplication, otherwise <code>NA</code>. On the season data, the same interviews give a total of 674 fish with party size and 1,134 (unit <code>NA</code>, with a warning) without it.</li>
+<li>
+<code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code>: zero, <code>NA</code> and refusal; the three states of a standard-error component (absent, <code>NA</code>, 0); and the kinds of refusal.</li>
 </ul></li>
 <li><p>New How-to page, <code><a href="../articles/instantaneous-counts.html">vignette("instantaneous-counts")</a></code> (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>), for the most common design: instantaneous counts with access or roving interviews. The same season’s counts give effort once; the access interviews then give a ratio-of-means rate from complete trips, and the roving interviews a mean-of-ratios rate from trips still in progress, selected by <code>interview_type = "roving"</code>. The page explains the one warning it shows, the truncation of trips under half an hour. The pkgdown “Survey Types” group is now “How-to: Survey Designs” and opens with this page.</p></li>
 <li><p>New dataset <code>example_roving_interviews</code>: 212 roving interviews on the sampled days of <code>example_season_calendar</code>, simulated with a known catch rate of 0.22 fish per angler-hour. Each party’s catch is its catch so far. <code><a href="../reference/simulate_creel_data.html">simulate_creel_data()</a></code> could not supply this: it gives an incomplete trip the whole trip’s catch over the hours fished so far, which inflates a roving rate (<a href="https://github.com/chrischizinski/tidycreel/issues/494" class="external-link">#494</a>).</p></li>

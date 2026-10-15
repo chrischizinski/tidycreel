@@ -64,7 +64,8 @@ planning.
 ### Explanation
 
 Why the estimates are built the way they are: effort and its two-stage
-variance, catch rates and totals, and the variance methods.
+variance, catch rates and totals, the variance methods, how an estimator
+is chosen, where units come from, and when the package refuses.
 
 - [Counts to Effort: How the Estimate and its Error Are
   Built](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md):
@@ -72,6 +73,12 @@ variance, catch rates and totals, and the variance methods.
   Built](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md):
 - [Variance Methods: Taylor, Bootstrap, and
   Jackknife](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md):
+- [How tidycreel Chooses an
+  Estimator](https://chrischizinski.com/tidycreel/dev/articles/estimator-choice.md):
+- [Where Units Come
+  From](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md):
+- [Refusals, NA, NULL and
+  Zero](https://chrischizinski.com/tidycreel/dev/articles/refusals-and-na.md):
 
 ### Reference & Equations
 
