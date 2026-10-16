@@ -921,6 +921,13 @@ estimate_effort <- function(
 #' ratio-of-means (for complete trips) and mean-of-ratios (for incomplete trips)
 #' estimation methods.
 #'
+#' The mean of ratios is derived for anglers (Hoenig et al. 1997), and an
+#' interview is a party: meeting a party meets all its anglers. When
+#' [add_interviews()] was given an `n_anglers` column, each party's rate per
+#' angler-hour is therefore weighted by its size, so the estimate is total catch
+#' over total angler-hours rather than an average over parties (GH #513).
+#' Without one, or with a constant party size, every party counts once.
+#'
 #' @param design A creel_design object with interviews attached via
 #'   \code{\link{add_interviews}}. The design must have an interview survey object
 #'   constructed with catch and effort columns.
@@ -1997,6 +2004,9 @@ estimate_catch_rate <- function(
 #' estimation via survey::svyratio() to properly account for ratio variance.
 #' HPUE measures the rate of kept fish (harvest) per unit effort, distinguished
 #' from total catch rate (CPUE which includes both kept and released fish).
+#' Roving designs, and `estimator = "mor"`, use the mean of ratios instead; with
+#' an `n_anglers` column each party is weighted by its size, as in
+#' [estimate_catch_rate()] (GH #513).
 #'
 #' @param design A creel_design object with interviews attached via
 #'   \code{\link{add_interviews}}. The design must have an interview survey object
@@ -2111,8 +2121,10 @@ estimate_catch_rate <- function(
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-#'   columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
-#'   with "-per-angler" suffix when normalized), variance_method (character:
+#'   columns if \code{by} is specified), method (character:
+#'   \code{"ratio-of-means-hpue"}, \code{"mean-of-ratios-hpue"} or
+#'   \code{"mean-of-ratios-truncated-hpue"}, with a \code{"-species"} or
+#'   \code{"-sections"} suffix on those paths), variance_method (character:
 #'   reflects the variance parameter value used), design (reference to source
 #'   creel_design), conf_level (numeric), and by_vars (character vector of
 #'   grouping variable names or NULL).
@@ -2564,6 +2576,9 @@ estimate_harvest_rate <- function(
 #' from a creel survey design with attached interview and catch data. Uses
 #' ratio-of-means estimation via survey::svyratio(). RPUE measures the rate of
 #' released fish per unit effort, analogous to HPUE for harvested fish.
+#' Roving designs, and `estimator = "mor"`, use the mean of ratios instead; with
+#' an `n_anglers` column each party is weighted by its size, as in
+#' [estimate_catch_rate()] (GH #513).
 #'
 #' @param design A creel_design object with interviews (via \code{\link{add_interviews}})
 #'   and catch data (via \code{\link{add_catch}}) attached. The catch data must
@@ -2666,7 +2681,10 @@ estimate_harvest_rate <- function(
 #'   directly observable, so \code{use_trips = "all"} remains available to include
 #'   incomplete-trip interviews.
 #'
-#' @return A creel_estimates S3 object with method = "ratio-of-means-rpue".
+#' @return A creel_estimates S3 object whose method is
+#'   \code{"ratio-of-means-rpue"}, \code{"mean-of-ratios-rpue"} or
+#'   \code{"mean-of-ratios-truncated-rpue"}, with a \code{"-sections"} suffix on
+#'   sectioned designs.
 #'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
 #'   any grouping columns).
 #'   The \code{estimator} component records the estimator as you asked for it,
@@ -3547,6 +3565,127 @@ mor_trip_counts <- function(design, interviews) {
     } else {
       sum(tolower(interviews[[trip_status_col]]) == "incomplete", na.rm = TRUE)
     }
+  )
+}
+
+#' Weight a mean of ratios by party size
+#'
+#' The mean-of-ratios estimator is derived for anglers: a roving clerk meets an
+#' angler with probability proportional to trip length, and the mean of the
+#' anglers' own rates then estimates total catch over total effort (Hoenig et
+#' al. 1997). An interview is a party, and meeting a party meets all its
+#' anglers, so each interview's per-angler rate stands for `n_anglers` anglers.
+#' Averaging the parties with equal weight instead estimates
+#' sum(C_j / n_j) / sum(L_j), not sum(C_j) / sum(n_j L_j), and leans toward the
+#' rates of small parties whenever the per-angler rate varies with party size
+#' (GH #513).
+#'
+#' Weighted, the estimate is sum(w n r) / sum(w n): a ratio of the party's catch
+#' per party-hour to its size, which `svyratio()` linearises. Only a party-size
+#' column changes anything. Without one, or with one that is constant, the
+#' weights cancel and the plain `svymean()` is kept, so those results are
+#' unchanged to the last digit.
+#'
+#' @param design A creel_design object, for its `n_anglers_col`.
+#' @param data The interview frame the estimate is computed from, already
+#'   holding the per-interview ratio in `ratio_col`.
+#' @param ratio_col Name of the per-interview rate column.
+#'
+#' @return List: `data` (with `.mor_num` and `.mor_n` added when weighted) and
+#'   `weighted` (logical).
+#'
+#' @keywords internal
+#' @noRd
+mor_party_weights <- function(design, data, ratio_col) {
+  n_col <- design$n_anglers_col
+  if (is.null(n_col) || !n_col %in% names(data)) {
+    return(list(data = data, weighted = FALSE))
+  }
+  n <- data[[n_col]]
+  # add_interviews() gives a missing party size NA angler-hours, and those rows
+  # leave the rate before this point. One arriving here means a path skipped
+  # that filter; falling back to equal weights would bring the bias back
+  # silently, so it is an error instead.
+  if (anyNA(n)) {
+    cli::cli_abort(c(
+      "A missing party size reached the mean-of-ratios estimator.",
+      "i" = "This is an internal error - please report."
+    ))
+  }
+  if (length(unique(n)) <= 1L) {
+    return(list(data = data, weighted = FALSE))
+  }
+  data$.mor_num <- n * data[[ratio_col]]
+  data$.mor_n <- n
+  list(data = data, weighted = TRUE)
+}
+
+#' Ungrouped mean of ratios, party-size weighted when `mor_party_weights()` says
+#'
+#' @param svy_design Survey design built from the frame `mor_party_weights()`
+#'   returned.
+#' @param ratio_col Name of the per-interview rate column.
+#' @param weighted Logical, from `mor_party_weights()`.
+#'
+#' @return A `svystat` or `svyratio` object; `coef()`, `SE()` and `confint()`
+#'   read both the same way.
+#'
+#' @keywords internal
+#' @noRd
+mor_svy_estimate <- function(svy_design, ratio_col, weighted) {
+  suppressWarnings(
+    if (weighted) {
+      survey::svyratio(~.mor_num, ~.mor_n, svy_design)
+    } else {
+      survey::svymean(stats::reformulate(ratio_col), svy_design)
+    }
+  )
+}
+
+#' Grouped mean of ratios, party-size weighted when `mor_party_weights()` says
+#'
+#' @inheritParams mor_svy_estimate
+#' @param by_formula One-sided formula of grouping variables.
+#' @param conf_level Confidence level.
+#'
+#' @return List with the `svyby()` result and its `estimate`, `se`,
+#'   `ci_lower` and `ci_upper` columns.
+#'
+#' @keywords internal
+#' @noRd
+mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf_level) {
+  if (weighted) {
+    svy_result <- wrap_survey_call(survey::svyby( # nolint: object_usage_linter
+      formula = ~.mor_num,
+      by = by_formula,
+      design = svy_design,
+      FUN = survey::svyratio,
+      denominator = ~.mor_n,
+      vartype = c("se", "ci"),
+      ci.level = conf_level,
+      keep.names = FALSE
+    ))
+    est_col <- ".mor_num/.mor_n"
+    se_col <- "se..mor_num/.mor_n"
+  } else {
+    svy_result <- wrap_survey_call(survey::svyby( # nolint: object_usage_linter
+      formula = stats::reformulate(ratio_col),
+      by = by_formula,
+      design = svy_design,
+      FUN = survey::svymean,
+      vartype = c("se", "ci"),
+      ci.level = conf_level,
+      keep.names = FALSE
+    ))
+    est_col <- ratio_col
+    se_col <- "se"
+  }
+  list(
+    svy_result = svy_result,
+    estimate = svy_result[[est_col]],
+    se = svy_result[[se_col]],
+    ci_lower = svy_result[["ci_l"]],
+    ci_upper = svy_result[["ci_u"]]
   )
 }
 
@@ -6431,6 +6570,9 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     # Mean-of-ratios: compute individual ratios, then take mean
     # Add ratio column to data
     interviews_data$cpue_ratio <- interviews_data[[catch_col]] / interviews_data[[effort_col]]
+    # Party-size weights (GH #513): see mor_party_weights().
+    mor_w <- mor_party_weights(design, interviews_data, "cpue_ratio")
+    interviews_data <- mor_w$data
 
     # Rebuild survey design with ratio column included
     strata_cols <- design$strata_cols
@@ -6442,10 +6584,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
 
-    # Call survey::svymean on ratio (suppress expected survey package warnings)
-    svy_result <- suppressWarnings(
-      survey::svymean(~cpue_ratio, svy_design)
-    )
+    svy_result <- mor_svy_estimate(svy_design, "cpue_ratio", mor_w$weighted)
 
     method_name <- if (estimator == "mortr") {
       "mean-of-ratios-truncated-cpue"
@@ -6560,8 +6699,10 @@ estimate_cpue_grouped <- function(
 
   # Determine method based on estimator
   if (estimator %in% c("mor", "mortr")) {
-    # Mean-of-ratios: add ratio column
+    # Mean-of-ratios: add ratio column, and party-size weights (GH #513)
     interviews_data$cpue_ratio <- interviews_data[[catch_col]] / interviews_data[[effort_col]]
+    mor_w <- mor_party_weights(design, interviews_data, "cpue_ratio")
+    interviews_data <- mor_w$data
     method_name <- if (estimator == "mortr") {
       "mean-of-ratios-truncated-cpue"
     } else {
@@ -6599,23 +6740,12 @@ estimate_cpue_grouped <- function(
   svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
 
   if (estimator %in% c("mor", "mortr")) {
-    # MOR: use svyby with svymean on ratio
-    svy_result <- wrap_survey_call(survey::svyby(
-      formula = ~cpue_ratio,
-      by = by_formula,
-      design = svy_design,
-      FUN = survey::svymean,
-      vartype = c("se", "ci"),
-      ci.level = conf_level,
-      keep.names = FALSE
-    ))
-
-    # Extract estimate columns from svyby result
-    # svymean uses simpler column names: cpue_ratio, se, ci_l, ci_u
-    estimate <- svy_result[["cpue_ratio"]]
-    se <- svy_result[["se"]]
-    ci_lower <- svy_result[["ci_l"]]
-    ci_upper <- svy_result[["ci_u"]]
+    mor_fit <- mor_svyby_estimate(svy_design, "cpue_ratio", mor_w$weighted, by_formula, conf_level)
+    svy_result <- mor_fit$svy_result
+    estimate <- mor_fit$estimate
+    se <- mor_fit$se
+    ci_lower <- mor_fit$ci_lower
+    ci_upper <- mor_fit$ci_upper
   } else {
     # Ratio-of-means: use svyby with svyratio
     catch_formula <- stats::reformulate(catch_col)
@@ -7743,6 +7873,9 @@ estimate_harvest_total <- function(
     # Mean-of-ratios: per-interview ratios first, then their mean.
     interviews_data$hpue_ratio <- interviews_data[[harvest_col]] /
       interviews_data[[effort_col]]
+    # Party-size weights (GH #513): see mor_party_weights().
+    mor_w <- mor_party_weights(design, interviews_data, "hpue_ratio")
+    interviews_data <- mor_w$data
 
     strata_cols_mor <- design$strata_cols
     strata_formula_mor <- if (
@@ -7755,9 +7888,7 @@ estimate_harvest_total <- function(
     temp_survey_mor <- build_interview_survey(interviews_data, strata = strata_formula_mor) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey_mor, variance_method) # nolint: object_usage_linter
 
-    svy_result <- suppressWarnings(
-      survey::svymean(~hpue_ratio, svy_design)
-    )
+    svy_result <- mor_svy_estimate(svy_design, "hpue_ratio", mor_w$weighted)
 
     method_name <- if (estimator == "mortr") {
       "mean-of-ratios-truncated-hpue"
@@ -7899,8 +8030,10 @@ estimate_harvest_grouped <- function(
 
   # Determine method based on estimator (GH #271, mirrors estimate_cpue_grouped)
   if (estimator %in% c("mor", "mortr")) {
-    # Mean-of-ratios: add ratio column
+    # Mean-of-ratios: add ratio column, and party-size weights (GH #513)
     interviews_data$hpue_ratio <- interviews_data[[harvest_col]] / interviews_data[[effort_col]]
+    mor_w <- mor_party_weights(design, interviews_data, "hpue_ratio")
+    interviews_data <- mor_w$data
     method_name <- if (estimator == "mortr") {
       "mean-of-ratios-truncated-hpue"
     } else {
@@ -7938,22 +8071,12 @@ estimate_harvest_grouped <- function(
   svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
 
   if (estimator %in% c("mor", "mortr")) {
-    # MOR: use svyby with svymean on ratio
-    svy_result <- wrap_survey_call(survey::svyby(
-      formula = ~hpue_ratio,
-      by = by_formula,
-      design = svy_design,
-      FUN = survey::svymean,
-      vartype = c("se", "ci"),
-      ci.level = conf_level,
-      keep.names = FALSE
-    ))
-
-    # svymean uses simpler column names: hpue_ratio, se, ci_l, ci_u
-    estimate <- svy_result[["hpue_ratio"]]
-    se <- svy_result[["se"]]
-    ci_lower <- svy_result[["ci_l"]]
-    ci_upper <- svy_result[["ci_u"]]
+    mor_fit <- mor_svyby_estimate(svy_design, "hpue_ratio", mor_w$weighted, by_formula, conf_level)
+    svy_result <- mor_fit$svy_result
+    estimate <- mor_fit$estimate
+    se <- mor_fit$se
+    ci_lower <- mor_fit$ci_lower
+    ci_upper <- mor_fit$ci_upper
   } else {
     harvest_formula <- stats::reformulate(harvest_col)
     effort_formula <- stats::reformulate(effort_col)

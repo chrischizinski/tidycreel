@@ -119,8 +119,10 @@ their documentation for why a targeted rate has no matching total.}
 \value{
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
-with "-per-angler" suffix when normalized), variance_method (character:
+columns if \code{by} is specified), method (character:
+\code{"ratio-of-means-hpue"}, \code{"mean-of-ratios-hpue"} or
+\code{"mean-of-ratios-truncated-hpue"}, with a \code{"-species"} or
+\code{"-sections"} suffix on those paths), variance_method (character:
 reflects the variance parameter value used), design (reference to source
 creel_design), conf_level (numeric), and by_vars (character vector of
 grouping variable names or NULL).
@@ -135,6 +137,9 @@ from a creel survey design with attached interview data. Uses ratio-of-means
 estimation via survey::svyratio() to properly account for ratio variance.
 HPUE measures the rate of kept fish (harvest) per unit effort, distinguished
 from total catch rate (CPUE which includes both kept and released fish).
+Roving designs, and \code{estimator = "mor"}, use the mean of ratios instead; with
+an \code{n_anglers} column each party is weighted by its size, as in
+\code{\link[=estimate_catch_rate]{estimate_catch_rate()}} (GH #513).
 }
 \details{
 HPUE is estimated as the ratio of total harvest (kept fish) to total effort
