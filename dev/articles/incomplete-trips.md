@@ -110,8 +110,11 @@ computed using the delta method.
 
     CPUE = mean(Catch_i / Effort_i)
 
-This estimator treats each incomplete trip’s catch rate as an
-independent observation. It’s used for incomplete trips because trip
+With `n_anglers`, each party’s rate is weighted by its size, because
+meeting a party meets all its anglers;
+[`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md)
+explains why. This estimator treats each incomplete trip’s catch rate as
+an independent observation. It’s used for incomplete trips because trip
 duration is unknown (trip not complete), making ratio-of-means
 inappropriate. The mean-of-ratios has higher variance but can be
 unbiased under stationarity assumptions.
@@ -910,10 +913,11 @@ The mean-of-ratios estimator computes:
 
     CPUE_MOR = (1/n) * Σ(catch_i / effort_i)
 
-Variance is estimated with the survey package, treating individual
-ratios as observations. The survey design is rebuilt after short
-incomplete trips are truncated so the variance calculation reflects the
-analytic sample.
+With `n_anglers` each ratio is weighted by party size, and the estimate
+is a ratio of weighted sums. Variance is estimated with the survey
+package, treating individual ratios as observations. The survey design
+is rebuilt after short incomplete trips are truncated so the variance
+calculation reflects the analytic sample.
 
 This differs from ratio-of-means which uses delta method variance
 accounting for catch-effort covariance.

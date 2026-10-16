@@ -189,15 +189,16 @@ estimate_catch_rate(roving)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.197 0.0233    0.151    0.243   183
+#> 1    0.191 0.0193    0.154    0.229   183
 ```
 
 With `interview_type = "roving"`, tidycreel uses the mean-of-ratios
 estimator of Hoenig et al. (1997) over all trips: each party’s catch per
-angler-hour so far, averaged. A ratio of means would be wrong here. A
-roving clerk meets long trips more often than short ones, and the ratio
-of means gives those trips more weight again. Averaging each party’s own
-rate does not.
+angler-hour so far, averaged with each party counted once per angler in
+it, because meeting a party meets all its anglers. A ratio of means
+would be wrong here. A roving clerk meets long trips more often than
+short ones, and the ratio of means gives those trips more weight again.
+Averaging each party’s own rate does not.
 
 The warning is expected, and is the subject of this paragraph. A party
 interviewed a few minutes into its trip has a catch rate that is mostly
@@ -209,10 +210,10 @@ short trips may be a data problem. It is not here: a clerk who meets
 parties at random points in their trips meets some of them early. Check
 your own data before deciding the same.
 
-The rate is about 0.20 fish per angler-hour from the 183 parties that
+The rate is about 0.19 fish per angler-hour from the 183 parties that
 had fished at least half an hour. The parties were simulated with a true
 catch rate of 0.22 fish per angler-hour, inside the 95% confidence
-interval of 0.15 to 0.24.
+interval of 0.15 to 0.23.
 
 ``` r
 
@@ -229,7 +230,7 @@ roving_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1957.  342.    1281.    2633.   183
+#> 1    1900.  313.    1283.    2516.   183
 estimate_total_harvest(roving, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -242,11 +243,11 @@ estimate_total_harvest(roving, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     628.  154.     324.     932.   183
+#> 1     580.  126.     331.     830.   183
 ```
 
 The totals multiply the same season effort by the roving rates: about
-1,960 fish caught and 630 kept. Each estimate built on a roving rate
+1,900 fish caught and 580 kept. Each estimate built on a roving rate
 drops the short trips again. The warning printed once for this design;
 each estimate still records it, and `get_warnings(roving_catch)` lists
 it.
@@ -272,7 +273,7 @@ totals <- rbind(
 totals[, c("interviews", "estimate", "se", "estimator", "unit")]
 #>   interviews estimate       se      estimator unit
 #> 1     access 2230.484 506.2577 ratio-of-means fish
-#> 2     roving 1956.962 342.3899            mor fish
+#> 2     roving 1899.513 312.5565            mor fish
 ```
 
 The two are different sets of interviews from the same days, so their

@@ -227,11 +227,14 @@ for the correlation between catch and effort within each trip. Variance
 is computed using the delta method.</p>
 <p><strong>Mean-of-Ratios (incomplete trips):</strong></p>
 <pre><code><span><span class="va">CPUE</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">Catch_i</span> <span class="op">/</span> <span class="va">Effort_i</span><span class="op">)</span></span></code></pre>
-<p>This estimator treats each incomplete trip’s catch rate as an
-independent observation. It’s used for incomplete trips because trip
-duration is unknown (trip not complete), making ratio-of-means
-inappropriate. The mean-of-ratios has higher variance but can be
-unbiased under stationarity assumptions.</p>
+<p>With <code>n_anglers</code>, each party’s rate is weighted by its
+size, because meeting a party meets all its anglers;
+<code><a href="../articles/catch-pipeline.html">vignette("catch-pipeline")</a></code> explains why. This estimator
+treats each incomplete trip’s catch rate as an independent observation.
+It’s used for incomplete trips because trip duration is unknown (trip
+not complete), making ratio-of-means inappropriate. The mean-of-ratios
+has higher variance but can be unbiased under stationarity
+assumptions.</p>
 <p>For details on variance estimation, see
 <code><a href="../reference/estimate_catch_rate.html">?estimate_catch_rate</a></code>.</p>
 </div>
@@ -997,10 +1000,11 @@ Warning: 7% of incomplete trips truncated (&gt;5% threshold)</code></pre>
 </h3>
 <p>The mean-of-ratios estimator computes:</p>
 <pre><code><span><span class="va">CPUE_MOR</span> <span class="op">=</span> <span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="va">n</span><span class="op">)</span> <span class="op">*</span> <span class="fu">Σ</span><span class="op">(</span><span class="va">catch_i</span> <span class="op">/</span> <span class="va">effort_i</span><span class="op">)</span></span></code></pre>
-<p>Variance is estimated with the survey package, treating individual
-ratios as observations. The survey design is rebuilt after short
-incomplete trips are truncated so the variance calculation reflects the
-analytic sample.</p>
+<p>With <code>n_anglers</code> each ratio is weighted by party size, and
+the estimate is a ratio of weighted sums. Variance is estimated with the
+survey package, treating individual ratios as observations. The survey
+design is rebuilt after short incomplete trips are truncated so the
+variance calculation reflects the analytic sample.</p>
 <p>This differs from ratio-of-means which uses delta method variance
 accounting for catch-effort covariance.</p>
 </div>

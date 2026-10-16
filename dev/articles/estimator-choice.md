@@ -108,11 +108,12 @@ et al. 1997):
   roving clerk meets a party in proportion to how long it fishes, and
   under that selection it is the mean of ratios that estimates total
   catch over total effort (Hoenig et al. 1997). That result is derived
-  for individual anglers. tidycreel averages over interviewed parties
-  with equal weight, so when party sizes vary, the rate per angler-hour
-  leans toward the rates of small parties; this is open as issue \#513.
-  Trips shorter than half an hour are left out by default: their rates
-  are mostly noise and inflate the variance.
+  for individual anglers, and an interview is a party: meeting a party
+  meets all its anglers. So each party’s rate per angler-hour counts
+  once per angler in it (`n_anglers`). Without a party size the rate is
+  per party-hour, and each party counts once. Trips shorter than half an
+  hour are left out by default: their rates are mostly noise and inflate
+  the variance.
 
 Why each of these is right, and when, is the subject of
 [`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md).

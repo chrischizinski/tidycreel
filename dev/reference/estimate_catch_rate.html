@@ -230,7 +230,13 @@ truncation and the default threshold with the same string.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Trip Type Selection (use_trips):</strong>
+    <p>The mean of ratios is derived for anglers (Hoenig et al. 1997), and an
+interview is a party: meeting a party meets all its anglers. When
+<code><a href="add_interviews.html">add_interviews()</a></code> was given an <code>n_anglers</code> column, each party's rate per
+angler-hour is therefore weighted by its size, so the estimate is total catch
+over total angler-hours rather than an average over parties (GH #513).
+Without one, or with a constant party size, every party counts once.</p>
+<p><strong>Trip Type Selection (use_trips):</strong>
 When trip_status is provided, the <code>use_trips</code> parameter controls which
 trips are used for estimation. For access-point designs
 (<code>interview_type = "access"</code>, the default), <code>use_trips</code> defaults

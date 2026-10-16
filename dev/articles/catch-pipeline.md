@@ -71,6 +71,21 @@ catch and hours so far, estimates total catch over total effort
 approximately, and the ratio of means does not: it gives the long trips
 extra weight a second time (Pollock et al. 1997; Hoenig et al. 1997).
 
+That argument is about anglers, and an interview is a party. Meeting a
+party meets every angler in it, so a party of three stands for three
+anglers, each with the party’s rate per angler-hour. With party sizes
+$`m_i`$ (`n_anglers`) and the rate per angler-hour
+$`r_i = c_i / (h_i m_i)`$, the mean of ratios is
+
+``` math
+\hat{R}_{\text{MOR}} = \frac{\sum m_i r_i}{\sum m_i}
+```
+
+Averaging the parties with equal weight would estimate a different
+quantity whenever the rate per angler differs between small and large
+parties. Without `n_anglers` the rate is per party-hour and each party
+counts once, which is the formula above.
+
 Parties met a few minutes into a trip have rates that are mostly noise
 (one fish in ten minutes is six an hour), which inflates the variance of
 the mean of ratios. Leaving out trips shorter than a minimum lowers the

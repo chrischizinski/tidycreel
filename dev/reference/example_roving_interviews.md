@@ -135,5 +135,5 @@ estimate_catch_rate(design)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.197 0.0233    0.151    0.243   183
+#> 1    0.191 0.0193    0.154    0.229   183
 ```

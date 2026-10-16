@@ -312,13 +312,14 @@ below.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.197 0.023<span style="text-decoration: underline;">3</span>    0.151    0.243   183</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.191 0.019<span style="text-decoration: underline;">3</span>    0.154    0.229   183</span></span></code></pre></div>
 <p>With <code>interview_type = "roving"</code>, tidycreel uses the
 mean-of-ratios estimator of Hoenig et al. (1997) over all trips: each
-party’s catch per angler-hour so far, averaged. A ratio of means would
-be wrong here. A roving clerk meets long trips more often than short
-ones, and the ratio of means gives those trips more weight again.
-Averaging each party’s own rate does not.</p>
+party’s catch per angler-hour so far, averaged with each party counted
+once per angler in it, because meeting a party meets all its anglers. A
+ratio of means would be wrong here. A roving clerk meets long trips more
+often than short ones, and the ratio of means gives those trips more
+weight again. Averaging each party’s own rate does not.</p>
 <p>The warning is expected, and is the subject of this paragraph. A
 party interviewed a few minutes into its trip has a catch rate that is
 mostly noise: one fish in ten minutes is six fish an hour. By default
@@ -329,10 +330,10 @@ parties. The warning also suggests this many short trips may be a data
 problem. It is not here: a clerk who meets parties at random points in
 their trips meets some of them early. Check your own data before
 deciding the same.</p>
-<p>The rate is about 0.20 fish per angler-hour from the 183 parties that
+<p>The rate is about 0.19 fish per angler-hour from the 183 parties that
 had fished at least half an hour. The parties were simulated with a true
 catch rate of 0.22 fish per angler-hour, inside the 95% confidence
-interval of 0.15 to 0.24.</p>
+interval of 0.15 to 0.23.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">roving_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">roving</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
 <span><span class="va">roving_catch</span></span>
@@ -347,7 +348,7 @@ interval of 0.15 to 0.24.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>957.  342.    <span style="text-decoration: underline;">1</span>281.    <span style="text-decoration: underline;">2</span>633.   183</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>900.  313.    <span style="text-decoration: underline;">1</span>283.    <span style="text-decoration: underline;">2</span>516.   183</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">roving</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -360,9 +361,9 @@ interval of 0.15 to 0.24.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     628.  154.     324.     932.   183</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     580.  126.     331.     830.   183</span></span></code></pre></div>
 <p>The totals multiply the same season effort by the roving rates: about
-1,960 fish caught and 630 kept. Each estimate built on a roving rate
+1,900 fish caught and 580 kept. Each estimate built on a roving rate
 drops the short trips again. The warning printed once for this design;
 each estimate still records it, and
 <code>get_warnings(roving_catch)</code> lists it.</p>
@@ -387,7 +388,7 @@ shows them side by side:</p>
 <span><span class="va">totals</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"interviews"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"estimator"</span>, <span class="st">"unit"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   interviews estimate       se      estimator unit</span></span>
 <span><span class="co">#&gt; 1     access 2230.484 506.2577 ratio-of-means fish</span></span>
-<span><span class="co">#&gt; 2     roving 1956.962 342.3899            mor fish</span></span></code></pre></div>
+<span><span class="co">#&gt; 2     roving 1899.513 312.5565            mor fish</span></span></code></pre></div>
 <p>The two are different sets of interviews from the same days, so their
 totals need not agree; they should be close when both kinds of interview
 describe the same fishery.</p>

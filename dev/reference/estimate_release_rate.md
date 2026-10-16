@@ -4,7 +4,11 @@ Computes release rate estimates with standard errors and confidence
 intervals from a creel survey design with attached interview and catch
 data. Uses ratio-of-means estimation via survey::svyratio(). RPUE
 measures the rate of released fish per unit effort, analogous to HPUE
-for harvested fish.
+for harvested fish. Roving designs, and `estimator = "mor"`, use the
+mean of ratios instead; with an `n_anglers` column each party is
+weighted by its size, as in
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
+(GH \#513).
 
 ## Usage
 
@@ -145,12 +149,13 @@ estimate_release_rate(
 
 ## Value
 
-A creel_estimates S3 object with method = "ratio-of-means-rpue".
-Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
-any grouping columns). The `estimator` component records the estimator
-as you asked for it, `"mortr"` included, which `method` cannot: it
-reports mandatory truncation and the default threshold with the same
-string.
+A creel_estimates S3 object whose method is `"ratio-of-means-rpue"`,
+`"mean-of-ratios-rpue"` or `"mean-of-ratios-truncated-rpue"`, with a
+`"-sections"` suffix on sectioned designs. Estimates tibble has columns:
+estimate, se, ci_lower, ci_upper, n (plus any grouping columns). The
+`estimator` component records the estimator as you asked for it,
+`"mortr"` included, which `method` cannot: it reports mandatory
+truncation and the default threshold with the same string.
 
 ## Details
 

@@ -5,7 +5,11 @@ from a creel survey design with attached interview data. Uses
 ratio-of-means estimation via survey::svyratio() to properly account for
 ratio variance. HPUE measures the rate of kept fish (harvest) per unit
 effort, distinguished from total catch rate (CPUE which includes both
-kept and released fish).
+kept and released fish). Roving designs, and `estimator = "mor"`, use
+the mean of ratios instead; with an `n_anglers` column each party is
+weighted by its size, as in
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
+(GH \#513).
 
 ## Usage
 
@@ -158,15 +162,16 @@ estimate_harvest_rate(
 
 A creel_estimates S3 object (list) with components: estimates (tibble
 with estimate, se, ci_lower, ci_upper, n columns, plus grouping columns
-if `by` is specified), method (character: "ratio-of-means-hpue", with
-"-per-angler" suffix when normalized), variance_method (character:
-reflects the variance parameter value used), design (reference to source
-creel_design), conf_level (numeric), and by_vars (character vector of
-grouping variable names or NULL). The `estimator` component records the
-estimator as you asked for it, `"mortr"` included, which `method`
-cannot: it reports mandatory truncation and the default threshold with
-the same string. For bus-route designs, a "site_contributions" attribute
-is also present.
+if `by` is specified), method (character: `"ratio-of-means-hpue"`,
+`"mean-of-ratios-hpue"` or `"mean-of-ratios-truncated-hpue"`, with a
+`"-species"` or `"-sections"` suffix on those paths), variance_method
+(character: reflects the variance parameter value used), design
+(reference to source creel_design), conf_level (numeric), and by_vars
+(character vector of grouping variable names or NULL). The `estimator`
+component records the estimator as you asked for it, `"mortr"` included,
+which `method` cannot: it reports mandatory truncation and the default
+threshold with the same string. For bus-route designs, a
+"site_contributions" attribute is also present.
 
 ## Details
 
