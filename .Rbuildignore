@@ -69,7 +69,6 @@
 ^\.mcp\.json$
 ^\.continue-here\.md$
 ^\.bg-shell$
-^tidycreel\.connect$
 ^\.serena$
 ^\.ai$
 ^justfile$
