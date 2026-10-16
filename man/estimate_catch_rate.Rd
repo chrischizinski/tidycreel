@@ -135,6 +135,13 @@ ratio-of-means (for complete trips) and mean-of-ratios (for incomplete trips)
 estimation methods.
 }
 \details{
+The mean of ratios is derived for anglers (Hoenig et al. 1997), and an
+interview is a party: meeting a party meets all its anglers. When
+\code{\link[=add_interviews]{add_interviews()}} was given an \code{n_anglers} column, each party's rate per
+angler-hour is therefore weighted by its size, so the estimate is total catch
+over total angler-hours rather than an average over parties (GH #513).
+Without one, or with a constant party size, every party counts once.
+
 \strong{Trip Type Selection (use_trips):}
 When trip_status is provided, the \code{use_trips} parameter controls which
 trips are used for estimation. For access-point designs

@@ -2,6 +2,22 @@
 
 ## Breaking changes
 
+* Mean-of-ratios catch, harvest and release rates now weight each interviewed
+  party by its size when `n_anglers` is a column (#513). The estimator is
+  derived for anglers (Hoenig et al. 1997), and an interview is a party: meeting
+  a party meets all its anglers. Averaging parties with equal weight estimated
+  sum(C/n) / sum(L) instead of total catch over total angler-hours, and leaned
+  toward small parties' rates whenever the rate per angler differed with party
+  size. Two equally long trips, one angler catching nothing and three catching
+  one fish per angler-hour, gave 0.5; the rate is 0.75. On
+  `example_roving_interviews` the roving rate moves from 0.197 to 0.191 fish per
+  angler-hour; in a simulation where larger parties catch faster, the old
+  estimator was 23% low and the weighted one unbiased. This changes roving
+  rates and every total built on them, and the bus-route and ice
+  `use_trips = "incomplete"` rates. Unchanged: designs without `n_anglers` or
+  with a constant party size (the weights cancel), and ratio-of-means rates,
+  which already weight each party by its angler-hours.
+
 * Effort standard errors on `target = "stratum_total"` or `"period_total"`
   were too small whenever a sampled day had a single count (#505). The
   finite-population correction (1 - n/N) removed, along with the day-to-day

@@ -828,6 +828,14 @@ br_incomplete_harvest_rate <- function(
   interviews$.h_ratio_i <- interviews[[harvest_col]] /
     interviews[[angler_effort_col]]
   interviews$.w_i <- interviews$.expansion / interviews$.pi_i
+  # An interview is a party, and the rate is per angler, so each party stands
+  # for its n_anglers anglers in the mean (GH #513; see mor_party_weights()).
+  # Folded into w_i, so the site table's w_i x h_ratio_i stays the estimate's
+  # own contribution. Unchanged when party size is absent or constant.
+  party_w <- mor_party_weights(design, interviews, ".h_ratio_i") # nolint: object_usage_linter
+  if (party_w$weighted) {
+    interviews$.w_i <- interviews$.w_i * party_w$data$.mor_n
+  }
   interviews$.contribution <- interviews$.h_ratio_i * interviews$.w_i
   interviews$.w_contribution <- interviews$.w_i
 

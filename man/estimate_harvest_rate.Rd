@@ -135,6 +135,9 @@ from a creel survey design with attached interview data. Uses ratio-of-means
 estimation via survey::svyratio() to properly account for ratio variance.
 HPUE measures the rate of kept fish (harvest) per unit effort, distinguished
 from total catch rate (CPUE which includes both kept and released fish).
+Roving designs, and \code{estimator = "mor"}, use the mean of ratios instead; with
+an \code{n_anglers} column each party is weighted by its size, as in
+\code{\link[=estimate_catch_rate]{estimate_catch_rate()}} (GH #513).
 }
 \details{
 HPUE is estimated as the ratio of total harvest (kept fish) to total effort

@@ -119,6 +119,9 @@ Computes release rate estimates with standard errors and confidence intervals
 from a creel survey design with attached interview and catch data. Uses
 ratio-of-means estimation via survey::svyratio(). RPUE measures the rate of
 released fish per unit effort, analogous to HPUE for harvested fish.
+Roving designs, and \code{estimator = "mor"}, use the mean of ratios instead; with
+an \code{n_anglers} column each party is weighted by its size, as in
+\code{\link[=estimate_catch_rate]{estimate_catch_rate()}} (GH #513).
 }
 \details{
 RPUE is estimated as the ratio of total released fish to total effort
