@@ -22,17 +22,15 @@ itself deliberately leaves out of scope:
 
 ## Installation
 
-tidycreel.connect lives in a subdirectory of the tidycreel repository
-rather than a repository of its own, so both installers need to be told
-where to look:
+tidycreel.connect has its own repository, separate from tidycreel:
 
 ``` r
 
 # Using remotes
-remotes::install_github("chrischizinski/tidycreel", subdir = "tidycreel.connect")
+remotes::install_github("chrischizinski/tidycreel.connect")
 
 # Or using pak
-pak::pak("chrischizinski/tidycreel/tidycreel.connect")
+pak::pak("chrischizinski/tidycreel.connect")
 ```
 
 It is not on CRAN, and it requires tidycreel 7.0.0 or newer: identifier
@@ -148,9 +146,8 @@ interviews <- fetch_interviews(con)
 
 ## More information
 
-- Source and documentation: `chrischizinski/tidycreel`, under
-  `tidycreel.connect/`
+- Source: <https://github.com/chrischizinski/tidycreel.connect>
+- Documentation: <https://chrischizinski.com/tidycreel.connect/>
 - Main package: <https://github.com/chrischizinski/tidycreel>
-- Bug reports and feature requests: both packages share one issue
-  tracker, <https://github.com/chrischizinski/tidycreel/issues> — there
-  is no separate tidycreel.connect repository to open an issue on.
+- Bug reports and feature requests for the companion package:
+  <https://github.com/chrischizinski/tidycreel.connect/issues>
