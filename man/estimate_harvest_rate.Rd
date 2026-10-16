@@ -119,8 +119,10 @@ their documentation for why a targeted rate has no matching total.}
 \value{
 A creel_estimates S3 object (list) with components: estimates
 (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
-with "-per-angler" suffix when normalized), variance_method (character:
+columns if \code{by} is specified), method (character:
+\code{"ratio-of-means-hpue"}, \code{"mean-of-ratios-hpue"} or
+\code{"mean-of-ratios-truncated-hpue"}, with a \code{"-species"} or
+\code{"-sections"} suffix on those paths), variance_method (character:
 reflects the variance parameter value used), design (reference to source
 creel_design), conf_level (numeric), and by_vars (character vector of
 grouping variable names or NULL).

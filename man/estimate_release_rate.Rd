@@ -107,7 +107,10 @@ Ignored for the \code{ratio-of-means} estimator, as for
 their documentation for why a targeted rate has no matching total.}
 }
 \value{
-A creel_estimates S3 object with method = "ratio-of-means-rpue".
+A creel_estimates S3 object whose method is
+\code{"ratio-of-means-rpue"}, \code{"mean-of-ratios-rpue"} or
+\code{"mean-of-ratios-truncated-rpue"}, with a \code{"-sections"} suffix on
+sectioned designs.
 Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
 any grouping columns).
 The \code{estimator} component records the estimator as you asked for it,

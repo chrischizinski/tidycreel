@@ -2121,8 +2121,10 @@ estimate_catch_rate <- function(
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
-#'   columns if \code{by} is specified), method (character: "ratio-of-means-hpue",
-#'   with "-per-angler" suffix when normalized), variance_method (character:
+#'   columns if \code{by} is specified), method (character:
+#'   \code{"ratio-of-means-hpue"}, \code{"mean-of-ratios-hpue"} or
+#'   \code{"mean-of-ratios-truncated-hpue"}, with a \code{"-species"} or
+#'   \code{"-sections"} suffix on those paths), variance_method (character:
 #'   reflects the variance parameter value used), design (reference to source
 #'   creel_design), conf_level (numeric), and by_vars (character vector of
 #'   grouping variable names or NULL).
@@ -2679,7 +2681,10 @@ estimate_harvest_rate <- function(
 #'   directly observable, so \code{use_trips = "all"} remains available to include
 #'   incomplete-trip interviews.
 #'
-#' @return A creel_estimates S3 object with method = "ratio-of-means-rpue".
+#' @return A creel_estimates S3 object whose method is
+#'   \code{"ratio-of-means-rpue"}, \code{"mean-of-ratios-rpue"} or
+#'   \code{"mean-of-ratios-truncated-rpue"}, with a \code{"-sections"} suffix on
+#'   sectioned designs.
 #'   Estimates tibble has columns: estimate, se, ci_lower, ci_upper, n (plus
 #'   any grouping columns).
 #'   The \code{estimator} component records the estimator as you asked for it,
@@ -3597,7 +3602,17 @@ mor_party_weights <- function(design, data, ratio_col) {
     return(list(data = data, weighted = FALSE))
   }
   n <- data[[n_col]]
-  if (anyNA(n) || length(unique(n)) <= 1L) {
+  # add_interviews() gives a missing party size NA angler-hours, and those rows
+  # leave the rate before this point. One arriving here means a path skipped
+  # that filter; falling back to equal weights would bring the bias back
+  # silently, so it is an error instead.
+  if (anyNA(n)) {
+    cli::cli_abort(c(
+      "A missing party size reached the mean-of-ratios estimator.",
+      "i" = "This is an internal error - please report."
+    ))
+  }
+  if (length(unique(n)) <= 1L) {
     return(list(data = data, weighted = FALSE))
   }
   data$.mor_num <- n * data[[ratio_col]]

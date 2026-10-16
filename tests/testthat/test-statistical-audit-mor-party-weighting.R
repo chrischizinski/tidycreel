@@ -134,3 +134,16 @@ test_that("release rate by mean of ratios weights parties by size", {
   expect_equal(got$estimates$estimate, sum(k$n_anglers * r) / sum(k$n_anglers))
   expect_false(isTRUE(all.equal(got$estimates$estimate, mean(r))))
 })
+
+test_that("a missing party size drops that party and keeps the rest weighted", {
+  # add_interviews() gives it NA angler-hours, so it leaves the rate; the other
+  # parties must stay weighted rather than the whole fit falling back.
+  fx <- mor_party_fixture(n_days = 6L)
+  fx$interviews$n_anglers[1] <- NA
+  d <- attach_roving(fx, n_anglers = n_anglers)
+  got <- quiet(estimate_catch_rate(d))$estimates
+  k <- fx$interviews[-1, ]
+  r <- k$catch_total / (k$hours_fished * k$n_anglers)
+  expect_identical(got$n, nrow(k))
+  expect_equal(got$estimate, sum(k$n_anglers * r) / sum(k$n_anglers))
+})
