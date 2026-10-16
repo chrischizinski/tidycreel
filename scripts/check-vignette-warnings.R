@@ -57,7 +57,11 @@ allowed <- list(
     "Instantaneous counts were expanded without a period length",
     "No `n_anglers` provided",
     "Rate and effort may be in different units"
-  )
+  ),
+  glossary = character(),
+  `bus-route-equations` = character(),
+  `survey-tidycreel` = character(),
+  `articles/api-conventions` = character()
 )
 
 suppressMessages(devtools::load_all(quiet = TRUE))
@@ -65,7 +69,7 @@ options(rlib_warning_verbosity = "verbose")
 grDevices::pdf(NULL) # plots are drawn, to raise their warnings, then discarded
 
 check_vignette <- function(name, patterns) {
-  r_file <- file.path(tempdir(), paste0(name, ".R"))
+  r_file <- file.path(tempdir(), paste0(basename(name), ".R"))
   suppressMessages(knitr::purl(
     file.path("vignettes", paste0(name, ".Rmd")),
     output = r_file, quiet = TRUE, documentation = 0
