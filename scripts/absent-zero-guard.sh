@@ -33,7 +33,8 @@
 #   scripts/absent-zero-guard.sh            # check against the baseline
 #   scripts/absent-zero-guard.sh --list     # print current hits, baseline format
 #
-# Covers BOTH tracked package source roots: `R/` and `tidycreel.connect/R`.
+# Covers the package source root `R/`. tidycreel.connect moved to its own
+# repository on 2026-10-16 and is no longer scanned here.
 #
 # To accept a new hit, add its row to scripts/absent-zero-guard-baseline.tsv
 # with a justification that says why absence means zero HERE. "It is fine" is
@@ -78,22 +79,7 @@ current_hits() {
   #
   # `|| true` on the head of the pipeline: grep exits 1 when nothing matches,
   # and under `set -e` that aborted `--list` on a tree with no hits at all.
-  # Both tracked package source roots, not just `R/`. The repo also carries
-  # `tidycreel.connect/`, and a new conversion there would have passed every run
-  # of this guard without a justification or a failure. It contributes zero hits
-  # today, so covering it costs nothing and closes the gap before it matters.
-  # (Found by Codex, which could see the second package because it reads the
-  # repo rather than a diff.)
-  #
-  # This used to justify itself with "whose live-API path is explicitly still
-  # unaudited". That framing was stale: the connect ingestion seam WAS audited,
-  # its five filed findings are closed, and the audit's remaining questions
-  # named fields the agency-agnostic rewrite deleted. What is actually still
-  # open is narrower -- no request has ever been made against a real endpoint --
-  # and it is tracked as GH #330. The reason to scan the second package does not
-  # depend on any of that.
   local roots=(R)
-  [ -d tidycreel.connect/R ] && roots+=(tidycreel.connect/R)
   { grep -rnE '\[is\.na\(|rep\(0[,L)]' "${roots[@]}" 2>/dev/null || true; } |
     sed -E 's/[[:space:]]*#.*$//' |
     grep -E '<-[[:space:]]*0L?[[:space:]]*$|<-[[:space:]]*FALSE|rep\(0[,L)]' |

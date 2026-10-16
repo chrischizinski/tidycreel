@@ -115,9 +115,8 @@ four DOIs resolve through the Crossref API to the expected articles, and
 
 ## Notes for the reviewer
 
-- The repository contains a companion package, `tidycreel.connect`, in a
-  subdirectory. It is excluded from the build via `.Rbuildignore` and is not
-  part of this submission; no file from it appears in the tarball. The vignette
+- A companion package, `tidycreel.connect`, lives in its own repository and is
+  not part of this submission. The vignette
   `tidycreel-connect.Rmd` describes that package for users who need database
   and API ingestion, but sets `eval = FALSE` throughout and never loads it, so
   it builds without the package present. `tidycreel.connect` is therefore
