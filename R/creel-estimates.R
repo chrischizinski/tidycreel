@@ -121,11 +121,14 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   component (one value, or one per group). NULL means the component was not
 #'   propagated at all, which is deliberately distinct from a propagated zero.
 #' @param se_components NULL, or a named list of numeric standard-error
-#'   contributions to `se`. An absent name means the component does not apply
-#'   to this path; `NA_real_` means it applies and is unknown; a finite value
-#'   is a contribution to `se` and never `se` itself. Never `0`, which cannot
-#'   be told apart from a component that was never propagated. `party_size` is
-#'   reserved: the constructor writes it from `se_expansion` so the two cannot
+#'   contributions to `se`. An absent name means the component was not
+#'   propagated: it does not apply to this path, or its quantity was supplied
+#'   without a standard error and `se` treats it as fixed. `NA_real_` means it
+#'   applies and is unknown; a finite value is a contribution to `se` and
+#'   never `se` itself. `0` only for a component known to be zero (e.g.
+#'   `angler_ratio_se = 0`), never for one that was not propagated, which a
+#'   zero could not be told apart from. `party_size` is reserved: the
+#'   constructor writes it from `se_expansion` so the two cannot
 #'   drift apart, and supplying it here is an error.
 #'
 #' @return List of class "creel_estimates" with components:

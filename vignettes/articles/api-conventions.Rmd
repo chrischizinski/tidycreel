@@ -136,9 +136,12 @@ result that cannot leave the package as data is not finished.
 definition (party-hours vs angler-hours, a period length, `h_open`). When it
 cannot be derived it is `NA`, meaning unknown. There is no default unit.
 
-**`NA`, `NULL` and zero are different.** A standard-error component that does
-not apply is `NULL`; one that applies but is unknown is `NA`; zero means a
-known zero. Never report `0` for "not propagated".
+**`NA`, `NULL` and zero are different.** A standard-error component that was
+not propagated is absent (`NULL`, or left out of `se_components`): either it
+does not apply to the design, or the quantity was supplied without its own
+standard error, so the reported `se` treats it as fixed. One that applies but
+is unknown is `NA`, and makes `se` `NA`. Zero means a known zero. Never report
+`0` for "not propagated"; `vignette("refusals-and-na")` shows all three.
 
 **Refuse rather than guess.** When the data cannot support an estimate
 (unsampled strata, units that do not combine, a design the estimator does not

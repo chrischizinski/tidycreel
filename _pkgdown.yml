@@ -255,7 +255,6 @@ articles:
     Introduction to creel survey analysis with tidycreel.
   contents:
   - tidycreel
-  - glossary
 
 - title: "How-to: Survey Designs"
   navbar: "How-to"
@@ -276,7 +275,6 @@ articles:
     Catch rate, harvest, effort, mark-recapture, exploitation rate, and
     spatially stratified estimation techniques.
   contents:
-  - survey-tidycreel
   - interview-estimation
   - mark-recapture
   - incomplete-trips
@@ -308,16 +306,16 @@ articles:
   - unit-rules
   - refusals-and-na
 
-- title: "Reference & Equations"
+- title: "Reference"
+  navbar: "Reference"
   desc: >
-    Technical equation derivations for advanced users.
+    Look-up material: the terms the package uses, the bus-route equations,
+    how each estimate maps onto survey package calls, and the conventions
+    every function follows.
   contents:
+  - glossary
   - bus-route-equations
-
-- title: "Package Conventions"
-  desc: >
-    How functions are named, what they take and what they return.
-  contents:
+  - survey-tidycreel
   - articles/api-conventions
 
 - title: "Ecosystem"

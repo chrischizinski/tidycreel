@@ -173,8 +173,9 @@ estimate_effort_aerial <- function(
 
   # Named components (GH #141). `visibility` is present-and-NA under the
   # declared opt-out and present-and-numeric when an SE was supplied; it is
-  # omitted entirely only when the correction was supplied without one, which
-  # is the "does not apply" case rather than the "unknown" case.
+  # omitted entirely only when the correction was supplied without one: not
+  # propagated, so `se` treats the correction as fixed. That is the absent
+  # case, not the "unknown" case.
   se_components <- list(
     count_sampling = se_between,
     within_day = se_within
@@ -253,7 +254,7 @@ aerial_effort_scale <- function(design) {
 #' One per reported quantity (a scalar for the pooled estimate, a vector for
 #' grouped rows), each `estimate * se / value` -- the delta-method term of a
 #' multiplier shared by everything it scales. A component is omitted when its
-#' SE was not supplied (does not apply), `NA` when it is unknown (the "none"
+#' SE was not supplied (not propagated), `NA` when it is unknown (the "none"
 #' opt-out), and exactly 0 for a zero estimate, which no multiplier changes.
 #'
 #' @param design An aerial creel_design object.
