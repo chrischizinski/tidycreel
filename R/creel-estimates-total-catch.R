@@ -30,6 +30,8 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by CPUE so total catch stays aligned with the requested
 #'   temporal target.
+#'   Aerial designs accept only `"sampled_days"`, as [estimate_effort()]
+#'   does: aerial calendar expansion is not yet supported (#518).
 #' @param use_trips Character. Which interviews contribute to CPUE:
 #'   `"complete"` uses only completed trips, `"all"` includes incomplete ones.
 #'   Default `NULL` means "not specified", which resolves to `"complete"` --
@@ -434,6 +436,7 @@ estimate_total_catch <- function(
   # estimate_effort_total() directly and never hear that refusal. First in the
   # block, so the camera case aborts instead of warning on its way out.
   refuse_camera_design(design, "estimate_total_catch") # nolint: object_usage_linter
+  refuse_aerial_expanded_target(design, target) # nolint: object_usage_linter
 
   # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
   warn_party_hours_product(design) # nolint: object_usage_linter

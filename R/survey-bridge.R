@@ -3122,3 +3122,36 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
     call = call
   )
 }
+
+#' Refuse an expanded effort target on an aerial design
+#'
+#' `estimate_effort()` has no calendar expansion for aerial designs yet, so it
+#' accepts only `target = "sampled_days"`. The three totals call
+#' `estimate_effort_total()` and `estimate_effort_grouped()` directly, which do
+#' expand, so without this guard they returned a stratum or period total built
+#' on an aerial expansion the effort entry point refuses (GH #518). Raised at
+#' all four entry points for the same reason as [refuse_camera_design()].
+#'
+#' @param design A creel_design object.
+#' @param target The resolved effort target.
+#' @param call Environment for the error's call.
+#'
+#' @return NULL (invisible) unless the design is aerial and the target is not
+#'   `"sampled_days"`. Aborts otherwise.
+#'
+#' @keywords internal
+#' @noRd
+refuse_aerial_expanded_target <- function(design, target, call = rlang::caller_env()) {
+  if (!identical(design$design_type, "aerial") || identical(target, "sampled_days")) {
+    return(invisible(NULL))
+  }
+  cli::cli_abort(
+    c(
+      "Expanded effort targets are not yet supported for aerial designs.",
+      "x" = "Got {.arg target = {target}}.",
+      "i" = "Use {.code target = 'sampled_days'} for now."
+    ),
+    class = "creel_error_dispatch_unsupported",
+    call = call
+  )
+}

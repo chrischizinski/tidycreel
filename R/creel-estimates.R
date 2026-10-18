@@ -811,16 +811,7 @@ estimate_effort <- function(
 
   # Aerial dispatch — svytotal scaled by h_open/v (Pollock et al. 1994 sec.15.6.1)
   if (!is.null(design$design_type) && identical(design$design_type, "aerial")) {
-    if (!identical(target, "sampled_days")) {
-      cli::cli_abort(
-        c(
-          "Expanded effort targets are not yet supported for aerial designs.",
-          "x" = "Got {.arg target = {target}}.",
-          "i" = "Use {.code target = 'sampled_days'} for now."
-        ),
-        class = "creel_error_dispatch_unsupported"
-      )
-    }
+    refuse_aerial_expanded_target(design, target) # nolint: object_usage_linter
     if (is.null(design$counts)) {
       cli::cli_abort(
         c(
