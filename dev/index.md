@@ -318,7 +318,7 @@ All vignettes ship with the package — open one with
 
 | Vignette | Description |
 |----|----|
-| tidycreel.connect ([`vignette("tidycreel-connect")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel-connect.md)) | Database integration and reproducible data pipelines |
+| [tidycreel.connect](https://chrischizinski.com/tidycreel.connect/) ([`vignette("tidycreel-connect")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel-connect.md)) | Database integration and reproducible data pipelines |
 
 ## Getting Help and Reporting Bugs
 
