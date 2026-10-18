@@ -198,7 +198,6 @@ All vignettes ship with the package — open one with
 | Vignette | Description |
 |---|---|
 | Getting Started (`vignette("tidycreel")`) | Core workflow: design → counts → effort estimation |
-| Glossary (`vignette("glossary")`) | Plain-language guide to tidycreel terms and concepts |
 
 ### Survey Types
 
@@ -214,7 +213,6 @@ All vignettes ship with the package — open one with
 
 | Vignette | Description |
 |---|---|
-| Survey Integration (`vignette("survey-tidycreel")`) | Using tidycreel alongside the `survey` package directly |
 | Interview Estimation (`vignette("interview-estimation")`) | CPUE, catch, and harvest from interview data |
 | Mark-Recapture and Exploitation Rate (`vignette("mark-recapture")`) | Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns |
 | Incomplete Trips (`vignette("incomplete-trips")`) | When and how to use mean-of-ratios and TOST validation |
@@ -241,7 +239,15 @@ All vignettes ship with the package — open one with
 | Choosing an Estimator (`vignette("estimator-choice")`) | Which estimator runs for effort, rates and totals, and what decides it |
 | Units (`vignette("unit-rules")`) | Where an estimate's unit comes from, and why it is sometimes `NA` |
 | Refusals and NA (`vignette("refusals-and-na")`) | Zero, `NA` and refusal; absent, `NA` and zero standard-error parts |
+
+### Reference
+
+| Vignette | Description |
+|---|---|
+| Glossary (`vignette("glossary")`) | Plain-language guide to tidycreel terms and concepts |
 | Bus-Route Equations (`vignette("bus-route-equations")`) | Technical equation derivations for bus-route estimators |
+| Survey Integration (`vignette("survey-tidycreel")`) | Effort, catch rate and total catch reproduced with `survey` package calls |
+| [API Conventions](https://chrischizinski.com/tidycreel/dev/articles/api-conventions.html) (website only) | How functions are named, what they take and what they return |
 
 ### Ecosystem
 

@@ -207,6 +207,35 @@
   - Every page now ends with `as_tibble()` and a plot, and all five are
     checked by `just vignette-warnings`.
 
+* A new pkgdown group, "Reference" (#480, Reference section, part 1), holds
+  the glossary, the bus-route equations, the survey package side-by-side and
+  the API conventions article; "Package Conventions" is folded into it. None
+  computed a wrong number; several described the package wrongly:
+  - `vignette("survey-tidycreel")` said each tidycreel estimate "matches" the
+    raw survey call. Run today, effort matched but tidycreel reported SE 13.2
+    where `svytotal()` with an FPC gave 0, the rate was per angler-hour (0.97)
+    where the raw call was per party-hour (2.29), and the total was built
+    stratum by stratum where the page showed one product. It also said
+    replicate-weight designs were out of scope. The page now uses the season
+    data and reproduces effort, rate and total exactly, explains the missing
+    FPC (#505), and notes that `as_creel_svydesign()` returns the sampled-day
+    design with weights 1.
+  - `vignette("glossary")` said `estimate_effort()` never multiplies a count
+    by its period, called totals "season-scale" although the default
+    `target` is the sampled days, and listed `estimate_catch_rate()` as an
+    extrapolation. New entries: party-hours, ratio of means and mean of
+    ratios, `target`, and the three states of a standard-error component.
+  - The API conventions article said an absent standard-error component
+    means "does not apply". It also covers a quantity supplied without its
+    own SE, which `se` then treats as fixed, as `vignette("refusals-and-na")`
+    already said.
+  - Neither covered the aerial GLMM bootstrap, whose `se` already contains
+    the visibility and angler-ratio parts without listing them; the glossary,
+    the API conventions and `vignette("refusals-and-na")` now say so.
+  - `vignette("survey-tidycreel")` gave every tidycreel interval as a $t$ on
+    the design's degrees of freedom. That holds for effort and total catch;
+    `estimate_catch_rate()` uses the normal interval.
+
 * The statistical articles were checked against the code and their sources
   (#480, Explanation section, part 1). None computed a wrong number; several
   gave formulas, reasons or citations that were wrong:
