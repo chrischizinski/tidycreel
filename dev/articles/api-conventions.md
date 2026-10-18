@@ -158,8 +158,15 @@ When it cannot be derived it is `NA`, meaning unknown. There is no
 default unit.
 
 **`NA`, `NULL` and zero are different.** A standard-error component that
-does not apply is `NULL`; one that applies but is unknown is `NA`; zero
-means a known zero. Never report `0` for “not propagated”.
+was not propagated is absent (`NULL`, or left out of `se_components`):
+either it does not apply to the design, or the quantity was supplied
+without its own standard error, so the reported `se` treats it as fixed.
+One that applies but is unknown is `NA`, and makes `se` `NA`. Zero means
+a known zero. Never report `0` for “not propagated”;
+[`vignette("refusals-and-na")`](https://chrischizinski.com/tidycreel/dev/articles/refusals-and-na.md)
+shows all three. The one exception is a bootstrap `se` that already
+contains a part it cannot report separately: the aerial GLMM’s
+visibility and angler-ratio parts are inside `se` there but not listed.
 
 **Refuse rather than guess.** When the data cannot support an estimate
 (unsampled strata, units that do not combine, a design the estimator

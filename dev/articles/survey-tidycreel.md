@@ -1,467 +1,277 @@
 # tidycreel and the survey Package: A Side-by-Side Guide
 
-## Introduction
+For a design with instantaneous counts and access interviews,
+tidycreel’s effort, catch rate and total catch are built from `survey`
+package calls:
+[`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) for
+effort, [`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html) for
+the rate, and [`svyby()`](https://rdrr.io/pkg/survey/man/svyby.html) to
+do each stratum separately. This page reproduces each of those three
+numbers with `survey` directly, so the two can be read side by side.
 
-The tidycreel package is built on top of R’s `survey` package. Every
-estimation function in tidycreel —
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
-[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
-[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
-— is a wrapper around a corresponding `survey` package call. The design
-objects tidycreel constructs are standard `svydesign` objects under the
-hood, and the estimators delegate directly to
-[`svymean()`](https://rdrr.io/pkg/survey/man/surveysummary.html),
-[`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html), and
-[`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html).
+It covers that one design. Other designs add steps of their own
+(bus-route inclusion probabilities, aerial calibration, camera ratios),
+described on their own pages; the reasoning behind each choice here is
+in the Explanation pages
+[`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)
+and
+[`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md).
 
-This vignette walks through the same effort + catch rate + total catch
-analysis twice: first using raw `survey` package calls, then using
-tidycreel. The goal is to make the mapping explicit, so that R users
-familiar with the `survey` package can immediately understand what
-tidycreel is doing and why. If you already know
-[`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html) and the
-delta method for variance propagation, you will recognize those
-computations in tidycreel’s output.
+## The data
 
-## Data Setup
-
-Both workflows use the same three example datasets included with
-tidycreel. Load them once and they are shared across both parts of this
-vignette.
+The season from
+[`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md):
+120 days in two strata, 36 of them sampled, one instantaneous count on
+each sampled day, and access interviews.
 
 ``` r
 
 library(tidycreel)
-
-data(example_calendar)
-data(example_counts)
-data(example_interviews)
-
-head(example_calendar)
-#>         date day_type
-#> 1 2024-06-01  weekend
-#> 2 2024-06-02  weekend
-#> 3 2024-06-03  weekday
-#> 4 2024-06-04  weekday
-#> 5 2024-06-05  weekday
-#> 6 2024-06-06  weekday
-head(example_counts)
-#>         date day_type effort_hours
-#> 1 2024-06-01  weekend         45.2
-#> 2 2024-06-02  weekend         52.8
-#> 3 2024-06-03  weekday         12.5
-#> 4 2024-06-04  weekday         18.3
-#> 5 2024-06-05  weekday         15.7
-#> 6 2024-06-06  weekday         22.1
-head(example_interviews)
-#>         date hours_fished catch_total catch_kept trip_status trip_duration
-#> 1 2024-06-01          2.0           5          2    complete           2.0
-#> 2 2024-06-01          3.5           8          5    complete           3.5
-#> 3 2024-06-02          1.5           2          1    complete           1.5
-#> 4 2024-06-02          2.0           3          2  incomplete           1.0
-#> 5 2024-06-03          2.5           6          3    complete           2.5
-#> 6 2024-06-03          4.0          12          8    complete           4.0
-#>   interview_id angler_type angler_method species_sought n_anglers refused
-#> 1            1        bank          bait        walleye         2   FALSE
-#> 2            2        boat    artificial        walleye         1   FALSE
-#> 3            3        bank          bait           bass         3   FALSE
-#> 4            4        bank           fly        panfish         2   FALSE
-#> 5            5        boat    artificial        walleye         1   FALSE
-#> 6            6        boat          bait           bass         4   FALSE
-```
-
-The calendar covers 14 days (10 weekdays, 4 weekend days). The counts
-record observed effort (angler-hours) on each sampled day. The
-interviews record catch and effort for individual completed and
-incomplete trips.
-
-------------------------------------------------------------------------
-
-## Part 1 — Raw survey Package Workflow
-
-### 1a. Survey Design from a Stratified Calendar
-
-A creel survey with weekday/weekend stratification is a stratified
-simple random sample. The finite population correction (FPC) for each
-stratum is the total number of days in that stratum over the survey
-period.
-
-`example_counts` already carries a `day_type` column (copied from the
-calendar), so we can build the FPC column directly from the calendar
-frequency table.
-
-``` r
-
 library(survey)
-#> Loading required package: grid
-#> Loading required package: Matrix
-#> Loading required package: survival
-#> 
-#> Attaching package: 'survey'
-#> The following object is masked from 'package:graphics':
-#> 
-#>     dotchart
 
-# Stratum sizes: total days per day_type in the calendar
-stratum_sizes <- table(example_calendar$day_type)
-stratum_sizes
+table(example_season_calendar$day_type) # days in the season, N_h
 #> 
 #> weekday weekend 
-#>      10       4
+#>      86      34
+table(example_season_counts$day_type) # days sampled, n_h
+#> 
+#> weekday weekend 
+#>      28       8
+head(example_season_counts, 3)
+#>         date day_type total_anglers daylight_hours
+#> 1 2024-05-06  weekday             5             14
+#> 2 2024-05-07  weekday             5             14
+#> 3 2024-05-09  weekday             9             14
+head(example_season_interviews, 3)
+#>         date day_type interview_id trip_status hours_fished n_anglers
+#> 1 2024-05-06  weekday            1  incomplete         1.78         2
+#> 2 2024-05-06  weekday            2  incomplete         1.82         1
+#> 3 2024-05-06  weekday            3    complete         4.66         3
+#>   catch_total catch_kept
+#> 1           0          0
+#> 2           3          1
+#> 3           1          0
+```
 
-# Attach FPC to the count frame
-counts_frame <- example_counts
-counts_frame$fpc <- as.integer(stratum_sizes[counts_frame$day_type])
-counts_frame
-#>          date day_type effort_hours fpc
-#> 1  2024-06-01  weekend         45.2   4
-#> 2  2024-06-02  weekend         52.8   4
-#> 3  2024-06-03  weekday         12.5  10
-#> 4  2024-06-04  weekday         18.3  10
-#> 5  2024-06-05  weekday         15.7  10
-#> 6  2024-06-06  weekday         22.1  10
-#> 7  2024-06-07  weekday         14.9  10
-#> 8  2024-06-08  weekend         48.6   4
-#> 9  2024-06-09  weekend         55.3   4
-#> 10 2024-06-10  weekday         16.8  10
-#> 11 2024-06-11  weekday         19.4  10
-#> 12 2024-06-12  weekday         13.2  10
-#> 13 2024-06-13  weekday         17.6  10
-#> 14 2024-06-14  weekday         20.1  10
+The tidycreel version, run once and used for comparison below:
 
-# Build the stratified survey design
-svy_counts <- svydesign(
-  ids    = ~1,
-  strata = ~day_type,
-  fpc    = ~fpc,
-  data   = counts_frame
+``` r
+
+design <- creel_design(example_season_calendar, date = date, strata = day_type)
+design <- add_counts(design, example_season_counts,
+  count_col = total_anglers,
+  period_length_col = daylight_hours
 )
-svy_counts
-#> Stratified Independent Sampling design
-#> svydesign(ids = ~1, strata = ~day_type, fpc = ~fpc, data = counts_frame)
-```
-
-Because all 14 survey days are observed (a census of the 14-day period),
-the FPC reduces to 1 and the standard error of the totals is 0. In a
-real survey where only a subset of days are sampled, the FPC would be
-less than 1 and variances would be positive.
-
-### 1b. Effort Estimation via svytotal
-
-Total effort is the sum of observed angler-hours across the 14 days,
-estimated via
-[`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) on the
-count frame design.
-
-``` r
-
-effort_total <- svytotal(~effort_hours, svy_counts)
-effort_total
-#>              total SE
-#> effort_hours 372.5  0
-confint(effort_total)
-#>              2.5 % 97.5 %
-#> effort_hours 372.5  372.5
-```
-
-The result is the estimated total angler-hours for the survey period,
-with a 95% confidence interval. Because this example uses a complete
-census of all 14 days, the standard error is 0. In practice, creel
-surveys sample a subset of days, and
-[`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
-extrapolates from the observed days to the full survey period using the
-stratum weights.
-
-### 1c. Catch Rate via svyratio and Total Catch via the Delta Method
-
-Catch per unit effort (CPUE) is estimated from the interview data using
-a ratio-of-means estimator: the total catch across all complete
-interviews divided by the total effort across those same interviews.
-This is the [`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
-approach.
-
-``` r
-
-# Use complete trips only (standard practice)
-complete_trips <- subset(example_interviews, trip_status == "complete")
-nrow(complete_trips)
-#> [1] 17
-
-# Build a simple survey design over the interview frame
-svy_interviews <- svydesign(ids = ~1, data = complete_trips)
-#> Warning in svydesign.default(ids = ~1, data = complete_trips): No weights or
-#> probabilities supplied, assuming equal probability
-
-# Ratio estimator: total catch / total effort (ratio-of-means CPUE)
-cpue_ratio <- svyratio(~catch_total, ~hours_fished, svy_interviews)
-cpue_ratio
-#> Ratio estimator: svyratio.survey.design2(~catch_total, ~hours_fished, svy_interviews)
-#> Ratios=
-#>             hours_fished
-#> catch_total     2.285714
-#> SEs=
-#>             hours_fished
-#> catch_total     0.112297
-```
-
-The CPUE estimate is the ratio of total catch to total effort across all
-complete interviews. The
-[`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html) function
-computes the Taylor linearization variance for this ratio, accounting
-for the correlation between catch and effort within each interview.
-
-Now combine the effort total and CPUE using the delta method to
-propagate variance through the product E × C:
-
-``` r
-
-effort_coef <- coef(effort_total)[[1]]
-cpue_coef <- coef(cpue_ratio)[[1]]
-var_effort <- vcov(effort_total)[[1]]
-var_cpue <- vcov(cpue_ratio)[[1]]
-
-# Delta method: Var(effort * cpue) = effort^2 * Var(cpue) + cpue^2 * Var(effort)
-total_catch_est <- effort_coef * cpue_coef
-total_catch_var <- effort_coef^2 * var_cpue + cpue_coef^2 * var_effort
-total_catch_se <- sqrt(total_catch_var)
-
-cat("Total catch estimate:", round(total_catch_est, 1), "\n")
-#> Total catch estimate: 851.4
-cat("Standard error:      ", round(total_catch_se, 1), "\n")
-#> Standard error:       41.8
-cat(
-  "95% CI: [",
-  round(total_catch_est - 1.96 * total_catch_se, 1), ",",
-  round(total_catch_est + 1.96 * total_catch_se, 1), "]\n"
+design <- add_interviews(design, example_season_interviews,
+  catch = catch_total,
+  effort = hours_fished,
+  trip_status = trip_status,
+  n_anglers = n_anglers
 )
-#> 95% CI: [ 769.4 , 933.4 ]
+
+effort <- estimate_effort(design, target = "period_total")
+rate <- estimate_catch_rate(design)
+total <- estimate_total_catch(design, target = "period_total")
 ```
 
-------------------------------------------------------------------------
+## Effort: `svytotal()`
 
-## Part 2 — tidycreel Equivalent
-
-### 2a. creel_design() + add_counts()
-
-[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
-wraps the calendar and stratification into a design object.
-[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
-attaches the count frame and builds the internal `svydesign` object —
-the equivalent of the
-[`svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html) call in
-Part 1a above.
+A day’s effort is its count times the length of the period the count was
+randomised within: anglers present × hours open, in angler-hours. The
+days are a stratified sample, and each sampled day stands for
+$`N_h / n_h`$ days of its stratum:
 
 ``` r
 
-design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
-design
-#> 
-#> ── Creel Survey Design ─────────────────────────────────────────────────────────
-#> Type: "instantaneous"
-#> Date column: date
-#> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
-#> day_type: 2 levels
-#> Counts: 14 observations
-#> PSU column: date
-#> Count column: effort_hours
-#> Party-size term: not carried
-#> Count type: "instantaneous"
-#> Survey: <survey.design2> (constructed)
-#> Interviews: "none"
-#> Sections: "none"
-```
+counts <- example_season_counts
+counts$angler_hours <- counts$total_anglers * counts$daylight_hours
 
-The design reports the same 14 observations across two strata (weekday,
-weekend) as the raw `svydesign` object above.
+N_h <- table(example_season_calendar$day_type)
+n_h <- table(counts$day_type)
+counts$w <- as.numeric(N_h[counts$day_type] / n_h[counts$day_type])
 
-### 2b. estimate_effort()
+count_design <- svydesign(
+  ids = ~1, strata = ~day_type, weights = ~w, data = counts
+)
+svytotal(~angler_hours, count_design)
+#>               total     SE
+#> angler_hours 9994.5 1286.3
 
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-calls [`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
-on the internal design object and returns the result as a tidy tibble
-with labelled columns.
-
-``` r
-
-effort_est <- estimate_effort(design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-effort_est
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Total
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Effort target: sampled_days
-#> 
+effort$estimates
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     372.  13.2       13.2         0     344.     401.    14
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36
+effort$unit
+#> [1] "angler-hours"
 ```
 
-The estimate (372.5 angler-hours) matches the raw
-[`svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html) result
-in Part 1b. tidycreel adds the CI directly to the output and labels the
-column as `estimate` instead of the raw column name.
-
-### 2c. estimate_catch_rate() + add_interviews()
-
-Before calling
-[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
-attach the interview data via
-[`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
-This maps interview columns to the design vocabulary and filters to
-complete trips by default.
+The estimate and standard error are the same. tidycreel’s confidence
+interval uses a $`t`$ quantile on the design’s degrees of freedom, 36
+days less 2 strata; [`confint()`](https://rdrr.io/r/stats/confint.html)
+uses the normal quantile unless it is given them:
 
 ``` r
 
-design <- add_interviews(design, example_interviews,
-  catch         = catch_total,
-  effort        = hours_fished,
-  n_anglers     = n_anglers,
-  harvest       = catch_kept,
-  trip_status   = trip_status,
-  trip_duration = trip_duration
+confint(svytotal(~angler_hours, count_design), df = degf(count_design))
+#>                 2.5 %  97.5 %
+#> angler_hours 7380.401 12608.6
+```
+
+### No finite-population correction
+
+The design above has no finite-population correction (FPC). Survey texts
+would usually add one, because days are drawn without replacement:
+
+``` r
+
+counts$fpc <- as.numeric(N_h[counts$day_type])
+svytotal(~angler_hours, svydesign(
+  ids = ~1, strata = ~day_type, fpc = ~fpc, data = counts
+))
+#>               total     SE
+#> angler_hours 9994.5 1078.6
+```
+
+The standard error falls from about 1,286 to 1,079. tidycreel leaves the
+correction out when a day has one count. The between-day variance then
+also carries the variation from when in the day the count fell, and
+sampling more days does not remove that part. With two or more counts on
+every sampled day of a stratum, tidycreel estimates the within-day part
+separately and applies the correction to the between-day part. The
+reasoning is in
+[`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md);
+up to tidycreel 8.0.0 the correction was always applied (#505).
+
+## Catch rate: `svyratio()`
+
+The rate comes from complete trips. Its denominator is **angler**-hours,
+each party’s hours times its number of anglers. The interviews are
+stratified by day type and weighted equally:
+
+``` r
+
+trips <- subset(example_season_interviews, trip_status == "complete")
+trips$angler_hours <- trips$hours_fished * trips$n_anglers
+
+trip_design <- svydesign(
+  ids = ~1, strata = ~day_type, weights = ~1, data = trips
 )
-#> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
+svyratio(~catch_total, ~angler_hours, trip_design)
+#> Ratio estimator: svyratio.survey.design2(~catch_total, ~angler_hours, trip_design)
+#> Ratios=
+#>             angler_hours
+#> catch_total    0.2207121
+#> SEs=
+#>             angler_hours
+#> catch_total   0.04148304
+
+rate$estimates
+#> # A tibble: 1 × 5
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1    0.221 0.0415    0.139    0.302   172
+rate$unit
+#> [1] "fish/angler-hour"
 ```
 
-Now estimate CPUE, which calls
-[`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html) internally
-on the complete-trip subset of the interview frame:
+This is the ratio of means (total catch over total effort), the
+estimator for access interviews;
+[`vignette("estimator-choice")`](https://chrischizinski.com/tidycreel/dev/articles/estimator-choice.md)
+covers when tidycreel uses the mean of ratios instead. Without
+`n_anglers`, the denominator would be party hours and the rate would be
+per party-hour, about 0.37 here instead of 0.22. The two are different
+quantities, and tidycreel reports which one it computed in `unit`.
+
+## Total catch: `svyby()` and a product variance
+
+The total is not season effort times the season rate. It is built
+**within each stratum** and the strata are then added,
+$`\hat{C} = \sum_h \hat{E}_h
+\hat{R}_h`$, so that each stratum’s rate is weighted by that stratum’s
+effort:
 
 ``` r
 
-cpue_est <- estimate_catch_rate(design)
-#> ℹ Using complete trips for CPUE estimation
-#>   (n=17, 77.3% of 22 interviews) [default]
-#> Warning: Small sample size for CPUE estimation.
-#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
-#> ℹ Variance estimates may be unstable with n < 30.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-cpue_est
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Ratio-of-Means CPUE
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Unit: fish/angler-hour
-#> 
+E <- svyby(~angler_hours, ~day_type, count_design, svytotal)
+R <- svyby(~catch_total, ~day_type, trip_design, svyratio,
+  denominator = ~angler_hours
+)
+E
+#>         day_type angler_hours       se
+#> weekday  weekday       7912.0 1062.602
+#> weekend  weekend       2082.5  724.896
+R
+#>         day_type catch_total/angler_hours se.catch_total/angler_hours
+#> weekday  weekday                0.2081839                  0.04530168
+#> weekend  weekend                0.2801120                  0.10241615
+
+e <- coef(E)
+r <- coef(R)
+se_e <- SE(E)
+se_r <- SE(R)
+
+sum(e * r)
+#> [1] 2230.484
+sqrt(sum(e^2 * se_r^2 + r^2 * se_e^2 - se_e^2 * se_r^2))
+#> [1] 506.2577
+
+total$estimates
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.967 0.110    0.752     1.18    17
+#> 1    2230.  506.    1231.    3230.   172
+total$unit
+#> [1] "fish"
 ```
 
-The CPUE estimate (2.29) and SE (0.11) match the
-[`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html) output from
-Part 1c.
+The variance of each stratum’s product is Goodman’s unbiased estimator:
+the two delta-method terms minus the product of the two variances. The
+familiar two-term delta method is `product_variance = "first_order"`.
+Both assume the effort and rate errors are independent;
+[`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md)
+derives the formula and discusses that assumption.
 
-### 2d. estimate_total_catch()
-
-[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
-applies the delta method to combine the effort and CPUE estimates,
-exactly as in Part 1c:
-
-``` r
-
-total_catch <- estimate_total_catch(design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:
-#> angler_method and species_sought.
-#> ! The rate differs across their levels in these interviews (angler_method:
-#>   artificial 1.121, bait 0.8, fly 1.31 and species_sought: bass 1.018, panfish
-#>   1.2, walleye 0.933), so the total depends on the interview sample's mix over
-#>   those domains.
-#> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
-#>   weighted by the interview mix rather than the effort mix. Interview selection
-#>   is not proportional to effort by construction (Malvestuto 1996).
-#> ℹ This is a risk, not an error: the counts carry no composition to check
-#>   against, so it cannot be verified from the data.
-#> ℹ Classifying angler_method and species_sought in the count data removes the
-#>   assumption -- the total becomes `sum(E_h * rate_h)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
-#> • day_type=weekend: n=7
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-total_catch
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Total Catch (Effort × CPUE)
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Effort target: sampled_days
-#> 
-#> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     364.  47.9     262.     466.    17
-```
-
-The total catch estimate (approximately 851) is consistent with the raw
-delta-method calculation in Part 1c. Small numerical differences reflect
-tidycreel’s internal handling of the complete-trip filter and variance
-components — the statistical method is identical.
-
-------------------------------------------------------------------------
-
-## Mapping Table
+## Mapping table
 
 | Step | survey package | tidycreel |
 |----|----|----|
-| Design construction | `svydesign(ids=~1, strata=~day_type, fpc=~fpc, data=counts)` | [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md) + [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md) |
-| Attach interview data | subset + `svydesign(ids=~1, data=complete_trips)` | [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md) |
-| Effort estimation | `svytotal(~effort_hours, design)` | `estimate_effort(design)` |
-| Catch rate | `svyratio(~catch_total, ~hours_fished, int_design)` | `estimate_catch_rate(design)` |
-| Total catch | E × C with delta method Var(E×C) = E² Var(C) + C² Var(E) | `estimate_total_catch(design)` |
-| Variance method | Taylor linearization (default in survey) | Taylor linearization (default in tidycreel) |
+| Day’s effort | `count × period length` | `add_counts(count_col =, period_length_col =)` |
+| Count design | `svydesign(ids = ~1, strata = ~day_type, weights = ~N_h/n_h)`, no `fpc` with one count a day | [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md) + [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md) |
+| Effort | `svytotal(~angler_hours, ...)` | `estimate_effort(target = "period_total")` |
+| Interview design | complete trips; `svydesign(ids = ~1, strata = ~day_type, weights = ~1)` | [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md) |
+| Catch rate | `svyratio(~catch, ~angler_hours, ...)` | [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md) |
+| Total catch | [`svyby()`](https://rdrr.io/pkg/survey/man/svyby.html) per stratum; $`\sum_h \hat{E}_h \hat{R}_h`$; Goodman variance | `estimate_total_catch(target = "period_total")` |
+| Confidence interval | effort and total catch: `confint(..., df = degf(design))`; catch rate: `confint(...)`, the normal interval | `ci_lower`, `ci_upper` |
 
-------------------------------------------------------------------------
+What tidycreel adds on top of these calls is the bookkeeping: the unit
+of each result, the strata a total must be built within, the refusals
+when the data cannot support an estimate
+([`vignette("refusals-and-na")`](https://chrischizinski.com/tidycreel/dev/articles/refusals-and-na.md)),
+and the bootstrap and jackknife variance methods
+([`vignette("replicate-designs")`](https://chrischizinski.com/tidycreel/dev/articles/replicate-designs.md)).
 
-## When to Use Each Approach
+## The internal design object
 
-**Use tidycreel** for standard creel survey designs where the main
-analysis follows the effort + CPUE + total catch workflow. tidycreel
-handles the bookkeeping (FPC construction, complete-trip filtering,
-delta method variance) and returns tidy tibbles ready for reporting. The
-domain vocabulary (`creel_design`, `estimate_effort`,
-`estimate_catch_rate`) matches the language creel biologists already
-use.
-
-**Use raw survey package calls** when you need capabilities outside
-tidycreel’s scope: custom clustering structures,
-probability-proportional-to-size (PPS) sampling, replicate-weight
-designs, or nonstandard variance estimators. The
 [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)
-function extracts the internal `svydesign` object from any tidycreel
-design, giving you full access to the survey package toolbox while still
-using tidycreel for the initial data setup.
+returns the count design tidycreel built, for use with other `survey`
+functions. It is the design over the **sampled days** with every weight
+1, not the season design above, and its count column now holds each
+day’s count × period in angler-hours, under the column’s original name:
 
 ``` r
 
-# Extract the internal svydesign object for advanced use
-internal_svy <- as_creel_svydesign(design)
-# Now use any survey package function directly
-svymean(~effort_hours, internal_svy)
+internal <- as_creel_svydesign(design)
+head(internal$variables[, c("date", "day_type", "total_anglers")], 3)
+#>         date day_type total_anglers
+#> 1 2024-05-06  weekday            70
+#> 2 2024-05-07  weekday            70
+#> 3 2024-05-09  weekday           126
+svytotal(~total_anglers, internal)
+#>               total     SE
+#> total_anglers  3066 385.72
 ```
+
+That total is effort over the 36 sampled days.
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+expands it to the season, and is the way to get the season total.

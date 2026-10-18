@@ -6,8 +6,6 @@ Introduction to creel survey analysis with tidycreel.
 
 - [Getting Started with
   tidycreel](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md):
-- [Glossary of Creel Survey
-  Terms](https://chrischizinski.com/tidycreel/dev/articles/glossary.md):
 
 ### How-to: Survey Designs
 
@@ -32,8 +30,6 @@ effort, rates, totals, results as data, and a plot.
 Catch rate, harvest, effort, mark-recapture, exploitation rate, and
 spatially stratified estimation techniques.
 
-- [tidycreel and the survey Package: A Side-by-Side
-  Guide](https://chrischizinski.com/tidycreel/dev/articles/survey-tidycreel.md):
 - [Interview-Based Catch
   Estimation](https://chrischizinski.com/tidycreel/dev/articles/interview-estimation.md):
 - [Mark-Recapture and Exploitation Rate
@@ -80,17 +76,18 @@ is chosen, where units come from, and when the package refuses.
 - [Refusals, NA, NULL and
   Zero](https://chrischizinski.com/tidycreel/dev/articles/refusals-and-na.md):
 
-### Reference & Equations
+### Reference
 
-Technical equation derivations for advanced users.
+Look-up material: the terms the package uses, the bus-route equations,
+how each estimate maps onto survey package calls, and the conventions
+every function follows.
 
+- [Glossary of Creel Survey
+  Terms](https://chrischizinski.com/tidycreel/dev/articles/glossary.md):
 - [Bus-Route Survey: Equation
   Traceability](https://chrischizinski.com/tidycreel/dev/articles/bus-route-equations.md):
-
-### Package Conventions
-
-How functions are named, what they take and what they return.
-
+- [tidycreel and the survey Package: A Side-by-Side
+  Guide](https://chrischizinski.com/tidycreel/dev/articles/survey-tidycreel.md):
 - [API
   Conventions](https://chrischizinski.com/tidycreel/dev/articles/api-conventions.md):
 

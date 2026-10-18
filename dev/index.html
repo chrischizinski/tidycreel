@@ -57,7 +57,6 @@
     <li><a class="dropdown-item" href="articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
-    <li><a class="dropdown-item" href="articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
@@ -78,6 +77,12 @@
     <li><a class="dropdown-item" href="articles/estimator-choice.html">How tidycreel Chooses an Estimator</a></li>
     <li><a class="dropdown-item" href="articles/unit-rules.html">Where Units Come From</a></li>
     <li><a class="dropdown-item" href="articles/refusals-and-na.html">Refusals, NA, NULL and Zero</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
+    <li><a class="dropdown-item" href="articles/glossary.html">Glossary of Creel Survey Terms</a></li>
+    <li><a class="dropdown-item" href="articles/bus-route-equations.html">Bus-Route Survey: Equation Traceability</a></li>
+    <li><a class="dropdown-item" href="articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
+    <li><a class="dropdown-item" href="articles/api-conventions.html">API Conventions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
   </ul>
@@ -395,16 +400,10 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <th>Vignette</th>
 <th>Description</th>
 </tr></thead>
-<tbody>
-<tr>
+<tbody><tr>
 <td>Getting Started (<code><a href="articles/tidycreel.html">vignette("tidycreel")</a></code>)</td>
 <td>Core workflow: design → counts → effort estimation</td>
-</tr>
-<tr>
-<td>Glossary (<code><a href="articles/glossary.html">vignette("glossary")</a></code>)</td>
-<td>Plain-language guide to tidycreel terms and concepts</td>
-</tr>
-</tbody>
+</tr></tbody>
 </table>
 </div>
 <div class="section level3">
@@ -456,10 +455,6 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr>
-<td>Survey Integration (<code><a href="articles/survey-tidycreel.html">vignette("survey-tidycreel")</a></code>)</td>
-<td>Using tidycreel alongside the <code>survey</code> package directly</td>
-</tr>
 <tr>
 <td>Interview Estimation (<code><a href="articles/interview-estimation.html">vignette("interview-estimation")</a></code>)</td>
 <td>CPUE, catch, and harvest from interview data</td>
@@ -558,9 +553,38 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <td>Refusals and NA (<code><a href="articles/refusals-and-na.html">vignette("refusals-and-na")</a></code>)</td>
 <td>Zero, <code>NA</code> and refusal; absent, <code>NA</code> and zero standard-error parts</td>
 </tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Vignette</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Glossary (<code><a href="articles/glossary.html">vignette("glossary")</a></code>)</td>
+<td>Plain-language guide to tidycreel terms and concepts</td>
+</tr>
 <tr>
 <td>Bus-Route Equations (<code><a href="articles/bus-route-equations.html">vignette("bus-route-equations")</a></code>)</td>
 <td>Technical equation derivations for bus-route estimators</td>
+</tr>
+<tr>
+<td>Survey Integration (<code><a href="articles/survey-tidycreel.html">vignette("survey-tidycreel")</a></code>)</td>
+<td>Effort, catch rate and total catch reproduced with <code>survey</code> package calls</td>
+</tr>
+<tr>
+<td>
+<a href="https://chrischizinski.com/tidycreel/dev/articles/api-conventions.html">API Conventions</a> (website only)</td>
+<td>How functions are named, what they take and what they return</td>
 </tr>
 </tbody>
 </table>

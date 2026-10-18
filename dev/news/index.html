@@ -29,7 +29,6 @@
     <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
-    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
@@ -50,6 +49,12 @@
     <li><a class="dropdown-item" href="../articles/estimator-choice.html">How tidycreel Chooses an Estimator</a></li>
     <li><a class="dropdown-item" href="../articles/unit-rules.html">Where Units Come From</a></li>
     <li><a class="dropdown-item" href="../articles/refusals-and-na.html">Refusals, NA, NULL and Zero</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Creel Survey Terms</a></li>
+    <li><a class="dropdown-item" href="../articles/bus-route-equations.html">Bus-Route Survey: Equation Traceability</a></li>
+    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
+    <li><a class="dropdown-item" href="../articles/api-conventions.html">API Conventions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
@@ -111,6 +116,17 @@
 <li>
 <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code> was removed from the camera and aerial pages: it hid warnings the text explained, or nothing at all.</li>
 <li>Every page now ends with <code>as_tibble()</code> and a plot, and all five are checked by <code>just vignette-warnings</code>.</li>
+</ul></li>
+<li>
+<p>A new pkgdown group, “Reference” (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, Reference section, part 1), holds the glossary, the bus-route equations, the survey package side-by-side and the API conventions article; “Package Conventions” is folded into it. None computed a wrong number; several described the package wrongly:</p>
+<ul><li>
+<code><a href="../articles/survey-tidycreel.html">vignette("survey-tidycreel")</a></code> said each tidycreel estimate “matches” the raw survey call. Run today, effort matched but tidycreel reported SE 13.2 where <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> with an FPC gave 0, the rate was per angler-hour (0.97) where the raw call was per party-hour (2.29), and the total was built stratum by stratum where the page showed one product. It also said replicate-weight designs were out of scope. The page now uses the season data and reproduces effort, rate and total exactly, explains the missing FPC (<a href="https://github.com/chrischizinski/tidycreel/issues/505" class="external-link">#505</a>), and notes that <code><a href="../reference/as_creel_svydesign.html">as_creel_svydesign()</a></code> returns the sampled-day design with weights 1.</li>
+<li>
+<code><a href="../articles/glossary.html">vignette("glossary")</a></code> said <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> never multiplies a count by its period, called totals “season-scale” although the default <code>target</code> is the sampled days, and listed <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> as an extrapolation. New entries: party-hours, ratio of means and mean of ratios, <code>target</code>, and the three states of a standard-error component.</li>
+<li>The API conventions article said an absent standard-error component means “does not apply”. It also covers a quantity supplied without its own SE, which <code>se</code> then treats as fixed, as <code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code> already said.</li>
+<li>Neither covered the aerial GLMM bootstrap, whose <code>se</code> already contains the visibility and angler-ratio parts without listing them; the glossary, the API conventions and <code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code> now say so.</li>
+<li>
+<code><a href="../articles/survey-tidycreel.html">vignette("survey-tidycreel")</a></code> gave every tidycreel interval as a <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math> on the design’s degrees of freedom. That holds for effort and total catch; <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> uses the normal interval.</li>
 </ul></li>
 <li>
 <p>The statistical articles were checked against the code and their sources (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, Explanation section, part 1). None computed a wrong number; several gave formulas, reasons or citations that were wrong:</p>

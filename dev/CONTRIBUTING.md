@@ -140,7 +140,7 @@ engine:
 
 Function families, argument names and order, return types, units and
 messages are set out in the [API
-Conventions](https://chrischizinski.github.io/tidycreel/articles/api-conventions.html)
+Conventions](https://chrischizinski.com/tidycreel/dev/articles/api-conventions.html)
 article (`vignettes/articles/api-conventions.Rmd`). Its checkable rules
 are enforced by `tests/testthat/test-api-conventions.R`; a new export
 that fits no family, or breaks the shared argument order, fails that

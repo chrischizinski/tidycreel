@@ -66,14 +66,16 @@ is used under the hood.
 
 **Count data** are effort-related observations attached with
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md).
-For instantaneous surveys the attached column may hold either the raw
-angler count observed at a sampled moment or angler-hours already
-accumulated over the day, and
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-does not convert between them — it expands whatever it is given to the
-season. Attach raw counts and the total is in angler-days; attach
-angler-hours and the total is in angler-hours. The bundled
-`example_counts` holds angler-hours.
+For instantaneous surveys each row is the number of anglers seen at a
+randomly chosen moment. A count becomes a day’s effort only when it is
+multiplied by the length of the period the moment was drawn from, so
+give that period with `period_length_col`; the effort is then in
+angler-hours. Without it the estimate is a sum of counts, its unit is
+`NA`, and a warning says so. Effort already totalled per day (like the
+bundled `example_counts`) goes through
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+instead
+([`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)).
 
 ### Interview data
 
@@ -117,6 +119,16 @@ data, reported in interviews, or estimated over an entire season.
 This is a standard effort unit for creel work because it combines trip
 duration and party size into one comparable measure.
 
+### Party-hours
+
+**Party-hours** are hours fished by a party, whatever its size. An
+interview records a party, so without `n_anglers` its effort is in
+party-hours, and a rate from it is per party-hour. A party-hour rate
+times angler-hour effort is not a catch; tidycreel warns when the two
+meet.
+[`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)
+covers how each estimate’s `unit` is derived.
+
 ### Catch rate
 
 A **catch rate** is catch per unit of effort. In tidycreel this surface
@@ -135,6 +147,17 @@ A **release rate** is released fish per unit of effort. In tidycreel
 this is estimated with
 [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_release_rate.md).
 
+### Ratio of means / mean of ratios
+
+The two catch-rate estimators. The **ratio of means** divides total
+catch by total effort across interviews, and is used for access
+(complete-trip) interviews. The **mean of ratios** averages each
+interview’s own rate, and is used for roving (incomplete-trip)
+interviews, where a clerk meets anglers in proportion to how long they
+fish; each party is weighted by its size when `n_anglers` is given.
+[`vignette("estimator-choice")`](https://chrischizinski.com/tidycreel/dev/articles/estimator-choice.md)
+says which runs when.
+
 ### CPUE / HPUE
 
 **CPUE** means **catch per unit effort**. **HPUE** means **harvest per
@@ -146,13 +169,24 @@ and
 
 ### Total catch / total harvest / total release
 
-These are **season-scale totals** that combine estimated effort with
-estimated rates. tidycreel provides
+These are totals that combine estimated effort with estimated rates,
+stratum by stratum. tidycreel provides
 [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
 [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md),
 and
 [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
-for these products.
+for these products. What they total over is set by `target` (next
+entry).
+
+### Target: sampled days, stratum total, period total
+
+`target` says what an effort or total covers. The default,
+`"sampled_days"`, is the total over the days actually sampled.
+`"period_total"` expands each stratum to all its calendar days, which is
+the season total in most reports. `"stratum_total"` runs the same
+expansion on standard count designs; the returned `effort_target`
+records which was asked for. Expanded targets are not yet available for
+bus-route, ice, aerial or sectioned designs.
 
 ## Trip-status and interview terms
 
@@ -212,10 +246,12 @@ and
 
 An **extrapolated estimate** projects from the sample to the broader
 survey period or population using the survey design. Examples include
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
-[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
 and
-[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md).
+[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
+with `target = "period_total"`. A rate from
+[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
+is design-based too, but it is a rate, not a projection.
 
 ### Variance
 
@@ -227,6 +263,19 @@ samples under the same design.
 
 The **standard error** is the square root of the variance. It is the
 most common uncertainty value shown next to an estimate.
+
+### SE components: absent, NA and zero
+
+Some estimates list the parts of their standard error in
+`se_components`. A part that is **absent** was not propagated: it does
+not apply, or its quantity was supplied without a standard error and is
+treated as fixed. **`NA`** means it applies and is unknown, which makes
+`se` `NA` too. **Zero** means it is known to be zero.
+[`vignette("refusals-and-na")`](https://chrischizinski.com/tidycreel/dev/articles/refusals-and-na.md)
+shows all three. One exception: on the bootstrap path of
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
+the visibility and angler-ratio parts are inside `se` but not listed,
+because the bootstrap replicates cannot separate them.
 
 ### Confidence interval (CI)
 

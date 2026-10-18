@@ -54,7 +54,6 @@
     <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
-    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
@@ -75,6 +74,12 @@
     <li><a class="dropdown-item" href="../articles/estimator-choice.html">How tidycreel Chooses an Estimator</a></li>
     <li><a class="dropdown-item" href="../articles/unit-rules.html">Where Units Come From</a></li>
     <li><a class="dropdown-item" href="../articles/refusals-and-na.html">Refusals, NA, NULL and Zero</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Creel Survey Terms</a></li>
+    <li><a class="dropdown-item" href="../articles/bus-route-equations.html">Bus-Route Survey: Equation Traceability</a></li>
+    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
+    <li><a class="dropdown-item" href="../articles/api-conventions.html">API Conventions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
@@ -177,14 +182,16 @@ which estimation path is used under the hood.</p>
 <h3 id="count-data">Count data<a class="anchor" aria-label="anchor" href="#count-data"></a>
 </h3>
 <p><strong>Count data</strong> are effort-related observations attached
-with <code><a href="../reference/add_counts.html">add_counts()</a></code>. For instantaneous surveys the attached
-column may hold either the raw angler count observed at a sampled moment
-or angler-hours already accumulated over the day, and
-<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> does not convert between them — it
-expands whatever it is given to the season. Attach raw counts and the
-total is in angler-days; attach angler-hours and the total is in
-angler-hours. The bundled <code>example_counts</code> holds
-angler-hours.</p>
+with <code><a href="../reference/add_counts.html">add_counts()</a></code>. For instantaneous surveys each row is
+the number of anglers seen at a randomly chosen moment. A count becomes
+a day’s effort only when it is multiplied by the length of the period
+the moment was drawn from, so give that period with
+<code>period_length_col</code>; the effort is then in angler-hours.
+Without it the estimate is a sum of counts, its unit is <code>NA</code>,
+and a warning says so. Effort already totalled per day (like the bundled
+<code>example_counts</code>) goes through
+<code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code> instead
+(<code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code>).</p>
 </div>
 <div class="section level3">
 <h3 id="interview-data">Interview data<a class="anchor" aria-label="anchor" href="#interview-data"></a>
@@ -238,6 +245,17 @@ it combines trip duration and party size into one comparable
 measure.</p>
 </div>
 <div class="section level3">
+<h3 id="party-hours">Party-hours<a class="anchor" aria-label="anchor" href="#party-hours"></a>
+</h3>
+<p><strong>Party-hours</strong> are hours fished by a party, whatever
+its size. An interview records a party, so without
+<code>n_anglers</code> its effort is in party-hours, and a rate from it
+is per party-hour. A party-hour rate times angler-hour effort is not a
+catch; tidycreel warns when the two meet.
+<code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code> covers how each estimate’s
+<code>unit</code> is derived.</p>
+</div>
+<div class="section level3">
 <h3 id="catch-rate">Catch rate<a class="anchor" aria-label="anchor" href="#catch-rate"></a>
 </h3>
 <p>A <strong>catch rate</strong> is catch per unit of effort. In
@@ -259,6 +277,18 @@ In tidycreel this is estimated with
 <code><a href="../reference/estimate_release_rate.html">estimate_release_rate()</a></code>.</p>
 </div>
 <div class="section level3">
+<h3 id="ratio-of-means-mean-of-ratios">Ratio of means / mean of ratios<a class="anchor" aria-label="anchor" href="#ratio-of-means-mean-of-ratios"></a>
+</h3>
+<p>The two catch-rate estimators. The <strong>ratio of means</strong>
+divides total catch by total effort across interviews, and is used for
+access (complete-trip) interviews. The <strong>mean of ratios</strong>
+averages each interview’s own rate, and is used for roving
+(incomplete-trip) interviews, where a clerk meets anglers in proportion
+to how long they fish; each party is weighted by its size when
+<code>n_anglers</code> is given.
+<code><a href="../articles/estimator-choice.html">vignette("estimator-choice")</a></code> says which runs when.</p>
+</div>
+<div class="section level3">
 <h3 id="cpue-hpue">CPUE / HPUE<a class="anchor" aria-label="anchor" href="#cpue-hpue"></a>
 </h3>
 <p><strong>CPUE</strong> means <strong>catch per unit effort</strong>.
@@ -270,11 +300,24 @@ and <code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rat
 <div class="section level3">
 <h3 id="total-catch-total-harvest-total-release">Total catch / total harvest / total release<a class="anchor" aria-label="anchor" href="#total-catch-total-harvest-total-release"></a>
 </h3>
-<p>These are <strong>season-scale totals</strong> that combine estimated
-effort with estimated rates. tidycreel provides
+<p>These are totals that combine estimated effort with estimated rates,
+stratum by stratum. tidycreel provides
 <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>,
 <code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code>, and
-<code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> for these products.</p>
+<code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> for these products. What they
+total over is set by <code>target</code> (next entry).</p>
+</div>
+<div class="section level3">
+<h3 id="target-sampled-days-stratum-total-period-total">Target: sampled days, stratum total, period total<a class="anchor" aria-label="anchor" href="#target-sampled-days-stratum-total-period-total"></a>
+</h3>
+<p><code>target</code> says what an effort or total covers. The default,
+<code>"sampled_days"</code>, is the total over the days actually
+sampled. <code>"period_total"</code> expands each stratum to all its
+calendar days, which is the season total in most reports.
+<code>"stratum_total"</code> runs the same expansion on standard count
+designs; the returned <code>effort_target</code> records which was asked
+for. Expanded targets are not yet available for bus-route, ice, aerial
+or sectioned designs.</p>
 </div>
 </div>
 <div class="section level2">
@@ -344,9 +387,11 @@ observed, without survey-design weighting. Examples include
 </h3>
 <p>An <strong>extrapolated estimate</strong> projects from the sample to
 the broader survey period or population using the survey design.
-Examples include <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>,
-<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>, and
-<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>.</p>
+Examples include <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> and
+<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> with
+<code>target = "period_total"</code>. A rate from
+<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> is design-based too, but it is a
+rate, not a projection.</p>
 </div>
 <div class="section level3">
 <h3 id="variance">Variance<a class="anchor" aria-label="anchor" href="#variance"></a>
@@ -361,6 +406,21 @@ repeated samples under the same design.</p>
 <p>The <strong>standard error</strong> is the square root of the
 variance. It is the most common uncertainty value shown next to an
 estimate.</p>
+</div>
+<div class="section level3">
+<h3 id="se-components-absent-na-and-zero">SE components: absent, NA and zero<a class="anchor" aria-label="anchor" href="#se-components-absent-na-and-zero"></a>
+</h3>
+<p>Some estimates list the parts of their standard error in
+<code>se_components</code>. A part that is <strong>absent</strong> was
+not propagated: it does not apply, or its quantity was supplied without
+a standard error and is treated as fixed.
+<strong><code>NA</code></strong> means it applies and is unknown, which
+makes <code>se</code> <code>NA</code> too. <strong>Zero</strong> means
+it is known to be zero. <code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code> shows
+all three. One exception: on the bootstrap path of
+<code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> the visibility and
+angler-ratio parts are inside <code>se</code> but not listed, because
+the bootstrap replicates cannot separate them.</p>
 </div>
 <div class="section level3">
 <h3 id="confidence-interval-ci">Confidence interval (CI)<a class="anchor" aria-label="anchor" href="#confidence-interval-ci"></a>

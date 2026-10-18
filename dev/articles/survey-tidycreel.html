@@ -54,7 +54,6 @@
     <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
-    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
@@ -75,6 +74,12 @@
     <li><a class="dropdown-item" href="../articles/estimator-choice.html">How tidycreel Chooses an Estimator</a></li>
     <li><a class="dropdown-item" href="../articles/unit-rules.html">Where Units Come From</a></li>
     <li><a class="dropdown-item" href="../articles/refusals-and-na.html">Refusals, NA, NULL and Zero</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Creel Survey Terms</a></li>
+    <li><a class="dropdown-item" href="../articles/bus-route-equations.html">Bus-Route Survey: Equation Traceability</a></li>
+    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
+    <li><a class="dropdown-item" href="../articles/api-conventions.html">API Conventions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
@@ -105,386 +110,217 @@
 
     
     
+<p>For a design with instantaneous counts and access interviews,
+tidycreel’s effort, catch rate and total catch are built from
+<code>survey</code> package calls: <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> for effort,
+<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code> for the rate, and <code><a href="https://rdrr.io/pkg/survey/man/svyby.html" class="external-link">svyby()</a></code> to do
+each stratum separately. This page reproduces each of those three
+numbers with <code>survey</code> directly, so the two can be read side
+by side.</p>
+<p>It covers that one design. Other designs add steps of their own
+(bus-route inclusion probabilities, aerial calibration, camera ratios),
+described on their own pages; the reasoning behind each choice here is
+in the Explanation pages <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> and
+<code><a href="../articles/catch-pipeline.html">vignette("catch-pipeline")</a></code>.</p>
 <div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+<h2 id="the-data">The data<a class="anchor" aria-label="anchor" href="#the-data"></a>
 </h2>
-<p>The tidycreel package is built on top of R’s <code>survey</code>
-package. Every estimation function in tidycreel —
-<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>, <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>,
-<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> — is a wrapper around a
-corresponding <code>survey</code> package call. The design objects
-tidycreel constructs are standard <code>svydesign</code> objects under
-the hood, and the estimators delegate directly to
-<code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svymean()</a></code>, <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code>, and
-<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code>.</p>
-<p>This vignette walks through the same effort + catch rate + total
-catch analysis twice: first using raw <code>survey</code> package calls,
-then using tidycreel. The goal is to make the mapping explicit, so that
-R users familiar with the <code>survey</code> package can immediately
-understand what tidycreel is doing and why. If you already know
-<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code> and the delta method for variance propagation,
-you will recognize those computations in tidycreel’s output.</p>
-</div>
-<div class="section level2">
-<h2 id="data-setup">Data Setup<a class="anchor" aria-label="anchor" href="#data-setup"></a>
-</h2>
-<p>Both workflows use the same three example datasets included with
-tidycreel. Load them once and they are shared across both parts of this
-vignette.</p>
+<p>The season from <code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>: 120 days in two
+strata, 36 of them sampled, one instantaneous count on each sampled day,
+and access interviews.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         date day_type</span></span>
-<span><span class="co">#&gt; 1 2024-06-01  weekend</span></span>
-<span><span class="co">#&gt; 2 2024-06-02  weekend</span></span>
-<span><span class="co">#&gt; 3 2024-06-03  weekday</span></span>
-<span><span class="co">#&gt; 4 2024-06-04  weekday</span></span>
-<span><span class="co">#&gt; 5 2024-06-05  weekday</span></span>
-<span><span class="co">#&gt; 6 2024-06-06  weekday</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         date day_type effort_hours</span></span>
-<span><span class="co">#&gt; 1 2024-06-01  weekend         45.2</span></span>
-<span><span class="co">#&gt; 2 2024-06-02  weekend         52.8</span></span>
-<span><span class="co">#&gt; 3 2024-06-03  weekday         12.5</span></span>
-<span><span class="co">#&gt; 4 2024-06-04  weekday         18.3</span></span>
-<span><span class="co">#&gt; 5 2024-06-05  weekday         15.7</span></span>
-<span><span class="co">#&gt; 6 2024-06-06  weekday         22.1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span>
-<span><span class="co">#&gt;         date hours_fished catch_total catch_kept trip_status trip_duration</span></span>
-<span><span class="co">#&gt; 1 2024-06-01          2.0           5          2    complete           2.0</span></span>
-<span><span class="co">#&gt; 2 2024-06-01          3.5           8          5    complete           3.5</span></span>
-<span><span class="co">#&gt; 3 2024-06-02          1.5           2          1    complete           1.5</span></span>
-<span><span class="co">#&gt; 4 2024-06-02          2.0           3          2  incomplete           1.0</span></span>
-<span><span class="co">#&gt; 5 2024-06-03          2.5           6          3    complete           2.5</span></span>
-<span><span class="co">#&gt; 6 2024-06-03          4.0          12          8    complete           4.0</span></span>
-<span><span class="co">#&gt;   interview_id angler_type angler_method species_sought n_anglers refused</span></span>
-<span><span class="co">#&gt; 1            1        bank          bait        walleye         2   FALSE</span></span>
-<span><span class="co">#&gt; 2            2        boat    artificial        walleye         1   FALSE</span></span>
-<span><span class="co">#&gt; 3            3        bank          bait           bass         3   FALSE</span></span>
-<span><span class="co">#&gt; 4            4        bank           fly        panfish         2   FALSE</span></span>
-<span><span class="co">#&gt; 5            5        boat    artificial        walleye         1   FALSE</span></span>
-<span><span class="co">#&gt; 6            6        boat          bait           bass         4   FALSE</span></span></code></pre></div>
-<p>The calendar covers 14 days (10 weekdays, 4 weekend days). The counts
-record observed effort (angler-hours) on each sampled day. The
-interviews record catch and effort for individual completed and
-incomplete trips.</p>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="part-1-raw-survey-package-workflow">Part 1 — Raw survey Package Workflow<a class="anchor" aria-label="anchor" href="#part-1-raw-survey-package-workflow"></a>
-</h2>
-<div class="section level3">
-<h3 id="a--survey-design-from-a-stratified-calendar">1a. Survey Design from a Stratified Calendar<a class="anchor" aria-label="anchor" href="#a--survey-design-from-a-stratified-calendar"></a>
-</h3>
-<p>A creel survey with weekday/weekend stratification is a stratified
-simple random sample. The finite population correction (FPC) for each
-stratum is the total number of days in that stratum over the survey
-period.</p>
-<p><code>example_counts</code> already carries a <code>day_type</code>
-column (copied from the calendar), so we can build the FPC column
-directly from the calendar frequency table.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: grid</span></span>
-<span><span class="co">#&gt; Loading required package: Matrix</span></span>
-<span><span class="co">#&gt; Loading required package: survival</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'survey'</span></span>
-<span><span class="co">#&gt; The following object is masked from 'package:graphics':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     dotchart</span></span>
-<span></span>
-<span><span class="co"># Stratum sizes: total days per day_type in the calendar</span></span>
-<span><span class="va">stratum_sizes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">$</span><span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="va">stratum_sizes</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_season_calendar</span><span class="op">$</span><span class="va">day_type</span><span class="op">)</span> <span class="co"># days in the season, N_h</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; weekday weekend </span></span>
-<span><span class="co">#&gt;      10       4</span></span>
-<span></span>
-<span><span class="co"># Attach FPC to the count frame</span></span>
-<span><span class="va">counts_frame</span> <span class="op">&lt;-</span> <span class="va">example_counts</span></span>
-<span><span class="va">counts_frame</span><span class="op">$</span><span class="va">fpc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">stratum_sizes</span><span class="op">[</span><span class="va">counts_frame</span><span class="op">$</span><span class="va">day_type</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">counts_frame</span></span>
-<span><span class="co">#&gt;          date day_type effort_hours fpc</span></span>
-<span><span class="co">#&gt; 1  2024-06-01  weekend         45.2   4</span></span>
-<span><span class="co">#&gt; 2  2024-06-02  weekend         52.8   4</span></span>
-<span><span class="co">#&gt; 3  2024-06-03  weekday         12.5  10</span></span>
-<span><span class="co">#&gt; 4  2024-06-04  weekday         18.3  10</span></span>
-<span><span class="co">#&gt; 5  2024-06-05  weekday         15.7  10</span></span>
-<span><span class="co">#&gt; 6  2024-06-06  weekday         22.1  10</span></span>
-<span><span class="co">#&gt; 7  2024-06-07  weekday         14.9  10</span></span>
-<span><span class="co">#&gt; 8  2024-06-08  weekend         48.6   4</span></span>
-<span><span class="co">#&gt; 9  2024-06-09  weekend         55.3   4</span></span>
-<span><span class="co">#&gt; 10 2024-06-10  weekday         16.8  10</span></span>
-<span><span class="co">#&gt; 11 2024-06-11  weekday         19.4  10</span></span>
-<span><span class="co">#&gt; 12 2024-06-12  weekday         13.2  10</span></span>
-<span><span class="co">#&gt; 13 2024-06-13  weekday         17.6  10</span></span>
-<span><span class="co">#&gt; 14 2024-06-14  weekday         20.1  10</span></span>
-<span></span>
-<span><span class="co"># Build the stratified survey design</span></span>
-<span><span class="va">svy_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span></span>
-<span>  ids    <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>,</span>
-<span>  strata <span class="op">=</span> <span class="op">~</span><span class="va">day_type</span>,</span>
-<span>  fpc    <span class="op">=</span> <span class="op">~</span><span class="va">fpc</span>,</span>
-<span>  data   <span class="op">=</span> <span class="va">counts_frame</span></span>
+<span><span class="co">#&gt;      86      34</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_season_counts</span><span class="op">$</span><span class="va">day_type</span><span class="op">)</span> <span class="co"># days sampled, n_h</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; weekday weekend </span></span>
+<span><span class="co">#&gt;      28       8</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_season_counts</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         date day_type total_anglers daylight_hours</span></span>
+<span><span class="co">#&gt; 1 2024-05-06  weekday             5             14</span></span>
+<span><span class="co">#&gt; 2 2024-05-07  weekday             5             14</span></span>
+<span><span class="co">#&gt; 3 2024-05-09  weekday             9             14</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_season_interviews</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         date day_type interview_id trip_status hours_fished n_anglers</span></span>
+<span><span class="co">#&gt; 1 2024-05-06  weekday            1  incomplete         1.78         2</span></span>
+<span><span class="co">#&gt; 2 2024-05-06  weekday            2  incomplete         1.82         1</span></span>
+<span><span class="co">#&gt; 3 2024-05-06  weekday            3    complete         4.66         3</span></span>
+<span><span class="co">#&gt;   catch_total catch_kept</span></span>
+<span><span class="co">#&gt; 1           0          0</span></span>
+<span><span class="co">#&gt; 2           3          1</span></span>
+<span><span class="co">#&gt; 3           1          0</span></span></code></pre></div>
+<p>The tidycreel version, run once and used for comparison below:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_season_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_counts</span>,</span>
+<span>  count_col <span class="op">=</span> <span class="va">total_anglers</span>,</span>
+<span>  period_length_col <span class="op">=</span> <span class="va">daylight_hours</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">svy_counts</span></span>
-<span><span class="co">#&gt; Stratified Independent Sampling design</span></span>
-<span><span class="co">#&gt; svydesign(ids = ~1, strata = ~day_type, fpc = ~fpc, data = counts_frame)</span></span></code></pre></div>
-<p>Because all 14 survey days are observed (a census of the 14-day
-period), the FPC reduces to 1 and the standard error of the totals is 0.
-In a real survey where only a subset of days are sampled, the FPC would
-be less than 1 and variances would be positive.</p>
-</div>
-<div class="section level3">
-<h3 id="b--effort-estimation-via-svytotal">1b. Effort Estimation via svytotal<a class="anchor" aria-label="anchor" href="#b--effort-estimation-via-svytotal"></a>
-</h3>
-<p>Total effort is the sum of observed angler-hours across the 14 days,
-estimated via <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> on the count frame design.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">effort_hours</span>, <span class="va">svy_counts</span><span class="op">)</span></span>
-<span><span class="va">effort_total</span></span>
-<span><span class="co">#&gt;              total SE</span></span>
-<span><span class="co">#&gt; effort_hours 372.5  0</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="va">effort_total</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt; effort_hours 372.5  372.5</span></span></code></pre></div>
-<p>The result is the estimated total angler-hours for the survey period,
-with a 95% confidence interval. Because this example uses a complete
-census of all 14 days, the standard error is 0. In practice, creel
-surveys sample a subset of days, and <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code>
-extrapolates from the observed days to the full survey period using the
-stratum weights.</p>
-</div>
-<div class="section level3">
-<h3 id="c--catch-rate-via-svyratio-and-total-catch-via-the-delta-method">1c. Catch Rate via svyratio and Total Catch via the Delta
-Method<a class="anchor" aria-label="anchor" href="#c--catch-rate-via-svyratio-and-total-catch-via-the-delta-method"></a>
-</h3>
-<p>Catch per unit effort (CPUE) is estimated from the interview data
-using a ratio-of-means estimator: the total catch across all complete
-interviews divided by the total effort across those same interviews.
-This is the <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code> approach.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Use complete trips only (standard practice)</span></span>
-<span><span class="va">complete_trips</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">example_interviews</span>, <span class="va">trip_status</span> <span class="op">==</span> <span class="st">"complete"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">complete_trips</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 17</span></span>
-<span></span>
-<span><span class="co"># Build a simple survey design over the interview frame</span></span>
-<span><span class="va">svy_interviews</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span>ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, data <span class="op">=</span> <span class="va">complete_trips</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in svydesign.default(ids = ~1, data = complete_trips): No weights or</span></span>
-<span><span class="co">#&gt; probabilities supplied, assuming equal probability</span></span>
-<span></span>
-<span><span class="co"># Ratio estimator: total catch / total effort (ratio-of-means CPUE)</span></span>
-<span><span class="va">cpue_ratio</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio</a></span><span class="op">(</span><span class="op">~</span><span class="va">catch_total</span>, <span class="op">~</span><span class="va">hours_fished</span>, <span class="va">svy_interviews</span><span class="op">)</span></span>
-<span><span class="va">cpue_ratio</span></span>
-<span><span class="co">#&gt; Ratio estimator: svyratio.survey.design2(~catch_total, ~hours_fished, svy_interviews)</span></span>
-<span><span class="co">#&gt; Ratios=</span></span>
-<span><span class="co">#&gt;             hours_fished</span></span>
-<span><span class="co">#&gt; catch_total     2.285714</span></span>
-<span><span class="co">#&gt; SEs=</span></span>
-<span><span class="co">#&gt;             hours_fished</span></span>
-<span><span class="co">#&gt; catch_total     0.112297</span></span></code></pre></div>
-<p>The CPUE estimate is the ratio of total catch to total effort across
-all complete interviews. The <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code> function computes
-the Taylor linearization variance for this ratio, accounting for the
-correlation between catch and effort within each interview.</p>
-<p>Now combine the effort total and CPUE using the delta method to
-propagate variance through the product E × C:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort_coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">effort_total</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">cpue_coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cpue_ratio</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">var_effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">effort_total</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="va">var_cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">cpue_ratio</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
-<span></span>
-<span><span class="co"># Delta method: Var(effort * cpue) = effort^2 * Var(cpue) + cpue^2 * Var(effort)</span></span>
-<span><span class="va">total_catch_est</span> <span class="op">&lt;-</span> <span class="va">effort_coef</span> <span class="op">*</span> <span class="va">cpue_coef</span></span>
-<span><span class="va">total_catch_var</span> <span class="op">&lt;-</span> <span class="va">effort_coef</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">var_cpue</span> <span class="op">+</span> <span class="va">cpue_coef</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">var_effort</span></span>
-<span><span class="va">total_catch_se</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">total_catch_var</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Total catch estimate:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">total_catch_est</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Total catch estimate: 851.4</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Standard error:      "</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">total_catch_se</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Standard error:       41.8</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span></span>
-<span>  <span class="st">"95% CI: ["</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">total_catch_est</span> <span class="op">-</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">total_catch_se</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">","</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">total_catch_est</span> <span class="op">+</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">total_catch_se</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"]\n"</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_interviews</span>,</span>
+<span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
+<span>  effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
+<span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; 95% CI: [ 769.4 , 933.4 ]</span></span></code></pre></div>
-<hr>
-</div>
+<span></span>
+<span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
+<span><span class="va">rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">total</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="part-2-tidycreel-equivalent">Part 2 — tidycreel Equivalent<a class="anchor" aria-label="anchor" href="#part-2-tidycreel-equivalent"></a>
+<h2 id="effort-svytotal">Effort: <code>svytotal()</code><a class="anchor" aria-label="anchor" href="#effort-svytotal"></a>
 </h2>
-<div class="section level3">
-<h3 id="a--creel_design-add_counts">2a. creel_design() + add_counts()<a class="anchor" aria-label="anchor" href="#a--creel_design-add_counts"></a>
-</h3>
-<p><code><a href="../reference/creel_design.html">creel_design()</a></code> wraps the calendar and stratification
-into a design object. <code><a href="../reference/add_counts.html">add_counts()</a></code> attaches the count frame
-and builds the internal <code>svydesign</code> object — the equivalent
-of the <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign()</a></code> call in Part 1a above.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
-<span><span class="va">design</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Design</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
-<span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">14</span> days (2024-06-01 to 2024-06-14)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
-<span><span class="co">#&gt; Counts: <span style="color: #0000BB;">14</span> observations</span></span>
-<span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">effort_hours</span></span></span>
-<span><span class="co">#&gt; Party-size term: not carried</span></span>
-<span><span class="co">#&gt; Count type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
-<span><span class="co">#&gt; Survey: <span style="color: #0000BB;">&lt;survey.design2&gt;</span> (constructed)</span></span>
-<span><span class="co">#&gt; Interviews: <span style="color: #0000BB;">"none"</span></span></span>
-<span><span class="co">#&gt; Sections: <span style="color: #0000BB;">"none"</span></span></span></code></pre></div>
-<p>The design reports the same 14 observations across two strata
-(weekday, weekend) as the raw <code>svydesign</code> object above.</p>
-</div>
-<div class="section level3">
-<h3 id="b--estimate_effort">2b. estimate_effort()<a class="anchor" aria-label="anchor" href="#b--estimate_effort"></a>
-</h3>
-<p><code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> calls <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> on the
-internal design object and returns the result as a tidy tibble with
-labelled columns.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
-<span><span class="va">effort_est</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Total</span></span>
-<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; </span></span>
+<p>A day’s effort is its count times the length of the period the count
+was randomised within: anglers present × hours open, in angler-hours.
+The days are a stratified sample, and each sampled day stands for
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>N</mi><mi>h</mi></msub><mi>/</mi><msub><mi>n</mi><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">N_h / n_h</annotation></semantics></math>
+days of its stratum:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="va">example_season_counts</span></span>
+<span><span class="va">counts</span><span class="op">$</span><span class="va">angler_hours</span> <span class="op">&lt;-</span> <span class="va">counts</span><span class="op">$</span><span class="va">total_anglers</span> <span class="op">*</span> <span class="va">counts</span><span class="op">$</span><span class="va">daylight_hours</span></span>
+<span></span>
+<span><span class="va">N_h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">example_season_calendar</span><span class="op">$</span><span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">n_h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">counts</span><span class="op">$</span><span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">counts</span><span class="op">$</span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">N_h</span><span class="op">[</span><span class="va">counts</span><span class="op">$</span><span class="va">day_type</span><span class="op">]</span> <span class="op">/</span> <span class="va">n_h</span><span class="op">[</span><span class="va">counts</span><span class="op">$</span><span class="va">day_type</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">count_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span></span>
+<span>  ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">day_type</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">w</span>, data <span class="op">=</span> <span class="va">counts</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">angler_hours</span>, <span class="va">count_design</span><span class="op">)</span></span>
+<span><span class="co">#&gt;               total     SE</span></span>
+<span><span class="co">#&gt; angler_hours 9994.5 1286.3</span></span>
+<span></span>
+<span><span class="va">effort</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     372.  13.2       13.2         0     344.     401.    14</span></span></code></pre></div>
-<p>The estimate (372.5 angler-hours) matches the raw
-<code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal()</a></code> result in Part 1b. tidycreel adds the CI
-directly to the output and labels the column as <code>estimate</code>
-instead of the raw column name.</p>
-</div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36</span></span>
+<span><span class="va">effort</span><span class="op">$</span><span class="va">unit</span></span>
+<span><span class="co">#&gt; [1] "angler-hours"</span></span></code></pre></div>
+<p>The estimate and standard error are the same. tidycreel’s confidence
+interval uses a
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
+quantile on the design’s degrees of freedom, 36 days less 2 strata;
+<code><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint()</a></code> uses the normal quantile unless it is given
+them:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/confint.html" class="external-link">confint</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">angler_hours</span>, <span class="va">count_design</span><span class="op">)</span>, df <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svychisq.html" class="external-link">degf</a></span><span class="op">(</span><span class="va">count_design</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                 2.5 %  97.5 %</span></span>
+<span><span class="co">#&gt; angler_hours 7380.401 12608.6</span></span></code></pre></div>
 <div class="section level3">
-<h3 id="c--estimate_catch_rate-add_interviews">2c. estimate_catch_rate() + add_interviews()<a class="anchor" aria-label="anchor" href="#c--estimate_catch_rate-add_interviews"></a>
+<h3 id="no-finite-population-correction">No finite-population correction<a class="anchor" aria-label="anchor" href="#no-finite-population-correction"></a>
 </h3>
-<p>Before calling <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>, attach the
-interview data via <code><a href="../reference/add_interviews.html">add_interviews()</a></code>. This maps interview
-columns to the design vocabulary and filters to complete trips by
-default.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span>
-<span>  catch         <span class="op">=</span> <span class="va">catch_total</span>,</span>
-<span>  effort        <span class="op">=</span> <span class="va">hours_fished</span>,</span>
-<span>  n_anglers     <span class="op">=</span> <span class="va">n_anglers</span>,</span>
-<span>  harvest       <span class="op">=</span> <span class="va">catch_kept</span>,</span>
-<span>  trip_status   <span class="op">=</span> <span class="va">trip_status</span>,</span>
-<span>  trip_duration <span class="op">=</span> <span class="va">trip_duration</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span></span></code></pre></div>
-<p>Now estimate CPUE, which calls <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code> internally on
-the complete-trip subset of the interview frame:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cpue_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
-<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
-<span><span class="va">cpue_est</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
-<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.967 0.110    0.752     1.18    17</span></span></code></pre></div>
-<p>The CPUE estimate (2.29) and SE (0.11) match the
-<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio()</a></code> output from Part 1c.</p>
-</div>
-<div class="section level3">
-<h3 id="d--estimate_total_catch">2d. estimate_total_catch()<a class="anchor" aria-label="anchor" href="#d--estimate_total_catch"></a>
-</h3>
-<p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> applies the delta method to
-combine the effort and CPUE estimates, exactly as in Part 1c:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
-<span><span class="co">#&gt; Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span>.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> The rate differs across their levels in these interviews (angler_method:</span></span>
-<span><span class="co">#&gt;   artificial 1.121, bait 0.8, fly 1.31 and species_sought: bass 1.018, panfish</span></span>
-<span><span class="co">#&gt;   1.2, walleye 0.933), so the total depends on the interview sample's mix over</span></span>
-<span><span class="co">#&gt;   those domains.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Without the domain in the counts the total is `E_total * rate_pooled`,</span></span>
-<span><span class="co">#&gt;   weighted by the interview mix rather than the effort mix. Interview selection</span></span>
-<span><span class="co">#&gt;   is not proportional to effort by construction (Malvestuto 1996).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> This is a risk, not an error: the counts carry no composition to check</span></span>
-<span><span class="co">#&gt;   against, so it cannot be verified from the data.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Classifying <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span> in the count data removes the</span></span>
-<span><span class="co">#&gt;   assumption -- the total becomes `sum(E_h * rate_h)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
-<span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
-<span><span class="co">#&gt;   trips alone; a ratio from so few trips is unstable, and the rate functions</span></span>
-<span><span class="co">#&gt;   refuse a group this small.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
-<span><span class="co">#&gt;   (GH #417).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
-<span><span class="va">total_catch</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
-<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     364.  47.9     262.     466.    17</span></span></code></pre></div>
-<p>The total catch estimate (approximately 851) is consistent with the
-raw delta-method calculation in Part 1c. Small numerical differences
-reflect tidycreel’s internal handling of the complete-trip filter and
-variance components — the statistical method is identical.</p>
-<hr>
+<p>The design above has no finite-population correction (FPC). Survey
+texts would usually add one, because days are drawn without
+replacement:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">counts</span><span class="op">$</span><span class="va">fpc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">N_h</span><span class="op">[</span><span class="va">counts</span><span class="op">$</span><span class="va">day_type</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">angler_hours</span>, <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span></span>
+<span>  ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">day_type</span>, fpc <span class="op">=</span> <span class="op">~</span><span class="va">fpc</span>, data <span class="op">=</span> <span class="va">counts</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;               total     SE</span></span>
+<span><span class="co">#&gt; angler_hours 9994.5 1078.6</span></span></code></pre></div>
+<p>The standard error falls from about 1,286 to 1,079. tidycreel leaves
+the correction out when a day has one count. The between-day variance
+then also carries the variation from when in the day the count fell, and
+sampling more days does not remove that part. With two or more counts on
+every sampled day of a stratum, tidycreel estimates the within-day part
+separately and applies the correction to the between-day part. The
+reasoning is in <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>; up to
+tidycreel 8.0.0 the correction was always applied (#505).</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="mapping-table">Mapping Table<a class="anchor" aria-label="anchor" href="#mapping-table"></a>
+<h2 id="catch-rate-svyratio">Catch rate: <code>svyratio()</code><a class="anchor" aria-label="anchor" href="#catch-rate-svyratio"></a>
+</h2>
+<p>The rate comes from complete trips. Its denominator is
+<strong>angler</strong>-hours, each party’s hours times its number of
+anglers. The interviews are stratified by day type and weighted
+equally:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">trips</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">example_season_interviews</span>, <span class="va">trip_status</span> <span class="op">==</span> <span class="st">"complete"</span><span class="op">)</span></span>
+<span><span class="va">trips</span><span class="op">$</span><span class="va">angler_hours</span> <span class="op">&lt;-</span> <span class="va">trips</span><span class="op">$</span><span class="va">hours_fished</span> <span class="op">*</span> <span class="va">trips</span><span class="op">$</span><span class="va">n_anglers</span></span>
+<span></span>
+<span><span class="va">trip_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span></span>
+<span>  ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">day_type</span>, weights <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, data <span class="op">=</span> <span class="va">trips</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">svyratio</a></span><span class="op">(</span><span class="op">~</span><span class="va">catch_total</span>, <span class="op">~</span><span class="va">angler_hours</span>, <span class="va">trip_design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Ratio estimator: svyratio.survey.design2(~catch_total, ~angler_hours, trip_design)</span></span>
+<span><span class="co">#&gt; Ratios=</span></span>
+<span><span class="co">#&gt;             angler_hours</span></span>
+<span><span class="co">#&gt; catch_total    0.2207121</span></span>
+<span><span class="co">#&gt; SEs=</span></span>
+<span><span class="co">#&gt;             angler_hours</span></span>
+<span><span class="co">#&gt; catch_total   0.04148304</span></span>
+<span></span>
+<span><span class="va">rate</span><span class="op">$</span><span class="va">estimates</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.221 0.041<span style="text-decoration: underline;">5</span>    0.139    0.302   172</span></span>
+<span><span class="va">rate</span><span class="op">$</span><span class="va">unit</span></span>
+<span><span class="co">#&gt; [1] "fish/angler-hour"</span></span></code></pre></div>
+<p>This is the ratio of means (total catch over total effort), the
+estimator for access interviews;
+<code><a href="../articles/estimator-choice.html">vignette("estimator-choice")</a></code> covers when tidycreel uses the
+mean of ratios instead. Without <code>n_anglers</code>, the denominator
+would be party hours and the rate would be per party-hour, about 0.37
+here instead of 0.22. The two are different quantities, and tidycreel
+reports which one it computed in <code>unit</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="total-catch-svyby-and-a-product-variance">Total catch: <code>svyby()</code> and a product variance<a class="anchor" aria-label="anchor" href="#total-catch-svyby-and-a-product-variance"></a>
+</h2>
+<p>The total is not season effort times the season rate. It is built
+<strong>within each stratum</strong> and the strata are then added,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>C</mi><mo accent="true">̂</mo></mover><mo>=</mo><msub><mo>∑</mo><mi>h</mi></msub><msub><mover><mi>E</mi><mo accent="true">̂</mo></mover><mi>h</mi></msub><msub><mover><mi>R</mi><mo accent="true">̂</mo></mover><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">\hat{C} = \sum_h \hat{E}_h
+\hat{R}_h</annotation></semantics></math>, so that each stratum’s rate
+is weighted by that stratum’s effort:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">E</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyby.html" class="external-link">svyby</a></span><span class="op">(</span><span class="op">~</span><span class="va">angler_hours</span>, <span class="op">~</span><span class="va">day_type</span>, <span class="va">count_design</span>, <span class="va">svytotal</span><span class="op">)</span></span>
+<span><span class="va">R</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyby.html" class="external-link">svyby</a></span><span class="op">(</span><span class="op">~</span><span class="va">catch_total</span>, <span class="op">~</span><span class="va">day_type</span>, <span class="va">trip_design</span>, <span class="va">svyratio</span>,</span>
+<span>  denominator <span class="op">=</span> <span class="op">~</span><span class="va">angler_hours</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">E</span></span>
+<span><span class="co">#&gt;         day_type angler_hours       se</span></span>
+<span><span class="co">#&gt; weekday  weekday       7912.0 1062.602</span></span>
+<span><span class="co">#&gt; weekend  weekend       2082.5  724.896</span></span>
+<span><span class="va">R</span></span>
+<span><span class="co">#&gt;         day_type catch_total/angler_hours se.catch_total/angler_hours</span></span>
+<span><span class="co">#&gt; weekday  weekday                0.2081839                  0.04530168</span></span>
+<span><span class="co">#&gt; weekend  weekend                0.2801120                  0.10241615</span></span>
+<span></span>
+<span><span class="va">e</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">E</span><span class="op">)</span></span>
+<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">R</span><span class="op">)</span></span>
+<span><span class="va">se_e</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/SE.html" class="external-link">SE</a></span><span class="op">(</span><span class="va">E</span><span class="op">)</span></span>
+<span><span class="va">se_r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/SE.html" class="external-link">SE</a></span><span class="op">(</span><span class="va">R</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">e</span> <span class="op">*</span> <span class="va">r</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 2230.484</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">e</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_r</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="va">r</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_e</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="va">se_e</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_r</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 506.2577</span></span>
+<span></span>
+<span><span class="va">total</span><span class="op">$</span><span class="va">estimates</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  506.    <span style="text-decoration: underline;">1</span>231.    <span style="text-decoration: underline;">3</span>230.   172</span></span>
+<span><span class="va">total</span><span class="op">$</span><span class="va">unit</span></span>
+<span><span class="co">#&gt; [1] "fish"</span></span></code></pre></div>
+<p>The variance of each stratum’s product is Goodman’s unbiased
+estimator: the two delta-method terms minus the product of the two
+variances. The familiar two-term delta method is
+<code>product_variance = "first_order"</code>. Both assume the effort
+and rate errors are independent; <code><a href="../articles/catch-pipeline.html">vignette("catch-pipeline")</a></code>
+derives the formula and discusses that assumption.</p>
+</div>
+<div class="section level2">
+<h2 id="mapping-table">Mapping table<a class="anchor" aria-label="anchor" href="#mapping-table"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -499,65 +335,83 @@ variance components — the statistical method is identical.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Design construction</td>
-<td><code>svydesign(ids=~1, strata=~day_type, fpc=~fpc, data=counts)</code></td>
+<td>Day’s effort</td>
+<td><code>count × period length</code></td>
+<td><code>add_counts(count_col =, period_length_col =)</code></td>
+</tr>
+<tr class="even">
+<td>Count design</td>
+<td>
+<code>svydesign(ids = ~1, strata = ~day_type, weights = ~N_h/n_h)</code>,
+no <code>fpc</code> with one count a day</td>
 <td>
 <code><a href="../reference/creel_design.html">creel_design()</a></code> + <code><a href="../reference/add_counts.html">add_counts()</a></code>
 </td>
 </tr>
+<tr class="odd">
+<td>Effort</td>
+<td><code>svytotal(~angler_hours, ...)</code></td>
+<td><code>estimate_effort(target = "period_total")</code></td>
+</tr>
 <tr class="even">
-<td>Attach interview data</td>
-<td>subset + <code>svydesign(ids=~1, data=complete_trips)</code>
+<td>Interview design</td>
+<td>complete trips;
+<code>svydesign(ids = ~1, strata = ~day_type, weights = ~1)</code>
 </td>
 <td><code><a href="../reference/add_interviews.html">add_interviews()</a></code></td>
 </tr>
 <tr class="odd">
-<td>Effort estimation</td>
-<td><code>svytotal(~effort_hours, design)</code></td>
-<td><code>estimate_effort(design)</code></td>
+<td>Catch rate</td>
+<td><code>svyratio(~catch, ~angler_hours, ...)</code></td>
+<td><code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code></td>
 </tr>
 <tr class="even">
-<td>Catch rate</td>
-<td><code>svyratio(~catch_total, ~hours_fished, int_design)</code></td>
-<td><code>estimate_catch_rate(design)</code></td>
+<td>Total catch</td>
+<td>
+<code><a href="https://rdrr.io/pkg/survey/man/svyby.html" class="external-link">svyby()</a></code> per stratum;
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mo>∑</mo><mi>h</mi></msub><msub><mover><mi>E</mi><mo accent="true">̂</mo></mover><mi>h</mi></msub><msub><mover><mi>R</mi><mo accent="true">̂</mo></mover><mi>h</mi></msub></mrow><annotation encoding="application/x-tex">\sum_h \hat{E}_h \hat{R}_h</annotation></semantics></math>;
+Goodman variance</td>
+<td><code>estimate_total_catch(target = "period_total")</code></td>
 </tr>
 <tr class="odd">
-<td>Total catch</td>
-<td>E × C with delta method Var(E×C) = E² Var(C) + C² Var(E)</td>
-<td><code>estimate_total_catch(design)</code></td>
-</tr>
-<tr class="even">
-<td>Variance method</td>
-<td>Taylor linearization (default in survey)</td>
-<td>Taylor linearization (default in tidycreel)</td>
+<td>Confidence interval</td>
+<td>effort and total catch:
+<code>confint(..., df = degf(design))</code>; catch rate:
+<code>confint(...)</code>, the normal interval</td>
+<td>
+<code>ci_lower</code>, <code>ci_upper</code>
+</td>
 </tr>
 </tbody>
 </table>
-<hr>
+<p>What tidycreel adds on top of these calls is the bookkeeping: the
+unit of each result, the strata a total must be built within, the
+refusals when the data cannot support an estimate
+(<code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code>), and the bootstrap and
+jackknife variance methods
+(<code><a href="../articles/replicate-designs.html">vignette("replicate-designs")</a></code>).</p>
 </div>
 <div class="section level2">
-<h2 id="when-to-use-each-approach">When to Use Each Approach<a class="anchor" aria-label="anchor" href="#when-to-use-each-approach"></a>
+<h2 id="the-internal-design-object">The internal design object<a class="anchor" aria-label="anchor" href="#the-internal-design-object"></a>
 </h2>
-<p><strong>Use tidycreel</strong> for standard creel survey designs
-where the main analysis follows the effort + CPUE + total catch
-workflow. tidycreel handles the bookkeeping (FPC construction,
-complete-trip filtering, delta method variance) and returns tidy tibbles
-ready for reporting. The domain vocabulary (<code>creel_design</code>,
-<code>estimate_effort</code>, <code>estimate_catch_rate</code>) matches
-the language creel biologists already use.</p>
-<p><strong>Use raw survey package calls</strong> when you need
-capabilities outside tidycreel’s scope: custom clustering structures,
-probability-proportional-to-size (PPS) sampling, replicate-weight
-designs, or nonstandard variance estimators. The
-<code><a href="../reference/as_creel_svydesign.html">as_creel_svydesign()</a></code> function extracts the internal
-<code>svydesign</code> object from any tidycreel design, giving you full
-access to the survey package toolbox while still using tidycreel for the
-initial data setup.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Extract the internal svydesign object for advanced use</span></span>
-<span><span class="va">internal_svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_creel_svydesign.html">as_creel_svydesign</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co"># Now use any survey package function directly</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svymean</a></span><span class="op">(</span><span class="op">~</span><span class="va">effort_hours</span>, <span class="va">internal_svy</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/as_creel_svydesign.html">as_creel_svydesign()</a></code> returns the count design tidycreel
+built, for use with other <code>survey</code> functions. It is the
+design over the <strong>sampled days</strong> with every weight 1, not
+the season design above, and its count column now holds each day’s count
+× period in angler-hours, under the column’s original name:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">internal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_creel_svydesign.html">as_creel_svydesign</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">internal</span><span class="op">$</span><span class="va">variables</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span>, <span class="st">"total_anglers"</span><span class="op">)</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         date day_type total_anglers</span></span>
+<span><span class="co">#&gt; 1 2024-05-06  weekday            70</span></span>
+<span><span class="co">#&gt; 2 2024-05-07  weekday            70</span></span>
+<span><span class="co">#&gt; 3 2024-05-09  weekday           126</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">svytotal</a></span><span class="op">(</span><span class="op">~</span><span class="va">total_anglers</span>, <span class="va">internal</span><span class="op">)</span></span>
+<span><span class="co">#&gt;               total     SE</span></span>
+<span><span class="co">#&gt; total_anglers  3066 385.72</span></span></code></pre></div>
+<p>That total is effort over the 36 sampled days.
+<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> expands it to the season, and is the way
+to get the season total.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

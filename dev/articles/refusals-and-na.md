@@ -209,6 +209,11 @@ one of three states:
 | `NA` | applies, and is unknown | `se` is `NA` |
 | `0` | known to be exactly zero | included, as zero |
 
+One exception to “absent”: a bootstrap `se` can contain a part it cannot
+report separately. On the bootstrap path of
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
+the visibility and angler-ratio parts are inside `se` but not listed.
+
 The three are kept apart because a zero is otherwise indistinguishable
 from a part nobody propagated. The aerial visibility correction shows
 all three:

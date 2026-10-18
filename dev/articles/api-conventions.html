@@ -54,7 +54,6 @@
     <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
-    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
@@ -75,6 +74,12 @@
     <li><a class="dropdown-item" href="../articles/estimator-choice.html">How tidycreel Chooses an Estimator</a></li>
     <li><a class="dropdown-item" href="../articles/unit-rules.html">Where Units Come From</a></li>
     <li><a class="dropdown-item" href="../articles/refusals-and-na.html">Refusals, NA, NULL and Zero</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Creel Survey Terms</a></li>
+    <li><a class="dropdown-item" href="../articles/bus-route-equations.html">Bus-Route Survey: Equation Traceability</a></li>
+    <li><a class="dropdown-item" href="../articles/survey-tidycreel.html">tidycreel and the survey Package: A Side-by-Side Guide</a></li>
+    <li><a class="dropdown-item" href="../articles/api-conventions.html">API Conventions</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
@@ -371,10 +376,17 @@ the data’s own definition (party-hours vs angler-hours, a period length,
 <code>h_open</code>). When it cannot be derived it is <code>NA</code>,
 meaning unknown. There is no default unit.</p>
 <p><strong><code>NA</code>, <code>NULL</code> and zero are
-different.</strong> A standard-error component that does not apply is
-<code>NULL</code>; one that applies but is unknown is <code>NA</code>;
-zero means a known zero. Never report <code>0</code> for “not
-propagated”.</p>
+different.</strong> A standard-error component that was not propagated
+is absent (<code>NULL</code>, or left out of
+<code>se_components</code>): either it does not apply to the design, or
+the quantity was supplied without its own standard error, so the
+reported <code>se</code> treats it as fixed. One that applies but is
+unknown is <code>NA</code>, and makes <code>se</code> <code>NA</code>.
+Zero means a known zero. Never report <code>0</code> for “not
+propagated”; <code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code> shows all three.
+The one exception is a bootstrap <code>se</code> that already contains a
+part it cannot report separately: the aerial GLMM’s visibility and
+angler-ratio parts are inside <code>se</code> there but not listed.</p>
 <p><strong>Refuse rather than guess.</strong> When the data cannot
 support an estimate (unsampled strata, units that do not combine, a
 design the estimator does not cover), stop with an error that says what
