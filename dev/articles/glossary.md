@@ -186,7 +186,7 @@ entry).
 the season total in most reports. `"stratum_total"` runs the same
 expansion on standard count designs; the returned `effort_target`
 records which was asked for. Expanded targets are not yet available for
-bus-route, ice or aerial designs.
+bus-route or ice designs.
 
 ## Trip-status and interview terms
 

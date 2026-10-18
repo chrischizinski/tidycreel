@@ -94,10 +94,11 @@ estimate_effort_aerial_glmm(
   `exp(sigma^2 / 2)`.
 
   Both are expectations, so both carry the retransformation factor
-  described under Details. Neither expands beyond the sampled days:
-  expanded targets are not supported for aerial designs by
+  described under Details. Neither expands beyond the sampled days: this
+  model-based estimator has no calendar expansion. The design-based
+  aerial estimate in
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-  either.
+  does, through its `target` argument (#519).
 
 - by:
 

@@ -62,8 +62,8 @@ estimate_effort(
   stratified count designs, `"stratum_total"` and `"period_total"` use
   the same weighted expansion engine; the distinction is semantic and is
   recorded on the returned object as `effort_target`. Expanded targets
-  run on standard and sectioned count designs and are not yet supported
-  for bus-route, ice or aerial designs. On an expanded target a
+  run on standard, sectioned and aerial count designs and are not yet
+  supported for bus-route or ice designs. On an expanded target a
   stratum's between-day variance takes the finite-population correction
   only when every sampled day in it has two or more counts: with one
   count per day the correction would also remove the variation from when

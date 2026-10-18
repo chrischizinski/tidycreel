@@ -12,21 +12,6 @@
 
 ### Breaking changes
 
-- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
-  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
-  and
-  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
-  now refuse `target = "stratum_total"` or `"period_total"` on an aerial
-  design, as
-  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-  already did
-  ([\#518](https://github.com/chrischizinski/tidycreel/issues/518)). The
-  totals reached the effort helpers directly and expanded anyway, so a
-  total could cover a scope its own effort was refused for: on the
-  aerial audit design every total grew by a third. Aerial calendar
-  expansion has no validated estimator yet; use
-  `target = "sampled_days"`.
-
 - The same totals now refuse `target = "stratum_total"` or
   `"period_total"` on bus-route and ice designs
   ([\#520](https://github.com/chrischizinski/tidycreel/issues/520)).
@@ -225,6 +210,20 @@
   `count_time_col`.
 
 ### New features
+
+- [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  now takes `target = "stratum_total"` or `"period_total"` on aerial
+  designs
+  ([\#519](https://github.com/chrischizinski/tidycreel/issues/519)), as
+  the catch, harvest and release totals already did. Total effort for a
+  stratum is the number of calendar days times the mean daily effort
+  (Smucker et al. 2010), and the shared visibility and angler-to-people
+  ratios enter once, at the total, so their uncertainty is not divided
+  across strata. Effort, its standard error and every total match that
+  formula computed by hand. While this was checked, the development
+  version refused aerial expansion in the totals too
+  ([\#518](https://github.com/chrischizinski/tidycreel/issues/518));
+  that refusal was never released and is gone.
 
 - [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
   now takes `target = "stratum_total"` or `"period_total"` on sectioned
