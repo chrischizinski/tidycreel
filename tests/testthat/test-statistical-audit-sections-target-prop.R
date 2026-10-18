@@ -41,9 +41,9 @@ tp_design <- function() {
 }
 
 tp_sections <- function(target = "sampled_days") {
-  # Reached directly: estimate_effort() refuses an expanded target on a
-  # sectioned design, so the public surface cannot exercise the forwarding this
-  # asserts. Testing through the guard would assert only that the guard exists.
+  # Reached directly, as written for #231 when estimate_effort() still refused
+  # an expanded target here; #520 lifted that, and the public surface is tested
+  # at the end of this file.
   suppressWarnings(suppressMessages(
     estimate_effort_sections(
       tp_design(),
@@ -166,4 +166,36 @@ test_that("an absent section reports no proportion and no SE", {
   expect_false(absent$data_available)
   expect_true(is.na(absent$prop_of_lake_total))
   expect_true(is.na(absent$se_prop_of_lake_total))
+})
+
+# GH #520: estimate_effort() refused an expanded target on a sectioned design
+# while all three totals expanded one, through this same per-section helper.
+# The refusal was the stale side; it is lifted, and the public result is pinned
+# to the stratified expansion computed by hand from the raw counts.
+test_that("#520: sectioned estimate_effort() expands to the hand-computed totals and SEs", {
+  d <- tp_design()
+  got <- tp_rows(suppressWarnings(suppressMessages(
+    estimate_effort(d, target = "period_total") # nolint: object_usage_linter
+  )))
+  # One count per day, no fpc: N_h / n_h * sum(y), variance N_h^2 * s_h^2 / n_h.
+  # tp_design() samples 2 of 6 calendar days per stratum, so each total is x3.
+  hand <- function(df) {
+    est <- 0
+    v <- 0
+    for (h in c("weekday", "weekend")) {
+      y <- df$effort_hours[df$day_type == h]
+      est <- est + 6 / length(y) * sum(y)
+      v <- v + 6^2 * stats::var(y) / length(y)
+    }
+    c(est, sqrt(v))
+  }
+  cnt <- d$counts
+  expected <- rbind(
+    A = hand(cnt[cnt$section == "A", ]),
+    B = hand(cnt[cnt$section == "B", ]),
+    .lake_total = hand(stats::aggregate(effort_hours ~ date + day_type, cnt, sum))
+  )
+  got <- got[match(rownames(expected), got$section), ]
+  expect_equal(got$estimate, unname(expected[, 1]))
+  expect_equal(got$se, unname(expected[, 2]))
 })

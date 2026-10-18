@@ -1621,7 +1621,10 @@ estimate_total_species_br <- function(
     design = design,
     conf_level = conf_level,
     by_vars = c(species_col, interview_by_vars),
-    unit = product_total_unit(rate_unit(design), interview_effort_unit(design)) # nolint: object_usage_linter
+    unit = product_total_unit(rate_unit(design), interview_effort_unit(design)), # nolint: object_usage_linter
+    # A Horvitz-Thompson total over the sampled days: p_period is a within-day
+    # probability, so nothing here expands to unsampled calendar days (GH #520).
+    effort_target = "sampled_days"
   )
 }
 
@@ -1752,7 +1755,8 @@ br_build_estimates <- function(
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
-      unit = product_total_unit(rate_unit(design), interview_effort_unit(design)) # nolint: object_usage_linter
+      unit = product_total_unit(rate_unit(design), interview_effort_unit(design)), # nolint: object_usage_linter
+      effort_target = "sampled_days" # sampled days only; see estimate_total_species_br() (GH #520)
     )
     attr(result, "site_contributions") <- site_table
     result
@@ -1845,7 +1849,8 @@ br_build_estimates <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
-      unit = product_total_unit(rate_unit(design), interview_effort_unit(design)) # nolint: object_usage_linter
+      unit = product_total_unit(rate_unit(design), interview_effort_unit(design)), # nolint: object_usage_linter
+      effort_target = "sampled_days" # sampled days only; see estimate_total_species_br() (GH #520)
     )
     attr(result, "site_contributions") <- site_table
     result

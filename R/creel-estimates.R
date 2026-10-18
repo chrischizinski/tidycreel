@@ -545,8 +545,8 @@ print.creel_estimates <- function(x, ...) {
 #'   stratified count designs, \code{"stratum_total"} and \code{"period_total"}
 #'   use the same weighted expansion engine; the distinction is semantic and is
 #'   recorded on the returned object as \code{effort_target}. Expanded targets
-#'   are currently limited to the standard count-design path and are not yet
-#'   supported for bus-route, ice, aerial, or sectioned designs. On an expanded
+#'   run on standard and sectioned count designs and are not yet supported
+#'   for bus-route, ice or aerial designs. On an expanded
 #'   target a stratum's between-day variance takes the finite-population
 #'   correction only when every sampled day in it has two or more counts: with
 #'   one count per day the correction would also remove the variation from when
@@ -737,16 +737,7 @@ estimate_effort <- function(
 
   # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
-    if (!identical(target, "sampled_days")) {
-      cli::cli_abort(
-        c(
-          "Expanded effort targets are not yet supported for {.val {design$design_type}} designs.",
-          "x" = "Got {.arg target = {target}}.",
-          "i" = "Use {.code target = 'sampled_days'} for now."
-        ),
-        class = "creel_error_dispatch_unsupported"
-      )
-    }
+    refuse_unexpandable_target(design, target) # nolint: object_usage_linter
     if (verbose) {
       cli::cli_inform(c(
         "i" = "Using bus-route estimator (Jones & Pollock 2012, Eq. 19.4)"
@@ -817,7 +808,7 @@ estimate_effort <- function(
 
   # Aerial dispatch — svytotal scaled by h_open/v (Pollock et al. 1994 sec.15.6.1)
   if (!is.null(design$design_type) && identical(design$design_type, "aerial")) {
-    refuse_aerial_expanded_target(design, target) # nolint: object_usage_linter
+    refuse_unexpandable_target(design, target) # nolint: object_usage_linter
     if (is.null(design$counts)) {
       cli::cli_abort(
         c(
@@ -871,13 +862,9 @@ estimate_effort <- function(
 
   # Section dispatch (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
-    if (!identical(target, "sampled_days")) {
-      cli::cli_abort(c(
-        "Expanded effort targets are not yet supported for sectioned designs.",
-        "x" = "Got {.arg target = {target}}.",
-        "i" = "Use {.code target = 'sampled_days'} for now."
-      ))
-    }
+    # Expanded targets run through per-section estimate_effort_total() and a
+    # target-aware lake total (GH #231); hand-checked against the stratified
+    # expansion, estimate and SE, per section and for the lake total (GH #520).
     return(estimate_effort_sections(
       # nolint: object_usage_linter
       design,
@@ -5783,7 +5770,7 @@ within_day_identified_strata <- function(design, counts_data, strata_cols) {
 #'
 #' @param design A sectioned `creel_design` with counts attached.
 #' @param result_df The per-section rows, with `se_within` and `data_available`.
-#' @param target Effort target (`"sampled_days"` for sectioned designs).
+#' @param target Effort target, forwarded to the within-day variance.
 #' @return Numeric scalar: the lake total's within-day SE.
 #' @keywords internal
 #' @noRd

@@ -1596,6 +1596,35 @@ test_that("ICE-04: estimate_total_catch() on ice design returns valid estimates 
   expect_true(is.numeric(result$estimates$estimate))
 })
 
+# GH #520: on bus-route and ice designs the totals accepted `target` and
+# dropped it, answering a period-total request with the sampled-days total and
+# no label, while estimate_effort() refuses that request. The Horvitz-Thompson
+# total here covers the sampled days only (p_period is a within-day
+# probability), so an expanded target must be refused, and the sampled-days
+# total must say what it is.
+test_that("#520: bus-route and ice totals refuse expanded targets and label sampled days", {
+  designs <- suppressWarnings(suppressMessages(list(
+    bus_route = make_br_catch_interviews(make_br_catch_design()), # nolint: object_usage_linter
+    ice = make_ice_total_catch_design() # nolint: object_usage_linter
+  )))
+  totals <- list(catch = estimate_total_catch, harvest = estimate_total_harvest) # nolint: object_usage_linter
+  for (nm in names(designs)) {
+    d <- designs[[nm]]
+    for (fn in names(totals)) {
+      if (nm == "ice" && fn == "harvest") next # the ice fixture records no harvest
+      for (tg in c("stratum_total", "period_total")) {
+        expect_error(
+          suppressWarnings(totals[[fn]](d, target = tg)),
+          class = "creel_error_dispatch_unsupported",
+          info = paste(nm, fn, tg)
+        )
+      }
+      res <- suppressWarnings(suppressMessages(totals[[fn]](d)))
+      expect_identical(res$effort_target, "sampled_days", info = paste(nm, fn))
+    }
+  }
+})
+
 # Phase 46: Camera interview pipeline (CAM-04) — estimate_total_catch() ----
 
 #' Build a camera design with counts and interviews for total catch estimation
