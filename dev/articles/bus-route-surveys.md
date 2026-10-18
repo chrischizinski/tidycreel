@@ -425,6 +425,7 @@ print(harvest_est)
 #> Method: Total Harvest (Horvitz-Thompson)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> Unit: fish
 #> 
 #> # A tibble: 1 × 5
@@ -439,6 +440,7 @@ print(catch_est)
 #> Method: Total Catch (Horvitz-Thompson)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> Unit: fish
 #> 
 #> # A tibble: 1 × 5
@@ -456,10 +458,11 @@ confidence interval:
 ``` r
 
 tibble::as_tibble(catch_est)
-#> # A tibble: 1 × 9
-#>   estimate    se ci_lower ci_upper     n method variance_method conf_level unit 
-#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>  <chr>                <dbl> <chr>
-#> 1     180.  30.0     122.     239.    15 ht-to… taylor                0.95 fish
+#> # A tibble: 1 × 10
+#>   estimate    se ci_lower ci_upper     n method       variance_method conf_level
+#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>        <chr>                <dbl>
+#> 1     180.  30.0     122.     239.    15 ht-total-ca… taylor                0.95
+#> # ℹ 2 more variables: effort_target <chr>, unit <chr>
 
 ggplot2::autoplot(catch_est)
 ```

@@ -352,6 +352,7 @@ print(total_catch_est)
 #> Method: Total Catch (Horvitz-Thompson)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Effort target: sampled_days
 #> Unit: fish
 #> 
 #> # A tibble: 1 × 5

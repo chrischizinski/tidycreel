@@ -45,7 +45,7 @@ follow the effort they are given, so a catch total on the default target
 is the catch on the sampled days.
 [`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)
 explains the expansion, and the expanded targets are not yet available
-for bus-route, ice, aerial or sectioned designs.
+for bus-route, ice or aerial designs.
 
 The pages that explain each estimator in full:
 

@@ -70,9 +70,10 @@ estimate_total_release(
   Options are `"sampled_days"` (default), `"stratum_total"`, or
   `"period_total"`. This controls which effort domain is multiplied by
   release rate so total release stays aligned with the requested
-  temporal target. Aerial designs accept only `"sampled_days"`, as
+  temporal target. Aerial, bus-route and ice designs accept only
+  `"sampled_days"`, as
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-  does: aerial calendar expansion is not yet supported (#518).
+  does: they have no calendar expansion yet (#518, \#520).
 
 - use_trips:
 
