@@ -10,14 +10,6 @@
 
 ## Breaking changes
 
-* `estimate_total_catch()`, `estimate_total_harvest()` and
-  `estimate_total_release()` now refuse `target = "stratum_total"` or
-  `"period_total"` on an aerial design, as `estimate_effort()` already did
-  (#518). The totals reached the effort helpers directly and expanded anyway,
-  so a total could cover a scope its own effort was refused for: on the aerial
-  audit design every total grew by a third. Aerial calendar expansion has no
-  validated estimator yet; use `target = "sampled_days"`.
-
 * The same totals now refuse `target = "stratum_total"` or `"period_total"` on
   bus-route and ice designs (#520). They accepted the argument and dropped it,
   so a period-total request returned the sampled-days total with no label,
@@ -165,6 +157,16 @@
   column, or attach the raw counts with `count_time_col`.
 
 ## New features
+
+* `estimate_effort()` now takes `target = "stratum_total"` or `"period_total"`
+  on aerial designs (#519), as the catch, harvest and release totals already
+  did. Total effort for a stratum is the number of calendar days times the
+  mean daily effort (Smucker et al. 2010), and the shared visibility and
+  angler-to-people ratios enter once, at the total, so their uncertainty is
+  not divided across strata. Effort, its standard error and every total match
+  that formula computed by hand. While this was checked, the development
+  version refused aerial expansion in the totals too (#518); that refusal was
+  never released and is gone.
 
 * `estimate_effort()` now takes `target = "stratum_total"` or `"period_total"`
   on sectioned designs (#520). The refusal dated from before the sectioned path

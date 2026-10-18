@@ -51,8 +51,9 @@ identical to the old value: it now carries the retransformation factor
 the old code omitted, so it is higher by \code{exp(sigma^2 / 2)}.
 
 Both are expectations, so both carry the retransformation factor described
-under Details. Neither expands beyond the sampled days: expanded targets
-are not supported for aerial designs by \code{\link[=estimate_effort]{estimate_effort()}} either.}
+under Details. Neither expands beyond the sampled days: this model-based
+estimator has no calendar expansion. The design-based aerial estimate in
+\code{\link[=estimate_effort]{estimate_effort()}} does, through its \code{target} argument (#519).}
 
 \item{by}{Optional tidy selection of columns in \code{design$counts} to estimate
 within, typically the design strata (for example \code{by = day_type}). The

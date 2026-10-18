@@ -20,15 +20,14 @@ at_calendar <- function() {
   )
 }
 
-at_design <- function(h_open = 14, v = 1, v_se = 0, a = 1, a_se = 0) {
-  cal <- at_calendar()
+at_design <- function(h_open = 14, v = 1, v_se = 0, a = 1, a_se = 0, cal = at_calendar()) {
   d <- creel_design( # nolint: object_usage_linter
     cal,
     date = date, strata = day_type, survey_type = "aerial",
     visibility_correction = v, visibility_se = v_se,
     angler_ratio = a, angler_ratio_se = a_se, h_open = h_open
   )
-  sampled <- cal[c(1, 2, 5, 3, 4, 8), ]
+  sampled <- cal[c(1, 2, 5, 3, 4, 8), ] # rows 1-8 are at_calendar()'s days
   counts <- data.frame(sampled, n_anglers = c(22L, 18L, 30L, 45L, 38L, 51L))
   d <- add_counts(d, counts) # nolint: object_usage_linter
   # Five interviews a day, 15 per stratum: ratio estimation by day_type needs 10.
@@ -255,27 +254,57 @@ test_that("#478: an aerial total over a party-hour rate still reports its unit a
   expect_true(is.na(at_quiet(estimate_total_catch(d))$unit))
 })
 
-test_that("#518: no aerial total expands to a target its own effort refuses", {
-  # estimate_effort() has no aerial calendar expansion and refuses one. The
-  # totals reach the effort helpers directly, so they returned a stratum or
-  # period total (x1.333 on this design) built on that refused expansion.
-  # Effort and every total must agree on what an aerial design supports.
-  d <- at_quiet(at_design(h_open = 14))
-  for (tg in c("stratum_total", "period_total")) {
-    expect_error(
-      estimate_effort(d, target = tg), # nolint: object_usage_linter
-      class = "creel_error_dispatch_unsupported"
-    )
-    for (nm in names(at_totals)) {
-      expect_error(
-        at_totals[[nm]](d, target = tg),
-        class = "creel_error_dispatch_unsupported",
-        info = paste(nm, tg)
-      )
-    }
+test_that("#519: aerial effort and totals expand to the calendar by hand-checked formula", {
+  # #518 refused aerial expansion everywhere because effort refused it while the
+  # totals expanded anyway. #519 established the estimator: total effort for a
+  # cell is M x mean daily effort (Smucker et al. 2010, eq. 4), and the shared
+  # visibility and angler ratios enter once, at the total -- their uncertainty
+  # does not average out across strata. Effort and every total must now expand
+  # by that rule, and agree with each other.
+  #
+  # Four extra unsampled weekend days make the expansion uneven (weekday N/n =
+  # 4/3, weekend 8/3), so a single global factor cannot pass.
+  cal <- data.frame(
+    date = as.Date("2024-07-01") + c(0:7, 20:23),
+    day_type = c(rep(c("weekday", "weekday", "weekend", "weekend"), 2), rep("weekend", 4))
+  )
+  h <- 14
+  v <- 0.8
+  se_v <- 0.05
+  a <- 0.9
+  se_a <- 0.03
+  d <- at_quiet(at_design(h_open = h, v = v, v_se = se_v, a = a, a_se = se_a, cal = cal))
+
+  # Hand: k * sum_h N_h / n_h * sum(count); variance k^2 * sum_h N_h^2 s_h^2 / n_h
+  # plus E^2 * ((se_v / v)^2 + (se_a / a)^2), added once.
+  cnt <- d$counts
+  n_cal <- table(cal$day_type)
+  k <- h * a / v
+  total_count <- 0
+  var_count <- 0
+  for (s in names(n_cal)) {
+    y <- cnt$n_anglers[cnt$day_type == s]
+    total_count <- total_count + n_cal[[s]] / length(y) * sum(y)
+    var_count <- var_count + n_cal[[s]]^2 * stats::var(y) / length(y)
   }
-  # The supported target is untouched.
+  e_hand <- k * total_count
+  se_hand <- sqrt(k^2 * var_count + e_hand^2 * ((se_v / v)^2 + (se_a / a)^2))
+
+  eff <- at_quiet(estimate_effort(d, target = "period_total")) # nolint: object_usage_linter
+  expect_equal(eff$estimates$estimate, e_hand)
+  expect_equal(eff$estimates$se, se_hand)
+  expect_identical(eff$effort_target, "period_total")
+
+  # Every total is the per-stratum rate times the per-stratum expanded effort.
+  eff_h <- at_quiet(estimate_effort(d, by = day_type, target = "period_total"))$estimates # nolint: object_usage_linter
+  rates <- list(
+    catch = estimate_catch_rate, harvest = estimate_harvest_rate, release = estimate_release_rate # nolint: object_usage_linter
+  )
   for (nm in names(at_totals)) {
-    expect_true(is.finite(at_totals[[nm]](d, target = "sampled_days")$estimates$estimate), info = nm)
+    r <- at_quiet(rates[[nm]](d, by = day_type))$estimates
+    r <- r[match(eff_h$day_type, r$day_type), ]
+    tot <- at_totals[[nm]](d, target = "period_total")
+    expect_equal(tot$estimates$estimate, sum(r$estimate * eff_h$estimate), info = nm)
+    expect_identical(tot$effort_target, "period_total", info = nm)
   }
 })

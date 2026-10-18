@@ -43,8 +43,9 @@
 #'   the old code omitted, so it is higher by `exp(sigma^2 / 2)`.
 #'
 #'   Both are expectations, so both carry the retransformation factor described
-#'   under Details. Neither expands beyond the sampled days: expanded targets
-#'   are not supported for aerial designs by [estimate_effort()] either.
+#'   under Details. Neither expands beyond the sampled days: this model-based
+#'   estimator has no calendar expansion. The design-based aerial estimate in
+#'   [estimate_effort()] does, through its `target` argument (#519).
 #' @param by Optional tidy selection of columns in `design$counts` to estimate
 #'   within, typically the design strata (for example `by = day_type`). The
 #'   strata enter the default model as additive fixed effects in ONE model --

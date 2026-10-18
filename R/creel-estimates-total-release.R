@@ -29,8 +29,8 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by release rate so total release stays aligned with the
 #'   requested temporal target.
-#'   Aerial, bus-route and ice designs accept only `"sampled_days"`, as
-#'   [estimate_effort()] does: they have no calendar expansion yet (#518, #520).
+#'   Bus-route and ice designs accept only `"sampled_days"`, as
+#'   [estimate_effort()] does: they have no calendar expansion yet (#520).
 #' @param use_trips Character. Which interviews contribute to RPUE.
 #'   `"complete"` uses only completed trips; `"all"` includes incomplete ones.
 #'   Default `NULL` means "not specified", which resolves to `"complete"`. An
