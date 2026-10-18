@@ -19,6 +19,7 @@ output: github_document
 [![Codecov test coverage](https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg)](https://app.codecov.io/gh/chrischizinski/tidycreel)
 [![Release](https://img.shields.io/github/v/release/chrischizinski/tidycreel?label=release&color=4CAF50)](https://github.com/chrischizinski/tidycreel/releases)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/tidycreel)](https://cran.r-project.org/package=tidycreel)
+[![Roadmap](https://img.shields.io/badge/Roadmap-tidycreel-6f42c1?logo=github)](https://github.com/users/chrischizinski/projects/2)
 [![Report bug](https://img.shields.io/badge/Report%20Bug-d73a4a?logo=github)](https://github.com/chrischizinski/tidycreel/issues/new?template=bug-report.yml)
 [![Request feature](https://img.shields.io/badge/Request%20Feature-1f6feb?logo=github)](https://github.com/chrischizinski/tidycreel/issues/new?template=feature-request.yml)
 [![GitHub Discussions](https://img.shields.io/github/discussions/chrischizinski/tidycreel?logo=github)](https://github.com/chrischizinski/tidycreel/discussions)
