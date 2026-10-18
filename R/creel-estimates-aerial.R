@@ -65,8 +65,11 @@ estimate_effort_aerial <- function(
   )
   count_formula <- stats::reformulate(count_var)
 
-  # Get appropriate survey design for variance method
-  svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+  # Get appropriate survey design for variance method. An expanded target
+  # reweights the sampled days to the calendar (N_h / n_h), as for a ground
+  # count: total = M x mean daily effort, Smucker et al. (2010) eq. 4 (GH #519).
+  target_design <- get_effort_target_design(design, effort_target) # nolint: object_usage_linter
+  svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
 
   # svytotal on the raw instantaneous count, then scale by h_over_v. The count
   # is guaranteed raw: add_counts() refuses period_length_col on an aerial
@@ -80,7 +83,7 @@ estimate_effort_aerial <- function(
   var_within <- compute_within_day_var_contribution(
     design,
     by_vars = NULL,
-    target = "sampled_days"
+    target = effort_target
   ) *
     h_over_v^2 # nolint: object_usage_linter
   se_within <- sqrt(var_within)

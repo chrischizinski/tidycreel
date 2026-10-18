@@ -3125,13 +3125,14 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
 
 #' Refuse an expanded effort target on a design with no calendar expansion
 #'
-#' Aerial, bus-route and ice designs have no calendar expansion yet, so they
-#' accept only `target = "sampled_days"`. The three totals do not go through
-#' `estimate_effort()`: on aerial designs they called the expanding effort
-#' helpers directly and returned an expansion `estimate_effort()` refuses
-#' (GH #518), and on bus-route and ice designs they dropped `target` and
-#' answered a period-total request with a sampled-days total (GH #520). Raised
-#' at all four entry points for the same reason as [refuse_camera_design()].
+#' Bus-route and ice designs have no calendar expansion: their
+#' Horvitz-Thompson total covers the sampled days, so they accept only
+#' `target = "sampled_days"`. The three totals do not go through
+#' `estimate_effort()`, and on these designs they dropped `target` and answered
+#' a period-total request with a sampled-days total (GH #520). Raised at all
+#' four entry points for the same reason as [refuse_camera_design()]. Aerial
+#' designs were refused here too (GH #518) until their expansion was
+#' hand-checked against Smucker et al. (2010) (GH #519).
 #'
 #' @param design A creel_design object.
 #' @param target The resolved effort target.
@@ -3143,7 +3144,7 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
 #' @keywords internal
 #' @noRd
 refuse_unexpandable_target <- function(design, target, call = rlang::caller_env()) {
-  if (!isTRUE(design$design_type %in% c("aerial", "bus_route", "ice")) ||
+  if (!isTRUE(design$design_type %in% c("bus_route", "ice")) ||
     identical(target, "sampled_days")) {
     return(invisible(NULL))
   }

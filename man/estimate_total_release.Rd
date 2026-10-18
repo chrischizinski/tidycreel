@@ -47,8 +47,8 @@ and release rate estimation, then combined via delta method.}
 \code{"stratum_total"}, or \code{"period_total"}. This controls which effort domain
 is multiplied by release rate so total release stays aligned with the
 requested temporal target.
-Aerial, bus-route and ice designs accept only \code{"sampled_days"}, as
-\code{\link[=estimate_effort]{estimate_effort()}} does: they have no calendar expansion yet (#518, #520).}
+Bus-route and ice designs accept only \code{"sampled_days"}, as
+\code{\link[=estimate_effort]{estimate_effort()}} does: they have no calendar expansion yet (#520).}
 
 \item{use_trips}{Character. Which interviews contribute to RPUE.
 \code{"complete"} uses only completed trips; \code{"all"} includes incomplete ones.
