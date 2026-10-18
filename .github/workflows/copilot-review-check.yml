@@ -27,9 +27,16 @@ name: Copilot Review Check
 # A failed API call is reported as a failed API call, never as a missing review:
 # swallowing the error would produce an empty list and an authoritative-sounding
 # "no review for this commit" that names the wrong cause.
+#
+# Scope (2026-10-18): Copilot reviews are a monthly allowance, so
+# the check covers package code only. A PR whose changed files are all outside the
+# code paths below (README, vignettes, pkgdown config, images, workflow-free docs)
+# passes without requesting a review; docs that make statistical claims get a
+# local review instead. A `no-copilot` label skips the check on any PR, for when
+# the allowance is spent; it is a visible, per-PR decision, not a silent bypass.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   pull_request_review:
     types: [submitted, dismissed]
 
@@ -45,7 +52,37 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Decide whether this PR needs a Copilot review
+        id: scope
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SKIP_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'no-copilot') }}
+        run: |
+          set -euo pipefail
+          if [ "${SKIP_LABEL}" = "true" ]; then
+            echo "::notice title=Copilot review skipped::PR carries the no-copilot label."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Into a file, not a pipeline, for the same reason as fetch_reviews below:
+          # an API failure must fail the job, not read as "no code changed".
+          if ! gh api "repos/${REPO}/pulls/${PR}/files" --paginate --jq '.[].filename' > changed.txt; then
+            echo "::error title=Could not list changed files::gh api failed for repos/${REPO}/pulls/${PR}/files."
+            exit 1
+          fi
+          # Package code: anything that changes what the package computes or ships
+          # as data, plus CI itself. Everything else is documentation or web.
+          if grep -Eq '^(R|tests|src|data|data-raw|inst)/|^(DESCRIPTION|NAMESPACE)$|^\.github/workflows/' changed.txt; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Copilot review skipped::No package code changed; docs and web changes do not spend a Copilot review."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Assert a Copilot review covers the head commit
+        if: steps.scope.outputs.needed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
