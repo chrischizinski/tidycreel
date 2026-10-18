@@ -1603,11 +1603,25 @@ test_that("ICE-04: estimate_total_catch() on ice design returns valid estimates 
 # probability), so an expanded target must be refused, and the sampled-days
 # total must say what it is.
 test_that("#520: bus-route and ice totals refuse expanded targets and label sampled days", {
+  # One released fish per interview, so the release total has data to work on.
+  with_release <- function(d) {
+    d$interviews$iid <- seq_len(nrow(d$interviews))
+    add_catch( # nolint: object_usage_linter
+      d,
+      data.frame(iid = d$interviews$iid, species = "walleye", count = 1L, catch_type = "released"),
+      catch_uid = iid, interview_uid = iid, species = species, count = count, # nolint: object_usage_linter
+      catch_type = catch_type # nolint: object_usage_linter
+    )
+  }
   designs <- suppressWarnings(suppressMessages(list(
-    bus_route = make_br_catch_interviews(make_br_catch_design()), # nolint: object_usage_linter
-    ice = make_ice_total_catch_design() # nolint: object_usage_linter
+    bus_route = with_release(make_br_catch_interviews(make_br_catch_design())), # nolint: object_usage_linter
+    ice = with_release(make_ice_total_catch_design()) # nolint: object_usage_linter
   )))
-  totals <- list(catch = estimate_total_catch, harvest = estimate_total_harvest) # nolint: object_usage_linter
+  totals <- list(
+    catch = estimate_total_catch, # nolint: object_usage_linter
+    harvest = estimate_total_harvest, # nolint: object_usage_linter
+    release = estimate_total_release # nolint: object_usage_linter
+  )
   for (nm in names(designs)) {
     d <- designs[[nm]]
     for (fn in names(totals)) {
