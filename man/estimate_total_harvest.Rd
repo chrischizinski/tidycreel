@@ -51,7 +51,9 @@ and HPUE estimation, then combined via delta method.}
 \code{\link[=estimate_effort]{estimate_effort()}}. Options are \code{"sampled_days"} (default),
 \code{"stratum_total"}, or \code{"period_total"}. This controls which effort domain
 is multiplied by HPUE so total harvest stays aligned with the requested
-temporal target.}
+temporal target.
+Aerial designs accept only \code{"sampled_days"}, as \code{\link[=estimate_effort]{estimate_effort()}}
+does: aerial calendar expansion is not yet supported (#518).}
 
 \item{use_trips}{Character. Which interviews contribute to HPUE.
 \code{"complete"} uses only completed trips; \code{"all"} includes incomplete ones.

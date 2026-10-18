@@ -254,3 +254,28 @@ test_that("#478: an aerial total over a party-hour rate still reports its unit a
   expect_warning(estimate_total_catch(d), "different units")
   expect_true(is.na(at_quiet(estimate_total_catch(d))$unit))
 })
+
+test_that("#518: no aerial total expands to a target its own effort refuses", {
+  # estimate_effort() has no aerial calendar expansion and refuses one. The
+  # totals reach the effort helpers directly, so they returned a stratum or
+  # period total (x1.333 on this design) built on that refused expansion.
+  # Effort and every total must agree on what an aerial design supports.
+  d <- at_quiet(at_design(h_open = 14))
+  for (tg in c("stratum_total", "period_total")) {
+    expect_error(
+      estimate_effort(d, target = tg), # nolint: object_usage_linter
+      class = "creel_error_dispatch_unsupported"
+    )
+    for (nm in names(at_totals)) {
+      expect_error(
+        at_totals[[nm]](d, target = tg),
+        class = "creel_error_dispatch_unsupported",
+        info = paste(nm, tg)
+      )
+    }
+  }
+  # The supported target is untouched.
+  for (nm in names(at_totals)) {
+    expect_true(is.finite(at_totals[[nm]](d, target = "sampled_days")$estimates$estimate), info = nm)
+  }
+})
