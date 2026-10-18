@@ -221,6 +221,12 @@
     means "does not apply". It also covers a quantity supplied without its
     own SE, which `se` then treats as fixed, as `vignette("refusals-and-na")`
     already said.
+  - Neither covered the aerial GLMM bootstrap, whose `se` already contains
+    the visibility and angler-ratio parts without listing them; the glossary,
+    the API conventions and `vignette("refusals-and-na")` now say so.
+  - `vignette("survey-tidycreel")` gave every tidycreel interval as a $t$ on
+    the design's degrees of freedom. That holds for effort and total catch;
+    `estimate_catch_rate()` uses the normal interval.
 
 * The statistical articles were checked against the code and their sources
   (#480, Explanation section, part 1). None computed a wrong number; several

@@ -123,7 +123,10 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #' @param se_components NULL, or a named list of numeric standard-error
 #'   contributions to `se`. An absent name means the component was not
 #'   propagated: it does not apply to this path, or its quantity was supplied
-#'   without a standard error and `se` treats it as fixed. `NA_real_` means it
+#'   without a standard error and `se` treats it as fixed. The exception is a
+#'   bootstrap `se` whose replicates already carry a component they cannot
+#'   report apart (the aerial GLMM's visibility and angler ratio, GH #141):
+#'   there an absent name means "inside `se`, not itemised". `NA_real_` means it
 #'   applies and is unknown; a finite value is a contribution to `se` and
 #'   never `se` itself. `0` only for a component known to be zero (e.g.
 #'   `angler_ratio_se = 0`), never for one that was not propagated, which a

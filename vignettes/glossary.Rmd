@@ -214,7 +214,10 @@ Some estimates list the parts of their standard error in `se_components`. A
 part that is **absent** was not propagated: it does not apply, or its quantity
 was supplied without a standard error and is treated as fixed. **`NA`** means
 it applies and is unknown, which makes `se` `NA` too. **Zero** means it is
-known to be zero. `vignette("refusals-and-na")` shows all three.
+known to be zero. `vignette("refusals-and-na")` shows all three. One exception:
+on the bootstrap path of `estimate_effort_aerial_glmm()` the visibility and
+angler-ratio parts are inside `se` but not listed, because the bootstrap
+replicates cannot separate them.
 
 ### Confidence interval (CI)
 A **confidence interval** is a range of plausible values for the quantity being
