@@ -53,7 +53,7 @@ each stratum to all its days. On the season data used below, that is 3,066
 angler-hours against about 9,994. Totals follow the effort they are given, so
 a catch total on the default target is the catch on the sampled days.
 `vignette("effort-pipeline")` explains the expansion, and the expanded targets
-are not yet available for bus-route, ice, aerial or sectioned designs.
+are not yet available for bus-route, ice or aerial designs.
 
 The pages that explain each estimator in full:
 

@@ -18,6 +18,13 @@
   audit design every total grew by a third. Aerial calendar expansion has no
   validated estimator yet; use `target = "sampled_days"`.
 
+* The same totals now refuse `target = "stratum_total"` or `"period_total"` on
+  bus-route and ice designs (#520). They accepted the argument and dropped it,
+  so a period-total request returned the sampled-days total with no label,
+  while `estimate_effort()` refused it. Their Horvitz-Thompson total covers the
+  sampled days only (`p_period` is a within-day probability), and the result
+  now says so: `effort_target = "sampled_days"`.
+
 * Mean-of-ratios catch, harvest and release rates now weight each interviewed
   party by its size when `n_anglers` is a column (#513). The estimator is
   derived for anglers (Hoenig et al. 1997), and an interview is a party: meeting
@@ -158,6 +165,13 @@
   column, or attach the raw counts with `count_time_col`.
 
 ## New features
+
+* `estimate_effort()` now takes `target = "stratum_total"` or `"period_total"`
+  on sectioned designs (#520). The refusal dated from before the sectioned path
+  carried the target (#231), and the three totals already expanded sectioned
+  effort through the same per-section helper, so effort and totals disagreed.
+  Expanded section and lake totals, and their standard errors, match the
+  stratified expansion computed by hand from the raw counts.
 
 * Every warning now has a class (#496), so one warning can be handled for one
   call with `withCallingHandlers()` instead of hiding all of them with
