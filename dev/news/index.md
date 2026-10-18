@@ -12,6 +12,21 @@
 
 ### Breaking changes
 
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
+  now refuse `target = "stratum_total"` or `"period_total"` on an aerial
+  design, as
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  already did
+  ([\#518](https://github.com/chrischizinski/tidycreel/issues/518)). The
+  totals reached the effort helpers directly and expanded anyway, so a
+  total could cover a scope its own effort was refused for: on the
+  aerial audit design every total grew by a third. Aerial calendar
+  expansion has no validated estimator yet; use
+  `target = "sampled_days"`.
+
 - Mean-of-ratios catch, harvest and release rates now weight each
   interviewed party by its size when `n_anglers` is a column
   ([\#513](https://github.com/chrischizinski/tidycreel/issues/513)). The

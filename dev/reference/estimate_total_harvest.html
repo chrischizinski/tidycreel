@@ -144,7 +144,9 @@ and HPUE estimation, then combined via delta method.</p></dd>
 <code><a href="estimate_effort.html">estimate_effort()</a></code>. Options are <code>"sampled_days"</code> (default),
 <code>"stratum_total"</code>, or <code>"period_total"</code>. This controls which effort domain
 is multiplied by HPUE so total harvest stays aligned with the requested
-temporal target.</p></dd>
+temporal target.
+Aerial designs accept only <code>"sampled_days"</code>, as <code><a href="estimate_effort.html">estimate_effort()</a></code>
+does: aerial calendar expansion is not yet supported (#518).</p></dd>
 
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>

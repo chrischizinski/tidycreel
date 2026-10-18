@@ -71,7 +71,9 @@ estimate_total_harvest(
   Options are `"sampled_days"` (default), `"stratum_total"`, or
   `"period_total"`. This controls which effort domain is multiplied by
   HPUE so total harvest stays aligned with the requested temporal
-  target.
+  target. Aerial designs accept only `"sampled_days"`, as
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  does: aerial calendar expansion is not yet supported (#518).
 
 - use_trips:
 
