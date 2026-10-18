@@ -153,7 +153,7 @@ is the total over the days actually sampled. `"period_total"` expands each
 stratum to all its calendar days, which is the season total in most reports.
 `"stratum_total"` runs the same expansion on standard count designs; the
 returned `effort_target` records which was asked for. Expanded targets are not
-yet available for bus-route, ice, aerial or sectioned designs.
+yet available for bus-route, ice or aerial designs.
 
 ## Trip-status and interview terms
 

@@ -32,8 +32,8 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by HPUE so total harvest stays aligned with the requested
 #'   temporal target.
-#'   Aerial designs accept only `"sampled_days"`, as [estimate_effort()]
-#'   does: aerial calendar expansion is not yet supported (#518).
+#'   Aerial, bus-route and ice designs accept only `"sampled_days"`, as
+#'   [estimate_effort()] does: they have no calendar expansion yet (#518, #520).
 #' @param use_trips Character. Which interviews contribute to HPUE.
 #'   `"complete"` uses only completed trips; `"all"` includes incomplete ones.
 #'   Default `NULL` means "not specified", which resolves to `"complete"`. An
@@ -317,6 +317,11 @@ estimate_total_harvest <- function(
   estimator <- rate_spec$estimator
   truncate_at <- rate_spec$truncate_at
 
+  # Before any dispatch: the bus-route/ice branch below never reads `target`,
+  # so refusing after it let a period-total request return a sampled-days
+  # total (GH #520), as the aerial path did through the effort helpers (#518).
+  refuse_unexpandable_target(design, target) # nolint: object_usage_linter
+
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     # Refused rather than ignored (GH #266): these designs build a
@@ -408,7 +413,6 @@ estimate_total_harvest <- function(
   # estimate_effort_total() directly and never hear that refusal. First in the
   # block, so the camera case aborts instead of warning on its way out.
   refuse_camera_design(design, "estimate_total_harvest") # nolint: object_usage_linter
-  refuse_aerial_expanded_target(design, target) # nolint: object_usage_linter
 
   # Effort x rate from here on: flag a party-hour rate meeting angler-hour effort
   warn_party_hours_product(design) # nolint: object_usage_linter
