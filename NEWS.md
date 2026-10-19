@@ -611,6 +611,18 @@
 
 ## Bug fixes
 
+* The `.lake_total` row of a sectioned `estimate_total_catch()`,
+  `estimate_total_harvest()` or `estimate_total_release()` reported a standard
+  error that was too small when the sections were counted on the same days
+  (#414). It summed the sections' variances as if they were independent, but a
+  busy day is busy in every section, so their effort totals covary. In a
+  400-replicate simulation with a day correlation of 0.82 the lake's empirical
+  SD was 1.07 times its reported SE (sections: about 0.95) and its 95%
+  intervals covered 91.5%; with the covariance added, 0.94 and 94.8%. The
+  point estimates and the per-section rows are unchanged, as is effort's own
+  lake row, which already carried the covariance. Shared within-day count times
+  are not yet included in the totals' lake row.
+
 * Aerial catch, harvest and release totals warned that the counts had been
   "expanded without a period length" (angler-days) and reported their unit
   as `NA`, while `estimate_effort()` on the same design reported

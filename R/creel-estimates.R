@@ -4645,11 +4645,17 @@ combine_section_variances <- function(
   rate,
   expansion_se,
   decomposition = NULL,
-  expansion_in_section_var = TRUE
+  expansion_in_section_var = TRUE,
+  effort_cross = NULL
 ) {
   structure <- expansion_group_structure(design, design[["section_col"]]) # nolint: object_usage_linter
 
   base_var <- sum(section_var)
+  # Sections counted on the same days have correlated effort; their covariance
+  # belongs in the lake variance alongside the per-section terms (GH #414).
+  if (!is.null(effort_cross)) {
+    base_var <- base_var + sum(effort_cross)
+  }
   if (!expansion_in_section_var && !is.null(expansion_se)) {
     # `add_expansion_covariance()` reads `pv` as already holding the independent
     # contributions -- every branch either returns it untouched or subtracts
@@ -4676,6 +4682,132 @@ combine_section_variances <- function(
     # to drift from it (GH #134).
     component = expansion_total_se(rate, expansion_se, structure, decomposition) # nolint: object_usage_linter
   )
+}
+
+
+#' Each section's effort covariance with the other sections, on the product scale
+#'
+#' Sections counted on the same days have correlated effort: a busy day is busy
+#' everywhere. A sectioned catch, harvest or release total summed the
+#' per-section product variances as if the sections were independent, and its
+#' lake row understated its SE whenever they moved together (GH #414; empirical
+#' SD 1.07 x the reported SE against ~0.95 for the sections themselves, and
+#' 91.5% CI coverage, at a day correlation of 0.82).
+#'
+#' Each section's effort is estimated from its own sample of days, so the
+#' covariance is that of two totals from overlapping samples. Per stratum,
+#' `Cov(Y_A, Y_B) = W_A * W_B * n_AB * s_AB`: the sections' own day weights
+#' (`N_h / n_h` on an expanded target, 1 on sampled days), the number of days
+#' both were counted, and the sample covariance of their daily counts on those
+#' days. Sections counted on the same days give `N_h^2 / n_h * s_AB`; sections
+#' never counted on the same day give 0, which is the independence the lake
+#' row assumed before. A covariance from the full design would treat the
+#' sections as domains of one sample instead, which is a different estimator
+#' from the per-section one each row reports, and is negative for disjoint
+#' days.
+#'
+#' Each cell is weighted by `rate * effort / count` on the product scale,
+#' which carries any count-to-effort scaling (period length, party size,
+#' aerial calibration). Strata are sampled independently, so only
+#' same-stratum cells covary. Rates come from each section's own interviews and
+#' are treated as independent across sections. Not included: the within-day
+#' covariance of shared count times. The formula is the linearisation form,
+#' added as-is on bootstrap and jackknife designs too.
+#'
+#' @param design The full sectioned design.
+#' @param target Effort target.
+#' @param cells Named list, one entry per present section, each a data frame of
+#'   the section's strata columns with `effort` and `rate` per stratum.
+#' @return Numeric, one per section in `cells`: the sum of that section's
+#'   covariances with every other section. Summed, it is the cross term of the
+#'   lake variance.
+#' @keywords internal
+#' @noRd
+section_effort_cross_covariance <- function(design, target, cells) {
+  secs <- names(cells)
+  n <- length(secs)
+  if (n < 2L) {
+    return(rep(0, n))
+  }
+  section_col <- design[["section_col"]]
+  strata_cols <- design$strata_cols %||% character(0)
+  psu_col <- design$psu_col %||% design$date_col
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = design$counts,
+    excluded = c(design$date_col, strata_cols, psu_col, section_col),
+    count_col = design$count_col
+  )
+  stratum_key <- function(df) {
+    if (length(strata_cols) == 0L) {
+      return(rep(".all", nrow(df)))
+    }
+    do.call(paste, c(lapply(strata_cols, function(cl) as.character(df[[cl]])), sep = "\r"))
+  }
+
+  # Per section: daily count sums, the section's own day weight and the
+  # product-scale weight, per stratum.
+  per_sec <- lapply(secs, function(sec) {
+    sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
+    svy <- get_effort_target_design(sec_design, target) # nolint: object_usage_linter
+    rows <- svy$variables
+    rows$.w <- stats::weights(svy)
+    rows$.h <- stratum_key(rows)
+    rows$.psu <- as.character(rows[[psu_col]])
+    daily <- stats::aggregate(rows[[count_var]], list(h = rows$.h, psu = rows$.psu), sum)
+    names(daily)[3] <- "y"
+    w_day <- tapply(rows$.w, rows$.h, mean)
+    count_total <- tapply(rows$.w * rows[[count_var]], rows$.h, sum)
+    cl <- as.data.frame(cells[[sec]])
+    cl_key <- stratum_key(cl)
+    scale <- stats::setNames(rep(NA_real_, length(cl_key)), cl_key)
+    ct <- count_total[cl_key]
+    scale[] <- ifelse(!is.na(ct) & ct > 0, cl$rate * cl$effort / ct, 0)
+    list(daily = daily, w_day = w_day, scale = scale)
+  })
+  names(per_sec) <- secs
+
+  pair_cov <- function(a, b) {
+    pa <- per_sec[[a]]
+    pb <- per_sec[[b]]
+    total <- 0
+    for (h in intersect(names(pa$scale), names(pb$scale))) {
+      da <- pa$daily[pa$daily$h == h, ]
+      db <- pb$daily[pb$daily$h == h, ]
+      shared <- intersect(da$psu, db$psu)
+      if (length(shared) < 2L) next
+      s_ab <- stats::cov(da$y[match(shared, da$psu)], db$y[match(shared, db$psu)])
+      cov_count <- pa$w_day[[h]] * pb$w_day[[h]] * length(shared) * s_ab
+      total <- total + pa$scale[[h]] * pb$scale[[h]] * cov_count
+    }
+    total
+  }
+
+  vapply(secs, function(a) {
+    sum(vapply(setdiff(secs, a), function(b) pair_cov(a, b), numeric(1L)))
+  }, numeric(1L), USE.NAMES = FALSE)
+}
+
+
+#' Per-stratum effort and rate, joined
+#'
+#' The cells `section_effort_cross_covariance()` weights the effort covariance
+#' by. One row per stratum, or a single row when the design is unstratified.
+#'
+#' @param effort_df Per-stratum effort estimates.
+#' @param rate_df Per-stratum rate estimates.
+#' @param strata_cols Strata columns, possibly empty.
+#' @return A data frame of `strata_cols`, `effort` and `rate`.
+#' @keywords internal
+#' @noRd
+stratum_cells <- function(effort_df, rate_df, strata_cols) {
+  if (length(strata_cols) == 0L) {
+    return(data.frame(effort = effort_df$estimate[[1L]], rate = rate_df$estimate[[1L]]))
+  }
+  e <- as.data.frame(effort_df)[, c(strata_cols, "estimate"), drop = FALSE]
+  r <- as.data.frame(rate_df)[, c(strata_cols, "estimate"), drop = FALSE]
+  names(e)[names(e) == "estimate"] <- "effort"
+  names(r)[names(r) == "estimate"] <- "rate"
+  merge(e, r, by = strata_cols, all.x = TRUE, sort = FALSE)
 }
 
 
