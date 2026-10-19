@@ -123,6 +123,9 @@
 #'   \item{\code{creel_warning_expansion_structure_unknown}}{Tier 1. Party-size
 #'     expansion groups straddle the estimation cells unevenly, so the SE of the
 #'     total cannot be combined from per-cell components.}
+#'   \item{\code{creel_warning_lake_variance_negative}}{Tier 1. The sections'
+#'     day samples overlap too unevenly to combine their effort covariances,
+#'     so a sectioned total's lake-wide SE is NA.}
 #'   \item{\code{creel_warning_trip_length_se_undefined}}{Tier 2. Too few trip
 #'     durations to give an SE for the mean trip length.}
 #'   \item{\code{creel_warning_single_interview_strata}}{Tier 2. Some strata
@@ -274,6 +277,7 @@ creel_warning_tiers <- c(
   creel_warning_expansion_structure_unknown = 1L,
   creel_warning_exploitation_out_of_range = 1L,
   creel_warning_imputation_convergence = 1L,
+  creel_warning_lake_variance_negative = 1L,
   creel_warning_missing_rate_strata = 1L,
   creel_warning_missing_sections = 1L,
   creel_warning_no_party_size = 1L,

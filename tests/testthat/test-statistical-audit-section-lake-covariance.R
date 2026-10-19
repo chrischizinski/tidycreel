@@ -110,3 +110,61 @@ test_that("#414: harvest and release lake rows carry the same term as catch", {
     expect_gt(lake$se^2, sum(res$se[res$section %in% c("A", "B")]^2))
   }
 })
+
+# Review findings on the first version of the fix (Codex, DeepSeek). The
+# covariance is now built from the shared-day correlation and each section's
+# own spread, so it cannot exceed what the section variances allow.
+
+lc_two_sections <- function(counts, cal, ...) {
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_sections(d, data.frame(section = c("A", "B")), section_col = section) # nolint: object_usage_linter
+  suppressWarnings(suppressMessages(add_counts(d, counts, count_col = y, ...))) # nolint: object_usage_linter
+}
+lc_cells <- function(label, effort) {
+  list(
+    A = data.frame(day_type = label, effort = effort, rate = 1),
+    B = data.frame(day_type = label, effort = effort, rate = 1)
+  )
+}
+
+test_that("#414: partially overlapping day samples cannot give a negative lake variance", {
+  # A on days 1-3, B on days 1, 2, 4. The shared days alone imply a covariance
+  # (-10000 per pair) larger than the sections' variances (7500 each) allow;
+  # the lake variance came out at -5000 and the SE at NaN.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:3, day_type = "x")
+  cnt <- data.frame(
+    date = as.Date("2024-06-03") + c(0, 1, 2, 0, 1, 3), day_type = "x",
+    section = rep(c("A", "B"), each = 3), y = c(0, 100, 50, 100, 0, 50)
+  )
+  cross <- section_effort_cross_covariance(lc_two_sections(cnt, cal), "sampled_days", lc_cells("x", 150))
+  var_section <- 3 * stats::var(c(0, 100, 50))
+  expect_gte(2 * var_section + sum(cross), 0)
+  expect_gte(sum(cross), -2 * var_section) # |Cov| <= sqrt(Var_A Var_B)
+})
+
+test_that("#414: an empty-string stratum label is matched like any other", {
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:3, day_type = "x")
+  cnt <- data.frame(
+    date = as.Date("2024-06-03") + c(0, 1, 2, 0, 1, 3), day_type = "x",
+    section = rep(c("A", "B"), each = 3), y = c(0, 100, 50, 100, 0, 50)
+  )
+  named <- section_effort_cross_covariance(lc_two_sections(cnt, cal), "sampled_days", lc_cells("x", 150))
+  cal$day_type <- ""
+  cnt$day_type <- ""
+  empty <- section_effort_cross_covariance(lc_two_sections(cnt, cal), "sampled_days", lc_cells("", 150))
+  expect_equal(empty, named)
+})
+
+test_that("#414: a census of days carries no between-day covariance", {
+  # Two counts a day put the finite-population correction on an expanded
+  # target. With every calendar day counted, the sections' between-day variance
+  # is zero, and so must their covariance be.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:2, day_type = "x")
+  cnt <- data.frame(
+    date = rep(as.Date("2024-06-03") + 0:2, each = 2, times = 2), day_type = "x",
+    section = rep(c("A", "B"), each = 6), ct = rep(c("09:00", "15:00"), 6),
+    y = rep(c(5, 5, 10, 10, 15, 15), 2)
+  )
+  d <- lc_two_sections(cnt, cal, count_time_col = ct)
+  expect_equal(sum(section_effort_cross_covariance(d, "period_total", lc_cells("x", 60))), 0)
+})
