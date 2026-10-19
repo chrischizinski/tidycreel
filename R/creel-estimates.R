@@ -4653,8 +4653,16 @@ combine_section_variances <- function(
   base_var <- sum(section_var)
   # Sections counted on the same days have correlated effort; their covariance
   # belongs in the lake variance alongside the per-section terms (GH #414).
+  # Pairwise covariances estimated over different day overlaps need not form a
+  # valid covariance matrix once there are three or more sections; then the lake
+  # variance, or a section's share of it, can come out negative. Checked on the
+  # whole matrix and reported as unknown -- never as a zero or a clamped share.
+  cross_invalid <- FALSE
   if (!is.null(effort_cross)) {
     base_var <- base_var + sum(effort_cross)
+    full <- diag(as.numeric(section_var), nrow = length(section_var)) + effort_cross
+    eig <- eigen(full, symmetric = TRUE, only.values = TRUE)$values
+    cross_invalid <- isTRUE(min(eig) < -1e-8 * max(abs(eig), 1))
   }
   if (!expansion_in_section_var && !is.null(expansion_se)) {
     # `add_expansion_covariance()` reads `pv` as already holding the independent
@@ -4678,13 +4686,13 @@ combine_section_variances <- function(
   # Pairwise covariances over different day overlaps need not form a valid
   # covariance matrix once there are three or more sections. A negative lake
   # variance is reported as unknown, never as a zero or a NaN (GH #414).
-  if (!is.null(effort_cross) && isTRUE(pv < 0)) {
+  if (cross_invalid || (!is.null(effort_cross) && isTRUE(pv < 0))) {
     creel_warn(
       c(
-        "The lake-wide variance came out negative, so its standard error is reported as NA.",
+        "The sections' combined covariance is not a valid variance, so the lake-wide SE and the section shares' SEs are reported as NA.",
         "i" = "The sections' day samples overlap too unevenly to combine their covariances."
       ),
-      class = c("creel_warning_lake_variance_negative", "creel_warning")
+      class = c("creel_warning_section_covariance_invalid", "creel_warning")
     )
     pv <- NA_real_
   }
@@ -4740,10 +4748,11 @@ combine_section_variances <- function(
 #' @param design The full sectioned design.
 #' @param target Effort target.
 #' @param cells Named list, one entry per present section, each a data frame of
-#'   the section's strata columns with `effort` and `rate` per stratum.
-#' @return Numeric, one per section in `cells`: the sum of that section's
-#'   covariances with every other section. Summed, it is the cross term of the
-#'   lake variance.
+#'   the section's strata columns with `.effort` and `.rate` per stratum.
+#' @return The pairwise covariance matrix of the sections in `cells`, zero on
+#'   the diagonal (the sections' own variances are added by the caller).
+#'   `rowSums()` is each section's covariance with the rest; `sum()` is the
+#'   cross term of the lake variance.
 #' @keywords internal
 #' @noRd
 section_effort_cross_covariance <- function(design, target, cells) {
@@ -4751,7 +4760,7 @@ section_effort_cross_covariance <- function(design, target, cells) {
   n <- length(secs)
   if (n < 2L) {
     # One section has nothing to covary with: a structural zero, not a default.
-    return(rep(0, n))
+    return(matrix(0, n, n, dimnames = list(secs, secs)))
   }
   section_col <- design[["section_col"]]
   strata_cols <- design$strata_cols %||% character(0)
@@ -4791,7 +4800,7 @@ section_effort_cross_covariance <- function(design, target, cells) {
     }, numeric(1L))
     cl <- as.data.frame(cells[[sec]])
     at <- match(strata, stratum_key(cl))
-    scale <- ifelse(!is.na(at) & count_total > 0, cl$rate[at] * cl$effort[at] / count_total, 0)
+    scale <- ifelse(!is.na(at) & count_total > 0, cl$.rate[at] * cl$.effort[at] / count_total, 0)
     list(daily = daily, strata = strata, w_day = w_day, pop = pop, scale = scale)
   })
   names(per_sec) <- secs
@@ -4826,9 +4835,13 @@ section_effort_cross_covariance <- function(design, target, cells) {
     total
   }
 
-  vapply(secs, function(a) {
-    sum(vapply(setdiff(secs, a), function(b) pair_cov(a, b), numeric(1L)))
-  }, numeric(1L), USE.NAMES = FALSE)
+  out <- matrix(0, n, n, dimnames = list(secs, secs))
+  for (i in seq_len(n - 1L)) {
+    for (j in (i + 1L):n) {
+      out[i, j] <- out[j, i] <- pair_cov(secs[[i]], secs[[j]])
+    }
+  }
+  out
 }
 
 
@@ -4840,17 +4853,18 @@ section_effort_cross_covariance <- function(design, target, cells) {
 #' @param effort_df Per-stratum effort estimates.
 #' @param rate_df Per-stratum rate estimates.
 #' @param strata_cols Strata columns, possibly empty.
-#' @return A data frame of `strata_cols`, `effort` and `rate`.
+#' @return A data frame of `strata_cols`, `.effort` and `.rate`. Dot names,
+#'   because a stratum column may itself be called `effort` or `rate`.
 #' @keywords internal
 #' @noRd
 stratum_cells <- function(effort_df, rate_df, strata_cols) {
   if (length(strata_cols) == 0L) {
-    return(data.frame(effort = effort_df$estimate[[1L]], rate = rate_df$estimate[[1L]]))
+    return(data.frame(.effort = effort_df$estimate[[1L]], .rate = rate_df$estimate[[1L]]))
   }
   e <- as.data.frame(effort_df)[, c(strata_cols, "estimate"), drop = FALSE]
   r <- as.data.frame(rate_df)[, c(strata_cols, "estimate"), drop = FALSE]
-  names(e)[names(e) == "estimate"] <- "effort"
-  names(r)[names(r) == "estimate"] <- "rate"
+  names(e)[ncol(e)] <- ".effort"
+  names(r)[ncol(r)] <- ".rate"
   merge(e, r, by = strata_cols, all.x = TRUE, sort = FALSE)
 }
 

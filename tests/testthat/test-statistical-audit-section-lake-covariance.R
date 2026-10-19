@@ -120,10 +120,10 @@ lc_two_sections <- function(counts, cal, ...) {
   d <- add_sections(d, data.frame(section = c("A", "B")), section_col = section) # nolint: object_usage_linter
   suppressWarnings(suppressMessages(add_counts(d, counts, count_col = y, ...))) # nolint: object_usage_linter
 }
-lc_cells <- function(label, effort) {
-  list(
-    A = data.frame(day_type = label, effort = effort, rate = 1),
-    B = data.frame(day_type = label, effort = effort, rate = 1)
+lc_cells <- function(label, effort, secs = c("A", "B")) {
+  stats::setNames(
+    lapply(secs, function(s) data.frame(day_type = label, .effort = effort, .rate = 1)),
+    secs
   )
 }
 
@@ -167,4 +167,44 @@ test_that("#414: a census of days carries no between-day covariance", {
   )
   d <- lc_two_sections(cnt, cal, count_time_col = ct)
   expect_equal(sum(section_effort_cross_covariance(d, "period_total", lc_cells("x", 60))), 0)
+})
+
+test_that("#414: three unevenly overlapping sections report unknown, not certain, shares", {
+  # Codex, round 2: A on days 1-3, B on 1, 2, 4, C on 1, 3, 4. The pairwise
+  # covariances do not form a valid covariance matrix: the lake variance is
+  # positive (1300) but A's share variance is negative, and the share SE was
+  # clamped to 0 -- a reported certainty. Now the matrix is checked as a whole.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:3, day_type = "x")
+  cnt <- data.frame(
+    date = as.Date("2024-06-03") + c(0, 1, 2, 0, 1, 3, 0, 2, 3), day_type = "x",
+    section = rep(c("A", "B", "C"), each = 3), y = c(10, 20, 30, 10, 20, 30, 20, 30, 10)
+  )
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_sections(d, data.frame(section = c("A", "B", "C")), section_col = section) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts(d, cnt, count_col = y))) # nolint: object_usage_linter
+  cross <- section_effort_cross_covariance(d, "sampled_days", lc_cells("x", 60, c("A", "B", "C")))
+  expect_equal(unname(cross[upper.tri(cross)]), c(200, 200, -200)) # A-B, A-C, B-C
+  expect_warning(
+    lake <- combine_section_variances( # nolint: object_usage_linter
+      d, section_var = rep(300, 3), rate = rep(1, 3), expansion_se = NULL, effort_cross = cross
+    ),
+    class = "creel_warning_section_covariance_invalid"
+  )
+  expect_true(is.na(lake$se))
+  shares <- section_prop_of_lake_se(rep(60, 3), rep(300, 3), lake$se^2, rowSums(cross)) # nolint: object_usage_linter
+  expect_true(all(is.na(shares)))
+})
+
+test_that("#414: a stratum column named effort or rate still joins", {
+  # Codex, round 2: the per-stratum cells were named effort / rate, so a stratum
+  # column of either name collided in the join and broke every catch total,
+  # sectioned or not. The cells now use dot names.
+  for (nm in c("effort", "rate")) {
+    e <- data.frame(x = c("hi", "lo"), estimate = c(100, 50))
+    r <- data.frame(x = c("hi", "lo"), estimate = c(0.5, 0.2))
+    names(e)[1] <- names(r)[1] <- nm
+    cells <- stratum_cells(e, r, nm) # nolint: object_usage_linter
+    expect_equal(cells$.effort, c(100, 50), info = nm)
+    expect_equal(cells$.rate, c(0.5, 0.2), info = nm)
+  }
 })

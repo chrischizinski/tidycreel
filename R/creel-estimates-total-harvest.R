@@ -1208,7 +1208,7 @@ estimate_total_harvest_sections <- function(
           structure = expansion_group_structure(design, design[["section_col"]]), # nolint: object_usage_linter
           decomposition = decomposition_list[present],
           n = nrow(present_rows)
-        ) + effort_cross
+        ) + rowSums(effort_cross)
       )
   }
 
