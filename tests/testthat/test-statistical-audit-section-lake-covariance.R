@@ -122,7 +122,7 @@ lc_two_sections <- function(counts, cal, ...) {
 }
 lc_cells <- function(label, effort, secs = c("A", "B")) {
   stats::setNames(
-    lapply(secs, function(s) data.frame(day_type = label, .effort = effort, .rate = 1)),
+    lapply(secs, function(s) list(strata = data.frame(day_type = label), effort = effort, rate = 1)),
     secs
   )
 }
@@ -195,16 +195,45 @@ test_that("#414: three unevenly overlapping sections report unknown, not certain
   expect_true(all(is.na(shares)))
 })
 
-test_that("#414: a stratum column named effort or rate still joins", {
-  # Codex, round 2: the per-stratum cells were named effort / rate, so a stratum
-  # column of either name collided in the join and broke every catch total,
-  # sectioned or not. The cells now use dot names.
-  for (nm in c("effort", "rate")) {
+test_that("#414: no stratum column name can collide with the cell values", {
+  # Codex, rounds 2 and 3: the cells were columns named effort / rate, then
+  # .effort / .rate, and a stratum column of the same name broke the join --
+  # and with it every catch total, sectioned or not. The values now sit beside
+  # the strata table, never in it.
+  for (nm in c("effort", "rate", ".effort", ".rate", "estimate")) {
     e <- data.frame(x = c("hi", "lo"), estimate = c(100, 50))
-    r <- data.frame(x = c("hi", "lo"), estimate = c(0.5, 0.2))
-    names(e)[1] <- names(r)[1] <- nm
-    cells <- stratum_cells(e, r, nm) # nolint: object_usage_linter
-    expect_equal(cells$.effort, c(100, 50), info = nm)
-    expect_equal(cells$.rate, c(0.5, 0.2), info = nm)
+    r <- data.frame(x = c("lo", "hi"), estimate = c(0.2, 0.5)) # other order
+    if (nm != "estimate") names(e)[1] <- names(r)[1] <- nm
+    cells <- stratum_cells(e, r, names(e)[1]) # nolint: object_usage_linter
+    expect_equal(cells$effort, c(100, 50), info = nm)
+    expect_equal(cells$rate, c(0.5, 0.2), info = nm)
   }
+})
+
+test_that("#414: an unknown section variance gives an unknown lake SE, not an error", {
+  # DeepSeek and Codex, round 3: an NA section variance (e.g. party_size_se =
+  # NA) reached eigen() and aborted the whole total.
+  d <- structure(list(section_col = "section"), class = "creel_design")
+  lake <- combine_section_variances( # nolint: object_usage_linter
+    d, section_var = c(300, NA), rate = c(1, 1), expansion_se = NULL,
+    effort_cross = matrix(c(0, 50, 50, 0), 2)
+  )
+  expect_true(is.na(lake$se))
+})
+
+test_that("#414: a census section covaries with nothing, whatever the other section's FPC", {
+  # Codex, round 3: A has two counts a day on every calendar day (FPC applies,
+  # between-day variance 0); B has one count a day (no FPC, variance > 0). The
+  # FPC was dropped unless both took it, so a covariance appeared that A's zero
+  # variance cannot support, and the lake SE was refused. Each section's own
+  # variance now bounds it.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:2, day_type = "x")
+  cnt <- data.frame(
+    date = c(rep(as.Date("2024-06-03") + 0:2, each = 2), as.Date("2024-06-03") + 0:2),
+    day_type = "x", section = c(rep("A", 6), rep("B", 3)),
+    ct = c(rep(c("09:00", "15:00"), 3), rep("09:00", 3)),
+    y = c(5, 5, 10, 10, 15, 15, 5, 10, 15)
+  )
+  d <- lc_two_sections(cnt, cal, count_time_col = ct)
+  expect_equal(sum(section_effort_cross_covariance(d, "period_total", lc_cells("x", 60))), 0)
 })

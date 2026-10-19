@@ -4661,8 +4661,12 @@ combine_section_variances <- function(
   if (!is.null(effort_cross)) {
     base_var <- base_var + sum(effort_cross)
     full <- diag(as.numeric(section_var), nrow = length(section_var)) + effort_cross
-    eig <- eigen(full, symmetric = TRUE, only.values = TRUE)$values
-    cross_invalid <- isTRUE(min(eig) < -1e-8 * max(abs(eig), 1))
+    # An unknown section variance leaves the lake variance unknown (NA through
+    # the sum above); there is no matrix to check.
+    if (all(is.finite(full))) {
+      eig <- eigen(full, symmetric = TRUE, only.values = TRUE)$values
+      cross_invalid <- isTRUE(min(eig) < -1e-8 * max(abs(eig), 1))
+    }
   }
   if (!expansion_in_section_var && !is.null(expansion_se)) {
     # `add_expansion_covariance()` reads `pv` as already holding the independent
@@ -4718,24 +4722,26 @@ combine_section_variances <- function(
 #'
 #' Each section's effort is estimated from its own sample of days, so this is
 #' the covariance of two totals from overlapping samples. Per stratum,
-#' `Cov(Y_A, Y_B) = (W_A * W_B * n_AB - N_fpc) * r_AB * s_A * s_B`:
+#' `Cov(Y_A, Y_B) = r_AB * sqrt(V_A * V_B) * n_AB / sqrt(n_A * n_B)`:
 #'
-#' - `W` is each section's own day weight (`N_h / n_h` on an expanded target,
-#'   1 on sampled days) and `n_AB` the days both were counted;
-#' - `r_AB` is the correlation of their daily counts on those shared days;
-#' - `s_A`, `s_B` are each section's own daily-count SD over **all** its days,
-#'   the spread its own variance is built from;
-#' - `N_fpc` is `N_h` when the sections' designs take the finite-population
-#'   correction (several counts per day on an expanded target), else 0.
+#' - `V_A` is section A's between-day count variance as its own design computes
+#'   it, `(W_A^2 n_A - N_fpc) s_A^2`: its day weight `W_A` (`N_h / n_A` on an
+#'   expanded target, 1 on sampled days), its own daily-count SD `s_A` over all
+#'   its days, and `N_fpc = N_h` only where its design takes the
+#'   finite-population correction (several counts per day on an expanded
+#'   target), else 0;
+#' - `r_AB` is the correlation of the daily counts on the `n_AB` days both
+#'   sections were counted.
 #'
-#' Built from the correlation and each section's own spread, the covariance
-#' cannot exceed what the sections' variances allow (`|r| <= 1` and
-#' `n_AB <= sqrt(n_A n_B)`). A covariance from the shared days alone can, and
-#' did: partially overlapping samples gave a negative lake variance. Sections
-#' counted on identical days reduce to `N_h^2 / n_h * s_AB`; sections never
-#' counted on the same day add 0, the independence the lake row assumed before.
-#' A covariance from the full design would treat the sections as domains of one
-#' sample, a different estimator from the per-section one each row reports.
+#' Sections treated alike reduce to the overlapping-samples covariance
+#' `(W_A W_B n_AB - N_fpc) r_AB s_A s_B`, and to `N_h^2 / n_h * s_AB` for
+#' identical day samples. Because `|r| <= 1` and `n_AB <= sqrt(n_A n_B)`, the
+#' covariance never exceeds what the two sections' own variances allow -- also
+#' when only one of them takes the FPC, where a census section (`V = 0`)
+#' covaries with nothing. Sections never counted on the same day add 0, the
+#' independence the lake row assumed before. (A covariance from the shared days
+#' alone, or from the full design treating sections as domains, can exceed
+#' those bounds and gave negative lake variances; both were tried and rejected.)
 #'
 #' Each cell is weighted by `rate * effort / count`, which carries any
 #' count-to-effort scaling (period length, party size, aerial calibration).
@@ -4747,8 +4753,8 @@ combine_section_variances <- function(
 #'
 #' @param design The full sectioned design.
 #' @param target Effort target.
-#' @param cells Named list, one entry per present section, each a data frame of
-#'   the section's strata columns with `.effort` and `.rate` per stratum.
+#' @param cells Named list, one entry per present section, each as returned by
+#'   `stratum_cells()`.
 #' @return The pairwise covariance matrix of the sections in `cells`, zero on
 #'   the diagonal (the sections' own variances are added by the caller).
 #'   `rowSums()` is each section's covariance with the rest; `sum()` is the
@@ -4798,12 +4804,21 @@ section_effort_cross_covariance <- function(design, target, cells) {
     count_total <- vapply(strata, function(h) {
       sum(rows$.w[rows$.h == h] * rows[[count_var]][rows$.h == h])
     }, numeric(1L))
-    cl <- as.data.frame(cells[[sec]])
-    at <- match(strata, stratum_key(cl))
-    scale <- ifelse(!is.na(at) & count_total > 0, cl$.rate[at] * cl$.effort[at] / count_total, 0)
+    cl <- cells[[sec]]
+    at <- match(strata, stratum_key(cl$strata))
+    scale <- ifelse(!is.na(at) & count_total > 0, cl$rate[at] * cl$effort[at] / count_total, 0)
     list(daily = daily, strata = strata, w_day = w_day, pop = pop, scale = scale)
   })
   names(per_sec) <- secs
+
+  # A section's between-day count variance in one stratum, as its own design
+  # computes it. `no_fpc_population` is the sentinel get_effort_target_design()
+  # writes for "no correction in this stratum", not a stratum size.
+  between_var <- function(ps, i, y) {
+    pop <- ps$pop[[i]]
+    n_fpc <- if (is.finite(pop) && pop < no_fpc_population) pop else 0
+    max(0, ps$w_day[[i]]^2 * length(y) - n_fpc) * stats::var(y)
+  }
 
   pair_cov <- function(a, b) {
     pa <- per_sec[[a]]
@@ -4818,18 +4833,11 @@ section_effort_cross_covariance <- function(design, target, cells) {
       if (length(shared) < 2L || nrow(da) < 2L || nrow(db) < 2L) next
       ya <- da$y[match(shared, da$psu)]
       yb <- db$y[match(shared, db$psu)]
-      s_a <- stats::sd(da$y)
-      s_b <- stats::sd(db$y)
-      # No spread on the shared days means no estimable correlation; with no
-      # spread in a section at all its variance is zero and so is the term.
-      if (stats::sd(ya) == 0 || stats::sd(yb) == 0 || s_a == 0 || s_b == 0) next
-      # The FPC applies only where both designs carry a real population:
-      # `no_fpc_population` is the sentinel get_effort_target_design() writes
-      # for "no correction in this stratum", not a stratum size.
-      takes_fpc <- function(pop) is.finite(pop) && pop < no_fpc_population
-      n_fpc <- if (takes_fpc(pa$pop[[ia]]) && takes_fpc(pb$pop[[ib]])) pa$pop[[ia]] else 0
-      cov_count <- (pa$w_day[[ia]] * pb$w_day[[ib]] * length(shared) - n_fpc) *
-        stats::cor(ya, yb) * s_a * s_b
+      # No spread on the shared days means no estimable correlation.
+      if (stats::sd(ya) == 0 || stats::sd(yb) == 0) next
+      cov_count <- stats::cor(ya, yb) *
+        sqrt(between_var(pa, ia, da$y) * between_var(pb, ib, db$y)) *
+        length(shared) / sqrt(nrow(da) * nrow(db))
       total <- total + pa$scale[[ia]] * pb$scale[[ib]] * cov_count
     }
     total
@@ -4845,27 +4853,35 @@ section_effort_cross_covariance <- function(design, target, cells) {
 }
 
 
-#' Per-stratum effort and rate, joined
+#' Per-stratum effort and rate, keyed by stratum
 #'
 #' The cells `section_effort_cross_covariance()` weights the effort covariance
-#' by. One row per stratum, or a single row when the design is unstratified.
+#' by. The values are kept beside the strata table, never as columns in it, so
+#' no stratum column name can collide with them.
 #'
 #' @param effort_df Per-stratum effort estimates.
 #' @param rate_df Per-stratum rate estimates.
 #' @param strata_cols Strata columns, possibly empty.
-#' @return A data frame of `strata_cols`, `.effort` and `.rate`. Dot names,
-#'   because a stratum column may itself be called `effort` or `rate`.
+#' @return A list: `strata`, a data frame of `strata_cols` (one row, no columns
+#'   when unstratified), and `effort` and `rate`, numeric, aligned with it.
 #' @keywords internal
 #' @noRd
 stratum_cells <- function(effort_df, rate_df, strata_cols) {
   if (length(strata_cols) == 0L) {
-    return(data.frame(.effort = effort_df$estimate[[1L]], .rate = rate_df$estimate[[1L]]))
+    return(list(
+      strata = data.frame(row.names = 1L),
+      effort = effort_df$estimate[[1L]],
+      rate = rate_df$estimate[[1L]]
+    ))
   }
-  e <- as.data.frame(effort_df)[, c(strata_cols, "estimate"), drop = FALSE]
-  r <- as.data.frame(rate_df)[, c(strata_cols, "estimate"), drop = FALSE]
-  names(e)[ncol(e)] <- ".effort"
-  names(r)[ncol(r)] <- ".rate"
-  merge(e, r, by = strata_cols, all.x = TRUE, sort = FALSE)
+  e <- as.data.frame(effort_df)
+  r <- as.data.frame(rate_df)
+  key <- function(df) do.call(paste, c(lapply(strata_cols, function(cl) as.character(df[[cl]])), sep = "\r"))
+  list(
+    strata = e[, strata_cols, drop = FALSE],
+    effort = e$estimate,
+    rate = r$estimate[match(key(e), key(r))]
+  )
 }
 
 
