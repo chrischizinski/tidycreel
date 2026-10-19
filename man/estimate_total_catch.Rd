@@ -177,10 +177,15 @@ When \code{\link{add_sections}} has been called on the design, each section
 is estimated independently using its own count survey (via
 \code{rebuild_counts_survey}) and interview survey (via
 \code{rebuild_interview_survey}). The lake-wide total is the arithmetic sum
-\code{sum(TC_i)}, not \code{E_total * CPUE_pooled}. The lake-wide SE uses
-the zero-covariance assumption: \code{sqrt(sum(se_i^2))}. Cross-section
-covariance between count-based effort and interview-based CPUE designs is not
-identified and is therefore assumed zero.
+\code{sum(TC_i)}, not
+\code{E_total * CPUE_pooled}. The lake-wide SE adds, to the sections' own
+variances, the covariance of their effort: sections counted on the same days
+share a day effect, so their effort totals move together. That term is
+\code{2 * sum_h R_ih R_jh Cov(E_ih, E_jh)} over pairs of sections and strata,
+estimated from the days both sections were counted; sections never counted
+on the same day add nothing (GH #414). Rates come from each section's own interviews
+and are treated as independent across sections; the within-day covariance of
+shared count times is not yet included.
 
 \code{by = <species>} is supported on a sectioned design: catch is
 apportioned against each section's own whole effort, giving one row per

@@ -4645,11 +4645,29 @@ combine_section_variances <- function(
   rate,
   expansion_se,
   decomposition = NULL,
-  expansion_in_section_var = TRUE
+  expansion_in_section_var = TRUE,
+  effort_cross = NULL
 ) {
   structure <- expansion_group_structure(design, design[["section_col"]]) # nolint: object_usage_linter
 
   base_var <- sum(section_var)
+  # Sections counted on the same days have correlated effort; their covariance
+  # belongs in the lake variance alongside the per-section terms (GH #414).
+  # Pairwise covariances estimated over different day overlaps need not form a
+  # valid covariance matrix once there are three or more sections; then the lake
+  # variance, or a section's share of it, can come out negative. Checked on the
+  # whole matrix and reported as unknown -- never as a zero or a clamped share.
+  cross_invalid <- FALSE
+  if (!is.null(effort_cross)) {
+    base_var <- base_var + sum(effort_cross)
+    full <- diag(as.numeric(section_var), nrow = length(section_var)) + effort_cross
+    # An unknown section variance leaves the lake variance unknown (NA through
+    # the sum above); there is no matrix to check.
+    if (length(full) > 0L && all(is.finite(full))) {
+      eig <- eigen(full, symmetric = TRUE, only.values = TRUE)$values
+      cross_invalid <- isTRUE(min(eig) < -1e-8 * max(abs(eig), 1))
+    }
+  }
   if (!expansion_in_section_var && !is.null(expansion_se)) {
     # `add_expansion_covariance()` reads `pv` as already holding the independent
     # contributions -- every branch either returns it untouched or subtracts
@@ -4669,12 +4687,201 @@ combine_section_variances <- function(
     part = "section"
   )
 
+  # Pairwise covariances over different day overlaps need not form a valid
+  # covariance matrix once there are three or more sections. A negative lake
+  # variance is reported as unknown, never as a zero or a NaN (GH #414).
+  if (cross_invalid || (!is.null(effort_cross) && isTRUE(pv < 0))) {
+    creel_warn(
+      c(
+        "The sections' combined covariance is not a valid variance, so the lake-wide SE and the section shares' SEs are reported as NA.",
+        "i" = "The sections' day samples overlap too unevenly to combine their covariances."
+      ),
+      class = c("creel_warning_section_covariance_invalid", "creel_warning")
+    )
+    pv <- NA_real_
+  }
+
   list(
     se = sqrt(pv),
     # Derived from the same two inputs the variance used, so the reported
     # component is the one inside `se` rather than a parallel calculation free
     # to drift from it (GH #134).
     component = expansion_total_se(rate, expansion_se, structure, decomposition) # nolint: object_usage_linter
+  )
+}
+
+
+#' Each section's effort covariance with the other sections, on the product scale
+#'
+#' Sections counted on the same days have correlated effort: a busy day is busy
+#' everywhere. A sectioned catch, harvest or release total summed the
+#' per-section product variances as if the sections were independent, and its
+#' lake row understated its SE whenever they moved together (GH #414; empirical
+#' SD 1.07 x the reported SE against ~0.95 for the sections themselves, and
+#' 91.5% CI coverage, at a day correlation of 0.82).
+#'
+#' Each section's effort is estimated from its own sample of days, so this is
+#' the covariance of two totals from overlapping samples. Per stratum,
+#' `Cov(Y_A, Y_B) = r_AB * sqrt(V_A * V_B) * n_AB / sqrt(n_A * n_B)`:
+#'
+#' - `V_A` is section A's between-day count variance as its own design computes
+#'   it, `(W_A^2 n_A - N_fpc) s_A^2`: its day weight `W_A` (`N_h / n_A` on an
+#'   expanded target, 1 on sampled days), its own daily-count SD `s_A` over all
+#'   its days, and `N_fpc = N_h` only where its design takes the
+#'   finite-population correction (several counts per day on an expanded
+#'   target), else 0;
+#' - `r_AB` is the correlation of the daily counts on the `n_AB` days both
+#'   sections were counted.
+#'
+#' Sections treated alike reduce to the overlapping-samples covariance
+#' `(W_A W_B n_AB - N_fpc) r_AB s_A s_B`, and to `N_h^2 / n_h * s_AB` for
+#' identical day samples. Because `|r| <= 1` and `n_AB <= sqrt(n_A n_B)`, the
+#' covariance never exceeds what the two sections' own variances allow -- also
+#' when only one of them takes the FPC, where a census section (`V = 0`)
+#' covaries with nothing. Sections never counted on the same day add 0, the
+#' independence the lake row assumed before. (A covariance from the shared days
+#' alone, or from the full design treating sections as domains, can exceed
+#' those bounds and gave negative lake variances; both were tried and rejected.)
+#'
+#' Each cell is weighted by `rate * effort / count`, which carries any
+#' count-to-effort scaling (period length, party size, aerial calibration).
+#' Strata are sampled independently, so only same-stratum cells covary. Rates
+#' come from each section's own interviews and are treated as independent
+#' across sections. Not included: the within-day covariance of shared count
+#' times. The formula is the linearisation form, added as-is on bootstrap and
+#' jackknife designs too.
+#'
+#' @param design The full sectioned design.
+#' @param target Effort target.
+#' @param cells Named list, one entry per present section, each as returned by
+#'   `stratum_cells()`.
+#' @return The pairwise covariance matrix of the sections in `cells`, zero on
+#'   the diagonal (the sections' own variances are added by the caller).
+#'   `rowSums()` is each section's covariance with the rest; `sum()` is the
+#'   cross term of the lake variance.
+#' @keywords internal
+#' @noRd
+section_effort_cross_covariance <- function(design, target, cells) {
+  secs <- names(cells)
+  n <- length(secs)
+  if (n < 2L) {
+    # One section has nothing to covary with: a structural zero, not a default.
+    return(matrix(0, n, n, dimnames = list(secs, secs)))
+  }
+  section_col <- design[["section_col"]]
+  strata_cols <- design$strata_cols %||% character(0)
+  psu_col <- design$psu_col %||% design$date_col
+  count_var <- resolve_count_col( # nolint: object_usage_linter
+    counts = design$counts,
+    excluded = c(design$date_col, strata_cols, psu_col, section_col),
+    count_col = design$count_col
+  )
+  stratum_key <- function(df) {
+    if (length(strata_cols) == 0L) {
+      return(rep(".all", nrow(df)))
+    }
+    do.call(paste, c(lapply(strata_cols, function(cl) as.character(df[[cl]])), sep = "\r"))
+  }
+
+  # Per section and stratum: daily count sums, the section's own day weight,
+  # the stratum population when the design takes the FPC, and the product-scale
+  # weight. Strata are matched by position, never by name: a name lookup does
+  # not match an empty-string stratum label.
+  per_sec <- lapply(secs, function(sec) {
+    sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
+    svy <- get_effort_target_design(sec_design, target) # nolint: object_usage_linter
+    # Working values as local vectors, never as columns: a user's count column
+    # may itself be called anything.
+    rows <- svy$variables
+    y <- rows[[count_var]]
+    w <- stats::weights(svy)
+    hk <- stratum_key(rows)
+    psu <- as.character(rows[[psu_col]])
+    popsize <- svy$fpc$popsize
+    pop_row <- if (is.null(popsize)) rep(NA_real_, length(y)) else as.numeric(popsize[, 1L])
+    daily <- stats::aggregate(y, list(h = hk, psu = psu), sum)
+    names(daily)[3] <- "y"
+    strata <- unique(hk)
+    w_day <- vapply(strata, function(h) mean(w[hk == h]), numeric(1L))
+    pop <- vapply(strata, function(h) mean(pop_row[hk == h]), numeric(1L))
+    count_total <- vapply(strata, function(h) sum(w[hk == h] * y[hk == h]), numeric(1L))
+    cl <- cells[[sec]]
+    at <- match(strata, stratum_key(cl$strata))
+    scale <- ifelse(!is.na(at) & count_total > 0, cl$rate[at] * cl$effort[at] / count_total, 0)
+    list(daily = daily, strata = strata, w_day = w_day, pop = pop, scale = scale)
+  })
+  names(per_sec) <- secs
+
+  # A section's between-day count variance in one stratum, as its own design
+  # computes it. `no_fpc_population` is the sentinel get_effort_target_design()
+  # writes for "no correction in this stratum", not a stratum size.
+  between_var <- function(ps, i, y) {
+    pop <- ps$pop[[i]]
+    n_fpc <- if (is.finite(pop) && pop < no_fpc_population) pop else 0
+    max(0, ps$w_day[[i]]^2 * length(y) - n_fpc) * stats::var(y)
+  }
+
+  pair_cov <- function(a, b) {
+    pa <- per_sec[[a]]
+    pb <- per_sec[[b]]
+    total <- 0
+    for (h in intersect(pa$strata, pb$strata)) {
+      ia <- match(h, pa$strata)
+      ib <- match(h, pb$strata)
+      da <- pa$daily[pa$daily$h == h, ]
+      db <- pb$daily[pb$daily$h == h, ]
+      shared <- intersect(da$psu, db$psu)
+      if (length(shared) < 2L || nrow(da) < 2L || nrow(db) < 2L) next
+      ya <- da$y[match(shared, da$psu)]
+      yb <- db$y[match(shared, db$psu)]
+      # No spread on the shared days means no estimable correlation.
+      if (stats::sd(ya) == 0 || stats::sd(yb) == 0) next
+      cov_count <- stats::cor(ya, yb) *
+        sqrt(between_var(pa, ia, da$y) * between_var(pb, ib, db$y)) *
+        length(shared) / sqrt(nrow(da) * nrow(db))
+      total <- total + pa$scale[[ia]] * pb$scale[[ib]] * cov_count
+    }
+    total
+  }
+
+  out <- matrix(0, n, n, dimnames = list(secs, secs))
+  for (i in seq_len(n - 1L)) {
+    for (j in (i + 1L):n) {
+      out[i, j] <- out[j, i] <- pair_cov(secs[[i]], secs[[j]])
+    }
+  }
+  out
+}
+
+
+#' Per-stratum effort and rate, keyed by stratum
+#'
+#' The cells `section_effort_cross_covariance()` weights the effort covariance
+#' by. The values are kept beside the strata table, never as columns in it, so
+#' no stratum column name can collide with them.
+#'
+#' @param effort_df Per-stratum effort estimates.
+#' @param rate_df Per-stratum rate estimates.
+#' @param strata_cols Strata columns, possibly empty.
+#' @return A list: `strata`, a data frame of `strata_cols` (one row, no columns
+#'   when unstratified), and `effort` and `rate`, numeric, aligned with it.
+#' @keywords internal
+#' @noRd
+stratum_cells <- function(effort_df, rate_df, strata_cols) {
+  if (length(strata_cols) == 0L) {
+    return(list(
+      strata = data.frame(row.names = 1L),
+      effort = effort_df$estimate[[1L]],
+      rate = rate_df$estimate[[1L]]
+    ))
+  }
+  e <- as.data.frame(effort_df)
+  r <- as.data.frame(rate_df)
+  key <- function(df) do.call(paste, c(lapply(strata_cols, function(cl) as.character(df[[cl]])), sep = "\r"))
+  list(
+    strata = e[, strata_cols, drop = FALSE],
+    effort = e$estimate,
+    rate = r$estimate[match(key(e), key(r))]
   )
 }
 
@@ -4805,10 +5012,25 @@ section_prop_of_lake_se <- function(
   var_p <- (section_var - 2 * prop * cov_hs + prop^2 * lake_var) / lake_est^2
 
   # `p_h = T_h / S` is a variance of a linear combination, so it cannot be
-  # negative under a valid covariance model; a negative here is floating point
-  # in the cancellation, not a component that went missing. A single section is
-  # the clean case: its share of the total is exactly 1 and the three terms
-  # cancel to zero on their own.
+  # negative under a valid covariance model; a negative of floating-point size
+  # is cancellation, and a single section is the clean case: its share is
+  # exactly 1 and the three terms cancel to zero on their own. A materially
+  # negative one means the covariances do not form a valid matrix -- pairwise
+  # effort covariances over uneven day overlaps, with or without a shared
+  # party-size term (GH #414) -- and is reported as unknown, never clamped to a
+  # zero that would read as certainty.
+  scale <- pmax(abs(section_var), abs(2 * prop * cov_hs), abs(prop^2 * lake_var)) / lake_est^2
+  invalid <- !is.na(var_p) & var_p < -1e-8 * scale
+  if (any(invalid)) {
+    creel_warn(
+      c(
+        "A section's share of the lake total has no valid variance, so its SE is reported as NA.",
+        "i" = "The sections' covariances do not form a valid covariance matrix."
+      ),
+      class = c("creel_warning_section_covariance_invalid", "creel_warning")
+    )
+    var_p[invalid] <- NA_real_
+  }
   sqrt(pmax(0, var_p))
 }
 

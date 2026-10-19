@@ -957,15 +957,20 @@ test_that("PROD-02-harvest-sum: .lake_total$estimate equals sum of per-section e
   expect_equal(lake_row$estimate, sum(section_rows$estimate), tolerance = 1e-10)
 })
 
-test_that("PROD-02-harvest-se: .lake_total$se equals sqrt(sum(se_i^2)) over present section rows", {
+test_that("PROD-02-harvest-se: .lake_total$se exceeds the independence sum when sections share days (#414)", {
   design <- make_3section_total_catch_design() # nolint: object_usage_linter
   result <- suppressWarnings(suppressMessages(
     estimate_total_harvest(design, aggregate_sections = TRUE) # nolint: object_usage_linter
   ))
   section_rows <- result$estimates[result$estimates$section != ".lake_total", ]
   lake_row <- result$estimates[result$estimates$section == ".lake_total", ]
-  expected_se <- sqrt(sum(section_rows$se^2))
-  expect_equal(lake_row$se, expected_se, tolerance = 1e-10)
+  # All three sections are counted on the same 12 days and their daily effort
+  # correlates 0.78-0.98, so the lake SE carries a positive cross-section
+  # covariance on top of the sections' own variances. The independence sum this
+  # test used to require understated it by about a third (GH #414); the exact
+  # formula is pinned in test-statistical-audit-section-lake-covariance.R.
+  independence_se <- sqrt(sum(section_rows$se^2))
+  expect_gt(lake_row$se, independence_se)
 })
 
 test_that("PROD-02-harvest-prop: prop_of_lake_total for present sections sums to 1.0", {

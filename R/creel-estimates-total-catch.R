@@ -163,10 +163,15 @@
 #' is estimated independently using its own count survey (via
 #' \code{rebuild_counts_survey}) and interview survey (via
 #' \code{rebuild_interview_survey}). The lake-wide total is the arithmetic sum
-#' \code{sum(TC_i)}, not \code{E_total * CPUE_pooled}. The lake-wide SE uses
-#' the zero-covariance assumption: \code{sqrt(sum(se_i^2))}. Cross-section
-#' covariance between count-based effort and interview-based CPUE designs is not
-#' identified and is therefore assumed zero.
+#' \code{sum(TC_i)}, not
+#' \code{E_total * CPUE_pooled}. The lake-wide SE adds, to the sections' own
+#' variances, the covariance of their effort: sections counted on the same days
+#' share a day effect, so their effort totals move together. That term is
+#' \code{2 * sum_h R_ih R_jh Cov(E_ih, E_jh)} over pairs of sections and strata,
+#' estimated from the days both sections were counted; sections never counted
+#' on the same day add nothing (GH #414). Rates come from each section's own interviews
+#' and are treated as independent across sections; the within-day covariance of
+#' shared count times is not yet included.
 #'
 #' \code{by = <species>} is supported on a sectioned design: catch is
 #' apportioned against each section's own whole effort, giving one row per
@@ -716,6 +721,9 @@ estimate_total_catch_ungrouped <- function(
   )
   # The interval's degrees of freedom, for a lake row summed from sections (GH #409).
   attr(result, "ci_df") <- attr(estimates_df, "ci_df")
+  # Per-stratum effort and rate, for the sectioned lake row's cross-section
+  # covariance (GH #414).
+  attr(result, "stratum_cells") <- stratum_cells(effort_df, cpue_df, strata_cols) # nolint: object_usage_linter
   result
 }
 
@@ -1035,6 +1043,8 @@ estimate_total_catch_sections <- function(
   names(sec_decomposition) <- registered_sections
   sec_ci_df <- vector("list", length(registered_sections))
   names(sec_ci_df) <- registered_sections
+  sec_cells <- vector("list", length(registered_sections))
+  names(sec_cells) <- registered_sections
   # Components for the branches whose sections contribute several rows -- one
   # vector per section rather than one scalar, because a grouped or species
   # result carries a component per row of its own.
@@ -1134,6 +1144,7 @@ estimate_total_catch_sections <- function(
         # the product scale -- each stratum weighted by its own rate -- and the
         # scale applied to them is 1.
         sec_rate[[sec]] <- 1
+        sec_cells[[sec]] <- attr(sec_result, "stratum_cells")
         sec_expansion_se[[sec]] <- sec_result$se_expansion
         sec_decomposition[[sec]] <- sec_result$expansion_decomposition
         sec_ci_df[[sec]] <- attr(sec_result, "ci_df")
@@ -1221,12 +1232,16 @@ estimate_total_catch_sections <- function(
   if (!is_grouped) {
     present_rows <- result_df[!is.na(result_df$estimate), ]
     present <- as.character(present_rows[[section_col]])
+    effort_cross <- section_effort_cross_covariance( # nolint: object_usage_linter
+      design, target, sec_cells[present]
+    )
     lake <- combine_section_variances( # nolint: object_usage_linter
       design,
       section_var = present_rows$se^2,
       rate = sec_rate[present],
       expansion_se = expansion_vec[present],
-      decomposition = decomposition_list[present]
+      decomposition = decomposition_list[present],
+      effort_cross = effort_cross
     )
     result_df$se_prop_of_lake_total <- NA_real_
     result_df$se_prop_of_lake_total[!is.na(result_df$estimate)] <-
@@ -1240,7 +1255,7 @@ estimate_total_catch_sections <- function(
           structure = expansion_group_structure(design, design[["section_col"]]), # nolint: object_usage_linter
           decomposition = decomposition_list[present],
           n = nrow(present_rows)
-        )
+        ) + rowSums(effort_cross)
       )
   }
 
