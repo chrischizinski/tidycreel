@@ -621,7 +621,10 @@
   intervals covered 91.5%; with the covariance added, 0.94 and 94.8%. The
   point estimates and the per-section rows are unchanged, as is effort's own
   lake row, which already carried the covariance. Shared within-day count times
-  are not yet included in the totals' lake row.
+  are not yet included in the totals' lake row. When sections' day samples
+  overlap so unevenly that their covariances do not form a valid variance, the
+  lake SE and the share SEs are reported as `NA` with
+  `creel_warning_section_covariance_invalid`, never as zero.
 
 * Aerial catch, harvest and release totals warned that the counts had been
   "expanded without a period length" (angler-days) and reported their unit
