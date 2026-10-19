@@ -200,7 +200,14 @@ Variance is computed via a stratified delta-method sum in
 [`add_sections`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md)
 has been called on the design, each section is estimated independently.
 The lake-wide total is `sum(TH_i)`, not `E_total * HPUE_pooled`. The
-lake-wide SE uses the zero-covariance assumption: `sqrt(sum(se_i^2))`.
+lake-wide SE adds, to the sections' own variances, the covariance of
+their effort: sections counted on the same days share a day effect, so
+their effort totals move together. That term is
+`2 * sum_h R_ih R_jh Cov(E_ih, E_jh)` over pairs of sections and strata,
+estimated from the days both sections were counted; sections never
+counted on the same day add nothing (GH \#414). Rates come from each
+section's own interviews and are treated as independent across sections;
+the within-day covariance of shared count times is not yet included.
 
 `by = <species>` is supported on a sectioned design: catch is
 apportioned against each section's own whole effort, giving one row per

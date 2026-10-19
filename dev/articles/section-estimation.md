@@ -196,7 +196,7 @@ print(catch_est$estimates)
 #> 1 North           285.  20.3     237.     333.     9              0.226
 #> 2 Central         717.  30.1     646.     788.     9              0.569
 #> 3 South           259.  22.8     205.     313.     9              0.205
-#> 4 .lake_total    1261.  42.9    1172.    1350.     3              1    
+#> 4 .lake_total    1261.  64.8    1126.    1396.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
@@ -221,7 +221,7 @@ print(harvest_est$estimates)
 #> 1 North           166.  13.5     134.     198.     9              0.203
 #> 2 Central         472.  23.3     416.     527.     9              0.576
 #> 3 South           181.  15.9     143.     218.     9              0.221
-#> 4 .lake_total     818.  31.3     753.     883.     3              1    
+#> 4 .lake_total     818.  44.4     726.     910.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 

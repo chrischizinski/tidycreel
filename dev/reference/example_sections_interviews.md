@@ -148,6 +148,6 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #> 1 North           285.  20.3     237.     333.     9              0.226
 #> 2 Central         717.  30.1     646.     788.     9              0.569
 #> 3 South           259.  22.8     205.     313.     9              0.205
-#> 4 .lake_total    1261.  42.9    1172.    1350.     3              1    
+#> 4 .lake_total    1261.  64.8    1126.    1396.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```

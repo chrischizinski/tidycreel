@@ -199,6 +199,12 @@ print on every call.
   unevenly, so the SE of the total cannot be combined from per-cell
   components.
 
+- `creel_warning_section_covariance_invalid`:
+
+  Tier 1. The sections' day samples overlap too unevenly for their
+  effort covariances to form a valid variance, so a sectioned total's
+  lake-wide SE and the sections' share SEs are NA.
+
 - `creel_warning_trip_length_se_undefined`:
 
   Tier 2. Too few trip durations to give an SE for the mean trip length.
