@@ -237,3 +237,45 @@ test_that("#414: a census section covaries with nothing, whatever the other sect
   d <- lc_two_sections(cnt, cal, count_time_col = ct)
   expect_equal(sum(section_effort_cross_covariance(d, "period_total", lc_cells("x", 60))), 0)
 })
+
+# Round-4 review findings (Codex).
+
+test_that("#414: a materially negative share variance is NA, not a clamped zero", {
+  # Whatever its source -- uneven effort overlaps, a shared party-size term, or
+  # both -- an invalid covariance can leave the lake variance positive and a
+  # share's variance negative. Clamping that to 0 reported certainty. Section A
+  # below: variances 300, cross sums (400, 0, 0), lake variance 1300.
+  expect_warning(
+    se <- section_prop_of_lake_se(rep(60, 3), rep(300, 3), 1300, c(400, 0, 0)), # nolint: object_usage_linter
+    class = "creel_warning_section_covariance_invalid"
+  )
+  expect_true(is.na(se[[1]]))
+  # Floating-point cancellation is still zero: one section is exactly its lake.
+  expect_equal(section_prop_of_lake_se(50, 25, 25, 0), 0) # nolint: object_usage_linter
+})
+
+test_that("#414: the count column's name does not change the lake SE", {
+  # The covariance helper wrote working columns (.w, .h, .psu) into the survey
+  # data, overwriting a count column of the same name.
+  base <- lc_design(c(18, 26, 14, 24, 20, 40, 33, 47))
+  lake_se <- function(d) {
+    res <- suppressWarnings(suppressMessages(estimate_total_catch(d, target = "period_total")))$estimates # nolint: object_usage_linter
+    res$se[res$section == ".lake_total"]
+  }
+  ref <- lake_se(base)
+  for (nm in c(".w", ".h", ".psu")) {
+    d <- base
+    names(d$counts)[names(d$counts) == "effort_hours"] <- nm
+    d$count_col <- nm
+    d$survey <- construct_survey_design(d) # nolint: object_usage_linter
+    expect_equal(lake_se(d), ref, info = nm)
+  }
+})
+
+test_that("#414: no section with an estimate leaves nothing to combine, without error", {
+  d <- structure(list(section_col = "section"), class = "creel_design")
+  expect_no_error(combine_section_variances( # nolint: object_usage_linter
+    d, section_var = numeric(0), rate = numeric(0), expansion_se = NULL,
+    effort_cross = matrix(0, 0, 0)
+  ))
+})

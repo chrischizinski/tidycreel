@@ -4663,7 +4663,7 @@ combine_section_variances <- function(
     full <- diag(as.numeric(section_var), nrow = length(section_var)) + effort_cross
     # An unknown section variance leaves the lake variance unknown (NA through
     # the sum above); there is no matrix to check.
-    if (all(is.finite(full))) {
+    if (length(full) > 0L && all(is.finite(full))) {
       eig <- eigen(full, symmetric = TRUE, only.values = TRUE)$values
       cross_invalid <- isTRUE(min(eig) < -1e-8 * max(abs(eig), 1))
     }
@@ -4790,20 +4790,21 @@ section_effort_cross_covariance <- function(design, target, cells) {
   per_sec <- lapply(secs, function(sec) {
     sec_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
     svy <- get_effort_target_design(sec_design, target) # nolint: object_usage_linter
+    # Working values as local vectors, never as columns: a user's count column
+    # may itself be called anything.
     rows <- svy$variables
-    rows$.w <- stats::weights(svy)
-    rows$.h <- stratum_key(rows)
-    rows$.psu <- as.character(rows[[psu_col]])
+    y <- rows[[count_var]]
+    w <- stats::weights(svy)
+    hk <- stratum_key(rows)
+    psu <- as.character(rows[[psu_col]])
     popsize <- svy$fpc$popsize
-    rows$.pop <- if (is.null(popsize)) NA_real_ else as.numeric(popsize[, 1L])
-    daily <- stats::aggregate(rows[[count_var]], list(h = rows$.h, psu = rows$.psu), sum)
+    pop_row <- if (is.null(popsize)) rep(NA_real_, length(y)) else as.numeric(popsize[, 1L])
+    daily <- stats::aggregate(y, list(h = hk, psu = psu), sum)
     names(daily)[3] <- "y"
-    strata <- unique(rows$.h)
-    w_day <- vapply(strata, function(h) mean(rows$.w[rows$.h == h]), numeric(1L))
-    pop <- vapply(strata, function(h) mean(rows$.pop[rows$.h == h]), numeric(1L))
-    count_total <- vapply(strata, function(h) {
-      sum(rows$.w[rows$.h == h] * rows[[count_var]][rows$.h == h])
-    }, numeric(1L))
+    strata <- unique(hk)
+    w_day <- vapply(strata, function(h) mean(w[hk == h]), numeric(1L))
+    pop <- vapply(strata, function(h) mean(pop_row[hk == h]), numeric(1L))
+    count_total <- vapply(strata, function(h) sum(w[hk == h] * y[hk == h]), numeric(1L))
     cl <- cells[[sec]]
     at <- match(strata, stratum_key(cl$strata))
     scale <- ifelse(!is.na(at) & count_total > 0, cl$rate[at] * cl$effort[at] / count_total, 0)
@@ -5011,10 +5012,25 @@ section_prop_of_lake_se <- function(
   var_p <- (section_var - 2 * prop * cov_hs + prop^2 * lake_var) / lake_est^2
 
   # `p_h = T_h / S` is a variance of a linear combination, so it cannot be
-  # negative under a valid covariance model; a negative here is floating point
-  # in the cancellation, not a component that went missing. A single section is
-  # the clean case: its share of the total is exactly 1 and the three terms
-  # cancel to zero on their own.
+  # negative under a valid covariance model; a negative of floating-point size
+  # is cancellation, and a single section is the clean case: its share is
+  # exactly 1 and the three terms cancel to zero on their own. A materially
+  # negative one means the covariances do not form a valid matrix -- pairwise
+  # effort covariances over uneven day overlaps, with or without a shared
+  # party-size term (GH #414) -- and is reported as unknown, never clamped to a
+  # zero that would read as certainty.
+  scale <- pmax(abs(section_var), abs(2 * prop * cov_hs), abs(prop^2 * lake_var)) / lake_est^2
+  invalid <- !is.na(var_p) & var_p < -1e-8 * scale
+  if (any(invalid)) {
+    creel_warn(
+      c(
+        "A section's share of the lake total has no valid variance, so its SE is reported as NA.",
+        "i" = "The sections' covariances do not form a valid covariance matrix."
+      ),
+      class = c("creel_warning_section_covariance_invalid", "creel_warning")
+    )
+    var_p[invalid] <- NA_real_
+  }
   sqrt(pmax(0, var_p))
 }
 
