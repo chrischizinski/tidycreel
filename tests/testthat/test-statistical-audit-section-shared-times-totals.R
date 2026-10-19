@@ -189,3 +189,37 @@ test_that("#414: a declaration the totals cannot honour is refused, as effort re
     class = "creel_error_shared_times_unpooled"
   )
 })
+
+# Review findings on the first version (Codex). It took the covariance as half
+# the pooled within-day variance less the sections' own, and the two divide by
+# different numbers of sampled days when the sections' days differ.
+
+test_that("#414: sections that share no day add no within-day covariance", {
+  # B counted on other days of the same strata. The declaration changed the
+  # lake variance here (3634.2 -> 3540.0) although no occasion was shared.
+  cnt <- stt_counts()
+  moved <- c(
+    "2024-06-03" = "2024-06-05", "2024-06-04" = "2024-06-06",
+    "2024-06-08" = "2024-06-01", "2024-06-09" = "2024-06-02"
+  )
+  b <- cnt$section == "B"
+  cnt$date[b] <- as.Date(moved[as.character(cnt$date[b])])
+  off <- stt_lake_var(estimate_total_catch, stt_design(FALSE, cnt), "period_total") # nolint: object_usage_linter
+  on <- stt_lake_var(estimate_total_catch, stt_design(TRUE, cnt), "period_total") # nolint: object_usage_linter
+  expect_equal(on, off, tolerance = 1e-10)
+})
+
+test_that("#414: unpaired occasions add nothing and say so", {
+  # B counted an hour after A: same days, different occasions. The declaration
+  # cannot be honoured on those days, and the user is told rather than left to
+  # assume it was.
+  cnt <- stt_counts()
+  cnt$count_time[cnt$section == "B"] <- cnt$count_time[cnt$section == "B"] + 1
+  d <- stt_design(TRUE, cnt)
+  expect_message(
+    suppressWarnings(estimate_total_catch(d, target = "period_total")), # nolint: object_usage_linter
+    class = "creel_message_within_day_independent"
+  )
+  off <- stt_lake_var(estimate_total_catch, stt_design(FALSE, cnt), "period_total") # nolint: object_usage_linter
+  expect_equal(stt_lake_var(estimate_total_catch, d, "period_total"), off, tolerance = 1e-10) # nolint: object_usage_linter
+})

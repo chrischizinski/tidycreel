@@ -4824,47 +4824,76 @@ section_effort_cross_covariance <- function(design, target, cells) {
 
   # Sections declared to share their count times also share within-day error:
   # counted at the same drawn moments, they are high or low together within a
-  # day as well as across days (GH #403 for effort, #414 for the totals). The
-  # covariance is taken from the package's own pooled within-day variance by
-  # polarisation, Cov(A, B) = (V(A + B) - V(A) - V(B)) / 2 per stratum, so it
-  # is exactly the term the effort lake row adds for the same two sections,
-  # pairing and its fallbacks included.
+  # day as well as across days (GH #403 for effort, #414 for the totals). Per
+  # stratum, from the days both sections were counted,
+  #   Cov_w = (S / n_AB) * sum_d cp_d / (k (k - 1)),
+  # with cp_d the cross-product of the two sections' counts about their day
+  # means at the shared occasions, k the mean counts per day and S = n_AB on
+  # sampled days or N_h on an expanded target: Rasmussen's within-day term with
+  # a cross-product for the sum of squares, so identical day samples give
+  # exactly its bilinear form. It is written out rather than read off a pooled
+  # variance: the pooled and per-section variances divide by different numbers
+  # of sampled days whenever the sections' days differ, and their difference
+  # is then no covariance (it moved a lake SE for sections sharing no day).
   shared_times <- isTRUE(design$shared_count_times)
+  n_unpaired <- 0L
   if (shared_times) {
     check_shared_count_times(design)
+    occ <- design$within_day_counts
+    occ_h <- stratum_key(occ)
+    occ_day <- as.character(occ[[psu_col]])
+    occ_sec <- as.character(occ[[section_col]])
+    occ_time <- as.character(occ$.count_time)
+    pop <- stratum_population_days(design$calendar, strata_cols, design$date_col) # nolint: object_usage_linter
+    pop_h <- stratum_key(pop)
   }
-  within_by_stratum <- function(keep) {
-    sub <- design
-    sub$counts <- design$counts[design$counts[[section_col]] %in% keep, , drop = FALSE]
-    by <- if (length(strata_cols) > 0L) strata_cols else NULL
-    # Its messages were already raised for the sections' own rows.
-    v <- suppressMessages(compute_within_day_var_contribution(sub, by_vars = by, target = target)) # nolint: object_usage_linter
-    units <- unique(sub$counts[strata_cols])
-    out <- if (is.null(by) || is.null(names(v))) {
-      rep(sum(v), nrow(units))
-    } else {
-      as.numeric(v[match(group_key(units, by), names(v))]) # nolint: object_usage_linter
+  within_cov <- function(a, b, h) {
+    in_h <- occ_h == h
+    days <- intersect(occ_day[in_h & occ_sec == a], occ_day[in_h & occ_sec == b])
+    if (length(days) == 0L) {
+      return(0)
     }
-    list(strata = stratum_key(units), v = out)
+    cp <- numeric(length(days))
+    k <- numeric(length(days))
+    for (i in seq_along(days)) {
+      ia <- which(in_h & occ_day == days[[i]] & occ_sec == a)
+      ib <- which(in_h & occ_day == days[[i]] & occ_sec == b)
+      ta <- occ_time[ia]
+      tb <- occ_time[ib]
+      # Paired only at the same known occasions, each counted once -- the rule
+      # the effort lake row pools by. Otherwise the day adds nothing, as two
+      # independent sections would.
+      paired <- !anyNA(c(ta, tb)) && !anyDuplicated(ta) && !anyDuplicated(tb) &&
+        identical(sort(ta), sort(tb))
+      if (paired) {
+        ya <- occ$.value[ia][order(ta)]
+        yb <- occ$.value[ib][order(tb)]
+        cp[[i]] <- sum((ya - mean(ya)) * (yb - mean(yb)))
+        k[[i]] <- length(ya)
+      } else {
+        n_unpaired <<- n_unpaired + 1L
+        k[[i]] <- mean(c(length(ia), length(ib)))
+      }
+    }
+    k_bar <- mean(k)
+    if (k_bar <= 1) {
+      return(0)
+    }
+    n_ab <- length(days)
+    s_h <- if (identical(target, "sampled_days")) n_ab else pop$.N_avail[match(h, pop_h)]
+    (s_h / n_ab) * sum(cp) / (k_bar * (k_bar - 1))
   }
-  within_at <- function(w, h) {
-    i <- match(h, w$strata)
-    if (is.na(i)) 0 else w$v[[i]]
-  }
-  within_own <- if (shared_times) lapply(stats::setNames(secs, secs), within_by_stratum) else NULL
 
   pair_cov <- function(a, b) {
     pa <- per_sec[[a]]
     pb <- per_sec[[b]]
-    within_ab <- if (shared_times) within_by_stratum(c(a, b)) else NULL
     total <- 0
     for (h in intersect(pa$strata, pb$strata)) {
       ia <- match(h, pa$strata)
       ib <- match(h, pb$strata)
       cov_count <- 0
       if (shared_times) {
-        cov_count <- (within_at(within_ab, h) - within_at(within_own[[a]], h) -
-          within_at(within_own[[b]], h)) / 2
+        cov_count <- within_cov(a, b, h)
       }
       da <- pa$daily[pa$daily$h == h, ]
       db <- pb$daily[pb$daily$h == h, ]
@@ -4888,6 +4917,16 @@ section_effort_cross_covariance <- function(design, target, cells) {
     for (j in (i + 1L):n) {
       out[i, j] <- out[j, i] <- pair_cov(secs[[i]], secs[[j]])
     }
+  }
+  if (n_unpaired > 0L) {
+    creel_inform(
+      c(
+        "i" = "Within-day covariance: on {n_unpaired} section-pair day{?s} the sections \\
+               were not counted at the same known occasions, so they cannot be paired.",
+        "i" = "Those days add no within-day covariance to the lake total."
+      ),
+      class = c("creel_message_within_day_independent", "creel_message")
+    )
   }
   out
 }
