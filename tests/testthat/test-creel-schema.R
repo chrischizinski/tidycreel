@@ -412,6 +412,73 @@ test_that("count_time_col prints under counts", {
 })
 
 
+## zip_code_col (#531) -------------------------------------------------------
+
+test_that("zip_code_col is carried on the schema", {
+  # summarize_by_zip() and summarize_by_county() read a ZIP column. Without a
+  # schema field for it, a loader could carry the column only when the source
+  # already called it `zip_code`.
+  s <- creel_schema(
+    survey_type  = "instantaneous",
+    zip_code_col = "AnglerZip"
+  )
+
+  expect_equal(s$zip_code_col, "AnglerZip")
+})
+
+test_that("zip_code_col is optional, so an existing schema still validates", {
+  # No estimator needs a ZIP; requiring one would break every schema written
+  # before #531.
+  s <- creel_schema(
+    survey_type       = "instantaneous",
+    date_col          = "SurveyDate",
+    catch_col         = "TotalCatch",
+    effort_col        = "EffortHours",
+    trip_status_col   = "TripStatus",
+    count_col         = "AnglerCount",
+    catch_uid_col     = "CatchID",
+    interview_uid_col = "InterviewID",
+    species_col       = "Species",
+    catch_count_col   = "FishCount",
+    catch_type_col    = "CatchCategory",
+    length_uid_col    = "LengthID",
+    length_mm_col     = "LengthMM",
+    length_type_col   = "LengthType"
+  )
+
+  expect_silent(validate_creel_schema(s))
+  expect_null(s$zip_code_col)
+})
+
+test_that("adding zip_code_col rebinds no positional argument", {
+  # Appended last for this reason: inserted earlier, it would take the value a
+  # positional call meant for the argument it displaced, and construction is
+  # permissive enough that nothing would say so.
+  formal_names <- names(formals(creel_schema))
+
+  expect_identical(utils::tail(formal_names, 1L), "zip_code_col")
+  s <- creel_schema("instantaneous", "int", "cnt", "catch", "len", "SurveyDate")
+  expect_equal(s$date_col, "SurveyDate")
+})
+
+test_that("zip_code_col prints under interviews", {
+  # It is an interviews column; listing it under another table would send a
+  # reader to the wrong frame -- the mistake #170 fixed for n_counted_col.
+  s <- creel_schema(
+    survey_type  = "instantaneous",
+    zip_code_col = "AnglerZip",
+    count_col    = "AnglerCount"
+  )
+  out <- capture.output(print(s))
+
+  interviews_at <- grep("interviews:", out)
+  counts_at     <- grep("counts:", out)
+  zip_at        <- grep("zip_code -> AnglerZip", out, fixed = TRUE)
+
+  expect_length(zip_at, 1L)
+  expect_true(zip_at > interviews_at && zip_at < counts_at)
+})
+
 ## free-label value maps (#532) -----------------------------------------------
 
 test_that("value_maps translates angler_method and species_sought codes", {
