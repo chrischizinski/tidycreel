@@ -138,7 +138,8 @@ survey type are mapped.</p>
 <span>  species_sought_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  refused_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  harvest_lengths_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  release_lengths_table <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  release_lengths_table <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  zip_code_col <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -362,6 +363,13 @@ source keeps harvest and release lengths in separate tables. Falls back to
 <dt id="arg-release-lengths-table">release_lengths_table<a class="anchor" aria-label="anchor" href="#arg-release-lengths-table"></a></dt>
 <dd><p>Name of the release lengths table, on the same
 terms as <code>harvest_lengths_table</code>.</p></dd>
+
+
+<dt id="arg-zip-code-col">zip_code_col<a class="anchor" aria-label="anchor" href="#arg-zip-code-col"></a></dt>
+<dd><p>Column name for the angler's ZIP code. Optional. tidycreel
+does not read this field itself: it tells a loader such as tidycreel.connect
+which source column to carry as <code>zip_code</code>, the default <code>zip_col</code> of
+<code><a href="summarize_by_zip.html">summarize_by_zip()</a></code> and <code><a href="summarize_by_county.html">summarize_by_county()</a></code> (#531).</p></dd>
 
 </dl></div>
     <div class="section level2">

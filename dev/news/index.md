@@ -211,6 +211,21 @@
 
 ### New features
 
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md)
+  gains `zip_code_col`
+  ([\#531](https://github.com/chrischizinski/tidycreel/issues/531)),
+  naming the source column that holds the angler’s ZIP code. Every other
+  column an interview summary reads already had a schema field; without
+  this one a loader such as tidycreel.connect could carry a ZIP column
+  only when the source already called it `zip_code`. tidycreel does not
+  read the field itself: a loader carries the column as `zip_code`, the
+  default `zip_col` of
+  [`summarize_by_zip()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_zip.md)
+  and
+  [`summarize_by_county()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_county.md).
+  It is optional, prints under the interviews table, and is the last
+  argument, so no positional call changes meaning.
+
 - `creel_schema(value_maps =)` accepts `angler_method` and
   `species_sought`
   ([\#532](https://github.com/chrischizinski/tidycreel/issues/532)). An
