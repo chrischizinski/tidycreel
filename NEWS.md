@@ -158,6 +158,16 @@
 
 ## New features
 
+* `creel_schema(value_maps =)` accepts `angler_method` and `species_sought`
+  (#532). An agency that codes method or target species as numbers can now
+  declare what the codes mean, instead of `summarize_by_method()` and
+  `summarize_by_species_sought()` reporting `"1"` and `"2"`, or a hand recode
+  that silently folds an undeclared code into a guessed label. Neither column
+  has a canonical vocabulary, since methods and species are the agency's own:
+  the map translates codes to any non-empty label, and its labels are that
+  column's vocabulary. Duplicate source codes are still refused, as before.
+  `creel_vocabulary()` is unchanged.
+
 * `estimate_effort()` now takes `target = "stratum_total"` or `"period_total"`
   on aerial designs (#519), as the catch, harvest and release totals already
   did. Total effort for a stratum is the number of calendar days times the

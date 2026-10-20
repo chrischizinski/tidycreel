@@ -97,6 +97,15 @@ CANONICAL_VOCABULARY <- list(
   catch_type  = c("caught", "harvested", "released"),
   length_type = c("harvest", "release")
 )
+
+# Columns a source codes but whose labels are the agency's own. Fishing methods
+# and target species differ by agency and waterbody, so there is no fixed list
+# to hold a target to -- but a coded source still has to say what its codes
+# mean, or summarize_by_method() reports "1" and "2" and a hand recode quietly
+# folds an undeclared code into whichever label the caller thought of (#532).
+# A map for one of these translates codes to any label; the map's own targets
+# are that column's vocabulary.
+FREE_LABEL_COLUMNS <- c("angler_method", "species_sought")
 # nolint end
 
 #' Canonical vocabularies for the coded columns
@@ -107,6 +116,10 @@ CANONICAL_VOCABULARY <- list(
 #' `length_type`. Every downstream filter compares against these literals, so a
 #' source that codes one of these columns has to be translated before its values
 #' can be trusted — see the `value_maps` argument of [creel_schema()].
+#'
+#' `angler_method` and `species_sought` can also be mapped, but have no entry
+#' here: their labels are the agency's own, so a map for either is its own
+#' vocabulary.
 #'
 #' Exported because `tidycreel.connect` translates source codes at the fetch and
 #' has to check its targets against the same list this package filters on; a
@@ -167,7 +180,7 @@ normalize_value_maps <- function(value_maps) {
     )
   }
 
-  known <- names(CANONICAL_VOCABULARY) # nolint: object_name_linter
+  known <- c(names(CANONICAL_VOCABULARY), FREE_LABEL_COLUMNS) # nolint: object_name_linter
   unknown <- setdiff(names(value_maps), known)
   if (length(unknown) > 0L) {
     cli::cli_abort(
@@ -201,6 +214,20 @@ normalize_value_maps <- function(value_maps) {
         ),
         class = "creel_error_schema_validation"
       )
+    }
+    if (col %in% FREE_LABEL_COLUMNS) { # nolint: object_name_linter
+      # No vocabulary to check the targets against, so check only that each one
+      # is a label: a code mapped to "" or NA would translate it into nothing.
+      if (anyNA(map) || !all(nzchar(map))) {
+        cli::cli_abort(
+          c(
+            "{.arg value_maps}${.field {col}} maps a source code to an empty or missing label.",
+            "i" = "Every code needs a label: {.code c(\"1\" = \"boat\")}."
+          ),
+          class = "creel_error_schema_validation"
+        )
+      }
+      next
     }
     bad <- setdiff(unname(map), valid)
     if (length(bad) > 0L) {
@@ -327,7 +354,8 @@ new_creel_schema <- function(survey_type, mappings) {
 #'   fetched counts frame reaches [add_counts()] with no stratum label and any
 #'   design built with `strata =` aborts (GH #171).
 #' @param value_maps Source vocabularies for the coded columns, as a named list
-#'   keyed by canonical column — `trip_status`, `catch_type`, `length_type`.
+#'   keyed by canonical column — `trip_status`, `catch_type`, `length_type`,
+#'   and the free-label columns `angler_method` and `species_sought`.
 #'   Each entry is a fully named character vector mapping the source's own codes
 #'   to canonical values: `c("1" = "complete", "2" = "incomplete")`. Names are
 #'   what the source writes, values what tidycreel means.
@@ -338,6 +366,12 @@ new_creel_schema <- function(survey_type, mappings) {
 #'   aborts at the fetch, where the source is still in view, rather than being
 #'   recoded by hand afterwards — a hand recode folds an undeclared third code
 #'   (`"refused"`, `"unknown"`) into complete or incomplete silently (GH #128).
+#'
+#'   `angler_method` and `species_sought` have no canonical vocabulary, because
+#'   methods and target species are the agency's own. Their maps translate codes
+#'   to any non-empty label, `c("1" = "boat", "2" = "shore")`, and the map's own
+#'   labels serve as the vocabulary: a loader still refuses a code the map does
+#'   not declare (#532).
 #' @param catch_col Column name for catch count in interviews.
 #' @param effort_col Column name for effort (hours) in interviews.
 #' @param trip_status_col Column name for trip status in interviews.

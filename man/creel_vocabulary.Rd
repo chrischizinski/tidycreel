@@ -21,6 +21,10 @@ is a fixed vocabulary rather than a number: \code{trip_status}, \code{catch_type
 source that codes one of these columns has to be translated before its values
 can be trusted — see the \code{value_maps} argument of \code{\link[=creel_schema]{creel_schema()}}.
 
+\code{angler_method} and \code{species_sought} can also be mapped, but have no entry
+here: their labels are the agency's own, so a map for either is its own
+vocabulary.
+
 Exported because \code{tidycreel.connect} translates source codes at the fetch and
 has to check its targets against the same list this package filters on; a
 second copy of the vocabulary would be free to drift from this one.
