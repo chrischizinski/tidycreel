@@ -272,6 +272,9 @@ Two ways to fail to cancel:
 column may be an instantaneous head count or effort the caller already
 expanded, and nothing can tell the two apart. Unknown times known is
 unknown. Supply \code{period_length_col} to make the total's unit derivable.
+An aerial design is the exception: it refuses \code{period_length_col}, but
+\code{h_open} is its period length, so its effort is recorded as angler-hours
+and its totals are \code{"fish"} (GH #478, #474).
 \item \strong{The denominators disagree.} A rate per party-hour times an effort in
 angler-hours is not a count of fish. Pass \code{n_anglers} to
 \code{\link[=add_interviews]{add_interviews()}} so the rate is per angler-hour.
