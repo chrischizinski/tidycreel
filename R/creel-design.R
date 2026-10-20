@@ -4789,8 +4789,8 @@ get_inclusion_probs <- function(design) {
 #'   NA when n_interviewed = 0).
 #'
 #' @references
-#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+#' estimation of effort, harvest, and released catch. In A. V. Zale, D. L. Parrish,
 #' & T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed., pp. 883--919).
 #' American Fisheries Society. Enumeration expansion factor used in Eq. 19.4
 #' and 19.5 for bus-route effort and harvest estimation.
