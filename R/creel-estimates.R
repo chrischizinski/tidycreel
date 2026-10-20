@@ -4888,8 +4888,12 @@ section_effort_cross_covariance <- function(design, target, cells) {
 #' @param target Effort target, forwarded to the within-day variance.
 #' @param secs Character vector of the present sections.
 #' @return A list: `strata`, the stratum keys (`section_stratum_key()`), and
-#'   `cov`, one matrix per stratum of the pairwise covariances in count units,
-#'   zero on the diagonal. Emits `creel_message_within_day_independent` when
+#'   `cov`, one matrix per stratum of the pairwise covariances, zero on the
+#'   diagonal. Their units are those of `within_day_counts$.value` -- the
+#'   counts after `add_counts()` multiplies them by the period length -- which
+#'   are the units of each section's own `se_within` on its effort row, so the
+#'   effort lake row adds them as they are. The product totals weight them by
+#'   `rate * effort / count`. Emits `creel_message_within_day_independent` when
 #'   some section-pair days could not be paired.
 #' @keywords internal
 #' @noRd
