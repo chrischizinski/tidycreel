@@ -121,7 +121,9 @@ specifying sites, circuits, and their sampling probabilities.</p>
 <span>  open_start <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  day_start <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  night_date <span class="op">=</span> <span class="st">"start"</span>,</span>
-<span>  tz <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  tz <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  wait_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  circuit_time <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -179,8 +181,11 @@ site-circuit sampling unit with its inclusion probability components
 
 <dt id="arg-p-site">p_site<a class="anchor" aria-label="anchor" href="#arg-p-site"></a></dt>
 <dd><p>Tidy selector for the site sampling probability column in
-<code>sampling_frame</code>. Required when <code>survey_type = "bus_route"</code>. Values must
-be in <code>(0, 1]</code> and must sum to <code>1.0</code> within each circuit (tolerance 1e-6).</p></dd>
+<code>sampling_frame</code>: the probability that a pass of the circuit selects
+the site. Values must be in <code>(0, 1]</code> and must sum to <code>1.0</code> within each
+circuit (tolerance 1e-6). For a bus route on which the clerk visits every
+site on every pass, give <code>wait_time</code> and <code>circuit_time</code> instead. A
+bus-route design needs one of the two.</p></dd>
 
 
 <dt id="arg-p-period">p_period<a class="anchor" aria-label="anchor" href="#arg-p-period"></a></dt>
@@ -344,6 +349,22 @@ for night designs; defaults to <code>getOption("tidycreel.tz")</code>, never to 
 computer's own zone. Shift lengths across a daylight-saving change, and
 record times given as POSIXct, are read in it.</p></dd>
 
+
+<dt id="arg-wait-time-circuit-time">wait_time, circuit_time<a class="anchor" aria-label="anchor" href="#arg-wait-time-circuit-time"></a></dt>
+<dd><p>Tidy selectors for two columns of
+<code>sampling_frame</code>, used together in place of <code>p_site</code> on a bus route
+where the clerk visits every site on every pass (Robson and Jones 1989).
+<code>wait_time</code> is the scheduled wait at the site. <code>circuit_time</code> is the time
+to complete the whole circuit, travel included, and is constant within a
+circuit. Both must be in the same unit. The site's weight is then
+<code>p_site = wait_time / circuit_time</code>: the share of the circuit during
+which a party at that site can be seen. These shares add up to less
+than 1 when the route has travel time, and the total wait must not
+exceed the circuit time. This is the weighting in Pollock et al. (1994,
+eq. 15.10). Encoding the waits as shares of the total wait, so that they
+add up to 1, would understate the totals by the travelling fraction of
+the circuit.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -389,18 +410,28 @@ belongs to no stratum's population of days</p></li>
 <li><p>Site column (if provided) is character or factor</p></li>
 <li><p>(bus_route only) All <code>p_site</code> and <code>p_period</code> values are in <code>(0, 1]</code></p></li>
 <li><p>(bus_route only) <code>p_site</code> values sum to 1.0 within each circuit
-(tolerance 1e-6)</p></li>
+(tolerance 1e-6); or, with <code>wait_time</code> and <code>circuit_time</code>, waits are
+positive, the circuit time is constant within each circuit, and the
+waits within a circuit add up to no more than its circuit time</p></li>
 <li><p>(bus_route only) <code>p_period</code> values are constant within each circuit
 (tolerance 1e-10)</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Jones, C. M., &amp; Pollock, K. H. (2012). Recreational survey methods:
-estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
-&amp; T. M. Sutton (Eds.), <em>Fisheries Techniques</em> (3rd ed., pp. 883–919).
-American Fisheries Society. Eq. 19.4 and 19.5 define the bus-route
-estimators; pp. 883–884 define the inclusion probability
-\(\pi_i = p_{\text{site}} \times p_{\text{period}}\).</p>
+    <p>Jones, C. M., &amp; Pollock, K. H. (2012). Recreational angler survey methods:
+estimation of effort, harvest, and released catch. In A. V. Zale,
+D. L. Parrish, &amp; T. M. Sutton (Eds.), <em>Fisheries Techniques</em> (3rd ed.,
+pp. 883–919). American Fisheries Society. Eq. 19.4 and 19.5 (pp.
+911–912) are the Horvitz–Thompson totals the estimators use, with
+\(\pi_i\) "the total probability that the ith sampling unit is included
+in the sample".</p>
+<p>Pollock, K. H., Jones, C. M., &amp; Brown, T. L. (1994). <em>Angler survey methods
+and their applications in fisheries management</em>. American Fisheries
+Society Special Publication 25. Section 15.5.3, eq. 15.10–15.11: the
+bus-route estimator, with each site weighted by its wait over the circuit
+time.</p>
+<p>Robson, D., &amp; Jones, C. M. (1989). The theoretical basis of an access site
+angler survey design. <em>Biometrics</em>, 45, 83–98. <a href="https://doi.org/10.2307/2532036" class="external-link">doi:10.2307/2532036</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -483,6 +514,25 @@ estimators; pp. 883–884 define the inclusion probability
 <span class="r-in"><span>  site <span class="op">=</span> <span class="va">site</span>,</span></span>
 <span class="r-in"><span>  p_site <span class="op">=</span> <span class="va">p_site</span>,</span></span>
 <span class="r-in"><span>  p_period <span class="op">=</span> <span class="va">p_period</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Bus route that visits every site on each pass: a 360-minute circuit with</span></span></span>
+<span class="r-in"><span><span class="co"># 195 minutes of waits, so each site's weight is its wait / 360</span></span></span>
+<span class="r-in"><span><span class="va">sf_wait</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span>, <span class="st">"D"</span>, <span class="st">"E"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  wait <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">30</span>, <span class="fl">15</span>, <span class="fl">60</span>, <span class="fl">60</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  circuit_minutes <span class="op">=</span> <span class="fl">360</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design_wait</span> <span class="op">&lt;-</span> <span class="fu">creel_design</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">calendar_br</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">date</span>,</span></span>
+<span class="r-in"><span>  strata <span class="op">=</span> <span class="va">day_type</span>,</span></span>
+<span class="r-in"><span>  survey_type <span class="op">=</span> <span class="st">"bus_route"</span>,</span></span>
+<span class="r-in"><span>  sampling_frame <span class="op">=</span> <span class="va">sf_wait</span>,</span></span>
+<span class="r-in"><span>  site <span class="op">=</span> <span class="va">site</span>,</span></span>
+<span class="r-in"><span>  wait_time <span class="op">=</span> <span class="va">wait</span>,</span></span>
+<span class="r-in"><span>  circuit_time <span class="op">=</span> <span class="va">circuit_minutes</span>,</span></span>
+<span class="r-in"><span>  p_period <span class="op">=</span> <span class="fl">0.5</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

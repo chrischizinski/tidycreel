@@ -34,7 +34,9 @@ creel_design(
   open_start = NULL,
   day_start = NULL,
   night_date = "start",
-  tz = NULL
+  tz = NULL,
+  wait_time = NULL,
+  circuit_time = NULL
 )
 ```
 
@@ -91,9 +93,11 @@ creel_design(
 - p_site:
 
   Tidy selector for the site sampling probability column in
-  `sampling_frame`. Required when `survey_type = "bus_route"`. Values
-  must be in `(0, 1]` and must sum to `1.0` within each circuit
-  (tolerance 1e-6).
+  `sampling_frame`: the probability that a pass of the circuit selects
+  the site. Values must be in `(0, 1]` and must sum to `1.0` within each
+  circuit (tolerance 1e-6). For a bus route on which the clerk visits
+  every site on every pass, give `wait_time` and `circuit_time` instead.
+  A bus-route design needs one of the two.
 
 - p_period:
 
@@ -283,6 +287,22 @@ creel_design(
   computer's own zone. Shift lengths across a daylight-saving change,
   and record times given as POSIXct, are read in it.
 
+- wait_time, circuit_time:
+
+  Tidy selectors for two columns of `sampling_frame`, used together in
+  place of `p_site` on a bus route where the clerk visits every site on
+  every pass (Robson and Jones 1989). `wait_time` is the scheduled wait
+  at the site. `circuit_time` is the time to complete the whole circuit,
+  travel included, and is constant within a circuit. Both must be in the
+  same unit. The site's weight is then
+  `p_site = wait_time / circuit_time`: the share of the circuit during
+  which a party at that site can be seen. These shares add up to less
+  than 1 when the route has travel time, and the total wait must not
+  exceed the circuit time. This is the weighting in Pollock et al.
+  (1994, eq. 15.10). Encoding the waits as shares of the total wait, so
+  that they add up to 1, would understate the totals by the travelling
+  fraction of the circuit.
+
 ## Value
 
 A `creel_design` S3 object (list) with components:
@@ -342,19 +362,32 @@ The constructor performs fail-fast validation:
 - (bus_route only) All `p_site` and `p_period` values are in `(0, 1]`
 
 - (bus_route only) `p_site` values sum to 1.0 within each circuit
-  (tolerance 1e-6)
+  (tolerance 1e-6); or, with `wait_time` and `circuit_time`, waits are
+  positive, the circuit time is constant within each circuit, and the
+  waits within a circuit add up to no more than its circuit time
 
 - (bus_route only) `p_period` values are constant within each circuit
   (tolerance 1e-10)
 
 ## References
 
-Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
-& T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed., pp. 883–919).
-American Fisheries Society. Eq. 19.4 and 19.5 define the bus-route
-estimators; pp. 883–884 define the inclusion probability \\\pi_i =
-p\_{\text{site}} \times p\_{\text{period}}\\.
+Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey
+methods: estimation of effort, harvest, and released catch. In A. V.
+Zale, D. L. Parrish, & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd
+ed., pp. 883–919). American Fisheries Society. Eq. 19.4 and 19.5 (pp.
+911–912) are the Horvitz–Thompson totals the estimators use, with
+\\\pi_i\\ "the total probability that the ith sampling unit is included
+in the sample".
+
+Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler survey
+methods and their applications in fisheries management*. American
+Fisheries Society Special Publication 25. Section 15.5.3, eq.
+15.10–15.11: the bus-route estimator, with each site weighted by its
+wait over the circuit time.
+
+Robson, D., & Jones, C. M. (1989). The theoretical basis of an access
+site angler survey design. *Biometrics*, 45, 83–98.
+[doi:10.2307/2532036](https://doi.org/10.2307/2532036)
 
 ## See also
 
@@ -437,5 +470,24 @@ design_br <- creel_design(
   site = site,
   p_site = p_site,
   p_period = p_period
+)
+
+# Bus route that visits every site on each pass: a 360-minute circuit with
+# 195 minutes of waits, so each site's weight is its wait / 360
+sf_wait <- data.frame(
+  site = c("A", "B", "C", "D", "E"),
+  wait = c(30, 30, 15, 60, 60),
+  circuit_minutes = 360
+)
+design_wait <- creel_design(
+  calendar_br,
+  date = date,
+  strata = day_type,
+  survey_type = "bus_route",
+  sampling_frame = sf_wait,
+  site = site,
+  wait_time = wait,
+  circuit_time = circuit_minutes,
+  p_period = 0.5
 )
 ```

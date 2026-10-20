@@ -8,12 +8,13 @@ stations an interviewer at one location for the day, a bus-route crew
 travels the circuit repeatedly, counting and interviewing anglers at
 each site as they pass through.
 
-Sites are not sampled uniformly. Instead, each site is assigned a
-selection probability proportional to its expected fishing effort:
-high-use sites appear in the sampling frame with higher probability and
-are therefore visited more often, while low-use sites appear with lower
-probability. This deliberate, probability-proportional-to-size design is
-what makes valid inference possible.
+Sites are not weighted equally. The crew visits every site on each pass
+but waits longer at busier sites (Jones & Pollock 2012, Box 19.3), so a
+party at a busy site is more likely to be seen. A site’s weight is the
+share of the circuit the crew spends there: its wait divided by the time
+to complete the whole circuit, travel included (Robson & Jones 1989;
+Pollock et al. 1994, eq. 15.10). Inverse weighting by that share is what
+makes the estimate unbiased.
 
 Two types of data are collected during each visit:
 
@@ -27,9 +28,9 @@ scales the interviewed catch and effort up to represent all parties at
 the site, including those not interviewed. Without this expansion, busy
 sites are systematically underrepresented in the total estimate.
 
-The statistical framework follows Malvestuto et al. (1978) and Jones &
-Pollock (2012, Chapter 19). tidycreel implements the general
-Horvitz-Thompson estimators from that chapter directly.
+The estimator is the bus-route design of Robson & Jones (1989), as set
+out in Pollock et al. (1994, section 15.5.3). It is written in the
+general Horvitz-Thompson form of Jones & Pollock (2012, Chapter 19).
 
 ## Key Concepts
 
@@ -43,11 +44,21 @@ two-stage bus-route design:
 \pi_i = p\_site_i \times p\_period
 ```
 
-where `p_site` is the probability of selecting site *i* in a given pass,
-and `p_period` is the probability that the period containing the visit
-is sampled. Sites with higher expected effort get higher `p_site`
-values, meaning they are selected more often — and correspondingly
-receive a lower inverse-probability weight in the estimator.
+where `p_period` is the probability that the period containing the visit
+is sampled, and `p_site` is the site’s weight within the circuit. It can
+be given in two ways:
+
+- **`wait_time` and `circuit_time`**, for a route that visits every site
+  on each pass. `p_site` is then `wait_time / circuit_time`. These
+  shares add up to less than 1 whenever the route has travel time, and
+  that is correct: no party can be seen while the crew is driving.
+- **`p_site`**, the probability that a pass selects the site, for a
+  design in which each pass visits a randomly chosen site. These
+  probabilities add up to 1 within a circuit.
+
+Do not rescale wait times so that they add up to 1. That divides by the
+total wait rather than the circuit time, and every total comes out too
+low by the share of the circuit spent travelling.
 
 The inclusion probability πᵢ belongs to the *sampling design*, not to a
 site or its anglers. Specify it when designing the survey; do not
@@ -90,23 +101,21 @@ structure:
 \hat{H} = \sum_i \frac{h_i}{\pi_i}
 ```
 
-## A Note on Existing Implementations
+## Choosing the Site Weights
 
-Some R packages that support bus-route surveys hardcode $`\pi_i = 0.5`$
-or compute the inclusion probability as `wait_time / circuit_time`.
-Neither is the inclusion probability as defined by Horvitz-Thompson
-theory or by Jones & Pollock (2012). Using an incorrect $`\pi_i`$
-produces biased estimates whose magnitude of bias grows with the
-heterogeneity of site probabilities.
+Some implementations fix $`\pi_i = 0.5`$ for every site. That is not an
+inclusion probability of the design, and each site’s contribution is
+then off by the ratio of 0.5 to its true $`\pi_i`$.
 
-tidycreel computes $`\pi_i = p\_site \times p\_period`$ directly from
-the sampling frame you supply to
-[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md).
-This matches the primary source definition in Jones & Pollock (2012,
-p. 912). Malvestuto (1996, Box 20.6) applies the same rule in its worked
-access-point and roving examples, dividing each observed effort by its
-selection probability; the package test suite reproduces its Example 1
-and Example 2 figures.
+tidycreel computes $`\pi_i = p\_site \times p\_period`$ from the
+sampling frame you give
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+with `p_site` either supplied directly or computed as
+`wait_time / circuit_time`. The test suite reproduces the bus-route
+effort and catch examples in Pollock et al. (1994, Tables 15.16 and
+15.17) from wait and circuit times. Malvestuto (1996, Box 20.6) uses the
+same inverse-probability rule in its access-point and roving examples,
+and the test suite reproduces its Examples 1 and 2.
 
 ## Step-by-Step Example
 
@@ -123,7 +132,10 @@ this example’s own arithmetic, not published figures.
 
 The sampling frame specifies the four sites, their selection
 probabilities (`p_site`), and the period sampling probability
-(`p_period`). Site probabilities must sum to 1.0 within each circuit.
+(`p_period`). This example gives `p_site` directly, so the site
+probabilities must sum to 1.0 within each circuit. For a route with wait
+and circuit times, pass `wait_time` and `circuit_time` instead (see
+[`?creel_design`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)).
 
 ``` r
 
@@ -488,15 +500,18 @@ labels which is which.
 
 ## References
 
-- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
-  Techniques* (3rd ed.), pp. 883–919. American Fisheries Society.
+- Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey
+  methods: estimation of effort, harvest, and released catch. Chapter 19
+  in *Fisheries Techniques* (3rd ed.), pp. 883–919. American Fisheries
+  Society.
 
-- Malvestuto, S. P. (1996). Sampling the recreational angler. Chapter 20
+- Malvestuto, S. P. (1996). Sampling the recreational creel. Chapter 20
   in *Fisheries Techniques* (2nd ed.), pp. 591–623. American Fisheries
   Society.
 
-- Malvestuto, S. P., Davies, W. D., & Shelton, W. L. (1978). An
-  evaluation of the roving creel survey with nonuniform probability
-  sampling. *Transactions of the American Fisheries Society*, 107(2),
-  255–262.
+- Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler survey
+  methods and their applications in fisheries management*. American
+  Fisheries Society Special Publication 25.
+
+- Robson, D., & Jones, C. M. (1989). The theoretical basis of an access
+  site angler survey design. *Biometrics*, 45, 83–98.

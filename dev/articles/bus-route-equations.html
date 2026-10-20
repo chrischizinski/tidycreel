@@ -605,11 +605,11 @@ estimators.</p>
 </h2>
 <p>Some implementations use a fixed value such as
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pi_i = 0.5</annotation></semantics></math>
-for all sites, or compute
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
-from interview timing data (e.g., wait time / circuit time). Both
-approaches are statistically incorrect: neither is the inclusion
-probability of the sampling design.</p>
+for all sites. That is not the inclusion probability of the sampling
+design. (Wait time over circuit time, by contrast, <em>is</em> the
+bus-route site weight of Robson &amp; Jones (1989) and Pollock et al.
+(1994, eq. 15.10). <code><a href="../reference/creel_design.html">creel_design()</a></code> takes it through
+<code>wait_time</code> and <code>circuit_time</code>.)</p>
 <p>The bias can be large and heterogeneous across sites. Using the
 Malvestuto (1996) Box 20.6 data, here is the effect of substituting
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pi_i = 0.5</annotation></semantics></math>
@@ -702,13 +702,20 @@ surveys of anglers. <em>Biometrics</em>, 53(1), 306–317.</p></li>
 <li><p>Horvitz, D. G., &amp; Thompson, D. J. (1952). A generalization of
 sampling without replacement from a finite universe. <em>Journal of the
 American Statistical Association</em>, 47(260), 663–685.</p></li>
-<li><p>Jones, C. M., &amp; Pollock, K. H. (2012). Recreational survey
-methods: estimation of effort, harvest, and abundance. Chapter 19 in
-<em>Fisheries Techniques</em> (3rd ed.), pp. 883–919. American Fisheries
-Society.</p></li>
+<li><p>Jones, C. M., &amp; Pollock, K. H. (2012). Recreational angler
+survey methods: estimation of effort, harvest, and released catch.
+Chapter 19 in <em>Fisheries Techniques</em> (3rd ed.), pp. 883–919.
+American Fisheries Society.</p></li>
+<li><p>Pollock, K. H., Jones, C. M., &amp; Brown, T. L. (1994).
+<em>Angler survey methods and their applications in fisheries
+management</em>. American Fisheries Society Special Publication
+25.</p></li>
+<li><p>Robson, D., &amp; Jones, C. M. (1989). The theoretical basis of
+an access site angler survey design. <em>Biometrics</em>, 45,
+83–98.</p></li>
 <li><p>Lumley, T. (2010). <em>Complex Surveys: A Guide to Analysis Using
 R</em>. Wiley.</p></li>
-<li><p>Malvestuto, S. P. (1996). Sampling the recreational angler.
+<li><p>Malvestuto, S. P. (1996). Sampling the recreational creel.
 Chapter 20 in <em>Fisheries Techniques</em> (2nd ed.), pp. 591–623.
 American Fisheries Society.</p></li>
 <li><p>Malvestuto, S. P., Davies, W. D., &amp; Shelton, W. L. (1978). An

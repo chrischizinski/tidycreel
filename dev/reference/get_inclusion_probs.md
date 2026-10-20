@@ -33,11 +33,11 @@ without an explicit circuit column).
 
 ## References
 
-Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
-& T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed., pp. 883–919).
-American Fisheries Society. Definition of \\\pi_i\\ for two-stage
-bus-route sampling, used in Eq. 19.4 and 19.5.
+Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey
+methods: estimation of effort, harvest, and released catch. In A. V.
+Zale, D. L. Parrish, & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd
+ed., pp. 883–919). American Fisheries Society. \\\pi_i\\ as used in Eq.
+19.4 and 19.5.
 
 ## See also
 

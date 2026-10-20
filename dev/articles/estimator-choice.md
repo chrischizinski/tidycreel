@@ -229,9 +229,10 @@ explain them.
 - Hoenig, J. M., Jones, C. M., Pollock, K. H., Robson, D. S., and
   Wade, D. L. (1997). Calculation of catch rate and total catch in
   roving surveys of anglers. *Biometrics*, 53, 306–317.
-- Jones, C. M., and Pollock, K. H. (2012). Recreational survey methods:
-  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
-  Techniques* (3rd ed.), pp. 883–919. American Fisheries Society.
+- Jones, C. M., and Pollock, K. H. (2012). Recreational angler survey
+  methods: estimation of effort, harvest, and released catch. Chapter 19
+  in *Fisheries Techniques* (3rd ed.), pp. 883–919. American Fisheries
+  Society.
 - Pollock, K. H., Hoenig, J. M., Jones, C. M., Robson, D. S., and
   Greene, C. J. (1997). Catch rate estimation for roving and access
   point surveys. *North American Journal of Fisheries Management*, 17,

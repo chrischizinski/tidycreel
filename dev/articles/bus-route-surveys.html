@@ -118,12 +118,13 @@ route, called a circuit. Unlike an access-point creel survey that
 stations an interviewer at one location for the day, a bus-route crew
 travels the circuit repeatedly, counting and interviewing anglers at
 each site as they pass through.</p>
-<p>Sites are not sampled uniformly. Instead, each site is assigned a
-selection probability proportional to its expected fishing effort:
-high-use sites appear in the sampling frame with higher probability and
-are therefore visited more often, while low-use sites appear with lower
-probability. This deliberate, probability-proportional-to-size design is
-what makes valid inference possible.</p>
+<p>Sites are not weighted equally. The crew visits every site on each
+pass but waits longer at busier sites (Jones &amp; Pollock 2012, Box
+19.3), so a party at a busy site is more likely to be seen. A site’s
+weight is the share of the circuit the crew spends there: its wait
+divided by the time to complete the whole circuit, travel included
+(Robson &amp; Jones 1989; Pollock et al. 1994, eq. 15.10). Inverse
+weighting by that share is what makes the estimate unbiased.</p>
 <p>Two types of data are collected during each visit:</p>
 <ul>
 <li>
@@ -138,9 +139,10 @@ expansion factor) scales the interviewed catch and effort up to
 represent all parties at the site, including those not interviewed.
 Without this expansion, busy sites are systematically underrepresented
 in the total estimate.</p>
-<p>The statistical framework follows Malvestuto et al. (1978) and Jones
-&amp; Pollock (2012, Chapter 19). tidycreel implements the general
-Horvitz-Thompson estimators from that chapter directly.</p>
+<p>The estimator is the bus-route design of Robson &amp; Jones (1989),
+as set out in Pollock et al. (1994, section 15.5.3). It is written in
+the general Horvitz-Thompson form of Jones &amp; Pollock (2012, Chapter
+19).</p>
 </div>
 <div class="section level2">
 <h2 id="key-concepts">Key Concepts<a class="anchor" aria-label="anchor" href="#key-concepts"></a>
@@ -152,12 +154,25 @@ Horvitz-Thompson estimators from that chapter directly.</p>
 unit (site × period combination) is included in the sample. For a
 two-stage bus-route design:</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mi>p</mi><mi>_</mi><mi>s</mi><mi>i</mi><mi>t</mi><msub><mi>e</mi><mi>i</mi></msub><mo>×</mo><mi>p</mi><mi>_</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">\pi_i = p\_site_i \times p\_period</annotation></semantics></math></p>
-<p>where <code>p_site</code> is the probability of selecting site
-<em>i</em> in a given pass, and <code>p_period</code> is the probability
-that the period containing the visit is sampled. Sites with higher
-expected effort get higher <code>p_site</code> values, meaning they are
-selected more often — and correspondingly receive a lower
-inverse-probability weight in the estimator.</p>
+<p>where <code>p_period</code> is the probability that the period
+containing the visit is sampled, and <code>p_site</code> is the site’s
+weight within the circuit. It can be given in two ways:</p>
+<ul>
+<li>
+<strong><code>wait_time</code> and
+<code>circuit_time</code></strong>, for a route that visits every site
+on each pass. <code>p_site</code> is then
+<code>wait_time / circuit_time</code>. These shares add up to less than
+1 whenever the route has travel time, and that is correct: no party can
+be seen while the crew is driving.</li>
+<li>
+<strong><code>p_site</code></strong>, the probability that a pass
+selects the site, for a design in which each pass visits a randomly
+chosen site. These probabilities add up to 1 within a circuit.</li>
+</ul>
+<p>Do not rescale wait times so that they add up to 1. That divides by
+the total wait rather than the circuit time, and every total comes out
+too low by the share of the circuit spent travelling.</p>
 <p>The inclusion probability πᵢ belongs to the <em>sampling design</em>,
 not to a site or its anglers. Specify it when designing the survey; do
 not compute it from the interview data.</p>
@@ -193,25 +208,22 @@ the same structure:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="a-note-on-existing-implementations">A Note on Existing Implementations<a class="anchor" aria-label="anchor" href="#a-note-on-existing-implementations"></a>
+<h2 id="choosing-the-site-weights">Choosing the Site Weights<a class="anchor" aria-label="anchor" href="#choosing-the-site-weights"></a>
 </h2>
-<p>Some R packages that support bus-route surveys hardcode
+<p>Some implementations fix
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pi_i = 0.5</annotation></semantics></math>
-or compute the inclusion probability as
-<code>wait_time / circuit_time</code>. Neither is the inclusion
-probability as defined by Horvitz-Thompson theory or by Jones &amp;
-Pollock (2012). Using an incorrect
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
-produces biased estimates whose magnitude of bias grows with the
-heterogeneity of site probabilities.</p>
+for every site. That is not an inclusion probability of the design, and
+each site’s contribution is then off by the ratio of 0.5 to its true
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>.</p>
 <p>tidycreel computes
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mi>p</mi><mi>_</mi><mi>s</mi><mi>i</mi><mi>t</mi><mi>e</mi><mo>×</mo><mi>p</mi><mi>_</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">\pi_i = p\_site \times p\_period</annotation></semantics></math>
-directly from the sampling frame you supply to
-<code><a href="../reference/creel_design.html">creel_design()</a></code>. This matches the primary source definition
-in Jones &amp; Pollock (2012, p. 912). Malvestuto (1996, Box 20.6)
-applies the same rule in its worked access-point and roving examples,
-dividing each observed effort by its selection probability; the package
-test suite reproduces its Example 1 and Example 2 figures.</p>
+from the sampling frame you give <code><a href="../reference/creel_design.html">creel_design()</a></code>, with
+<code>p_site</code> either supplied directly or computed as
+<code>wait_time / circuit_time</code>. The test suite reproduces the
+bus-route effort and catch examples in Pollock et al. (1994, Tables
+15.16 and 15.17) from wait and circuit times. Malvestuto (1996, Box
+20.6) uses the same inverse-probability rule in its access-point and
+roving examples, and the test suite reproduces its Examples 1 and 2.</p>
 </div>
 <div class="section level2">
 <h2 id="step-by-step-example">Step-by-Step Example<a class="anchor" aria-label="anchor" href="#step-by-step-example"></a>
@@ -229,8 +241,10 @@ this example’s own arithmetic, not published figures.</p>
 </h3>
 <p>The sampling frame specifies the four sites, their selection
 probabilities (<code>p_site</code>), and the period sampling probability
-(<code>p_period</code>). Site probabilities must sum to 1.0 within each
-circuit.</p>
+(<code>p_period</code>). This example gives <code>p_site</code>
+directly, so the site probabilities must sum to 1.0 within each circuit.
+For a route with wait and circuit times, pass <code>wait_time</code> and
+<code>circuit_time</code> instead (see <code><a href="../reference/creel_design.html">?creel_design</a></code>).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
@@ -611,17 +625,20 @@ both, and labels which is which.</p>
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
 <ul>
-<li><p>Jones, C. M., &amp; Pollock, K. H. (2012). Recreational survey
-methods: estimation of effort, harvest, and abundance. Chapter 19 in
-<em>Fisheries Techniques</em> (3rd ed.), pp. 883–919. American Fisheries
-Society.</p></li>
-<li><p>Malvestuto, S. P. (1996). Sampling the recreational angler.
+<li><p>Jones, C. M., &amp; Pollock, K. H. (2012). Recreational angler
+survey methods: estimation of effort, harvest, and released catch.
+Chapter 19 in <em>Fisheries Techniques</em> (3rd ed.), pp. 883–919.
+American Fisheries Society.</p></li>
+<li><p>Malvestuto, S. P. (1996). Sampling the recreational creel.
 Chapter 20 in <em>Fisheries Techniques</em> (2nd ed.), pp. 591–623.
 American Fisheries Society.</p></li>
-<li><p>Malvestuto, S. P., Davies, W. D., &amp; Shelton, W. L. (1978). An
-evaluation of the roving creel survey with nonuniform probability
-sampling. <em>Transactions of the American Fisheries Society</em>,
-107(2), 255–262.</p></li>
+<li><p>Pollock, K. H., Jones, C. M., &amp; Brown, T. L. (1994).
+<em>Angler survey methods and their applications in fisheries
+management</em>. American Fisheries Society Special Publication
+25.</p></li>
+<li><p>Robson, D., &amp; Jones, C. M. (1989). The theoretical basis of
+an access site angler survey design. <em>Biometrics</em>, 45,
+83–98.</p></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

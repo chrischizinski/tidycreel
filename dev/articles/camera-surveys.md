@@ -535,11 +535,12 @@ which refuse them for the same reason.
 
 ## References
 
-- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
-  Techniques* (3rd ed.), pp. 883-919. American Fisheries Society.
+- Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey
+  methods: estimation of effort, harvest, and released catch. Chapter 19
+  in *Fisheries Techniques* (3rd ed.), pp. 883-919. American Fisheries
+  Society.
 
-- Malvestuto, S. P. (1996). Sampling the recreational angler. Chapter 20
+- Malvestuto, S. P. (1996). Sampling the recreational creel. Chapter 20
   in *Fisheries Techniques* (2nd ed.), pp. 591-623. American Fisheries
   Society.
 

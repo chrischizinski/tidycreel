@@ -347,9 +347,11 @@ Bootstrap (`variance = "bootstrap"`) and jackknife
 ## 8. Why πᵢ Matters: A Quantitative Example
 
 Some implementations use a fixed value such as $`\pi_i = 0.5`$ for all
-sites, or compute $`\pi_i`$ from interview timing data (e.g., wait time
-/ circuit time). Both approaches are statistically incorrect: neither is
-the inclusion probability of the sampling design.
+sites. That is not the inclusion probability of the sampling design.
+(Wait time over circuit time, by contrast, *is* the bus-route site
+weight of Robson & Jones (1989) and Pollock et al. (1994, eq. 15.10).
+[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+takes it through `wait_time` and `circuit_time`.)
 
 The bias can be large and heterogeneous across sites. Using the
 Malvestuto (1996) Box 20.6 data, here is the effect of substituting
@@ -390,14 +392,22 @@ contribution = 57.5 / 0.20 = **287.5**; with π = 0.5 it would be 57.5 /
   without replacement from a finite universe. *Journal of the American
   Statistical Association*, 47(260), 663–685.
 
-- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-  estimation of effort, harvest, and abundance. Chapter 19 in *Fisheries
-  Techniques* (3rd ed.), pp. 883–919. American Fisheries Society.
+- Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey
+  methods: estimation of effort, harvest, and released catch. Chapter 19
+  in *Fisheries Techniques* (3rd ed.), pp. 883–919. American Fisheries
+  Society.
+
+- Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler survey
+  methods and their applications in fisheries management*. American
+  Fisheries Society Special Publication 25.
+
+- Robson, D., & Jones, C. M. (1989). The theoretical basis of an access
+  site angler survey design. *Biometrics*, 45, 83–98.
 
 - Lumley, T. (2010). *Complex Surveys: A Guide to Analysis Using R*.
   Wiley.
 
-- Malvestuto, S. P. (1996). Sampling the recreational angler. Chapter 20
+- Malvestuto, S. P. (1996). Sampling the recreational creel. Chapter 20
   in *Fisheries Techniques* (2nd ed.), pp. 591–623. American Fisheries
   Society.
 

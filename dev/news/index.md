@@ -211,6 +211,26 @@
 
 ### New features
 
+- [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+  takes bus-route site weights as `wait_time` and `circuit_time`
+  ([\#539](https://github.com/chrischizinski/tidycreel/issues/539)), the
+  published bus-route estimator (Robson & Jones 1989; Pollock et
+  al. 1994, eq. 15.10). On a bus route the crew visits every site on
+  each pass, so a site’s weight is the share of the circuit spent
+  waiting there: wait / circuit time, travel included. These shares add
+  up to less than 1 whenever the route has travel time, and `p_site` had
+  to add up to
+
+  1.  The published weights were therefore refused, and wait shares
+      rescaled to add up to 1 gave every total multiplied by (total wait
+      / circuit time), with no warning. On Pollock et al.’s Table 15.16
+      route that is 0.54 of the published effort. `p_site`, a
+      site-selection probability, still adds up to 1 and is unchanged.
+      The test suite now reproduces Pollock et al.’s bus-route effort
+      and catch (Tables 15.16 and 15.17). The bus-route How-to page and
+      [`?creel_design`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+      no longer call wait time over circuit time “incorrect”.
+
 - [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md)
   gains `zip_code_col`
   ([\#531](https://github.com/chrischizinski/tidycreel/issues/531)),
