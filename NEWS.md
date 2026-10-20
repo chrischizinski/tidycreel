@@ -620,8 +620,17 @@
   SD was 1.07 times its reported SE (sections: about 0.95) and its 95%
   intervals covered 91.5%; with the covariance added, 0.94 and 94.8%. The
   point estimates and the per-section rows are unchanged, as is effort's own
-  lake row, which already carried the covariance. Shared within-day count times
-  are not yet included in the totals' lake row. When sections' day samples
+  lake row, which already carried the covariance. Sections declared with
+  `add_sections(shared_count_times = TRUE)` now also add the within-day
+  covariance of their counts, the term effort's lake row has carried since
+  #403; before, the totals ignored the declaration and reported the same lake
+  SE with it as without it. In a 400-replicate simulation with shared count
+  times the declared lake row's SD/SE ratio went from 1.07 to 1.00. A
+  declaration the totals cannot honour (no per-occasion counts, sections that
+  are strata, count units finer than the section) is now refused there as it
+  is in `estimate_effort()`, not silently treated as independence. Rates come
+  from each section's own interviews, so no rate covariance across sections
+  arises. When sections' day samples
   overlap so unevenly that their covariances do not form a valid variance, the
   lake SE and the share SEs are reported as `NA` with
   `creel_warning_section_covariance_invalid`, never as zero.
