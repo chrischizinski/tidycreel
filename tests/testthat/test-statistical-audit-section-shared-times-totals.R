@@ -372,3 +372,26 @@ test_that("#414: the totals refuse a section that is also a stratum, as effort d
     class = "creel_error_shared_times_section_strata"
   )
 })
+
+test_that("#414: one section is refused like two when the declaration cannot be honoured", {
+  # The one-section shortcut returned before the refusal ran, so the totals
+  # accepted what estimate_effort() refuses (DeepSeek, fourth review).
+  cnt <- stt_counts()
+  cnt <- cnt[cnt$section == "A" & cnt$count_time == 9, ]
+  iv <- stt_interviews()
+  iv <- iv[iv$section == "A", ]
+  d <- creel_design(stt_calendar(), date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_sections(d, data.frame(section = "A"), # nolint: object_usage_linter
+    section_col = section, shared_count_times = TRUE # nolint: object_usage_linter
+  )
+  d <- suppressWarnings(suppressMessages(add_counts(d, cnt, count_col = "n"))) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_interviews( # nolint: object_usage_linter
+    d, iv,
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  )))
+  expect_error(
+    suppressWarnings(suppressMessages(estimate_total_catch(d, target = "period_total"))), # nolint: object_usage_linter
+    class = "creel_error_shared_times_unpooled"
+  )
+})

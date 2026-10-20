@@ -4765,6 +4765,11 @@ combine_section_variances <- function(
 section_effort_cross_covariance <- function(design, target, cells) {
   secs <- names(cells)
   n <- length(secs)
+  # Refused before the one-section shortcut, so a declaration the totals cannot
+  # honour is refused whatever the number of sections, as effort refuses it.
+  if (isTRUE(design$shared_count_times)) {
+    check_shared_count_times(design)
+  }
   if (n < 2L) {
     # One section has nothing to covary with: a structural zero, not a default.
     return(matrix(0, n, n, dimnames = list(secs, secs)))
@@ -4839,7 +4844,6 @@ section_effort_cross_covariance <- function(design, target, cells) {
   shared_times <- isTRUE(design$shared_count_times)
   n_unpaired <- 0L
   if (shared_times) {
-    check_shared_count_times(design)
     occ <- design$within_day_counts
     # Each occasion is placed in its stratum and day through the unit it belongs
     # to: the occasion table holds the unit key only, which need not include the
