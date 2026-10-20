@@ -211,6 +211,23 @@
 
 ### New features
 
+- `creel_schema(value_maps =)` accepts `angler_method` and
+  `species_sought`
+  ([\#532](https://github.com/chrischizinski/tidycreel/issues/532)). An
+  agency that codes method or target species as numbers can now declare
+  what the codes mean, instead of
+  [`summarize_by_method()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_method.md)
+  and
+  [`summarize_by_species_sought()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_species_sought.md)
+  reporting `"1"` and `"2"`, or a hand recode that silently folds an
+  undeclared code into a guessed label. Neither column has a canonical
+  vocabulary, since methods and species are the agency’s own: the map
+  translates codes to any non-empty label, and its labels are that
+  column’s vocabulary. Duplicate source codes are still refused, as
+  before.
+  [`creel_vocabulary()`](https://chrischizinski.com/tidycreel/dev/reference/creel_vocabulary.md)
+  is unchanged.
+
 - [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
   now takes `target = "stratum_total"` or `"period_total"` on aerial
   designs
@@ -841,6 +858,13 @@
   package’s own error.
 
 ### Bug fixes
+
+- `creel_schema(value_maps =)` refuses a map entry whose source code is
+  `NA`. The “fully named” check used
+  [`nzchar()`](https://rdrr.io/r/base/nchar.html), which is `TRUE` for
+  `NA`, so such an entry was accepted although no source value can ever
+  match it (found while adding free-label maps,
+  [\#532](https://github.com/chrischizinski/tidycreel/issues/532)).
 
 - The `.lake_total` row of a sectioned
   [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),

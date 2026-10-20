@@ -107,10 +107,11 @@ creel_schema(
 - value_maps:
 
   Source vocabularies for the coded columns, as a named list keyed by
-  canonical column — `trip_status`, `catch_type`, `length_type`. Each
-  entry is a fully named character vector mapping the source's own codes
-  to canonical values: `c("1" = "complete", "2" = "incomplete")`. Names
-  are what the source writes, values what tidycreel means.
+  canonical column — `trip_status`, `catch_type`, `length_type`, and the
+  free-label columns `angler_method` and `species_sought`. Each entry is
+  a fully named character vector mapping the source's own codes to
+  canonical values: `c("1" = "complete", "2" = "incomplete")`. Names are
+  what the source writes, values what tidycreel means.
 
   Every downstream filter matches the canonical literals, so a source
   that codes these columns has to declare what its codes mean. Values
@@ -119,6 +120,13 @@ creel_schema(
   rather than being recoded by hand afterwards — a hand recode folds an
   undeclared third code (`"refused"`, `"unknown"`) into complete or
   incomplete silently (GH \#128).
+
+  `angler_method` and `species_sought` have no canonical vocabulary,
+  because methods and target species are the agency's own. Their maps
+  translate codes to any non-empty label,
+  `c("1" = "boat", "2" = "shore")`, and the map's own labels serve as
+  the vocabulary: a loader still refuses a code the map does not declare
+  (#532).
 
 - catch_col:
 

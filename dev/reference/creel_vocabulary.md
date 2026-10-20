@@ -8,6 +8,10 @@ translated before its values can be trusted — see the `value_maps`
 argument of
 [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md).
 
+`angler_method` and `species_sought` can also be mapped, but have no
+entry here: their labels are the agency's own, so a map for either is
+its own vocabulary.
+
 Exported because `tidycreel.connect` translates source codes at the
 fetch and has to check its targets against the same list this package
 filters on; a second copy of the vocabulary would be free to drift from

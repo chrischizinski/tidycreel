@@ -189,7 +189,8 @@ design built with <code>strata =</code> aborts (GH #171).</p></dd>
 
 <dt id="arg-value-maps">value_maps<a class="anchor" aria-label="anchor" href="#arg-value-maps"></a></dt>
 <dd><p>Source vocabularies for the coded columns, as a named list
-keyed by canonical column — <code>trip_status</code>, <code>catch_type</code>, <code>length_type</code>.
+keyed by canonical column — <code>trip_status</code>, <code>catch_type</code>, <code>length_type</code>,
+and the free-label columns <code>angler_method</code> and <code>species_sought</code>.
 Each entry is a fully named character vector mapping the source's own codes
 to canonical values: <code>c("1" = "complete", "2" = "incomplete")</code>. Names are
 what the source writes, values what tidycreel means.</p>
@@ -198,7 +199,12 @@ codes these columns has to declare what its codes mean. Values already
 canonical pass through untouched; anything neither mapped nor canonical
 aborts at the fetch, where the source is still in view, rather than being
 recoded by hand afterwards — a hand recode folds an undeclared third code
-(<code>"refused"</code>, <code>"unknown"</code>) into complete or incomplete silently (GH #128).</p></dd>
+(<code>"refused"</code>, <code>"unknown"</code>) into complete or incomplete silently (GH #128).</p>
+<p><code>angler_method</code> and <code>species_sought</code> have no canonical vocabulary, because
+methods and target species are the agency's own. Their maps translate codes
+to any non-empty label, <code>c("1" = "boat", "2" = "shore")</code>, and the map's own
+labels serve as the vocabulary: a loader still refuses a code the map does
+not declare (#532).</p></dd>
 
 
 <dt id="arg-catch-col">catch_col<a class="anchor" aria-label="anchor" href="#arg-catch-col"></a></dt>
