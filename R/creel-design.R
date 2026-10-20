@@ -249,19 +249,6 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   `sampling_frame`. A circuit is a route x period combination. If omitted,
 #'   all rows are treated as belonging to a single unnamed circuit
 #'   (`".default"`). Required only for multi-circuit designs.
-#' @param wait_time,circuit_time Tidy selectors for two columns of
-#'   `sampling_frame`, used together in place of `p_site` on a bus route
-#'   where the clerk visits every site on every pass (Robson and Jones 1989).
-#'   `wait_time` is the scheduled wait at the site. `circuit_time` is the time
-#'   to complete the whole circuit, travel included, and is constant within a
-#'   circuit. Both must be in the same unit. The site's weight is then
-#'   `p_site = wait_time / circuit_time`: the share of the circuit during
-#'   which a party at that site can be seen. These shares add up to less
-#'   than 1 when the route has travel time, and the total wait must not
-#'   exceed the circuit time. This is the weighting in Pollock et al. (1994,
-#'   eq. 15.10). Encoding the waits as shares of the total wait, so that they
-#'   add up to 1, would understate the totals by the travelling fraction of
-#'   the circuit.
 #' @param effort_type Character string specifying the type of effort measured
 #'   in ice fishing surveys. Required when `survey_type = "ice"`. Must be one
 #'   of `"time_on_ice"` (total hours the angler was on the ice) or
@@ -383,6 +370,19 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   computer's own zone. Shift lengths across a daylight-saving change, and
 #'   record times given as POSIXct, are read in it.
 #'
+#' @param wait_time,circuit_time Tidy selectors for two columns of
+#'   `sampling_frame`, used together in place of `p_site` on a bus route
+#'   where the clerk visits every site on every pass (Robson and Jones 1989).
+#'   `wait_time` is the scheduled wait at the site. `circuit_time` is the time
+#'   to complete the whole circuit, travel included, and is constant within a
+#'   circuit. Both must be in the same unit. The site's weight is then
+#'   `p_site = wait_time / circuit_time`: the share of the circuit during
+#'   which a party at that site can be seen. These shares add up to less
+#'   than 1 when the route has travel time, and the total wait must not
+#'   exceed the circuit time. This is the weighting in Pollock et al. (1994,
+#'   eq. 15.10). Encoding the waits as shares of the total wait, so that they
+#'   add up to 1, would understate the totals by the travelling fraction of
+#'   the circuit.
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
 #'   \item{date_col}{Character name of the date column}
@@ -520,8 +520,6 @@ creel_design <- function(
   p_site = NULL,
   p_period = NULL,
   circuit = NULL,
-  wait_time = NULL,
-  circuit_time = NULL,
   effort_type = NULL,
   camera_mode = NULL,
   h_open = NULL,
@@ -532,7 +530,10 @@ creel_design <- function(
   open_start = NULL,
   day_start = NULL,
   night_date = "start",
-  tz = NULL
+  tz = NULL,
+  # Appended so that existing positional calls bind as before (GH #539).
+  wait_time = NULL,
+  circuit_time = NULL
 ) {
   # A grouped input would carry its grouping into every dplyr step that reads
   # the stored table (GH #441).

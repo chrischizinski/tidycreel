@@ -187,3 +187,11 @@ test_that("a wait-weighted bus-route design survives write_design() and read_des
     suppressMessages(estimate_effort(d))$estimates$estimate
   )
 })
+
+test_that("the new arguments come last, so positional calls bind as before", {
+  # Inserted before effort_type, they shifted every later argument: an ice
+  # design given effort_type as its 11th argument bound it to wait_time.
+  f <- names(formals(creel_design))
+  expect_identical(utils::tail(f, 2), c("wait_time", "circuit_time"))
+  expect_identical(match("effort_type", f), 11L)
+})

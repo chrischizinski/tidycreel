@@ -15,8 +15,6 @@ creel_design(
   p_site = NULL,
   p_period = NULL,
   circuit = NULL,
-  wait_time = NULL,
-  circuit_time = NULL,
   effort_type = NULL,
   camera_mode = NULL,
   h_open = NULL,
@@ -27,7 +25,9 @@ creel_design(
   open_start = NULL,
   day_start = NULL,
   night_date = "start",
-  tz = NULL
+  tz = NULL,
+  wait_time = NULL,
+  circuit_time = NULL
 )
 }
 \arguments{
@@ -80,20 +80,6 @@ globally to all rows. Required when \code{survey_type = "bus_route"}.}
 \code{sampling_frame}. A circuit is a route x period combination. If omitted,
 all rows are treated as belonging to a single unnamed circuit
 (\code{".default"}). Required only for multi-circuit designs.}
-
-\item{wait_time, circuit_time}{Tidy selectors for two columns of
-\code{sampling_frame}, used together in place of \code{p_site} on a bus route
-where the clerk visits every site on every pass (Robson and Jones 1989).
-\code{wait_time} is the scheduled wait at the site. \code{circuit_time} is the time
-to complete the whole circuit, travel included, and is constant within a
-circuit. Both must be in the same unit. The site's weight is then
-\code{p_site = wait_time / circuit_time}: the share of the circuit during
-which a party at that site can be seen. These shares add up to less
-than 1 when the route has travel time, and the total wait must not
-exceed the circuit time. This is the weighting in Pollock et al. (1994,
-eq. 15.10). Encoding the waits as shares of the total wait, so that they
-add up to 1, would understate the totals by the travelling fraction of
-the circuit.}
 
 \item{effort_type}{Character string specifying the type of effort measured
 in ice fishing surveys. Required when \code{survey_type = "ice"}. Must be one
@@ -224,6 +210,20 @@ it) is supported.}
 for night designs; defaults to \code{getOption("tidycreel.tz")}, never to the
 computer's own zone. Shift lengths across a daylight-saving change, and
 record times given as POSIXct, are read in it.}
+
+\item{wait_time, circuit_time}{Tidy selectors for two columns of
+\code{sampling_frame}, used together in place of \code{p_site} on a bus route
+where the clerk visits every site on every pass (Robson and Jones 1989).
+\code{wait_time} is the scheduled wait at the site. \code{circuit_time} is the time
+to complete the whole circuit, travel included, and is constant within a
+circuit. Both must be in the same unit. The site's weight is then
+\code{p_site = wait_time / circuit_time}: the share of the circuit during
+which a party at that site can be seen. These shares add up to less
+than 1 when the route has travel time, and the total wait must not
+exceed the circuit time. This is the weighting in Pollock et al. (1994,
+eq. 15.10). Encoding the waits as shares of the total wait, so that they
+add up to 1, would understate the totals by the travelling fraction of
+the circuit.}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:
