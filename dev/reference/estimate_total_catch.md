@@ -224,8 +224,10 @@ totals move together. That term is `2 * sum_h R_ih R_jh Cov(E_ih, E_jh)`
 over pairs of sections and strata, estimated from the days both sections
 were counted; sections never counted on the same day add nothing (GH
 \#414). Rates come from each section's own interviews and are treated as
-independent across sections; the within-day covariance of shared count
-times is not yet included.
+independent across sections. Sections declared with
+`add_sections(shared_count_times = TRUE)` also add the within-day
+covariance of their counts, the term the effort lake row carries for
+them.
 
 `by = <species>` is supported on a sectioned design: catch is
 apportioned against each section's own whole effort, giving one row per
