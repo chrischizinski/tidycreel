@@ -94,8 +94,9 @@ were not. With every party interviewed, the expansion is 1, as in the examples b
 $$\hat{E} = \sum_{i} \frac{e_i}{\pi_i}, \qquad e_i = a_i \times \text{expansion}_i$$
 
 where $a_i$ is interview $i$'s angler effort: the hours fished times `n_anglers`, or the
-hours fished alone when no party size is given. With $\pi_i = (w_i/T)\,\pi_j$ this is
-Pollock et al.'s Eq. 15.10 term for term:
+hours fished alone when no party size is given. Pollock et al. write $\pi_j$ for the
+probability of the sampled period, tidycreel's `p_period`. With
+$\pi_i = (w_i/T)\,\pi_j$ the sum is their Eq. 15.10 term for term:
 
 $$\hat{E} = T \sum_i \frac{1}{w_i} \sum_j \frac{e_{ji}}{\pi_j}$$
 
@@ -183,8 +184,9 @@ angler-hours: a party of five fishing twelve minutes supplies a full angler-hour
 still the unstable case. `truncate_at = NULL` disables truncation and warns.
 
 `use_trips = "diagnostic"` returns both rates. They are different estimators, each the one
-its trip type supports, but both are per angler-hour, so the gap between them reflects
-trip status rather than a change of unit.
+its trip type supports, but both divide by the same effort column, so they share a unit
+(per angler-hour with `n_anglers`, per party-hour without) and the gap between them
+reflects trip status rather than a change of unit.
 
 **R implementation:** `br_incomplete_harvest_rate()`, called from `estimate_harvest_br()`.
 
@@ -297,7 +299,7 @@ figures.
 
 | Quantity | Formula | Source | R function |
 |---|---|---|---|
-| Site weight (bus route) | $p\_site_i = w_i / T$ | Robson & Jones (1989) Eq. 12; Pollock et al. (1994) Eq. 15.10 | `creel_design(wait_time, circuit_time)` |
+| Site weight (bus route) | $p\_site_i = w_i / T$ | Robson & Jones (1989) Eq. 12; Pollock et al. (1994) Eq. 15.10 (both as $T/w_i$) | `creel_design(wait_time, circuit_time)` |
 | Inclusion probability | $\pi_i = p\_site_i \times p\_period$ | Pollock et al. (1994) Eq. 15.10 ($\pi_j$) | `creel_design()`, `add_interviews()` |
 | Enumeration expansion | $n\_counted / n\_interviewed$ | — | `add_interviews()` |
 | Effort total | $\hat{E} = \sum e_i/\pi_i$ | Jones & Pollock (2012) Eq. 19.4 | `estimate_effort_br()` |
