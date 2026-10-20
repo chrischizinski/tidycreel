@@ -200,7 +200,7 @@ Sections declared with `add_sections(shared_count_times = TRUE)` also
 add the within-day covariance of their counts, the term the effort lake
 row carries for them.
 
-`by = <species>` is supported on a sectioned design: catch is
+`by = <species>` is supported on a sectioned design: release is
 apportioned against each section's own whole effort, giving one row per
 section per species. As with any other grouping, the sectioned result
 then carries no `.lake_total` row and no `prop_of_lake_total`.
