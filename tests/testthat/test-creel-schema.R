@@ -410,3 +410,94 @@ test_that("count_time_col prints under counts", {
   expect_length(time_at, 1L)
   expect_true(all(time_at > counts_at))
 })
+
+
+## free-label value maps (#532) -----------------------------------------------
+
+test_that("value_maps translates angler_method and species_sought codes", {
+  # An agency that codes method as 1/2 had no way to say what the codes mean,
+  # so summarize_by_method() reported "1" and "2" or the caller recoded by hand.
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(
+      angler_method  = c("1" = "boat", "2" = "shore"),
+      species_sought = c(WAE = "walleye", ANY = "anything")
+    )
+  )
+
+  expect_equal(s$value_maps$angler_method, c("1" = "boat", "2" = "shore"))
+  expect_equal(s$value_maps$species_sought, c(WAE = "walleye", ANY = "anything"))
+})
+
+test_that("a free-label map accepts labels no vocabulary lists", {
+  # Methods and species are the agency's own, so any label is a valid target --
+  # the check that refuses "compleet" for trip_status must not apply here.
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(angler_method = c("7" = "spear (through ice)"))
+  )
+
+  expect_equal(unname(s$value_maps$angler_method), "spear (through ice)")
+})
+
+test_that("a free-label map refuses an empty or missing label", {
+  # With no vocabulary to check against, an empty target is the one mistake
+  # left to catch: it would translate a real code into nothing.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = c("1" = "boat", "2" = ""))
+    ),
+    "empty or missing label",
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(species_sought = c(WAE = NA_character_))
+    ),
+    "empty or missing label",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("a free-label map still refuses one source code twice", {
+  # Free labels relax the target check only; a code with two meanings is as
+  # ambiguous here as anywhere.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = c("1" = "boat", "1" = "shore"))
+    ),
+    "same source code twice",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("free-label columns stay out of creel_vocabulary()", {
+  # creel_vocabulary() lists the literals tidycreel's own filters match on.
+  # Nothing filters on a method or species label, so neither belongs there.
+  expect_false(any(c("angler_method", "species_sought") %in% names(creel_vocabulary())))
+  expect_error(creel_vocabulary("angler_method"), "no canonical vocabulary")
+})
+
+test_that("value_maps refuses an NA source code", {
+  # nzchar(NA) is TRUE, so an NA name used to pass the "fully named" check. No
+  # source value can match an NA code, so the entry would be dead on arrival.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = stats::setNames("complete", NA_character_))
+    ),
+    "fully named",
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = stats::setNames("boat", NA_character_))
+    ),
+    "fully named",
+    class = "creel_error_schema_validation"
+  )
+})
