@@ -6183,7 +6183,7 @@ check_shared_count_times <- function(design) {
     cli::cli_abort(
       c(
         "{.code shared_count_times = TRUE} cannot be honoured: the counts carry no per-occasion values.",
-        "x" = "Sections can only be added up at each occasion when the raw counts are kept.",
+        "x" = "Sections can only be paired at each occasion when the raw counts are kept.",
         "i" = "Pass {.arg count_time_col} to {.fn add_counts}, or leave \
                {.code shared_count_times = FALSE} to treat the sections as independent."
       ),
