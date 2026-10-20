@@ -153,9 +153,10 @@ in v0.8.0 aerial survey estimation.</p></dd>
 within-day sampling errors as independent. Set <code>TRUE</code> only when the
 sections' counts were taken at the <strong>same randomly drawn count times</strong>, so
 that a <code>count_time</code> label means the same moment in every section. The lake
-total's within-day SE then adds the sections up at each occasion before
-taking the variance, which keeps the covariance between sections that rise
-and fall together through the day. Requires <code>count_time_col</code> in
+total's within-day SE then adds, to the sections' own components, each
+pair's within-day covariance over the days both were counted, which keeps
+the covariance between sections that rise and fall together through the
+day. Requires <code>count_time_col</code> in
 <code><a href="add_counts.html">add_counts()</a></code>. Never inferred from matching labels: one clerk driving a
 circuit counts "am" in each section at a different moment, and pairing those
 would be a modelling choice the data cannot confirm. Not supported
@@ -193,9 +194,10 @@ with <code>shared_count_times</code> and never read off the labels.</p>
 <p>With <code>shared_count_times = TRUE</code>, the per-section rows are unchanged; only
 the <code>.lake_total</code> row's <code>se_within</code> (and so its <code>se</code>) changes. A day on which
 the sections were not counted at the same known occasions cannot be paired and
-is added as independent, with a message saying so. Sections counted a
-different number of times on a day share the unequal-count limitation noted
-in GH #405: the pooled component averages the counts per day across sections.</p>
+is added as independent, with a message saying so, and so is a day only one
+of them was counted on: sections whose sampled days differ covary on the days
+they share and nowhere else (GH #527). The catch, harvest and release totals
+add the same covariance to their lake rows.</p>
     </div>
     <div class="section level2">
     <h2 id="how-sections-are-named-in-results">How sections are named in results<a class="anchor" aria-label="anchor" href="#how-sections-are-named-in-results"></a></h2>
