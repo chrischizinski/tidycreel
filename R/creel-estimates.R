@@ -6157,9 +6157,11 @@ shared_times_lake_se_within <- function(design, result_df, target) {
   # each day they fall into groups, and the lake term is a sum over days and
   # groups of the sum of squares of sum_i sqrt(c_i) * y_i -- unlike the totals'
   # between-day covariances, which can fail to form a valid matrix.
+  # Sections that offset exactly sum to a true zero, which rounding can leave a
+  # hair below it; given the structure above, any negative is rounding.
   secs <- as.character(result_df[[design$section_col]][present])
   within <- section_within_day_cross_covariance(design, target, secs)
-  sqrt(sum(result_df$se_within[present]^2) + sum(vapply(within$cov, sum, numeric(1L))))
+  sqrt(max(0, sum(result_df$se_within[present]^2) + sum(vapply(within$cov, sum, numeric(1L)))))
 }
 
 #' Refuse a shared-count-times declaration that cannot be honoured
@@ -6214,8 +6216,8 @@ check_shared_count_times <- function(design) {
       c(
         "{.code shared_count_times = TRUE} is not supported with count units finer than the section.",
         "x" = "The counts are keyed by {.field {finer}} as well as the section.",
-        "i" = "Pooling would need to add the units up within each section and then the sections \
-               up across the lake; only the second level is implemented.",
+        "i" = "The within-day covariance would need the units paired within each section and then \
+               the sections paired across the lake; only the second level is implemented.",
         "i" = "Leave {.code shared_count_times = FALSE} to treat the sections as independent."
       ),
       class = "creel_error_shared_times_finer_units"

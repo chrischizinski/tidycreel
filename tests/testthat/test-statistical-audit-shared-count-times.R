@@ -310,3 +310,22 @@ test_that("#527: partly shared days covary on the shared days only, at each sect
     tolerance = 1e-10
   )
 })
+
+test_that("#527: sections that offset exactly give a zero lake within-day SE, not NaN", {
+  # A counts (0, 2) and B (2, 0) at the same two times every day: the lake count
+  # is 2 at both occasions, so its within-day variance is exactly zero. Adding
+  # the sections' own variances and their covariance cancels to a rounding
+  # residue that can fall below zero, and its square root would be NaN.
+  days <- as.Date(c("2024-06-03", "2024-06-04", "2024-06-05"))
+  cnt <- rbind(
+    data.frame(date = rep(days, each = 2), day_type = "weekday", section = "A",
+               count_time = rep(c(9, 15), 3), n = rep(c(0, 2), 3)),
+    data.frame(date = rep(days, each = 2), day_type = "weekday", section = "B",
+               count_time = rep(c(9, 15), 3), n = rep(c(2, 0), 3))
+  )
+  res <- sct_est(sct_design(cnt, shared = TRUE))$estimates
+  lake <- res[res$section == ".lake_total", ]
+  expect_gt(min(res$se_within[res$section %in% c("A", "B")]), 0)
+  expect_identical(lake$se_within, 0)
+  expect_false(is.nan(lake$se))
+})
