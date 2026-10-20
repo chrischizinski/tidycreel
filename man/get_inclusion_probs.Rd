@@ -48,16 +48,16 @@ get_inclusion_probs(design)
 
 }
 \references{
-Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
-& T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed., pp. 883--919).
-American Fisheries Society. Definition of \eqn{\pi_i} for two-stage
-bus-route sampling, used in Eq. 19.4 and 19.5.
+Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+estimation of effort, harvest, and released catch. In A. V. Zale,
+D. L. Parrish, & T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed.,
+pp. 883--919). American Fisheries Society. \eqn{\pi_i} as used in
+Eq. 19.4 and 19.5.
 }
 \seealso{
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=get_sampling_frame]{get_sampling_frame()}}
 
-Other "Bus-Route Helpers": 
+Other "Bus-Route Helpers":
 \code{\link{get_enumeration_counts}()},
 \code{\link{get_sampling_frame}()},
 \code{\link{get_site_contributions}()}
