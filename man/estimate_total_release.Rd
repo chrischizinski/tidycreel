@@ -158,7 +158,7 @@ and are treated as independent across sections. Sections declared with
 \code{add_sections(shared_count_times = TRUE)} also add the within-day
 covariance of their counts, the term the effort lake row carries for them.
 
-\code{by = <species>} is supported on a sectioned design: catch is
+\code{by = <species>} is supported on a sectioned design: release is
 apportioned against each section's own whole effort, giving one row per
 section per species. As with any other grouping, the sectioned result then
 carries no \code{.lake_total} row and no \code{prop_of_lake_total}.

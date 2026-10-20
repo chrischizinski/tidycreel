@@ -24,9 +24,11 @@
 #'   and Their Applications in Fisheries Management. American Fisheries Society
 #'   Special Publication 25. Sec. 15.6.1, Eq. 15.4.
 #'
-#'   Smucker, B.J., Lorantas, R.M., and Rosenberger, A.E. (2010). Correcting
-#'   bias introduced by aerial counts in angler effort estimation. (Source for
-#'   the ground-truthing ratio and its standard error.)
+#'   Smucker, B.J., Lorantas, R.M., and Rosenberger, J.L. (2010). Correcting
+#'   bias introduced by aerial counts in angler effort estimation. North
+#'   American Journal of Fisheries Management, 30, 1051-1061.
+#'   \doi{10.1577/M09-193.1} (Source for the ground-truthing ratio and its
+#'   standard error.)
 #'
 #' @keywords internal
 #' @noRd
