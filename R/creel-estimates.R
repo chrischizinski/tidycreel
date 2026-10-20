@@ -4825,16 +4825,18 @@ section_effort_cross_covariance <- function(design, target, cells) {
   # Sections declared to share their count times also share within-day error:
   # counted at the same drawn moments, they are high or low together within a
   # day as well as across days (GH #403 for effort, #414 for the totals). Per
-  # stratum, from the days both sections were counted,
-  #   Cov_w = (S / n_AB) * sum_d cp_d / (k (k - 1)),
-  # with cp_d the cross-product of the two sections' counts about their day
-  # means at the shared occasions, k the mean counts per day and S = n_AB on
-  # sampled days or N_h on an expanded target: Rasmussen's within-day term with
-  # a cross-product for the sum of squares, so identical day samples give
-  # exactly its bilinear form. It is written out rather than read off a pooled
-  # variance: the pooled and per-section variances divide by different numbers
-  # of sampled days whenever the sections' days differ, and their difference
-  # is then no covariance (it moved a lake SE for sections sharing no day).
+  # stratum, in the same overlapping-samples form as the between-day term,
+  #   Cov_w = rho_w * sqrt(Vw_A * Vw_B) * n_AB / sqrt(n_A * n_B),
+  # where Vw is each section's own Rasmussen within-day variance over its own
+  # days, rho_w the correlation of the two sections' counts about their day
+  # means at the occasions both were counted, and n_AB the days on which they
+  # pair. Identical day samples give exactly Rasmussen's term with a
+  # cross-product for the sum of squares, sections sharing no day give 0, and
+  # the covariance never exceeds what the sections' own variances allow. It is
+  # not read off a pooled within-day variance: pooled and per-section variances
+  # divide by different numbers of sampled days whenever the sections' days
+  # differ, and their difference is then no covariance; a cross-product scaled
+  # by the overlap alone can exceed both variances.
   shared_times <- isTRUE(design$shared_count_times)
   n_unpaired <- 0L
   if (shared_times) {
@@ -4847,41 +4849,53 @@ section_effort_cross_covariance <- function(design, target, cells) {
     pop <- stratum_population_days(design$calendar, strata_cols, design$date_col) # nolint: object_usage_linter
     pop_h <- stratum_key(pop)
   }
+  # One section's occasions on one day, ordered by time.
+  day_counts <- function(sec, h, day) {
+    i <- which(occ_h == h & occ_day == day & occ_sec == sec)
+    list(time = occ_time[i][order(occ_time[i])], y = occ$.value[i][order(occ_time[i])])
+  }
+  # A section's own within-day variance in one stratum, as its own row has it.
+  own_within <- function(sec, h) {
+    days <- unique(occ_day[occ_h == h & occ_sec == sec])
+    ss <- vapply(days, function(day) {
+      y <- day_counts(sec, h, day)$y
+      sum((y - mean(y))^2)
+    }, numeric(1L))
+    k <- vapply(days, function(day) length(day_counts(sec, h, day)$y), numeric(1L))
+    rasmussen_within_var(ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
+  }
   within_cov <- function(a, b, h) {
     in_h <- occ_h == h
-    days <- intersect(occ_day[in_h & occ_sec == a], occ_day[in_h & occ_sec == b])
-    if (length(days) == 0L) {
-      return(0)
-    }
-    cp <- numeric(length(days))
-    k <- numeric(length(days))
-    for (i in seq_along(days)) {
-      ia <- which(in_h & occ_day == days[[i]] & occ_sec == a)
-      ib <- which(in_h & occ_day == days[[i]] & occ_sec == b)
-      ta <- occ_time[ia]
-      tb <- occ_time[ib]
+    days_a <- unique(occ_day[in_h & occ_sec == a])
+    days_b <- unique(occ_day[in_h & occ_sec == b])
+    cp <- 0
+    ss_a <- 0
+    ss_b <- 0
+    n_ab <- 0L
+    for (day in intersect(days_a, days_b)) {
+      ca <- day_counts(a, h, day)
+      cb <- day_counts(b, h, day)
       # Paired only at the same known occasions, each counted once -- the rule
       # the effort lake row pools by. Otherwise the day adds nothing, as two
       # independent sections would.
-      paired <- !anyNA(c(ta, tb)) && !anyDuplicated(ta) && !anyDuplicated(tb) &&
-        identical(sort(ta), sort(tb))
-      if (paired) {
-        ya <- occ$.value[ia][order(ta)]
-        yb <- occ$.value[ib][order(tb)]
-        cp[[i]] <- sum((ya - mean(ya)) * (yb - mean(yb)))
-        k[[i]] <- length(ya)
-      } else {
+      paired <- !anyNA(c(ca$time, cb$time)) && !anyDuplicated(ca$time) &&
+        !anyDuplicated(cb$time) && identical(ca$time, cb$time)
+      if (!paired) {
         n_unpaired <<- n_unpaired + 1L
-        k[[i]] <- mean(c(length(ia), length(ib)))
+        next
       }
+      da <- ca$y - mean(ca$y)
+      db <- cb$y - mean(cb$y)
+      cp <- cp + sum(da * db)
+      ss_a <- ss_a + sum(da^2)
+      ss_b <- ss_b + sum(db^2)
+      n_ab <- n_ab + 1L
     }
-    k_bar <- mean(k)
-    if (k_bar <= 1) {
+    if (n_ab == 0L || ss_a == 0 || ss_b == 0) {
       return(0)
     }
-    n_ab <- length(days)
-    s_h <- if (identical(target, "sampled_days")) n_ab else pop$.N_avail[match(h, pop_h)]
-    (s_h / n_ab) * sum(cp) / (k_bar * (k_bar - 1))
+    cp / sqrt(ss_a * ss_b) * sqrt(own_within(a, h) * own_within(b, h)) *
+      n_ab / sqrt(length(days_a) * length(days_b))
   }
 
   pair_cov <- function(a, b) {

@@ -223,3 +223,33 @@ test_that("#414: unpaired occasions add nothing and say so", {
   off <- stt_lake_var(estimate_total_catch, stt_design(FALSE, cnt), "period_total") # nolint: object_usage_linter
   expect_equal(stt_lake_var(estimate_total_catch, d, "period_total"), off, tolerance = 1e-10) # nolint: object_usage_linter
 })
+
+test_that("#414: partially overlapping days cannot push the covariance past the variances", {
+  # Two sampled days each, one shared, ten population days. Scaling the shared
+  # cross-product by the overlap alone gave a covariance of 1000 against
+  # section variances of 500 each, an invalid matrix and an NA lake SE (Codex,
+  # second review). The overlapping-samples form gives
+  # rho * sqrt(500 * 500) * 1 / sqrt(2 * 2) = 250.
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:9, day_type = "all")
+  mk <- function(sec, day, am, pm) {
+    data.frame(
+      date = as.Date("2024-06-01") + day, day_type = "all", section = sec,
+      count_time = c(9, 15), n = c(am, pm)
+    )
+  }
+  cnt <- rbind(mk("A", 0, 10, 30), mk("A", 1, 20, 20), mk("B", 0, 10, 30), mk("B", 2, 20, 20))
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_sections(d, data.frame(section = c("A", "B")), # nolint: object_usage_linter
+    section_col = section, shared_count_times = TRUE # nolint: object_usage_linter
+  )
+  d <- suppressWarnings(suppressMessages(add_counts(d, cnt, count_col = "n", count_time_col = count_time))) # nolint: object_usage_linter
+  e <- suppressWarnings(suppressMessages(estimate_effort(d, target = "period_total")))$estimates # nolint: object_usage_linter
+  own <- e$se_within[e$section %in% c("A", "B")]^2
+  expect_equal(own, c(500, 500))
+  cells <- lapply(c(A = "A", B = "B"), function(s) {
+    list(strata = data.frame(day_type = "all"), effort = e$estimate[e$section == s], rate = 1)
+  })
+  cross <- section_effort_cross_covariance(d, "period_total", cells) # nolint: object_usage_linter
+  expect_equal(cross["A", "B"], 250)
+  expect_lte(abs(cross["A", "B"]), sqrt(prod(own)))
+})
