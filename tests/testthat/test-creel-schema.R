@@ -410,3 +410,161 @@ test_that("count_time_col prints under counts", {
   expect_length(time_at, 1L)
   expect_true(all(time_at > counts_at))
 })
+
+
+## zip_code_col (#531) -------------------------------------------------------
+
+test_that("zip_code_col is carried on the schema", {
+  # summarize_by_zip() and summarize_by_county() read a ZIP column. Without a
+  # schema field for it, a loader could carry the column only when the source
+  # already called it `zip_code`.
+  s <- creel_schema(
+    survey_type  = "instantaneous",
+    zip_code_col = "AnglerZip"
+  )
+
+  expect_equal(s$zip_code_col, "AnglerZip")
+})
+
+test_that("zip_code_col is optional, so an existing schema still validates", {
+  # No estimator needs a ZIP; requiring one would break every schema written
+  # before #531.
+  s <- creel_schema(
+    survey_type       = "instantaneous",
+    date_col          = "SurveyDate",
+    catch_col         = "TotalCatch",
+    effort_col        = "EffortHours",
+    trip_status_col   = "TripStatus",
+    count_col         = "AnglerCount",
+    catch_uid_col     = "CatchID",
+    interview_uid_col = "InterviewID",
+    species_col       = "Species",
+    catch_count_col   = "FishCount",
+    catch_type_col    = "CatchCategory",
+    length_uid_col    = "LengthID",
+    length_mm_col     = "LengthMM",
+    length_type_col   = "LengthType"
+  )
+
+  expect_silent(validate_creel_schema(s))
+  expect_null(s$zip_code_col)
+})
+
+test_that("adding zip_code_col rebinds no positional argument", {
+  # Appended last for this reason: inserted earlier, it would take the value a
+  # positional call meant for the argument it displaced, and construction is
+  # permissive enough that nothing would say so.
+  formal_names <- names(formals(creel_schema))
+
+  expect_identical(utils::tail(formal_names, 1L), "zip_code_col")
+  s <- creel_schema("instantaneous", "int", "cnt", "catch", "len", "SurveyDate")
+  expect_equal(s$date_col, "SurveyDate")
+})
+
+test_that("zip_code_col prints under interviews", {
+  # It is an interviews column; listing it under another table would send a
+  # reader to the wrong frame -- the mistake #170 fixed for n_counted_col.
+  s <- creel_schema(
+    survey_type  = "instantaneous",
+    zip_code_col = "AnglerZip",
+    count_col    = "AnglerCount"
+  )
+  out <- capture.output(print(s))
+
+  interviews_at <- grep("interviews:", out)
+  counts_at     <- grep("counts:", out)
+  zip_at        <- grep("zip_code -> AnglerZip", out, fixed = TRUE)
+
+  expect_length(zip_at, 1L)
+  expect_true(zip_at > interviews_at && zip_at < counts_at)
+})
+
+## free-label value maps (#532) -----------------------------------------------
+
+test_that("value_maps translates angler_method and species_sought codes", {
+  # An agency that codes method as 1/2 had no way to say what the codes mean,
+  # so summarize_by_method() reported "1" and "2" or the caller recoded by hand.
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(
+      angler_method  = c("1" = "boat", "2" = "shore"),
+      species_sought = c(WAE = "walleye", ANY = "anything")
+    )
+  )
+
+  expect_equal(s$value_maps$angler_method, c("1" = "boat", "2" = "shore"))
+  expect_equal(s$value_maps$species_sought, c(WAE = "walleye", ANY = "anything"))
+})
+
+test_that("a free-label map accepts labels no vocabulary lists", {
+  # Methods and species are the agency's own, so any label is a valid target --
+  # the check that refuses "compleet" for trip_status must not apply here.
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(angler_method = c("7" = "spear (through ice)"))
+  )
+
+  expect_equal(unname(s$value_maps$angler_method), "spear (through ice)")
+})
+
+test_that("a free-label map refuses an empty or missing label", {
+  # With no vocabulary to check against, an empty target is the one mistake
+  # left to catch: it would translate a real code into nothing.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = c("1" = "boat", "2" = ""))
+    ),
+    "empty or missing label",
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(species_sought = c(WAE = NA_character_))
+    ),
+    "empty or missing label",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("a free-label map still refuses one source code twice", {
+  # Free labels relax the target check only; a code with two meanings is as
+  # ambiguous here as anywhere.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = c("1" = "boat", "1" = "shore"))
+    ),
+    "same source code twice",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("free-label columns stay out of creel_vocabulary()", {
+  # creel_vocabulary() lists the literals tidycreel's own filters match on.
+  # Nothing filters on a method or species label, so neither belongs there.
+  expect_false(any(c("angler_method", "species_sought") %in% names(creel_vocabulary())))
+  expect_error(creel_vocabulary("angler_method"), "no canonical vocabulary")
+})
+
+test_that("value_maps refuses an NA source code", {
+  # nzchar(NA) is TRUE, so an NA name used to pass the "fully named" check. No
+  # source value can match an NA code, so the entry would be dead on arrival.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = stats::setNames("complete", NA_character_))
+    ),
+    "fully named",
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = stats::setNames("boat", NA_character_))
+    ),
+    "fully named",
+    class = "creel_error_schema_validation"
+  )
+})
