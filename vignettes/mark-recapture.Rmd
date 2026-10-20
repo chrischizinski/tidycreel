@@ -321,8 +321,8 @@ Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler Survey Methods
 and Their Applications in Fisheries Management.* AFS Special Publication 25.
 American Fisheries Society.
 
-Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-estimating effort, harvest, and abundance. In A. V. Zale et al. (Eds.),
+Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+estimation of effort, harvest, and released catch. In A. V. Zale et al. (Eds.),
 *Fisheries Techniques* (3rd ed., Ch. 19). American Fisheries Society.
 
 Chapman, D. G. (1952). Inverse, multiple and sequential sample censuses.

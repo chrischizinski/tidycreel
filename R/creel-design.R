@@ -237,8 +237,11 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   site-circuit sampling unit with its inclusion probability components
 #'   (`p_site` and `p_period`).
 #' @param p_site Tidy selector for the site sampling probability column in
-#'   `sampling_frame`. Required when `survey_type = "bus_route"`. Values must
-#'   be in `(0, 1]` and must sum to `1.0` within each circuit (tolerance 1e-6).
+#'   `sampling_frame`: the probability that a pass of the circuit selects
+#'   the site. Values must be in `(0, 1]` and must sum to `1.0` within each
+#'   circuit (tolerance 1e-6). For a bus route on which the clerk visits every
+#'   site on every pass, give `wait_time` and `circuit_time` instead. A
+#'   bus-route design needs one of the two.
 #' @param p_period Tidy selector for the period sampling probability column in
 #'   `sampling_frame`, OR a scalar numeric value in `(0, 1]` that applies
 #'   globally to all rows. Required when `survey_type = "bus_route"`.
@@ -367,6 +370,19 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   computer's own zone. Shift lengths across a daylight-saving change, and
 #'   record times given as POSIXct, are read in it.
 #'
+#' @param wait_time,circuit_time Tidy selectors for two columns of
+#'   `sampling_frame`, used together in place of `p_site` on a bus route
+#'   where the clerk visits every site on every pass (Robson and Jones 1989).
+#'   `wait_time` is the scheduled wait at the site. `circuit_time` is the time
+#'   to complete the whole circuit, travel included, and is constant within a
+#'   circuit. Both must be in the same unit. The site's weight is then
+#'   `p_site = wait_time / circuit_time`: the share of the circuit during
+#'   which a party at that site can be seen. These shares add up to less
+#'   than 1 when the route has travel time, and the total wait must not
+#'   exceed the circuit time. This is the weighting in Pollock et al. (1994,
+#'   eq. 15.10). Encoding the waits as shares of the total wait, so that they
+#'   add up to 1, would understate the totals by the travelling fraction of
+#'   the circuit.
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
 #'   \item{date_col}{Character name of the date column}
@@ -391,17 +407,29 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #' - Site column (if provided) is character or factor
 #' - (bus_route only) All `p_site` and `p_period` values are in `(0, 1]`
 #' - (bus_route only) `p_site` values sum to 1.0 within each circuit
-#'   (tolerance 1e-6)
+#'   (tolerance 1e-6); or, with `wait_time` and `circuit_time`, waits are
+#'   positive, the circuit time is constant within each circuit, and the
+#'   waits within a circuit add up to no more than its circuit time
 #' - (bus_route only) `p_period` values are constant within each circuit
 #'   (tolerance 1e-10)
 #'
 #' @references
-#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
-#' & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed., pp. 883--919).
-#' American Fisheries Society. Eq. 19.4 and 19.5 define the bus-route
-#' estimators; pp. 883--884 define the inclusion probability
-#' \eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}}.
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+#' estimation of effort, harvest, and released catch. In A. V. Zale,
+#' D. L. Parrish, & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed.,
+#' pp. 883--919). American Fisheries Society. Eq. 19.4 and 19.5 (pp.
+#' 911--912) are the Horvitz--Thompson totals the estimators use, with
+#' \eqn{\pi_i} "the total probability that the ith sampling unit is included
+#' in the sample".
+#'
+#' Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler survey methods
+#' and their applications in fisheries management*. American Fisheries
+#' Society Special Publication 25. Section 15.5.3, eq. 15.10--15.11: the
+#' bus-route estimator, with each site weighted by its wait over the circuit
+#' time.
+#'
+#' Robson, D., & Jones, C. M. (1989). The theoretical basis of an access site
+#' angler survey design. *Biometrics*, 45, 83--98. \doi{10.2307/2532036}
 #'
 #' @examples
 #' # Basic design with single stratum
@@ -460,6 +488,25 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   p_period = p_period
 #' )
 #'
+#' # Bus route that visits every site on each pass: a 360-minute circuit with
+#' # 195 minutes of waits, so each site's weight is its wait / 360
+#' sf_wait <- data.frame(
+#'   site = c("A", "B", "C", "D", "E"),
+#'   wait = c(30, 30, 15, 60, 60),
+#'   circuit_minutes = 360
+#' )
+#' design_wait <- creel_design(
+#'   calendar_br,
+#'   date = date,
+#'   strata = day_type,
+#'   survey_type = "bus_route",
+#'   sampling_frame = sf_wait,
+#'   site = site,
+#'   wait_time = wait,
+#'   circuit_time = circuit_minutes,
+#'   p_period = 0.5
+#' )
+#'
 #' @family "Survey Design"
 #' @export
 creel_design <- function(
@@ -483,7 +530,10 @@ creel_design <- function(
   open_start = NULL,
   day_start = NULL,
   night_date = "start",
-  tz = NULL
+  tz = NULL,
+  # Appended so that existing positional calls bind as before (GH #539).
+  wait_time = NULL,
+  circuit_time = NULL
 ) {
   # A grouped input would carry its grouping into every dplyr step that reads
   # the stored table (GH #441).
@@ -548,6 +598,21 @@ creel_design <- function(
   # recorded as the column it chose, and p_period as its column or its number.
   frame_step <- list()
 
+  # wait_time and circuit_time weight bus-route sites; on any other survey type
+  # they would be dropped without effect, so they are refused.
+  wait_quo <- rlang::enquo(wait_time)
+  circuit_time_quo <- rlang::enquo(circuit_time)
+  if (!identical(survey_type, "bus_route") &&
+        (!rlang::quo_is_null(wait_quo) || !rlang::quo_is_null(circuit_time_quo))) {
+    cli::cli_abort(
+      c(
+        "{.arg wait_time} and {.arg circuit_time} apply only when {.arg survey_type} is {.val bus_route}.",
+        "x" = "{.arg survey_type} is {.val {survey_type}}."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+
   # --- Bus-Route branch ---
   bus_route <- NULL
   if (identical(survey_type, "bus_route")) {
@@ -561,18 +626,55 @@ creel_design <- function(
       )
     }
 
-    # Resolve p_site column (tidy selector, required)
+    # The site's weight comes either as a selection probability (p_site) or,
+    # on a route that visits every site each pass, as wait / circuit time
+    # (Robson & Jones 1989; Pollock et al. 1994, eq. 15.10). Shares of the
+    # circuit sum to less than 1 when the route has travel time, so they
+    # cannot be squeezed into p_site's sum-to-1 rule (GH #539).
     p_site_quo <- rlang::enquo(p_site)
-    if (rlang::quo_is_null(p_site_quo)) {
+    by_wait <- !rlang::quo_is_null(wait_quo) || !rlang::quo_is_null(circuit_time_quo)
+    if (by_wait && !rlang::quo_is_null(p_site_quo)) {
       cli::cli_abort(
         c(
-          "{.arg p_site} is required when {.arg survey_type} is {.val bus_route}.",
-          "i" = "Specify the column in {.arg sampling_frame} that holds site sampling probabilities."
+          "Supply either {.arg p_site} or {.arg wait_time} and {.arg circuit_time}, not both.",
+          "i" = "With {.arg wait_time} and {.arg circuit_time}, the site's weight is wait / circuit time."
         ),
         class = "creel_error_invalid_input"
       )
     }
-    p_site_col <- resolve_single_col(p_site_quo, sampling_frame, "p_site", rlang::caller_env())
+    if (by_wait && (rlang::quo_is_null(wait_quo) || rlang::quo_is_null(circuit_time_quo))) {
+      cli::cli_abort(
+        c(
+          "{.arg wait_time} and {.arg circuit_time} must be supplied together.",
+          "i" = "The site's weight is wait / circuit time; one without the other has no weight."
+        ),
+        class = "creel_error_invalid_input"
+      )
+    }
+    if (!by_wait && rlang::quo_is_null(p_site_quo)) {
+      cli::cli_abort(
+        c(
+          "{.arg p_site} is required when {.arg survey_type} is {.val bus_route}.",
+          "i" = "Specify the column in {.arg sampling_frame} that holds site sampling probabilities.",
+          "i" = paste(
+            "On a route that visits every site each pass, give {.arg wait_time} and",
+            "{.arg circuit_time} instead."
+          )
+        ),
+        class = "creel_error_invalid_input"
+      )
+    }
+    wait_time_col <- NULL
+    circuit_time_col <- NULL
+    if (by_wait) {
+      wait_time_col <- resolve_single_col(wait_quo, sampling_frame, "wait_time", rlang::caller_env())
+      circuit_time_col <- resolve_single_col(
+        circuit_time_quo, sampling_frame, "circuit_time", rlang::caller_env()
+      )
+      p_site_col <- ".p_site"
+    } else {
+      p_site_col <- resolve_single_col(p_site_quo, sampling_frame, "p_site", rlang::caller_env())
+    }
 
     # Resolve site column in sampling_frame (tidy selector, required for bus_route)
     site_frame_col <- NULL
@@ -611,8 +713,10 @@ creel_design <- function(
       )
     }
 
-    frame_step <- list(site = site_frame_col, p_site = p_site_col, circuit = circuit_col,
-                       p_period = if (is.null(p_period_scalar)) p_period_col else p_period_scalar)
+    frame_step <- list(site = site_frame_col, p_site = if (by_wait) NULL else p_site_col,
+                       circuit = circuit_col,
+                       p_period = if (is.null(p_period_scalar)) p_period_col else p_period_scalar,
+                       wait_time = wait_time_col, circuit_time = circuit_time_col)
 
     # Build internal bus_route data frame with standardized column names
     br_df <- sampling_frame
@@ -629,6 +733,18 @@ creel_design <- function(
       p_period_col <- ".p_period"
     }
 
+    # The share of the circuit spent at the site. Values that are not positive
+    # numbers are refused in validate_creel_design(), before this is used.
+    if (by_wait) {
+      waits <- br_df[[wait_time_col]]
+      circuit_times <- br_df[[circuit_time_col]]
+      br_df[[".p_site"]] <- if (is.numeric(waits) && is.numeric(circuit_times)) {
+        waits / circuit_times
+      } else {
+        NA_real_
+      }
+    }
+
     # Compute pi_i = p_site * p_period
     br_df[[".pi_i"]] <- br_df[[p_site_col]] * br_df[[p_period_col]]
 
@@ -639,7 +755,9 @@ creel_design <- function(
       circuit_col = circuit_col,
       p_site_col = p_site_col,
       p_period_col = p_period_col,
-      pi_i_col = ".pi_i"
+      pi_i_col = ".pi_i",
+      wait_time_col = wait_time_col,
+      circuit_time_col = circuit_time_col
     )
   }
 
@@ -922,7 +1040,9 @@ creel_design <- function(
     list(date = date_col, strata = strata_cols,
          site = if (is.null(frame_step$site)) site_col else frame_step$site,
          p_site = frame_step$p_site, circuit = frame_step$circuit,
-         p_period = frame_step$p_period, effort_type = effort_type,
+         p_period = frame_step$p_period,
+         wait_time = frame_step$wait_time, circuit_time = frame_step$circuit_time,
+         effort_type = effort_type,
          design_type = survey_type, survey_type = survey_type,
          day_start = day_start, night_date = night_date,
          tz = if (is.null(night)) tz else night$tz,
@@ -1078,6 +1198,53 @@ validate_creel_design <- function(x) {
     p_site_col <- x$bus_route$p_site_col
     p_period_col <- x$bus_route$p_period_col
     circuit_col <- x$bus_route$circuit_col
+    wait_time_col <- x$bus_route$wait_time_col
+    circuit_time_col <- x$bus_route$circuit_time_col
+    by_wait <- !is.null(wait_time_col)
+
+    # Wait-time weighting (GH #539): checked on the inputs, so a bad wait is
+    # reported as a wait rather than as the p_site it became.
+    if (by_wait) {
+      for (col in c(wait_time_col, circuit_time_col)) {
+        vals <- br[[col]]
+        if (!is.numeric(vals) || any(is.na(vals) | vals <= 0)) {
+          bad <- if (is.numeric(vals)) which(is.na(vals) | vals <= 0) else seq_along(vals) # nolint: object_usage_linter
+          cli::cli_abort(
+            c(
+              "{.field {col}} must hold positive numbers.",
+              "x" = "{length(bad)} value{?s} not a positive number at row{?s} {bad}.",
+              "i" = "{.arg wait_time} and {.arg circuit_time} are durations in the same unit."
+            ),
+            class = "creel_error_invalid_input"
+          )
+        }
+      }
+      for (circ in unique(br[[circuit_col]])) {
+        circ_rows <- br[[circuit_col]] == circ
+        ct <- br[[circuit_time_col]][circ_rows]
+        if (max(ct) - min(ct) > 1e-10) {
+          cli::cli_abort(
+            c(
+              "{.field {circuit_time_col}} must be constant within each circuit.",
+              "x" = "Circuit {.val {circ}} has circuit times {.val {unique(ct)}}.",
+              "i" = "The circuit time is the time to complete the whole circuit, travel included."
+            ),
+            class = "creel_error_invalid_input"
+          )
+        }
+        total_wait <- sum(br[[wait_time_col]][circ_rows])
+        if (total_wait > ct[[1]] * (1 + 1e-6)) {
+          cli::cli_abort(
+            c(
+              "The waits in a circuit cannot add up to more than its circuit time.",
+              "x" = "Circuit {.val {circ}}: total wait {total_wait}, circuit time {ct[[1]]}.",
+              "i" = "The circuit time includes every wait and the travel between sites."
+            ),
+            class = "creel_error_invalid_input"
+          )
+        }
+      }
+    }
 
     # All p_site values must be in (0, 1]
     p_site_vals <- br[[p_site_col]]
@@ -1107,9 +1274,11 @@ validate_creel_design <- function(x) {
       )
     }
 
-    # p_site values must sum to 1.0 per circuit (tolerance 1e-6)
+    # p_site values must sum to 1.0 per circuit (tolerance 1e-6). Shares of the
+    # circuit from wait times sum to less than 1 when there is travel, and were
+    # checked against the circuit time above.
     circuits <- unique(br[[circuit_col]])
-    for (circ in circuits) {
+    for (circ in if (by_wait) character() else circuits) {
       circ_rows <- br[[circuit_col]] == circ
       circ_sum <- sum(br[[p_site_col]][circ_rows])
       if (abs(circ_sum - 1.0) > 1e-6) {
@@ -4547,11 +4716,11 @@ get_sampling_frame <- function(design) {
 #'   for designs without an explicit circuit column).
 #'
 #' @references
-#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
-#' & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed., pp. 883--919).
-#' American Fisheries Society. Definition of \eqn{\pi_i} for two-stage
-#' bus-route sampling, used in Eq. 19.4 and 19.5.
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+#' estimation of effort, harvest, and released catch. In A. V. Zale,
+#' D. L. Parrish, & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed.,
+#' pp. 883--919). American Fisheries Society. \eqn{\pi_i} as used in
+#' Eq. 19.4 and 19.5.
 #'
 #' @seealso [creel_design()], [get_sampling_frame()]
 #'
@@ -4621,8 +4790,8 @@ get_inclusion_probs <- function(design) {
 #'   NA when n_interviewed = 0).
 #'
 #' @references
-#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+#' estimation of effort, harvest, and released catch. In A. V. Zale, D. L. Parrish,
 #' & T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed., pp. 883--919).
 #' American Fisheries Society. Enumeration expansion factor used in Eq. 19.4
 #' and 19.5 for bus-route effort and harvest estimation.

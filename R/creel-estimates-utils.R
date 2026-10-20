@@ -22,8 +22,8 @@
 #'   \item{e_i_over_pi_i}{Site contribution to Horvitz-Thompson estimate}
 #'
 #' @references
-#' Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-#' estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+#' Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+#' estimation of effort, harvest, and released catch. In A. V. Zale, D. L. Parrish,
 #' & T. M. Sutton (Eds.), *Fisheries Techniques* (3rd ed., pp. 883-919).
 #' American Fisheries Society.
 #'

@@ -61,8 +61,8 @@ get_enumeration_counts(design2)
 
 }
 \references{
-Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
+Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+estimation of effort, harvest, and released catch. In A. V. Zale, D. L. Parrish,
 & T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed., pp. 883--919).
 American Fisheries Society. Enumeration expansion factor used in Eq. 19.4
 and 19.5 for bus-route effort and harvest estimation.
@@ -71,7 +71,7 @@ and 19.5 for bus-route effort and harvest estimation.
 \code{\link[=creel_design]{creel_design()}}, \code{\link[=add_interviews]{add_interviews()}}, \code{\link[=get_sampling_frame]{get_sampling_frame()}},
 \code{\link[=get_inclusion_probs]{get_inclusion_probs()}}
 
-Other "Bus-Route Helpers": 
+Other "Bus-Route Helpers":
 \code{\link{get_inclusion_probs}()},
 \code{\link{get_sampling_frame}()},
 \code{\link{get_site_contributions}()}

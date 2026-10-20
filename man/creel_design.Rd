@@ -25,7 +25,9 @@ creel_design(
   open_start = NULL,
   day_start = NULL,
   night_date = "start",
-  tz = NULL
+  tz = NULL,
+  wait_time = NULL,
+  circuit_time = NULL
 )
 }
 \arguments{
@@ -64,8 +66,11 @@ site-circuit sampling unit with its inclusion probability components
 (\code{p_site} and \code{p_period}).}
 
 \item{p_site}{Tidy selector for the site sampling probability column in
-\code{sampling_frame}. Required when \code{survey_type = "bus_route"}. Values must
-be in \verb{(0, 1]} and must sum to \code{1.0} within each circuit (tolerance 1e-6).}
+\code{sampling_frame}: the probability that a pass of the circuit selects
+the site. Values must be in \verb{(0, 1]} and must sum to \code{1.0} within each
+circuit (tolerance 1e-6). For a bus route on which the clerk visits every
+site on every pass, give \code{wait_time} and \code{circuit_time} instead. A
+bus-route design needs one of the two.}
 
 \item{p_period}{Tidy selector for the period sampling probability column in
 \code{sampling_frame}, OR a scalar numeric value in \verb{(0, 1]} that applies
@@ -205,6 +210,20 @@ it) is supported.}
 for night designs; defaults to \code{getOption("tidycreel.tz")}, never to the
 computer's own zone. Shift lengths across a daylight-saving change, and
 record times given as POSIXct, are read in it.}
+
+\item{wait_time, circuit_time}{Tidy selectors for two columns of
+\code{sampling_frame}, used together in place of \code{p_site} on a bus route
+where the clerk visits every site on every pass (Robson and Jones 1989).
+\code{wait_time} is the scheduled wait at the site. \code{circuit_time} is the time
+to complete the whole circuit, travel included, and is constant within a
+circuit. Both must be in the same unit. The site's weight is then
+\code{p_site = wait_time / circuit_time}: the share of the circuit during
+which a party at that site can be seen. These shares add up to less
+than 1 when the route has travel time, and the total wait must not
+exceed the circuit time. This is the weighting in Pollock et al. (1994,
+eq. 15.10). Encoding the waits as shares of the total wait, so that they
+add up to 1, would understate the totals by the travelling fraction of
+the circuit.}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:
@@ -244,7 +263,9 @@ belongs to no stratum's population of days
 \item Site column (if provided) is character or factor
 \item (bus_route only) All \code{p_site} and \code{p_period} values are in \verb{(0, 1]}
 \item (bus_route only) \code{p_site} values sum to 1.0 within each circuit
-(tolerance 1e-6)
+(tolerance 1e-6); or, with \code{wait_time} and \code{circuit_time}, waits are
+positive, the circuit time is constant within each circuit, and the
+waits within a circuit add up to no more than its circuit time
 \item (bus_route only) \code{p_period} values are constant within each circuit
 (tolerance 1e-10)
 }
@@ -307,14 +328,43 @@ design_br <- creel_design(
   p_period = p_period
 )
 
+# Bus route that visits every site on each pass: a 360-minute circuit with
+# 195 minutes of waits, so each site's weight is its wait / 360
+sf_wait <- data.frame(
+  site = c("A", "B", "C", "D", "E"),
+  wait = c(30, 30, 15, 60, 60),
+  circuit_minutes = 360
+)
+design_wait <- creel_design(
+  calendar_br,
+  date = date,
+  strata = day_type,
+  survey_type = "bus_route",
+  sampling_frame = sf_wait,
+  site = site,
+  wait_time = wait,
+  circuit_time = circuit_minutes,
+  p_period = 0.5
+)
+
 }
 \references{
-Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-estimating effort, harvest, and abundance. In A. V. Zale, D. L. Parrish,
-& T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed., pp. 883--919).
-American Fisheries Society. Eq. 19.4 and 19.5 define the bus-route
-estimators; pp. 883--884 define the inclusion probability
-\eqn{\pi_i = p_{\text{site}} \times p_{\text{period}}}.
+Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+estimation of effort, harvest, and released catch. In A. V. Zale,
+D. L. Parrish, & T. M. Sutton (Eds.), \emph{Fisheries Techniques} (3rd ed.,
+pp. 883--919). American Fisheries Society. Eq. 19.4 and 19.5 (pp.
+911--912) are the Horvitz--Thompson totals the estimators use, with
+\eqn{\pi_i} "the total probability that the ith sampling unit is included
+in the sample".
+
+Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). \emph{Angler survey methods
+and their applications in fisheries management}. American Fisheries
+Society Special Publication 25. Section 15.5.3, eq. 15.10--15.11: the
+bus-route estimator, with each site weighted by its wait over the circuit
+time.
+
+Robson, D., & Jones, C. M. (1989). The theoretical basis of an access site
+angler survey design. \emph{Biometrics}, 45, 83--98. \doi{10.2307/2532036}
 }
 \seealso{
 Other "Survey Design":

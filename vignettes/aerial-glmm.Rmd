@@ -400,8 +400,8 @@ have 8 or more survey days.
   *North American Journal of Fisheries Management*, 38(1), 194–209.
   [https://doi.org/10.1002/nafm.10010](https://doi.org/10.1002/nafm.10010)
 
-- Jones, C. M., & Pollock, K. H. (2012). Recreational survey methods:
-  estimation of effort, harvest, and abundance. Chapter 19 in
+- Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods:
+  estimation of effort, harvest, and released catch. Chapter 19 in
   *Fisheries Techniques* (3rd ed.), pp. 883–919. American Fisheries Society.
 
 - Smucker, B. J., Lorantas, R. M., & Rosenberger, J. L. (2010). Correcting
