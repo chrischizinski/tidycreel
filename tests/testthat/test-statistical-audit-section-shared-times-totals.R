@@ -224,32 +224,151 @@ test_that("#414: unpaired occasions add nothing and say so", {
   expect_equal(stt_lake_var(estimate_total_catch, d, "period_total"), off, tolerance = 1e-10) # nolint: object_usage_linter
 })
 
-test_that("#414: partially overlapping days cannot push the covariance past the variances", {
-  # Two sampled days each, one shared, ten population days. Scaling the shared
-  # cross-product by the overlap alone gave a covariance of 1000 against
-  # section variances of 500 each, an invalid matrix and an NA lake SE (Codex,
-  # second review). The overlapping-samples form gives
-  # rho * sqrt(500 * 500) * 1 / sqrt(2 * 2) = 250.
+stt_one_stratum <- function(cnt) {
   cal <- data.frame(date = as.Date("2024-06-01") + 0:9, day_type = "all")
-  mk <- function(sec, day, am, pm) {
-    data.frame(
-      date = as.Date("2024-06-01") + day, day_type = "all", section = sec,
-      count_time = c(9, 15), n = c(am, pm)
-    )
-  }
-  cnt <- rbind(mk("A", 0, 10, 30), mk("A", 1, 20, 20), mk("B", 0, 10, 30), mk("B", 2, 20, 20))
   d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   d <- add_sections(d, data.frame(section = c("A", "B")), # nolint: object_usage_linter
     section_col = section, shared_count_times = TRUE # nolint: object_usage_linter
   )
-  d <- suppressWarnings(suppressMessages(add_counts(d, cnt, count_col = "n", count_time_col = count_time))) # nolint: object_usage_linter
+  suppressWarnings(suppressMessages(add_counts(d, cnt, count_col = "n", count_time_col = count_time))) # nolint: object_usage_linter
+}
+stt_mk <- function(sec, day, am, pm, times = c(9, 15)) {
+  data.frame(
+    date = as.Date("2024-06-01") + day, day_type = "all", section = sec,
+    count_time = times, n = c(am, pm)
+  )
+}
+# The within-day cross term straight from the helper, with unit rates.
+stt_cross <- function(d) {
   e <- suppressWarnings(suppressMessages(estimate_effort(d, target = "period_total")))$estimates # nolint: object_usage_linter
-  own <- e$se_within[e$section %in% c("A", "B")]^2
-  expect_equal(own, c(500, 500))
   cells <- lapply(c(A = "A", B = "B"), function(s) {
     list(strata = data.frame(day_type = "all"), effort = e$estimate[e$section == s], rate = 1)
   })
-  cross <- section_effort_cross_covariance(d, "period_total", cells) # nolint: object_usage_linter
-  expect_equal(cross["A", "B"], 250)
-  expect_lte(abs(cross["A", "B"]), sqrt(prod(own)))
+  list(
+    own = e$se_within[e$section %in% c("A", "B")]^2,
+    cross = suppressMessages(section_effort_cross_covariance(d, "period_total", cells))["A", "B"] # nolint: object_usage_linter
+  )
+}
+
+test_that("#414: partially overlapping days cannot push the covariance past the variances", {
+  # Two sampled days each, one shared, ten population days; the unshared days
+  # have no within-day spread. Scaling the shared cross-product by the overlap
+  # alone gave 1000 against section variances of 500 each, an invalid matrix
+  # and an NA lake SE (Codex, second review). Each section's own Rasmussen
+  # constant gives (10 / (2 * 2 * 1)) * 200 = 500: correlation 1, at the bound.
+  d <- stt_one_stratum(rbind(
+    stt_mk("A", 0, 10, 30), stt_mk("A", 1, 20, 20), stt_mk("B", 0, 10, 30), stt_mk("B", 2, 20, 20)
+  ))
+  got <- stt_cross(d)
+  expect_equal(got$own, c(500, 500))
+  expect_equal(got$cross, 500)
+  expect_lte(abs(got$cross), sqrt(prod(got$own)) + 1e-8)
+})
+
+test_that("#414: days counted at different occasions add nothing to the covariance", {
+  # Day 1 pairs, (19, 21) in both; day 2 is counted at different times. Its
+  # spread is each section's own, not shared: the covariance is the paired
+  # cross-product alone, 2.5 * 2 = 5. Scaling a paired-day correlation by the
+  # whole own variances made it 252.5 (Codex, third review).
+  d <- stt_one_stratum(rbind(
+    stt_mk("A", 0, 19, 21), stt_mk("A", 1, 10, 30),
+    stt_mk("B", 0, 19, 21), stt_mk("B", 1, 10, 30, times = c(10, 16))
+  ))
+  got <- stt_cross(d)
+  expect_equal(got$own, c(505, 505))
+  expect_equal(got$cross, 5)
+})
+
+test_that("#414: an explicit unit key without the strata still finds the shared occasions", {
+  # With unit_cols = c(date, section) the occasion table carries no stratum
+  # column, and every occasion matched no stratum: the declaration silently
+  # added nothing (Codex, third review).
+  build <- function(units) {
+    d <- creel_design(stt_calendar(), date = date, strata = day_type) # nolint: object_usage_linter
+    d <- add_sections(d, data.frame(section = c("A", "B")), # nolint: object_usage_linter
+      section_col = section, shared_count_times = TRUE # nolint: object_usage_linter
+    )
+    d <- suppressWarnings(suppressMessages(add_counts( # nolint: object_usage_linter
+      d, stt_counts(),
+      count_col = "n", count_time_col = count_time, unit_cols = units # nolint: object_usage_linter
+    )))
+    iv <- stt_interviews()
+    suppressWarnings(suppressMessages(add_interviews( # nolint: object_usage_linter
+      d, iv,
+      catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+      trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+    )))
+  }
+  expect_equal(
+    stt_lake_var(estimate_total_catch, build(c("date", "section")), "period_total"), # nolint: object_usage_linter
+    stt_lake_var(estimate_total_catch, stt_design(TRUE), "period_total"), # nolint: object_usage_linter
+    tolerance = 1e-10
+  )
+})
+
+# Review findings, first round (DeepSeek, Nemotron).
+
+test_that("#414: the within-day term is on the effort scale once, with unequal period lengths", {
+  # DeepSeek claimed the cell weight converted counts to effort a second time.
+  # The occasions and the count column are both multiplied by the period length
+  # in add_counts(), so the weight carries only the rate. Sections of 6 and 12
+  # hours would be off by (12 / 6)^2 if it did not.
+  cnt <- stt_counts()
+  cnt$hrs <- ifelse(cnt$section == "A", 6, 12)
+  build <- function(shared) {
+    d <- creel_design(stt_calendar(), date = date, strata = day_type) # nolint: object_usage_linter
+    d <- add_sections(d, data.frame(section = c("A", "B")), # nolint: object_usage_linter
+      section_col = section, shared_count_times = shared # nolint: object_usage_linter
+    )
+    d <- suppressWarnings(suppressMessages(add_counts( # nolint: object_usage_linter
+      d, cnt,
+      count_col = "n", count_time_col = count_time, period_length_col = hrs # nolint: object_usage_linter
+    )))
+    iv <- stt_interviews()
+    suppressWarnings(suppressMessages(add_interviews( # nolint: object_usage_linter
+      d, iv,
+      catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+      trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+    )))
+  }
+  off <- stt_lake_var(estimate_total_catch, build(FALSE), "period_total") # nolint: object_usage_linter
+  on <- stt_lake_var(estimate_total_catch, build(TRUE), "period_total") # nolint: object_usage_linter
+  effort_scale <- cnt
+  effort_scale$n <- effort_scale$n * effort_scale$hrs
+  r <- stt_rates(stt_interviews()$catch_total)
+  expected <- 2 * sum(r["A", ] * r["B", ] * stt_hand_within_cov(effort_scale, "period_total"))
+  expect_equal(on - off, expected, tolerance = 1e-8)
+})
+
+test_that("#414: the totals refuse a section that is also a stratum, as effort does", {
+  # The declaration is a claim about shared days that strata cannot have. The
+  # totals used to accept it and assume independence without saying so.
+  days <- as.Date("2024-06-03") + 0:3
+  cal <- data.frame(date = rep(days, 2), section = rep(c("A", "B"), each = 4), day_type = "weekday")
+  cnt <- rbind(
+    data.frame(date = rep(days, each = 2), section = "A", count_time = c(9, 15), n = c(10, 20)),
+    data.frame(date = rep(days, each = 2), section = "B", count_time = c(9, 15), n = c(12, 25))
+  )
+  cnt$day_type <- "weekday"
+  iv <- data.frame(
+    date = rep(days, each = 2, times = 2), section = rep(c("A", "B"), each = 8), day_type = "weekday",
+    hours_fished = rep(c(2, 3, 1.5, 4, 2.5, 3, 5, 1), 2),
+    catch_total = c(1, 2, 0, 3, 1, 1, 4, 0, 0, 1, 1, 0, 2, 0, 1, 0),
+    trip_status = "complete"
+  )
+  iv$trip_duration <- iv$hours_fished
+  d <- creel_design(cal, date = date, strata = c(day_type, section)) # nolint: object_usage_linter
+  d <- add_sections(d, data.frame(section = c("A", "B")), # nolint: object_usage_linter
+    section_col = section, shared_count_times = TRUE # nolint: object_usage_linter
+  )
+  d <- suppressWarnings(suppressMessages(add_counts(d, cnt, count_col = "n", count_time_col = count_time))) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_interviews( # nolint: object_usage_linter
+    d, iv,
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  )))
+  expect_error(
+    suppressWarnings(suppressMessages(estimate_total_catch(d, target = "period_total"))), # nolint: object_usage_linter
+    class = "creel_error_shared_times_section_strata"
+  )
 })

@@ -4824,26 +4824,30 @@ section_effort_cross_covariance <- function(design, target, cells) {
 
   # Sections declared to share their count times also share within-day error:
   # counted at the same drawn moments, they are high or low together within a
-  # day as well as across days (GH #403 for effort, #414 for the totals). Per
-  # stratum, in the same overlapping-samples form as the between-day term,
-  #   Cov_w = rho_w * sqrt(Vw_A * Vw_B) * n_AB / sqrt(n_A * n_B),
-  # where Vw is each section's own Rasmussen within-day variance over its own
-  # days, rho_w the correlation of the two sections' counts about their day
-  # means at the occasions both were counted, and n_AB the days on which they
-  # pair. Identical day samples give exactly Rasmussen's term with a
-  # cross-product for the sum of squares, sections sharing no day give 0, and
-  # the covariance never exceeds what the sections' own variances allow. It is
-  # not read off a pooled within-day variance: pooled and per-section variances
-  # divide by different numbers of sampled days whenever the sections' days
-  # differ, and their difference is then no covariance; a cross-product scaled
-  # by the overlap alone can exceed both variances.
+  # day as well as across days (GH #403 for effort, #414 for the totals).
+  # Rasmussen's within-day variance is linear in the day sums of squares,
+  # V_A = c_A * sum_d ss_Ad, with c_A fixed by the section's own sampled days,
+  # mean counts per day and target. Per stratum the covariance is the same form
+  # with cross-products, over the days on which the two sections pair:
+  #   Cov_w = sqrt(c_A * c_B) * sum_d cp_d.
+  # Identical day samples give exactly Rasmussen's term with a cross-product for
+  # the sum of squares; days the sections do not share, or share at different
+  # occasions, add nothing; and by Cauchy-Schwarz the covariance never exceeds
+  # sqrt(V_A * V_B). It is not read off a pooled within-day variance: pooled and
+  # per-section variances divide by different numbers of sampled days whenever
+  # the sections' days differ, and their difference is then no covariance.
   shared_times <- isTRUE(design$shared_count_times)
   n_unpaired <- 0L
   if (shared_times) {
     check_shared_count_times(design)
     occ <- design$within_day_counts
-    occ_h <- stratum_key(occ)
-    occ_day <- as.character(occ[[psu_col]])
+    # Each occasion is placed in its stratum and day through the unit it belongs
+    # to: the occasion table holds the unit key only, which need not include the
+    # strata (`unit_cols`).
+    unit_cols <- setdiff(names(occ), c(".count_time", ".value"))
+    at_row <- match(group_key(occ, unit_cols), group_key(design$counts, unit_cols)) # nolint: object_usage_linter
+    occ_h <- stratum_key(design$counts)[at_row]
+    occ_day <- as.character(design$counts[[psu_col]])[at_row]
     occ_sec <- as.character(occ[[section_col]])
     occ_time <- as.character(occ$.count_time)
     pop <- stratum_population_days(design$calendar, strata_cols, design$date_col) # nolint: object_usage_linter
@@ -4854,25 +4858,19 @@ section_effort_cross_covariance <- function(design, target, cells) {
     i <- which(occ_h == h & occ_day == day & occ_sec == sec)
     list(time = occ_time[i][order(occ_time[i])], y = occ$.value[i][order(occ_time[i])])
   }
-  # A section's own within-day variance in one stratum, as its own row has it.
-  own_within <- function(sec, h) {
+  # c_A: a section's within-day variance per unit of day sum of squares, as its
+  # own row computes it. The formula is linear in the sums of squares, so it is
+  # the formula at a single unit sum.
+  within_scale <- function(sec, h) {
     days <- unique(occ_day[occ_h == h & occ_sec == sec])
-    ss <- vapply(days, function(day) {
-      y <- day_counts(sec, h, day)$y
-      sum((y - mean(y))^2)
-    }, numeric(1L))
     k <- vapply(days, function(day) length(day_counts(sec, h, day)$y), numeric(1L))
-    rasmussen_within_var(ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
+    unit_ss <- replace(numeric(length(days)), 1L, 1)
+    rasmussen_within_var(unit_ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
   }
   within_cov <- function(a, b, h) {
     in_h <- occ_h == h
-    days_a <- unique(occ_day[in_h & occ_sec == a])
-    days_b <- unique(occ_day[in_h & occ_sec == b])
     cp <- 0
-    ss_a <- 0
-    ss_b <- 0
-    n_ab <- 0L
-    for (day in intersect(days_a, days_b)) {
+    for (day in intersect(occ_day[in_h & occ_sec == a], occ_day[in_h & occ_sec == b])) {
       ca <- day_counts(a, h, day)
       cb <- day_counts(b, h, day)
       # Paired only at the same known occasions, each counted once -- the rule
@@ -4884,18 +4882,12 @@ section_effort_cross_covariance <- function(design, target, cells) {
         n_unpaired <<- n_unpaired + 1L
         next
       }
-      da <- ca$y - mean(ca$y)
-      db <- cb$y - mean(cb$y)
-      cp <- cp + sum(da * db)
-      ss_a <- ss_a + sum(da^2)
-      ss_b <- ss_b + sum(db^2)
-      n_ab <- n_ab + 1L
+      cp <- cp + sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
     }
-    if (n_ab == 0L || ss_a == 0 || ss_b == 0) {
+    if (cp == 0) {
       return(0)
     }
-    cp / sqrt(ss_a * ss_b) * sqrt(own_within(a, h) * own_within(b, h)) *
-      n_ab / sqrt(length(days_a) * length(days_b))
+    sqrt(within_scale(a, h) * within_scale(b, h)) * cp
   }
 
   pair_cov <- function(a, b) {
