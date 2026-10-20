@@ -266,6 +266,9 @@
 #'   column may be an instantaneous head count or effort the caller already
 #'   expanded, and nothing can tell the two apart. Unknown times known is
 #'   unknown. Supply `period_length_col` to make the total's unit derivable.
+#'   An aerial design is the exception: it refuses `period_length_col`, but
+#'   `h_open` is its period length, so its effort is recorded as angler-hours
+#'   and its totals are `"fish"` (GH #478, #474).
 #' * **The denominators disagree.** A rate per party-hour times an effort in
 #'   angler-hours is not a count of fish. Pass `n_anglers` to
 #'   [add_interviews()] so the rate is per angler-hour.
