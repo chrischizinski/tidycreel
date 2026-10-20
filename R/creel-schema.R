@@ -57,6 +57,9 @@ COL_TO_TABLE <- list(
     "angler_method_col",
     "species_sought_col",
     "refused_col",
+    # summarize_by_zip() and summarize_by_county() read it off the interviews
+    # frame; mapped here so a source can name it however it records it (#531).
+    "zip_code_col",
     "interview_uid_col"
   ),
   counts = c(
@@ -391,6 +394,10 @@ new_creel_schema <- function(survey_type, mappings) {
 #' @param angler_method_col Column name for fishing method.
 #' @param species_sought_col Column name for target species.
 #' @param refused_col Column name for refused interviews indicator.
+#' @param zip_code_col Column name for the angler's ZIP code. Optional. tidycreel
+#'   does not read this field itself: it tells a loader such as tidycreel.connect
+#'   which source column to carry as `zip_code`, the default `zip_col` of
+#'   [summarize_by_zip()] and [summarize_by_county()] (#531).
 #'
 #' @return A `creel_schema` S3 object.
 #' @family "Survey Design"
@@ -455,7 +462,9 @@ creel_schema <- function(
   # `harvest_lengths_table` and left `date_col` NULL -- and construction is
   # permissive, so it produced a working-looking schema with no date mapping.
   harvest_lengths_table = NULL,
-  release_lengths_table = NULL
+  release_lengths_table = NULL,
+  # Last for the same reason: appended, so no positional call is rebound (#531).
+  zip_code_col = NULL
 ) {
   survey_type <- match.arg(survey_type)
   strata_cols <- normalize_strata_cols(strata_cols)
@@ -508,7 +517,8 @@ creel_schema <- function(
       circuit_col = circuit_col,
       angler_method_col = angler_method_col,
       species_sought_col = species_sought_col,
-      refused_col = refused_col
+      refused_col = refused_col,
+      zip_code_col = zip_code_col
     )
   )
 }

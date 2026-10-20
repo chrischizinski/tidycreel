@@ -45,7 +45,8 @@ creel_schema(
   species_sought_col = NULL,
   refused_col = NULL,
   harvest_lengths_table = NULL,
-  release_lengths_table = NULL
+  release_lengths_table = NULL,
+  zip_code_col = NULL
 )
 }
 \arguments{
@@ -179,6 +180,11 @@ source keeps harvest and release lengths in separate tables. Falls back to
 
 \item{release_lengths_table}{Name of the release lengths table, on the same
 terms as \code{harvest_lengths_table}.}
+
+\item{zip_code_col}{Column name for the angler's ZIP code. Optional. tidycreel
+does not read this field itself: it tells a loader such as tidycreel.connect
+which source column to carry as \code{zip_code}, the default \code{zip_col} of
+\code{\link[=summarize_by_zip]{summarize_by_zip()}} and \code{\link[=summarize_by_county]{summarize_by_county()}} (#531).}
 }
 \value{
 A \code{creel_schema} S3 object.

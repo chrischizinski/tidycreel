@@ -158,6 +158,16 @@
 
 ## New features
 
+* `creel_schema()` gains `zip_code_col` (#531), naming the source column that
+  holds the angler's ZIP code. Every other column an interview summary reads
+  already had a schema field; without this one a loader such as
+  tidycreel.connect could carry a ZIP column only when the source already
+  called it `zip_code`. tidycreel does not read the field itself: a loader
+  carries the column as `zip_code`, the default `zip_col` of
+  `summarize_by_zip()` and `summarize_by_county()`. It is optional, prints under
+  the interviews table, and is the last argument, so no positional call changes
+  meaning.
+
 * `estimate_effort()` now takes `target = "stratum_total"` or `"period_total"`
   on aerial designs (#519), as the catch, harvest and release totals already
   did. Total effort for a stratum is the number of calendar days times the
