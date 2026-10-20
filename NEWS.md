@@ -285,6 +285,30 @@
     the design's degrees of freedom. That holds for effort and total catch;
     `estimate_catch_rate()` uses the normal interval.
 
+* `vignette("bus-route-equations")` is rewritten against the code and its
+  sources (#480, Reference section, part 2). It computed no number but
+  described the package wrongly:
+  - It presented a four-site design with E = 847.5 as Malvestuto (1996) Box
+    20.6, which has no bus-route example; 847.5 is the package's own
+    fixture (#202).
+  - It cited Jones & Pollock (2012, p. 912) for `pi_i = p_site * p_period`,
+    which the chapter does not give, and its Eq. 19.4/19.5 as bus-route
+    estimators. They are the general Horvitz-Thompson totals. The bus-route
+    estimator is Robson & Jones (1989) and Pollock et al. (1994, eq. 15.10).
+  - Its variance section described `svydesign(ids = ~1)` and a test file
+    that does not exist; the PSU has been the sampled day since #198.
+  - Its incomplete-trip formula omitted the party-size weight (#513). It
+    said "angler-hours" where the unit is party-hours without `n_anglers`,
+    did not say the totals cover the sampled days only (#520), and cited
+    code by line numbers that had moved.
+
+  The page now gives each formula with its source and function, and runs
+  Pollock et al.'s Tables 15.15-15.17 through `creel_design(wait_time,
+  circuit_time)`, reproducing 24,816 min and 228 fish per day. The bus-route
+  How-to page's example now uses wait and circuit times. It shows that
+  rescaling its waits to add up to 1 would halve the total (847.5 instead of
+  1,695), because half its circuit is travel.
+
 * The statistical articles were checked against the code and their sources
   (#480, Explanation section, part 1). None computed a wrong number; several
   gave formulas, reasons or citations that were wrong:

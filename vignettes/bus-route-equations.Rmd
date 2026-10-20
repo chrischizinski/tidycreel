@@ -9,318 +9,318 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
 ## Overview
 
-This document maps every formula used in tidycreel's bus-route estimation to its
-published primary source, including the specific equation number and page number. It is
-intended as an auditable record for reviewers, developers, and users who want to verify
-that the implementation matches the statistical theory.
+This page maps each formula in tidycreel's bus-route estimators to its published source
+and to the function that computes it. It is a reference for checking the implementation,
+not a tutorial; the [bus-route How-to page](bus-route-surveys.html) shows the workflow.
 
-The bus-route estimation framework in tidycreel follows two primary sources:
+The sources, and what each supplies:
 
-- **Jones & Pollock (2012)**: Chapter 19 of *Fisheries Techniques* (3rd ed.), pp. 883–919.
-  This chapter provides the general nonuniform probability creel survey estimators.
-- **Malvestuto (1996)**: Chapter 20 of *Fisheries Techniques* (2nd ed.), pp. 591–623.
-  Box 20.6 provides a worked numerical example that tidycreel reproduces exactly.
+- **Robson & Jones (1989)** define the bus-route design and its effort estimator: the
+  crew visits every site on each pass, waits a scheduled time at each, and expands what it
+  sees by the circuit time over the wait (their Eq. 12).
+- **Pollock, Jones & Brown (1994, section 15.5.3)** give the same estimator as Eq. 15.10
+  (effort) and 15.11 (catch), with worked examples in Tables 15.14–15.17.
+- **Jones & Pollock (2012, Eq. 19.4–19.5, pp. 911–912)** give the general
+  Horvitz–Thompson totals, $\hat{E} = \sum e_i/\pi_i$ and $\hat{H} = \sum h_i/\pi_i$,
+  "where $\pi_i$ is the total probability that the ith sampling unit is included in the
+  sample". tidycreel writes the bus-route estimator in this form.
+- **Hoenig et al. (1997)** supply the estimator for anglers interviewed mid-trip.
 
-The four key computations are: inclusion probability (πᵢ), enumeration expansion,
-expanded effort per interview, and the Horvitz-Thompson total estimators for effort and
-harvest. Each is documented in a section below.
+Code references below name functions, not line numbers, which go stale.
 
 ---
 
-## 1. Inclusion Probability (πᵢ)
-
-**Published source:** Jones & Pollock (2012), p. 912
+## 1. Site Weight and Inclusion Probability
 
 **Formula:**
 
 $$\pi_i = p\_site_i \times p\_period$$
 
-where $p\_site_i$ is the probability of selecting site $i$ during a given circuit pass,
-and $p\_period$ is the probability that the sampling period is included in the survey.
-For uniform period sampling (all periods equally likely), $p\_period$ is the same for all
-sites and circuits.
+`p_period` is the probability that the sampled period (for example the morning or the
+afternoon) is the one worked; it is constant within a circuit. `p_site` is the site's
+weight within the circuit, given in one of two ways:
 
-**Statistical meaning:** $\pi_i$ is the *inclusion probability* — the marginal probability
-that unit $i$ is included in the sample under the two-stage design (stage 1: select a
-period; stage 2: traverse the circuit). Jones & Pollock (2012) treat this as the product
-of the two independent selection probabilities.
+| Argument(s) | `p_site` | Constraint | Design |
+|---|---|---|---|
+| `wait_time`, `circuit_time` | $w_i / T$ | waits add up to no more than $T$ | bus route: every site visited on each pass |
+| `p_site` | as given | adds up to 1 within a circuit | a randomly chosen site on each pass |
 
-**R implementation:**
+For a bus route, $w_i$ is the scheduled wait at site $i$ and $T$ "the total time to
+complete a full circuit of the route, including traveling and waiting" (Pollock et al.
+1994, p. 238). A party at the site can be seen only while the crew is there, so $w_i/T$ is
+the share of the period during which it can be observed. The shares add up to less than 1
+whenever the route has travel time. Rescaling them to add up to 1 divides by the total wait
+instead of $T$, and lowers every total by the travelling share of the circuit (GH #539).
 
-- `creel_design()` in `R/creel-design.R`: accepts `p_site` and `p_period` columns from the
-  `sampling_frame` argument and precomputes `pi_i = p_site * p_period` for each
-  site×circuit combination. The result is stored in `design$bus_route$sampling_frame`.
-- `add_interviews()` in `R/creel-design.R`: joins the precomputed `pi_i` value from the
-  sampling frame to each interview row, storing it as the `.pi_i` column.
-
-**Malvestuto (1996) Box 20.6 values:**
-
-| Site | p_site | p_period | πᵢ    |
-|------|--------|----------|-------|
-| A    | 0.30   | 0.50     | 0.150 |
-| B    | 0.25   | 0.50     | 0.125 |
-| C    | 0.40   | 0.50     | 0.200 |
-| D    | 0.05   | 0.50     | 0.025 |
+**R implementation:** `creel_design()` computes `.p_site` (from waits) and `.pi_i` in the
+sampling frame and checks the constraints; `add_interviews()` joins `.pi_i` to each
+interview by site and circuit.
 
 ---
 
 ## 2. Enumeration Expansion
 
-**Published source:** Malvestuto (1996), Box 20.6, p. 614
-
 **Formula:**
 
 $$\text{expansion}_i = \frac{n\_counted_i}{n\_interviewed_i}$$
 
-where $n\_counted_i$ is the total number of angler parties observed at site $i$ during
-the visit, and $n\_interviewed_i$ is the number of those parties actually interviewed.
+When not every party at a site is interviewed, the interviewed parties stand for those that
+were not. With every party interviewed, the expansion is 1, as in the examples below.
 
-**Statistical meaning:** When not all parties at a site are interviewed, the expansion
-factor rescales the interviewed sample to represent the full party count. If all parties
-are interviewed ($n\_counted = n\_interviewed$), the expansion is 1 and no adjustment is
-needed. This is the case in Box 20.6 Example 1.
+**R implementation:** `add_interviews()` stores `.expansion`. Two edge cases:
 
-**R implementation:**
-
-- `add_interviews()` in `R/creel-design.R`: computes
-  `.expansion = n_counted / n_interviewed` for each interview row. When
-  `n_counted = 0` and `n_interviewed = 0` (zero-effort site), `.expansion` is set to
-  `NA`; the effort estimator treats this as zero contribution.
+- **Nobody seen** ($0/0$): the site-visit contributes zero effort, because no party was
+  there; `estimate_effort()` sets it to 0 deliberately.
+- **Parties seen, none interviewed** ($n\_counted > 0$, $n\_interviewed = 0$): the
+  expansion is undefined and `add_interviews()` warns. The point estimate currently counts
+  those parties as zero effort, with an `NaN` standard error. That is a known defect
+  (GH #542): their effort is unknown, not zero.
 
 ---
 
-## 3. Effort Estimator (Jones & Pollock Eq. 19.4)
+## 3. Effort
 
-**Published source:** Jones & Pollock (2012), Eq. 19.4, p. 911
+**Formula** (Jones & Pollock 2012, Eq. 19.4):
 
-**Formula:**
+$$\hat{E} = \sum_{i} \frac{e_i}{\pi_i}, \qquad e_i = a_i \times \text{expansion}_i$$
 
-$$\hat{E} = \sum_{i=1}^{n} \frac{e_i}{\pi_i}$$
+where $a_i$ is interview $i$'s angler effort: the hours fished times `n_anglers`, or the
+hours fished alone when no party size is given. Pollock et al. write $\pi_j$ for the
+probability of the sampled period, tidycreel's `p_period`. With
+$\pi_i = (w_i/T)\,\pi_j$ the sum is their Eq. 15.10 term for term:
 
-where $e_i$ is the enumeration-expanded effort for interview $i$ (see Section 4 below),
-$\pi_i$ is the inclusion probability, and the sum runs over all interview records.
+$$\hat{E} = T \sum_i \frac{1}{w_i} \sum_j \frac{e_{ji}}{\pi_j}$$
 
-**Statistical meaning:** This is a Horvitz-Thompson (HT) total estimator. Dividing by
-$\pi_i$ is the HT inverse-probability weight: if a unit is sampled with probability
-$\pi_i$, it represents $1/\pi_i$ units in the population. Summing the weighted
-contributions gives an unbiased estimator of the population total (under the design).
+**Unit:** angler-hours when `add_interviews()` was given `n_anglers`; party-hours when it
+was not (it warns). The effort column is read as hours.
 
-**R implementation:**
-
-- `estimate_effort_br()` in `R/creel-estimates-bus-route.R`, lines 21–215:
-  - Line 69: `interviews$.e_i <- interviews[[effort_col]] * interviews$.expansion`
-    (computes expanded effort; see Section 4)
-  - Line 83: `interviews$.contribution <- interviews$.e_i / interviews$.pi_i`
-    (computes $e_i / \pi_i$ for each row)
-  - Line 96: `total_estimate <- sum(interviews$.contribution, na.rm = TRUE)`
-    (sums to produce $\hat{E}$)
-- `estimate_effort()` in `R/creel-estimates.R`, line 310: dispatches to
-  `estimate_effort_br()` when `design$design_type == "bus_route"`.
+**R implementation:** `estimate_effort()` dispatches to `estimate_effort_br()`, which
+forms `.e_i` and `.contribution` $= e_i/\pi_i$ and sums them.
+`get_site_contributions()` returns the per-interview table.
 
 ---
 
-## 4. Expanded Effort per Interview (eᵢ)
+## 4. Catch, Harvest and Release Totals
 
-**Published source:** Malvestuto (1996), Box 20.6, p. 614 (implicit in the expansion step)
+**Formula** (Jones & Pollock 2012, Eq. 19.5; Pollock et al. 1994, Eq. 15.11):
 
-**Formula:**
+$$\hat{H} = \sum_i \frac{h_i}{\pi_i}, \qquad h_i = \text{harvest}_i \times \text{expansion}_i$$
 
-$$e_i = \text{hours\_fished}_i \times \text{expansion}_i$$
+and likewise for catch and released fish. These totals are Horvitz–Thompson totals of the
+fish themselves. They are **not** effort times a rate, so they need no assumption about the
+covariance of the two.
 
-**Statistical meaning:** The effort recorded in an interview represents only the fishing
-party interviewed. Multiplying by the expansion factor scales that effort to represent
-all $n\_counted$ parties at the site, not just the $n\_interviewed$ parties.
-
-**R implementation:**
-
-- `estimate_effort_br()` in `R/creel-estimates-bus-route.R`:
-  - Line 69: `interviews$.e_i <- interviews[[effort_col]] * interviews$.expansion`
-
-When expansion = 1 (all parties interviewed, as in Box 20.6 Example 1), $e_i$ equals the
-raw effort. For example, Site C has 6 interviews each with `hours_fished = 57.5 / 6`:
-
-$$e_C = (57.5/6) \times (6/6) = 57.5 \text{ h per interview row}$$
-
-Wait — more precisely, each of the 6 Site C rows contributes $e_i = (57.5/6) \times 1$,
-and these sum to 57.5 h before the $1/\pi_C = 5$ weight is applied, yielding the site
-contribution of 287.5 angler-hours.
+**R implementation:** `estimate_total_catch()`, `estimate_total_harvest()` and
+`estimate_total_release()` dispatch to `estimate_total_catch_br()`,
+`estimate_total_harvest_br()` and `estimate_total_release_br()`, which share
+`br_build_estimates()`.
 
 ---
 
-## 5. Harvest Estimator (Jones & Pollock Eq. 19.5)
+## 5. Rates from Complete Trips
 
-**Published source:** Jones & Pollock (2012), Eq. 19.5, p. 912
+Eq. 19.4 and 19.5 are totals; the sources define no separate bus-route rate. The rate this
+design supports is the ratio of the two totals:
 
-**Formula:**
+$$\widehat{\text{HPUE}} = \frac{\hat{H}}{\hat{E}} = \frac{\sum_i h_i/\pi_i}{\sum_i e_i/\pi_i}$$
 
-$$\hat{H} = \sum_{i=1}^{n} \frac{h_i}{\pi_i}$$
+This is a ratio of means, reported as `method = "ratio-of-means-hpue"` (or `-cpue`,
+`-rpue`). Its unit follows the denominator: fish per angler-hour, or per party-hour without
+`n_anglers`.
 
-where $h_i = \text{harvest}_i \times \text{expansion}_i$ is the enumeration-expanded
-harvest for interview $i$.
+**Variance.** `survey::svyratio()` linearises numerator and denominator together. The two
+totals come from the same interviews and are strongly positively correlated, so dividing
+two separately estimated totals and treating them as independent overstates the SE.
 
-**Statistical meaning:** Structurally identical to the effort estimator (Eq. 19.4) with
-harvest substituted for effort. Both are HT totals over the same sampling design.
-
-**R implementation:**
-
-- `estimate_harvest_br()` in `R/creel-estimates-bus-route.R`:
-  computes `.h_i = harvest * .expansion` and `.contribution = .h_i / .pi_i`.
-- `estimate_total_harvest()` sums those contributions via
-  `survey::svytotal(~.contribution, ...)` to give $\hat{H}$.
+**R implementation:** `estimate_harvest_rate()`, `estimate_catch_rate()` and
+`estimate_release_rate()` dispatch to `estimate_harvest_br()` (catch and release reuse it
+with their own column), whose ratio step is `br_harvest_rate_estimates()`. On a bus-route
+design `use_trips` defaults to `"complete"`.
 
 ---
 
-## 5a. Harvest Rate (HPUE) as a Ratio of HT Totals
+## 6. Rates from Incomplete Trips
 
-Eq. 19.4 and Eq. 19.5 are **totals**. Jones & Pollock define no rate estimator for
-the bus-route design, so the rate this design supports is the ratio of the two
-totals:
+Anglers interviewed mid-trip need a different estimator, selected with
+`use_trips = "incomplete"`.
 
-$$\widehat{\text{HPUE}} = \frac{\hat{H}}{\hat{E}}
-= \frac{\sum_i h_i / \pi_i}{\sum_i e_i / \pi_i}$$
-
-This is the ratio-of-means form, the same quantity `estimate_harvest_rate()`
-returns for standard designs, and it carries the same `method` string
-(`"ratio-of-means-hpue"`). Because $e_i$ is built from angler-effort, the result
-is fish per **angler**-hour, matching the CPUE denominator on the same design.
-
-**Variance.** Computed with `survey::svyratio()` over both contribution columns,
-not by dividing two separately estimated totals. $\hat{H}$ and $\hat{E}$ come from
-the same interviews and are strongly positively correlated; propagating their SEs
-as if independent overstates the standard error substantially (roughly eightfold
-on the package's bus-route harvest fixture).
-
-## 5b. Incomplete trips: truncated mean of ratios
-
-Everything above assumes completed trips. Anglers intercepted mid-trip are a
-different estimation problem, and `use_trips = "incomplete"` uses a different
-estimator for it.
-
-Hoenig, Jones, Pollock, Robson & Wade (1997) analyse both candidates under the
-roving-type sampling that applies here — encounter probability proportional to
-time fished, catch observed only up to the interview moment. Writing $C_j$ for
-the catch and $L_j$ for the hours fished by angler $j$ at the time of interview,
-the ratio of means has expectation
+Hoenig, Jones, Pollock, Robson & Wade (1997) compare the two candidates under roving-type
+sampling: encounter probability proportional to time fished, and catch observed only up to
+the interview. Writing $C_j$ for the catch and $L_j$ for the hours fished by angler $j$ at
+the time of interview, the ratio of means has expectation (their Eq. 3.2)
 
 $$E[R_1] \;\approx\; \frac{\sum_j \lambda_j L_j^{*2}}{\sum_j L_j^{*2}}$$
 
-a weighting of individual rates $\lambda_j$ by the **square** of completed trip
-length $L_j^{*}$. That is not the population catch rate, so $R_1$ "does not
-provide an estimate of catch rate that can be used with an independent estimate
-of total effort to provide an unbiased estimate of total catch except in the
-unrealistic case where $\lambda$ is constant over all anglers." The mean of
-ratios has the correct expectation — the ratio of total catch to total effort.
+a weighting of individual rates $\lambda_j$ by the **square** of completed trip length
+$L_j^{*}$. So $R_1$ "does not provide an estimate of catch rate that can be used with an
+independent estimate of total effort to provide an unbiased estimate of total catch except
+in the unrealistic case where $\lambda$ is constant over all anglers." The mean of ratios
+has approximately the correct expectation.
 
-Two departures from the paper's plain average are forced by the bus-route
-design. Interviews are not equally likely, so each is weighted by
-$w_i = \text{expansion}_i / \pi_i$, giving a Hájek weighted mean:
+On a bus route the interviews are not equally likely, so each enters a Hájek weighted
+mean:
 
 $$\widehat{\text{HPUE}}_{\text{inc}} \;=\;
 \frac{\sum_i w_i \, (h_i / a_i)}{\sum_i w_i},
-\qquad w_i = \frac{\text{expansion}_i}{\pi_i}$$
+\qquad w_i = \frac{\text{expansion}_i}{\pi_i} \times n\_anglers_i$$
 
-where $a_i$ is angler-effort, so the result is fish per **angler**-hour rather
-than fish per party-hour. It is reported as `method = "mean-of-ratios-hpue"`.
+where $a_i$ is angler-effort. The $n\_anglers_i$ factor applies when party size varies: an
+interview is a party, the rate is per angler, and meeting a party meets all its anglers
+(GH #513). It is reported as `method = "mean-of-ratios-hpue"`.
 
-**Truncation is not optional.** The mean-of-ratios estimator has *infinite*
-asymptotic variance: $E[1/L_j]$ is infinite as trip length approaches zero.
-Hoenig et al. recommend discarding trips shorter than 30 minutes, which is the
-`truncate_at = 0.5` default. The threshold applies to elapsed trip duration, not
-to angler-hours — it is the short clock interval that makes the reciprocal
-explode, and a party of five fishing twelve minutes supplies a full angler-hour
-while still being the unstable case. `truncate_at = NULL` disables truncation
-and warns.
+**Truncation.** The mean of ratios has infinite asymptotic variance as trip length goes to
+zero. Hoenig et al. recommend disregarding trips shorter than 30 minutes, which is the
+`truncate_at = 0.5` default. The threshold applies to elapsed trip duration, not to
+angler-hours: a party of five fishing twelve minutes supplies a full angler-hour and is
+still the unstable case. `truncate_at = NULL` disables truncation and warns.
 
-**Variance.** As in 5a, `survey::svyratio()` linearises over numerator and
-denominator together; here the denominator is the sum of the weights.
+`use_trips = "diagnostic"` returns both rates. They are different estimators, each the one
+its trip type supports, but both divide by the same effort column, so they share a unit
+(per angler-hour with `n_anglers`, per party-hour without) and the gap between them
+reflects trip status rather than a change of unit.
 
-**Comparing the two.** `use_trips = "diagnostic"` returns both slots. They use
-different estimators, because each is the estimator its trip type supports, but
-both report fish per angler-hour — so the gap between them is attributable to
-trip status rather than to a change of physical quantity.
-
-**R implementation:**
-
-- `br_harvest_rate_estimates()` in `R/creel-estimates-bus-route.R` (shared ratio
-  machinery for both trip paths).
-- `br_incomplete_harvest_rate()` in `R/creel-estimates-bus-route.R`.
-- `estimate_harvest_rate()` in `R/creel-estimates.R`: dispatches to
-  `estimate_harvest_br()` when `design$design_type == "bus_route"`.
+**R implementation:** `br_incomplete_harvest_rate()`, called from `estimate_harvest_br()`.
 
 ---
 
-## 6. Variance Estimation
+## 7. Variance and What the Total Covers
 
-**Published source:** Horvitz & Thompson (1952); implemented via Taylor linearization
-in the R `survey` package (Lumley 2010).
+**Design.** The per-interview contributions are analysed as a stratified sample with the
+**sampled day** as the primary sampling unit, stratified by the design's strata. Interviews
+on the same day share that day's conditions, so they are not independent draws (GH #198).
 
-**Method:** tidycreel uses `survey::svytotal(~.contribution, svy_br)` where
-`svy_br` is an `svydesign` object constructed from the interview data. The `.contribution`
-column holds $e_i / \pi_i$ (or $h_i / \pi_i$). The `survey` package applies Taylor
-linearization to compute the standard error of this total.
+**Method.** `survey::svytotal()` for totals and `survey::svyratio()` for rates, by Taylor
+linearisation (Lumley 2010); `variance = "bootstrap"` or `"jackknife"` replicate the same
+design. A stratum with one sampled day has no between-day variance and is refused.
 
-**R implementation:**
+**Within-day variance.** Robson & Jones (1989, p. 95) show that with one crew per route per
+day the within-day component cannot be estimated separately. The day-level variance
+contains it, so the SE includes it, but tidycreel reports no separate within-day term for
+bus routes.
 
-- `estimate_effort_br()`, lines 99–112: constructs `svy_br` via
-  `survey::svydesign(ids = ~1, ...)`, applies `get_variance_design()` for the
-  selected variance method, and calls `survey::svytotal(~.contribution, svy_br)`.
-- Phase 26 cross-validation (`tests/testthat/test-cross-validation.R`) confirms that
-  the `survey::svytotal` variance matches a manually constructed `svydesign` calculation
-  to tolerance 1e-6.
+**Target.** The total covers the **sampled days**. Robson & Jones (Eq. 13) expand the mean
+daily estimate to all $N$ days of a stratum; tidycreel does not implement that expansion
+for bus routes, and `target = "stratum_total"` or `"period_total"` is refused rather than
+ignored (GH #520). The result records `effort_target = "sampled_days"`.
 
-Bootstrap (`variance = "bootstrap"`) and jackknife (`variance = "jackknife"`) alternatives
-are available via `get_variance_design()`, consistent with all other tidycreel estimators.
-
----
-
-## 7. Summary Traceability Table
-
-| Quantity | Formula | Source | Page | R Location |
-|----------|---------|--------|------|------------|
-| Inclusion probability | πᵢ = p_site × p_period | Jones & Pollock (2012) | p. 912 | `creel-design.R`: `creel_design()`, `add_interviews()` |
-| Enumeration expansion | expansion = n_counted / n_interviewed | Malvestuto (1996) Box 20.6 | p. 614 | `creel-design.R`: `add_interviews()` |
-| Expanded effort | eᵢ = angler-hours × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R`: `estimate_effort_br()` |
-| HT effort total | Ê = Σ(eᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.4 | p. 911 | `creel-estimates-bus-route.R` lines 83, 96 |
-| Expanded harvest | hᵢ = harvest × expansion | Malvestuto (1996) Box 20.6 | p. 614 | `creel-estimates-bus-route.R` (harvest branch) |
-| HT harvest total | Ĥ = Σ(hᵢ/πᵢ) | Jones & Pollock (2012) Eq. 19.5 | p. 912 | `creel-estimates-bus-route.R`: `estimate_total_harvest_br()` |
-| Harvest rate (HPUE) | Ĥ / Ê | ratio of Eq. 19.5 to Eq. 19.4 | pp. 911–912 | `creel-estimates-bus-route.R`: `br_harvest_rate_estimates()` |
-| Variance | Taylor linearization on Σ(eᵢ/πᵢ) | Lumley (2010) | — | `survey::svytotal(~.contribution, svy_br)` |
+**R implementation:** `br_add_psu_key()` sets the PSU; `get_variance_design()` applies the
+variance method.
 
 ---
 
-## 8. Why πᵢ Matters: A Quantitative Example
+## 8. Worked Check: Pollock et al. (1994), Tables 15.15–15.17
 
-Some implementations use a fixed value such as $\pi_i = 0.5$ for all sites. That is not
-the inclusion probability of the sampling design. (Wait time over circuit time, by
-contrast, *is* the bus-route site weight of Robson & Jones (1989) and Pollock et al.
-(1994, eq. 15.10). `creel_design()` takes it through `wait_time` and `circuit_time`.)
+Pollock et al. give one day of direct-expansion interviews on a five-site route: a
+360-minute circuit with waits of 30, 30, 15, 60 and 60 minutes, and the morning or
+afternoon chosen with probability 0.5. Site 3 had no anglers. They report
+$\hat{E} = 24{,}814.80$ minutes (Table 15.16) and $\hat{C} = 227.88$ fish (Table 15.17).
 
-The bias can be large and heterogeneous across sites. Using the Malvestuto (1996) Box 20.6
-data, here is the effect of substituting $\pi_i = 0.5$ for the correct design-based
-values:
+A design needs two sampled days for a between-day variance, so the published day is
+entered twice. Each day's estimate is then the published one, and the sampled-day total is
+twice it. Trip durations are converted to hours.
 
-| Site | Correct πᵢ | eᵢ (h) | Correct eᵢ/πᵢ | Incorrect (π=0.5) eᵢ/πᵢ | Error |
-|------|-----------|--------|--------------|-------------------------|-------|
-| A    | 0.150     | 30.0   | 200.0        | 60.0                    | −70%  |
-| B    | 0.125     | 20.0   | 160.0        | 40.0                    | −75%  |
-| C    | 0.200     | 57.5   | 287.5        | 115.0                   | −60%  |
-| D    | 0.025     |  5.0   | 200.0        | 10.0                    | −95%  |
-| **Total** | | | **847.5** | **225.0** | **−73%** |
+```{r pollock-frame}
+library(tidycreel)
 
-With $\pi_i = 0.5$, the total effort estimate would be 225.0 angler-hours — a 73%
-underestimate of the correct 847.5. The bias is not uniform: Site D is underestimated
-by 95% because it has the lowest correct $\pi_i$ (0.025) but the incorrect formula
-assigns it the same weight as Site C (π = 0.5).
+frame <- data.frame(
+  site = as.character(1:5),
+  circuit = "am_pm",
+  wait_min = c(30, 30, 15, 60, 60),
+  circuit_min = 360
+)
 
-The direction and magnitude of bias depend entirely on the distribution of site
-probabilities in the actual design. The only way to avoid bias is to use the
-design-specified inclusion probabilities — which is what tidycreel does.
+one_day <- data.frame(
+  site = c("1", "1", "2", "2", "4", "4", "4", "5"),
+  trip_min = c(135, 165, 175, 215, 150, 145, 168, 225),
+  catch = c(3, 2, 0, 1, 1, 2, 3, 1)
+)
+days <- as.Date(c("2024-06-01", "2024-06-02"))
+interviews <- do.call(rbind, lapply(days, function(d) cbind(date = d, one_day)))
+interviews$day_type <- "weekday"
+interviews$circuit <- "am_pm"
+interviews$trip_hours <- interviews$trip_min / 60
+interviews$trip_status <- "complete"
+# Every party at a site was interviewed.
+interviews$n_counted <- ave(rep(1L, nrow(interviews)), interviews$date, interviews$site,
+  FUN = length
+)
+interviews$n_interviewed <- interviews$n_counted
+```
 
-For the specific Site C example cited in the design documents: correct contribution
-= 57.5 / 0.20 = **287.5**; with π = 0.5 it would be 57.5 / 0.5 = **115.0** — a 2.5×
-underestimate for that site alone.
+Pollock et al.'s estimate is party effort, the trip length of each party, so the
+interviews are added without `n_anglers`. `add_interviews()` warns that it is assuming one
+angler per interview, and the estimates are labelled **party-hours**, which is what this
+example is.
+
+```{r pollock-design}
+design <- creel_design(
+  data.frame(date = days, day_type = "weekday"),
+  date = date, strata = day_type, survey_type = "bus_route",
+  sampling_frame = frame, site = site, circuit = circuit,
+  wait_time = wait_min, circuit_time = circuit_min, p_period = 0.5
+)
+design <- add_interviews(design, interviews,
+  effort = trip_hours, catch = catch, trip_status = trip_status,
+  n_counted = n_counted, n_interviewed = n_interviewed
+)
+```
+
+```{r pollock-estimates}
+effort <- estimate_effort(design)
+effort$estimates
+effort$unit
+
+# Per day, in minutes: Pollock et al. print 24,814.80 from site terms rounded to two
+# decimals; unrounded it is 24,816.
+effort$estimates$estimate / 2 * 60
+
+catch <- estimate_total_catch(design)
+# Per day: Pollock et al. print 227.88 from the rounded 0.633; unrounded it is 228.
+catch$estimates$estimate / 2
+```
+
+The standard error is 0 only because the two entered days are identical, so there is no
+between-day variation to measure. It says nothing about Pollock et al.'s survey, which
+reports one day and no variance. `tests/testthat/test-bus-route-wait-time.R` checks both
+figures.
+
+---
+
+## 9. Summary Traceability Table
+
+| Quantity | Formula | Source | R function |
+|---|---|---|---|
+| Site weight (bus route) | $p\_site_i = w_i / T$ | Robson & Jones (1989) Eq. 12; Pollock et al. (1994) Eq. 15.10 (both as $T/w_i$) | `creel_design(wait_time, circuit_time)` |
+| Inclusion probability | $\pi_i = p\_site_i \times p\_period$ | Pollock et al. (1994) Eq. 15.10 ($\pi_j$) | `creel_design()`, `add_interviews()` |
+| Enumeration expansion | $n\_counted / n\_interviewed$ | — | `add_interviews()` |
+| Effort total | $\hat{E} = \sum e_i/\pi_i$ | Jones & Pollock (2012) Eq. 19.4 | `estimate_effort_br()` |
+| Catch/harvest/release total | $\hat{H} = \sum h_i/\pi_i$ | Jones & Pollock (2012) Eq. 19.5; Pollock et al. (1994) Eq. 15.11 | `br_build_estimates()` |
+| Rate, complete trips | $\hat{H}/\hat{E}$ | ratio of Eq. 19.5 to Eq. 19.4 | `br_harvest_rate_estimates()` |
+| Rate, incomplete trips | Hájek mean of $h_i/a_i$ | Hoenig et al. (1997) | `br_incomplete_harvest_rate()` |
+| Variance | day-PSU stratified design, Taylor or replicates | Lumley (2010) | `br_add_psu_key()`, `get_variance_design()` |
+
+---
+
+## 10. Why the Weights Matter
+
+Each site's contribution is divided by its $\pi_i$, so an error in $\pi_i$ is an error in
+that site's share of the total. Two common errors, on the Pollock et al. route above:
+
+- **A fixed $\pi_i = 0.5$ for every site.** That is not an inclusion probability of the
+  design. Each site is then off by the ratio of 0.5 to its true $\pi_i$; site 1's true
+  $\pi_i$ is $30/360 \times 0.5 = 0.042$, so it would be understated twelvefold.
+- **Wait shares rescaled to add up to 1** ($w_i / \sum w$). Every total is multiplied by
+  $\sum w / T = 195/360 = 0.54$: the 165 minutes of travel are treated as if they were
+  spent watching.
 
 ---
 
@@ -330,26 +330,14 @@ underestimate for that site alone.
   Calculation of catch rate and total catch in roving surveys of anglers. *Biometrics*,
   53(1), 306–317.
 
-- Horvitz, D. G., & Thompson, D. J. (1952). A generalization of sampling without
-  replacement from a finite universe. *Journal of the American Statistical Association*,
-  47(260), 663–685.
-
 - Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey methods: estimation of
   effort, harvest, and released catch. Chapter 19 in *Fisheries Techniques* (3rd ed.),
-  pp. 883–919.
-  American Fisheries Society.
+  pp. 883–919. American Fisheries Society.
+
+- Lumley, T. (2010). *Complex Surveys: A Guide to Analysis Using R*. Wiley.
 
 - Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler survey methods and their
   applications in fisheries management*. American Fisheries Society Special Publication 25.
 
 - Robson, D., & Jones, C. M. (1989). The theoretical basis of an access site angler survey
   design. *Biometrics*, 45, 83–98.
-
-- Lumley, T. (2010). *Complex Surveys: A Guide to Analysis Using R*. Wiley.
-
-- Malvestuto, S. P. (1996). Sampling the recreational creel. Chapter 20 in *Fisheries
-  Techniques* (2nd ed.), pp. 591–623. American Fisheries Society.
-
-- Malvestuto, S. P., Davies, W. D., & Shelton, W. L. (1978). An evaluation of the roving
-  creel survey with nonuniform probability sampling. *Transactions of the American Fisheries
-  Society*, 107(2), 255–262.

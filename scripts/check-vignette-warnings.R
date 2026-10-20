@@ -59,7 +59,9 @@ allowed <- list(
     "Rate and effort may be in different units"
   ),
   glossary = character(),
-  `bus-route-equations` = character(),
+  # The Pollock et al. (1994) check is party effort, so the interviews carry no
+  # n_anglers on purpose; the text explains the warning and the party-hours unit.
+  `bus-route-equations` = c("No `n_anglers` provided"),
   `survey-tidycreel` = character(),
   `articles/api-conventions` = character()
 )
