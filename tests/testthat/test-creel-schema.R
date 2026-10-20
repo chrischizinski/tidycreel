@@ -480,3 +480,24 @@ test_that("free-label columns stay out of creel_vocabulary()", {
   expect_false(any(c("angler_method", "species_sought") %in% names(creel_vocabulary())))
   expect_error(creel_vocabulary("angler_method"), "no canonical vocabulary")
 })
+
+test_that("value_maps refuses an NA source code", {
+  # nzchar(NA) is TRUE, so an NA name used to pass the "fully named" check. No
+  # source value can match an NA code, so the entry would be dead on arrival.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = stats::setNames("complete", NA_character_))
+    ),
+    "fully named",
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = stats::setNames("boat", NA_character_))
+    ),
+    "fully named",
+    class = "creel_error_schema_validation"
+  )
+})

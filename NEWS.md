@@ -621,6 +621,11 @@
 
 ## Bug fixes
 
+* `creel_schema(value_maps =)` refuses a map entry whose source code is
+  `NA`. The "fully named" check used `nzchar()`, which is `TRUE` for `NA`, so
+  such an entry was accepted although no source value can ever match it (found
+  while adding free-label maps, #532).
+
 * The `.lake_total` row of a sectioned `estimate_total_catch()`,
   `estimate_total_harvest()` or `estimate_total_release()` reported a standard
   error that was too small when the sections were counted on the same days

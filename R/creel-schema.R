@@ -196,11 +196,14 @@ normalize_value_maps <- function(value_maps) {
   for (col in names(value_maps)) {
     map <- value_maps[[col]]
     valid <- CANONICAL_VOCABULARY[[col]] # nolint: object_name_linter
-    if (!is.character(map) || length(map) == 0L || is.null(names(map)) || !all(nzchar(names(map)))) {
+    # anyNA() as well as nzchar(): nzchar(NA) is TRUE, so an NA name -- a code
+    # no source value can ever match -- otherwise passed as "named".
+    named <- !is.null(names(map)) && !anyNA(names(map)) && all(nzchar(names(map)))
+    if (!is.character(map) || length(map) == 0L || !named) {
       cli::cli_abort(
         c(
           "{.arg value_maps}${.field {col}} must be a fully named character vector.",
-          "i" = "Names are the source's own codes, values the canonical meaning."
+          "i" = "Names are the source's own codes, values what each code means."
         ),
         class = "creel_error_schema_validation"
       )
