@@ -1577,10 +1577,11 @@ br_abort_unknown_contribution <- function(
   }
   # cli would read braces in the user's values as glue.
   shown <- gsub("\\}", "}}", gsub("\\{", "{{", shown))
+  design_label <- if (identical(design$design_type, "ice")) "Ice" else "Bus-route" # nolint: object_usage_linter
 
   cli::cli_abort(
     c(
-      "Bus-route {quantity} total has {n_bad} interview row{?s} with an unknown contribution:",
+      "{design_label} {quantity} total has {n_bad} interview row{?s} with an unknown contribution:",
       stats::setNames(shown, rep("*", length(shown))),
       "x" = paste0(
         "An unknown contribution is not zero. Summing without these rows would ",

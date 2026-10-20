@@ -176,4 +176,6 @@ test_that("#542: ice designs, which reuse the bus-route totals, refuse too", {
   expect_s3_class(err, "creel_error_unknown_contribution")
   # Ice interviews have no site or circuit column; the date still identifies the row.
   expect_match(conditionMessage(err), "date=2024-01-11: 8 counted, none interviewed", fixed = TRUE)
+  # The shared helper must not call an ice survey a bus route.
+  expect_match(conditionMessage(err), "^Ice effort total")
 })
