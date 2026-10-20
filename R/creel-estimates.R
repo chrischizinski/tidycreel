@@ -4748,9 +4748,10 @@ combine_section_variances <- function(
 #' Strata are sampled independently, so only same-stratum cells covary. Rates
 #' come from each section's own interviews and are treated as independent
 #' across sections. Sections declared with `add_sections(shared_count_times =
-#' TRUE)` add, per stratum, the within-day covariance of their counts, from the
-#' same pooled within-day variance the effort lake row uses. The formula is the
-#' linearisation form, added as-is on bootstrap and jackknife designs too.
+#' TRUE)` add, per stratum, the within-day covariance of their counts
+#' (`section_within_day_cross_covariance()`, shared with the effort lake row).
+#' The formula is the linearisation form, added as-is on bootstrap and jackknife
+#' designs too.
 #'
 #' @param design The full sectioned design.
 #' @param target Effort target.
@@ -4782,12 +4783,7 @@ section_effort_cross_covariance <- function(design, target, cells) {
     excluded = c(design$date_col, strata_cols, psu_col, section_col),
     count_col = design$count_col
   )
-  stratum_key <- function(df) {
-    if (length(strata_cols) == 0L) {
-      return(rep(".all", nrow(df)))
-    }
-    do.call(paste, c(lapply(strata_cols, function(cl) as.character(df[[cl]])), sep = "\r"))
-  }
+  stratum_key <- function(df) section_stratum_key(df, strata_cols)
 
   # Per section and stratum: daily count sums, the section's own day weight,
   # the stratum population when the design takes the FPC, and the product-scale
@@ -4827,71 +4823,13 @@ section_effort_cross_covariance <- function(design, target, cells) {
     max(0, ps$w_day[[i]]^2 * length(y) - n_fpc) * stats::var(y)
   }
 
-  # Sections declared to share their count times also share within-day error:
-  # counted at the same drawn moments, they are high or low together within a
-  # day as well as across days (GH #403 for effort, #414 for the totals).
-  # Rasmussen's within-day variance is linear in the day sums of squares,
-  # V_A = c_A * sum_d ss_Ad, with c_A fixed by the section's own sampled days,
-  # mean counts per day and target. Per stratum the covariance is the same form
-  # with cross-products, over the days on which the two sections pair:
-  #   Cov_w = sqrt(c_A * c_B) * sum_d cp_d.
-  # Identical day samples give exactly Rasmussen's term with a cross-product for
-  # the sum of squares; days the sections do not share, or share at different
-  # occasions, add nothing; and by Cauchy-Schwarz the covariance never exceeds
-  # sqrt(V_A * V_B). It is not read off a pooled within-day variance: pooled and
-  # per-section variances divide by different numbers of sampled days whenever
-  # the sections' days differ, and their difference is then no covariance.
-  shared_times <- isTRUE(design$shared_count_times)
-  n_unpaired <- 0L
-  if (shared_times) {
-    occ <- design$within_day_counts
-    # Each occasion is placed in its stratum and day through the unit it belongs
-    # to: the occasion table holds the unit key only, which need not include the
-    # strata (`unit_cols`).
-    unit_cols <- setdiff(names(occ), c(".count_time", ".value"))
-    at_row <- match(group_key(occ, unit_cols), group_key(design$counts, unit_cols)) # nolint: object_usage_linter
-    occ_h <- stratum_key(design$counts)[at_row]
-    occ_day <- as.character(design$counts[[psu_col]])[at_row]
-    occ_sec <- as.character(occ[[section_col]])
-    occ_time <- as.character(occ$.count_time)
-    pop <- stratum_population_days(design$calendar, strata_cols, design$date_col) # nolint: object_usage_linter
-    pop_h <- stratum_key(pop)
-  }
-  # One section's occasions on one day, ordered by time.
-  day_counts <- function(sec, h, day) {
-    i <- which(occ_h == h & occ_day == day & occ_sec == sec)
-    list(time = occ_time[i][order(occ_time[i])], y = occ$.value[i][order(occ_time[i])])
-  }
-  # c_A: a section's within-day variance per unit of day sum of squares, as its
-  # own row computes it. The formula is linear in the sums of squares, so it is
-  # the formula at a single unit sum.
-  within_scale <- function(sec, h) {
-    days <- unique(occ_day[occ_h == h & occ_sec == sec])
-    k <- vapply(days, function(day) length(day_counts(sec, h, day)$y), numeric(1L))
-    unit_ss <- replace(numeric(length(days)), 1L, 1)
-    rasmussen_within_var(unit_ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
-  }
-  within_cov <- function(a, b, h) {
-    in_h <- occ_h == h
-    cp <- 0
-    for (day in intersect(occ_day[in_h & occ_sec == a], occ_day[in_h & occ_sec == b])) {
-      ca <- day_counts(a, h, day)
-      cb <- day_counts(b, h, day)
-      # Paired only at the same known occasions, each counted once -- the rule
-      # the effort lake row pools by. Otherwise the day adds nothing, as two
-      # independent sections would.
-      paired <- !anyNA(c(ca$time, cb$time)) && !anyDuplicated(ca$time) &&
-        !anyDuplicated(cb$time) && identical(ca$time, cb$time)
-      if (!paired) {
-        n_unpaired <<- n_unpaired + 1L
-        next
-      }
-      cp <- cp + sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
-    }
-    if (cp == 0) {
-      return(0)
-    }
-    sqrt(within_scale(a, h) * within_scale(b, h)) * cp
+  # Sections declared to share their count times also share within-day error
+  # (GH #403, #414): per stratum, each pair's within-day count covariance, from
+  # the helper the effort lake row uses too, so the two lake rows cannot
+  # disagree (GH #527).
+  within <- list(strata = character(0), cov = list())
+  if (isTRUE(design$shared_count_times)) {
+    within <- section_within_day_cross_covariance(design, target, secs)
   }
 
   pair_cov <- function(a, b) {
@@ -4902,8 +4840,9 @@ section_effort_cross_covariance <- function(design, target, cells) {
       ia <- match(h, pa$strata)
       ib <- match(h, pb$strata)
       cov_count <- 0
-      if (shared_times) {
-        cov_count <- within_cov(a, b, h)
+      iw <- match(h, within$strata)
+      if (!is.na(iw)) {
+        cov_count <- within$cov[[iw]][a, b]
       }
       da <- pa$daily[pa$daily$h == h, ]
       db <- pb$daily[pb$daily$h == h, ]
@@ -4928,6 +4867,111 @@ section_effort_cross_covariance <- function(design, target, cells) {
       out[i, j] <- out[j, i] <- pair_cov(secs[[i]], secs[[j]])
     }
   }
+  out
+}
+
+
+#' Each pair of sections' within-day count covariance, per stratum
+#'
+#' Internal. Sections declared with `add_sections(shared_count_times = TRUE)`
+#' were counted at the same drawn times, so their counts are high or low
+#' together within a day as well as across days. This is the within-day term of
+#' the lake variance that the sections' own components leave out; the effort
+#' lake row (`shared_times_lake_se_within()`) and the product totals
+#' (`section_effort_cross_covariance()`) both take it from here (GH #527).
+#'
+#' The caller refuses a declaration that cannot be honoured
+#' (`check_shared_count_times()`) before calling.
+#'
+#' @param design A sectioned `creel_design` with counts and
+#'   `within_day_counts` attached.
+#' @param target Effort target, forwarded to the within-day variance.
+#' @param secs Character vector of the present sections.
+#' @return A list: `strata`, the stratum keys (`section_stratum_key()`), and
+#'   `cov`, one matrix per stratum of the pairwise covariances, zero on the
+#'   diagonal. Their units are those of `within_day_counts$.value` -- the
+#'   counts after `add_counts()` multiplies them by the period length -- which
+#'   are the units of each section's own `se_within` on its effort row, so the
+#'   effort lake row adds them as they are. The product totals weight them by
+#'   `rate * effort / count`. Emits `creel_message_within_day_independent` when
+#'   some section-pair days could not be paired.
+#' @keywords internal
+#' @noRd
+section_within_day_cross_covariance <- function(design, target, secs) {
+  # Rasmussen's within-day variance is linear in the day sums of squares,
+  # V_A = c_A * sum_d ss_Ad, with c_A fixed by the section's own sampled days,
+  # mean counts per day and target. Per stratum the covariance is the same form
+  # with cross-products, over the days on which the two sections pair:
+  #   Cov_w = sqrt(c_A * c_B) * sum_d cp_d.
+  # Identical day samples give exactly Rasmussen's term with a cross-product for
+  # the sum of squares; days the sections do not share, or share at different
+  # occasions, add nothing; and by Cauchy-Schwarz the covariance never exceeds
+  # sqrt(V_A * V_B). It is not read off a pooled within-day variance: pooled and
+  # per-section variances divide by different numbers of sampled days whenever
+  # the sections' days differ, and their difference is then no covariance.
+  section_col <- design[["section_col"]]
+  strata_cols <- design$strata_cols %||% character(0)
+  psu_col <- design$psu_col %||% design$date_col
+  n_unpaired <- 0L
+  occ <- design$within_day_counts
+  # Each occasion is placed in its stratum and day through the unit it belongs
+  # to: the occasion table holds the unit key only, which need not include the
+  # strata (`unit_cols`).
+  unit_cols <- setdiff(names(occ), c(".count_time", ".value"))
+  at_row <- match(group_key(occ, unit_cols), group_key(design$counts, unit_cols)) # nolint: object_usage_linter
+  occ_h <- section_stratum_key(design$counts, strata_cols)[at_row]
+  occ_day <- as.character(design$counts[[psu_col]])[at_row]
+  occ_sec <- as.character(occ[[section_col]])
+  occ_time <- as.character(occ$.count_time)
+  pop <- stratum_population_days(design$calendar, strata_cols, design$date_col) # nolint: object_usage_linter
+  pop_h <- section_stratum_key(pop, strata_cols)
+  # One section's occasions on one day, ordered by time.
+  day_counts <- function(sec, h, day) {
+    i <- which(occ_h == h & occ_day == day & occ_sec == sec)
+    list(time = occ_time[i][order(occ_time[i])], y = occ$.value[i][order(occ_time[i])])
+  }
+  # c_A: a section's within-day variance per unit of day sum of squares, as its
+  # own row computes it. The formula is linear in the sums of squares, so it is
+  # the formula at a single unit sum.
+  within_scale <- function(sec, h) {
+    days <- unique(occ_day[occ_h == h & occ_sec == sec])
+    k <- vapply(days, function(day) length(day_counts(sec, h, day)$y), numeric(1L))
+    unit_ss <- replace(numeric(length(days)), 1L, 1)
+    rasmussen_within_var(unit_ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
+  }
+  within_cov <- function(a, b, h) {
+    in_h <- occ_h == h
+    cp <- 0
+    for (day in intersect(occ_day[in_h & occ_sec == a], occ_day[in_h & occ_sec == b])) {
+      ca <- day_counts(a, h, day)
+      cb <- day_counts(b, h, day)
+      # Paired only at the same known occasions, each counted once. Otherwise
+      # the day adds nothing, as two independent sections would.
+      paired <- !anyNA(c(ca$time, cb$time)) && !anyDuplicated(ca$time) &&
+        !anyDuplicated(cb$time) && identical(ca$time, cb$time)
+      if (!paired) {
+        n_unpaired <<- n_unpaired + 1L
+        next
+      }
+      cp <- cp + sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
+    }
+    if (cp == 0) {
+      return(0)
+    }
+    sqrt(within_scale(a, h) * within_scale(b, h)) * cp
+  }
+
+  n <- length(secs)
+  strata <- unique(occ_h[occ_sec %in% secs])
+  cov <- lapply(strata, function(h) {
+    m <- matrix(0, n, n, dimnames = list(secs, secs))
+    for (i in seq_len(max(n - 1L, 0L))) {
+      for (j in (i + 1L):n) {
+        m[i, j] <- m[j, i] <- within_cov(secs[[i]], secs[[j]], h)
+      }
+    }
+    m
+  })
   if (n_unpaired > 0L) {
     creel_inform(
       c(
@@ -4938,7 +4982,24 @@ section_effort_cross_covariance <- function(design, target, cells) {
       class = c("creel_message_within_day_independent", "creel_message")
     )
   }
-  out
+  list(strata = strata, cov = cov)
+}
+
+#' A stratum key for the cross-section covariances
+#'
+#' Internal. One definition, so the effort and within-day covariances match
+#' their strata by the same key. `".all"` for an unstratified design.
+#'
+#' @param df A data frame holding `strata_cols`.
+#' @param strata_cols Character vector of strata columns, possibly empty.
+#' @return Character vector, one key per row of `df`.
+#' @keywords internal
+#' @noRd
+section_stratum_key <- function(df, strata_cols) {
+  if (length(strata_cols) == 0L) {
+    return(rep(".all", nrow(df)))
+  }
+  do.call(paste, c(lapply(strata_cols, function(cl) as.character(df[[cl]])), sep = "\r"))
 }
 
 
@@ -6066,10 +6127,16 @@ within_day_identified_strata <- function(design, counts_data, strata_cols) {
 #' Internal. Sections declared with `add_sections(shared_count_times = TRUE)` were
 #' counted at the same drawn times, so their within-day errors are correlated and
 #' the quadrature sum of the per-section components understates the lake's. The
-#' full design is run through the same occasion-pooling the unit case uses
-#' (GH #373): sections are added up at each occasion, then the variance is taken
-#' of that total. The section is already part of the unit key, so it is the
-#' "extra" column that gets pooled.
+#' lake variance is the sections' own components plus each pair's within-day
+#' covariance, from `section_within_day_cross_covariance()` -- the term the
+#' catch, harvest and release lake rows add, so effort and the totals agree.
+#'
+#' It was the occasion-pooled variance of the lake (GH #403): the sections added
+#' up at each occasion, then Rasmussen's formula over the pooled days. That is
+#' the same number when the sections share their sampled days, and wrong when
+#' they do not, because the pooled formula divides by the union of the days and
+#' each section's own by its own: two sections never counted on the same day
+#' came out with half their summed variance on an expanded target (GH #527).
 #'
 #' The raw occasions are required. A supplied sum of squares per section has lost
 #' the cross-products, and a declaration that cannot be honoured is refused
@@ -6090,7 +6157,15 @@ shared_times_lake_se_within <- function(design, result_df, target) {
   if (anyNA(result_df$se_within[present])) {
     return(NA_real_)
   }
-  sqrt(compute_within_day_var_contribution(design, by_vars = NULL, target = target)) # nolint: object_usage_linter
+  # Never negative: sections paired on a day share identical count times, so on
+  # each day they fall into groups, and the lake term is a sum over days and
+  # groups of the sum of squares of sum_i sqrt(c_i) * y_i -- unlike the totals'
+  # between-day covariances, which can fail to form a valid matrix.
+  # Sections that offset exactly sum to a true zero, which rounding can leave a
+  # hair below it; given the structure above, any negative is rounding.
+  secs <- as.character(result_df[[design$section_col]][present])
+  within <- section_within_day_cross_covariance(design, target, secs)
+  sqrt(max(0, sum(result_df$se_within[present]^2) + sum(vapply(within$cov, sum, numeric(1L)))))
 }
 
 #' Refuse a shared-count-times declaration that cannot be honoured
@@ -6108,14 +6183,14 @@ check_shared_count_times <- function(design) {
     cli::cli_abort(
       c(
         "{.code shared_count_times = TRUE} cannot be honoured: the counts carry no per-occasion values.",
-        "x" = "Sections can only be added up at each occasion when the raw counts are kept.",
+        "x" = "Sections can only be paired at each occasion when the raw counts are kept.",
         "i" = "Pass {.arg count_time_col} to {.fn add_counts}, or leave \
                {.code shared_count_times = FALSE} to treat the sections as independent."
       ),
       class = "creel_error_shared_times_unpooled"
     )
   }
-  # The pooling runs stratum by stratum. With the section among the strata each
+  # The covariance is taken stratum by stratum. With the section among the strata each
   # section is its own stratum, so no call ever holds two of them and the
   # declaration would silently do nothing. It would also be a different model:
   # strata are sampled independently, so each section would have its own sampled
@@ -6133,12 +6208,11 @@ check_shared_count_times <- function(design) {
       class = "creel_error_shared_times_section_strata"
     )
   }
-  # Units finer than the section (angler type, say) need pooling at two levels:
-  # within each section first, then across sections. The pooling below is flat,
-  # so when sections cannot be paired on a day it falls back to treating every
-  # unit as independent and drops the pairing inside each section -- a lake
-  # component below even the undeclared quadrature sum. Refused until both
-  # levels are pooled, rather than reported smaller than the default.
+  # Units finer than the section (angler type, say) need pairing at two levels:
+  # the units within each section first, then the sections across the lake.
+  # Only the second is implemented, and each section's several units at one
+  # occasion would leave its days unpaired. Refused until both levels are
+  # handled, rather than quietly reported as independent.
   key_cols <- within_day_key_cols(design$within_day_var) # nolint: object_usage_linter
   finer <- setdiff(key_cols, c(design$psu_col, design$strata_cols, design$section_col))
   if (length(finer) > 0L) {
@@ -6146,8 +6220,8 @@ check_shared_count_times <- function(design) {
       c(
         "{.code shared_count_times = TRUE} is not supported with count units finer than the section.",
         "x" = "The counts are keyed by {.field {finer}} as well as the section.",
-        "i" = "Pooling would need to add the units up within each section and then the sections \
-               up across the lake; only the second level is implemented.",
+        "i" = "The within-day covariance would need the units paired within each section and then \
+               the sections paired across the lake; only the second level is implemented.",
         "i" = "Leave {.code shared_count_times = FALSE} to treat the sections as independent."
       ),
       class = "creel_error_shared_times_finer_units"

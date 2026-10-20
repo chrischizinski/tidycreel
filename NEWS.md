@@ -635,6 +635,21 @@
   lake SE and the share SEs are reported as `NA` with
   `creel_warning_section_covariance_invalid`, never as zero.
 
+* A sectioned `estimate_effort()` with `add_sections(shared_count_times =
+  TRUE)` reported the wrong `.lake_total` within-day SE on
+  `target = "stratum_total"` or `"period_total"` when the sections were not
+  counted on the same days (#527). It added the sections up at each occasion
+  and ran the within-day formula over the union of their days, which divided
+  by more days than either section was counted on: two sections that shared no
+  day came out with half their summed within-day variance (895 against 1791 on
+  the test fixture), where sections that never meet cannot covary at all. The
+  lake row now adds, to the sections' own components, each pair's within-day
+  covariance over the days both were counted -- the term the catch, harvest
+  and release lake rows have used since #414, so effort and the totals now
+  agree. Unchanged: designs whose sections share every sampled day (the two
+  forms are then identical), `target = "sampled_days"`, and the per-section
+  rows.
+
 * Aerial catch, harvest and release totals warned that the counts had been
   "expanded without a period length" (angler-days) and reported their unit
   as `NA`, while `estimate_effort()` on the same design reported

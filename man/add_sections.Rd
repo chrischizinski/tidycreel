@@ -40,9 +40,10 @@ in v0.8.0 aerial survey estimation.}
 within-day sampling errors as independent. Set \code{TRUE} only when the
 sections' counts were taken at the \strong{same randomly drawn count times}, so
 that a \code{count_time} label means the same moment in every section. The lake
-total's within-day SE then adds the sections up at each occasion before
-taking the variance, which keeps the covariance between sections that rise
-and fall together through the day. Requires \code{count_time_col} in
+total's within-day SE then adds, to the sections' own components, each
+pair's within-day covariance over the days both were counted, which keeps
+the covariance between sections that rise and fall together through the
+day. Requires \code{count_time_col} in
 \code{\link[=add_counts]{add_counts()}}. Never inferred from matching labels: one clerk driving a
 circuit counts "am" in each section at a different moment, and pairing those
 would be a modelling choice the data cannot confirm. Not supported
@@ -87,9 +88,10 @@ with \code{shared_count_times} and never read off the labels.
 With \code{shared_count_times = TRUE}, the per-section rows are unchanged; only
 the \code{.lake_total} row's \code{se_within} (and so its \code{se}) changes. A day on which
 the sections were not counted at the same known occasions cannot be paired and
-is added as independent, with a message saying so. Sections counted a
-different number of times on a day share the unequal-count limitation noted
-in GH #405: the pooled component averages the counts per day across sections.
+is added as independent, with a message saying so, and so is a day only one
+of them was counted on: sections whose sampled days differ covary on the days
+they share and nowhere else (GH #527). The catch, harvest and release totals
+add the same covariance to their lake rows.
 }
 
 \section{How sections are named in results}{
