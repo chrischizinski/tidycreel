@@ -221,3 +221,92 @@ test_that("#403: a section that is also a stratum is refused, not silently ignor
   res <- sct_est(build(FALSE))
   expect_equal(res$estimates$se_within[res$estimates$section == ".lake_total"], sqrt(200), tolerance = 1e-8)
 })
+
+# The lake within-day variance when the sections' sampled days differ, written
+# out independently of the package: each section's own Rasmussen term, plus,
+# per stratum, sqrt(c_A * c_B) * sum of the day cross-products over the days
+# both were counted, where c is a section's own Rasmussen constant
+# (S / k) / (n (k - 1)) with S = n on sampled days and N_h on an expanded
+# target. Two counts per day throughout.
+sct_hand_lake_var <- function(cnt, target) {
+  n_cal <- table(sct_calendar()$day_type)
+  k <- 2
+  dev <- function(s) {
+    lapply(split(s, as.character(s$date)), function(day) {
+      y <- day$n[order(day$count_time)]
+      y - mean(y)
+    })
+  }
+  v <- 0
+  for (h in c("weekday", "weekend")) {
+    da <- dev(cnt[cnt$day_type == h & cnt$section == "A", ])
+    db <- dev(cnt[cnt$day_type == h & cnt$section == "B", ])
+    c_of <- function(d) {
+      n <- length(d)
+      s <- if (identical(target, "sampled_days")) n else n_cal[[h]]
+      (s / k) / (n * (k - 1))
+    }
+    ss <- function(d) sum(vapply(d, function(e) sum(e^2), numeric(1)))
+    shared <- intersect(names(da), names(db))
+    cp <- sum(vapply(shared, function(day) sum(da[[day]] * db[[day]]), numeric(1)))
+    v <- v + c_of(da) * ss(da) + c_of(db) * ss(db) + 2 * sqrt(c_of(da) * c_of(db)) * cp
+  }
+  v
+}
+
+# Section B moved off A's days, within the same strata.
+sct_move_b <- function(cnt, map) {
+  ib <- cnt$section == "B" & as.character(cnt$date) %in% names(map)
+  cnt$date[ib] <- as.Date(map[as.character(cnt$date[ib])])
+  cnt
+}
+
+test_that("#527: sections that share no sampled day add no within-day covariance", {
+  # B counted on other days of the same strata. Sections never counted on the
+  # same day cannot covary, so declaring shared count times must leave the lake
+  # component at the sections' own sum. The occasion-pooled formula divided by
+  # the union of the days and halved it on an expanded target.
+  cnt <- sct_move_b(sct_counts(), c(
+    "2024-06-03" = "2024-06-05", "2024-06-04" = "2024-06-06",
+    "2024-06-08" = "2024-06-01", "2024-06-09" = "2024-06-02"
+  ))
+  for (target in c("sampled_days", "stratum_total", "period_total")) {
+    off <- suppressMessages(suppressWarnings(estimate_effort(sct_design(cnt, FALSE), target = target)))$estimates # nolint: object_usage_linter
+    on <- suppressMessages(suppressWarnings(estimate_effort(sct_design(cnt, TRUE), target = target)))$estimates # nolint: object_usage_linter
+    expect_equal(
+      on$se_within[on$section == ".lake_total"],
+      off$se_within[off$section == ".lake_total"],
+      tolerance = 1e-10, label = target
+    )
+    expect_equal(
+      on$se_within[on$section == ".lake_total"]^2,
+      sum(on$se_within[on$section %in% c("A", "B")]^2),
+      tolerance = 1e-10, label = target
+    )
+  }
+})
+
+test_that("#527: partly shared days covary on the shared days only, at each section's own scale", {
+  # Weekdays: A on the 3rd and 4th, B on the 3rd, 5th and 6th -- one shared
+  # day, and unequal day counts, so the two sections' Rasmussen constants
+  # differ and the covariance takes their geometric mean. Weekends identical.
+  cnt <- sct_counts()
+  extra <- cnt[cnt$section == "B" & cnt$date == as.Date("2024-06-04"), ]
+  extra$date <- as.Date("2024-06-06")
+  extra$n <- extra$n + c(3, -2)
+  cnt <- rbind(sct_move_b(cnt, c("2024-06-04" = "2024-06-05")), extra)
+  for (target in c("sampled_days", "stratum_total", "period_total")) {
+    res <- suppressMessages(suppressWarnings(estimate_effort(sct_design(cnt, TRUE), target = target)))$estimates # nolint: object_usage_linter
+    expect_equal(
+      res$se_within[res$section == ".lake_total"]^2, sct_hand_lake_var(cnt, target),
+      tolerance = 1e-8, label = target
+    )
+  }
+  # The hand formula reduces to the occasion-pooled one when the days are
+  # identical -- the case #403 was tested on -- so both agree there.
+  same <- sct_counts()
+  expect_equal(
+    sct_hand_lake_var(same, "sampled_days"), sct_hand_within_var(same, c("A", "B")),
+    tolerance = 1e-10
+  )
+})
