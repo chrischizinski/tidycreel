@@ -82,8 +82,8 @@ were not. With every party interviewed, the expansion is 1, as in the examples b
   there; `estimate_effort()` sets it to 0 deliberately.
 - **Parties seen, none interviewed** ($n\_counted > 0$, $n\_interviewed = 0$): the
   expansion is undefined and `add_interviews()` warns. Their effort and catch are unknown,
-  not zero, so the effort, catch, harvest and release totals stop with an error that names
-  each such site-day. Remove those rows to leave the parties out deliberately, or impute
+  not zero, so the effort, catch, harvest and release totals, and the catch, harvest and
+  release rates, stop with an error that names each such site-day. Remove those rows to leave the parties out deliberately, or impute
   their values and set `n_interviewed` to the number of parties the values stand for. The
   same refusal covers a missing count or a missing value on an interviewed row.
 
