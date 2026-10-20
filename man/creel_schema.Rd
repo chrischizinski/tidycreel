@@ -78,7 +78,8 @@ fetched counts frame reaches \code{\link[=add_counts]{add_counts()}} with no str
 design built with \verb{strata =} aborts (GH #171).}
 
 \item{value_maps}{Source vocabularies for the coded columns, as a named list
-keyed by canonical column — \code{trip_status}, \code{catch_type}, \code{length_type}.
+keyed by canonical column — \code{trip_status}, \code{catch_type}, \code{length_type},
+and the free-label columns \code{angler_method} and \code{species_sought}.
 Each entry is a fully named character vector mapping the source's own codes
 to canonical values: \code{c("1" = "complete", "2" = "incomplete")}. Names are
 what the source writes, values what tidycreel means.
@@ -88,7 +89,13 @@ codes these columns has to declare what its codes mean. Values already
 canonical pass through untouched; anything neither mapped nor canonical
 aborts at the fetch, where the source is still in view, rather than being
 recoded by hand afterwards — a hand recode folds an undeclared third code
-(\code{"refused"}, \code{"unknown"}) into complete or incomplete silently (GH #128).}
+(\code{"refused"}, \code{"unknown"}) into complete or incomplete silently (GH #128).
+
+\code{angler_method} and \code{species_sought} have no canonical vocabulary, because
+methods and target species are the agency's own. Their maps translate codes
+to any non-empty label, \code{c("1" = "boat", "2" = "shore")}, and the map's own
+labels serve as the vocabulary: a loader still refuses a code the map does
+not declare (#532).}
 
 \item{catch_col}{Column name for catch count in interviews.}
 
