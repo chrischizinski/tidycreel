@@ -105,6 +105,7 @@ estimate_effort_br <- function(
 
   # Compute e_i / pi_i (Eq. 19.4 site contribution)
   interviews$.contribution <- interviews$.e_i / interviews$.pi_i
+  br_abort_unknown_contribution(interviews, design, "effort", call = call)
 
   # Build per-site attribution table for attribute storage
   # For ice designs the synthetic site/circuit columns are not in interviews — use row index
@@ -120,7 +121,7 @@ estimate_effort_br <- function(
   # Compute the HT estimate: E_hat = sum(e_i / pi_i)
   if (is.null(by_vars)) {
     # Ungrouped: single total
-    total_estimate <- sum(interviews$.contribution, na.rm = TRUE) # nolint: object_usage_linter
+    total_estimate <- sum(interviews$.contribution) # nolint: object_usage_linter
     n <- nrow(interviews) # nolint: object_usage_linter
 
     # Variance via survey package using svytotal on .contribution column
@@ -209,7 +210,7 @@ estimate_effort_br <- function(
     ci_upper <- svy_result[["ci_u"]]
 
     # Compute proportion of overall total for each group
-    overall_total <- sum(interviews$.contribution, na.rm = TRUE)
+    overall_total <- sum(interviews$.contribution)
     proportion <- estimate / overall_total
 
     # Per-group sample sizes
@@ -1222,6 +1223,7 @@ estimate_total_catch_br <- function(
 
   # Compute c_i / pi_i (Eq. 19.5 site contribution, catch variant)
   interviews$.contribution <- interviews$.c_i / interviews$.pi_i
+  br_abort_unknown_contribution(interviews, design, "catch", call = call)
 
   # Build per-site attribution table for site_contributions attribute
   # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
@@ -1330,6 +1332,7 @@ estimate_total_harvest_br <- function(
 
   # Compute h_i / pi_i contribution
   interviews$.contribution <- interviews$.h_i / interviews$.pi_i
+  br_abort_unknown_contribution(interviews, design, "harvest", call = call)
 
   # Build site attribution table (intersect() guard for ice designs)
   avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
@@ -1436,6 +1439,7 @@ estimate_total_release_br <- function(
 
   # Compute r_i / pi_i contribution
   interviews$.contribution <- interviews$.r_i / interviews$.pi_i
+  br_abort_unknown_contribution(interviews, design, "release", call = call)
 
   # Build site attribution table (intersect() guard for ice designs)
   avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
@@ -1511,6 +1515,89 @@ br_abort_if_no_complete <- function(interviews, quantity = "estimation", call = 
         "or {.code use_trips = 'diagnostic'} to see both."
       )
     ),
+    call = call
+  )
+}
+
+# Internal helper: refuse a total with an unknown contribution ----
+
+# The four HT totals summed e_i / pi_i with `na.rm = TRUE`, so a row whose
+# contribution was unknown entered the total as zero (GH #542). The commonest
+# source is a site visit where parties were counted but none interviewed: its
+# expansion n_counted / n_interviewed is undefined, and those parties' effort
+# and catch vanished from a believable, low total whose only symptom was an SE
+# of NaN. A missing count, or a missing value on an interviewed row, did the
+# same, the count case without any warning.
+#
+# Absent is not zero, so the total stops and names the rows for the user to
+# resolve (drop them on purpose, or fill them in); it does not impute. The 0/0
+# visit -- nobody there -- is a true zero, set before this runs, and passes.
+# Shared by all four totals so they cannot disagree about which rows count.
+br_abort_unknown_contribution <- function(
+  interviews,
+  design,
+  quantity,
+  call = rlang::caller_env()
+) {
+  unknown <- is.na(interviews$.contribution)
+  if (!any(unknown)) {
+    return(invisible(interviews))
+  }
+
+  bad <- interviews[unknown, , drop = FALSE]
+  nc_col <- design$n_counted_col
+  ni_col <- design$n_interviewed_col
+  nc <- if (!is.null(nc_col)) bad[[nc_col]] else rep(NA_real_, nrow(bad))
+  ni <- if (!is.null(ni_col)) bad[[ni_col]] else rep(NA_real_, nrow(bad))
+  cause <- ifelse(
+    is.na(nc) | is.na(ni),
+    "n_counted or n_interviewed is missing",
+    ifelse(
+      nc > 0 & ni == 0,
+      paste0(nc, " counted, none interviewed"),
+      paste0(quantity, " value is missing")
+    )
+  )
+
+  # Ice interviews carry no site or circuit column; name what the rows have.
+  id_cols <- intersect(
+    c(design$date_col, design$bus_route$site_col, design$bus_route$circuit_col),
+    names(bad)
+  )
+  row_ids <- if (length(id_cols) > 0L) {
+    apply(bad[id_cols], 1, function(r) paste0(id_cols, "=", trimws(r), collapse = ", "))
+  } else {
+    paste0("row ", which(unknown))
+  }
+  lines <- paste0(row_ids, ": ", cause)
+  n_bad <- length(lines) # nolint: object_usage_linter
+  shown <- utils::head(lines, 5L)
+  if (n_bad > 5L) {
+    shown <- c(shown, paste0("... and ", n_bad - 5L, " more"))
+  }
+  # cli would read braces in the user's values as glue.
+  shown <- gsub("\\}", "}}", gsub("\\{", "{{", shown))
+
+  cli::cli_abort(
+    c(
+      "Bus-route {quantity} total has {n_bad} interview row{?s} with an unknown contribution:",
+      stats::setNames(shown, rep("*", length(shown))),
+      "x" = paste0(
+        "An unknown contribution is not zero. Summing without these rows would ",
+        "understate the total."
+      ),
+      "i" = if (any(grepl("none interviewed", cause))) {
+        paste0(
+          "Parties counted but not interviewed have unknown effort and catch. ",
+          "Remove those rows to leave the parties out deliberately (the total then ",
+          "covers interviewed parties only), or impute their values in the ",
+          "interview data and set {.arg n_interviewed} to the number of parties ",
+          "the values stand for."
+        )
+      },
+      "i" = "Resolve the rows in the data passed to {.fn add_interviews}, then re-run."
+    ),
+    class = "creel_error_unknown_contribution",
     call = call
   )
 }
@@ -1670,8 +1757,8 @@ validate_use_trips_br <- function(use_trips, call = rlang::caller_env()) {
 }
 
 # Internal helper: build creel_estimates from .contribution column ----
-# Shared by estimate_harvest_br(), estimate_total_catch_br(),
-# estimate_total_harvest_br(), and estimate_total_release_br()
+# Shared by estimate_total_catch_br(), estimate_total_harvest_br(), and
+# estimate_total_release_br() (and so by the species totals, which call them)
 
 #' Build creel_estimates from pre-computed .contribution column
 #'
@@ -1709,7 +1796,7 @@ br_build_estimates <- function(
   strata_cols <- design$strata_cols
 
   if (is.null(by_vars)) {
-    total_estimate <- sum(interviews$.contribution, na.rm = TRUE) # nolint
+    total_estimate <- sum(interviews$.contribution) # nolint
     n <- nrow(interviews) # nolint: object_usage_linter
 
     strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
@@ -1796,7 +1883,7 @@ br_build_estimates <- function(
     ci_lower <- pmax(0, svy_result[["ci_l"]])
     ci_upper <- svy_result[["ci_u"]]
 
-    overall_total <- sum(interviews$.contribution, na.rm = TRUE)
+    overall_total <- sum(interviews$.contribution)
     proportion <- estimate / overall_total
 
     # Counted on the group key, not with `aggregate(.count ~ ., ...)`, whose

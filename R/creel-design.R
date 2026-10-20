@@ -4163,8 +4163,8 @@ add_interviews <- function(
         n_partial <- sum(partial_zero, na.rm = TRUE) # nolint: object_usage_linter
         creel_warn(c(
           "!" = "{n_partial} observation{?s} ha{?s/ve} n_counted > 0 but n_interviewed = 0.",
-          "i" = "Anglers were counted but none interviewed. These rows contribute no catch data.",
-          "i" = "Expansion factor (.expansion) is NA for these rows."
+          "i" = "Anglers were counted but none interviewed, so their effort and catch are unknown.",
+          "i" = "Expansion factor (.expansion) is NA for these rows; bus-route totals refuse them."
         ),
         class = c("creel_warning_counted_not_interviewed", "creel_warning")
         )
