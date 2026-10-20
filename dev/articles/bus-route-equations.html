@@ -113,583 +113,492 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This document maps every formula used in tidycreel’s bus-route
-estimation to its published primary source, including the specific
-equation number and page number. It is intended as an auditable record
-for reviewers, developers, and users who want to verify that the
-implementation matches the statistical theory.</p>
-<p>The bus-route estimation framework in tidycreel follows two primary
-sources:</p>
+<p>This page maps each formula in tidycreel’s bus-route estimators to
+its published source and to the function that computes it. It is a
+reference for checking the implementation, not a tutorial; the <a href="bus-route-surveys.html">bus-route How-to page</a> shows the
+workflow.</p>
+<p>The sources, and what each supplies:</p>
 <ul>
 <li>
-<strong>Jones &amp; Pollock (2012)</strong>: Chapter 19 of
-<em>Fisheries Techniques</em> (3rd ed.), pp. 883–919. This chapter
-provides the general nonuniform probability creel survey
-estimators.</li>
+<strong>Robson &amp; Jones (1989)</strong> define the bus-route
+design and its effort estimator: the crew visits every site on each
+pass, waits a scheduled time at each, and expands what it sees by the
+circuit time over the wait (their Eq. 12).</li>
 <li>
-<strong>Malvestuto (1996)</strong>: Chapter 20 of <em>Fisheries
-Techniques</em> (2nd ed.), pp. 591–623. Box 20.6 provides a worked
-numerical example that tidycreel reproduces exactly.</li>
+<strong>Pollock, Jones &amp; Brown (1994, section 15.5.3)</strong>
+give the same estimator as Eq. 15.10 (effort) and 15.11 (catch), with
+worked examples in Tables 15.14–15.17.</li>
+<li>
+<strong>Jones &amp; Pollock (2012, Eq. 19.4–19.5,
+pp. 911–912)</strong> give the general Horvitz–Thompson totals,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><mo>∑</mo><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\hat{E} = \sum e_i/\pi_i</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo>=</mo><mo>∑</mo><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\hat{H} = \sum h_i/\pi_i</annotation></semantics></math>,
+“where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
+is the total probability that the ith sampling unit is included in the
+sample”. tidycreel writes the bus-route estimator in this form.</li>
+<li>
+<strong>Hoenig et al. (1997)</strong> supply the estimator for
+anglers interviewed mid-trip.</li>
 </ul>
-<p>The four key computations are: inclusion probability (πᵢ),
-enumeration expansion, expanded effort per interview, and the
-Horvitz-Thompson total estimators for effort and harvest. Each is
-documented in a section below.</p>
+<p>Code references below name functions, not line numbers, which go
+stale.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="inclusion-probability-πᵢ">1. Inclusion Probability (πᵢ)<a class="anchor" aria-label="anchor" href="#inclusion-probability-%CF%80%E1%B5%A2"></a>
+<h2 id="site-weight-and-inclusion-probability">1. Site Weight and Inclusion Probability<a class="anchor" aria-label="anchor" href="#site-weight-and-inclusion-probability"></a>
 </h2>
-<p><strong>Published source:</strong> Jones &amp; Pollock (2012),
-p. 912</p>
 <p><strong>Formula:</strong></p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mi>p</mi><mi>_</mi><mi>s</mi><mi>i</mi><mi>t</mi><msub><mi>e</mi><mi>i</mi></msub><mo>×</mo><mi>p</mi><mi>_</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">\pi_i = p\_site_i \times p\_period</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mi>_</mi><mi>s</mi><mi>i</mi><mi>t</mi><msub><mi>e</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">p\_site_i</annotation></semantics></math>
-is the probability of selecting site
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
-during a given circuit pass, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mi>_</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">p\_period</annotation></semantics></math>
-is the probability that the sampling period is included in the survey.
-For uniform period sampling (all periods equally likely),
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mi>_</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">p\_period</annotation></semantics></math>
-is the same for all sites and circuits.</p>
-<p><strong>Statistical meaning:</strong>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
-is the <em>inclusion probability</em> — the marginal probability that
-unit
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
-is included in the sample under the two-stage design (stage 1: select a
-period; stage 2: traverse the circuit). Jones &amp; Pollock (2012) treat
-this as the product of the two independent selection probabilities.</p>
-<p><strong>R implementation:</strong></p>
-<ul>
-<li>
-<code><a href="../reference/creel_design.html">creel_design()</a></code> in <code>R/creel-design.R</code>:
-accepts <code>p_site</code> and <code>p_period</code> columns from the
-<code>sampling_frame</code> argument and precomputes
-<code>pi_i = p_site * p_period</code> for each site×circuit combination.
-The result is stored in
-<code>design$bus_route$sampling_frame</code>.</li>
-<li>
-<code><a href="../reference/add_interviews.html">add_interviews()</a></code> in <code>R/creel-design.R</code>:
-joins the precomputed <code>pi_i</code> value from the sampling frame to
-each interview row, storing it as the <code>.pi_i</code> column.</li>
-</ul>
-<p><strong>Malvestuto (1996) Box 20.6 values:</strong></p>
+<p><code>p_period</code> is the probability that the sampled period (for
+example the morning or the afternoon) is the one worked; it is constant
+within a circuit. <code>p_site</code> is the site’s weight within the
+circuit, given in one of two ways:</p>
 <table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
 <thead><tr class="header">
-<th>Site</th>
-<th>p_site</th>
-<th>p_period</th>
-<th>πᵢ</th>
+<th>Argument(s)</th>
+<th><code>p_site</code></th>
+<th>Constraint</th>
+<th>Design</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>A</td>
-<td>0.30</td>
-<td>0.50</td>
-<td>0.150</td>
+<td>
+<code>wait_time</code>, <code>circuit_time</code>
+</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>i</mi></msub><mi>/</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">w_i / T</annotation></semantics></math></td>
+<td>waits add up to no more than
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
+</td>
+<td>bus route: every site visited on each pass</td>
 </tr>
 <tr class="even">
-<td>B</td>
-<td>0.25</td>
-<td>0.50</td>
-<td>0.125</td>
-</tr>
-<tr class="odd">
-<td>C</td>
-<td>0.40</td>
-<td>0.50</td>
-<td>0.200</td>
-</tr>
-<tr class="even">
-<td>D</td>
-<td>0.05</td>
-<td>0.50</td>
-<td>0.025</td>
+<td><code>p_site</code></td>
+<td>as given</td>
+<td>adds up to 1 within a circuit</td>
+<td>a randomly chosen site on each pass</td>
 </tr>
 </tbody>
 </table>
+<p>For a bus route,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>w</mi><mi>i</mi></msub><annotation encoding="application/x-tex">w_i</annotation></semantics></math>
+is the scheduled wait at site
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>
+“the total time to complete a full circuit of the route, including
+traveling and waiting” (Pollock et al. 1994, p. 238). A party at the
+site can be seen only while the crew is there, so
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>i</mi></msub><mi>/</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">w_i/T</annotation></semantics></math>
+is the share of the period during which it can be observed. The shares
+add up to less than 1 whenever the route has travel time. Rescaling them
+to add up to 1 divides by the total wait instead of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>,
+and lowers every total by the travelling share of the circuit (GH
+#539).</p>
+<p><strong>R implementation:</strong> <code><a href="../reference/creel_design.html">creel_design()</a></code>
+computes <code>.p_site</code> (from waits) and <code>.pi_i</code> in the
+sampling frame and checks the constraints; <code><a href="../reference/add_interviews.html">add_interviews()</a></code>
+joins <code>.pi_i</code> to each interview by site and circuit.</p>
 <hr>
 </div>
 <div class="section level2">
 <h2 id="enumeration-expansion">2. Enumeration Expansion<a class="anchor" aria-label="anchor" href="#enumeration-expansion"></a>
 </h2>
-<p><strong>Published source:</strong> Malvestuto (1996), Box 20.6,
-p. 614</p>
 <p><strong>Formula:</strong></p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub><mo>=</mo><mfrac><mrow><mi>n</mi><mi>_</mi><mi>c</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><msub><mi>d</mi><mi>i</mi></msub></mrow><mrow><mi>n</mi><mi>_</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><msub><mi>d</mi><mi>i</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">\text{expansion}_i = \frac{n\_counted_i}{n\_interviewed_i}</annotation></semantics></math></p>
+<p>When not every party at a site is interviewed, the interviewed
+parties stand for those that were not. With every party interviewed, the
+expansion is 1, as in the examples below.</p>
+<p><strong>R implementation:</strong> <code><a href="../reference/add_interviews.html">add_interviews()</a></code>
+stores <code>.expansion</code>. Two edge cases:</p>
+<ul>
+<li>
+<strong>Nobody seen</strong>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn><mi>/</mi><mn>0</mn></mrow><annotation encoding="application/x-tex">0/0</annotation></semantics></math>):
+the site-visit contributes zero effort, because no party was there;
+<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> sets it to 0 deliberately.</li>
+<li>
+<strong>Parties seen, none interviewed</strong>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>c</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">n\_counted &gt; 0</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><mi>d</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">n\_interviewed = 0</annotation></semantics></math>):
+the expansion is undefined and <code><a href="../reference/add_interviews.html">add_interviews()</a></code> warns. The
+point estimate currently counts those parties as zero effort, with an
+<code>NaN</code> standard error. That is a known defect (GH #542): their
+effort is unknown, not zero.</li>
+</ul>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="effort">3. Effort<a class="anchor" aria-label="anchor" href="#effort"></a>
+</h2>
+<p><strong>Formula</strong> (Jones &amp; Pollock 2012, Eq. 19.4):</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><mfrac><msub><mi>e</mi><mi>i</mi></msub><msub><mi>π</mi><mi>i</mi></msub></mfrac><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>e</mi><mi>i</mi></msub><mo>=</mo><msub><mi>a</mi><mi>i</mi></msub><mo>×</mo><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\hat{E} = \sum_{i} \frac{e_i}{\pi_i}, \qquad e_i = a_i \times \text{expansion}_i</annotation></semantics></math></p>
 <p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>c</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><msub><mi>d</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">n\_counted_i</annotation></semantics></math>
-is the total number of angler parties observed at site
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
-during the visit, and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><msub><mi>d</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">n\_interviewed_i</annotation></semantics></math>
-is the number of those parties actually interviewed.</p>
-<p><strong>Statistical meaning:</strong> When not all parties at a site
-are interviewed, the expansion factor rescales the interviewed sample to
-represent the full party count. If all parties are interviewed
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>c</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi><mo>=</mo><mi>n</mi><mi>_</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">n\_counted = n\_interviewed</annotation></semantics></math>),
-the expansion is 1 and no adjustment is needed. This is the case in Box
-20.6 Example 1.</p>
-<p><strong>R implementation:</strong></p>
-<ul>
-<li>
-<code><a href="../reference/add_interviews.html">add_interviews()</a></code> in <code>R/creel-design.R</code>:
-computes <code>.expansion = n_counted / n_interviewed</code> for each
-interview row. When <code>n_counted = 0</code> and
-<code>n_interviewed = 0</code> (zero-effort site),
-<code>.expansion</code> is set to <code>NA</code>; the effort estimator
-treats this as zero contribution.</li>
-</ul>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>a</mi><mi>i</mi></msub><annotation encoding="application/x-tex">a_i</annotation></semantics></math>
+is interview
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>’s
+angler effort: the hours fished times <code>n_anglers</code>, or the
+hours fished alone when no party size is given. Pollock et al. write
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\pi_j</annotation></semantics></math>
+for the probability of the sampled period, tidycreel’s
+<code>p_period</code>. With
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>w</mi><mi>i</mi></msub><mi>/</mi><mi>T</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><msub><mi>π</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">\pi_i = (w_i/T)\,\pi_j</annotation></semantics></math>
+the sum is their Eq. 15.10 term for term:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><mi>T</mi><munder><mo>∑</mo><mi>i</mi></munder><mfrac><mn>1</mn><msub><mi>w</mi><mi>i</mi></msub></mfrac><munder><mo>∑</mo><mi>j</mi></munder><mfrac><msub><mi>e</mi><mrow><mi>j</mi><mi>i</mi></mrow></msub><msub><mi>π</mi><mi>j</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\hat{E} = T \sum_i \frac{1}{w_i} \sum_j \frac{e_{ji}}{\pi_j}</annotation></semantics></math></p>
+<p><strong>Unit:</strong> angler-hours when
+<code><a href="../reference/add_interviews.html">add_interviews()</a></code> was given <code>n_anglers</code>;
+party-hours when it was not (it warns). The effort column is read as
+hours.</p>
+<p><strong>R implementation:</strong> <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>
+dispatches to <code>estimate_effort_br()</code>, which forms
+<code>.e_i</code> and <code>.contribution</code>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>=</mo><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">= e_i/\pi_i</annotation></semantics></math>
+and sums them. <code><a href="../reference/get_site_contributions.html">get_site_contributions()</a></code> returns the
+per-interview table.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="effort-estimator-jones-pollock-eq--19-4">3. Effort Estimator (Jones &amp; Pollock Eq. 19.4)<a class="anchor" aria-label="anchor" href="#effort-estimator-jones-pollock-eq--19-4"></a>
+<h2 id="catch-harvest-and-release-totals">4. Catch, Harvest and Release Totals<a class="anchor" aria-label="anchor" href="#catch-harvest-and-release-totals"></a>
 </h2>
-<p><strong>Published source:</strong> Jones &amp; Pollock (2012), Eq.
-19.4, p. 911</p>
-<p><strong>Formula:</strong></p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mfrac><msub><mi>e</mi><mi>i</mi></msub><msub><mi>π</mi><mi>i</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\hat{E} = \sum_{i=1}^{n} \frac{e_i}{\pi_i}</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>e</mi><mi>i</mi></msub><annotation encoding="application/x-tex">e_i</annotation></semantics></math>
-is the enumeration-expanded effort for interview
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>
-(see Section 4 below),
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
-is the inclusion probability, and the sum runs over all interview
-records.</p>
-<p><strong>Statistical meaning:</strong> This is a Horvitz-Thompson (HT)
-total estimator. Dividing by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
-is the HT inverse-probability weight: if a unit is sampled with
-probability
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>,
-it represents
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">1/\pi_i</annotation></semantics></math>
-units in the population. Summing the weighted contributions gives an
-unbiased estimator of the population total (under the design).</p>
-<p><strong>R implementation:</strong></p>
-<ul>
-<li>
-<code>estimate_effort_br()</code> in
-<code>R/creel-estimates-bus-route.R</code>, lines 21–215:
-<ul>
-<li>Line 69:
-<code>interviews$.e_i &lt;- interviews[[effort_col]] * interviews$.expansion</code>
-(computes expanded effort; see Section 4)</li>
-<li>Line 83:
-<code>interviews$.contribution &lt;- interviews$.e_i / interviews$.pi_i</code>
-(computes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">e_i / \pi_i</annotation></semantics></math>
-for each row)</li>
-<li>Line 96:
-<code>total_estimate &lt;- sum(interviews$.contribution, na.rm = TRUE)</code>
-(sums to produce
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>E</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat{E}</annotation></semantics></math>)</li>
-</ul>
-</li>
-<li>
-<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> in <code>R/creel-estimates.R</code>,
-line 310: dispatches to <code>estimate_effort_br()</code> when
-<code>design$design_type == "bus_route"</code>.</li>
-</ul>
+<p><strong>Formula</strong> (Jones &amp; Pollock 2012, Eq. 19.5; Pollock
+et al. 1994, Eq. 15.11):</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo>=</mo><munder><mo>∑</mo><mi>i</mi></munder><mfrac><msub><mi>h</mi><mi>i</mi></msub><msub><mi>π</mi><mi>i</mi></msub></mfrac><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>h</mi><mi>i</mi></msub><mo>=</mo><msub><mtext mathvariant="normal">harvest</mtext><mi>i</mi></msub><mo>×</mo><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\hat{H} = \sum_i \frac{h_i}{\pi_i}, \qquad h_i = \text{harvest}_i \times \text{expansion}_i</annotation></semantics></math></p>
+<p>and likewise for catch and released fish. These totals are
+Horvitz–Thompson totals of the fish themselves. They are
+<strong>not</strong> effort times a rate, so they need no assumption
+about the covariance of the two.</p>
+<p><strong>R implementation:</strong>
+<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>,
+<code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> and
+<code><a href="../reference/estimate_total_release.html">estimate_total_release()</a></code> dispatch to
+<code>estimate_total_catch_br()</code>,
+<code>estimate_total_harvest_br()</code> and
+<code>estimate_total_release_br()</code>, which share
+<code>br_build_estimates()</code>.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="expanded-effort-per-interview-eᵢ">4. Expanded Effort per Interview (eᵢ)<a class="anchor" aria-label="anchor" href="#expanded-effort-per-interview-e%E1%B5%A2"></a>
+<h2 id="rates-from-complete-trips">5. Rates from Complete Trips<a class="anchor" aria-label="anchor" href="#rates-from-complete-trips"></a>
 </h2>
-<p><strong>Published source:</strong> Malvestuto (1996), Box 20.6,
-p. 614 (implicit in the expansion step)</p>
-<p><strong>Formula:</strong></p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>i</mi></msub><mo>=</mo><msub><mtext mathvariant="normal">hours_fished</mtext><mi>i</mi></msub><mo>×</mo><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">e_i = \text{hours\_fished}_i \times \text{expansion}_i</annotation></semantics></math></p>
-<p><strong>Statistical meaning:</strong> The effort recorded in an
-interview represents only the fishing party interviewed. Multiplying by
-the expansion factor scales that effort to represent all
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>c</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">n\_counted</annotation></semantics></math>
-parties at the site, not just the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">n\_interviewed</annotation></semantics></math>
-parties.</p>
-<p><strong>R implementation:</strong></p>
-<ul>
-<li>
-<code>estimate_effort_br()</code> in
-<code>R/creel-estimates-bus-route.R</code>:
-<ul>
-<li>Line 69:
-<code>interviews$.e_i &lt;- interviews[[effort_col]] * interviews$.expansion</code>
-</li>
-</ul>
-</li>
-</ul>
-<p>When expansion = 1 (all parties interviewed, as in Box 20.6 Example
-1),
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>e</mi><mi>i</mi></msub><annotation encoding="application/x-tex">e_i</annotation></semantics></math>
-equals the raw effort. For example, Site C has 6 interviews each with
-<code>hours_fished = 57.5 / 6</code>:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>C</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>57.5</mn><mi>/</mi><mn>6</mn><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><mn>6</mn><mi>/</mi><mn>6</mn><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>57.5</mn><mrow><mspace width="0.333em"></mspace><mtext mathvariant="normal"> h per interview row</mtext></mrow></mrow><annotation encoding="application/x-tex">e_C = (57.5/6) \times (6/6) = 57.5 \text{ h per interview row}</annotation></semantics></math></p>
-<p>Wait — more precisely, each of the 6 Site C rows contributes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>i</mi></msub><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mn>57.5</mn><mi>/</mi><mn>6</mn><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">e_i = (57.5/6) \times 1</annotation></semantics></math>,
-and these sum to 57.5 h before the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><msub><mi>π</mi><mi>C</mi></msub><mo>=</mo><mn>5</mn></mrow><annotation encoding="application/x-tex">1/\pi_C = 5</annotation></semantics></math>
-weight is applied, yielding the site contribution of 287.5
-angler-hours.</p>
+<p>Eq. 19.4 and 19.5 are totals; the sources define no separate
+bus-route rate. The rate this design supports is the ratio of the two
+totals:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">HPUE</mtext><mo accent="true">̂</mo></mover><mo>=</mo><mfrac><mover><mi>H</mi><mo accent="true">̂</mo></mover><mover><mi>E</mi><mo accent="true">̂</mo></mover></mfrac><mo>=</mo><mfrac><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">\widehat{\text{HPUE}} = \frac{\hat{H}}{\hat{E}} = \frac{\sum_i h_i/\pi_i}{\sum_i e_i/\pi_i}</annotation></semantics></math></p>
+<p>This is a ratio of means, reported as
+<code>method = "ratio-of-means-hpue"</code> (or <code>-cpue</code>,
+<code>-rpue</code>). Its unit follows the denominator: fish per
+angler-hour, or per party-hour without <code>n_anglers</code>.</p>
+<p><strong>Variance.</strong> <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> linearises
+numerator and denominator together. The two totals come from the same
+interviews and are strongly positively correlated, so dividing two
+separately estimated totals and treating them as independent overstates
+the SE.</p>
+<p><strong>R implementation:</strong>
+<code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code>, <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>
+and <code><a href="../reference/estimate_release_rate.html">estimate_release_rate()</a></code> dispatch to
+<code>estimate_harvest_br()</code> (catch and release reuse it with
+their own column), whose ratio step is
+<code>br_harvest_rate_estimates()</code>. On a bus-route design
+<code>use_trips</code> defaults to <code>"complete"</code>.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="harvest-estimator-jones-pollock-eq--19-5">5. Harvest Estimator (Jones &amp; Pollock Eq. 19.5)<a class="anchor" aria-label="anchor" href="#harvest-estimator-jones-pollock-eq--19-5"></a>
+<h2 id="rates-from-incomplete-trips">6. Rates from Incomplete Trips<a class="anchor" aria-label="anchor" href="#rates-from-incomplete-trips"></a>
 </h2>
-<p><strong>Published source:</strong> Jones &amp; Pollock (2012), Eq.
-19.5, p. 912</p>
-<p><strong>Formula:</strong></p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mfrac><msub><mi>h</mi><mi>i</mi></msub><msub><mi>π</mi><mi>i</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\hat{H} = \sum_{i=1}^{n} \frac{h_i}{\pi_i}</annotation></semantics></math></p>
-<p>where
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mi>i</mi></msub><mo>=</mo><msub><mtext mathvariant="normal">harvest</mtext><mi>i</mi></msub><mo>×</mo><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">h_i = \text{harvest}_i \times \text{expansion}_i</annotation></semantics></math>
-is the enumeration-expanded harvest for interview
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>.</p>
-<p><strong>Statistical meaning:</strong> Structurally identical to the
-effort estimator (Eq. 19.4) with harvest substituted for effort. Both
-are HT totals over the same sampling design.</p>
-<p><strong>R implementation:</strong></p>
-<ul>
-<li>
-<code>estimate_harvest_br()</code> in
-<code>R/creel-estimates-bus-route.R</code>: computes
-<code>.h_i = harvest * .expansion</code> and
-<code>.contribution = .h_i / .pi_i</code>.</li>
-<li>
-<code><a href="../reference/estimate_total_harvest.html">estimate_total_harvest()</a></code> sums those contributions via
-<code>survey::svytotal(~.contribution, ...)</code> to give
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>H</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat{H}</annotation></semantics></math>.</li>
-</ul>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="a--harvest-rate-hpue-as-a-ratio-of-ht-totals">5a. Harvest Rate (HPUE) as a Ratio of HT Totals<a class="anchor" aria-label="anchor" href="#a--harvest-rate-hpue-as-a-ratio-of-ht-totals"></a>
-</h2>
-<p>Eq. 19.4 and Eq. 19.5 are <strong>totals</strong>. Jones &amp;
-Pollock define no rate estimator for the bus-route design, so the rate
-this design supports is the ratio of the two totals:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mtext mathvariant="normal">HPUE</mtext><mo accent="true">̂</mo></mover><mo>=</mo><mfrac><mover><mi>H</mi><mo accent="true">̂</mo></mover><mover><mi>E</mi><mo accent="true">̂</mo></mover></mfrac><mo>=</mo><mfrac><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">\widehat{\text{HPUE}} = \frac{\hat{H}}{\hat{E}}
-= \frac{\sum_i h_i / \pi_i}{\sum_i e_i / \pi_i}</annotation></semantics></math></p>
-<p>This is the ratio-of-means form, the same quantity
-<code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> returns for standard designs, and
-it carries the same <code>method</code> string
-(<code>"ratio-of-means-hpue"</code>). Because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>e</mi><mi>i</mi></msub><annotation encoding="application/x-tex">e_i</annotation></semantics></math>
-is built from angler-effort, the result is fish per
-<strong>angler</strong>-hour, matching the CPUE denominator on the same
-design.</p>
-<p><strong>Variance.</strong> Computed with
-<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> over both contribution columns, not by
-dividing two separately estimated totals.
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>H</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat{H}</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>E</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat{E}</annotation></semantics></math>
-come from the same interviews and are strongly positively correlated;
-propagating their SEs as if independent overstates the standard error
-substantially (roughly eightfold on the package’s bus-route harvest
-fixture).</p>
-</div>
-<div class="section level2">
-<h2 id="b--incomplete-trips-truncated-mean-of-ratios">5b. Incomplete trips: truncated mean of ratios<a class="anchor" aria-label="anchor" href="#b--incomplete-trips-truncated-mean-of-ratios"></a>
-</h2>
-<p>Everything above assumes completed trips. Anglers intercepted
-mid-trip are a different estimation problem, and
-<code>use_trips = "incomplete"</code> uses a different estimator for
-it.</p>
-<p>Hoenig, Jones, Pollock, Robson &amp; Wade (1997) analyse both
-candidates under the roving-type sampling that applies here — encounter
-probability proportional to time fished, catch observed only up to the
-interview moment. Writing
+<p>Anglers interviewed mid-trip need a different estimator, selected
+with <code>use_trips = "incomplete"</code>.</p>
+<p>Hoenig, Jones, Pollock, Robson &amp; Wade (1997) compare the two
+candidates under roving-type sampling: encounter probability
+proportional to time fished, and catch observed only up to the
+interview. Writing
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>C</mi><mi>j</mi></msub><annotation encoding="application/x-tex">C_j</annotation></semantics></math>
 for the catch and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>L</mi><mi>j</mi></msub><annotation encoding="application/x-tex">L_j</annotation></semantics></math>
 for the hours fished by angler
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>
-at the time of interview, the ratio of means has expectation</p>
+at the time of interview, the ratio of means has expectation (their Eq.
+3.2)</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><msub><mi>R</mi><mn>1</mn></msub><mo stretchy="false" form="postfix">]</mo><mspace width="0.278em"></mspace><mo>≈</mo><mspace width="0.278em"></mspace><mfrac><mrow><munder><mo>∑</mo><mi>j</mi></munder><msub><mi>λ</mi><mi>j</mi></msub><msubsup><mi>L</mi><mi>j</mi><mrow><mi>*</mi><mn>2</mn></mrow></msubsup></mrow><mrow><munder><mo>∑</mo><mi>j</mi></munder><msubsup><mi>L</mi><mi>j</mi><mrow><mi>*</mi><mn>2</mn></mrow></msubsup></mrow></mfrac></mrow><annotation encoding="application/x-tex">E[R_1] \;\approx\; \frac{\sum_j \lambda_j L_j^{*2}}{\sum_j L_j^{*2}}</annotation></semantics></math></p>
 <p>a weighting of individual rates
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>λ</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\lambda_j</annotation></semantics></math>
 by the <strong>square</strong> of completed trip length
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>L</mi><mi>j</mi><mo>*</mo></msubsup><annotation encoding="application/x-tex">L_j^{*}</annotation></semantics></math>.
-That is not the population catch rate, so
+So
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>R</mi><mn>1</mn></msub><annotation encoding="application/x-tex">R_1</annotation></semantics></math>
 “does not provide an estimate of catch rate that can be used with an
 independent estimate of total effort to provide an unbiased estimate of
 total catch except in the unrealistic case where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-is constant over all anglers.” The mean of ratios has the correct
-expectation — the ratio of total catch to total effort.</p>
-<p>Two departures from the paper’s plain average are forced by the
-bus-route design. Interviews are not equally likely, so each is weighted
-by
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">w_i = \text{expansion}_i / \pi_i</annotation></semantics></math>,
-giving a Hájek weighted mean:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mtext mathvariant="normal">HPUE</mtext><mo accent="true">̂</mo></mover><mtext mathvariant="normal">inc</mtext></msub><mspace width="0.278em"></mspace><mo>=</mo><mspace width="0.278em"></mspace><mfrac><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><mspace width="0.167em"></mspace><mo stretchy="false" form="prefix">(</mo><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>a</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub></mrow></mfrac><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mfrac><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub><msub><mi>π</mi><mi>i</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\widehat{\text{HPUE}}_{\text{inc}} \;=\;
+is constant over all anglers.” The mean of ratios has approximately the
+correct expectation.</p>
+<p>On a bus route the interviews are not equally likely, so each enters
+a Hájek weighted mean:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mtext mathvariant="normal">HPUE</mtext><mo accent="true">̂</mo></mover><mtext mathvariant="normal">inc</mtext></msub><mspace width="0.278em"></mspace><mo>=</mo><mspace width="0.278em"></mspace><mfrac><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub><mspace width="0.167em"></mspace><mo stretchy="false" form="prefix">(</mo><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>a</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><mrow><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>w</mi><mi>i</mi></msub></mrow></mfrac><mo>,</mo><mspace width="2.0em"></mspace><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mfrac><msub><mtext mathvariant="normal">expansion</mtext><mi>i</mi></msub><msub><mi>π</mi><mi>i</mi></msub></mfrac><mo>×</mo><mi>n</mi><mi>_</mi><mi>a</mi><mi>n</mi><mi>g</mi><mi>l</mi><mi>e</mi><mi>r</mi><msub><mi>s</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\widehat{\text{HPUE}}_{\text{inc}} \;=\;
 \frac{\sum_i w_i \, (h_i / a_i)}{\sum_i w_i},
-\qquad w_i = \frac{\text{expansion}_i}{\pi_i}</annotation></semantics></math></p>
+\qquad w_i = \frac{\text{expansion}_i}{\pi_i} \times n\_anglers_i</annotation></semantics></math></p>
 <p>where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>a</mi><mi>i</mi></msub><annotation encoding="application/x-tex">a_i</annotation></semantics></math>
-is angler-effort, so the result is fish per <strong>angler</strong>-hour
-rather than fish per party-hour. It is reported as
-<code>method = "mean-of-ratios-hpue"</code>.</p>
-<p><strong>Truncation is not optional.</strong> The mean-of-ratios
-estimator has <em>infinite</em> asymptotic variance:
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><mn>1</mn><mi>/</mi><msub><mi>L</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">E[1/L_j]</annotation></semantics></math>
-is infinite as trip length approaches zero. Hoenig et al. recommend
-discarding trips shorter than 30 minutes, which is the
+is angler-effort. The
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>a</mi><mi>n</mi><mi>g</mi><mi>l</mi><mi>e</mi><mi>r</mi><msub><mi>s</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">n\_anglers_i</annotation></semantics></math>
+factor applies when party size varies: an interview is a party, the rate
+is per angler, and meeting a party meets all its anglers (GH #513). It
+is reported as <code>method = "mean-of-ratios-hpue"</code>.</p>
+<p><strong>Truncation.</strong> The mean of ratios has infinite
+asymptotic variance as trip length goes to zero. Hoenig et al. recommend
+disregarding trips shorter than 30 minutes, which is the
 <code>truncate_at = 0.5</code> default. The threshold applies to elapsed
-trip duration, not to angler-hours — it is the short clock interval that
-makes the reciprocal explode, and a party of five fishing twelve minutes
-supplies a full angler-hour while still being the unstable case.
+trip duration, not to angler-hours: a party of five fishing twelve
+minutes supplies a full angler-hour and is still the unstable case.
 <code>truncate_at = NULL</code> disables truncation and warns.</p>
-<p><strong>Variance.</strong> As in 5a, <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code>
-linearises over numerator and denominator together; here the denominator
-is the sum of the weights.</p>
-<p><strong>Comparing the two.</strong>
-<code>use_trips = "diagnostic"</code> returns both slots. They use
-different estimators, because each is the estimator its trip type
-supports, but both report fish per angler-hour — so the gap between them
-is attributable to trip status rather than to a change of physical
-quantity.</p>
-<p><strong>R implementation:</strong></p>
-<ul>
-<li>
-<code>br_harvest_rate_estimates()</code> in
-<code>R/creel-estimates-bus-route.R</code> (shared ratio machinery for
-both trip paths).</li>
-<li>
-<code>br_incomplete_harvest_rate()</code> in
-<code>R/creel-estimates-bus-route.R</code>.</li>
-<li>
-<code><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate()</a></code> in
-<code>R/creel-estimates.R</code>: dispatches to
-<code>estimate_harvest_br()</code> when
-<code>design$design_type == "bus_route"</code>.</li>
-</ul>
+<p><code>use_trips = "diagnostic"</code> returns both rates. They are
+different estimators, each the one its trip type supports, but both
+divide by the same effort column, so they share a unit (per angler-hour
+with <code>n_anglers</code>, per party-hour without) and the gap between
+them reflects trip status rather than a change of unit.</p>
+<p><strong>R implementation:</strong>
+<code>br_incomplete_harvest_rate()</code>, called from
+<code>estimate_harvest_br()</code>.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="variance-estimation">6. Variance Estimation<a class="anchor" aria-label="anchor" href="#variance-estimation"></a>
+<h2 id="variance-and-what-the-total-covers">7. Variance and What the Total Covers<a class="anchor" aria-label="anchor" href="#variance-and-what-the-total-covers"></a>
 </h2>
-<p><strong>Published source:</strong> Horvitz &amp; Thompson (1952);
-implemented via Taylor linearization in the R <code>survey</code>
-package (Lumley 2010).</p>
-<p><strong>Method:</strong> tidycreel uses
-<code>survey::svytotal(~.contribution, svy_br)</code> where
-<code>svy_br</code> is an <code>svydesign</code> object constructed from
-the interview data. The <code>.contribution</code> column holds
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">e_i / \pi_i</annotation></semantics></math>
-(or
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">h_i / \pi_i</annotation></semantics></math>).
-The <code>survey</code> package applies Taylor linearization to compute
-the standard error of this total.</p>
-<p><strong>R implementation:</strong></p>
-<ul>
-<li>
-<code>estimate_effort_br()</code>, lines 99–112: constructs
-<code>svy_br</code> via <code>survey::svydesign(ids = ~1, ...)</code>,
-applies <code>get_variance_design()</code> for the selected variance
-method, and calls
-<code>survey::svytotal(~.contribution, svy_br)</code>.</li>
-<li>Phase 26 cross-validation
-(<code>tests/testthat/test-cross-validation.R</code>) confirms that the
-<code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">survey::svytotal</a></code> variance matches a manually constructed
-<code>svydesign</code> calculation to tolerance 1e-6.</li>
-</ul>
-<p>Bootstrap (<code>variance = "bootstrap"</code>) and jackknife
-(<code>variance = "jackknife"</code>) alternatives are available via
-<code>get_variance_design()</code>, consistent with all other tidycreel
-estimators.</p>
+<p><strong>Design.</strong> The per-interview contributions are analysed
+as a stratified sample with the <strong>sampled day</strong> as the
+primary sampling unit, stratified by the design’s strata. Interviews on
+the same day share that day’s conditions, so they are not independent
+draws (GH #198).</p>
+<p><strong>Method.</strong> <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">survey::svytotal()</a></code> for totals
+and <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> for rates, by Taylor linearisation
+(Lumley 2010); <code>variance = "bootstrap"</code> or
+<code>"jackknife"</code> replicate the same design. A stratum with one
+sampled day has no between-day variance and is refused.</p>
+<p><strong>Within-day variance.</strong> Robson &amp; Jones (1989,
+p. 95) show that with one crew per route per day the within-day
+component cannot be estimated separately. The day-level variance
+contains it, so the SE includes it, but tidycreel reports no separate
+within-day term for bus routes.</p>
+<p><strong>Target.</strong> The total covers the <strong>sampled
+days</strong>. Robson &amp; Jones (Eq. 13) expand the mean daily
+estimate to all
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
+days of a stratum; tidycreel does not implement that expansion for bus
+routes, and <code>target = "stratum_total"</code> or
+<code>"period_total"</code> is refused rather than ignored (GH #520).
+The result records <code>effort_target = "sampled_days"</code>.</p>
+<p><strong>R implementation:</strong> <code>br_add_psu_key()</code> sets
+the PSU; <code>get_variance_design()</code> applies the variance
+method.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="summary-traceability-table">7. Summary Traceability Table<a class="anchor" aria-label="anchor" href="#summary-traceability-table"></a>
+<h2 id="worked-check-pollock-et-al--1994-tables-15-1515-17">8. Worked Check: Pollock et al. (1994), Tables 15.15–15.17<a class="anchor" aria-label="anchor" href="#worked-check-pollock-et-al--1994-tables-15-1515-17"></a>
+</h2>
+<p>Pollock et al. give one day of direct-expansion interviews on a
+five-site route: a 360-minute circuit with waits of 30, 30, 15, 60 and
+60 minutes, and the morning or afternoon chosen with probability 0.5.
+Site 3 had no anglers. They report
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><mn>24</mn><mo>,</mo><mn>814.80</mn></mrow><annotation encoding="application/x-tex">\hat{E} = 24{,}814.80</annotation></semantics></math>
+minutes (Table 15.16) and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>C</mi><mo accent="true">̂</mo></mover><mo>=</mo><mn>227.88</mn></mrow><annotation encoding="application/x-tex">\hat{C} = 227.88</annotation></semantics></math>
+fish (Table 15.17).</p>
+<p>A design needs two sampled days for a between-day variance, so the
+published day is entered twice. Each day’s estimate is then the
+published one, and the sampled-day total is twice it. Trip durations are
+converted to hours.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">frame</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span>,</span>
+<span>  circuit <span class="op">=</span> <span class="st">"am_pm"</span>,</span>
+<span>  wait_min <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">30</span>, <span class="fl">15</span>, <span class="fl">60</span>, <span class="fl">60</span><span class="op">)</span>,</span>
+<span>  circuit_min <span class="op">=</span> <span class="fl">360</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">one_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  site <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1"</span>, <span class="st">"1"</span>, <span class="st">"2"</span>, <span class="st">"2"</span>, <span class="st">"4"</span>, <span class="st">"4"</span>, <span class="st">"4"</span>, <span class="st">"5"</span><span class="op">)</span>,</span>
+<span>  trip_min <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">135</span>, <span class="fl">165</span>, <span class="fl">175</span>, <span class="fl">215</span>, <span class="fl">150</span>, <span class="fl">145</span>, <span class="fl">168</span>, <span class="fl">225</span><span class="op">)</span>,</span>
+<span>  catch <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">2</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">days</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">interviews</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">days</span>, <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>date <span class="op">=</span> <span class="va">d</span>, <span class="va">one_day</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">interviews</span><span class="op">$</span><span class="va">day_type</span> <span class="op">&lt;-</span> <span class="st">"weekday"</span></span>
+<span><span class="va">interviews</span><span class="op">$</span><span class="va">circuit</span> <span class="op">&lt;-</span> <span class="st">"am_pm"</span></span>
+<span><span class="va">interviews</span><span class="op">$</span><span class="va">trip_hours</span> <span class="op">&lt;-</span> <span class="va">interviews</span><span class="op">$</span><span class="va">trip_min</span> <span class="op">/</span> <span class="fl">60</span></span>
+<span><span class="va">interviews</span><span class="op">$</span><span class="va">trip_status</span> <span class="op">&lt;-</span> <span class="st">"complete"</span></span>
+<span><span class="co"># Every party at a site was interviewed.</span></span>
+<span><span class="va">interviews</span><span class="op">$</span><span class="va">n_counted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/ave.html" class="external-link">ave</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">interviews</span><span class="op">)</span><span class="op">)</span>, <span class="va">interviews</span><span class="op">$</span><span class="va">date</span>, <span class="va">interviews</span><span class="op">$</span><span class="va">site</span>,</span>
+<span>  FUN <span class="op">=</span> <span class="va">length</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">interviews</span><span class="op">$</span><span class="va">n_interviewed</span> <span class="op">&lt;-</span> <span class="va">interviews</span><span class="op">$</span><span class="va">n_counted</span></span></code></pre></div>
+<p>Pollock et al.’s estimate is party effort, the trip length of each
+party, so the interviews are added without <code>n_anglers</code>.
+<code><a href="../reference/add_interviews.html">add_interviews()</a></code> warns that it is assuming one angler per
+interview, and the estimates are labelled <strong>party-hours</strong>,
+which is what this example is.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>date <span class="op">=</span> <span class="va">days</span>, day_type <span class="op">=</span> <span class="st">"weekday"</span><span class="op">)</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, survey_type <span class="op">=</span> <span class="st">"bus_route"</span>,</span>
+<span>  sampling_frame <span class="op">=</span> <span class="va">frame</span>, site <span class="op">=</span> <span class="va">site</span>, circuit <span class="op">=</span> <span class="va">circuit</span>,</span>
+<span>  wait_time <span class="op">=</span> <span class="va">wait_min</span>, circuit_time <span class="op">=</span> <span class="va">circuit_min</span>, p_period <span class="op">=</span> <span class="fl">0.5</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">interviews</span>,</span>
+<span>  effort <span class="op">=</span> <span class="va">trip_hours</span>, catch <span class="op">=</span> <span class="va">catch</span>, trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
+<span>  n_counted <span class="op">=</span> <span class="va">n_counted</span>, n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
+<span><span class="co">#&gt;   normalization.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
+<span><span class="co">#&gt;   that and silence this warning.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 2 interviews have zero catch.</span></span>
+<span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 16 interviews: 16 complete (100%), 0 incomplete (0%)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">effort</span><span class="op">$</span><span class="va">estimates</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     827.     0     827.     827.    16</span></span>
+<span><span class="va">effort</span><span class="op">$</span><span class="va">unit</span></span>
+<span><span class="co">#&gt; [1] "party-hours"</span></span>
+<span></span>
+<span><span class="co"># Per day, in minutes: Pollock et al. print 24,814.80 from site terms rounded to two</span></span>
+<span><span class="co"># decimals; unrounded it is 24,816.</span></span>
+<span><span class="va">effort</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">/</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">60</span></span>
+<span><span class="co">#&gt; [1] 24816</span></span>
+<span></span>
+<span><span class="va">catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co"># Per day: Pollock et al. print 227.88 from the rounded 0.633; unrounded it is 228.</span></span>
+<span><span class="va">catch</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">/</span> <span class="fl">2</span></span>
+<span><span class="co">#&gt; [1] 228</span></span></code></pre></div>
+<p>The standard error is 0 only because the two entered days are
+identical, so there is no between-day variation to measure. It says
+nothing about Pollock et al.’s survey, which reports one day and no
+variance. <code>tests/testthat/test-bus-route-wait-time.R</code> checks
+both figures.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="summary-traceability-table">9. Summary Traceability Table<a class="anchor" aria-label="anchor" href="#summary-traceability-table"></a>
 </h2>
 <table class="table">
 <colgroup>
-<col width="22%">
-<col width="20%">
-<col width="17%">
-<col width="13%">
-<col width="26%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
 </colgroup>
 <thead><tr class="header">
 <th>Quantity</th>
 <th>Formula</th>
 <th>Source</th>
-<th>Page</th>
-<th>R Location</th>
+<th>R function</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td>Site weight (bus route)</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mi>_</mi><mi>s</mi><mi>i</mi><mi>t</mi><msub><mi>e</mi><mi>i</mi></msub><mo>=</mo><msub><mi>w</mi><mi>i</mi></msub><mi>/</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">p\_site_i = w_i / T</annotation></semantics></math></td>
+<td>Robson &amp; Jones (1989) Eq. 12; Pollock et al. (1994) Eq. 15.10
+(both as
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi><mi>/</mi><msub><mi>w</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">T/w_i</annotation></semantics></math>)</td>
+<td><code>creel_design(wait_time, circuit_time)</code></td>
+</tr>
+<tr class="even">
 <td>Inclusion probability</td>
-<td>πᵢ = p_site × p_period</td>
-<td>Jones &amp; Pollock (2012)</td>
-<td>p. 912</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mi>p</mi><mi>_</mi><mi>s</mi><mi>i</mi><mi>t</mi><msub><mi>e</mi><mi>i</mi></msub><mo>×</mo><mi>p</mi><mi>_</mi><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">\pi_i = p\_site_i \times p\_period</annotation></semantics></math></td>
+<td>Pollock et al. (1994) Eq. 15.10
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\pi_j</annotation></semantics></math>)</td>
 <td>
-<code>creel-design.R</code>: <code><a href="../reference/creel_design.html">creel_design()</a></code>,
-<code><a href="../reference/add_interviews.html">add_interviews()</a></code>
+<code><a href="../reference/creel_design.html">creel_design()</a></code>, <code><a href="../reference/add_interviews.html">add_interviews()</a></code>
 </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Enumeration expansion</td>
-<td>expansion = n_counted / n_interviewed</td>
-<td>Malvestuto (1996) Box 20.6</td>
-<td>p. 614</td>
-<td>
-<code>creel-design.R</code>: <code><a href="../reference/add_interviews.html">add_interviews()</a></code>
-</td>
-</tr>
-<tr class="odd">
-<td>Expanded effort</td>
-<td>eᵢ = angler-hours × expansion</td>
-<td>Malvestuto (1996) Box 20.6</td>
-<td>p. 614</td>
-<td>
-<code>creel-estimates-bus-route.R</code>:
-<code>estimate_effort_br()</code>
-</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mi>_</mi><mi>c</mi><mi>o</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>d</mi><mi>/</mi><mi>n</mi><mi>_</mi><mi>i</mi><mi>n</mi><mi>t</mi><mi>e</mi><mi>r</mi><mi>v</mi><mi>i</mi><mi>e</mi><mi>w</mi><mi>e</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">n\_counted / n\_interviewed</annotation></semantics></math></td>
+<td>—</td>
+<td><code><a href="../reference/add_interviews.html">add_interviews()</a></code></td>
 </tr>
 <tr class="even">
-<td>HT effort total</td>
-<td>Ê = Σ(eᵢ/πᵢ)</td>
+<td>Effort total</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><mo>∑</mo><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\hat{E} = \sum e_i/\pi_i</annotation></semantics></math></td>
 <td>Jones &amp; Pollock (2012) Eq. 19.4</td>
-<td>p. 911</td>
-<td>
-<code>creel-estimates-bus-route.R</code> lines 83, 96</td>
+<td><code>estimate_effort_br()</code></td>
 </tr>
 <tr class="odd">
-<td>Expanded harvest</td>
-<td>hᵢ = harvest × expansion</td>
-<td>Malvestuto (1996) Box 20.6</td>
-<td>p. 614</td>
-<td>
-<code>creel-estimates-bus-route.R</code> (harvest branch)</td>
+<td>Catch/harvest/release total</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mo>=</mo><mo>∑</mo><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">\hat{H} = \sum h_i/\pi_i</annotation></semantics></math></td>
+<td>Jones &amp; Pollock (2012) Eq. 19.5; Pollock et al. (1994) Eq.
+15.11</td>
+<td><code>br_build_estimates()</code></td>
 </tr>
 <tr class="even">
-<td>HT harvest total</td>
-<td>Ĥ = Σ(hᵢ/πᵢ)</td>
-<td>Jones &amp; Pollock (2012) Eq. 19.5</td>
-<td>p. 912</td>
-<td>
-<code>creel-estimates-bus-route.R</code>:
-<code>estimate_total_harvest_br()</code>
-</td>
+<td>Rate, complete trips</td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>H</mi><mo accent="true">̂</mo></mover><mi>/</mi><mover><mi>E</mi><mo accent="true">̂</mo></mover></mrow><annotation encoding="application/x-tex">\hat{H}/\hat{E}</annotation></semantics></math></td>
+<td>ratio of Eq. 19.5 to Eq. 19.4</td>
+<td><code>br_harvest_rate_estimates()</code></td>
 </tr>
 <tr class="odd">
-<td>Harvest rate (HPUE)</td>
-<td>Ĥ / Ê</td>
-<td>ratio of Eq. 19.5 to Eq. 19.4</td>
-<td>pp. 911–912</td>
-<td>
-<code>creel-estimates-bus-route.R</code>:
-<code>br_harvest_rate_estimates()</code>
+<td>Rate, incomplete trips</td>
+<td>Hájek mean of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>h</mi><mi>i</mi></msub><mi>/</mi><msub><mi>a</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">h_i/a_i</annotation></semantics></math>
 </td>
+<td>Hoenig et al. (1997)</td>
+<td><code>br_incomplete_harvest_rate()</code></td>
 </tr>
 <tr class="even">
 <td>Variance</td>
-<td>Taylor linearization on Σ(eᵢ/πᵢ)</td>
+<td>day-PSU stratified design, Taylor or replicates</td>
 <td>Lumley (2010)</td>
-<td>—</td>
-<td><code>survey::svytotal(~.contribution, svy_br)</code></td>
+<td>
+<code>br_add_psu_key()</code>,
+<code>get_variance_design()</code>
+</td>
 </tr>
 </tbody>
 </table>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="why-πᵢ-matters-a-quantitative-example">8. Why πᵢ Matters: A Quantitative Example<a class="anchor" aria-label="anchor" href="#why-%CF%80%E1%B5%A2-matters-a-quantitative-example"></a>
+<h2 id="why-the-weights-matter">10. Why the Weights Matter<a class="anchor" aria-label="anchor" href="#why-the-weights-matter"></a>
 </h2>
-<p>Some implementations use a fixed value such as
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pi_i = 0.5</annotation></semantics></math>
-for all sites. That is not the inclusion probability of the sampling
-design. (Wait time over circuit time, by contrast, <em>is</em> the
-bus-route site weight of Robson &amp; Jones (1989) and Pollock et al.
-(1994, eq. 15.10). <code><a href="../reference/creel_design.html">creel_design()</a></code> takes it through
-<code>wait_time</code> and <code>circuit_time</code>.)</p>
-<p>The bias can be large and heterogeneous across sites. Using the
-Malvestuto (1996) Box 20.6 data, here is the effect of substituting
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pi_i = 0.5</annotation></semantics></math>
-for the correct design-based values:</p>
-<table style="width:100%;" class="table">
-<colgroup>
-<col width="8%">
-<col width="15%">
-<col width="11%">
-<col width="19%">
-<col width="35%">
-<col width="9%">
-</colgroup>
-<thead><tr class="header">
-<th>Site</th>
-<th>Correct πᵢ</th>
-<th>eᵢ (h)</th>
-<th>Correct eᵢ/πᵢ</th>
-<th>Incorrect (π=0.5) eᵢ/πᵢ</th>
-<th>Error</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>A</td>
-<td>0.150</td>
-<td>30.0</td>
-<td>200.0</td>
-<td>60.0</td>
-<td>−70%</td>
-</tr>
-<tr class="even">
-<td>B</td>
-<td>0.125</td>
-<td>20.0</td>
-<td>160.0</td>
-<td>40.0</td>
-<td>−75%</td>
-</tr>
-<tr class="odd">
-<td>C</td>
-<td>0.200</td>
-<td>57.5</td>
-<td>287.5</td>
-<td>115.0</td>
-<td>−60%</td>
-</tr>
-<tr class="even">
-<td>D</td>
-<td>0.025</td>
-<td>5.0</td>
-<td>200.0</td>
-<td>10.0</td>
-<td>−95%</td>
-</tr>
-<tr class="odd">
-<td><strong>Total</strong></td>
-<td></td>
-<td></td>
-<td><strong>847.5</strong></td>
-<td><strong>225.0</strong></td>
-<td><strong>−73%</strong></td>
-</tr>
-</tbody>
-</table>
-<p>With
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pi_i = 0.5</annotation></semantics></math>,
-the total effort estimate would be 225.0 angler-hours — a 73%
-underestimate of the correct 847.5. The bias is not uniform: Site D is
-underestimated by 95% because it has the lowest correct
+<p>Each site’s contribution is divided by its
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>,
+so an error in
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
-(0.025) but the incorrect formula assigns it the same weight as Site C
-(π = 0.5).</p>
-<p>The direction and magnitude of bias depend entirely on the
-distribution of site probabilities in the actual design. The only way to
-avoid bias is to use the design-specified inclusion probabilities —
-which is what tidycreel does.</p>
-<p>For the specific Site C example cited in the design documents:
-correct contribution = 57.5 / 0.20 = <strong>287.5</strong>; with π =
-0.5 it would be 57.5 / 0.5 = <strong>115.0</strong> — a 2.5×
-underestimate for that site alone.</p>
+is an error in that site’s share of the total. Two common errors, on the
+Pollock et al. route above:</p>
+<ul>
+<li>
+<strong>A fixed
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\pi_i = 0.5</annotation></semantics></math>
+for every site.</strong> That is not an inclusion probability of the
+design. Each site is then off by the ratio of 0.5 to its true
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>;
+site 1’s true
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>π</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\pi_i</annotation></semantics></math>
+is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>30</mn><mi>/</mi><mn>360</mn><mo>×</mo><mn>0.5</mn><mo>=</mo><mn>0.042</mn></mrow><annotation encoding="application/x-tex">30/360 \times 0.5 = 0.042</annotation></semantics></math>,
+so it would be understated twelvefold.</li>
+<li>
+<strong>Wait shares rescaled to add up to 1</strong>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>i</mi></msub><mi>/</mi><mo>∑</mo><mi>w</mi></mrow><annotation encoding="application/x-tex">w_i / \sum w</annotation></semantics></math>).
+Every total is multiplied by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>∑</mo><mi>w</mi><mi>/</mi><mi>T</mi><mo>=</mo><mn>195</mn><mi>/</mi><mn>360</mn><mo>=</mo><mn>0.54</mn></mrow><annotation encoding="application/x-tex">\sum w / T = 195/360 = 0.54</annotation></semantics></math>:
+the 165 minutes of travel are treated as if they were spent
+watching.</li>
+</ul>
 <hr>
 </div>
 <div class="section level2">
@@ -699,13 +608,12 @@ underestimate for that site alone.</p>
 <li><p>Hoenig, J. M., Jones, C. M., Pollock, K. H., Robson, D. S., &amp;
 Wade, D. L. (1997). Calculation of catch rate and total catch in roving
 surveys of anglers. <em>Biometrics</em>, 53(1), 306–317.</p></li>
-<li><p>Horvitz, D. G., &amp; Thompson, D. J. (1952). A generalization of
-sampling without replacement from a finite universe. <em>Journal of the
-American Statistical Association</em>, 47(260), 663–685.</p></li>
 <li><p>Jones, C. M., &amp; Pollock, K. H. (2012). Recreational angler
 survey methods: estimation of effort, harvest, and released catch.
 Chapter 19 in <em>Fisheries Techniques</em> (3rd ed.), pp. 883–919.
 American Fisheries Society.</p></li>
+<li><p>Lumley, T. (2010). <em>Complex Surveys: A Guide to Analysis Using
+R</em>. Wiley.</p></li>
 <li><p>Pollock, K. H., Jones, C. M., &amp; Brown, T. L. (1994).
 <em>Angler survey methods and their applications in fisheries
 management</em>. American Fisheries Society Special Publication
@@ -713,15 +621,6 @@ management</em>. American Fisheries Society Special Publication
 <li><p>Robson, D., &amp; Jones, C. M. (1989). The theoretical basis of
 an access site angler survey design. <em>Biometrics</em>, 45,
 83–98.</p></li>
-<li><p>Lumley, T. (2010). <em>Complex Surveys: A Guide to Analysis Using
-R</em>. Wiley.</p></li>
-<li><p>Malvestuto, S. P. (1996). Sampling the recreational creel.
-Chapter 20 in <em>Fisheries Techniques</em> (2nd ed.), pp. 591–623.
-American Fisheries Society.</p></li>
-<li><p>Malvestuto, S. P., Davies, W. D., &amp; Shelton, W. L. (1978). An
-evaluation of the roving creel survey with nonuniform probability
-sampling. <em>Transactions of the American Fisheries Society</em>,
-107(2), 255–262.</p></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

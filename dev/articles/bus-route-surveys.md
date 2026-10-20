@@ -121,39 +121,38 @@ and the test suite reproduces its Examples 1 and 2.
 
 We demonstrate the full bus-route workflow on a small constructed
 example: a four-site, single-circuit survey with 15 interviews over four
-days. Site C borrows its numbers from Malvestuto (1996) Box 20.6,
-Example 1, an access-point example in which six parties of 11 anglers
-fished 57.5 angler-hours at a landing selected with probability 0.20.
-Sites A, B and D are invented so the bus-route sum has several sites to
-add. Box 20.6 contains no bus-route example, so the totals below are
-this example’s own arithmetic, not published figures.
+days. The numbers are invented, so the totals below are this example’s
+own arithmetic, not published figures. The test suite checks the same
+estimator against a published example, Pollock et al. (1994, Tables
+15.16 and 15.17); the [equations
+page](https://chrischizinski.com/tidycreel/dev/articles/bus-route-equations.md)
+works through it.
 
 ### Step 1: Define the Sampling Design
 
-The sampling frame specifies the four sites, their selection
-probabilities (`p_site`), and the period sampling probability
-(`p_period`). This example gives `p_site` directly, so the site
-probabilities must sum to 1.0 within each circuit. For a route with wait
-and circuit times, pass `wait_time` and `circuit_time` instead (see
-[`?creel_design`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)).
+The sampling frame lists the four sites, the crew’s scheduled wait at
+each, and the time to drive the whole circuit once, waits included: 400
+minutes, of which 200 are waits and 200 are travel. Each day the crew
+works either the morning or the afternoon, chosen with equal
+probability, so `p_period = 0.5`.
 
 ``` r
 
 library(tidycreel)
 
-# Sampling frame: 4 sites, 1 circuit
-# p_site values are proportional to expected fishing effort at each site
+# Sampling frame: 4 sites, 1 circuit. Waits are longer at busier sites.
 sampling_frame <- data.frame(
-  site     = c("A", "B", "C", "D"),
-  circuit  = "circ1",
-  p_site   = c(0.30, 0.25, 0.40, 0.05), # must sum to 1.0
-  p_period = 0.50 # uniform period sampling
+  site        = c("A", "B", "C", "D"),
+  circuit     = "circ1",
+  wait_min    = c(60, 50, 80, 10), # 200 min of waits
+  circuit_min = 400, # whole circuit, travel included
+  p_period    = 0.50 # morning or afternoon, equally likely
 )
-# Inclusion probability: pi_i = p_site * p_period
-# Site A: 0.30 * 0.50 = 0.15
-# Site B: 0.25 * 0.50 = 0.125
-# Site C: 0.40 * 0.50 = 0.20
-# Site D: 0.05 * 0.50 = 0.025
+# Site weight: p_site = wait / circuit time; pi_i = p_site * p_period
+# Site A: 60 / 400 = 0.150; x 0.5 = 0.0750
+# Site B: 50 / 400 = 0.125; x 0.5 = 0.0625
+# Site C: 80 / 400 = 0.200; x 0.5 = 0.1000
+# Site D: 10 / 400 = 0.025; x 0.5 = 0.0125
 
 # Survey calendar: 4 weekdays
 calendar <- data.frame(
@@ -170,7 +169,8 @@ design <- creel_design(
   sampling_frame = sampling_frame,
   site = site,
   circuit = circuit,
-  p_site = p_site,
+  wait_time = wait_min,
+  circuit_time = circuit_min,
   p_period = p_period
 )
 print(design)
@@ -189,17 +189,18 @@ print(design)
 #> 
 #> Sites: 4, Circuits: 1
 #> Sampling probabilities (pi_i = p_site * p_period):
-#> A [circ1]: p_site=0.3, p_period=0.5, pi_i=0.15
-#> B [circ1]: p_site=0.25, p_period=0.5, pi_i=0.125
-#> C [circ1]: p_site=0.4, p_period=0.5, pi_i=0.2
-#> D [circ1]: p_site=0.05, p_period=0.5, pi_i=0.025
+#> A [circ1]: p_site=0.15, p_period=0.5, pi_i=0.075
+#> B [circ1]: p_site=0.125, p_period=0.5, pi_i=0.0625
+#> C [circ1]: p_site=0.2, p_period=0.5, pi_i=0.1
+#> D [circ1]: p_site=0.025, p_period=0.5, pi_i=0.0125
 ```
 
 The design object stores the sampling frame and precomputes πᵢ for each
-site×circuit combination. Site C has the highest selection probability
-(p_site = 0.40) and therefore the highest πᵢ (0.20), which means its
-interviews will carry lower inverse-probability weight than Site D’s (πᵢ
-= 0.025).
+site×circuit combination. The four site shares add up to 0.5, not 1:
+half the circuit is spent driving, when no party can be seen. Site C has
+the longest wait and therefore the highest πᵢ (0.10), so each of its
+parties stands for fewer unseen ones than a party at Site D (πᵢ =
+0.0125).
 
 ### Step 2: Attach Interview Data
 
@@ -210,9 +211,8 @@ are equal (no expansion needed), but the columns must still be supplied
 for bus-route designs.
 
 Each party’s effort is recorded here as angler-hours: the hours fished
-times the number of anglers in the party, which is how Box 20.6 reports
-it. Because the column already counts every angler, `n_anglers = 1`
-tells
+times the number of anglers in the party. Because the column already
+counts every angler, `n_anglers = 1` tells
 [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
 to take each value as it stands. If your sheet records hours per party
 and party size separately, pass the hours as `effort` and the party size
@@ -322,10 +322,10 @@ print(design)
 #> 
 #> Sites: 4, Circuits: 1
 #> Sampling probabilities (pi_i = p_site * p_period):
-#> A [circ1]: p_site=0.3, p_period=0.5, pi_i=0.15
-#> B [circ1]: p_site=0.25, p_period=0.5, pi_i=0.125
-#> C [circ1]: p_site=0.4, p_period=0.5, pi_i=0.2
-#> D [circ1]: p_site=0.05, p_period=0.5, pi_i=0.025
+#> A [circ1]: p_site=0.15, p_period=0.5, pi_i=0.075
+#> B [circ1]: p_site=0.125, p_period=0.5, pi_i=0.0625
+#> C [circ1]: p_site=0.2, p_period=0.5, pi_i=0.1
+#> D [circ1]: p_site=0.025, p_period=0.5, pi_i=0.0125
 #> 
 #> ── Enumeration Counts ──
 #> 
@@ -365,45 +365,41 @@ print(effort_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     848.  124.     604.    1091.    15
+#> 1     1695  248.    1208.    2182.    15
 
 # Inspect per-site contributions to the total
 site_contribs <- get_site_contributions(effort_est)
 print(site_contribs)
 #> # A tibble: 15 × 5
-#>    site  circuit   e_i  pi_i e_i_over_pi_i
-#>    <chr> <chr>   <dbl> <dbl>         <dbl>
-#>  1 A     circ1    7.5  0.15           50  
-#>  2 A     circ1    7.5  0.15           50  
-#>  3 A     circ1    7.5  0.15           50  
-#>  4 A     circ1    7.5  0.15           50  
-#>  5 B     circ1    6.67 0.125          53.3
-#>  6 B     circ1    6.67 0.125          53.3
-#>  7 B     circ1    6.67 0.125          53.3
-#>  8 C     circ1    9.58 0.2            47.9
-#>  9 C     circ1    9.58 0.2            47.9
-#> 10 C     circ1    9.58 0.2            47.9
-#> 11 C     circ1    9.58 0.2            47.9
-#> 12 C     circ1    9.58 0.2            47.9
-#> 13 D     circ1    2.5  0.025         100  
-#> 14 D     circ1    2.5  0.025         100  
-#> 15 C     circ1    9.58 0.2            47.9
+#>    site  circuit   e_i   pi_i e_i_over_pi_i
+#>    <chr> <chr>   <dbl>  <dbl>         <dbl>
+#>  1 A     circ1    7.5  0.075          100  
+#>  2 A     circ1    7.5  0.075          100  
+#>  3 A     circ1    7.5  0.075          100  
+#>  4 A     circ1    7.5  0.075          100  
+#>  5 B     circ1    6.67 0.0625         107. 
+#>  6 B     circ1    6.67 0.0625         107. 
+#>  7 B     circ1    6.67 0.0625         107. 
+#>  8 C     circ1    9.58 0.1             95.8
+#>  9 C     circ1    9.58 0.1             95.8
+#> 10 C     circ1    9.58 0.1             95.8
+#> 11 C     circ1    9.58 0.1             95.8
+#> 12 C     circ1    9.58 0.1             95.8
+#> 13 D     circ1    2.5  0.0125         200  
+#> 14 D     circ1    2.5  0.0125         200  
+#> 15 C     circ1    9.58 0.1             95.8
 ```
 
 The site contributions table shows exactly how each site’s effort feeds
-into the total. Site C (πᵢ = 0.20, total effort = 57.5 h) contributes
-57.5 / 0.20 = 287.5 angler-hours to the total — the largest single-site
-contribution, reflecting its high effort despite the relatively frequent
-sampling.
+into the total. Site C (πᵢ = 0.10, observed effort 57.5 h) contributes
+57.5 / 0.10 = 575 angler-hours, the largest single-site contribution.
+Site D (πᵢ = 0.0125, observed effort 5 h) contributes 5 / 0.0125 = 400
+angler-hours: the crew waits there for only 10 minutes of each 400, so
+each party seen stands for many that were not.
 
-Site D (πᵢ = 0.025, total effort = 5 h) contributes 5 / 0.025 = 200
-angler-hours. Though Site D has little observed effort, its low sampling
-probability means it represents a much larger population of fishing
-activity.
-
-Site C’s 287.5 angler-hours is the figure Box 20.6 publishes for its
-Example 1 landing; the total of 847.5 angler-hours adds the three
-constructed sites.
+The total is over the four sampled days. Bus-route totals refuse
+`target = "stratum_total"` and `"period_total"` (the expansion to
+unsampled days is not implemented).
 
 ### Step 4: Estimate Catch and Harvest
 
@@ -443,7 +439,7 @@ print(harvest_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     49.3  17.8     14.4     84.3    15
+#> 1     98.7  35.7     28.8     169.    15
 
 catch_est <- estimate_total_catch(design)
 print(catch_est)
@@ -458,7 +454,7 @@ print(catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     180.  30.0     122.     239.    15
+#> 1     361.  59.9     243.     478.    15
 ```
 
 ### Step 5: Results as Data
@@ -473,7 +469,7 @@ tibble::as_tibble(catch_est)
 #> # A tibble: 1 × 10
 #>   estimate    se ci_lower ci_upper     n method       variance_method conf_level
 #>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>        <chr>                <dbl>
-#> 1     180.  30.0     122.     239.    15 ht-total-ca… taylor                0.95
+#> 1     361.  59.9     243.     478.    15 ht-total-ca… taylor                0.95
 #> # ℹ 2 more variables: effort_target <chr>, unit <chr>
 
 ggplot2::autoplot(catch_est)
@@ -485,18 +481,19 @@ interval.](bus-route-surveys_files/figure-html/results-1.png)
 ## Checking the Arithmetic
 
 Each site contributes its observed effort divided by its inclusion
-probability. Site C’s row is the one figure published in Malvestuto
-(1996) Box 20.6 (Example 1); the rest are this example’s own arithmetic.
-`tests/testthat/test-primary-source-validation.R` checks both, and
-labels which is which.
+probability:
 
-| Site      | e_i (h) | πᵢ    | e_i / πᵢ  |
-|-----------|---------|-------|-----------|
-| A         | 30.0    | 0.150 | 200.0     |
-| B         | 20.0    | 0.125 | 160.0     |
-| C         | 57.5    | 0.200 | 287.5     |
-| D         | 5.0     | 0.025 | 200.0     |
-| **Total** |         |       | **847.5** |
+| Site      | wait / circuit | πᵢ     | e_i (h) | e_i / πᵢ  |
+|-----------|----------------|--------|---------|-----------|
+| A         | 60 / 400       | 0.0750 | 30.0    | 400       |
+| B         | 50 / 400       | 0.0625 | 20.0    | 320       |
+| C         | 80 / 400       | 0.1000 | 57.5    | 575       |
+| D         | 10 / 400       | 0.0125 | 5.0     | 400       |
+| **Total** |                |        |         | **1,695** |
+
+Rescaling the waits to add up to 1 (60/200, 50/200, …) would have given
+847.5, half the total, because half the circuit is travel. That is the
+error the `wait_time` and `circuit_time` arguments exist to prevent.
 
 ## References
 

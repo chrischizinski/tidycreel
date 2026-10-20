@@ -230,37 +230,35 @@ roving examples, and the test suite reproduces its Examples 1 and 2.</p>
 </h2>
 <p>We demonstrate the full bus-route workflow on a small constructed
 example: a four-site, single-circuit survey with 15 interviews over four
-days. Site C borrows its numbers from Malvestuto (1996) Box 20.6,
-Example 1, an access-point example in which six parties of 11 anglers
-fished 57.5 angler-hours at a landing selected with probability 0.20.
-Sites A, B and D are invented so the bus-route sum has several sites to
-add. Box 20.6 contains no bus-route example, so the totals below are
-this example’s own arithmetic, not published figures.</p>
+days. The numbers are invented, so the totals below are this example’s
+own arithmetic, not published figures. The test suite checks the same
+estimator against a published example, Pollock et al. (1994, Tables
+15.16 and 15.17); the <a href="bus-route-equations.html">equations
+page</a> works through it.</p>
 <div class="section level3">
 <h3 id="step-1-define-the-sampling-design">Step 1: Define the Sampling Design<a class="anchor" aria-label="anchor" href="#step-1-define-the-sampling-design"></a>
 </h3>
-<p>The sampling frame specifies the four sites, their selection
-probabilities (<code>p_site</code>), and the period sampling probability
-(<code>p_period</code>). This example gives <code>p_site</code>
-directly, so the site probabilities must sum to 1.0 within each circuit.
-For a route with wait and circuit times, pass <code>wait_time</code> and
-<code>circuit_time</code> instead (see <code><a href="../reference/creel_design.html">?creel_design</a></code>).</p>
+<p>The sampling frame lists the four sites, the crew’s scheduled wait at
+each, and the time to drive the whole circuit once, waits included: 400
+minutes, of which 200 are waits and 200 are travel. Each day the crew
+works either the morning or the afternoon, chosen with equal
+probability, so <code>p_period = 0.5</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Sampling frame: 4 sites, 1 circuit</span></span>
-<span><span class="co"># p_site values are proportional to expected fishing effort at each site</span></span>
+<span><span class="co"># Sampling frame: 4 sites, 1 circuit. Waits are longer at busier sites.</span></span>
 <span><span class="va">sampling_frame</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  site     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span>, <span class="st">"D"</span><span class="op">)</span>,</span>
-<span>  circuit  <span class="op">=</span> <span class="st">"circ1"</span>,</span>
-<span>  p_site   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.25</span>, <span class="fl">0.40</span>, <span class="fl">0.05</span><span class="op">)</span>, <span class="co"># must sum to 1.0</span></span>
-<span>  p_period <span class="op">=</span> <span class="fl">0.50</span> <span class="co"># uniform period sampling</span></span>
+<span>  site        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"C"</span>, <span class="st">"D"</span><span class="op">)</span>,</span>
+<span>  circuit     <span class="op">=</span> <span class="st">"circ1"</span>,</span>
+<span>  wait_min    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">60</span>, <span class="fl">50</span>, <span class="fl">80</span>, <span class="fl">10</span><span class="op">)</span>, <span class="co"># 200 min of waits</span></span>
+<span>  circuit_min <span class="op">=</span> <span class="fl">400</span>, <span class="co"># whole circuit, travel included</span></span>
+<span>  p_period    <span class="op">=</span> <span class="fl">0.50</span> <span class="co"># morning or afternoon, equally likely</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co"># Inclusion probability: pi_i = p_site * p_period</span></span>
-<span><span class="co"># Site A: 0.30 * 0.50 = 0.15</span></span>
-<span><span class="co"># Site B: 0.25 * 0.50 = 0.125</span></span>
-<span><span class="co"># Site C: 0.40 * 0.50 = 0.20</span></span>
-<span><span class="co"># Site D: 0.05 * 0.50 = 0.025</span></span>
+<span><span class="co"># Site weight: p_site = wait / circuit time; pi_i = p_site * p_period</span></span>
+<span><span class="co"># Site A: 60 / 400 = 0.150; x 0.5 = 0.0750</span></span>
+<span><span class="co"># Site B: 50 / 400 = 0.125; x 0.5 = 0.0625</span></span>
+<span><span class="co"># Site C: 80 / 400 = 0.200; x 0.5 = 0.1000</span></span>
+<span><span class="co"># Site D: 10 / 400 = 0.025; x 0.5 = 0.0125</span></span>
 <span></span>
 <span><span class="co"># Survey calendar: 4 weekdays</span></span>
 <span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -277,7 +275,8 @@ For a route with wait and circuit times, pass <code>wait_time</code> and
 <span>  sampling_frame <span class="op">=</span> <span class="va">sampling_frame</span>,</span>
 <span>  site <span class="op">=</span> <span class="va">site</span>,</span>
 <span>  circuit <span class="op">=</span> <span class="va">circuit</span>,</span>
-<span>  p_site <span class="op">=</span> <span class="va">p_site</span>,</span>
+<span>  wait_time <span class="op">=</span> <span class="va">wait_min</span>,</span>
+<span>  circuit_time <span class="op">=</span> <span class="va">circuit_min</span>,</span>
 <span>  p_period <span class="op">=</span> <span class="va">p_period</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
@@ -296,15 +295,16 @@ For a route with wait and circuit times, pass <code>wait_time</code> and
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Sites: <span style="color: #0000BB;">4</span>, Circuits: <span style="color: #0000BB;">1</span></span></span>
 <span><span class="co">#&gt; Sampling probabilities (pi_i = p_site * p_period):</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">A</span> [circ1]: p_site=0.3, p_period=0.5, pi_i=0.15</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">B</span> [circ1]: p_site=0.25, p_period=0.5, pi_i=0.125</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">C</span> [circ1]: p_site=0.4, p_period=0.5, pi_i=0.2</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">D</span> [circ1]: p_site=0.05, p_period=0.5, pi_i=0.025</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">A</span> [circ1]: p_site=0.15, p_period=0.5, pi_i=0.075</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">B</span> [circ1]: p_site=0.125, p_period=0.5, pi_i=0.0625</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">C</span> [circ1]: p_site=0.2, p_period=0.5, pi_i=0.1</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">D</span> [circ1]: p_site=0.025, p_period=0.5, pi_i=0.0125</span></span></code></pre></div>
 <p>The design object stores the sampling frame and precomputes πᵢ for
-each site×circuit combination. Site C has the highest selection
-probability (p_site = 0.40) and therefore the highest πᵢ (0.20), which
-means its interviews will carry lower inverse-probability weight than
-Site D’s (πᵢ = 0.025).</p>
+each site×circuit combination. The four site shares add up to 0.5, not
+1: half the circuit is spent driving, when no party can be seen. Site C
+has the longest wait and therefore the highest πᵢ (0.10), so each of its
+parties stands for fewer unseen ones than a party at Site D (πᵢ =
+0.0125).</p>
 </div>
 <div class="section level3">
 <h3 id="step-2-attach-interview-data">Step 2: Attach Interview Data<a class="anchor" aria-label="anchor" href="#step-2-attach-interview-data"></a>
@@ -315,13 +315,12 @@ many parties were at the site vs. how many were actually interviewed. In
 this example both are equal (no expansion needed), but the columns must
 still be supplied for bus-route designs.</p>
 <p>Each party’s effort is recorded here as angler-hours: the hours
-fished times the number of anglers in the party, which is how Box 20.6
-reports it. Because the column already counts every angler,
-<code>n_anglers = 1</code> tells <code><a href="../reference/add_interviews.html">add_interviews()</a></code> to take
-each value as it stands. If your sheet records hours per party and party
-size separately, pass the hours as <code>effort</code> and the party
-size as <code>n_anglers</code> instead, and tidycreel multiplies
-them.</p>
+fished times the number of anglers in the party. Because the column
+already counts every angler, <code>n_anglers = 1</code> tells
+<code><a href="../reference/add_interviews.html">add_interviews()</a></code> to take each value as it stands. If your
+sheet records hours per party and party size separately, pass the hours
+as <code>effort</code> and the party size as <code>n_anglers</code>
+instead, and tidycreel multiplies them.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 15 interviews across 4 sites and 4 days</span></span>
 <span><span class="co"># Site A: 4 interviews (all 4 parties interviewed)</span></span>
@@ -425,10 +424,10 @@ them.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Sites: <span style="color: #0000BB;">4</span>, Circuits: <span style="color: #0000BB;">1</span></span></span>
 <span><span class="co">#&gt; Sampling probabilities (pi_i = p_site * p_period):</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">A</span> [circ1]: p_site=0.3, p_period=0.5, pi_i=0.15</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">B</span> [circ1]: p_site=0.25, p_period=0.5, pi_i=0.125</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">C</span> [circ1]: p_site=0.4, p_period=0.5, pi_i=0.2</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">D</span> [circ1]: p_site=0.05, p_period=0.5, pi_i=0.025</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">A</span> [circ1]: p_site=0.15, p_period=0.5, pi_i=0.075</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">B</span> [circ1]: p_site=0.125, p_period=0.5, pi_i=0.0625</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">C</span> [circ1]: p_site=0.2, p_period=0.5, pi_i=0.1</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">D</span> [circ1]: p_site=0.025, p_period=0.5, pi_i=0.0125</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">Enumeration Counts</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -465,41 +464,38 @@ and computes
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     848.  124.     604.    <span style="text-decoration: underline;">1</span>091.    15</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">1</span>695  248.    <span style="text-decoration: underline;">1</span>208.    <span style="text-decoration: underline;">2</span>182.    15</span></span>
 <span></span>
 <span><span class="co"># Inspect per-site contributions to the total</span></span>
 <span><span class="va">site_contribs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_site_contributions.html">get_site_contributions</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">site_contribs</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 15 × 5</span></span></span>
-<span><span class="co">#&gt;    site  circuit   e_i  pi_i e_i_over_pi_i</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> A     circ1    7.5  0.15           50  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> A     circ1    7.5  0.15           50  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> A     circ1    7.5  0.15           50  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> A     circ1    7.5  0.15           50  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> B     circ1    6.67 0.125          53.3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> B     circ1    6.67 0.125          53.3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> B     circ1    6.67 0.125          53.3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> C     circ1    9.58 0.2            47.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> C     circ1    9.58 0.2            47.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> C     circ1    9.58 0.2            47.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span> C     circ1    9.58 0.2            47.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">12</span> C     circ1    9.58 0.2            47.9</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">13</span> D     circ1    2.5  0.025         100  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">14</span> D     circ1    2.5  0.025         100  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">15</span> C     circ1    9.58 0.2            47.9</span></span></code></pre></div>
+<span><span class="co">#&gt;    site  circuit   e_i   pi_i e_i_over_pi_i</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> A     circ1    7.5  0.075          100  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> A     circ1    7.5  0.075          100  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> A     circ1    7.5  0.075          100  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> A     circ1    7.5  0.075          100  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> B     circ1    6.67 0.062<span style="text-decoration: underline;">5</span>         107. </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> B     circ1    6.67 0.062<span style="text-decoration: underline;">5</span>         107. </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> B     circ1    6.67 0.062<span style="text-decoration: underline;">5</span>         107. </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> C     circ1    9.58 0.1             95.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> C     circ1    9.58 0.1             95.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> C     circ1    9.58 0.1             95.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span> C     circ1    9.58 0.1             95.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">12</span> C     circ1    9.58 0.1             95.8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">13</span> D     circ1    2.5  0.012<span style="text-decoration: underline;">5</span>         200  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">14</span> D     circ1    2.5  0.012<span style="text-decoration: underline;">5</span>         200  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">15</span> C     circ1    9.58 0.1             95.8</span></span></code></pre></div>
 <p>The site contributions table shows exactly how each site’s effort
-feeds into the total. Site C (πᵢ = 0.20, total effort = 57.5 h)
-contributes 57.5 / 0.20 = 287.5 angler-hours to the total — the largest
-single-site contribution, reflecting its high effort despite the
-relatively frequent sampling.</p>
-<p>Site D (πᵢ = 0.025, total effort = 5 h) contributes 5 / 0.025 = 200
-angler-hours. Though Site D has little observed effort, its low sampling
-probability means it represents a much larger population of fishing
-activity.</p>
-<p>Site C’s 287.5 angler-hours is the figure Box 20.6 publishes for its
-Example 1 landing; the total of 847.5 angler-hours adds the three
-constructed sites.</p>
+feeds into the total. Site C (πᵢ = 0.10, observed effort 57.5 h)
+contributes 57.5 / 0.10 = 575 angler-hours, the largest single-site
+contribution. Site D (πᵢ = 0.0125, observed effort 5 h) contributes 5 /
+0.0125 = 400 angler-hours: the crew waits there for only 10 minutes of
+each 400, so each party seen stands for many that were not.</p>
+<p>The total is over the four sampled days. Bus-route totals refuse
+<code>target = "stratum_total"</code> and <code>"period_total"</code>
+(the expansion to unsampled days is not implemented).</p>
 </div>
 <div class="section level3">
 <h3 id="step-4-estimate-catch-and-harvest">Step 4: Estimate Catch and Harvest<a class="anchor" aria-label="anchor" href="#step-4-estimate-catch-and-harvest"></a>
@@ -537,7 +533,7 @@ each party’s fish by its inclusion probability and summing.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     49.3  17.8     14.4     84.3    15</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     98.7  35.7     28.8     169.    15</span></span>
 <span></span>
 <span><span class="va">catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span>
@@ -552,7 +548,7 @@ each party’s fish by its inclusion probability and summing.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     180.  30.0     122.     239.    15</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     361.  59.9     243.     478.    15</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-5-results-as-data">Step 5: Results as Data<a class="anchor" aria-label="anchor" href="#step-5-results-as-data"></a>
@@ -565,7 +561,7 @@ plots with its confidence interval:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n method       variance_method conf_level</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     180.  30.0     122.     239.    15 ht-total-ca… taylor                0.95</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     361.  59.9     243.     478.    15 ht-total-ca… taylor                0.95</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
 <span></span>
 <span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span></code></pre></div>
@@ -576,50 +572,57 @@ plots with its confidence interval:</p>
 <h2 id="checking-the-arithmetic">Checking the Arithmetic<a class="anchor" aria-label="anchor" href="#checking-the-arithmetic"></a>
 </h2>
 <p>Each site contributes its observed effort divided by its inclusion
-probability. Site C’s row is the one figure published in Malvestuto
-(1996) Box 20.6 (Example 1); the rest are this example’s own arithmetic.
-<code>tests/testthat/test-primary-source-validation.R</code> checks
-both, and labels which is which.</p>
+probability:</p>
 <table class="table">
 <thead><tr class="header">
 <th>Site</th>
-<th>e_i (h)</th>
+<th>wait / circuit</th>
 <th>πᵢ</th>
+<th>e_i (h)</th>
 <th>e_i / πᵢ</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td>A</td>
+<td>60 / 400</td>
+<td>0.0750</td>
 <td>30.0</td>
-<td>0.150</td>
-<td>200.0</td>
+<td>400</td>
 </tr>
 <tr class="even">
 <td>B</td>
+<td>50 / 400</td>
+<td>0.0625</td>
 <td>20.0</td>
-<td>0.125</td>
-<td>160.0</td>
+<td>320</td>
 </tr>
 <tr class="odd">
 <td>C</td>
+<td>80 / 400</td>
+<td>0.1000</td>
 <td>57.5</td>
-<td>0.200</td>
-<td>287.5</td>
+<td>575</td>
 </tr>
 <tr class="even">
 <td>D</td>
+<td>10 / 400</td>
+<td>0.0125</td>
 <td>5.0</td>
-<td>0.025</td>
-<td>200.0</td>
+<td>400</td>
 </tr>
 <tr class="odd">
 <td><strong>Total</strong></td>
 <td></td>
 <td></td>
-<td><strong>847.5</strong></td>
+<td></td>
+<td><strong>1,695</strong></td>
 </tr>
 </tbody>
 </table>
+<p>Rescaling the waits to add up to 1 (60/200, 50/200, …) would have
+given 847.5, half the total, because half the circuit is travel. That is
+the error the <code>wait_time</code> and <code>circuit_time</code>
+arguments exist to prevent.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
