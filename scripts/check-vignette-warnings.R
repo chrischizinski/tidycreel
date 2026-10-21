@@ -38,7 +38,7 @@ allowed <- list(
     "No `n_anglers` provided",
     "Rate and effort may be in different units"
   ),
-  # How-to: Tasks, part 1 (#480): the former Estimation group.
+  # How-to: Tasks (#480), part 1: the former Estimation group.
   # The interview example is small: 17 complete trips, a 7-trip weekend cell,
   # and method/species domains the counts do not record. The age example
   # rescales aged fish onto the reported catch. The text explains each.
@@ -61,6 +61,20 @@ allowed <- list(
     "missing section"
   ),
   `temporal-extrapolation` = character(),
+  # How-to: Tasks (#480), part 2: the former Reporting & Planning group.
+  # The species estimates rest on 17 trips with a 7-trip weekend cell.
+  `unextrapolated-summaries` = c(
+    "Small sample size for CPUE estimation",
+    "rests on fewer than 10 trips"
+  ),
+  # The one-day opener example is there to show the fragile-schedule warning.
+  `survey-scheduling` = c("fragile schedule design"),
+  `survey-design-toolbox` = character(),
+  # 17 trips for the rate; lengths are rescaled from a subsample.
+  `visualisation` = c(
+    "Small sample size for CPUE estimation",
+    "Length totals were rescaled"
+  ),
   # Explanation section (#480).
   `effort-pipeline` = character(),
   `catch-pipeline` = character(),
