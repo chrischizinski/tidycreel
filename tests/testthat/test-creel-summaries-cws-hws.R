@@ -417,3 +417,22 @@ test_that("the two sides of the catch key may be named differently (#372)", {
   expect_equal(summarize_hws_rates(diff, by = species_sought), summarize_hws_rates(same, by = species_sought))
   expect_equal(summarize_successful_parties(diff), summarize_successful_parties(same))
 })
+
+test_that("CWS and HWS lower bounds are clamped at zero, upper bounds untouched (#550)", {
+  # Why: a catch or harvest rate cannot be negative, but the symmetric t
+  # interval on a small-N mean went below zero (bass: -0.157 on the example
+  # data). The rate estimators already clamp with pmax(0, ...); the summaries
+  # did not. Only the lower bound moves -- the upper bound and every group
+  # whose interval was already positive must be unchanged.
+  d <- make_design_with_catch_for_cws()
+  for (fn in list(summarize_cws_rates, summarize_hws_rates)) {
+    result <- fn(d, by = species_sought) # nolint: object_usage_linter
+    t_crit <- stats::qt(0.975, df = pmax(result$N - 1, 1))
+    raw_lower <- result$mean_rate - t_crit * result$se
+    # The fixture must exercise the clamp, or this test passes vacuously.
+    expect_true(any(raw_lower < 0))
+    expect_true(any(raw_lower > 0))
+    expect_equal(result$ci_lower, pmax(0, raw_lower))
+    expect_equal(result$ci_upper, result$mean_rate + t_crit * result$se)
+  }
+})
