@@ -53,15 +53,13 @@
     <li><a class="dropdown-item" href="../articles/aerial-surveys.html">Aerial Survey Analysis with tidycreel</a></li>
     <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>How-to: Tasks</h6></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete-Trip Interviews</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Season, Monthly and Annual Totals</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
+    <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
     <li><a class="dropdown-item" href="../articles/survey-scheduling.html">Survey Scheduling</a></li>
     <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
@@ -128,18 +126,18 @@ sought)</li>
 quality indicators</li>
 </ul>
 <p>All unextrapolated functions are <em>interview-weighted</em>, not
-<em>pressure-weighted</em>. A day with many anglers and few interviews
-has the same weight as a day with few anglers and many interviews. For
-pressure-weighted, design-correct estimates, use
-<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>, <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>,
-and related functions described in the “Interview-Based Catch
-Estimation” vignette.</p>
+<em>pressure-weighted</em>: every interview counts once. A day with many
+interviews therefore counts for more than a day with few, however many
+anglers were fishing on each. For pressure-weighted, design-based
+estimates, use <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>,
+<code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code>, and the related functions in
+<code><a href="../articles/interview-estimation.html">vignette("interview-estimation")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="build-the-design">Build the Design<a class="anchor" aria-label="anchor" href="#build-the-design"></a>
 </h2>
-<p>Start by assembling a complete design using all v0.5.0 data
-layers:</p>
+<p>Start by assembling a design with every data layer the summaries
+use:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
@@ -153,10 +151,13 @@ layers:</p>
 <span><span class="co"># Step 1: Define the survey calendar and stratification</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Step 2: Attach instantaneous count observations</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
+<span><span class="co"># Step 2: Attach effort. example_counts already holds angler-hours for each</span></span>
+<span><span class="co"># sampled day, so it goes in through prep_counts_daily_effort()</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Step 3: Attach interview records (all extended v0.5.0 fields)</span></span>
+<span><span class="co"># Step 3: Attach interview records, with the optional descriptive fields</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span>
 <span>  catch          <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>  effort         <span class="op">=</span> <span class="va">hours_fished</span>,</span>
@@ -200,7 +201,7 @@ layers:</p>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">14</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">effort_hours</span></span></span>
+<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">daily_effort</span></span></span>
 <span><span class="co">#&gt; Party-size term: not carried</span></span>
 <span><span class="co">#&gt; Count type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Survey: <span style="color: #0000BB;">&lt;survey.design2&gt;</span> (constructed)</span></span>
@@ -236,8 +237,9 @@ bias estimates if refusers differ systematically from participants.</p>
 <span><span class="co">#&gt;   month participation  N percent</span></span>
 <span><span class="co">#&gt; 1  June      accepted 22     100</span></span></code></pre></div>
 <p>All 22 interviews in <code>example_interviews</code> were accepted
-(no refusals). In field surveys, a refusal rate above 20% warrants
-investigation.</p>
+(no refusals). In a field survey, check whether refusals cluster in a
+stratum, a site or an angler type; the estimators assume the interviewed
+parties stand for the ones that refused.</p>
 </div>
 <div class="section level2">
 <h2 id="interview-composition">Interview Composition<a class="anchor" aria-label="anchor" href="#interview-composition"></a>
@@ -451,10 +453,15 @@ truncated, give <code>"lower-upper"</code> labels
 <div class="section level2">
 <h2 id="extrapolated-species-level-estimates">Extrapolated Species-Level Estimates<a class="anchor" aria-label="anchor" href="#extrapolated-species-level-estimates"></a>
 </h2>
-<p>For design-correct, pressure-weighted estimates broken down by
-species, use the extrapolated estimators. These combine effort estimates
-(from count data) with species-specific catch rates (from interview +
-catch data) using the ratio-of-means estimator.</p>
+<p>For pressure-weighted estimates broken down by species, use the
+estimators. These combine the effort estimate with species-specific
+catch rates from the interview and catch data, using the ratio of means
+for these complete trips. The calendar lists only the sampled days, so
+the totals are totals over those days.</p>
+<p>The example is small, 17 complete trips, so the rate calls warn that
+the sample is small for a ratio estimator, and the species totals warn
+that the weekend rate rests on fewer than 10 trips. Both are about
+precision, and the standard errors reflect them.</p>
 <div class="section level3">
 <h3 id="catch-per-unit-effort-by-species">Catch Per Unit Effort by Species<a class="anchor" aria-label="anchor" href="#catch-per-unit-effort-by-species"></a>
 </h3>
@@ -484,14 +491,6 @@ catch data) using the ratio-of-means estimator.</p>
 </h3>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 1 rate cell in <span style="color: #0000BB;">"species total catch"</span> rests on fewer than 10 trips.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> day_type=weekend: n=7</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>

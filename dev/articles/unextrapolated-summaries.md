@@ -17,17 +17,18 @@ survey-design weighting.
   indicators
 
 All unextrapolated functions are *interview-weighted*, not
-*pressure-weighted*. A day with many anglers and few interviews has the
-same weight as a day with few anglers and many interviews. For
-pressure-weighted, design-correct estimates, use
+*pressure-weighted*: every interview counts once. A day with many
+interviews therefore counts for more than a day with few, however many
+anglers were fishing on each. For pressure-weighted, design-based
+estimates, use
 [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
 [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
-and related functions described in the “Interview-Based Catch
-Estimation” vignette.
+and the related functions in
+[`vignette("interview-estimation")`](https://chrischizinski.com/tidycreel/dev/articles/interview-estimation.md).
 
 ## Build the Design
 
-Start by assembling a complete design using all v0.5.0 data layers:
+Start by assembling a design with every data layer the summaries use:
 
 ``` r
 
@@ -43,10 +44,13 @@ data(example_lengths)
 # Step 1: Define the survey calendar and stratification
 design <- creel_design(example_calendar, date = date, strata = day_type)
 
-# Step 2: Attach instantaneous count observations
-design <- add_counts(design, example_counts)
+# Step 2: Attach effort. example_counts already holds angler-hours for each
+# sampled day, so it goes in through prep_counts_daily_effort()
+design <- add_counts(design, prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+))
 
-# Step 3: Attach interview records (all extended v0.5.0 fields)
+# Step 3: Attach interview records, with the optional descriptive fields
 design <- add_interviews(design, example_interviews,
   catch          = catch_total,
   effort         = hours_fished,
@@ -90,7 +94,7 @@ print(design)
 #> day_type: 2 levels
 #> Counts: 14 observations
 #> PSU column: date
-#> Count column: effort_hours
+#> Count column: daily_effort
 #> Party-size term: not carried
 #> Count type: "instantaneous"
 #> Survey: <survey.design2> (constructed)
@@ -133,7 +137,9 @@ summarize_refusals(design)
 ```
 
 All 22 interviews in `example_interviews` were accepted (no refusals).
-In field surveys, a refusal rate above 20% warrants investigation.
+In a field survey, check whether refusals cluster in a stratum, a site
+or an angler type; the estimators assume the interviewed parties stand
+for the ones that refused.
 
 ## Interview Composition
 
@@ -363,10 +369,16 @@ summarize_length_freq(design, type = "catch", by = species, bin_width = 25)
 
 ## Extrapolated Species-Level Estimates
 
-For design-correct, pressure-weighted estimates broken down by species,
-use the extrapolated estimators. These combine effort estimates (from
-count data) with species-specific catch rates (from interview + catch
-data) using the ratio-of-means estimator.
+For pressure-weighted estimates broken down by species, use the
+estimators. These combine the effort estimate with species-specific
+catch rates from the interview and catch data, using the ratio of means
+for these complete trips. The calendar lists only the sampled days, so
+the totals are totals over those days.
+
+The example is small, 17 complete trips, so the rate calls warn that the
+sample is small for a ratio estimator, and the species totals warn that
+the weekend rate rests on fewer than 10 trips. Both are about precision,
+and the standard errors reflect them.
 
 ### Catch Per Unit Effort by Species
 
@@ -398,14 +410,6 @@ estimate_catch_rate(design, by = species)
 ``` r
 
 estimate_total_catch(design, by = species)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 rate cell in "species total catch" rests on fewer than 10 trips.
 #> • day_type=weekend: n=7
 #> ℹ The total multiplies each cell's effort by a rate built from that cell's

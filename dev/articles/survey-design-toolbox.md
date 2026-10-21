@@ -1,7 +1,6 @@
 # Survey Design Toolbox: Planning, Comparing, and Combining Designs
 
-This vignette collects three M014 tools into one practitioner-facing
-workflow:
+This vignette collects three tools into one workflow:
 
 1.  [`power_creel()`](https://chrischizinski.com/tidycreel/dev/reference/power_creel.md)
     for pre-season sample-size and power planning
@@ -117,8 +116,12 @@ data("example_interviews")
 
 calendar <- unique(example_counts[, c("date", "day_type")])
 
+# example_counts holds angler-hours for each sampled day, so it goes in through
+# prep_counts_daily_effort() rather than as instantaneous counts
 design <- creel_design(calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
+design <- add_counts(design, prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+))
 design <- add_interviews(
   design,
   example_interviews,
@@ -274,7 +277,10 @@ survey::svytotal(~count, hybrid_design)
 ```
 
 That total is a season total: 20 weekday days and 10 weekend days in the
-June calendar, expanded from the two of each that were sampled.
+June calendar, expanded from the two of each that were sampled. It is in
+the units of `count`, a sum of angler counts over days, not
+angler-hours: to get angler-hours, multiply each count by the length of
+the period it was made in before building the design.
 
 This small example is intentionally self-contained, but the same pattern
 scales to real field programs where the count frames cover

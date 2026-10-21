@@ -53,15 +53,13 @@
     <li><a class="dropdown-item" href="../articles/aerial-surveys.html">Aerial Survey Analysis with tidycreel</a></li>
     <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>How-to: Tasks</h6></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete-Trip Interviews</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Season, Monthly and Annual Totals</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
+    <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
     <li><a class="dropdown-item" href="../articles/survey-scheduling.html">Survey Scheduling</a></li>
     <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
@@ -283,145 +281,28 @@ deterministically by civil date.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">sched_high_use</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
-<span>  start_date <span class="op">=</span> <span class="st">"2027-07-30"</span>,</span>
-<span>  end_date <span class="op">=</span> <span class="st">"2027-08-03"</span>,</span>
+<span>  start_date <span class="op">=</span> <span class="st">"2027-07-17"</span>,</span>
+<span>  end_date <span class="op">=</span> <span class="st">"2027-08-08"</span>,</span>
 <span>  n_periods <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  sampling_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">1</span>, weekend <span class="op">=</span> <span class="fl">1</span>, high_use <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  sampling_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>weekday <span class="op">=</span> <span class="fl">0.5</span>, weekend <span class="op">=</span> <span class="fl">1</span>, high_use <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  include_all <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  expand_periods <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
 <span>  special_periods <span class="op">=</span> <span class="va">opener_periods</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Special-period declarations produced a fragile schedule design.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Affected strata: <span style="color: #0000BB;">"weekend (baseline=2, final=0)"</span></span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Inspect the <span style="color: #0000BB;">"special_period_diagnostics"</span> attribute or print the schedule for</span></span>
-<span><span class="co">#&gt;   details.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span></span>
-<span><span class="va">sched_high_use</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span>, <span class="st">"final_stratum"</span>, <span class="st">"special_period_reason"</span>, <span class="st">"sampled"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="july-2027">July 2027<a class="anchor" aria-label="anchor" href="#july-2027"></a>
-</h3>
-<table class="table">
-<thead><tr class="header">
-<th>Sun</th>
-<th>Mon</th>
-<th>Tue</th>
-<th>Wed</th>
-<th>Thu</th>
-<th>Fri</th>
-<th>Sat</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>01</td>
-<td>02</td>
-<td>03</td>
-</tr>
-<tr class="even">
-<td>04</td>
-<td>05</td>
-<td>06</td>
-<td>07</td>
-<td>08</td>
-<td>09</td>
-<td>10</td>
-</tr>
-<tr class="odd">
-<td>11</td>
-<td>12</td>
-<td>13</td>
-<td>14</td>
-<td>15</td>
-<td>16</td>
-<td>17</td>
-</tr>
-<tr class="even">
-<td>18</td>
-<td>19</td>
-<td>20</td>
-<td>21</td>
-<td>22</td>
-<td>23</td>
-<td>24</td>
-</tr>
-<tr class="odd">
-<td>25</td>
-<td>26</td>
-<td>27</td>
-<td>28</td>
-<td>29</td>
-<td>WEEKD</td>
-<td>WEEKE</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="august-2027">August 2027<a class="anchor" aria-label="anchor" href="#august-2027"></a>
-</h3>
-<table class="table">
-<thead><tr class="header">
-<th>Sun</th>
-<th>Mon</th>
-<th>Tue</th>
-<th>Wed</th>
-<th>Thu</th>
-<th>Fri</th>
-<th>Sat</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>WEEKE</td>
-<td>WEEKD</td>
-<td>WEEKD</td>
-<td>04</td>
-<td>05</td>
-<td>06</td>
-<td>07</td>
-</tr>
-<tr class="even">
-<td>08</td>
-<td>09</td>
-<td>10</td>
-<td>11</td>
-<td>12</td>
-<td>13</td>
-<td>14</td>
-</tr>
-<tr class="odd">
-<td>15</td>
-<td>16</td>
-<td>17</td>
-<td>18</td>
-<td>19</td>
-<td>20</td>
-<td>21</td>
-</tr>
-<tr class="even">
-<td>22</td>
-<td>23</td>
-<td>24</td>
-<td>25</td>
-<td>26</td>
-<td>27</td>
-<td>28</td>
-</tr>
-<tr class="odd">
-<td>29</td>
-<td>30</td>
-<td>31</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
+<span><span class="va">opener_days</span> <span class="op">&lt;-</span> <span class="va">sched_high_use</span><span class="op">$</span><span class="va">date</span> <span class="op">&gt;=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2027-07-30"</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>  <span class="va">sched_high_use</span><span class="op">$</span><span class="va">date</span> <span class="op">&lt;=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2027-08-03"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">sched_high_use</span><span class="op">)</span><span class="op">[</span></span>
+<span>  <span class="va">opener_days</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span>, <span class="st">"final_stratum"</span>, <span class="st">"special_period_reason"</span>, <span class="st">"sampled"</span><span class="op">)</span></span>
+<span><span class="op">]</span></span>
+<span><span class="co">#&gt;          date day_type final_stratum special_period_reason sampled</span></span>
+<span><span class="co">#&gt; 14 2027-07-30  weekday       weekday                  &lt;NA&gt;    TRUE</span></span>
+<span><span class="co">#&gt; 15 2027-07-31  weekend      high_use                opener    TRUE</span></span>
+<span><span class="co">#&gt; 16 2027-08-01  weekend      high_use                opener    TRUE</span></span>
+<span><span class="co">#&gt; 17 2027-08-02  weekday       weekday                  &lt;NA&gt;   FALSE</span></span>
+<span><span class="co">#&gt; 18 2027-08-03  weekday       weekday                  &lt;NA&gt;   FALSE</span></span></code></pre></div>
 <p>The output keeps the baseline <code>day_type</code> classification
 and adds <code>final_stratum</code>, which is what the scheduler
 actually uses for sample allocation when special periods are present.
@@ -440,20 +321,22 @@ August.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sched_high_use</span>, <span class="st">"special_period_allocation"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   final_stratum available_days</span></span>
 <span><span class="co">#&gt; 1      high_use              2</span></span>
-<span><span class="co">#&gt; 2       weekday              3</span></span></code></pre></div>
+<span><span class="co">#&gt; 2       weekday             15</span></span>
+<span><span class="co">#&gt; 3       weekend              6</span></span></code></pre></div>
 <p>These attributes show which dates were reassigned to the special
 stratum and how many available days ended up in each final stratum after
 the calendar rules were applied.</p>
-<p>When a declaration is technically valid but leaves a very small
-special stratum or consumes most of a baseline stratum,
-<code><a href="../reference/generate_schedule.html">generate_schedule()</a></code> now emits a warning rather than failing
-silently. The returned schedule also carries a
+<p>When a declaration is valid but leaves a very small special stratum,
+or consumes most of a baseline stratum, <code><a href="../reference/generate_schedule.html">generate_schedule()</a></code>
+warns. The returned schedule also carries a
 <code>special_period_diagnostics</code> attribute, and
-<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> / <code><a href="https://rdrr.io/r/base/format.html" class="external-link">format()</a></code> surface a compact summary
-so you can see the risky stratum rewrite without digging through raw
-attributes.</p>
+<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> / <code><a href="https://rdrr.io/r/base/format.html" class="external-link">format()</a></code> show a compact summary.
+Here the opener is a single day, so the high-use stratum has one day in
+it, and the call warns that the schedule is fragile. A stratum with one
+sampled day gives no variance estimate later, when the effort is
+estimated.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sched_fragile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">sched_fragile</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_schedule.html">generate_schedule</a></span><span class="op">(</span></span>
 <span>  start_date <span class="op">=</span> <span class="st">"2027-08-01"</span>,</span>
 <span>  end_date <span class="op">=</span> <span class="st">"2027-08-08"</span>,</span>
 <span>  n_periods <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -467,7 +350,12 @@ attributes.</p>
 <span>    label <span class="op">=</span> <span class="st">"high_use"</span>,</span>
 <span>    reason <span class="op">=</span> <span class="st">"opener"</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Special-period declarations produced a fragile schedule design.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Affected strata: <span style="color: #0000BB;">"high_use (baseline=0, final=1)"</span></span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Inspect the <span style="color: #0000BB;">"special_period_diagnostics"</span> attribute or print the schedule for</span></span>
+<span><span class="co">#&gt;   details.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">sched_fragile</span>, <span class="st">"special_period_diagnostics"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   severity</span></span>
@@ -487,11 +375,9 @@ attributes.</p>
 requested baseline stratum no longer exists in the final schedule,
 tidycreel aborts and asks you to update <code>n_days</code> or
 <code>sampling_rate</code> to match the final strata.</p>
-<p>This scheduling feature is the operational companion to the high-use
-design contract from M020: prospective high-use periods are treated as
-true design strata, and boundary-crossing periods are split by day
-rather than assigned wholesale to the month where they started.</p>
-</div>
+<p>Declared this way, a high-use period is a design stratum planned
+before sampling, and a period that crosses a month boundary is split by
+day rather than assigned wholesale to the month where it started.</p>
 <div class="section level3">
 <h3 id="special-strata-vs--post-stratification">Special Strata vs. Post-Stratification<a class="anchor" aria-label="anchor" href="#special-strata-vs--post-stratification"></a>
 </h3>
@@ -622,9 +508,10 @@ application) or xlsx (for direct field printing).
 <code><a href="../reference/read_schedule.html">read_schedule()</a></code> reloads the file with correct column types,
 so the schedule round-trips without type coercion issues.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Save for field crews</span></span>
+<code class="sourceCode R"><span><span class="co"># Save for field crews. The format is not read from the file name, so name it</span></span>
+<span><span class="co"># for xlsx.</span></span>
 <span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">sched</span>, <span class="st">"count_schedule_2024.csv"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">sched</span>, <span class="st">"count_schedule_2024.xlsx"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">sched</span>, <span class="st">"count_schedule_2024.xlsx"</span>, format <span class="op">=</span> <span class="st">"xlsx"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Reload — column types are preserved automatically</span></span>
 <span><span class="va">sched_reload</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_schedule.html">read_schedule</a></span><span class="op">(</span><span class="st">"count_schedule_2024.csv"</span><span class="op">)</span></span>
@@ -668,8 +555,8 @@ should follow.</p>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
 <span><span class="co">#&gt; Strata: <span style="color: #00BB00;">analysis_stratum</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">5</span> days (2027-07-30 to 2027-08-03)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">analysis_stratum</span>: <span style="color: #0000BB;">2</span> levels</span></span>
+<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">23</span> days (2027-07-17 to 2027-08-08)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">analysis_stratum</span>: <span style="color: #0000BB;">3</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">"none"</span></span></span>
 <span><span class="co">#&gt; Interviews: <span style="color: #0000BB;">"none"</span></span></span>
 <span><span class="co">#&gt; Sections: <span style="color: #0000BB;">"none"</span></span></span></code></pre></div>
@@ -700,11 +587,20 @@ days.</p>
 <div class="section level2">
 <h2 id="bus-route-scheduling">Bus-Route Scheduling<a class="anchor" aria-label="anchor" href="#bus-route-scheduling"></a>
 </h2>
-<p>For bus-route designs, <code><a href="../reference/generate_bus_schedule.html">generate_bus_schedule()</a></code> converts
-a count schedule and a site-level sampling frame into a complete
-bus-route sampling frame with inclusion probabilities. Each site’s
-probability of being visited in a given period is:</p>
+<p>For bus-route designs, <code><a href="../reference/generate_bus_schedule.html">generate_bus_schedule()</a></code> turns a
+site-level frame into a bus-route sampling frame with inclusion
+probabilities:</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo>=</mo><msub><mi>p</mi><mrow><mi>s</mi><mi>i</mi><mi>t</mi><mi>e</mi></mrow></msub><mo>×</mo><msub><mi>p</mi><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow></msub><mspace width="1.0em"></mspace><mtext mathvariant="normal">where</mtext><mspace width="1.0em"></mspace><msub><mi>p</mi><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow></msub><mo>=</mo><mfrac><mtext mathvariant="normal">crew</mtext><msub><mi>n</mi><mrow><mi>c</mi><mi>i</mi><mi>r</mi><mi>c</mi><mi>u</mi><mi>i</mi><mi>t</mi><mi>s</mi></mrow></msub></mfrac></mrow><annotation encoding="application/x-tex">\pi_i = p_{site} \times p_{period} \quad \text{where} \quad p_{period} = \frac{\text{crew}}{n_{circuits}}</annotation></semantics></math></p>
+<p><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>p</mi><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow></msub><annotation encoding="application/x-tex">p_{period}</annotation></semantics></math>
+here is the chance that a given circuit is the one a crew works. The
+function takes the schedule as an argument but does not use it in the
+calculation, and it requires <code>p_site</code> to sum to 1 within a
+circuit. The published bus-route estimator weights each site by its wait
+time over the whole circuit time, travel included, so its weights sum to
+less than 1; give those to <code><a href="../reference/creel_design.html">creel_design()</a></code> through
+<code>wait_time</code> and <code>circuit_time</code>
+(<code><a href="../articles/bus-route-surveys.html">vignette("bus-route-surveys")</a></code>). Bringing the planner in
+line is open as issue #541.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Site-level selection probabilities (must sum to 1.0)</span></span>
 <span><span class="va">site_frame</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -729,46 +625,23 @@ probability of being visited in a given period is:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> South Cove     0.25        1           0.25</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Dock Area      0.25        1           0.25</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Main Channel   0.15        1           0.15</span></span></code></pre></div>
-<p>The <code>inclusion_prob</code> column is the per-site overall
-inclusion probability across the season. This frame passes directly to
-<code>creel_design(survey_type = "bus_route", ...)</code>.</p>
+<p>The <code>inclusion_prob</code> column is each site’s probability of
+being sampled on a worked circuit,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>p</mi><mrow><mi>s</mi><mi>i</mi><mi>t</mi><mi>e</mi></mrow></msub><mo>×</mo><msub><mi>p</mi><mrow><mi>p</mi><mi>e</mi><mi>r</mi><mi>i</mi><mi>o</mi><mi>d</mi></mrow></msub></mrow><annotation encoding="application/x-tex">p_{site} \times p_{period}</annotation></semantics></math>.
+It is not a probability over the season.</p>
 </div>
 <div class="section level2">
 <h2 id="sampling-rate-guidance">Sampling Rate Guidance<a class="anchor" aria-label="anchor" href="#sampling-rate-guidance"></a>
 </h2>
-<p>The right sampling intensity depends on the target precision for the
-survey. As a starting point:</p>
-<table class="table">
-<thead><tr class="header">
-<th>Survey length</th>
-<th>Typical weekday rate</th>
-<th>Typical weekend rate</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Short (&lt; 8 weeks)</td>
-<td>0.40–0.60</td>
-<td>0.60–0.80</td>
-</tr>
-<tr class="even">
-<td>Standard (8–20 weeks)</td>
-<td>0.25–0.40</td>
-<td>0.40–0.60</td>
-</tr>
-<tr class="odd">
-<td>Long (&gt; 20 weeks)</td>
-<td>0.15–0.25</td>
-<td>0.25–0.40</td>
-</tr>
-</tbody>
-</table>
-<p>Higher rates on weekends reflect greater angler activity and higher
-stratum variance. Use <code><a href="../reference/creel_n_effort.html">creel_n_effort()</a></code> or
-<code><a href="../reference/creel_power.html">creel_power()</a></code> to select rates based on a CV target rather
-than rule of thumb.</p>
+<p>The right sampling intensity depends on the precision the survey
+needs and on how much daily effort varies within each stratum.
+<code><a href="../reference/creel_n_effort.html">creel_n_effort()</a></code> turns a target coefficient of variation
+and pilot estimates of each stratum’s mean and variance into the number
+of days to sample, and <code><a href="../reference/creel_power.html">creel_power()</a></code> gives the power to
+detect a change.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Effort sample size to achieve CV ≤ 0.15</span></span>
-<span><span class="co"># N_h: total days per stratum in a 184-day season</span></span>
+<span><span class="co"># N_h: total days per stratum in a 184-day season (illustrative, not the schedule above)</span></span>
 <span><span class="co"># ybar_h: pilot mean daily effort (angler-hours) per stratum</span></span>
 <span><span class="co"># s2_h: pilot variance of daily effort per stratum</span></span>
 <span><span class="fu"><a href="../reference/creel_n_effort.html">creel_n_effort</a></span><span class="op">(</span></span>
@@ -783,13 +656,15 @@ than rule of thumb.</p>
 <div class="section level2">
 <h2 id="within-day-count-time-scheduling">Within-Day Count Time Scheduling<a class="anchor" aria-label="anchor" href="#within-day-count-time-scheduling"></a>
 </h2>
-<p>Counts are the primary effort estimator in creel surveys: the number
-of anglers observed during each count window is used to estimate total
-angler-hours. When those count windows fall in the day matters —
-clustered or poorly spaced windows can introduce bias into effort
-estimates. Pollock et al. (1994) describe three strategies for placing
-count time windows within the survey day: random, systematic, and fixed.
-<code><a href="../reference/generate_count_times.html">generate_count_times()</a></code> implements all three.</p>
+<p>An instantaneous count estimates effort without bias only if the
+moment of the count is chosen at random; always counting at the same
+time of day gives a bias that “is unpredictable and can be very large”
+(Hoenig et al. 1993). Pollock et al. (1994, Chapter 11) give two ways to
+choose the times: simple random sampling, and systematic random
+sampling, a random start followed by counts at a fixed interval. Both
+are unbiased; random times can fall close together by chance, which
+systematic times avoid. <code><a href="../reference/generate_count_times.html">generate_count_times()</a></code> implements
+both, and also places counts at times you fix yourself.</p>
 <div class="section level3">
 <h3 id="random-strategy">Random Strategy<a class="anchor" aria-label="anchor" href="#random-strategy"></a>
 </h3>
@@ -819,14 +694,12 @@ end of one window and the start of the next.</p>
 <div class="section level3">
 <h3 id="systematic-strategy">Systematic Strategy<a class="anchor" aria-label="anchor" href="#systematic-strategy"></a>
 </h3>
-<p>The systematic strategy uses the Pollock et al. (1994) model: the day
-is divided into <code>n_windows</code> equal-length strata and one
-window is placed at a random start within the first stratum; subsequent
-windows begin at t₁+k, t₁+2k, and so on, where k is the stratum length.
-This ensures even spacing across the day. Systematic sampling is
-preferred by many agencies (Colorado CPW 2012) because it avoids the
-clustered count times that can occur by chance under random
-placement.</p>
+<p>The systematic strategy follows Pollock et al. (1994, Chapter 11):
+the day is divided into <code>n_windows</code> equal periods of length
+k, the first count falls at a random time within the first period, and
+the rest follow at t₁+k, t₁+2k, and so on. The counts are spread evenly
+across the day, which random placement does not guarantee; the cost, in
+their words, is “more complexity of the variance formulas”.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ct_systematic</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_count_times.html">generate_count_times</a></span><span class="op">(</span></span>
 <span>  start_time  <span class="op">=</span> <span class="st">"06:00"</span>,</span>
@@ -843,12 +716,14 @@ placement.</p>
 <div class="section level3">
 <h3 id="fixed-strategy">Fixed Strategy<a class="anchor" aria-label="anchor" href="#fixed-strategy"></a>
 </h3>
-<p>Use the fixed strategy when count time windows are defined by
-regulation, permit conditions, or a prior-season protocol that must be
-replicated exactly. Supply a <code>data.frame</code> with
-<code>start_time</code> and <code>end_time</code> columns and
-<code><a href="../reference/generate_count_times.html">generate_count_times()</a></code> wraps them in a
-<code>creel_schedule</code> object without any random placement.</p>
+<p>The fixed strategy takes count times you supply, as a
+<code>data.frame</code> with <code>start_time</code> and
+<code>end_time</code> columns, and wraps them in a
+<code>creel_schedule</code> without any random placement. Fixed times
+are not a sampling design: counts made at the same times every day are
+the error Hoenig et al. (1993) warn against, and the estimators cannot
+correct the bias. Use it to print times that were themselves drawn at
+random, or when a protocol fixes the times and you accept that risk.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  start_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"07:00"</span>, <span class="st">"09:30"</span>, <span class="st">"12:00"</span><span class="op">)</span>,</span>
@@ -1047,17 +922,15 @@ or CPUE estimates.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_interviews</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_interviews</span>,</span>
 <span>  catch        <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>  effort       <span class="op">=</span> <span class="va">hours_fished</span>,</span>
+<span>  n_anglers    <span class="op">=</span> <span class="va">n_anglers</span>,</span>
 <span>  trip_status  <span class="op">=</span> <span class="va">trip_status</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: <span style="color: #BBBB00;">!</span> No `n_anglers` provided — assuming 1 angler per interview.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Pass `n_anglers = &lt;column&gt;` to use actual party sizes for angler-hour</span></span>
-<span><span class="co">#&gt;   normalization.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
-<span><span class="co">#&gt;   that and silence this warning.</span></span>
 <span><span class="va">comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/check_completeness.html">check_completeness</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">comp</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -1107,9 +980,11 @@ and interviews, and running the estimators — is covered in the main
 tidycreel vignette. <code><a href="../reference/season_summary.html">season_summary()</a></code> is the final step that
 wraps pre-computed results for export or reporting.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">summary_tbl</span><span class="op">$</span><span class="va">table</span>, <span class="st">"season_2024_summary.xlsx"</span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/write_schedule.html">write_schedule()</a></code> accepts any data frame or tibble, so
-the season summary table exports to CSV or xlsx with a single call.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">summary_tbl</span><span class="op">$</span><span class="va">table</span>, <span class="st">"season_2024_summary.xlsx"</span>, format <span class="op">=</span> <span class="st">"xlsx"</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/write_schedule.html">write_schedule()</a></code> writes any data frame or tibble, so the
+season summary table exports to CSV or xlsx with a single call. Name
+<code>format = "xlsx"</code> for a spreadsheet: the format is not taken
+from the file name.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

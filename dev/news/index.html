@@ -28,15 +28,13 @@
     <li><a class="dropdown-item" href="../articles/aerial-surveys.html">Aerial Survey Analysis with tidycreel</a></li>
     <li><a class="dropdown-item" href="../articles/aerial-glmm.html">GLMM Aerial Effort Estimation</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>How-to: Tasks</h6></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete-Trip Interviews</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Season, Monthly and Annual Totals</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
+    <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
     <li><a class="dropdown-item" href="../articles/survey-scheduling.html">Survey Scheduling</a></li>
     <li><a class="dropdown-item" href="../articles/survey-design-toolbox.html">Survey Design Toolbox: Planning, Comparing, and Combining Designs</a></li>
@@ -138,6 +136,17 @@
 <li>Neither covered the aerial GLMM bootstrap, whose <code>se</code> already contains the visibility and angler-ratio parts without listing them; the glossary, the API conventions and <code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code> now say so.</li>
 <li>
 <code><a href="../articles/survey-tidycreel.html">vignette("survey-tidycreel")</a></code> gave every tidycreel interval as a <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math> on the design’s degrees of freedom. That holds for effort and total catch; <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> uses the normal interval.</li>
+</ul></li>
+<li>
+<p>The four former “Reporting &amp; Planning” vignettes are checked the same way (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, How-to: Tasks, part 2), and the ten task pages now form one “How-to: Tasks” group on the website. Every vignette that runs code is now in <code>scripts/check-vignette-warnings.R</code>.</p>
+<ul><li>
+<code><a href="../articles/survey-scheduling.html">vignette("survey-scheduling")</a></code> attributed three count-time strategies, including fixed times, to Pollock et al. (1994). The book gives random and systematic random times; fixed times are the error Hoenig et al. (1993) warn against, and the page now says so. It also said clustered count times bias the estimate (they cost coverage, not bias), described <code><a href="../reference/generate_bus_schedule.html">generate_bus_schedule()</a></code>’s <code>inclusion_prob</code> as a season-long probability, and gave an unsourced table of sampling rates.</li>
+<li>
+<code><a href="../articles/unextrapolated-summaries.html">vignette("unextrapolated-summaries")</a></code> had the weighting backwards: a day with more interviews counts for more, not the same.</li>
+<li>
+<code><a href="../articles/visualisation.html">vignette("visualisation")</a></code> titled an all-species catch rate “Walleye”.</li>
+<li>
+<code>example_counts</code> now goes through <code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code> on these pages too, and no chunk hides warnings with <code>warning = FALSE</code>.</li>
 </ul></li>
 <li>
 <p>The six former “Estimation” vignettes are checked against the code and their sources (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, How-to: Tasks, part 1), and now run without unexplained warnings. Two showed wrong numbers:</p>

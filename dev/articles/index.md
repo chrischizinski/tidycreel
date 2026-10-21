@@ -25,15 +25,15 @@ effort, rates, totals, results as data, and a plot.
 - [GLMM Aerial Effort
   Estimation](https://chrischizinski.com/tidycreel/dev/articles/aerial-glmm.md):
 
-### Estimation
+### How-to: Tasks
 
-Catch rate, harvest, effort, mark-recapture, exploitation rate, and
-spatially stratified estimation techniques.
+One page per task that cuts across survey designs: catch and harvest
+from interviews, incomplete trips, progressive counts, sections, season
+and monthly totals, mark-recapture, interview summaries, scheduling,
+planning, and plots.
 
 - [Interview-Based Catch
   Estimation](https://chrischizinski.com/tidycreel/dev/articles/interview-estimation.md):
-- [Mark-Recapture and Exploitation Rate
-  Estimation](https://chrischizinski.com/tidycreel/dev/articles/mark-recapture.md):
 - [Incomplete-Trip
   Interviews](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md):
 - [Progressive Count
@@ -42,12 +42,8 @@ spatially stratified estimation techniques.
   Sections](https://chrischizinski.com/tidycreel/dev/articles/section-estimation.md):
 - [Season, Monthly and Annual
   Totals](https://chrischizinski.com/tidycreel/dev/articles/temporal-extrapolation.md):
-
-### Reporting & Planning
-
-Interview summaries, diagnostics, scheduling, and pre-season survey
-planning.
-
+- [Mark-Recapture and Exploitation Rate
+  Estimation](https://chrischizinski.com/tidycreel/dev/articles/mark-recapture.md):
 - [Unextrapolated Interview
   Summaries](https://chrischizinski.com/tidycreel/dev/articles/unextrapolated-summaries.md):
 - [Survey

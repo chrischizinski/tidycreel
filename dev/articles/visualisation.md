@@ -1,7 +1,7 @@
 # Visualising Creel Survey Designs and Results
 
-tidycreel ships three ggplot2-based plotting functions that cover the
-main inspection points in a creel survey workflow:
+tidycreel’s ggplot2-based plotting functions cover the main inspection
+points in a creel survey workflow:
 
 | Function | When to use |
 |----|----|
@@ -47,22 +47,30 @@ that estimates for the weekend stratum will carry higher uncertainty.
 
 Once counts are attached,
 [`plot_design()`](https://chrischizinski.com/tidycreel/dev/reference/plot_design.md)
-switches to a jitter + crossbar display showing the raw count
-distribution per stratum.
+switches to a jitter + crossbar display of the counts per stratum.
+`example_counts` already holds angler-hours for each sampled day, so it
+goes in through
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+and the plot shows daily effort.
 
 ``` r
 
-design <- add_counts(design, example_counts)
+design <- add_counts(design, prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+))
 
-plot_design(design, title = "Count distribution by stratum")
+plot_design(design, title = "Daily effort by stratum")
+#> Warning: Computation failed in `stat_summary()`.
+#> Caused by error in `fun.data()`:
+#> ! The package "Hmisc" is required.
 ```
 
 ![](visualisation_files/figure-html/design-with-counts-1.png)
 
-The crossbar shows the mean with a 95 % normal CI across sampled days.
-Large within-stratum spread (many jittered points far from the crossbar)
-suggests high day-to-day variability and the need for more sampling
-days.
+The crossbar shows the mean and a 95 % t interval for it across sampled
+days. Large within-stratum spread (many jittered points far from the
+crossbar) suggests high day-to-day variability and the need for more
+sampling days.
 
 ------------------------------------------------------------------------
 
@@ -112,6 +120,7 @@ design <- add_interviews(
   example_interviews,
   catch       = catch_total,
   effort      = hours_fished,
+  n_anglers   = n_anglers,
   trip_status = trip_status
 )
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
@@ -148,11 +157,19 @@ pattern in summer recreational fisheries.
 cpue <- estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
+#> Warning: Small sample size for CPUE estimation.
+#> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 
-autoplot(cpue, title = "Walleye CPUE (catch per angler-hour)")
+autoplot(cpue, title = "CPUE, all species (fish per angler-hour)")
 ```
 
 ![](visualisation_files/figure-html/cpue-1.png)
+
+The rate rests on 17 complete trips, and the call warns that this is a
+small sample for a ratio estimator; the example dataset is small, and
+the interval shows it.
 
 ### Weighted Length Distributions
 
@@ -202,6 +219,11 @@ autoplot(ld, theme = "creel")
 ```
 
 ![](visualisation_files/figure-html/length-dist-1.png)
+
+Lengths come from a subsample of the fish, so the length-class totals
+are scaled onto the reported catch for each species. The call warns when
+it rescales and names the factor; the shares within a species do not
+depend on how many fish were measured.
 
 ------------------------------------------------------------------------
 

@@ -431,6 +431,31 @@
     [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
     uses the normal interval.
 
+- The four former “Reporting & Planning” vignettes are checked the same
+  way ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),
+  How-to: Tasks, part 2), and the ten task pages now form one “How-to:
+  Tasks” group on the website. Every vignette that runs code is now in
+  `scripts/check-vignette-warnings.R`.
+
+  - [`vignette("survey-scheduling")`](https://chrischizinski.com/tidycreel/dev/articles/survey-scheduling.md)
+    attributed three count-time strategies, including fixed times, to
+    Pollock et al. (1994). The book gives random and systematic random
+    times; fixed times are the error Hoenig et al. (1993) warn against,
+    and the page now says so. It also said clustered count times bias
+    the estimate (they cost coverage, not bias), described
+    [`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_bus_schedule.md)’s
+    `inclusion_prob` as a season-long probability, and gave an unsourced
+    table of sampling rates.
+  - [`vignette("unextrapolated-summaries")`](https://chrischizinski.com/tidycreel/dev/articles/unextrapolated-summaries.md)
+    had the weighting backwards: a day with more interviews counts for
+    more, not the same.
+  - [`vignette("visualisation")`](https://chrischizinski.com/tidycreel/dev/articles/visualisation.md)
+    titled an all-species catch rate “Walleye”.
+  - `example_counts` now goes through
+    [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md)
+    on these pages too, and no chunk hides warnings with
+    `warning = FALSE`.
+
 - The six former “Estimation” vignettes are checked against the code and
   their sources
   ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),
