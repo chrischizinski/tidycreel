@@ -101,14 +101,16 @@ A progressive count dataset needs:
 
 ### Survey Setup
 
-We survey a 25-km reservoir access road over a 4-week season (July–July). A single
+We survey a 25-km reservoir access road on 18 sampled days in July. A single
 crew completes the full circuit in 2 hours ($\tau = 2$ h). The access road is open
-10 hours per day.
+10 hours per day. The calendar below lists only the sampled days, so the totals
+on this page are totals over those days; `vignette("temporal-extrapolation")`
+shows how to expand to a whole season.
 
 ```{r setup-design, message = FALSE}
 library(tidycreel)
 
-# Four-week season: 10 weekdays, 8 weekend days sampled
+# 18 sampled days: 10 weekdays and 8 weekend days
 calendar <- data.frame(
   date = as.Date(c(
     # Weekdays
@@ -219,9 +221,11 @@ effort <- estimate_effort(design)
 effort$estimates
 ```
 
-The `estimate` column is the stratified total angler-hours for the 4-week season.
-The `se` column is the standard error of that total; `se_within` is always zero for
-progressive surveys because there is only one circuit per day (no within-day replication).
+The `estimate` column is the stratified total angler-hours over the 18 sampled
+days, and `se` its standard error. With one circuit per day `se_within` is
+reported as 0. That does not mean effort was steady through the day: the
+day-to-day term contains the within-day variation, but with one circuit per day
+it cannot be separated out, so the 0 stands for "not estimated".
 
 ### Adding Interviews
 
@@ -263,9 +267,10 @@ total_catch <- estimate_total_catch(design)
 total_catch$estimates
 ```
 
-`estimate_total_catch()` multiplies the effort estimate by the CPUE estimate and
-propagates uncertainty via the delta method, producing a season-total catch with
-a combined standard error.
+`estimate_total_catch()` multiplies each day type's effort by that day type's
+catch rate and adds the products. Its standard error combines the two
+estimates' variances, treating effort and rate as independent;
+`vignette("catch-pipeline")` explains the formula and that assumption.
 
 ### Harvest Rate and Total Harvest
 
@@ -279,7 +284,7 @@ total_harvest$estimates
 
 ## Pope et al. Worked Example
 
-Pope et al. (in press) give the canonical calculation: $C = 234$ anglers encountered
+Pope et al. (Chapter 17 draft) give the calculation: $C = 234$ anglers encountered
 during a $\tau = 2$ h circuit on a day with $T_d = 8$ open hours.
 
 $$\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}$$
@@ -311,44 +316,46 @@ des_pope$counts
 ## Multiple Periods per Day
 
 Some progressive surveys run two circuits per day (e.g., morning and evening). This
-creates multiple counts per PSU (day), and tidycreel decomposes variance into between-day
-and within-day components via the Rasmussen (1994) two-stage formula.
+creates several counts per day, the sampling unit, and tidycreel splits the variance
+into a between-day and a within-day term: Cochran's (1977) two-stage variance, as
+Pope et al. (Chapter 17 draft) apply it to creel counts.
 
-For the morning–evening case, use `count_time_col` to identify the circuit within each day:
+Name the circuit within each day with `count_time_col`, alongside the progressive
+arguments. Each day's effort is then the mean of its circuits' $C \times T_d$:
 
 ```{r multi-period, message = FALSE}
-# Two circuits per day (morning and evening traversals)
+# Two circuits per day (morning and evening traversals), three days per day type
+days_2p <- as.Date(c(
+  "2024-07-01", "2024-07-02", "2024-07-03",
+  "2024-07-06", "2024-07-07", "2024-07-13"
+))
 cal_2p <- data.frame(
-  date     = rep(as.Date(c("2024-07-01", "2024-07-02", "2024-07-06", "2024-07-07")), 1),
-  day_type = c("weekday", "weekday", "weekend", "weekend")
+  date     = days_2p,
+  day_type = rep(c("weekday", "weekend"), each = 3)
 )
 des_2p <- creel_design(cal_2p, date = date, strata = day_type)
 
 cnt_2p <- data.frame(
-  date = rep(as.Date(c(
-    "2024-07-01", "2024-07-02",
-    "2024-07-06", "2024-07-07"
-  )), each = 2),
-  day_type = rep(c("weekday", "weekday", "weekend", "weekend"), each = 2),
-  count_time = rep(c("am", "pm"), 4),
-  n_anglers = c(22L, 18L, 20L, 24L, 55L, 48L, 62L, 58L)
+  date        = rep(days_2p, each = 2),
+  day_type    = rep(c("weekday", "weekend"), each = 6),
+  count_time  = rep(c("am", "pm"), 6),
+  n_anglers   = c(22L, 18L, 20L, 24L, 17L, 21L, 55L, 48L, 62L, 58L, 51L, 57L),
+  shift_hours = 10
 )
 
-# Note: count_time_col for within-day identification
-des_2p <- add_counts(des_2p, cnt_2p, count_time_col = count_time)
+des_2p <- add_counts(des_2p, cnt_2p,
+  count_type = "progressive",
+  circuit_time = 2,
+  period_length_col = shift_hours,
+  count_time_col = count_time
+)
 
 est_2p <- estimate_effort(des_2p)
 est_2p$estimates
 ```
 
-The `se_within` column is now non-zero, reflecting variability between the morning and
-evening circuits within each day.
-
-This chunk shows the within-day variance decomposition on its own; it does not apply the
-progressive $T_d$ expansion, so `est_2p` is in counts rather than angler-hours. To get
-both, add `count_type = "progressive"`, `circuit_time`, and `period_length_col` as in the
-sections above — `add_counts()` supports multiple circuits per day on the progressive
-path.
+`se_within` is now estimated, from the differences between each day's morning and
+evening circuits, and the total is in angler-hours.
 
 ## Assemble a Summary Report
 
@@ -368,10 +375,6 @@ summary_tbl$table
   counts in the instantaneous and progressive count methods for estimating sportfishing
   effort. *North American Journal of Fisheries Management*, 13, 723–736.
 
-- Pope, K. L., Wilde, G. R., and Gabelhouse, D. W. Jr. (in press). Creel Surveys.
-  Chapter 17 in *Fisheries Techniques*, 4th ed. American Fisheries Society, Bethesda, MD.
+- Pope, K. L., et al. Creel surveys. Chapter 17 (unpublished draft).
 
-- Rasmussen, P. W. (1994). Two-stage variance estimation for creel surveys.
-
-- Su, Y.-S., and Liu, P. (2025). Flexible creel survey estimators.
-  *Canadian Journal of Fisheries and Aquatic Sciences*, 82, 1–27.
+- Cochran, W. G. (1977). *Sampling Techniques*, 3rd edition. Wiley, New York.

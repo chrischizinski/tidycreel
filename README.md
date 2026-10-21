@@ -215,10 +215,10 @@ All vignettes ship with the package — open one with
 |---|---|
 | Interview Estimation (`vignette("interview-estimation")`) | CPUE, catch, and harvest from interview data |
 | Mark-Recapture and Exploitation Rate (`vignette("mark-recapture")`) | Chapman, Petersen, Schnabel estimators; MR harvest; exploitation rate from tag returns |
-| Incomplete Trips (`vignette("incomplete-trips")`) | When and how to use mean-of-ratios and TOST validation |
+| Incomplete-Trip Interviews (`vignette("incomplete-trips")`) | Catch rates from anglers still fishing, and checking them against complete trips |
 | Progressive Count Surveys (`vignette("progressive-count-surveys")`) | Rolling and progressive count workflows |
 | Section Estimation (`vignette("section-estimation")`) | Spatial section-level effort and catch estimation |
-| Temporal Extrapolation (`vignette("temporal-extrapolation")`) | Extrapolating partial-season data to full-season estimates |
+| Season, Monthly and Annual Totals (`vignette("temporal-extrapolation")`) | Season totals from sampled days, and monthly totals that add up to them |
 
 ### Reporting & Planning
 
