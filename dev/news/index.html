@@ -31,10 +31,10 @@
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
+    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete-Trip Interviews</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
-    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
+    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Season, Monthly and Annual Totals</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
@@ -138,6 +138,17 @@
 <li>Neither covered the aerial GLMM bootstrap, whose <code>se</code> already contains the visibility and angler-ratio parts without listing them; the glossary, the API conventions and <code><a href="../articles/refusals-and-na.html">vignette("refusals-and-na")</a></code> now say so.</li>
 <li>
 <code><a href="../articles/survey-tidycreel.html">vignette("survey-tidycreel")</a></code> gave every tidycreel interval as a <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math> on the design’s degrees of freedom. That holds for effort and total catch; <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> uses the normal interval.</li>
+</ul></li>
+<li>
+<p>The six former “Estimation” vignettes are checked against the code and their sources (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, How-to: Tasks, part 1), and now run without unexplained warnings. Two showed wrong numbers:</p>
+<ul><li>
+<code><a href="../articles/temporal-extrapolation.html">vignette("temporal-extrapolation")</a></code>, now “Season, Monthly and Annual Totals”, built its designs from the sampled days only and used the default <code>target</code>, so every “season total” was the total over the sampled days. It now uses the full calendar and <code>target = "period_total"</code>, and gets monthly totals that add up to the season from one design stratified by month.</li>
+<li>
+<code><a href="../articles/section-estimation.html">vignette("section-estimation")</a></code> said shared-calendar covariance between sections is negative and narrows the lake-total SE. It is positive and widens it: on the page’s data 39.4 with the covariance, 24.4 without.</li>
+<li>
+<code><a href="../articles/incomplete-trips.html">vignette("incomplete-trips")</a></code>, now “Incomplete-Trip Interviews”, is rewritten. It attributed a “10% complete trips” rule and a ban on pooling to Pollock et al. (1994), which contains neither, showed invented output, and had calls that cannot run (<code>truncate_at = 0</code>, <code>catch =</code> in <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>). It now executes every example and separates what the sources say from the package’s own checks.</li>
+<li>
+<code>interview-estimation</code>, <code>section-estimation</code> and <code>progressive-count-surveys</code> passed daily angler-hours to <code><a href="../reference/add_counts.html">add_counts()</a></code> as instantaneous counts (<a href="https://github.com/chrischizinski/tidycreel/issues/478" class="external-link">#478</a>); they now use <code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code>. Citations that could not be found (Rasmussen 1994; Su &amp; Liu 2025 “Flexible creel survey estimators”) are removed, and <code>mark-recapture</code> credits its exploitation estimator to Newman et al. (1997).</li>
 </ul></li>
 <li>
 <p><code><a href="../articles/bus-route-equations.html">vignette("bus-route-equations")</a></code> is rewritten against the code and its sources (<a href="https://github.com/chrischizinski/tidycreel/issues/480" class="external-link">#480</a>, Reference section, part 2). It computed no number but described the package wrongly:</p>

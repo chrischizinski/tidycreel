@@ -56,10 +56,10 @@
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
+    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete-Trip Interviews</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
-    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
+    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Season, Monthly and Annual Totals</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
@@ -131,10 +131,11 @@ data</li>
 <li>
 <strong>Total Catch</strong>: Combine effort and CPUE estimates</li>
 </ol>
-<p>The package uses ratio-of-means estimation for catch per unit effort
-(CPUE), which is appropriate for access point surveys with complete trip
-interviews. This estimator accounts for the correlation between catch
-and effort within each interview.</p>
+<p>The example is an access-point survey: anglers are interviewed as
+they finish their trips. For complete trips the catch rate is the ratio
+of means, total catch over total effort (Pollock et al. 1994,
+§15.3.3.5). <code><a href="../articles/estimator-choice.html">vignette("estimator-choice")</a></code> explains how the
+package picks the estimator from the interview type.</p>
 </div>
 <div class="section level2">
 <h2 id="survey-design-and-count-data">Survey Design and Count Data<a class="anchor" aria-label="anchor" href="#survey-design-and-count-data"></a>
@@ -148,20 +149,17 @@ and effort within each interview.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_calendar</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Create design with counts</span></span>
+<span><span class="co"># effort_hours is already angler-hours for each sampled day, not an</span></span>
+<span><span class="co"># instantaneous count, so it goes in through prep_counts_daily_effort()</span></span>
+<span><span class="va">daily_effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">daily_effort</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Estimate total effort</span></span>
 <span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -174,8 +172,15 @@ and effort within each interview.</p>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     372.  13.2       13.2         0     344.     401.    14</span></span></code></pre></div>
-<p>The effort estimate provides the total angler-hours for the survey
-period, which we’ll combine with CPUE to estimate total catch.</p>
+<p><code>example_counts</code> records angler-hours for each sampled
+day, so it goes in through <code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code>.
+Passed to <code><a href="../reference/add_counts.html">add_counts()</a></code> directly it would be read as
+instantaneous counts, with a warning that no period length was given.
+The estimate is in angler-hours, as the data say. The printout has no
+<code>Unit:</code> line, because the package did not see how those
+angler-hours were made and so reports the unit as unknown
+(<code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code>). The calendar lists only the 14
+sampled days, so this is the total over those days.</p>
 </div>
 <div class="section level2">
 <h2 id="adding-interview-data">Adding Interview Data<a class="anchor" aria-label="anchor" href="#adding-interview-data"></a>
@@ -221,7 +226,7 @@ complete trips:</p>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">14</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">effort_hours</span></span></span>
+<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">daily_effort</span></span></span>
 <span><span class="co">#&gt; Party-size term: not carried</span></span>
 <span><span class="co">#&gt; Count type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Survey: <span style="color: #0000BB;">&lt;survey.design2&gt;</span> (constructed)</span></span>
@@ -266,12 +271,13 @@ effort:</p>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.967 0.110    0.752     1.18    17</span></span></code></pre></div>
-<p>The CPUE estimate uses a ratio-of-means estimator: total catch
-divided by total effort across all interviews. This estimator is
-appropriate for access point surveys because it accounts for the
-correlation between catch and effort within each trip. The variance is
-computed using the delta method, accounting for the covariance between
-numerator and denominator.</p>
+<p>The CPUE estimate is the ratio of means: total catch divided by total
+effort over the 17 complete trips. Its variance is a Taylor
+linearization of the ratio, which carries the covariance between catch
+and effort across interviews.</p>
+<p>The call warns that 17 trips is a small sample for a ratio estimator.
+It is: the example dataset is small. The warning concerns precision, and
+the standard error already reflects it.</p>
 <p>For details on the ratio-of-means formula and variance calculation,
 see <code><a href="../reference/estimate_catch_rate.html">?estimate_catch_rate</a></code>.</p>
 </div>
@@ -283,14 +289,6 @@ catch:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Estimate total catch</span></span>
 <span><span class="va">total_catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">angler_method</span> and <span style="color: #00BB00;">species_sought</span>.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> The rate differs across their levels in these interviews (angler_method:</span></span>
@@ -325,13 +323,33 @@ catch:</p>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     364.  47.9     262.     466.    17</span></span></code></pre></div>
-<p>The total catch estimate multiplies the effort and CPUE estimates.
-The variance is computed using the delta method with the formula:</p>
-<p>Var(E × C) = E² Var(C) + C² Var(E)</p>
-<p>This formula assumes independence between the count and interview
-data streams, which is appropriate since they are collected through
-separate sampling processes. See <code><a href="../reference/estimate_total_catch.html">?estimate_total_catch</a></code> for
-more details on the variance propagation.</p>
+<p>The total is built stratum by stratum: each day type’s effort times
+that day type’s catch rate, then added. The variance of each product
+uses Goodman’s (1960) unbiased estimator by default,
+<code>E² Var(R) + R² Var(E) − Var(E) Var(R)</code>, with the estimates
+in place of the true values. The exact variance of a product has
+<code>+ Var(E) Var(R)</code>; the estimator subtracts it because each
+squared estimate already overstates its squared mean by its variance.
+<code>product_variance = "first_order"</code> drops the last term, which
+gives a slightly larger, conservative standard error. Both treat the
+effort and rate estimates as independent. That is an assumption, not a
+fact of the design: counts and interviews are taken on the same sampled
+days. <code><a href="../articles/catch-pipeline.html">vignette("catch-pipeline")</a></code> discusses it.</p>
+<p>This call raises two warnings, both about the example’s small
+size:</p>
+<ul>
+<li>
+<strong>Pooled domains.</strong> The interviews record fishing
+method and target species, and the catch rate differs across them. The
+counts do not record either, so the total uses one rate per day type,
+weighted by the interview mix rather than the effort mix. With counts
+that record method or species, the total would be summed over those
+domains instead.</li>
+<li>
+<strong>A thin rate cell.</strong> The weekend rate rests on 7
+trips. Each stratum’s effort is multiplied by that stratum’s own rate,
+and a ratio from so few trips is unstable.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="estimating-harvest">Estimating Harvest<a class="anchor" aria-label="anchor" href="#estimating-harvest"></a>
@@ -387,11 +405,8 @@ grouped estimation using the <code>by</code> parameter:</p>
 <span></span>
 <span><span class="co"># Estimate total catch by day_type</span></span>
 <span><span class="va">total_catch_by_day</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></code></pre></div>
-<p>Note: The example data has insufficient interview sample sizes for
-grouped estimation (weekend n=9, weekday n=13). Ratio estimation
-requires at least 10 observations per group for stability. In real
-surveys, aim for at least 30 interviews per stratum for reliable grouped
-estimates.</p>
+<p>This chunk is not run: the rate functions refuse a group with fewer
+than 10 trips, and the weekend group here has 7.</p>
 </div>
 <div class="section level2">
 <h2 id="variance-methods">Variance Methods<a class="anchor" aria-label="anchor" href="#variance-methods"></a>
@@ -400,19 +415,29 @@ estimates.</p>
 methods. The default is Taylor linearization, but bootstrap and
 jackknife are also available:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Bootstrap variance estimation</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span> <span class="co"># For reproducibility</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span> <span class="co"># bootstrap replicates are random</span></span>
 <span><span class="va">cpue_boot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
-<span></span>
-<span><span class="co"># Jackknife variance estimation</span></span>
 <span><span class="va">cpue_jk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span></code></pre></div>
-<p>All three methods produce similar results for these data. Use
-bootstrap or jackknife when you want to verify Taylor linearization
-assumptions or when working with complex grouped estimates.</p>
+<span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span></span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"taylor"</span>, <span class="st">"bootstrap"</span>, <span class="st">"jackknife"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>    <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">cpue_est</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>    <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">cpue_boot</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>    <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">cpue_jk</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"se"</span><span class="op">)</span><span class="op">]</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;      method  estimate        se</span></span>
+<span><span class="co">#&gt; 1    taylor 0.9674419 0.1100611</span></span>
+<span><span class="co">#&gt; 2 bootstrap 0.9674419 0.1144879</span></span>
+<span><span class="co">#&gt; 3 jackknife 0.9674419 0.1132936</span></span></code></pre></div>
+<p>The estimate is the same under all three; only the standard error
+depends on the method. Use bootstrap or jackknife to check the
+linearization, or for statistics where it is awkward.</p>
 <p><strong>When to use each method:</strong></p>
 <ul>
 <li>
@@ -537,7 +562,9 @@ delta method.</p>
 <span></span>
 <span><span class="co"># Build design and attach data</span></span>
 <span><span class="va">complete_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_counts</span>,</span>
+<span>    date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span></span>
+<span>  <span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">example_interviews</span>,</span>
 <span>    catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>    effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
@@ -550,14 +577,6 @@ delta method.</p>
 <span></span>
 <span><span class="co"># Compute all estimates</span></span>
 <span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">complete_design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">complete_design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=17, 77.3% of 22 interviews) [default]</span></span>
@@ -630,37 +649,18 @@ delta method.</p>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     225.  28.1     165.     284.    17</span></span></code></pre></div>
-<p>This demonstrates the complete v0.2.0 workflow from survey design
-through total catch and harvest estimation.</p>
+<p>The same warnings appear here as in the sections above, for the same
+reasons.</p>
 </div>
 <div class="section level2">
 <h2 id="working-with-incomplete-trips">Working with Incomplete Trips<a class="anchor" aria-label="anchor" href="#working-with-incomplete-trips"></a>
 </h2>
-<p>This vignette demonstrates the default workflow using complete trips,
-which is the recommended approach following Pollock et al. (1994)
-roving-access design principles.</p>
-<p>For situations with incomplete-trip interviews where you want to
-examine using them for estimation, see the <strong>Incomplete Trip
-Estimation</strong> vignette
-(<code><a href="../articles/incomplete-trips.html">vignette("incomplete-trips", package = "tidycreel")</a></code>). That
-vignette covers:</p>
-<ul>
-<li>When incomplete trip estimation is scientifically valid</li>
-<li>How to validate incomplete trip estimates using TOST equivalence
-testing</li>
-<li>Step-by-step workflow with
-<code><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code>
-</li>
-<li>Examples of passing and failing validation scenarios</li>
-<li>Why you should NEVER pool complete and incomplete trips</li>
-</ul>
-<div class="alert alert-warning">
-<p><strong>Important:</strong> The package defaults to complete trips
-only. Incomplete trip estimation requires explicit opt-in via the
-<code>use_trips</code> parameter in <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code>
-and should only be used after validation with
-<code><a href="../reference/validate_incomplete_trips.html">validate_incomplete_trips()</a></code>.</p>
-</div>
+<p>This page uses the 17 complete trips, as an access-point survey does.
+On an access design the rate functions use complete trips unless told
+otherwise. Interviews of anglers still fishing (incomplete trips) call
+for a different estimator, the mean of ratios with short trips dropped;
+on a roving design the package uses it by default.
+<code><a href="../articles/incomplete-trips.html">vignette("incomplete-trips")</a></code> covers when and how.</p>
 </div>
 <div class="section level2">
 <h2 id="next-steps">Next Steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
@@ -690,10 +690,26 @@ frequency</li>
 <li>
 <code><a href="../reference/example_interviews.html">?example_interviews</a></code> - Example interview dataset</li>
 <li>
+<code><a href="../reference/prep_counts_daily_effort.html">?prep_counts_daily_effort</a></code> - Attach effort already
+worked out for each day</li>
+<li>
 <code><a href="../reference/example_ages.html">?example_ages</a></code> - Example age dataset</li>
 </ul>
 <p>For the effort estimation workflow, see the “Getting Started with
 tidycreel” vignette.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<ul>
+<li>Goodman, L. A. (1960). On the exact variance of products.
+<em>Journal of the American Statistical Association</em>
+55:708–713.</li>
+<li>Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). <em>Angler
+Survey Methods and Their Applications in Fisheries Management</em>.
+American Fisheries Society Special Publication 25. Bethesda,
+Maryland.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

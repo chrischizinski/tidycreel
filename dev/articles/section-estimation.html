@@ -56,10 +56,10 @@
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
+    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete-Trip Interviews</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
-    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
+    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Season, Monthly and Annual Totals</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
@@ -143,13 +143,21 @@ without <code><a href="../reference/add_sections.html">add_sections()</a></code>
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># effort_hours is already angler-hours for each section and day, not an</span></span>
+<span><span class="co"># instantaneous count, so it goes in through prep_counts_daily_effort()</span></span>
+<span><span class="va">section_effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">example_sections_counts</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span>,</span>
+<span>  section <span class="op">=</span> <span class="va">section</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_sections_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_sections.html">add_sections</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">sections_df</span>, section_col <span class="op">=</span> <span class="va">section</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_sections_counts</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">section_effort</span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design</span>, <span class="va">example_sections_interviews</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>,</span>
 <span>  effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
+<span>  n_anglers <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  harvest <span class="op">=</span> <span class="va">catch_kept</span>,</span>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
 <span>  trip_duration <span class="op">=</span> <span class="va">trip_duration</span></span>
@@ -165,7 +173,7 @@ without <code><a href="../reference/add_sections.html">add_sections()</a></code>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">36</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
-<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">effort_hours</span></span></span>
+<span><span class="co">#&gt; Count column: <span style="color: #00BB00;">daily_effort</span></span></span>
 <span><span class="co">#&gt; Party-size term: not carried</span></span>
 <span><span class="co">#&gt; Count type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Survey: <span style="color: #0000BB;">&lt;survey.design2&gt;</span> (constructed)</span></span>
@@ -183,6 +191,21 @@ without <code><a href="../reference/add_sections.html">add_sections()</a></code>
 <p>The design now shows three registered sections (North, Central,
 South). All downstream estimators automatically detect sections and
 return per-section output.</p>
+<p>Two choices in that chunk matter for units:</p>
+<ul>
+<li>
+<code>example_sections_counts</code> already holds angler-hours per
+section-day, so it goes through <code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code>.
+Given to <code><a href="../reference/add_counts.html">add_counts()</a></code> directly it would be read as
+instantaneous counts, with a warning that no period length was supplied.
+The effort printed below is in angler-hours as the data say, but the
+reported unit is <code>NA</code>: the package did not see how those
+angler-hours were made (<code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code>).</li>
+<li>The interview data record no party size. This page assumes one
+angler per interview with <code>n_anglers = 1</code>, so the catch rate
+is per angler-hour, the same unit as the effort it multiplies. With your
+own data, pass the party-size column instead.</li>
+</ul>
 <hr>
 </div>
 <div class="section level2">
@@ -195,14 +218,6 @@ cross-section covariance (described in the Variance Aggregation section
 below).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 11</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se se_between se_within ci_lower ci_upper     n</span></span>
@@ -253,22 +268,30 @@ call <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()
 registration.</p>
 </div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Lake-wide catch rate: build an unsectioned design using the same data</span></span>
+<code class="sourceCode R"><span><span class="co"># Lake-wide catch rate: an unsectioned design with the same interviews. A rate</span></span>
+<span><span class="co"># needs only interviews, so no counts are attached.</span></span>
 <span><span class="va">design_nosections</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_sections_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
-<span><span class="va">design_nosections</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_nosections</span>, <span class="va">example_sections_counts</span><span class="op">)</span></span>
 <span><span class="va">design_nosections</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design_nosections</span>, <span class="va">example_sections_interviews</span>,</span>
-<span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
+<span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>, n_anglers <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  harvest <span class="op">=</span> <span class="va">catch_kept</span>, trip_status <span class="op">=</span> <span class="va">trip_status</span>, trip_duration <span class="op">=</span> <span class="va">trip_duration</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 27 interviews: 27 complete (100%), 0 incomplete (0%)</span></span>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_nosections</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=27, 100% of 27 interviews) [default]</span></span>
+<span><span class="co">#&gt; Warning: Small sample size for CPUE estimation.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sample size is 27. Ratio estimates are more stable with n &gt;= 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1.77 0.118     1.54     2.00    27</span></span></code></pre></div>
+<p>This call warns that 27 interviews is a small sample for a ratio
+estimator. It is: the example dataset is small so the page runs quickly.
+The warning is about precision, and the standard error already reflects
+it.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -282,6 +305,15 @@ registration.</p>
 <code>.lake_total</code> row is appended to the output.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, aggregate_sections <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: 2 rate cells in <span style="color: #0000BB;">"estimate_total_catch"</span> rests on fewer than 10 trips.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> section=North, day_type=weekday: n=6</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> section=North, day_type=weekend: n=3</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total multiplies each cell's effort by a rate built from that cell's</span></span>
+<span><span class="co">#&gt;   trips alone; a ratio from so few trips is unstable, and the rate functions</span></span>
+<span><span class="co">#&gt;   refuse a group this small.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Combine cells or collect more interviews. Totals warn here rather than refuse</span></span>
+<span><span class="co">#&gt;   (GH #417).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se ci_lower ci_upper     n prop_of_lake_total</span></span>
@@ -291,6 +323,11 @@ registration.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           259.  22.8     205.     313.     9              0.205</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>261.  64.8    <span style="text-decoration: underline;">1</span>126.    <span style="text-decoration: underline;">1</span>396.     3              1    </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: se_prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
+<p>The call warns that two rate cells rest on fewer than 10 trips. A
+sectioned total builds a rate for each section within each day type, and
+nine interviews per section split across two day types leave some cells
+thin. With real data, collect more interviews or combine cells; here it
+is a property of the small example.</p>
 <p>South has a high catch rate but the lowest effort, which limits its
 contribution to the lake total. Central has a moderate catch rate
 combined with the highest effort, making it the largest contributor. The
@@ -312,16 +349,6 @@ its share of itself is 1 by construction rather than estimated.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           181.  15.9     143.     218.     9              0.221</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total     818.  44.4     726.     910.     3              1    </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: se_prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
-<p><code>example_sections_interviews</code> carries no party-size
-column, so both calls above raise a warning that the rate they multiply
-is per <em>party</em>-hour while the count-derived effort is
-angler-hours. It is correct for this dataset and is hidden here only by
-the chunks’ <code>warning = FALSE</code>, which predates it. With one
-angler per party the totals are right as printed; with larger parties
-they are understated. Supply <code>n_anglers</code> from your own
-interview data, or state a constant party size
-(<code>n_anglers = 1</code>) when every interview really is a single
-angler, to remove the ambiguity.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -332,12 +359,14 @@ Default<a class="anchor" aria-label="anchor" href="#variance-aggregation-why-met
 entire lake on each survey day. Every section is counted and interviewed
 on the same calendar days: if a day is sampled, all three sections are
 observed; if a day is not sampled, none are.</p>
-<p>Sharing survey days creates cross-section covariance in the sampling
-errors. In practice this covariance tends to be negative: on high-effort
-days all sections run high together, and on low-effort days they run low
-together. The shared-calendar variance formula accounts for this
-covariance and produces a narrower lake-total standard error than simply
-adding the section standard errors in quadrature.</p>
+<p>Sharing survey days creates covariance between the sections’ sampling
+errors. It is usually positive: a busy day is busy in every section, and
+a quiet day quiet in all of them, so the section totals’ errors move
+together. Positive covariance makes the lake-total standard error
+<strong>wider</strong> than adding the section standard errors in
+quadrature, which assumes they move independently. The
+<code>"correlated"</code> method includes the covariance terms;
+<code>"independent"</code> leaves them out.</p>
 <p><code>method = "independent"</code> is appropriate only when sections
 are surveyed by separate, uncoordinated crews — for example, when the
 South section is run by Crew A on different days from the North section
@@ -372,6 +401,11 @@ If different sections have separate, non-overlapping calendars, use
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total      846 24.4       24.4          0    792.      900.    36</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span></code></pre></div>
+<p>The section rows are identical; only the <code>.lake_total</code>
+standard error moves. On these shared days it is about 39 angler-hours
+with the covariance and about 24 without it, so treating shared-calendar
+sections as independent would understate the lake-total uncertainty by
+roughly a third.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -388,17 +422,15 @@ silent omission of sections that should have been observed.</p>
 <span></span>
 <span><span class="va">design_missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_sections_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span><span class="va">design_missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_sections.html">add_sections</a></span><span class="op">(</span><span class="va">design_missing</span>, <span class="va">sections_df</span>, section_col <span class="op">=</span> <span class="va">section</span><span class="op">)</span></span>
-<span><span class="va">design_missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design_missing</span>, <span class="va">north_central_counts</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">design_missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span></span>
+<span>  <span class="va">design_missing</span>,</span>
+<span>  <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">north_central_counts</span>,</span>
+<span>    date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span>,</span>
+<span>    section <span class="op">=</span> <span class="va">section</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_missing</span>, missing_sections <span class="op">=</span> <span class="st">"warn"</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; Warning: 1 missing section(s) in count data.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Section(s) not found: <span style="color: #0000BB;">"South"</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Inserting NA row(s) with <span style="color: #00BB00;">data_available = FALSE</span>.</span></span>

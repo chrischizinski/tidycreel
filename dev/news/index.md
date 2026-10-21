@@ -431,6 +431,42 @@
     [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
     uses the normal interval.
 
+- The six former “Estimation” vignettes are checked against the code and
+  their sources
+  ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),
+  How-to: Tasks, part 1), and now run without unexplained warnings. Two
+  showed wrong numbers:
+
+  - [`vignette("temporal-extrapolation")`](https://chrischizinski.com/tidycreel/dev/articles/temporal-extrapolation.md),
+    now “Season, Monthly and Annual Totals”, built its designs from the
+    sampled days only and used the default `target`, so every “season
+    total” was the total over the sampled days. It now uses the full
+    calendar and `target = "period_total"`, and gets monthly totals that
+    add up to the season from one design stratified by month.
+  - [`vignette("section-estimation")`](https://chrischizinski.com/tidycreel/dev/articles/section-estimation.md)
+    said shared-calendar covariance between sections is negative and
+    narrows the lake-total SE. It is positive and widens it: on the
+    page’s data 39.4 with the covariance, 24.4 without.
+  - [`vignette("incomplete-trips")`](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md),
+    now “Incomplete-Trip Interviews”, is rewritten. It attributed a “10%
+    complete trips” rule and a ban on pooling to Pollock et al. (1994),
+    which contains neither, showed invented output, and had calls that
+    cannot run (`truncate_at = 0`, `catch =` in
+    [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)).
+    It now executes every example and separates what the sources say
+    from the package’s own checks.
+  - `interview-estimation`, `section-estimation` and
+    `progressive-count-surveys` passed daily angler-hours to
+    [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+    as instantaneous counts
+    ([\#478](https://github.com/chrischizinski/tidycreel/issues/478));
+    they now use
+    [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md).
+    Citations that could not be found (Rasmussen 1994; Su & Liu 2025
+    “Flexible creel survey estimators”) are removed, and
+    `mark-recapture` credits its exploitation estimator to Newman et
+    al. (1997).
+
 - [`vignette("bus-route-equations")`](https://chrischizinski.com/tidycreel/dev/articles/bus-route-equations.md)
   is rewritten against the code and its sources
   ([\#480](https://github.com/chrischizinski/tidycreel/issues/480),

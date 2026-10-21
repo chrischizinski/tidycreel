@@ -12,10 +12,11 @@ The complete workflow involves five steps:
 4.  **CPUE**: Estimate catch per unit effort
 5.  **Total Catch**: Combine effort and CPUE estimates
 
-The package uses ratio-of-means estimation for catch per unit effort
-(CPUE), which is appropriate for access point surveys with complete trip
-interviews. This estimator accounts for the correlation between catch
-and effort within each interview.
+The example is an access-point survey: anglers are interviewed as they
+finish their trips. For complete trips the catch rate is the ratio of
+means, total catch over total effort (Pollock et al. 1994, §15.3.3.5).
+[`vignette("estimator-choice")`](https://chrischizinski.com/tidycreel/dev/articles/estimator-choice.md)
+explains how the package picks the estimator from the interview type.
 
 ## Survey Design and Count Data
 
@@ -30,20 +31,17 @@ library(tidycreel)
 data(example_calendar)
 data(example_counts)
 
-# Create design with counts
+# effort_hours is already angler-hours for each sampled day, not an
+# instantaneous count, so it goes in through prep_counts_daily_effort()
+daily_effort <- prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+)
+
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
+design <- add_counts(design, daily_effort)
 
 # Estimate total effort
 effort_est <- estimate_effort(design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(effort_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -58,8 +56,18 @@ print(effort_est)
 #> 1     372.  13.2       13.2         0     344.     401.    14
 ```
 
-The effort estimate provides the total angler-hours for the survey
-period, which we’ll combine with CPUE to estimate total catch.
+`example_counts` records angler-hours for each sampled day, so it goes
+in through
+[`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md).
+Passed to
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+directly it would be read as instantaneous counts, with a warning that
+no period length was given. The estimate is in angler-hours, as the data
+say. The printout has no `Unit:` line, because the package did not see
+how those angler-hours were made and so reports the unit as unknown
+([`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)).
+The calendar lists only the 14 sampled days, so this is the total over
+those days.
 
 ## Adding Interview Data
 
@@ -106,7 +114,7 @@ print(design)
 #> day_type: 2 levels
 #> Counts: 14 observations
 #> PSU column: date
-#> Count column: effort_hours
+#> Count column: daily_effort
 #> Party-size term: not carried
 #> Count type: "instantaneous"
 #> Survey: <survey.design2> (constructed)
@@ -156,12 +164,14 @@ print(cpue_est)
 #> 1    0.967 0.110    0.752     1.18    17
 ```
 
-The CPUE estimate uses a ratio-of-means estimator: total catch divided
-by total effort across all interviews. This estimator is appropriate for
-access point surveys because it accounts for the correlation between
-catch and effort within each trip. The variance is computed using the
-delta method, accounting for the covariance between numerator and
-denominator.
+The CPUE estimate is the ratio of means: total catch divided by total
+effort over the 17 complete trips. Its variance is a Taylor
+linearization of the ratio, which carries the covariance between catch
+and effort across interviews.
+
+The call warns that 17 trips is a small sample for a ratio estimator. It
+is: the example dataset is small. The warning concerns precision, and
+the standard error already reflects it.
 
 For details on the ratio-of-means formula and variance calculation, see
 [`?estimate_catch_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md).
@@ -174,14 +184,6 @@ We can combine the effort and CPUE estimates to compute total catch:
 
 # Estimate total catch
 total_catch_est <- estimate_total_catch(design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: `estimate_total_catch()` is pooling over domains the counts do not classify:
 #> angler_method and species_sought.
 #> ! The rate differs across their levels in these interviews (angler_method:
@@ -218,16 +220,31 @@ print(total_catch_est)
 #> 1     364.  47.9     262.     466.    17
 ```
 
-The total catch estimate multiplies the effort and CPUE estimates. The
-variance is computed using the delta method with the formula:
+The total is built stratum by stratum: each day type’s effort times that
+day type’s catch rate, then added. The variance of each product uses
+Goodman’s (1960) unbiased estimator by default,
+`E² Var(R) + R² Var(E) − Var(E) Var(R)`, with the estimates in place of
+the true values. The exact variance of a product has `+ Var(E) Var(R)`;
+the estimator subtracts it because each squared estimate already
+overstates its squared mean by its variance.
+`product_variance = "first_order"` drops the last term, which gives a
+slightly larger, conservative standard error. Both treat the effort and
+rate estimates as independent. That is an assumption, not a fact of the
+design: counts and interviews are taken on the same sampled days.
+[`vignette("catch-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/catch-pipeline.md)
+discusses it.
 
-Var(E × C) = E² Var(C) + C² Var(E)
+This call raises two warnings, both about the example’s small size:
 
-This formula assumes independence between the count and interview data
-streams, which is appropriate since they are collected through separate
-sampling processes. See
-[`?estimate_total_catch`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
-for more details on the variance propagation.
+- **Pooled domains.** The interviews record fishing method and target
+  species, and the catch rate differs across them. The counts do not
+  record either, so the total uses one rate per day type, weighted by
+  the interview mix rather than the effort mix. With counts that record
+  method or species, the total would be summed over those domains
+  instead.
+- **A thin rate cell.** The weekend rate rests on 7 trips. Each
+  stratum’s effort is multiplied by that stratum’s own rate, and a ratio
+  from so few trips is unstable.
 
 ## Estimating Harvest
 
@@ -289,11 +306,8 @@ cpue_by_day <- estimate_catch_rate(design, by = day_type)
 total_catch_by_day <- estimate_total_catch(design, by = day_type)
 ```
 
-Note: The example data has insufficient interview sample sizes for
-grouped estimation (weekend n=9, weekday n=13). Ratio estimation
-requires at least 10 observations per group for stability. In real
-surveys, aim for at least 30 interviews per stratum for reliable grouped
-estimates.
+This chunk is not run: the rate functions refuse a group with fewer than
+10 trips, and the weekend group here has 7.
 
 ## Variance Methods
 
@@ -303,21 +317,31 @@ jackknife are also available:
 
 ``` r
 
-# Bootstrap variance estimation
-set.seed(42) # For reproducibility
+set.seed(42) # bootstrap replicates are random
 cpue_boot <- estimate_catch_rate(design, variance = "bootstrap")
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
-
-# Jackknife variance estimation
 cpue_jk <- estimate_catch_rate(design, variance = "jackknife")
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
+
+cbind(
+  method = c("taylor", "bootstrap", "jackknife"),
+  rbind(
+    tibble::as_tibble(cpue_est)[, c("estimate", "se")],
+    tibble::as_tibble(cpue_boot)[, c("estimate", "se")],
+    tibble::as_tibble(cpue_jk)[, c("estimate", "se")]
+  )
+)
+#>      method  estimate        se
+#> 1    taylor 0.9674419 0.1100611
+#> 2 bootstrap 0.9674419 0.1144879
+#> 3 jackknife 0.9674419 0.1132936
 ```
 
-All three methods produce similar results for these data. Use bootstrap
-or jackknife when you want to verify Taylor linearization assumptions or
-when working with complex grouped estimates.
+The estimate is the same under all three; only the standard error
+depends on the method. Use bootstrap or jackknife to check the
+linearization, or for statistics where it is awkward.
 
 **When to use each method:**
 
@@ -452,7 +476,9 @@ data(example_interviews)
 
 # Build design and attach data
 complete_design <- creel_design(example_calendar, date = date, strata = day_type) |>
-  add_counts(example_counts) |>
+  add_counts(prep_counts_daily_effort(example_counts,
+    date = date, strata = day_type, daily_effort = effort_hours
+  )) |>
   add_interviews(example_interviews,
     catch = catch_total,
     effort = hours_fished,
@@ -465,14 +491,6 @@ complete_design <- creel_design(example_calendar, date = date, strata = day_type
 
 # Compute all estimates
 effort <- estimate_effort(complete_design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 cpue <- estimate_catch_rate(complete_design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews) [default]
@@ -547,35 +565,18 @@ print(total_harvest)
 #> 1     225.  28.1     165.     284.    17
 ```
 
-This demonstrates the complete v0.2.0 workflow from survey design
-through total catch and harvest estimation.
+The same warnings appear here as in the sections above, for the same
+reasons.
 
 ## Working with Incomplete Trips
 
-This vignette demonstrates the default workflow using complete trips,
-which is the recommended approach following Pollock et al. (1994)
-roving-access design principles.
-
-For situations with incomplete-trip interviews where you want to examine
-using them for estimation, see the **Incomplete Trip Estimation**
-vignette
-([`vignette("incomplete-trips", package = "tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md)).
-That vignette covers:
-
-- When incomplete trip estimation is scientifically valid
-- How to validate incomplete trip estimates using TOST equivalence
-  testing
-- Step-by-step workflow with
-  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md)
-- Examples of passing and failing validation scenarios
-- Why you should NEVER pool complete and incomplete trips
-
-**Important:** The package defaults to complete trips only. Incomplete
-trip estimation requires explicit opt-in via the `use_trips` parameter
-in
-[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
-and should only be used after validation with
-[`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md).
+This page uses the 17 complete trips, as an access-point survey does. On
+an access design the rate functions use complete trips unless told
+otherwise. Interviews of anglers still fishing (incomplete trips) call
+for a different estimator, the mean of ratios with short trips dropped;
+on a roving design the package uses it by default.
+[`vignette("incomplete-trips")`](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md)
+covers when and how.
 
 ## Next Steps
 
@@ -599,8 +600,18 @@ For more details on interview-based estimation functions, see:
   Compute design-weighted mean age
 - [`?example_interviews`](https://chrischizinski.com/tidycreel/dev/reference/example_interviews.md) -
   Example interview dataset
+- [`?prep_counts_daily_effort`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md) -
+  Attach effort already worked out for each day
 - [`?example_ages`](https://chrischizinski.com/tidycreel/dev/reference/example_ages.md) -
   Example age dataset
 
 For the effort estimation workflow, see the “Getting Started with
 tidycreel” vignette.
+
+## References
+
+- Goodman, L. A. (1960). On the exact variance of products. *Journal of
+  the American Statistical Association* 55:708–713.
+- Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). *Angler Survey
+  Methods and Their Applications in Fisheries Management*. American
+  Fisheries Society Special Publication 25. Bethesda, Maryland.

@@ -12,8 +12,8 @@ three estimators for these purposes:
 - **[`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_mr_harvest.md)**
   — total harvest derived from a mark-recapture population estimate
 - **[`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_exploitation_rate.md)**
-  — seasonal exploitation rate from tagged-fish recoveries (Pollock et
-  al. 1994)
+  — seasonal exploitation rate from tagged fish seen in the creel
+  (Newman et al. 1997)
 
 All three return `creel_estimates` objects compatible with the standard
 tidycreel output tools ([`print()`](https://rdrr.io/r/base/print.html),
@@ -263,9 +263,13 @@ sensitivity check.
 ## Exploitation Rate
 
 [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_exploitation_rate.md)
-implements the Pollock et al. (1994) moment estimator. Rather than
-counting anglers, it estimates the fraction of a tagged cohort that was
-harvested during the season. The inputs come from two sources:
+estimates the fraction of a tagged cohort that was harvested during the
+season: the estimated number of tagged fish harvested divided by the
+number tagged. The number of tagged fish harvested is the creel survey’s
+harvest total times the proportion of tagged fish among the harvested
+fish the clerk inspected (Newman et al. 1997). Pollock et al. (1994,
+Chapter 18) cover the tag-return designs that estimate exploitation from
+angler-reported tags instead. The inputs come from two sources:
 
 - **Tagging study**: $`T`$ fish tagged and released at season start;
   $`m`$ tagged fish recovered among $`n`$ fish inspected in the creel.
@@ -414,7 +418,10 @@ accuracy as a separate sensitivity analysis.
 
 ## Assumptions
 
-All three estimators share the standard closed-population assumptions:
+[`estimate_angler_n()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_angler_n.md),
+and so
+[`estimate_mr_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_mr_harvest.md),
+rest on the standard closed-population assumptions:
 
 1.  **Closure** — the population is closed between marking and
     recapture; no births, deaths, emigration, or immigration.
@@ -424,13 +431,14 @@ All three estimators share the standard closed-population assumptions:
 4.  **Random mixing** — marked individuals are randomly distributed in
     the population before the second sample.
 
-For
 [`estimate_exploitation_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_exploitation_rate.md)
-two additional caveats apply:
+estimates the harvested fraction of the $`T`$ tagged fish, so it needs
+the tagged fish to stand for the population and the inspected harvest to
+stand for the whole harvest. Two cautions:
 
-- Natural mortality between tagging and the creel survey is not
-  corrected for; if natural mortality is non-trivial, the estimator
-  overestimates exploitation.
+- Tags lost, or tagged fish that die from handling, leave the cohort
+  without being harvested. The estimator does not correct for either, so
+  both bias the estimate low.
 - The reporting rate is treated as known without error (see adjustment
   section above).
 
@@ -445,6 +453,11 @@ Management*, 38(2), 400–410. <https://doi.org/10.1002/nafm.10038>
 Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler Survey
 Methods and Their Applications in Fisheries Management.* AFS Special
 Publication 25. American Fisheries Society.
+
+Newman, S. P., Rasmussen, P. W., & Andrews, L. M. (1997). Comparison of
+a stratified, instantaneous count creel survey with a complete mandatory
+creel census on Escanaba Lake, Wisconsin. *North American Journal of
+Fisheries Management*, 17, 321–330.
 
 Jones, C. M., & Pollock, K. H. (2012). Recreational angler survey
 methods: estimation of effort, harvest, and released catch. In A. V.

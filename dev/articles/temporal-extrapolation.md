@@ -1,542 +1,324 @@
-# Temporal Extrapolation
+# Season, Monthly and Annual Totals
 
-## Overview
+## The task
 
-Creel surveys sample a fraction of days in a season. Design-based
-estimators in tidycreel automatically account for unsampled days through
-survey weights — so when you call
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-or
-[`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
-the result is already a season-total estimate, not just a sample-day
-sum.
+A creel survey samples some of the days in a season. The number usually
+reported is the effort or catch over **every** day of the season, and
+often a total for each month. This page shows how to get both from one
+design.
 
-The examples show how to:
+Two things have to be true for an estimate to cover unsampled days:
 
-1.  Obtain a full-season total from a single design
-2.  Break the season into monthly totals using separate monthly designs
-3.  Combine monthly estimates to a season or annual total
-4.  Assemble multi-estimate reports with
-    [`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md)
+1.  **The calendar lists every day of the period**, sampled or not.
+    tidycreel counts the days in each stratum from the calendar; the
+    sampled days are the ones that have counts. A calendar of sampled
+    days only has nothing to expand to.
+2.  **You ask for the period**, with `target = "period_total"`. The
+    default, `target = "sampled_days"`, is the total over the days that
+    were sampled.
 
-## How Design-Based Extrapolation Works
+Each stratum’s mean daily effort is multiplied by the number of days in
+that stratum, and the strata are added (the stratified estimator of
+Pollock et al. 1994, Ch. 3).
 
-When you create a design with
-[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
-the survey object assigns a **weight** to each sampled day. A day
-sampled at rate $`f`$ receives weight $`1/f`$, so its observed
-angler-hours represent $`1/f`$ days of that stratum type. The estimator
-then sums weighted observations across strata to produce a population
-total for the entire design period.
+## A simulated season
 
-In practice this means:
-
-- A season design covering May–September gives you a **season-total**
-  estimate.
-- A monthly design covering just June gives you a **June-total**
-  estimate.
-- You do not need to multiply results by any “expansion factor” — the
-  weights already perform the extrapolation.
-
-The same target logic applies when the calendar includes
-schedule-defined special strata. If
-`generate_schedule(..., special_periods = ...)` resolved opener or
-holiday days into a final analysis stratum,
-`estimate_effort(..., target = "stratum_total")` and
-`target = "period_total"` expand within those declared strata exactly as
-they do for the usual weekday/weekend case. The important constraint is
-that the calendar passed to
-[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
-must use the resolved final analysis stratum rather than the old
-baseline label. Sparse special strata still trigger the usual variance
-diagnostics: warnings for unstable small strata and explicit single-PSU
-errors when variance cannot be estimated.
-
-## Building a Season-Long Dataset
+May to September, 153 days. Weekends were sampled at about half and
+weekdays at about a third, with one instantaneous count on each sampled
+day. The fishing day is 14 hours, and the count was made at a random
+moment within it.
 
 ``` r
 
 library(tidycreel)
 
 set.seed(2024)
-
-# Full season: May 1 – September 30 (184 days)
 all_dates <- seq(as.Date("2024-05-01"), as.Date("2024-09-30"), by = "1 day")
-day_types <- ifelse(
-  as.integer(format(all_dates, "%u")) %in% c(6L, 7L), "weekend", "weekday"
+day_type <- ifelse(as.integer(format(all_dates, "%u")) %in% 6:7, "weekend", "weekday")
+month <- factor(month.name[as.integer(format(all_dates, "%m"))], levels = month.name[5:9])
+
+# Every day of the season, sampled or not
+season_calendar <- data.frame(date = all_dates, month = month, day_type = day_type)
+
+sampled <- runif(length(all_dates)) < ifelse(day_type == "weekend", 0.5, 0.3)
+s <- season_calendar[sampled, ]
+
+# One instantaneous count per sampled day, made within a 14-hour fishing day
+counts <- data.frame(
+  date = s$date, month = s$month, day_type = s$day_type,
+  anglers = pmax(round(ifelse(s$day_type == "weekend",
+    rnorm(nrow(s), mean = 55, sd = 18),
+    rnorm(nrow(s), mean = 28, sd = 12)
+  )), 0),
+  fishing_day = 14
 )
 
-season_calendar <- data.frame(
-  date     = all_dates,
-  day_type = day_types
-)
-
-# Stratified random sample: 30% of weekdays, 50% of weekends
-set.seed(2024)
-sampled <- ave(
-  seq_along(all_dates), day_types,
-  FUN = function(i) {
-    rate <- if (day_types[i[1]] == "weekend") 0.50 else 0.30
-    as.integer(runif(length(i)) < rate)
-  }
-)
-sampled_calendar <- season_calendar[as.logical(sampled), ]
-
-# Generate plausible effort counts (angler-hours per count)
-# Weekend counts higher than weekday
-sampled_counts <- data.frame(
-  date = sampled_calendar$date,
-  day_type = sampled_calendar$day_type,
-  n_anglers = ifelse(
-    sampled_calendar$day_type == "weekend",
-    round(rnorm(sum(sampled), mean = 55, sd = 18)),
-    round(rnorm(sum(sampled), mean = 28, sd = 12))
-  )
-)
-sampled_counts$n_anglers <- pmax(sampled_counts$n_anglers, 0L)
-
-nrow(sampled_calendar) # Number of sampled days
-#> [1] 58
+table(s$month, s$day_type)
+#>            
+#>             weekday weekend
+#>   May             7       3
+#>   June            5       9
+#>   July            6       6
+#>   August         10       3
+#>   September       6       6
 ```
 
-## Season-Total Effort
+## Season total
 
-Pass the sampled calendar to
-[`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
-attach the counts, and call
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md).
-The result is the estimated total angler-hours for the entire
-May–September season.
+The strata are month and day type together, so that each month’s days
+are their own strata. That is what lets the same design report months as
+well as the season (next section).
 
 ``` r
 
-season_design <- creel_design(
-  sampled_calendar,
-  date = date, strata = day_type
+design <- creel_design(season_calendar, date = date, strata = c(month, day_type))
+design <- add_counts(design, counts,
+  count_col = anglers,
+  period_length_col = fishing_day
 )
-season_design <- add_counts(season_design, sampled_counts)
 
-season_effort <- estimate_effort(season_design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-season_effort$estimates
+estimate_effort(design)
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: sampled_days
+#> Unit: angler-hours
+#> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     2004  121.       121.         0    1763.    2245.    58
+#> 1    34860 1604.      1604.         0   31639.   38081.    61
+estimate_effort(design, target = "period_total")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: period_total
+#> Unit: angler-hours
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1   81407. 4233.      4233.         0   72909.   89904.    61
 ```
 
-The `estimate` column is the season-total angler-hours; `se` is the
-standard error of that total.
+The first estimate is the effort on the 61 sampled days. The second is
+the season total, about 81,400 angler-hours: the number to report. The
+unit is angler-hours because each count was given the 14-hour period it
+was made in (`period_length_col`);
+[`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)
+explains why the unit is derived rather than assumed.
 
-## Monthly Effort Totals
+## Monthly totals
 
-To break the season into monthly totals, subset the calendar and counts
-to each month, build a separate monthly design, and estimate. Monthly
-designs are independent, so their variances can be combined later.
+Because each month is made of its own strata, a monthly total is the sum
+of that month’s strata. Ask for it with `by = month`:
 
 ``` r
 
-months <- 5:9
-month_labels <- c("May", "June", "July", "August", "September")
-
-monthly_effort <- lapply(seq_along(months), function(i) {
-  m <- months[i]
-  cal_m <- sampled_calendar[format(sampled_calendar$date, "%m") == sprintf("%02d", m), ]
-  cnt_m <- sampled_counts[format(sampled_counts$date, "%m") == sprintf("%02d", m), ]
-
-  if (nrow(cal_m) == 0) {
-    return(NULL)
-  }
-
-  des_m <- creel_design(cal_m, date = date, strata = day_type)
-  des_m <- add_counts(des_m, cnt_m)
-  est <- estimate_effort(des_m)$estimates
-
-  cbind(month = month_labels[i], est)
-})
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-
-do.call(rbind, monthly_effort)
-#>       month estimate       se se_between se_within ci_lower ci_upper  n
-#> 1       May      257 45.19735   45.19735         0 150.1253 363.8747  9
-#> 2      June      461 73.10814   73.10814         0 300.0901 621.9099 13
-#> 3      July      338 57.00058   57.00058         0 206.5564 469.4436 10
-#> 4    August      491 55.13036   55.13036         0 369.6589 612.3411 13
-#> 5 September      457 39.73244   39.73244         0 369.5495 544.4505 13
+monthly_effort <- estimate_effort(design, by = month, target = "period_total")
+monthly_effort
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Grouped by: month
+#> Effort target: period_total
+#> Unit: angler-hours
+#> 
+#> # A tibble: 5 × 8
+#>   month     estimate    se se_between se_within ci_lower ci_upper     n
+#>   <fct>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1 May         16882  2046.      2046.         0   12774.   20990.    10
+#> 2 June        16878. 2523.      2523.         0   11813.   21943.    14
+#> 3 July        17397. 1518.      1518.         0   14349.   20446.    12
+#> 4 August      18735. 2029.      2029.         0   14662.   22808.    13
+#> 5 September   11515   971.       971.         0    9566.   13464.    12
 ```
 
-## Season Total from Monthly Estimates
-
-Because monthly estimates are independent (non-overlapping time
-windows), the season total is the sum of monthly estimates and the
-season variance is the sum of monthly variances.
+The months add up to the season total, and their standard errors add in
+quadrature to the season’s, because strata are sampled independently:
 
 ``` r
 
-monthly_df <- do.call(rbind, monthly_effort)
+monthly <- tibble::as_tibble(monthly_effort)
+c(sum = sum(monthly$estimate), se = sqrt(sum(monthly$se^2)))
+#>       sum        se 
+#> 81406.911  4232.692
+```
 
-season_from_months <- data.frame(
-  stratum  = "Season total",
-  estimate = sum(monthly_df$estimate),
-  se       = sqrt(sum(monthly_df$se^2))
+### Why strata, not a `by` over a season design
+
+Stratifying by month is a design choice, and it changes the season total
+a little. With day type as the only stratum the same counts give:
+
+``` r
+
+design_dt <- creel_design(season_calendar, date = date, strata = day_type)
+design_dt <- add_counts(design_dt, counts,
+  count_col = anglers,
+  period_length_col = fishing_day
 )
-
-season_from_months
-#>        stratum estimate       se
-#> 1 Season total     2004 123.5099
+estimate_effort(design_dt, target = "period_total")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: period_total
+#> Unit: angler-hours
+#> 
+#> # A tibble: 1 × 7
+#>   estimate    se se_between se_within ci_lower ci_upper     n
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1   81017. 3870.      3870.         0   73273.   88761.    61
 ```
 
-This should be close to the single-design season total above (small
-differences are due to independent stratification within each monthly
-design).
+about 81,000 instead of 81,400. Neither is wrong. With month strata,
+each month’s mean is expanded by that month’s own number of days, so a
+month whose sampled days happened to run busy is not averaged into the
+quiet ones. Stratify by month when the sampling was planned month by
+month, or when monthly totals are needed; then the months are strata and
+they add up exactly.
 
-## Monthly Catch Totals
+## Catch totals
 
-Total catch estimation follows the same monthly pattern: estimate the
-catch rate from interviews, then multiply by monthly effort. First,
-generate synthetic interview data:
+Interviews attach to the same design. The simulated anglers fish alone,
+so `n_anglers = 1`; that makes the rate fish per angler-hour, the same
+unit as the effort it multiplies.
 
 ``` r
 
-set.seed(2024)
-
-# Three interviews per sampled day (ensures ≥10 complete trips per month)
-n_per_day <- 3L
-n_int <- nrow(sampled_calendar) * n_per_day
-catch_total <- rpois(n_int, lambda = 1.8)
+set.seed(2025)
+n_per_day <- 4L
+n_int <- nrow(s) * n_per_day
 interviews <- data.frame(
-  date         = rep(sampled_calendar$date, each = n_per_day),
-  day_type     = rep(sampled_calendar$day_type, each = n_per_day),
-  trip_status  = "complete",
-  hours_fished = round(rnorm(n_int, mean = 3.5, sd = 1.2), 1),
-  catch_total  = catch_total,
-  catch_kept   = pmin(rpois(n_int, lambda = 0.6), catch_total)
+  date = rep(s$date, each = n_per_day),
+  month = rep(s$month, each = n_per_day),
+  day_type = rep(s$day_type, each = n_per_day),
+  trip_status = "complete",
+  hours_fished = pmax(round(rnorm(n_int, mean = 3.5, sd = 1.2), 1), 0.5)
 )
-interviews$hours_fished <- pmax(interviews$hours_fished, 0.5)
-```
+interviews$catch_total <- rpois(n_int, lambda = 0.5 * interviews$hours_fished)
+interviews$catch_kept <- pmin(rpois(n_int, lambda = 0.6), interviews$catch_total)
 
-Then loop over months exactly as for effort:
-
-``` r
-
-monthly_catch <- lapply(seq_along(months), function(i) {
-  m <- months[i]
-  cal_m <- sampled_calendar[format(sampled_calendar$date, "%m") == sprintf("%02d", m), ]
-  cnt_m <- sampled_counts[format(sampled_counts$date, "%m") == sprintf("%02d", m), ]
-  int_m <- interviews[format(interviews$date, "%m") == sprintf("%02d", m), ]
-
-  if (nrow(cal_m) == 0) {
-    return(NULL)
-  }
-
-  des_m <- creel_design(cal_m, date = date, strata = day_type)
-  des_m <- add_counts(des_m, cnt_m)
-  des_m <- add_interviews(des_m, int_m,
-    trip_status = trip_status,
-    catch = catch_total,
-    effort = hours_fished,
-    n_anglers = 1, # every interview is a single angler
-    harvest = catch_kept
-  )
-
-  effort_est <- estimate_effort(des_m)
-  catch_est <- estimate_total_catch(des_m)
-
-  cbind(month = month_labels[i], catch_est$estimates)
-})
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
-#> • day_type=weekend: n=9
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-
-do.call(rbind, monthly_catch)
-#>       month estimate       se  ci_lower ci_upper  n
-#> 1       May 135.4235 32.19588  69.11487 201.7322 27
-#> 2      June 209.1243 43.65869 120.66337 297.5852 39
-#> 3      July 143.0169 32.42928  76.58848 209.4452 30
-#> 4    August 236.6189 41.48349 152.56536 320.6724 39
-#> 5 September 217.9545 38.61587 139.71136 296.1977 39
-```
-
-## Season-Total Catch
-
-Sum the monthly totals:
-
-``` r
-
-catch_df <- do.call(rbind, monthly_catch)
-season_catch <- data.frame(
-  stratum  = "Season total",
-  estimate = sum(catch_df$estimate),
-  se       = sqrt(sum(catch_df$se^2))
+design <- add_interviews(design, interviews,
+  trip_status = trip_status,
+  catch = catch_total,
+  effort = hours_fished,
+  n_anglers = 1,
+  harvest = catch_kept
 )
-season_catch
-#>        stratum estimate      se
-#> 1 Season total 942.1381 84.8904
+#> ℹ 47 interviews have zero catch.
+#>   Zero catch is usual; check it is not missing data recorded as 0.
+#> ℹ Added 244 interviews: 244 complete (100%), 0 incomplete (0%)
+
+monthly_catch <- estimate_total_catch(design, by = month, target = "period_total")
+monthly_catch
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total Catch (Effort × CPUE)
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Grouped by: month
+#> Effort target: period_total
+#> Unit: fish
+#> 
+#> # A tibble: 5 × 6
+#>   month     estimate    se ci_lower ci_upper     n
+#>   <fct>        <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1 August      11982. 1980.    8004.   15960.    52
+#> 2 July         7763. 1026.    5698.    9829.    48
+#> 3 June         8407. 1554.    5292.   11522.    56
+#> 4 May          8340. 1480.    5343.   11336.    40
+#> 5 September    5875.  872.    4119.    7631.    48
+estimate_total_catch(design, target = "period_total")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total Catch (Effort × CPUE)
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: period_total
+#> Unit: fish
+#> 
+#> # A tibble: 1 × 5
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1   42367. 3216.   36032.   48702.   244
 ```
 
-## Assembling a Summary Report
+Each month’s catch is that month’s effort times its catch rate, stratum
+by stratum, and the months again add to the season total.
+
+## One table for the report
 
 [`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md)
-assembles multiple `creel_estimates` objects into a single wide tibble
-for reporting. For a monthly summary, build a list with named entries
-and pass it to
-[`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md).
+joins several estimates on their grouping columns into one wide table:
 
 ``` r
 
-# Collect effort and catch estimates for each month into named lists
-effort_list <- list()
-catch_list <- list()
-
-for (i in seq_along(months)) {
-  m <- months[i]
-  label <- month_labels[i]
-
-  cal_m <- sampled_calendar[format(sampled_calendar$date, "%m") == sprintf("%02d", m), ]
-  cnt_m <- sampled_counts[format(sampled_counts$date, "%m") == sprintf("%02d", m), ]
-  int_m <- interviews[format(interviews$date, "%m") == sprintf("%02d", m), ]
-
-  if (nrow(cal_m) == 0) next
-
-  des_m <- creel_design(cal_m, date = date, strata = day_type)
-  des_m <- add_counts(des_m, cnt_m)
-  des_m <- add_interviews(des_m, int_m,
-    trip_status = trip_status,
-    catch = catch_total,
-    effort = hours_fished,
-    n_anglers = 1, # every interview is a single angler
-    harvest = catch_kept
-  )
-
-  effort_list[[label]] <- estimate_effort(des_m)
-  catch_list[[label]] <- estimate_total_catch(des_m)
-}
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Warning: 1 rate cell in "estimate_total_catch" rests on fewer than 10 trips.
-#> • day_type=weekend: n=9
-#> ℹ The total multiplies each cell's effort by a rate built from that cell's
-#>   trips alone; a ratio from so few trips is unstable, and the rate functions
-#>   refuse a group this small.
-#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
-#>   (GH #417).
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-
-# Assemble effort report
-effort_summary <- season_summary(effort_list)
-effort_summary$table
-#> # A tibble: 1 × 35
-#>   May_estimate May_se May_se_between May_se_within May_ci_lower May_ci_upper
-#>          <dbl>  <dbl>          <dbl>         <dbl>        <dbl>        <dbl>
-#> 1          257   45.2           45.2             0         150.         364.
-#> # ℹ 29 more variables: May_n <int>, June_estimate <dbl>, June_se <dbl>,
-#> #   June_se_between <dbl>, June_se_within <dbl>, June_ci_lower <dbl>,
-#> #   June_ci_upper <dbl>, June_n <int>, July_estimate <dbl>, July_se <dbl>,
-#> #   July_se_between <dbl>, July_se_within <dbl>, July_ci_lower <dbl>,
-#> #   July_ci_upper <dbl>, July_n <int>, August_estimate <dbl>, August_se <dbl>,
-#> #   August_se_between <dbl>, August_se_within <dbl>, August_ci_lower <dbl>,
-#> #   August_ci_upper <dbl>, August_n <int>, September_estimate <dbl>, …
+report <- season_summary(list(effort = monthly_effort, catch = monthly_catch))
+report$table
+#> # A tibble: 5 × 13
+#>   month     effort_estimate effort_se effort_se_between effort_se_within
+#>   <fct>               <dbl>     <dbl>             <dbl>            <dbl>
+#> 1 May                16882      2046.             2046.                0
+#> 2 June               16878.     2523.             2523.                0
+#> 3 July               17397.     1518.             1518.                0
+#> 4 August             18735.     2029.             2029.                0
+#> 5 September          11515       971.              971.                0
+#> # ℹ 8 more variables: effort_ci_lower <dbl>, effort_ci_upper <dbl>,
+#> #   effort_n <int>, catch_estimate <dbl>, catch_se <dbl>, catch_ci_lower <dbl>,
+#> #   catch_ci_upper <dbl>, catch_n <int>
 ```
 
+To write it out, use any writer for data frames, or
+[`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
+with the format named:
+
 ``` r
 
-catch_summary <- season_summary(catch_list)
-catch_summary$table
-#> # A tibble: 1 × 25
-#>   May_estimate May_se May_ci_lower May_ci_upper May_n June_estimate June_se
-#>          <dbl>  <dbl>        <dbl>        <dbl> <int>         <dbl>   <dbl>
-#> 1         135.   32.2         69.1         202.    27          209.    43.7
-#> # ℹ 18 more variables: June_ci_lower <dbl>, June_ci_upper <dbl>, June_n <int>,
-#> #   July_estimate <dbl>, July_se <dbl>, July_ci_lower <dbl>,
-#> #   July_ci_upper <dbl>, July_n <int>, August_estimate <dbl>, August_se <dbl>,
-#> #   August_ci_lower <dbl>, August_ci_upper <dbl>, August_n <int>,
-#> #   September_estimate <dbl>, September_se <dbl>, September_ci_lower <dbl>,
-#> #   September_ci_upper <dbl>, September_n <int>
+write_schedule(report$table, "season_2024.csv")
+write_schedule(report$table, "season_2024.xlsx", format = "xlsx")
 ```
 
-## Annual Totals Across Multiple Seasons
+[`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
+does not read the format from the file name, so an `.xlsx` name without
+`format = "xlsx"` gets CSV text.
 
-When survey data span multiple calendar years, apply the same pattern at
-the year level: build one design per year, run estimators, then sum
-totals and combine variances.
+## Several years
+
+Build one design per year, each with that year’s full calendar, and
+report the years side by side. Years are separate surveys, so their
+totals are independent and can be compared or added like strata.
 
 ``` r
 
-# Conceptual pattern — replace with actual data per year
-year_effort <- list()
-
-for (yr in c(2022, 2023, 2024)) {
-  cal_yr <- subset(full_calendar, format(date, "%Y") == yr)
-  cnt_yr <- subset(full_counts, format(date, "%Y") == yr)
-
-  des_yr <- creel_design(cal_yr, date = date, strata = day_type)
-  des_yr <- add_counts(des_yr, cnt_yr)
-
-  year_effort[[as.character(yr)]] <- estimate_effort(des_yr)
-}
-
-# Multi-year report table
+year_effort <- lapply(split(all_years_calendar, all_years_calendar$year), function(cal) {
+  cnt <- all_years_counts[all_years_counts$date %in% cal$date, ]
+  creel_design(cal, date = date, strata = day_type) |>
+    add_counts(cnt, count_col = anglers, period_length_col = fishing_day) |>
+    estimate_effort(target = "period_total")
+})
 season_summary(year_effort)$table
 ```
 
-## Exporting Results
+## Summary
 
-[`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
-accepts any data frame, so you can export the assembled summary table
-directly:
-
-``` r
-
-write_schedule(effort_summary$table, "effort_by_month_2024.csv")
-write_schedule(effort_summary$table, "effort_by_month_2024.xlsx")
-```
-
-## Practical reminders
-
-| Goal | Approach |
+| Goal | Call |
 |----|----|
-| Season total | Single design covering full season; call [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md) once |
-| Monthly totals | Separate monthly designs; loop over months |
-| Season total from months | Sum monthly estimates; sum monthly variances |
-| Annual comparison | Separate annual designs; use [`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md) |
-| Report table | `season_summary(named_list_of_estimates)$table` |
+| Effort on the sampled days | `estimate_effort(design)` |
+| Season total | full calendar, then `estimate_effort(design, target = "period_total")` |
+| Monthly totals that add to the season | `strata = c(month, day_type)`, then `by = month, target = "period_total"` |
+| Catch or harvest totals | the same `by` and `target` on [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md) / [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md) |
+| A report table | `season_summary(list(...))$table` |
 
 ## References
 
-- Cochran, W. G. (1977). *Sampling Techniques*, 3rd ed. Wiley, New York.
-
 - Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). *Angler Survey
   Methods and Their Applications in Fisheries Management*. American
-  Fisheries Society, Bethesda, MD.
-
-- Su, Y.-S., and Liu, P. (2025). Flexible creel survey estimators.
-  *Canadian Journal of Fisheries and Aquatic Sciences*, 82, 1–27.
+  Fisheries Society Special Publication 25. Bethesda, Maryland.

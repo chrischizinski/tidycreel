@@ -56,10 +56,10 @@
     <li><h6 class="dropdown-header" data-toc-skip>Estimation</h6></li>
     <li><a class="dropdown-item" href="../articles/interview-estimation.html">Interview-Based Catch Estimation</a></li>
     <li><a class="dropdown-item" href="../articles/mark-recapture.html">Mark-Recapture and Exploitation Rate Estimation</a></li>
-    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete Trip Estimation</a></li>
+    <li><a class="dropdown-item" href="../articles/incomplete-trips.html">Incomplete-Trip Interviews</a></li>
     <li><a class="dropdown-item" href="../articles/progressive-count-surveys.html">Progressive Count Surveys</a></li>
     <li><a class="dropdown-item" href="../articles/section-estimation.html">Spatially Stratified Estimation with Sections</a></li>
-    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Temporal Extrapolation</a></li>
+    <li><a class="dropdown-item" href="../articles/temporal-extrapolation.html">Season, Monthly and Annual Totals</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Reporting &amp; Planning</h6></li>
     <li><a class="dropdown-item" href="../articles/unextrapolated-summaries.html">Unextrapolated Interview Summaries</a></li>
@@ -275,14 +275,17 @@ estimator looks for the open hours.</li>
 <div class="section level3">
 <h3 id="survey-setup">Survey Setup<a class="anchor" aria-label="anchor" href="#survey-setup"></a>
 </h3>
-<p>We survey a 25-km reservoir access road over a 4-week season
-(July–July). A single crew completes the full circuit in 2 hours
+<p>We survey a 25-km reservoir access road on 18 sampled days in July. A
+single crew completes the full circuit in 2 hours
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\tau = 2</annotation></semantics></math>
-h). The access road is open 10 hours per day.</p>
+h). The access road is open 10 hours per day. The calendar below lists
+only the sampled days, so the totals on this page are totals over those
+days; <code><a href="../articles/temporal-extrapolation.html">vignette("temporal-extrapolation")</a></code> shows how to
+expand to a whole season.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Four-week season: 10 weekdays, 8 weekend days sampled</span></span>
+<span><span class="co"># 18 sampled days: 10 weekdays and 8 weekend days</span></span>
 <span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="co"># Weekdays</span></span>
@@ -418,10 +421,11 @@ angler-hours):</p>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">6</span>130  249.       249.         0    <span style="text-decoration: underline;">5</span>601.    <span style="text-decoration: underline;">6</span>659.    18</span></span></code></pre></div>
 <p>The <code>estimate</code> column is the stratified total angler-hours
-for the 4-week season. The <code>se</code> column is the standard error
-of that total; <code>se_within</code> is always zero for progressive
-surveys because there is only one circuit per day (no within-day
-replication).</p>
+over the 18 sampled days, and <code>se</code> its standard error. With
+one circuit per day <code>se_within</code> is reported as 0. That does
+not mean effort was steady through the day: the day-to-day term contains
+the within-day variation, but with one circuit per day it cannot be
+separated out, so the 0 stands for “not estimated”.</p>
 </div>
 <div class="section level3">
 <h3 id="adding-interviews">Adding Interviews<a class="anchor" aria-label="anchor" href="#adding-interviews"></a>
@@ -469,9 +473,11 @@ Attach them exactly as in any other survey type:</p>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>846.  305.    <span style="text-decoration: underline;">3</span>243.    <span style="text-decoration: underline;">4</span>450.   120</span></span></code></pre></div>
-<p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> multiplies the effort estimate by
-the CPUE estimate and propagates uncertainty via the delta method,
-producing a season-total catch with a combined standard error.</p>
+<p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> multiplies each day type’s effort
+by that day type’s catch rate and adds the products. Its standard error
+combines the two estimates’ variances, treating effort and rate as
+independent; <code><a href="../articles/catch-pipeline.html">vignette("catch-pipeline")</a></code> explains the
+formula and that assumption.</p>
 </div>
 <div class="section level3">
 <h3 id="harvest-rate-and-total-harvest">Harvest Rate and Total Harvest<a class="anchor" aria-label="anchor" href="#harvest-rate-and-total-harvest"></a>
@@ -495,7 +501,7 @@ producing a season-total catch with a combined standard error.</p>
 <div class="section level2">
 <h2 id="pope-et-al--worked-example">Pope et al. Worked Example<a class="anchor" aria-label="anchor" href="#pope-et-al--worked-example"></a>
 </h2>
-<p>Pope et al. (in press) give the canonical calculation:
+<p>Pope et al. (Chapter 17 draft) give the calculation:
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo>=</mo><mn>234</mn></mrow><annotation encoding="application/x-tex">C = 234</annotation></semantics></math>
 anglers encountered during a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\tau = 2</annotation></semantics></math>
@@ -533,63 +539,50 @@ open hours.</p>
 <h2 id="multiple-periods-per-day">Multiple Periods per Day<a class="anchor" aria-label="anchor" href="#multiple-periods-per-day"></a>
 </h2>
 <p>Some progressive surveys run two circuits per day (e.g., morning and
-evening). This creates multiple counts per PSU (day), and tidycreel
-decomposes variance into between-day and within-day components via the
-Rasmussen (1994) two-stage formula.</p>
-<p>For the morning–evening case, use <code>count_time_col</code> to
-identify the circuit within each day:</p>
+evening). This creates several counts per day, the sampling unit, and
+tidycreel splits the variance into a between-day and a within-day term:
+Cochran’s (1977) two-stage variance, as Pope et al. (Chapter 17 draft)
+apply it to creel counts.</p>
+<p>Name the circuit within each day with <code>count_time_col</code>,
+alongside the progressive arguments. Each day’s effort is then the mean
+of its circuits’
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo>×</mo><msub><mi>T</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">C \times T_d</annotation></semantics></math>:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Two circuits per day (morning and evening traversals)</span></span>
+<code class="sourceCode R"><span><span class="co"># Two circuits per day (morning and evening traversals), three days per day type</span></span>
+<span><span class="va">days_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"2024-07-01"</span>, <span class="st">"2024-07-02"</span>, <span class="st">"2024-07-03"</span>,</span>
+<span>  <span class="st">"2024-07-06"</span>, <span class="st">"2024-07-07"</span>, <span class="st">"2024-07-13"</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">cal_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-07-01"</span>, <span class="st">"2024-07-02"</span>, <span class="st">"2024-07-06"</span>, <span class="st">"2024-07-07"</span><span class="op">)</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span></span>
+<span>  date     <span class="op">=</span> <span class="va">days_2p</span>,</span>
+<span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">des_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal_2p</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cnt_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="st">"2024-07-01"</span>, <span class="st">"2024-07-02"</span>,</span>
-<span>    <span class="st">"2024-07-06"</span>, <span class="st">"2024-07-07"</span></span>
-<span>  <span class="op">)</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
-<span>  count_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"am"</span>, <span class="st">"pm"</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span>
-<span>  n_anglers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">22L</span>, <span class="fl">18L</span>, <span class="fl">20L</span>, <span class="fl">24L</span>, <span class="fl">55L</span>, <span class="fl">48L</span>, <span class="fl">62L</span>, <span class="fl">58L</span><span class="op">)</span></span>
+<span>  date        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="va">days_2p</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  day_type    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span>
+<span>  count_time  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"am"</span>, <span class="st">"pm"</span><span class="op">)</span>, <span class="fl">6</span><span class="op">)</span>,</span>
+<span>  n_anglers   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">22L</span>, <span class="fl">18L</span>, <span class="fl">20L</span>, <span class="fl">24L</span>, <span class="fl">17L</span>, <span class="fl">21L</span>, <span class="fl">55L</span>, <span class="fl">48L</span>, <span class="fl">62L</span>, <span class="fl">58L</span>, <span class="fl">51L</span>, <span class="fl">57L</span><span class="op">)</span>,</span>
+<span>  shift_hours <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Note: count_time_col for within-day identification</span></span>
-<span><span class="va">des_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">des_2p</span>, <span class="va">cnt_2p</span>, count_time_col <span class="op">=</span> <span class="va">count_time</span><span class="op">)</span></span>
+<span><span class="va">des_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">des_2p</span>, <span class="va">cnt_2p</span>,</span>
+<span>  count_type <span class="op">=</span> <span class="st">"progressive"</span>,</span>
+<span>  circuit_time <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  period_length_col <span class="op">=</span> <span class="va">shift_hours</span>,</span>
+<span>  count_time_col <span class="op">=</span> <span class="va">count_time</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">est_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">des_2p</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
-<span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
-<span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
-<span><span class="co">#&gt; Warning: 2 strata have fewer than 3 observations:</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekday: 2 observations</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Stratum weekend: 2 observations</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Sparse strata produce unstable variance estimates.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider combining sparse strata or collecting more data.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="va">est_2p</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     154.  10.0       8.73      4.92     110.     197.     4</span></span></code></pre></div>
-<p>The <code>se_within</code> column is now non-zero, reflecting
-variability between the morning and evening circuits within each
-day.</p>
-<p>This chunk shows the within-day variance decomposition on its own; it
-does not apply the progressive
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>T</mi><mi>d</mi></msub><annotation encoding="application/x-tex">T_d</annotation></semantics></math>
-expansion, so <code>est_2p</code> is in counts rather than angler-hours.
-To get both, add <code>count_type = "progressive"</code>,
-<code>circuit_time</code>, and <code>period_length_col</code> as in the
-sections above — <code><a href="../reference/add_counts.html">add_counts()</a></code> supports multiple circuits
-per day on the progressive path.</p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>265  101.       80.2      61.0    <span style="text-decoration: underline;">1</span>985.    <span style="text-decoration: underline;">2</span>545.     6</span></span></code></pre></div>
+<p><code>se_within</code> is now estimated, from the differences between
+each day’s morning and evening circuits, and the total is in
+angler-hours.</p>
 </div>
 <div class="section level2">
 <h2 id="assemble-a-summary-report">Assemble a Summary Report<a class="anchor" aria-label="anchor" href="#assemble-a-summary-report"></a>
@@ -620,14 +613,10 @@ per day on the progressive path.</p>
 (1993). Scheduling counts in the instantaneous and progressive count
 methods for estimating sportfishing effort. <em>North American Journal
 of Fisheries Management</em>, 13, 723–736.</p></li>
-<li><p>Pope, K. L., Wilde, G. R., and Gabelhouse, D. W. Jr. (in press).
-Creel Surveys. Chapter 17 in <em>Fisheries Techniques</em>, 4th
-ed. American Fisheries Society, Bethesda, MD.</p></li>
-<li><p>Rasmussen, P. W. (1994). Two-stage variance estimation for creel
-surveys.</p></li>
-<li><p>Su, Y.-S., and Liu, P. (2025). Flexible creel survey estimators.
-<em>Canadian Journal of Fisheries and Aquatic Sciences</em>, 82,
-1–27.</p></li>
+<li><p>Pope, K. L., et al. Creel surveys. Chapter 17 (unpublished
+draft).</p></li>
+<li><p>Cochran, W. G. (1977). <em>Sampling Techniques</em>, 3rd edition.
+Wiley, New York.</p></li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

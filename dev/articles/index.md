@@ -34,14 +34,14 @@ spatially stratified estimation techniques.
   Estimation](https://chrischizinski.com/tidycreel/dev/articles/interview-estimation.md):
 - [Mark-Recapture and Exploitation Rate
   Estimation](https://chrischizinski.com/tidycreel/dev/articles/mark-recapture.md):
-- [Incomplete Trip
-  Estimation](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md):
+- [Incomplete-Trip
+  Interviews](https://chrischizinski.com/tidycreel/dev/articles/incomplete-trips.md):
 - [Progressive Count
   Surveys](https://chrischizinski.com/tidycreel/dev/articles/progressive-count-surveys.md):
 - [Spatially Stratified Estimation with
   Sections](https://chrischizinski.com/tidycreel/dev/articles/section-estimation.md):
-- [Temporal
-  Extrapolation](https://chrischizinski.com/tidycreel/dev/articles/temporal-extrapolation.md):
+- [Season, Monthly and Annual
+  Totals](https://chrischizinski.com/tidycreel/dev/articles/temporal-extrapolation.md):
 
 ### Reporting & Planning
 

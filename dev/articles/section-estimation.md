@@ -37,13 +37,21 @@ sections_df <- data.frame(
   stringsAsFactors = FALSE
 )
 
+# effort_hours is already angler-hours for each section and day, not an
+# instantaneous count, so it goes in through prep_counts_daily_effort()
+section_effort <- prep_counts_daily_effort(example_sections_counts,
+  date = date, strata = day_type, daily_effort = effort_hours,
+  section = section
+)
+
 design <- creel_design(example_sections_calendar, date = date, strata = day_type)
 design <- add_sections(design, sections_df, section_col = section)
-design <- add_counts(design, example_sections_counts)
+design <- add_counts(design, section_effort)
 design <- add_interviews(
   design, example_sections_interviews,
   catch = catch_total,
   effort = hours_fished,
+  n_anglers = 1,
   harvest = catch_kept,
   trip_status = trip_status,
   trip_duration = trip_duration
@@ -59,7 +67,7 @@ print(design)
 #> day_type: 2 levels
 #> Counts: 36 observations
 #> PSU column: date
-#> Count column: effort_hours
+#> Count column: daily_effort
 #> Party-size term: not carried
 #> Count type: "instantaneous"
 #> Survey: <survey.design2> (constructed)
@@ -80,6 +88,23 @@ The design now shows three registered sections (North, Central, South).
 All downstream estimators automatically detect sections and return
 per-section output.
 
+Two choices in that chunk matter for units:
+
+- `example_sections_counts` already holds angler-hours per section-day,
+  so it goes through
+  [`prep_counts_daily_effort()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_daily_effort.md).
+  Given to
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  directly it would be read as instantaneous counts, with a warning that
+  no period length was supplied. The effort printed below is in
+  angler-hours as the data say, but the reported unit is `NA`: the
+  package did not see how those angler-hours were made
+  ([`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)).
+- The interview data record no party size. This page assumes one angler
+  per interview with `n_anglers = 1`, so the catch rate is per
+  angler-hour, the same unit as the effort it multiplies. With your own
+  data, pass the party-size column instead.
+
 ------------------------------------------------------------------------
 
 ## Per-Section Effort Estimation
@@ -93,14 +118,6 @@ Variance Aggregation section below).
 ``` r
 
 effort_est <- estimate_effort(design)
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(effort_est$estimates)
 #> # A tibble: 4 × 11
 #>   section     estimate    se se_between se_within ci_lower ci_upper     n
@@ -159,23 +176,32 @@ on a design without section registration.
 
 ``` r
 
-# Lake-wide catch rate: build an unsectioned design using the same data
+# Lake-wide catch rate: an unsectioned design with the same interviews. A rate
+# needs only interviews, so no counts are attached.
 design_nosections <- creel_design(example_sections_calendar, date = date, strata = day_type)
-design_nosections <- add_counts(design_nosections, example_sections_counts)
 design_nosections <- add_interviews(
   design_nosections, example_sections_interviews,
-  catch = catch_total, effort = hours_fished,
+  catch = catch_total, effort = hours_fished, n_anglers = 1,
   harvest = catch_kept, trip_status = trip_status, trip_duration = trip_duration
 )
 #> ℹ Added 27 interviews: 27 complete (100%), 0 incomplete (0%)
 estimate_catch_rate(design_nosections)$estimates
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=27, 100% of 27 interviews) [default]
+#> Warning: Small sample size for CPUE estimation.
+#> ! Sample size is 27. Ratio estimates are more stable with n >= 30.
+#> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
 #> 1     1.77 0.118     1.54     2.00    27
 ```
+
+This call warns that 27 interviews is a small sample for a ratio
+estimator. It is: the example dataset is small so the page runs quickly.
+The warning is about precision, and the standard error already reflects
+it.
 
 ------------------------------------------------------------------------
 
@@ -189,6 +215,15 @@ a `.lake_total` row is appended to the output.
 ``` r
 
 catch_est <- estimate_total_catch(design, aggregate_sections = TRUE)
+#> Warning: 2 rate cells in "estimate_total_catch" rests on fewer than 10 trips.
+#> • section=North, day_type=weekday: n=6
+#> • section=North, day_type=weekend: n=3
+#> ℹ The total multiplies each cell's effort by a rate built from that cell's
+#>   trips alone; a ratio from so few trips is unstable, and the rate functions
+#>   refuse a group this small.
+#> ℹ Combine cells or collect more interviews. Totals warn here rather than refuse
+#>   (GH #417).
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(catch_est$estimates)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
@@ -199,6 +234,12 @@ print(catch_est$estimates)
 #> 4 .lake_total    1261.  64.8    1126.    1396.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
+
+The call warns that two rate cells rest on fewer than 10 trips. A
+sectioned total builds a rate for each section within each day type, and
+nine interviews per section split across two day types leave some cells
+thin. With real data, collect more interviews or combine cells; here it
+is a property of the small example.
 
 South has a high catch rate but the lowest effort, which limits its
 contribution to the lake total. Central has a moderate catch rate
@@ -225,16 +266,6 @@ print(harvest_est$estimates)
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
-`example_sections_interviews` carries no party-size column, so both
-calls above raise a warning that the rate they multiply is per
-*party*-hour while the count-derived effort is angler-hours. It is
-correct for this dataset and is hidden here only by the chunks’
-`warning = FALSE`, which predates it. With one angler per party the
-totals are right as printed; with larger parties they are understated.
-Supply `n_anglers` from your own interview data, or state a constant
-party size (`n_anglers = 1`) when every interview really is a single
-angler, to remove the ambiguity.
-
 ------------------------------------------------------------------------
 
 ## Variance Aggregation — Why `method = "correlated"` Is the Default
@@ -244,12 +275,13 @@ entire lake on each survey day. Every section is counted and interviewed
 on the same calendar days: if a day is sampled, all three sections are
 observed; if a day is not sampled, none are.
 
-Sharing survey days creates cross-section covariance in the sampling
-errors. In practice this covariance tends to be negative: on high-effort
-days all sections run high together, and on low-effort days they run low
-together. The shared-calendar variance formula accounts for this
-covariance and produces a narrower lake-total standard error than simply
-adding the section standard errors in quadrature.
+Sharing survey days creates covariance between the sections’ sampling
+errors. It is usually positive: a busy day is busy in every section, and
+a quiet day quiet in all of them, so the section totals’ errors move
+together. Positive covariance makes the lake-total standard error
+**wider** than adding the section standard errors in quadrature, which
+assumes they move independently. The `"correlated"` method includes the
+covariance terms; `"independent"` leaves them out.
 
 `method = "independent"` is appropriate only when sections are surveyed
 by separate, uncoordinated crews — for example, when the South section
@@ -288,6 +320,12 @@ estimate_effort(design, method = "independent")$estimates
 #> #   data_available <lgl>
 ```
 
+The section rows are identical; only the `.lake_total` standard error
+moves. On these shared days it is about 39 angler-hours with the
+covariance and about 24 without it, so treating shared-calendar sections
+as independent would understate the lake-total uncertainty by roughly a
+third.
+
 ------------------------------------------------------------------------
 
 ## Missing Section Warning
@@ -306,17 +344,15 @@ north_central_counts <- example_sections_counts[
 
 design_missing <- creel_design(example_sections_calendar, date = date, strata = day_type)
 design_missing <- add_sections(design_missing, sections_df, section_col = section)
-design_missing <- suppressWarnings(add_counts(design_missing, north_central_counts))
+design_missing <- add_counts(
+  design_missing,
+  prep_counts_daily_effort(north_central_counts,
+    date = date, strata = day_type, daily_effort = effort_hours,
+    section = section
+  )
+)
 
 estimate_effort(design_missing, missing_sections = "warn")$estimates
-#> Warning: Instantaneous counts were expanded without a period length.
-#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
-#>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
-#> ℹ Supply the period each count was randomised within: `add_counts(design,
-#>   counts, period_length_col = <col>)`.
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 missing section(s) in count data.
 #> ! Section(s) not found: "South"
 #> ℹ Inserting NA row(s) with data_available = FALSE.
