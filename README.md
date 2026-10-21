@@ -45,6 +45,12 @@ pak::pak("chrischizinski/tidycreel")
 devtools::install_github("chrischizinski/tidycreel")
 ```
 
+The [website](https://chrischizinski.com/tidycreel/) documents the CRAN
+release. Documentation for the development version on GitHub is at
+[/dev/](https://chrischizinski.com/tidycreel/dev/); corrections to the
+documentation appear there first and reach the main site with the next CRAN
+release. Check your installed version with `packageVersion("tidycreel")`.
+
 ## Survey Types
 
 <div class="row mt-4 mb-4">
