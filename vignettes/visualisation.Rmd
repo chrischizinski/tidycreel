@@ -69,7 +69,7 @@ design <- add_counts(design, prep_counts_daily_effort(example_counts,
   date = date, strata = day_type, daily_effort = effort_hours
 ))
 
-plot_design(design, title = "Count distribution by stratum")
+plot_design(design, title = "Daily effort by stratum")
 ```
 
 The crossbar shows the mean and a 95 % t interval for it across sampled days.

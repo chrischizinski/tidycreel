@@ -143,8 +143,9 @@ available days ended up in each final stratum after the calendar rules were appl
 When a declaration is valid but leaves a very small special stratum, or consumes most of
 a baseline stratum, `generate_schedule()` warns. The returned schedule also carries a
 `special_period_diagnostics` attribute, and `print()` / `format()` show a compact summary.
-Here the opener is a single day, so the high-use stratum has one day in it and the call
-warns: a stratum of one sampled day gives no variance.
+Here the opener is a single day, so the high-use stratum has one day in it, and the call
+warns that the schedule is fragile. A stratum with one sampled day gives no variance
+estimate later, when the effort is estimated.
 
 ```{r high-use-diagnostics, message = FALSE}
 sched_fragile <- generate_schedule(
