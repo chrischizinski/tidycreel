@@ -107,17 +107,22 @@ opener_periods <- data.frame(
 )
 
 sched_high_use <- generate_schedule(
-  start_date = "2027-07-30",
-  end_date = "2027-08-03",
+  start_date = "2027-07-17",
+  end_date = "2027-08-08",
   n_periods = 1,
-  sampling_rate = c(weekday = 1, weekend = 1, high_use = 1),
+  sampling_rate = c(weekday = 0.5, weekend = 1, high_use = 1),
   include_all = TRUE,
   expand_periods = FALSE,
   seed = 42,
   special_periods = opener_periods
 )
 
-sched_high_use[, c("date", "day_type", "final_stratum", "special_period_reason", "sampled")]
+opener_days <- sched_high_use$date >= as.Date("2027-07-30") &
+  sched_high_use$date <= as.Date("2027-08-03")
+as.data.frame(sched_high_use)[
+  opener_days,
+  c("date", "day_type", "final_stratum", "special_period_reason", "sampled")
+]
 ```
 
 The output keeps the baseline `day_type` classification and adds `final_stratum`, which is
@@ -135,14 +140,14 @@ attr(sched_high_use, "special_period_allocation")
 These attributes show which dates were reassigned to the special stratum and how many
 available days ended up in each final stratum after the calendar rules were applied.
 
-When a declaration is technically valid but leaves a very small special stratum or consumes
-most of a baseline stratum, `generate_schedule()` now emits a warning rather than failing
-silently. The returned schedule also carries a `special_period_diagnostics` attribute, and
-`print()` / `format()` surface a compact summary so you can see the risky stratum rewrite
-without digging through raw attributes.
+When a declaration is valid but leaves a very small special stratum, or consumes most of
+a baseline stratum, `generate_schedule()` warns. The returned schedule also carries a
+`special_period_diagnostics` attribute, and `print()` / `format()` show a compact summary.
+Here the opener is a single day, so the high-use stratum has one day in it and the call
+warns: a stratum of one sampled day gives no variance.
 
 ```{r high-use-diagnostics, message = FALSE}
-sched_fragile <- suppressWarnings(generate_schedule(
+sched_fragile <- generate_schedule(
   start_date = "2027-08-01",
   end_date = "2027-08-08",
   n_periods = 1,
@@ -156,7 +161,7 @@ sched_fragile <- suppressWarnings(generate_schedule(
     label = "high_use",
     reason = "opener"
   )
-))
+)
 
 attr(sched_fragile, "special_period_diagnostics")
 head(format(sched_fragile), 6)
@@ -166,9 +171,9 @@ If a declaration rewrites the schedule so aggressively that a requested baseline
 longer exists in the final schedule, tidycreel aborts and asks you to update `n_days` or
 `sampling_rate` to match the final strata.
 
-This scheduling feature is the operational companion to the high-use design contract from
-M020: prospective high-use periods are treated as true design strata, and boundary-crossing
-periods are split by day rather than assigned wholesale to the month where they started.
+Declared this way, a high-use period is a design stratum planned before sampling, and a
+period that crosses a month boundary is split by day rather than assigned wholesale to the
+month where it started.
 
 ### Special Strata vs. Post-Stratification
 
@@ -224,9 +229,10 @@ field printing). `read_schedule()` reloads the file with correct column types, s
 schedule round-trips without type coercion issues.
 
 ```{r io, eval = FALSE}
-# Save for field crews
+# Save for field crews. The format is not read from the file name, so name it
+# for xlsx.
 write_schedule(sched, "count_schedule_2024.csv")
-write_schedule(sched, "count_schedule_2024.xlsx")
+write_schedule(sched, "count_schedule_2024.xlsx", format = "xlsx")
 
 # Reload — column types are preserved automatically
 sched_reload <- read_schedule("count_schedule_2024.csv")
@@ -281,11 +287,18 @@ interviews collected on sampled count-period days.
 
 ## Bus-Route Scheduling
 
-For bus-route designs, `generate_bus_schedule()` converts a count schedule and a
-site-level sampling frame into a complete bus-route sampling frame with inclusion
-probabilities. Each site's probability of being visited in a given period is:
+For bus-route designs, `generate_bus_schedule()` turns a site-level frame into a
+bus-route sampling frame with inclusion probabilities:
 
 $$\pi_i = p_{site} \times p_{period} \quad \text{where} \quad p_{period} = \frac{\text{crew}}{n_{circuits}}$$
+
+$p_{period}$ here is the chance that a given circuit is the one a crew works. The
+function takes the schedule as an argument but does not use it in the calculation,
+and it requires `p_site` to sum to 1 within a circuit. The published bus-route
+estimator weights each site by its wait time over the whole circuit time, travel
+included, so its weights sum to less than 1; give those to `creel_design()` through
+`wait_time` and `circuit_time` (`vignette("bus-route-surveys")`). Bringing the
+planner in line is open as issue #541.
 
 ```{r bus-schedule, message = FALSE}
 # Site-level selection probabilities (must sum to 1.0)
@@ -306,27 +319,19 @@ bus_frame <- generate_bus_schedule(
 bus_frame
 ```
 
-The `inclusion_prob` column is the per-site overall inclusion probability across the
-season. This frame passes directly to `creel_design(survey_type = "bus_route", ...)`.
+The `inclusion_prob` column is each site's probability of being sampled on a worked
+circuit, $p_{site} \times p_{period}$. It is not a probability over the season.
 
 ## Sampling Rate Guidance
 
-The right sampling intensity depends on the target precision for the survey. As a
-starting point:
-
-| Survey length | Typical weekday rate | Typical weekend rate |
-|---------------|---------------------|---------------------|
-| Short (< 8 weeks) | 0.40–0.60 | 0.60–0.80 |
-| Standard (8–20 weeks) | 0.25–0.40 | 0.40–0.60 |
-| Long (> 20 weeks) | 0.15–0.25 | 0.25–0.40 |
-
-Higher rates on weekends reflect greater angler activity and higher stratum variance.
-Use `creel_n_effort()` or `creel_power()` to select rates based on a CV target rather
-than rule of thumb.
+The right sampling intensity depends on the precision the survey needs and on how much
+daily effort varies within each stratum. `creel_n_effort()` turns a target coefficient of
+variation and pilot estimates of each stratum's mean and variance into the number of days
+to sample, and `creel_power()` gives the power to detect a change.
 
 ```{r sample-size, message = FALSE}
 # Effort sample size to achieve CV ≤ 0.15
-# N_h: total days per stratum in a 184-day season
+# N_h: total days per stratum in a 184-day season (illustrative, not the schedule above)
 # ybar_h: pilot mean daily effort (angler-hours) per stratum
 # s2_h: pilot variance of daily effort per stratum
 creel_n_effort(
@@ -339,12 +344,14 @@ creel_n_effort(
 
 ## Within-Day Count Time Scheduling
 
-Counts are the primary effort estimator in creel surveys: the number of anglers observed
-during each count window is used to estimate total angler-hours. When those count windows
-fall in the day matters — clustered or poorly spaced windows can introduce bias into effort
-estimates. Pollock et al. (1994) describe three strategies for placing count time windows
-within the survey day: random, systematic, and fixed. `generate_count_times()` implements
-all three.
+An instantaneous count estimates effort without bias only if the moment of the count is
+chosen at random; always counting at the same time of day gives a bias that "is
+unpredictable and can be very large" (Hoenig et al. 1993). Pollock et al. (1994,
+Chapter 11) give two ways to choose the times: simple random sampling, and systematic
+random sampling, a random start followed by counts at a fixed interval. Both are
+unbiased; random times can fall close together by chance, which systematic times avoid.
+`generate_count_times()` implements both, and also places counts at times you fix
+yourself.
 
 ### Random Strategy
 
@@ -373,12 +380,11 @@ end of one window and the start of the next.
 
 ### Systematic Strategy
 
-The systematic strategy uses the Pollock et al. (1994) model: the day is divided into
-`n_windows` equal-length strata and one window is placed at a random start within the
-first stratum; subsequent windows begin at t₁+k, t₁+2k, and so on, where k is the
-stratum length. This ensures even spacing across the day. Systematic sampling is
-preferred by many agencies (Colorado CPW 2012) because it avoids the clustered count
-times that can occur by chance under random placement.
+The systematic strategy follows Pollock et al. (1994, Chapter 11): the day is divided
+into `n_windows` equal periods of length k, the first count falls at a random time within
+the first period, and the rest follow at t₁+k, t₁+2k, and so on. The counts are spread
+evenly across the day, which random placement does not guarantee; the cost, in their
+words, is "more complexity of the variance formulas".
 
 ```{r count-times-systematic, message = FALSE}
 ct_systematic <- generate_count_times(
@@ -395,10 +401,12 @@ ct_systematic
 
 ### Fixed Strategy
 
-Use the fixed strategy when count time windows are defined by regulation, permit
-conditions, or a prior-season protocol that must be replicated exactly. Supply a
-`data.frame` with `start_time` and `end_time` columns and `generate_count_times()` wraps
-them in a `creel_schedule` object without any random placement.
+The fixed strategy takes count times you supply, as a `data.frame` with `start_time`
+and `end_time` columns, and wraps them in a `creel_schedule` without any random
+placement. Fixed times are not a sampling design: counts made at the same times every day
+are the error Hoenig et al. (1993) warn against, and the estimators cannot correct the
+bias. Use it to print times that were themselves drawn at random, or when a protocol
+fixes the times and you accept that risk.
 
 ```{r count-times-fixed, message = FALSE}
 fw <- data.frame(
@@ -510,10 +518,13 @@ data(example_counts)
 data(example_interviews)
 
 design <- creel_design(example_calendar, date = date, strata = day_type)
-design <- add_counts(design, example_counts)
+design <- add_counts(design, prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+))
 design <- add_interviews(design, example_interviews,
   catch        = catch_total,
   effort       = hours_fished,
+  n_anglers    = n_anglers,
   trip_status  = trip_status
 )
 comp <- check_completeness(design)
@@ -547,11 +558,12 @@ running the estimators — is covered in the main tidycreel vignette. `season_su
 the final step that wraps pre-computed results for export or reporting.
 
 ```{r season-summary-export, eval = FALSE}
-write_schedule(summary_tbl$table, "season_2024_summary.xlsx")
+write_schedule(summary_tbl$table, "season_2024_summary.xlsx", format = "xlsx")
 ```
 
-`write_schedule()` accepts any data frame or tibble, so the season summary table exports
-to CSV or xlsx with a single call.
+`write_schedule()` writes any data frame or tibble, so the season summary table exports
+to CSV or xlsx with a single call. Name `format = "xlsx"` for a spreadsheet: the format is
+not taken from the file name.
 
 ## References
 

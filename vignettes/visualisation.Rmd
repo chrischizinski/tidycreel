@@ -19,8 +19,8 @@ knitr::opts_chunk$set(
 )
 ```
 
-tidycreel ships three ggplot2-based plotting functions that cover the main
-inspection points in a creel survey workflow:
+tidycreel's ggplot2-based plotting functions cover the main inspection points in a
+creel survey workflow:
 
 | Function | When to use |
 |----------|-------------|
@@ -60,15 +60,19 @@ estimates for the weekend stratum will carry higher uncertainty.
 ### After attaching counts
 
 Once counts are attached, `plot_design()` switches to a jitter + crossbar
-display showing the raw count distribution per stratum.
+display of the counts per stratum. `example_counts` already holds angler-hours
+for each sampled day, so it goes in through `prep_counts_daily_effort()` and the
+plot shows daily effort.
 
-```{r design-with-counts, warning = FALSE}
-design <- add_counts(design, example_counts)
+```{r design-with-counts}
+design <- add_counts(design, prep_counts_daily_effort(example_counts,
+  date = date, strata = day_type, daily_effort = effort_hours
+))
 
 plot_design(design, title = "Count distribution by stratum")
 ```
 
-The crossbar shows the mean with a 95 % normal CI across sampled days.
+The crossbar shows the mean and a 95 % t interval for it across sampled days.
 Large within-stratum spread (many jittered points far from the crossbar)
 suggests high day-to-day variability and the need for more sampling days.
 
@@ -105,7 +109,7 @@ histogram-style bar charts from `creel_length_distribution` objects.
 
 ### Ungrouped effort estimate
 
-```{r effort-ungrouped, warning = FALSE}
+```{r effort-ungrouped}
 data("example_interviews")
 
 design <- add_interviews(
@@ -113,6 +117,7 @@ design <- add_interviews(
   example_interviews,
   catch       = catch_total,
   effort      = hours_fished,
+  n_anglers   = n_anglers,
   trip_status = trip_status
 )
 
@@ -127,7 +132,7 @@ Passing `by = day_type` estimates effort separately for each stratum. The
 resulting plot maps the grouping variable to both the x-axis and point
 colour.
 
-```{r effort-grouped, warning = FALSE}
+```{r effort-grouped}
 effort_by_type <- estimate_effort(design, by = day_type)
 
 autoplot(effort_by_type, title = "Angler-effort by day type")
@@ -138,11 +143,15 @@ pattern in summer recreational fisheries.
 
 ### CPUE estimate
 
-```{r cpue, warning = FALSE}
+```{r cpue}
 cpue <- estimate_catch_rate(design)
 
-autoplot(cpue, title = "Walleye CPUE (catch per angler-hour)")
+autoplot(cpue, title = "CPUE, all species (fish per angler-hour)")
 ```
+
+The rate rests on 17 complete trips, and the call warns that this is a small
+sample for a ratio estimator; the example dataset is small, and the interval
+shows it.
 
 ### Weighted Length Distributions
 
@@ -183,6 +192,11 @@ ld <- est_length_distribution(design, by = species, bin_width = 25)
 
 autoplot(ld, theme = "creel")
 ```
+
+Lengths come from a subsample of the fish, so the length-class totals are scaled
+onto the reported catch for each species. The call warns when it rescales and
+names the factor; the shares within a species do not depend on how many fish
+were measured.
 
 ---
 

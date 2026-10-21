@@ -307,6 +307,23 @@
     the design's degrees of freedom. That holds for effort and total catch;
     `estimate_catch_rate()` uses the normal interval.
 
+* The four former "Reporting & Planning" vignettes are checked the same way
+  (#480, How-to: Tasks, part 2), and the ten task pages now form one
+  "How-to: Tasks" group on the website. Every vignette that runs code is now in
+  `scripts/check-vignette-warnings.R`.
+  - `vignette("survey-scheduling")` attributed three count-time strategies,
+    including fixed times, to Pollock et al. (1994). The book gives random and
+    systematic random times; fixed times are the error Hoenig et al. (1993)
+    warn against, and the page now says so. It also said clustered count times
+    bias the estimate (they cost coverage, not bias), described
+    `generate_bus_schedule()`'s `inclusion_prob` as a season-long probability,
+    and gave an unsourced table of sampling rates.
+  - `vignette("unextrapolated-summaries")` had the weighting backwards: a day
+    with more interviews counts for more, not the same.
+  - `vignette("visualisation")` titled an all-species catch rate "Walleye".
+  - `example_counts` now goes through `prep_counts_daily_effort()` on these
+    pages too, and no chunk hides warnings with `warning = FALSE`.
+
 * The six former "Estimation" vignettes are checked against the code and their
   sources (#480, How-to: Tasks, part 1), and now run without unexplained
   warnings. Two showed wrong numbers:

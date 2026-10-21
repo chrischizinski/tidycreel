@@ -269,24 +269,20 @@ articles:
   - aerial-surveys
   - aerial-glmm
 
-- title: "Estimation"
-  navbar: "Estimation"
+- title: "How-to: Tasks"
+  navbar: "How-to: Tasks"
   desc: >
-    Catch rate, harvest, effort, mark-recapture, exploitation rate, and
-    spatially stratified estimation techniques.
+    One page per task that cuts across survey designs: catch and harvest from
+    interviews, incomplete trips, progressive counts, sections, season and
+    monthly totals, mark-recapture, interview summaries, scheduling, planning,
+    and plots.
   contents:
   - interview-estimation
-  - mark-recapture
   - incomplete-trips
   - progressive-count-surveys
   - section-estimation
   - temporal-extrapolation
-
-- title: "Reporting & Planning"
-  navbar: "Reporting & Planning"
-  desc: >
-    Interview summaries, diagnostics, scheduling, and pre-season survey planning.
-  contents:
+  - mark-recapture
   - unextrapolated-summaries
   - survey-scheduling
   - survey-design-toolbox
