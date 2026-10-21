@@ -1020,6 +1020,15 @@
 
 ### Bug fixes
 
+- The incomplete-trip messages and the `use_trips = "diagnostic"` print
+  no longer refer to an internal development phase (“Phase 19”)
+  ([\#548](https://github.com/chrischizinski/tidycreel/issues/548)). The
+  diagnostic print also listed three statistical tests, two of which
+  (nonstationary catch rates, length-of-stay bias) the package does not
+  have; it now names the check that exists,
+  [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md),
+  an equivalence test (TOST) of the two rates.
+
 - [`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_cws_rates.md)
   and
   [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_hws_rates.md)

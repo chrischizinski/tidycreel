@@ -131,7 +131,7 @@ add_interviews(
 
   Tidy selector for angler type column (optional, default NULL). Use
   bare column names (e.g., `angler_type = angler_type`). Common values
-  are "bank" and "boat". Not validated in Phase 28; downstream summary
+  are "bank" and "boat". Values are not validated; downstream summary
   functions use this field.
 
 - angler_method:

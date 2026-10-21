@@ -369,7 +369,7 @@ result_mor <- estimate_catch_rate(design_with_interviews, estimator = "mor")
 #> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=20 incomplete of 20 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
-#> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
+#> ℹ Validate incomplete estimates with `validate_incomplete_trips()`.
 #> ℹ MOR truncation: 0 trips excluded (all >= 0.5 hours)
 
 # Mean-of-ratios with custom truncation threshold
@@ -379,6 +379,6 @@ result_mor_1h <- estimate_catch_rate(design_with_interviews, estimator = "mor", 
 #> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=20 incomplete of 20 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
-#> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
+#> ℹ Validate incomplete estimates with `validate_incomplete_trips()`.
 #> ℹ MOR truncation: 0 trips excluded (all >= 1 hours)
 ```

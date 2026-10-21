@@ -160,13 +160,13 @@ estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor")
 #> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=120 incomplete of 120 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
-#> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
+#> ℹ Validate incomplete estimates with `validate_incomplete_trips()`.
 #> ℹ MOR truncation: 5 trips excluded (< 0.5 hours)
 #> ── DIAGNOSTIC: MOR Estimator (Incomplete Trips) ────────────────────────────────
 #> ! Complete trips preferred for CPUE estimation.
 #> Uses incomplete trip interviews only (115 trips).
 #> Truncation: 5 trips excluded (< 0.5 hours)
-#> Validate with `validate_incomplete_trips()` before use (Phase 19).
+#> Validate with `validate_incomplete_trips()` before use.
 #> 
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ estimate_catch_rate(design,
 #> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=120 incomplete of 120 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
-#> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
+#> ℹ Validate incomplete estimates with `validate_incomplete_trips()`.
 #> Warning: ! MOR truncation: 24 trips excluded (20.0%)
 #> ℹ Trips < 1 hours excluded to prevent unstable variance
 #> ! High truncation rate may indicate data quality issues
@@ -221,7 +221,7 @@ estimate_catch_rate(design,
 #> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=120 incomplete of 120 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
-#> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
+#> ℹ Validate incomplete estimates with `validate_incomplete_trips()`.
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
@@ -256,7 +256,7 @@ estimate_catch_rate(design, use_trips = "diagnostic")
 #> ! MOR estimator for incomplete trips. Complete trips preferred.
 #> ℹ Using MOR with n=120 incomplete of 120 total interviews.
 #> ℹ Incomplete trips may have length-of-stay bias (Pollock et al.).
-#> ℹ Validate incomplete estimates with `validate_incomplete_trips()` (Phase 19).
+#> ℹ Validate incomplete estimates with `validate_incomplete_trips()`.
 #> ℹ MOR truncation: 5 trips excluded (< 0.5 hours)
 #> 
 #> ── CPUE Diagnostic Comparison ──────────────────────────────────────────────────
@@ -277,10 +277,8 @@ estimate_catch_rate(design, use_trips = "diagnostic")
 #> 
 #> Estimates are similar (difference < 10% of complete estimate)
 #> 
-#> For statistical tests, see Phase 19 validation framework:
-#> - Test for equality of estimates (confidence interval overlap)
-#> - Test for nonstationary catch rates
-#> - Validate length-of-stay bias assumptions
+#> `validate_incomplete_trips()` tests whether the two rates are equivalent within
+#> a margin (TOST).
 ```
 
 Its “similar” or “different” verdict uses a 10% difference as the line.
