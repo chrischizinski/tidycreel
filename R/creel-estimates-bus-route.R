@@ -769,12 +769,15 @@ br_incomplete_harvest_rate <- function(
   # Before truncation and the zero-effort drop below, both of which discard a
   # row with no effort: an uncovered party has none, and would have left under
   # a "shorter than truncate_at" or "zero or missing effort" message (GH #545).
-  # A 0/0 visit has no party in it, so it is not unknown.
+  # An interviewed party with no effort recorded is unknown for the same reason.
+  # Zero effort (met at the start of the trip) is not unknown: its ratio is
+  # undefined, and the drop below still excludes it. A 0/0 visit has no party.
   nc <- if (!is.null(design$n_counted_col)) interviews[[design$n_counted_col]] else NA
   ni <- if (!is.null(design$n_interviewed_col)) interviews[[design$n_interviewed_col]] else NA
   br_abort_unknown_contribution(
-    interviews, design, paste(quantity, "rate"), quantity,
-    unknown = is.na(interviews$.expansion) & !(nc %in% 0 & ni %in% 0),
+    interviews, design, paste(quantity, "rate"), "effort",
+    unknown = !(nc %in% 0 & ni %in% 0) &
+      (is.na(interviews$.expansion) | is.na(interviews[[angler_effort_col]])),
     call = call
   )
 
@@ -833,7 +836,7 @@ br_incomplete_harvest_rate <- function(
   if (any(!valid_effort)) {
     n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
     creel_warn(
-      "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
+      "Dropping {n_dropped} incomplete-trip interview{?s} with zero effort \\
       before computing {quantity} rate.",
       class = c("creel_warning_effort_excluded", "creel_warning")
     )

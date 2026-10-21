@@ -243,3 +243,28 @@ test_that("#545: a missing catch on an interviewed party is refused, a 0/0 visit
   iv$n_counted[2] <- 0L
   expect_equal(suppressWarnings(estimate_catch_rate(br542_attach(iv)))$estimates$estimate, 0.5)
 })
+
+test_that("#545: the incomplete-trip rate refuses missing effort but still drops zero effort", {
+  iv <- br542_interviews()
+  iv$trip_status <- "incomplete"
+  iv$n_interviewed[2] <- 1L
+  iv$hrs[2] <- NA
+  iv$catch[2] <- 1
+  # Missing effort is unknown, so the rate refuses rather than dropping the party.
+  err <- tryCatch(
+    suppressWarnings(suppressMessages(estimate_catch_rate(br542_attach(iv), use_trips = "incomplete"))),
+    error = identity
+  )
+  expect_s3_class(err, "creel_error_unknown_contribution")
+  expect_match(conditionMessage(err), "site=B, circuit=c: effort value is missing", fixed = TRUE)
+
+  # Zero effort (met at the start of the trip) has an undefined ratio, not an
+  # unknown one: it is still excluded, with the warning, and the rate runs.
+  iv$hrs[2] <- 0
+  d <- br542_attach(iv)
+  expect_warning(
+    res <- suppressMessages(estimate_catch_rate(d, use_trips = "incomplete", truncate_at = NULL)),
+    class = "creel_warning_effort_excluded"
+  )
+  expect_false(is.na(res$estimates$estimate))
+})
