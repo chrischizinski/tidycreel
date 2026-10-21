@@ -89,11 +89,12 @@ stores `.expansion`. Two edge cases:
   $`n\_interviewed = 0`$): the expansion is undefined and
   [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
   warns. Their effort and catch are unknown, not zero, so the effort,
-  catch, harvest and release totals stop with an error that names each
-  such site-day. Remove those rows to leave the parties out
-  deliberately, or impute their values and set `n_interviewed` to the
-  number of parties the values stand for. The same refusal covers a
-  missing count or a missing value on an interviewed row.
+  catch, harvest and release totals, and the catch, harvest and release
+  rates, stop with an error that names each such site-day. Remove those
+  rows to leave the parties out deliberately, or impute their values and
+  set `n_interviewed` to the number of parties the values stand for. The
+  same refusal covers a missing count or a missing value on an
+  interviewed row.
 
 ------------------------------------------------------------------------
 
