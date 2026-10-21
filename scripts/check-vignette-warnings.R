@@ -38,6 +38,29 @@ allowed <- list(
     "No `n_anglers` provided",
     "Rate and effort may be in different units"
   ),
+  # How-to: Tasks, part 1 (#480): the former Estimation group.
+  # The interview example is small: 17 complete trips, a 7-trip weekend cell,
+  # and method/species domains the counts do not record. The age example
+  # rescales aged fish onto the reported catch. The text explains each.
+  `interview-estimation` = c(
+    "Small sample size for CPUE estimation",
+    "pooling over domains the counts do not classify",
+    "rests on fewer than 10 trips",
+    "Age totals were rescaled"
+  ),
+  `mark-recapture` = character(),
+  # The roving example has 22 interviews, and the truncation example raises the
+  # cutoff to show the high-truncation warning; both are explained in the text.
+  `incomplete-trips` = c("Small sample size for CPUE estimation", "MOR truncation"),
+  `progressive-count-surveys` = character(),
+  # 27 interviews over three sections leave thin rate cells, and the
+  # missing-section example is there to show its warning.
+  `section-estimation` = c(
+    "Small sample size for CPUE estimation",
+    "rests on fewer than 10 trips",
+    "missing section"
+  ),
+  `temporal-extrapolation` = character(),
   # Explanation section (#480).
   `effort-pipeline` = character(),
   `catch-pipeline` = character(),

@@ -307,6 +307,30 @@
     the design's degrees of freedom. That holds for effort and total catch;
     `estimate_catch_rate()` uses the normal interval.
 
+* The six former "Estimation" vignettes are checked against the code and their
+  sources (#480, How-to: Tasks, part 1), and now run without unexplained
+  warnings. Two showed wrong numbers:
+  - `vignette("temporal-extrapolation")`, now "Season, Monthly and Annual
+    Totals", built its designs from the sampled days only and used the default
+    `target`, so every "season total" was the total over the sampled days. It
+    now uses the full calendar and `target = "period_total"`, and gets monthly
+    totals that add up to the season from one design stratified by month.
+  - `vignette("section-estimation")` said shared-calendar covariance between
+    sections is negative and narrows the lake-total SE. It is positive and
+    widens it: on the page's data 39.4 with the covariance, 24.4 without.
+  - `vignette("incomplete-trips")`, now "Incomplete-Trip Interviews", is
+    rewritten. It attributed a "10% complete trips" rule and a ban on pooling to
+    Pollock et al. (1994), which contains neither, showed invented output, and
+    had calls that cannot run (`truncate_at = 0`, `catch =` in
+    `estimate_catch_rate()`). It now executes every example and separates what
+    the sources say from the package's own checks.
+  - `interview-estimation`, `section-estimation` and `progressive-count-surveys`
+    passed daily angler-hours to `add_counts()` as instantaneous counts (#478);
+    they now use `prep_counts_daily_effort()`. Citations that could not be found
+    (Rasmussen 1994; Su & Liu 2025 "Flexible creel survey estimators") are
+    removed, and `mark-recapture` credits its exploitation estimator to Newman
+    et al. (1997).
+
 * `vignette("bus-route-equations")` is rewritten against the code and its
   sources (#480, Reference section, part 2). It computed no number but
   described the package wrongly:
