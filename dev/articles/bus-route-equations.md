@@ -88,9 +88,12 @@ stores `.expansion`. Two edge cases:
 - **Parties seen, none interviewed** ($`n\_counted > 0`$,
   $`n\_interviewed = 0`$): the expansion is undefined and
   [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
-  warns. The point estimate currently counts those parties as zero
-  effort, with an `NaN` standard error. That is a known defect (GH
-  \#542): their effort is unknown, not zero.
+  warns. Their effort and catch are unknown, not zero, so the effort,
+  catch, harvest and release totals stop with an error that names each
+  such site-day. Remove those rows to leave the parties out
+  deliberately, or impute their values and set `n_interviewed` to the
+  number of parties the values stand for. The same refusal covers a
+  missing count or a missing value on an interviewed row.
 
 ------------------------------------------------------------------------
 

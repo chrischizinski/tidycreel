@@ -12,8 +12,29 @@
 
 ### Breaking changes
 
-- The same totals now refuse `target = "stratum_total"` or
-  `"period_total"` on bus-route and ice designs
+- Bus-route and ice totals
+  ([`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
+  [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md),
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md))
+  now stop when an interview row’s contribution is unknown, and name
+  each row
+  ([\#542](https://github.com/chrischizinski/tidycreel/issues/542)).
+  They summed contributions with `na.rm = TRUE`, so parties counted but
+  not interviewed (`n_counted > 0`, `n_interviewed = 0`, whose expansion
+  is undefined) entered the total as zero effort and zero catch: a
+  believable, low number whose only symptom was an `NaN` standard error.
+  A missing count or a missing value on an interviewed row was dropped
+  the same way, the count case without any warning. In a two-site
+  example the effort total was 18 with three uncovered parties left out.
+  Remove such rows to exclude those parties deliberately, or impute
+  their values and set `n_interviewed` to the number of parties the
+  values stand for. A visit where nobody was there (`0 / 0`) is still a
+  true zero.
+
+- The catch, harvest and release totals now refuse
+  `target = "stratum_total"` or `"period_total"` on bus-route and ice
+  designs
   ([\#520](https://github.com/chrischizinski/tidycreel/issues/520)).
   They accepted the argument and dropped it, so a period-total request
   returned the sampled-days total with no label, while
