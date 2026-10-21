@@ -731,6 +731,13 @@
 
 ## Bug fixes
 
+* The incomplete-trip messages and the `use_trips = "diagnostic"` print no
+  longer refer to an internal development phase ("Phase 19") (#548). The
+  diagnostic print also listed three statistical tests, two of which
+  (nonstationary catch rates, length-of-stay bias) the package does not have;
+  it now names the check that exists, `validate_incomplete_trips()`, an
+  equivalence test (TOST) of the two rates.
+
 * `summarize_cws_rates()` and `summarize_hws_rates()` no longer report a
   negative lower confidence bound (#550). The t interval around a small-group
   mean rate went below zero (bass: -0.16 fish per angler-hour on the example

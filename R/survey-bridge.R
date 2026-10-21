@@ -1931,7 +1931,7 @@ mor_estimation_warning <- function(n_incomplete, n_total) {
     "!" = "MOR estimator for incomplete trips. Complete trips preferred.",
     "i" = "Using MOR with n={n_incomplete} incomplete of {n_total} total interviews.",
     "i" = "Incomplete trips may have length-of-stay bias (Pollock et al.).",
-    "i" = "Validate incomplete estimates with {.fn validate_incomplete_trips} (Phase 19)."
+    "i" = "Validate incomplete estimates with {.fn validate_incomplete_trips}."
   ),
   class = c("creel_message_mor_incomplete_trips", "creel_message")
   )

@@ -82,7 +82,7 @@ other designs). Values of 0 are valid (no anglers came off the water).}
 
 \item{angler_type}{Tidy selector for angler type column (optional, default
 NULL). Use bare column names (e.g., \code{angler_type = angler_type}). Common
-values are "bank" and "boat". Not validated in Phase 28; downstream summary
+values are "bank" and "boat". Values are not validated; downstream summary
 functions use this field.}
 
 \item{angler_method}{Tidy selector for angler method column (optional, default

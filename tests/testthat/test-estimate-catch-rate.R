@@ -2682,6 +2682,21 @@ test_that("diagnostic comparison print method produces readable output", {
   expect_match(output_text, "diagnostic|comparison", ignore.case = TRUE)
 })
 
+test_that("diagnostic print points only at checks the package has (#548)", {
+  # Why: the print named an internal development phase ("Phase 19") and listed
+  # three tests, two of which -- nonstationary catch rates and length-of-stay
+  # bias -- exist nowhere in the package. A user told to run them has nothing
+  # to run. The one real check is validate_incomplete_trips() (a TOST).
+  design <- make_grouped_use_trips_design()
+  result <- suppressWarnings(estimate_catch_rate(design, use_trips = "diagnostic"))
+  output_text <- paste(format(result), collapse = " ")
+
+  expect_no_match(output_text, "Phase [0-9]")
+  expect_no_match(output_text, "nonstationary|length-of-stay", ignore.case = TRUE)
+  expect_match(output_text, "validate_incomplete_trips")
+  expect_match(output_text, "TOST")
+})
+
 # Informative messaging tests ----
 
 test_that("estimate_catch_rate shows informative message for default complete trip usage", {
