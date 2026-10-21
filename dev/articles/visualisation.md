@@ -60,9 +60,6 @@ design <- add_counts(design, prep_counts_daily_effort(example_counts,
 ))
 
 plot_design(design, title = "Daily effort by stratum")
-#> Warning: Computation failed in `stat_summary()`.
-#> Caused by error in `fun.data()`:
-#> ! The package "Hmisc" is required.
 ```
 
 ![](visualisation_files/figure-html/design-with-counts-1.png)

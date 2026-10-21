@@ -3,14 +3,16 @@
 Without counts attached (design$counts is NULL): a bar chart
 showing the number of sampled days per stratum.
 With counts attached: a jitter + crossbar chart showing the
-distribution of count values per stratum.
+distribution of count values per stratum. The crossbar is the stratum mean
+and a 95% t interval for it; a stratum with one sampled day has no interval.
 
 
 Both variants colour bars/points by stratum for easy differentiation."><meta property="og:description" content="Produces a quick visual summary of a creel_design object:
 Without counts attached (design$counts is NULL): a bar chart
 showing the number of sampled days per stratum.
 With counts attached: a jitter + crossbar chart showing the
-distribution of count values per stratum.
+distribution of count values per stratum. The crossbar is the stratum mean
+and a 95% t interval for it; a stratum with one sampled day has no interval.
 
 
 Both variants colour bars/points by stratum for easy differentiation."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
@@ -89,7 +91,8 @@ Both variants colour bars/points by stratum for easy differentiation."><meta pro
     <p>Produces a quick visual summary of a <code>creel_design</code> object:</p><ul><li><p><strong>Without counts attached</strong> (<code>design$counts</code> is <code>NULL</code>): a bar chart
 showing the number of sampled days per stratum.</p></li>
 <li><p><strong>With counts attached</strong>: a jitter + crossbar chart showing the
-distribution of count values per stratum.</p></li>
+distribution of count values per stratum. The crossbar is the stratum mean
+and a 95% t interval for it; a stratum with one sampled day has no interval.</p></li>
 </ul><p>Both variants colour bars/points by stratum for easy differentiation.</p>
     </div>
 
@@ -144,9 +147,6 @@ distribution of count values per stratum.</p></li>
 <span class="r-in"><span><span class="co"># With counts — count distribution per stratum</span></span></span>
 <span class="r-in"><span><span class="va">design_with_counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_counts</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">plot_design</span><span class="op">(</span><span class="va">design_with_counts</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Computation failed in `stat_summary()`.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> Caused by error in `fun.data()`:</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> The package "Hmisc" is required.</span>
 <span class="r-plt img"><img src="plot_design-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

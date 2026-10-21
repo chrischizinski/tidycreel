@@ -6,7 +6,9 @@ Produces a quick visual summary of a `creel_design` object:
   showing the number of sampled days per stratum.
 
 - **With counts attached**: a jitter + crossbar chart showing the
-  distribution of count values per stratum.
+  distribution of count values per stratum. The crossbar is the stratum
+  mean and a 95% t interval for it; a stratum with one sampled day has
+  no interval.
 
 Both variants colour bars/points by stratum for easy differentiation.
 
@@ -62,8 +64,5 @@ plot_design(design)
 # With counts — count distribution per stratum
 design_with_counts <- add_counts(design, example_counts)
 plot_design(design_with_counts)
-#> Warning: Computation failed in `stat_summary()`.
-#> Caused by error in `fun.data()`:
-#> ! The package "Hmisc" is required.
 
 ```
