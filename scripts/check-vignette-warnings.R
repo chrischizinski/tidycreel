@@ -12,10 +12,12 @@
 # Every allowed pattern must be explained in the vignette's text. That part is
 # a review rule, not something this script can check.
 #
-# Vignettes join the list as #480 restructures them, one pkgdown section at a
-# time; a vignette not listed is not checked yet.
+# Every vignette that runs code is listed. tidycreel-connect is left out on
+# purpose: its code is shown, not run, and it installs a package. A new vignette
+# must be added here with its allowed warnings.
 #
 # Usage: Rscript scripts/check-vignette-warnings.R   (or `just vignette-warnings`)
+# CI runs it on every pull request (.github/workflows/vignette-warnings.yaml).
 
 allowed <- list(
   tidycreel = character(),
