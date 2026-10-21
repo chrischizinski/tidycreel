@@ -24,7 +24,8 @@ Produces a quick visual summary of a \code{creel_design} object:
 \item \strong{Without counts attached} (\code{design$counts} is \code{NULL}): a bar chart
 showing the number of sampled days per stratum.
 \item \strong{With counts attached}: a jitter + crossbar chart showing the
-distribution of count values per stratum.
+distribution of count values per stratum. The crossbar is the stratum mean
+and a 95\% t interval for it; a stratum with one sampled day has no interval.
 }
 
 Both variants colour bars/points by stratum for easy differentiation.
