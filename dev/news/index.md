@@ -1020,6 +1020,17 @@
 
 ### Bug fixes
 
+- [`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_cws_rates.md)
+  and
+  [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_hws_rates.md)
+  no longer report a negative lower confidence bound
+  ([\#550](https://github.com/chrischizinski/tidycreel/issues/550)). The
+  t interval around a small-group mean rate went below zero (bass: -0.16
+  fish per angler-hour on the example data), though a rate cannot be
+  negative. `ci_lower` is now clamped at 0, as the rate estimators
+  already do; `ci_upper` and every interval that was already above zero
+  are unchanged.
+
 - [`plot_design()`](https://chrischizinski.com/tidycreel/dev/reference/plot_design.md)
   with counts attached drew no crossbar unless the Hmisc package
   happened to be installed. It used

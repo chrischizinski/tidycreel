@@ -250,10 +250,10 @@ summarize_cws_rates(design, by = species_sought)
 #> 1           bass  6                0                0                    0
 #> 2        panfish  5                0                0                    0
 #> 3        walleye 11                0                0                    0
-#>   mean_rate        se   ci_lower  ci_upper
-#> 1 0.1854167 0.1330890 -0.1566994 0.5275328
-#> 2 0.2333333 0.2333333 -0.4145039 0.8811705
-#> 3 0.6293290 0.2163859  0.1471911 1.1114669
+#>   mean_rate        se  ci_lower  ci_upper
+#> 1 0.1854167 0.1330890 0.0000000 0.5275328
+#> 2 0.2333333 0.2333333 0.0000000 0.8811705
+#> 3 0.6293290 0.2163859 0.1471911 1.1114669
 ```
 
 ### CWS Rates Collapsed Across All Groupings
@@ -276,10 +276,10 @@ summarize_hws_rates(design, by = species_sought)
 #> 1           bass  6                0                0                    0
 #> 2        panfish  5                0                0                    0
 #> 3        walleye 11                0                0                    0
-#>   mean_rate        se    ci_lower  ci_upper
-#> 1 0.0312500 0.0312500 -0.04908068 0.1115807
-#> 2 0.1333333 0.1333333 -0.23685935 0.5035260
-#> 3 0.3887987 0.1322997  0.09401668 0.6835807
+#>   mean_rate        se   ci_lower  ci_upper
+#> 1 0.0312500 0.0312500 0.00000000 0.1115807
+#> 2 0.1333333 0.1333333 0.00000000 0.5035260
+#> 3 0.3887987 0.1322997 0.09401668 0.6835807
 ```
 
 **Interpretation guidance:** these are rates, not proportions. A CWS of

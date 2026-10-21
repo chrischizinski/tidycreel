@@ -131,7 +131,8 @@ because their sought species was not recorded), <code>n_unknown_effort</code>
 effort was zero or negative),
 <code>mean_rate</code> (numeric, mean fish/angler-hour, <code>NA</code> when
 <code>N</code> is 0), <code>se</code> (numeric, standard error), <code>ci_lower</code>,
-<code>ci_upper</code>.</p>
+<code>ci_upper</code> (t-interval; <code>ci_lower</code> is clamped at 0 because a
+rate cannot be negative).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -262,10 +263,10 @@ apart in the output.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1           bass  6                0                0                    0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2        panfish  5                0                0                    0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3        walleye 11                0                0                    0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   mean_rate        se   ci_lower  ci_upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.3416667 0.2237620 -0.2335319 0.9168653</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.4666667 0.4666667 -0.8290077 1.7623410</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 1.2500000 0.3127661  0.5531138 1.9468862</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   mean_rate        se  ci_lower  ci_upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.3416667 0.2237620 0.0000000 0.9168653</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.4666667 0.4666667 0.0000000 1.7623410</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 1.2500000 0.3127661 0.5531138 1.9468862</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

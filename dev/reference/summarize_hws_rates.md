@@ -45,7 +45,8 @@ excluded because their sought species was not recorded),
 was not recorded), `n_nonpositive_effort` (integer, interviews excluded
 because their effort was zero or negative), `mean_rate` (numeric, mean
 fish/angler-hour, `NA` when `N` is 0), `se` (numeric, standard error),
-`ci_lower`, `ci_upper`.
+`ci_lower`, `ci_upper` (t-interval; `ci_lower` is clamped at 0 because a
+rate cannot be negative).
 
 ## Details
 
@@ -183,8 +184,8 @@ summarize_hws_rates(d, by = species_sought)
 #> 1           bass  6                0                0                    0
 #> 2        panfish  5                0                0                    0
 #> 3        walleye 11                0                0                    0
-#>   mean_rate        se   ci_lower  ci_upper
-#> 1 0.1250000 0.1250000 -0.1963227 0.4463227
-#> 2 0.2666667 0.2666667 -0.4737187 1.0070520
-#> 3 0.7943723 0.1979076  0.3534067 1.2353379
+#>   mean_rate        se  ci_lower  ci_upper
+#> 1 0.1250000 0.1250000 0.0000000 0.4463227
+#> 2 0.2666667 0.2666667 0.0000000 1.0070520
+#> 3 0.7943723 0.1979076 0.3534067 1.2353379
 ```
