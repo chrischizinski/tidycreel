@@ -1,0 +1,47 @@
+# Run every vignette's code and fail on a warning it does not explain (GH #480).
+#
+# A warning in a rendered vignette is either a defect in the example or a
+# teaching point, and a reader cannot tell which. scripts/check-vignette-warnings.R
+# lists each page's allowed warnings; this job fails on an error, on a warning not
+# in the list, and on an allowed warning that no longer fires.
+#
+# Its own workflow, like absent-zero-guard: its failure is a request to fix an
+# example or explain a warning, not a broken build. It runs on every pull request,
+# not only documentation ones, because a change in R/ can add a warning to a page.
+name: vignette-warnings
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  vignette-warnings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/harden-apt
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        timeout-minutes: 15
+        with:
+          r-version: "release"
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::devtools, any::knitr
+          needs: check
+
+      - name: Check vignette warnings
+        run: Rscript scripts/check-vignette-warnings.R
