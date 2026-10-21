@@ -519,7 +519,8 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
 #' - **Without counts attached** (`design$counts` is `NULL`): a bar chart
 #'   showing the number of sampled days per stratum.
 #' - **With counts attached**: a jitter + crossbar chart showing the
-#'   distribution of count values per stratum.
+#'   distribution of count values per stratum. The crossbar is the stratum mean
+#'   and a 95% t interval for it; a stratum with one sampled day has no interval.
 #'
 #' Both variants colour bars/points by stratum for easy differentiation.
 #'
@@ -658,7 +659,7 @@ plot_design <- function(design, title = NULL, ...) {
         size = 2
       ) +
       ggplot2::stat_summary(
-        fun.data = ggplot2::mean_cl_normal, # nolint: object_usage_linter
+        fun.data = mean_t_interval,
         geom = "crossbar",
         width = 0.4,
         colour = "black",
@@ -678,4 +679,19 @@ plot_design <- function(design, title = NULL, ...) {
         legend.position = "none"
       )
   }
+}
+
+# The crossbar for plot_design(): the mean and a 95% t interval, as
+# ggplot2::mean_cl_normal() gives. mean_cl_normal() needs Hmisc, which tidycreel
+# does not declare; without it ggplot2 only warns "Computation failed in
+# stat_summary()" and draws no crossbar, so the same arithmetic lives here.
+mean_t_interval <- function(x, conf_level = 0.95) {
+  x <- x[!is.na(x)]
+  n <- length(x)
+  m <- mean(x)
+  if (n < 2L) {
+    return(data.frame(y = m, ymin = NA_real_, ymax = NA_real_))
+  }
+  half <- stats::qt((1 + conf_level) / 2, df = n - 1L) * stats::sd(x) / sqrt(n)
+  data.frame(y = m, ymin = m - half, ymax = m + half)
 }

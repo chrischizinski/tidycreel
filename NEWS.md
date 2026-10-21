@@ -731,6 +731,13 @@
 
 ## Bug fixes
 
+* `plot_design()` with counts attached drew no crossbar unless the Hmisc
+  package happened to be installed. It used `ggplot2::mean_cl_normal()`, which
+  needs Hmisc, and tidycreel does not declare it; without it ggplot2 warned
+  "Computation failed in `stat_summary()`" and left the bar out. The crossbar
+  (the stratum mean and a 95% t interval) is now computed by tidycreel. Found
+  when CI first ran the vignettes' code (#480).
+
 * `creel_schema(value_maps =)` refuses a map entry whose source code is
   `NA`. The "fully named" check used `nzchar()`, which is `TRUE` for `NA`, so
   such an entry was accepted although no source value can ever match it (found

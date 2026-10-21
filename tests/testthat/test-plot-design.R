@@ -32,6 +32,25 @@ test_that("PLTD-02: plot_design() with counts returns a ggplot object", {
   expect_s3_class(p, "ggplot")
 })
 
+# The crossbar used ggplot2::mean_cl_normal(), which needs Hmisc. tidycreel does
+# not declare Hmisc, so where it was not installed (the CI runner, for one) the
+# plot built with a "Computation failed in stat_summary()" warning and no
+# crossbar. The plot has to be built, not just returned, for that to show.
+test_that("PLTD-02b: plot_design() crossbar is the mean and t interval, built without Hmisc", {
+  p <- plot_design(make_design_with_counts())
+  built <- expect_no_warning(ggplot2::ggplot_build(p))
+  bar <- built$data[[2]]
+  weekday <- bar[bar$y == 12, ] # counts 10 and 14
+  half <- stats::qt(0.975, df = 1) * stats::sd(c(10, 14)) / sqrt(2)
+  expect_equal(weekday$ymin, 12 - half)
+  expect_equal(weekday$ymax, 12 + half)
+})
+
+test_that("PLTD-02c: a one-day stratum gets a mean and no interval", {
+  expect_equal(mean_t_interval(5), data.frame(y = 5, ymin = NA_real_, ymax = NA_real_))
+  expect_equal(mean_t_interval(c(4, NA, 6))$y, 5)
+})
+
 test_that("PLTD-03: plot_design() errors on non-creel_design input", {
   expect_error(
     plot_design(list(a = 1)),
