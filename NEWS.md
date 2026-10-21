@@ -731,6 +731,13 @@
 
 ## Bug fixes
 
+* `summarize_cws_rates()` and `summarize_hws_rates()` no longer report a
+  negative lower confidence bound (#550). The t interval around a small-group
+  mean rate went below zero (bass: -0.16 fish per angler-hour on the example
+  data), though a rate cannot be negative. `ci_lower` is now clamped at 0, as
+  the rate estimators already do; `ci_upper` and every interval that was
+  already above zero are unchanged.
+
 * `plot_design()` with counts attached drew no crossbar unless the Hmisc
   package happened to be installed. It used `ggplot2::mean_cl_normal()`, which
   needs Hmisc, and tidycreel does not declare it; without it ggplot2 warned

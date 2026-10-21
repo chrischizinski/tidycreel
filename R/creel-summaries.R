@@ -1249,7 +1249,8 @@ summarize_by_trip_length <- function(design) {
 #'   effort was zero or negative),
 #'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 #'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
-#'   \code{ci_upper}.
+#'   \code{ci_upper} (t-interval; \code{ci_lower} is clamped at 0 because a
+#'   rate cannot be negative).
 #'
 #' @seealso [summarize_hws_rates()], [estimate_catch_rate()]
 #'
@@ -1538,7 +1539,8 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
   # Step 7: SE and CI via t-distribution
   result$se <- result$sd_rate / sqrt(result$N)
   t_crit <- stats::qt((1 + conf_level) / 2, df = pmax(result$N - 1, 1))
-  result$ci_lower <- result$mean_rate - t_crit * result$se
+  # A rate is bounded below by zero; the symmetric t bound is not.
+  result$ci_lower <- pmax(0, result$mean_rate - t_crit * result$se)
   result$ci_upper <- result$mean_rate + t_crit * result$se
   result$sd_rate <- NULL
 
@@ -1669,7 +1671,8 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
 #'   effort was zero or negative),
 #'   \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 #'   \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
-#'   \code{ci_upper}.
+#'   \code{ci_upper} (t-interval; \code{ci_lower} is clamped at 0 because a
+#'   rate cannot be negative).
 #'
 #' @seealso [summarize_cws_rates()], [estimate_harvest_rate()]
 #'

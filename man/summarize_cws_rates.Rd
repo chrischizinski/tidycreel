@@ -32,7 +32,8 @@ because their sought species was not recorded), \code{n_unknown_effort}
 effort was zero or negative),
 \code{mean_rate} (numeric, mean fish/angler-hour, \code{NA} when
 \code{N} is 0), \code{se} (numeric, standard error), \code{ci_lower},
-\code{ci_upper}.
+\code{ci_upper} (t-interval; \code{ci_lower} is clamped at 0 because a
+rate cannot be negative).
 }
 \description{
 Computes mean caught-while-sought rates (fish per angler-hour) for anglers
