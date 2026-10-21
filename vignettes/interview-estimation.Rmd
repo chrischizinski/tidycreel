@@ -110,7 +110,7 @@ total_catch_est <- estimate_total_catch(design)
 print(total_catch_est)
 ```
 
-The total is built stratum by stratum: each day type's effort times that day type's catch rate, then added. The variance of each product uses Goodman's (1960) formula, `E² Var(R) + R² Var(E) − Var(E) Var(R)`, by default (`product_variance = "first_order"` drops the last term). Both treat the effort and rate estimates as independent. That is an assumption, not a fact of the design: counts and interviews are taken on the same sampled days. `vignette("catch-pipeline")` discusses it.
+The total is built stratum by stratum: each day type's effort times that day type's catch rate, then added. The variance of each product uses Goodman's (1960) unbiased estimator by default, `E² Var(R) + R² Var(E) − Var(E) Var(R)`, with the estimates in place of the true values. The exact variance of a product has `+ Var(E) Var(R)`; the estimator subtracts it because each squared estimate already overstates its squared mean by its variance. `product_variance = "first_order"` drops the last term, which gives a slightly larger, conservative standard error. Both treat the effort and rate estimates as independent. That is an assumption, not a fact of the design: counts and interviews are taken on the same sampled days. `vignette("catch-pipeline")` discusses it.
 
 This call raises two warnings, both about the example's small size:
 

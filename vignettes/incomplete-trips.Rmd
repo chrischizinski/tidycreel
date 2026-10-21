@@ -188,8 +188,8 @@ rule of thumb, not a test.
 `validate_incomplete_trips()` asks whether the two rates are *equivalent*: closer
 than a margin, rather than merely not shown to differ. It uses two one-sided
 tests (TOST; Schuirmann 1987), each at the 5% level. The margin is ±20% of the
-complete-trip rate by default; set it with
-`options(tidycreel.equivalence_threshold = )`. The margin is a package default,
+complete-trip rate by default; set it with, for example,
+`options(tidycreel.equivalence_threshold = 0.15)` for ±15%. The margin is a package default,
 not a published standard: choose it for the decision the rate will support.
 
 ```{r validate-pass}
