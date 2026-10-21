@@ -24,6 +24,14 @@
   parties the values stand for. A visit where nobody was there (`0 / 0`) is
   still a true zero.
 
+* Bus-route and ice catch, harvest and release rates refuse the same rows
+  (#545). They returned `NA` with an `NaN` standard error and no reason. The
+  incomplete-trip rate refuses before its short-trip truncation and zero-effort
+  drop, which would otherwise have removed an uncovered party under a message
+  about short or zero-effort trips. An interviewed incomplete-trip party with
+  effort missing is refused too; one with zero effort is still dropped with a
+  warning, since its ratio is undefined rather than unknown.
+
 * The catch, harvest and release totals now refuse `target = "stratum_total"` or `"period_total"` on
   bus-route and ice designs (#520). They accepted the argument and dropped it,
   so a period-total request returned the sampled-days total with no label,

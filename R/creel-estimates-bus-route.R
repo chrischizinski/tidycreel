@@ -105,7 +105,7 @@ estimate_effort_br <- function(
 
   # Compute e_i / pi_i (Eq. 19.4 site contribution)
   interviews$.contribution <- interviews$.e_i / interviews$.pi_i
-  br_abort_unknown_contribution(interviews, design, "effort", call = call)
+  br_abort_unknown_contribution(interviews, design, "effort total", "effort", call = call)
 
   # Build per-site attribution table for attribute storage
   # For ice designs the synthetic site/circuit columns are not in interviews — use row index
@@ -486,7 +486,9 @@ estimate_harvest_br <- function(
       paste0("Cannot compute a ", quantity, " rate: estimated total effort is zero."),
       "x" = paste0("{.fn ", rate_fn, "} divides ", quantity, " by the HT effort total."),
       "i" = "Check that {.arg effort} and {.arg n_anglers} were supplied to {.fn add_interviews}."
-    )
+    ),
+    quantity = quantity,
+    call = call
   )
 }
 
@@ -520,6 +522,9 @@ estimate_harvest_br <- function(
 #' @param denom_col Name of the denominator contribution column
 #' @param zero_denom_msg Character vector passed to [cli::cli_abort()] when the
 #'   denominator sums to zero
+#' @param quantity "catch", "harvest" or "release": names the rate in the
+#'   refusal raised for an unknown contribution
+#' @param call Calling environment for the condition
 #'
 #' @return A creel_estimates object carrying `method`
 #'
@@ -539,8 +544,18 @@ br_harvest_rate_estimates <- function(
     "Cannot compute a harvest rate: estimated total effort is zero.",
     "x" = "{.fn estimate_harvest_rate} divides harvest by the HT effort total.",
     "i" = "Check that {.arg effort} and {.arg n_anglers} were supplied to {.fn add_interviews}."
-  )
+  ),
+  quantity = "harvest",
+  call = rlang::caller_env()
 ) {
+  # svyratio() returns NA for the whole rate, with SE NaN and no reason, when
+  # any numerator or denominator contribution is unknown (GH #545).
+  br_abort_unknown_contribution(
+    interviews, design, paste(quantity, "rate"), paste(quantity, "or effort"),
+    unknown = is.na(interviews$.contribution) | is.na(interviews[[denom_col]]),
+    call = call
+  )
+
   strata_cols <- design$strata_cols
   strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
     stats::reformulate(strata_cols)
@@ -751,6 +766,21 @@ br_incomplete_harvest_rate <- function(
   site_col <- design$bus_route$site_col
   circuit_col <- design$bus_route$circuit_col
 
+  # Before truncation and the zero-effort drop below, both of which discard a
+  # row with no effort: an uncovered party has none, and would have left under
+  # a "shorter than truncate_at" or "zero or missing effort" message (GH #545).
+  # An interviewed party with no effort recorded is unknown for the same reason.
+  # Zero effort (met at the start of the trip) is not unknown: its ratio is
+  # undefined, and the drop below still excludes it. A 0/0 visit has no party.
+  nc <- if (!is.null(design$n_counted_col)) interviews[[design$n_counted_col]] else NA
+  ni <- if (!is.null(design$n_interviewed_col)) interviews[[design$n_interviewed_col]] else NA
+  br_abort_unknown_contribution(
+    interviews, design, paste(quantity, "rate"), "effort",
+    unknown = !(nc %in% 0 & ni %in% 0) &
+      (is.na(interviews$.expansion) | is.na(interviews[[angler_effort_col]])),
+    call = call
+  )
+
   if (
     !is.null(truncate_at) &&
       (!is.numeric(truncate_at) ||
@@ -806,7 +836,7 @@ br_incomplete_harvest_rate <- function(
   if (any(!valid_effort)) {
     n_dropped <- sum(!valid_effort) # nolint: object_usage_linter
     creel_warn(
-      "Dropping {n_dropped} incomplete-trip interview{?s} with zero or missing effort \\
+      "Dropping {n_dropped} incomplete-trip interview{?s} with zero effort \\
       before computing {quantity} rate.",
       class = c("creel_warning_effort_excluded", "creel_warning")
     )
@@ -867,7 +897,9 @@ br_incomplete_harvest_rate <- function(
       ),
       "x" = "Every incomplete-trip interview has zero weight (.expansion / .pi_i).",
       "i" = "Check {.arg n_counted}, {.arg n_interviewed}, and the sampling frame."
-    )
+    ),
+    quantity = quantity,
+    call = call
   )
 }
 
@@ -1223,7 +1255,7 @@ estimate_total_catch_br <- function(
 
   # Compute c_i / pi_i (Eq. 19.5 site contribution, catch variant)
   interviews$.contribution <- interviews$.c_i / interviews$.pi_i
-  br_abort_unknown_contribution(interviews, design, "catch", call = call)
+  br_abort_unknown_contribution(interviews, design, "catch total", "catch", call = call)
 
   # Build per-site attribution table for site_contributions attribute
   # Use intersect() to skip synthetic site/circuit cols absent in ice interviews
@@ -1332,7 +1364,7 @@ estimate_total_harvest_br <- function(
 
   # Compute h_i / pi_i contribution
   interviews$.contribution <- interviews$.h_i / interviews$.pi_i
-  br_abort_unknown_contribution(interviews, design, "harvest", call = call)
+  br_abort_unknown_contribution(interviews, design, "harvest total", "harvest", call = call)
 
   # Build site attribution table (intersect() guard for ice designs)
   avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
@@ -1439,7 +1471,7 @@ estimate_total_release_br <- function(
 
   # Compute r_i / pi_i contribution
   interviews$.contribution <- interviews$.r_i / interviews$.pi_i
-  br_abort_unknown_contribution(interviews, design, "release", call = call)
+  br_abort_unknown_contribution(interviews, design, "release total", "release", call = call)
 
   # Build site attribution table (intersect() guard for ice designs)
   avail_site_cols <- intersect(c(site_col, circuit_col), names(interviews))
@@ -1533,13 +1565,22 @@ br_abort_if_no_complete <- function(interviews, quantity = "estimation", call = 
 # resolve (drop them on purpose, or fill them in); it does not impute. The 0/0
 # visit -- nobody there -- is a true zero, set before this runs, and passes.
 # Shared by all four totals so they cannot disagree about which rows count.
+#
+# The rates refuse the same rows (GH #545): they returned NA with no reason.
+# The incomplete-trip rate drops zero-effort rows before its ratio, which would
+# have hidden an uncovered party behind a "zero or missing effort" warning, so
+# it passes its own `unknown` mask ahead of that drop.
+#
+# `estimate` names what is refused ("catch total", "harvest rate"); `value` names
+# the interview quantity whose absence makes a contribution unknown.
 br_abort_unknown_contribution <- function(
   interviews,
   design,
-  quantity,
+  estimate,
+  value,
+  unknown = is.na(interviews$.contribution),
   call = rlang::caller_env()
 ) {
-  unknown <- is.na(interviews$.contribution)
   if (!any(unknown)) {
     return(invisible(interviews))
   }
@@ -1555,7 +1596,7 @@ br_abort_unknown_contribution <- function(
     ifelse(
       nc > 0 & ni == 0,
       paste0(nc, " counted, none interviewed"),
-      paste0(quantity, " value is missing")
+      paste0(value, " value is missing")
     )
   )
 
@@ -1581,17 +1622,24 @@ br_abort_unknown_contribution <- function(
 
   cli::cli_abort(
     c(
-      "{design_label} {quantity} total has {n_bad} interview row{?s} with an unknown contribution:",
+      "{design_label} {estimate} has {n_bad} interview row{?s} with an unknown contribution:",
       stats::setNames(shown, rep("*", length(shown))),
-      "x" = paste0(
-        "An unknown contribution is not zero. Summing without these rows would ",
-        "understate the total."
-      ),
+      "x" = if (grepl("total", estimate, fixed = TRUE)) {
+        paste0(
+          "An unknown contribution is not zero. Summing without these rows would ",
+          "understate the total."
+        )
+      } else {
+        paste0(
+          "An unknown contribution is not zero. Leaving these rows out silently ",
+          "would change which parties the rate describes."
+        )
+      },
       "i" = if (any(grepl("none interviewed", cause))) {
         paste0(
           "Parties counted but not interviewed have unknown effort and catch. ",
-          "Remove those rows to leave the parties out deliberately (the total then ",
-          "covers interviewed parties only), or impute their values in the ",
+          "Remove those rows to leave the parties out deliberately (the ", estimate,
+          " then covers interviewed parties only), or impute their values in the ",
           "interview data and set {.arg n_interviewed} to the number of parties ",
           "the values stand for."
         )

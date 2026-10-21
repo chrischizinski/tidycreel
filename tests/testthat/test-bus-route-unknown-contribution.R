@@ -179,3 +179,92 @@ test_that("#542: ice designs, which reuse the bus-route totals, refuse too", {
   # The shared helper must not call an ice survey a bus route.
   expect_match(conditionMessage(err), "^Ice effort total")
 })
+
+# GH #545: the rates on the same rows returned NA with SE NaN and no reason.
+# They refuse the same rows the totals do, so resolving the data once lets both
+# run. All rates delegate to estimate_harvest_br(), so the four metrics and the
+# three use_trips modes are checked through the public functions.
+test_that("#545: bus-route rates refuse parties counted but not interviewed", {
+  d <- br542_attach(br542_interviews(), release = TRUE)
+  rates <- list(
+    catch = function(...) estimate_catch_rate(d, ...),
+    harvest = function(...) estimate_harvest_rate(d, ...),
+    release = function(...) estimate_release_rate(d, ...)
+  )
+  for (nm in names(rates)) {
+    err <- tryCatch(suppressWarnings(rates[[nm]]()), error = identity)
+    expect_s3_class(err, "creel_error_unknown_contribution")
+    expect_match(conditionMessage(err), paste0("^Bus-route ", nm, " rate has 1 interview row"), info = nm)
+    expect_match(conditionMessage(err), "site=B, circuit=c: 3 counted, none interviewed", fixed = TRUE)
+    expect_error(
+      suppressWarnings(rates[[nm]](by = site)), # nolint: object_usage_linter
+      class = "creel_error_unknown_contribution", info = paste(nm, "by site")
+    )
+  }
+  # Diagnostic mode needs both trip types; the uncovered row stays complete.
+  mixed <- br542_interviews()
+  mixed$trip_status[3:4] <- "incomplete"
+  expect_error(
+    suppressWarnings(suppressMessages(
+      estimate_catch_rate(br542_attach(mixed), use_trips = "diagnostic")
+    )),
+    class = "creel_error_unknown_contribution"
+  )
+})
+
+test_that("#545: the incomplete-trip rate refuses before truncation can hide the row", {
+  # An uncovered party has no effort, so truncation (NA duration) and the
+  # zero-effort drop would each have removed it under a message about short or
+  # zero-effort trips. The refusal has to come first.
+  iv <- br542_interviews()
+  iv$trip_status <- c("incomplete", "incomplete", "incomplete", "incomplete")
+  d <- br542_attach(iv)
+  err <- tryCatch(
+    suppressWarnings(suppressMessages(estimate_catch_rate(d, use_trips = "incomplete"))),
+    error = identity
+  )
+  expect_s3_class(err, "creel_error_unknown_contribution")
+  expect_match(conditionMessage(err), "3 counted, none interviewed", fixed = TRUE)
+})
+
+test_that("#545: a missing catch on an interviewed party is refused, a 0/0 visit is not", {
+  iv <- br542_interviews()
+  iv$n_counted[2] <- 1L
+  iv$n_interviewed[2] <- 1L
+  iv$hrs[2] <- 2
+  iv$kept[2] <- 0
+  err <- tryCatch(suppressWarnings(estimate_catch_rate(br542_attach(iv))), error = identity)
+  expect_s3_class(err, "creel_error_unknown_contribution")
+  expect_match(conditionMessage(err), "catch or effort value is missing", fixed = TRUE)
+
+  # Nobody at site B on day 1: the rate is total catch over total effort of the
+  # three interviewed parties, (1 + 2 + 0) / (2 + 3 + 1) = 0.5 (pi cancels).
+  iv <- br542_interviews()
+  iv$n_counted[2] <- 0L
+  expect_equal(suppressWarnings(estimate_catch_rate(br542_attach(iv)))$estimates$estimate, 0.5)
+})
+
+test_that("#545: the incomplete-trip rate refuses missing effort but still drops zero effort", {
+  iv <- br542_interviews()
+  iv$trip_status <- "incomplete"
+  iv$n_interviewed[2] <- 1L
+  iv$hrs[2] <- NA
+  iv$catch[2] <- 1
+  # Missing effort is unknown, so the rate refuses rather than dropping the party.
+  err <- tryCatch(
+    suppressWarnings(suppressMessages(estimate_catch_rate(br542_attach(iv), use_trips = "incomplete"))),
+    error = identity
+  )
+  expect_s3_class(err, "creel_error_unknown_contribution")
+  expect_match(conditionMessage(err), "site=B, circuit=c: effort value is missing", fixed = TRUE)
+
+  # Zero effort (met at the start of the trip) has an undefined ratio, not an
+  # unknown one: it is still excluded, with the warning, and the rate runs.
+  iv$hrs[2] <- 0
+  d <- br542_attach(iv)
+  expect_warning(
+    res <- suppressMessages(estimate_catch_rate(d, use_trips = "incomplete", truncate_at = NULL)),
+    class = "creel_warning_effort_excluded"
+  )
+  expect_false(is.na(res$estimates$estimate))
+})
