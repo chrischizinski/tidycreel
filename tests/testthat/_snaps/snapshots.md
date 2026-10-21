@@ -65,7 +65,7 @@
       ! Complete trips preferred for CPUE estimation.
       Uses incomplete trip interviews only (10 trips).
       Truncation: 0 trips excluded (threshold: 0.5 hours)
-      Validate with `validate_incomplete_trips()` before use (Phase 19).
+      Validate with `validate_incomplete_trips()` before use.
       
       
       -- Creel Survey Estimates ------------------------------------------------------

@@ -87,7 +87,7 @@ format.creel_estimates_mor <- function(x, ...) {
 
     if (diagnostic) {
       cli::cli_text(
-        "Validate with {.fn validate_incomplete_trips} before use (Phase 19)."
+        "Validate with {.fn validate_incomplete_trips} before use."
       )
     }
     cli::cli_text("")
@@ -157,10 +157,10 @@ format.creel_estimates_diagnostic <- function(x, ...) {
     cli::cli_h2("Interpretation")
     cli::cli_text("{x$interpretation}")
     cli::cli_text("")
-    cli::cli_text("For statistical tests, see Phase 19 validation framework:")
-    cli::cli_text("  - Test for equality of estimates (confidence interval overlap)")
-    cli::cli_text("  - Test for nonstationary catch rates")
-    cli::cli_text("  - Validate length-of-stay bias assumptions")
+    cli::cli_text(
+      "{.fn validate_incomplete_trips} tests whether the two rates are \\
+      equivalent within a margin (TOST)."
+    )
   })
 
   # Combine all sections
