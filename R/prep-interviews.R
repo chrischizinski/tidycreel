@@ -448,6 +448,9 @@ prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, s
   sum_by <- function(keep) {
     s <- tapply(n[keep], ct_ids[keep], sum)
     out <- unname(s[iv_ids])
+    # An interview with catch rows but none of this fate recorded none of it
+    # (the add_catch() model). One with no catch rows at all is the user's
+    # call: under absent = "unknown" it is set back to NA below.
     out[is.na(out)] <- 0
     out
   }
