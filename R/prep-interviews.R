@@ -324,3 +324,133 @@ prep_interview_catch <- function(data, interview_uid, species, count, catch_type
     catch_type = catch_type_vals
   )
 }
+
+#' Add each interview's catch, harvest and release totals from a catch table
+#'
+#' @description
+#' [add_interviews()] needs a per-interview total catch column, but most
+#' agencies record catch as a long table -- one row per interview, species and
+#' fate -- which is what [add_catch()] takes. `prep_interview_totals()` sums that
+#' table back to one row per interview, so the two never have to be reconciled
+#' by hand (GH #560).
+#'
+#' Totals follow the catch-type model [add_catch()] documents, per
+#' species-interview pair: a pair's own `"caught"` row when it has one,
+#' otherwise harvested + released. Harvest sums the `"harvested"` rows and
+#' release the `"released"` rows.
+#'
+#' @section An interview with no catch rows:
+#' Whether that means "caught nothing" or "catch not recorded" depends on the
+#' field sheet, so `absent` has no default. On a sheet that records a row for
+#' every species caught, no row means zero fish: `absent = "zero"`. If a missing
+#' row can mean the catch was never written down, `absent = "unknown"` gives
+#' `NA`, which [add_interviews()] then asks you to resolve rather than scoring
+#' as zero.
+#'
+#' @param interviews Interview table, one row per interview.
+#' @param catch Long catch table: one row per interview, species and catch type.
+#' @param interview_uid <[`tidy-select`][tidyselect::language]> Interview id
+#'   column in `interviews`.
+#' @param catch_uid <[`tidy-select`][tidyselect::language]> Interview id column
+#'   in `catch`.
+#' @param species,count,catch_type <[`tidy-select`][tidyselect::language]>
+#'   Species, fish count and fate (`"caught"`, `"harvested"` or `"released"`,
+#'   any case) columns in `catch`.
+#' @param absent What an interview with no catch rows means: `"zero"` or
+#'   `"unknown"`. Required; see the section above.
+#'
+#' @return `interviews` with three numeric columns added: `catch_total`,
+#'   `harvest_total` and `release_total`.
+#'
+#' @examples
+#' iv <- data.frame(id = c("a", "b", "c"))
+#' ct <- data.frame(
+#'   id = c("a", "a", "b"), sp = c("walleye", "walleye", "bass"),
+#'   n = c(2, 3, 1), fate = c("harvested", "released", "caught")
+#' )
+#' prep_interview_totals(iv, ct,
+#'   interview_uid = id, catch_uid = id, species = sp,
+#'   count = n, catch_type = fate, absent = "zero"
+#' )
+#'
+#' @seealso [add_interviews()], [add_catch()], [prep_interview_catch()]
+#' @family "Survey Design"
+#' @export
+prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, species,
+                                  count, catch_type, absent) {
+  if (missing(absent)) {
+    cli::cli_abort(c(
+      "{.arg absent} must be given: what does an interview with no catch rows mean?",
+      "i" = "{.val zero} if the sheet records a row for every species caught;
+             {.val unknown} if a missing row can mean the catch was not recorded."
+    ))
+  }
+  absent <- rlang::arg_match0(absent, c("zero", "unknown"))
+  one <- function(quo, data, arg) {
+    cols <- names(tidyselect::eval_select(quo, data))
+    if (length(cols) != 1L) {
+      cli::cli_abort("{.arg {arg}} must select exactly one column; it selected {length(cols)}.")
+    }
+    cols
+  }
+  iv_uid <- one(rlang::enquo(interview_uid), interviews, "interview_uid")
+  ct_uid <- one(rlang::enquo(catch_uid), catch, "catch_uid")
+  sp_col <- one(rlang::enquo(species), catch, "species")
+  n_col <- one(rlang::enquo(count), catch, "count")
+  type_col <- one(rlang::enquo(catch_type), catch, "catch_type")
+
+  taken <- intersect(c("catch_total", "harvest_total", "release_total"), names(interviews))
+  if (length(taken)) {
+    cli::cli_abort("{.arg interviews} already has {.field {taken}}; rename or drop {?it/them} first.")
+  }
+  if (!is.numeric(catch[[n_col]])) {
+    cli::cli_abort("{.field {n_col}} must be numeric, not {.cls {class(catch[[n_col]])[1]}}.")
+  }
+  if (anyNA(catch[[n_col]])) {
+    cli::cli_abort(c(
+      "{sum(is.na(catch[[n_col]]))} catch row{?s} {?has/have} an {.val {NA}} count.",
+      "i" = "An unknown count is not a zero; fill or remove those rows first."
+    ))
+  }
+  type <- tolower(as.character(catch[[type_col]]))
+  bad <- setdiff(unique(type), c("caught", "harvested", "released"))
+  if (length(bad)) {
+    cli::cli_abort(c(
+      "{.field {type_col}} holds value{?s} other than caught, harvested or released: {.val {bad}}.",
+      "i" = "Map them with {.fn creel_schema} {.arg value_maps}, or recode them first."
+    ))
+  }
+  iv_ids <- as_uid_character(interviews[[iv_uid]])
+  ct_ids <- as_uid_character(catch[[ct_uid]])
+  orphan <- setdiff(unique(ct_ids), iv_ids)
+  if (length(orphan)) {
+    cli::cli_abort(c(
+      "{length(orphan)} interview id{?s} in {.arg catch} {?is/are} not in {.arg interviews}:
+       {.val {utils::head(orphan, 5)}}.",
+      "i" = "Every catch row must belong to an interview."
+    ))
+  }
+
+  n <- catch[[n_col]]
+  pair <- paste(ct_ids, as.character(catch[[sp_col]]), sep = "\r")
+  has_caught <- pair %in% pair[type == "caught"]
+  # per pair: its caught row, or harvested + released when it has none (add_catch() model)
+  use <- ifelse(has_caught, type == "caught", type %in% c("harvested", "released"))
+  sum_by <- function(keep) {
+    s <- tapply(n[keep], ct_ids[keep], sum)
+    out <- unname(s[iv_ids])
+    out[is.na(out)] <- 0
+    out
+  }
+  any_row <- iv_ids %in% ct_ids
+  totals <- list(
+    catch_total = sum_by(use),
+    harvest_total = sum_by(type == "harvested"),
+    release_total = sum_by(type == "released")
+  )
+  if (identical(absent, "unknown")) {
+    totals <- lapply(totals, function(x) replace(x, !any_row, NA_real_))
+  }
+  for (nm in names(totals)) interviews[[nm]] <- as.numeric(totals[[nm]])
+  interviews
+}

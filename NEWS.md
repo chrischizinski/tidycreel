@@ -180,6 +180,15 @@
 
 ## New features
 
+* New `prep_interview_totals()` adds each interview's `catch_total`,
+  `harvest_total` and `release_total` from a long catch table (one row per
+  interview, species and fate), so `add_interviews()` and `add_catch()` can be
+  fed from the same records instead of a hand-written aggregation (#560). It
+  applies the `add_catch()` model per species-interview pair (a pair's own
+  `caught` row, otherwise harvested + released), and its `absent` argument has
+  no default: the user states whether an interview with no catch rows caught
+  nothing (`"zero"`) or went unrecorded (`"unknown"`, giving `NA`).
+
 * `creel_design()` takes bus-route site weights as `wait_time` and
   `circuit_time` (#539), the published bus-route estimator (Robson & Jones
   1989; Pollock et al. 1994, eq. 15.10). On a bus route the crew visits every
