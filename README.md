@@ -1,6 +1,3 @@
----
-output: github_document
----
 <!-- Generated from README.Rmd — do not edit README.md directly -->
 
 # tidycreel
