@@ -193,6 +193,15 @@
 
 ## New features
 
+* New `prep_interview_totals()` adds each interview's `catch_total`,
+  `harvest_total` and `release_total` from a long catch table (one row per
+  interview, species and fate), so `add_interviews()` and `add_catch()` can be
+  fed from the same records instead of a hand-written aggregation (#560). It
+  applies the `add_catch()` model per species-interview pair (a pair's own
+  `caught` row, otherwise harvested + released), and its `absent` argument has
+  no default: the user states whether an interview with no catch rows caught
+  nothing (`"zero"`) or went unrecorded (`"unknown"`, giving `NA`).
+
 * `add_counts()` gains `missing_count = c("keep", "exclude")` (#561). An `NA`
   count -- often a placeholder row for a scheduled count that was not made --
   used to be named only by an unrelated "repeated sampling unit" warning. It is
