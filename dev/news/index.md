@@ -265,6 +265,20 @@
 ### New features
 
 - New
+  [`summarize_rws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_rws_rates.md):
+  released-while-sought rates, completing the trio with
+  [`summarize_cws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_cws_rates.md)
+  and
+  [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_hws_rates.md)
+  ([\#558](https://github.com/chrischizinski/tidycreel/issues/558)). It
+  reads released rows exactly as
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_release_rate.md)
+  does, and uses the same interviews and exclusions as CWS and HWS, so
+  where `caught` is inferred as harvested + released, RWS = CWS - HWS.
+  The three now share one implementation, so a fix to one reaches all
+  three.
+
+- New
   [`prep_interview_totals()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_totals.md)
   adds each interview’s `catch_total`, `harvest_total` and
   `release_total` from a long catch table (one row per interview,

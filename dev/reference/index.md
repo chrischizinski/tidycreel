@@ -151,6 +151,8 @@ check data completeness, and inspect estimate output.
   : Compute caught-while-sought (CWS) rates by group
 - [`summarize_hws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_hws_rates.md)
   : Compute harvested-while-sought (HWS) rates by group
+- [`summarize_rws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_rws_rates.md)
+  : Compute released-while-sought (RWS) rates by group
 - [`summarize_length_freq()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_length_freq.md)
   : Compute length frequency distribution from creel interview data
 - [`summarize_successful_parties()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_successful_parties.md)
