@@ -264,6 +264,22 @@
 
 ### New features
 
+- [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  gains `missing_trip_status = c("refuse", "exclude")`
+  ([\#561](https://github.com/chrischizinski/tidycreel/issues/561)). An
+  interview with no trip status fits neither the complete- nor the
+  incomplete-trip estimator, and
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  refused the whole table, so the rows were filtered and counted by
+  hand. The default still refuses, now naming the way through;
+  `"exclude"` sets those interviews aside with a message, keeps them in
+  `design$excluded_interviews`, and drops their rows from later
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  and
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)
+  data. Bus-route and ice designs stop, as for refusals.
+
 - New
   [`summarize_rws_rates()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_rws_rates.md):
   released-while-sought rates, completing the trio with

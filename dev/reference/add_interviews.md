@@ -38,7 +38,8 @@ add_interviews(
   refused = NULL,
   date_col = NULL,
   interview_type = c("access", "roving"),
-  allow_invalid = FALSE
+  allow_invalid = FALSE,
+  missing_trip_status = c("refuse", "exclude")
 )
 ```
 
@@ -203,6 +204,20 @@ add_interviews(
   failures generate warnings and attach interviews anyway (use with
   caution).
 
+- missing_trip_status:
+
+  What to do with interviews whose trip status is `NA`. `"refuse"`
+  (default) stops and names them: without a status an interview belongs
+  to neither the complete- nor the incomplete-trip estimator.
+  `"exclude"` sets them aside with a message, keeps them in
+  `design$excluded_interviews`, and drops their rows from later
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  and
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)
+  data. Excluding treats the missing statuses as unrelated to catch. Not
+  yet supported on bus-route and ice designs (GH \#561).
+
 ## Value
 
 A new creel_design object (list) with components:
@@ -274,6 +289,15 @@ A new creel_design object (list) with components:
 - validation:
 
   creel_validation object with Tier 1 results
+
+- refused_interviews:
+
+  Interviews set aside as refused (`refused =`), or NULL
+
+- excluded_interviews:
+
+  Interviews set aside for having no trip status
+  (`missing_trip_status = "exclude"`), or NULL
 
 ## Immutability
 

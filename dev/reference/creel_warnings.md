@@ -422,6 +422,16 @@ is recorded like a warning, with tier 3. Silence one for one call with
   Tier 3. Count rows with an `NA` count were dropped on request
   (`missing_count = "exclude"`).
 
+- `creel_message_no_trip_status_records_dropped`:
+
+  Tier 3. Catch, length or age rows of interviews set aside for having
+  no trip status were dropped (GH \#561).
+
+- `creel_message_no_trip_status_excluded`:
+
+  Tier 3. Interviews with no trip status were set aside on request
+  (`missing_trip_status = "exclude"`, GH \#561).
+
 - `creel_message_no_subdesigns`:
 
   Tier 3. No survey sub-designs were found to adjust.
