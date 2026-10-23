@@ -1272,103 +1272,10 @@ summarize_by_trip_length <- function(design) {
 #' @family "Reporting & Diagnostics"
 #' @export
 summarize_cws_rates <- function(design, by = NULL, conf_level = 0.95) {
-  # Capture by before validation
-  by_quo <- rlang::enquo(by)
-
-  # Guard 1: type check
-  if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
-      "{.arg design} must be a {.cls creel_design} object.",
-      "x" = "{.arg design} is {.cls {class(design)[1]}}.",
-      "i" = "Create a design with {.fn creel_design}."
-    ))
-  }
-
-  # Guard 2: interviews attached
-  if (is.null(design$interviews)) {
-    cli::cli_abort(c(
-      "No interviews found in design.",
-      "x" = "The design object has no interview data.",
-      "i" = "Attach interviews with {.fn add_interviews}."
-    ))
-  }
-
-  # Guard 3a: angler_effort_col
-  if (is.null(design$angler_effort_col)) {
-    cli::cli_abort(c(
-      "No angler_effort column found in design.",
-      "x" = "This should be set automatically by {.fn add_interviews}.",
-      "i" = "Re-attach interviews with {.fn add_interviews}."
-    ))
-  }
-
-  # Guard 3b: species_sought_col
-  if (is.null(design$species_sought_col)) {
-    cli::cli_abort(c(
-      "No species_sought column found in design.",
-      "x" = "Did you provide {.arg species_sought} in {.fn add_interviews}?"
-    ))
-  }
-
-  # Guard 3c: catch data (double-bracket, exact match)
-  if (is.null(design[["catch"]])) {
-    cli::cli_abort(c(
-      "No catch data found in design.",
-      "i" = "Attach species catch data with {.fn add_catch} before calling this function."
-    ))
-  }
-
-  # Extract field names from design
-  interviews <- design$interviews
-  catch_data <- design[["catch"]]
-  uid_col <- design$catch_interview_uid_col
-  species_col <- design$catch_species_col
-  count_col <- design$catch_count_col
-  type_col <- design$catch_type_col
-  ss_col <- design$species_sought_col
-  ae_col <- design$angler_effort_col
-
-  # Step 1: Resolve by columns from interviews
-  if (!rlang::quo_is_null(by_quo)) {
-    by_cols <- tidyselect::eval_select(
-      # nolint: object_usage_linter
-      by_quo,
-      data = interviews,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
-      error_call = rlang::caller_env()
-    )
-    by_vars <- screen_by_vars(
-      names(by_cols), by_quo, interviews, design,
-      error_call = rlang::caller_env()
-    )
-  } else {
-    by_vars <- character(0)
-  }
-
-  # Step 2: each interview's count of the species it sought (caught).
-  agg <- sought_target_counts( # nolint: object_usage_linter
-    interviews, catch_data, "caught",
-    uid_col = uid_col, species_col = species_col, type_col = type_col,
-    count_col = count_col, ss_col = ss_col, catch_uid_col = design$catch_uid_col
+  summarize_sought_rates(
+    design, rlang::enquo(by), "caught", "creel_summary_cws_rates", conf_level,
+    call = rlang::caller_env(), fn_env = rlang::current_env()
   )
-
-  # Steps 3-7 are identical for CWS and HWS -- the only difference between the
-  # two is which catch type Step 2 filtered to -- so they live in one place. The
-  # two used to hold byte-identical copies of this block, which is how a seam
-  # fixed in one twin comes to survive in the other.
-  result <- summarize_rate_by_group(
-    interviews   = interviews,
-    agg          = agg,
-    uid_col      = uid_col,
-    ss_col       = ss_col,
-    ae_col       = ae_col,
-    by_vars      = by_vars,
-    conf_level   = conf_level
-  )
-
-  class(result) <- c("creel_summary_cws_rates", "data.frame")
-  result
 }
 
 
@@ -1694,16 +1601,90 @@ summarize_rate_by_group <- function(interviews, agg, uid_col, ss_col, ae_col,
 #' @family "Reporting & Diagnostics"
 #' @export
 summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
-  # Capture by before validation
-  by_quo <- rlang::enquo(by)
+  summarize_sought_rates(
+    design, rlang::enquo(by), "harvested", "creel_summary_hws_rates", conf_level,
+    call = rlang::caller_env(), fn_env = rlang::current_env()
+  )
+}
 
+#' Compute released-while-sought (RWS) rates by group
+#'
+#' @description
+#' Computes mean released-while-sought rates (fish per angler-hour) for anglers
+#' targeting each species. For each interview, the rate is
+#' \code{released_count / angler_effort}, where \code{released_count} is the
+#' number of fish released of the species the angler was seeking and
+#' \code{angler_effort} is angler-hours (effort x n_anglers, standardized at
+#' design time by \code{\link{add_interviews}}). It completes the
+#' while-sought trio with [summarize_cws_rates()] and [summarize_hws_rates()].
+#'
+#' @details
+#' \strong{Interview-based summary, not pressure-weighted.} This function
+#' computes a simple arithmetic mean over sampled interviews. It does NOT apply
+#' survey weighting by sampling effort or effort stratum. For pressure-weighted
+#' extrapolated estimates use \code{\link{estimate_release_rate}}.
+#'
+#' Released fish are read from \code{"released"} rows in \code{design$catch},
+#' exactly as [estimate_release_rate()] reads them: a pair with no released row
+#' released none of that species. Where every pair records its catch as
+#' harvested + released (the \code{"caught"} row left to be inferred), each
+#' party's RWS rate is its CWS rate minus its HWS rate, and so are the group
+#' means, since all three use the same interviews and exclusions.
+#'
+#' @param by Optional tidy selector for grouping columns from
+#'   \code{design$interviews}, e.g. \code{by = species_sought} or
+#'   \code{by = c(month, angler_type, species_sought)}. When \code{NULL},
+#'   returns a single overall rate across all interviews.
+#' @inheritParams summarize_hws_rates
+#' @inheritSection summarize_hws_rates Unrecorded grouping values
+#' @inheritSection summarize_hws_rates Interviews with an unrecorded sought species
+#'
+#' @return A \code{data.frame} with class
+#'   \code{c("creel_summary_rws_rates", "data.frame")} and the same columns as
+#'   [summarize_hws_rates()].
+#'
+#' @seealso [summarize_cws_rates()], [summarize_hws_rates()],
+#'   [estimate_release_rate()]
+#'
+#' @examples
+#' data(example_calendar)
+#' data(example_interviews)
+#' data(example_catch)
+#' d <- creel_design(example_calendar, date = date, strata = day_type)
+#' d <- add_interviews(d, example_interviews,
+#'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
+#'   trip_status = trip_status, species_sought = species_sought
+#' )
+#' d <- add_catch(d, example_catch,
+#'   catch_uid = interview_id, interview_uid = interview_id,
+#'   species = species, count = count, catch_type = catch_type
+#' )
+#' summarize_rws_rates(d, by = species_sought)
+#'
+#' @family "Reporting & Diagnostics"
+#' @export
+summarize_rws_rates <- function(design, by = NULL, conf_level = 0.95) {
+  summarize_sought_rates(
+    design, rlang::enquo(by), "released", "creel_summary_rws_rates", conf_level,
+    call = rlang::caller_env(), fn_env = rlang::current_env()
+  )
+}
+
+# CWS, HWS and RWS differ only in the catch fate they count (#558). They held
+# byte-identical copies of this body until RWS was added; one body now serves
+# all three, so a seam fixed for one cannot survive in another.
+# `call` is the user's frame (for tidyselect errors), `fn_env` the exported
+# function's (so a guard names summarize_cws_rates(), not this helper).
+#' @noRd
+summarize_sought_rates <- function(design, by_quo, catch_type_val, cls, conf_level,
+                                   call, fn_env) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
-    ))
+    ), call = fn_env)
   }
 
   # Guard 2: interviews attached
@@ -1712,7 +1693,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
-    ))
+    ), call = fn_env)
   }
 
   # Guard 3a: angler_effort_col
@@ -1721,7 +1702,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
       "No angler_effort column found in design.",
       "x" = "This should be set automatically by {.fn add_interviews}.",
       "i" = "Re-attach interviews with {.fn add_interviews}."
-    ))
+    ), call = fn_env)
   }
 
   # Guard 3b: species_sought_col
@@ -1729,7 +1710,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
     cli::cli_abort(c(
       "No species_sought column found in design.",
       "x" = "Did you provide {.arg species_sought} in {.fn add_interviews}?"
-    ))
+    ), call = fn_env)
   }
 
   # Guard 3c: catch data (double-bracket, exact match)
@@ -1737,7 +1718,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
     cli::cli_abort(c(
       "No catch data found in design.",
       "i" = "Attach species catch data with {.fn add_catch} before calling this function."
-    ))
+    ), call = fn_env)
   }
 
   # Extract field names from design
@@ -1758,19 +1739,19 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
       data = interviews,
       allow_rename = FALSE,
       allow_empty = FALSE,
-      error_call = rlang::caller_env()
+      error_call = call
     )
     by_vars <- screen_by_vars(
       names(by_cols), by_quo, interviews, design,
-      error_call = rlang::caller_env()
+      error_call = call
     )
   } else {
     by_vars <- character(0)
   }
 
-  # Step 2: each interview's count of the species it sought (harvested).
+  # Step 2: each interview's count of the species it sought, of this fate.
   agg <- sought_target_counts( # nolint: object_usage_linter
-    interviews, catch_data, "harvested",
+    interviews, catch_data, catch_type_val,
     uid_col = uid_col, species_col = species_col, type_col = type_col,
     count_col = count_col, ss_col = ss_col, catch_uid_col = design$catch_uid_col
   )
@@ -1789,7 +1770,7 @@ summarize_hws_rates <- function(design, by = NULL, conf_level = 0.95) {
     conf_level   = conf_level
   )
 
-  class(result) <- c("creel_summary_hws_rates", "data.frame")
+  class(result) <- c(cls, "data.frame")
   result
 }
 

@@ -124,6 +124,7 @@ reference:
       - summarize_by_trip_length
       - summarize_cws_rates
       - summarize_hws_rates
+      - summarize_rws_rates
       - summarize_length_freq
       - summarize_successful_parties
       - summarize_boat_composition
