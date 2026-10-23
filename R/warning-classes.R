@@ -170,6 +170,10 @@
 #'     failed a check and estimation continued.}
 #'   \item{\code{creel_warning_repeated_sampling_units}}{Tier 1. Counts have
 #'     repeated sampling units with no count time to tell them apart.}
+#'   \item{\code{creel_warning_na_counts}}{Tier 2. Some counts are `NA`; the
+#'     effort estimate will be `NA` unless they are filled or excluded with
+#'     `missing_count = "exclude"` (GH #561). Not raised on camera designs,
+#'     which report the gap at estimation (`creel_warning_camera_na_counts`).}
 #'   \item{\code{creel_warning_negative_counts}}{Tier 2. The count column has
 #'     negative values.}
 #'   \item{\code{creel_warning_negative_catch}}{Tier 2. Interviews have negative
@@ -240,6 +244,8 @@
 #'   \item{\code{creel_message_mor_incomplete_trips}}{Tier 3. A rate uses the
 #'     mean-of-ratios estimator on incomplete trips; complete trips are
 #'     preferred where available.}
+#'   \item{\code{creel_message_na_counts_excluded}}{Tier 3. Count rows with
+#'     an `NA` count were dropped on request (`missing_count = "exclude"`).}
 #'   \item{\code{creel_message_no_subdesigns}}{Tier 3. No survey sub-designs
 #'     were found to adjust.}
 #'   \item{\code{creel_message_nonstandard_estimator}}{Tier 3. An unusual
@@ -312,6 +318,7 @@ creel_warning_tiers <- c(
   creel_warning_low_response_rate = 2L,
   creel_warning_missing_effort = 2L,
   creel_warning_mor_truncation = 2L,
+  creel_warning_na_counts = 2L,
   creel_warning_negative_catch = 2L,
   creel_warning_negative_counts = 2L,
   creel_warning_negative_effort = 2L,
@@ -339,6 +346,7 @@ creel_warning_tiers <- c(
   creel_message_internal_svydesign = 3L,
   creel_message_large_delta_pct = 3L,
   creel_message_mor_incomplete_trips = 3L,
+  creel_message_na_counts_excluded = 3L,
   creel_message_no_subdesigns = 3L,
   creel_message_nonstandard_estimator = 3L,
   creel_message_species_column_missing = 3L,

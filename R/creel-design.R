@@ -2527,6 +2527,14 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #'   as applying the probability twice. Shifts that cross midnight are refused
 #'   until #407.
 #'
+#' @param missing_count What to do with count rows whose count is `NA`.
+#'   `"keep"` (default) keeps them: an unknown count is not a zero, so the
+#'   effort estimate is `NA`, and a warning names the rows (camera designs
+#'   report them at estimation instead). `"exclude"` drops them, says how many,
+#'   and keeps them in `design$excluded_counts`; use it when the rows are
+#'   placeholders for counts that were not made. Excluding treats those counts
+#'   as missing at random within their day: the day keeps its other counts, and
+#'   a day left with none is no longer a sampled day (GH #561).
 #' @return A new creel_design object (list) with components:
 #'   \item{calendar}{Original calendar data frame}
 #'   \item{date_col}{Character name of date column}
@@ -2537,6 +2545,8 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #'   \item{psu_col}{Character name of PSU column}
 #'   \item{survey}{Internal survey.design2 object (newly constructed)}
 #'   \item{validation}{creel_validation object with Tier 1 results}
+#'   \item{excluded_counts}{Count rows dropped by `missing_count = "exclude"`,
+#'     or NULL}
 #'
 #' @section Immutability:
 #' add_counts() follows functional programming patterns and returns a new
@@ -2663,7 +2673,8 @@ add_counts <- function(
   period_length_col = NULL,
   unit_cols = NULL,
   allow_invalid = FALSE,
-  p_period = NULL
+  p_period = NULL,
+  missing_count = c("keep", "exclude")
 ) {
   counts <- ungroup_input(counts) # GH #441
   step_supplied <- supplied_arg_names(match.call(), c("design", "counts")) # nolint: object_usage_linter
@@ -2935,6 +2946,16 @@ add_counts <- function(
   if (!is.null(design$night)) {
     check_night_records_worked(counts, design, design$date_col, "count") # nolint: object_usage_linter
   }
+
+  # Unknown counts (GH #561): reported by default, or set aside on request.
+  # After the checks above, which never read the count itself, so an excluded
+  # row is still held to a valid date, stratum and PSU.
+  missing_count <- match.arg(missing_count)
+  na_split <- split_na_counts(
+    counts, count_col_name, design$date_col, count_time_col_name, missing_count,
+    design$design_type, label_cols = c(design$section_col, psu)
+  )
+  counts <- na_split$kept
 
   # One definition of "the same sampling unit" for every check below. These had
   # drifted into three different keys, none carrying the section, so a day
@@ -3248,6 +3269,8 @@ add_counts <- function(
   # Store validation results
   new_design$validation <- validation
 
+  new_design$excluded_counts <- na_split$excluded
+
   # Preserve class
   class(new_design) <- "creel_design"
 
@@ -3257,7 +3280,8 @@ add_counts <- function(
          count_type = count_type, circuit_time = circuit_time,
          period_length_col = period_length_col_name, unit_cols = unit_cols,
          allow_invalid = allow_invalid,
-         p_period = if (is.null(p_period_vals)) NULL else as.vector(attr(p_period_vals, "source"))),
+         p_period = if (is.null(p_period_vals)) NULL else as.vector(attr(p_period_vals, "source")),
+         missing_count = missing_count),
     step_supplied, "counts", step_counts
   )
 }
@@ -6165,4 +6189,48 @@ preprocess_camera_timestamps <- function(timestamps, date_col, ingress_col, egre
   )
   names(agg) <- c("date", "daily_effort_hours")
   agg
+}
+
+#' Report or set aside count rows whose count is NA (GH #561)
+#'
+#' An NA count is unknown, not zero. Kept (the default), it stays a sampled
+#' observation and makes the effort estimate NA -- the same rule camera designs
+#' follow (#215), where a missing count is not a deleted row. Excluding it is a
+#' different, legitimate analysis, so it is the caller's explicit choice.
+#'
+#' @return A list: `kept` rows, and `excluded` rows (NULL when none).
+#' @keywords internal
+#' @noRd
+split_na_counts <- function(counts, count_col, date_col, time_col, missing_count, design_type,
+                            label_cols = NULL) {
+  na <- is.na(counts[[count_col]])
+  if (!any(na)) {
+    return(list(kept = counts, excluded = NULL))
+  }
+  where <- format(counts[[date_col]][na])
+  if (!is.null(time_col)) where <- paste(where, counts[[time_col]][na])
+  # a date and time can repeat across sections and sites, so name those too
+  for (lc in intersect(setdiff(label_cols, date_col), names(counts))) {
+    where <- paste(where, counts[[lc]][na])
+  }
+  shown <- utils::head(unique(where), 5) # nolint: object_usage_linter
+  more <- if (length(unique(where)) > 5) ", ..." else "" # nolint: object_usage_linter
+  n_na <- sum(na) # nolint: object_usage_linter
+  if (identical(missing_count, "exclude")) {
+    creel_inform(c(
+      "i" = "Excluded {n_na} count row{?s} with an unknown ({.val {NA}}) count: {.val {shown}}{more}.",
+      " " = "They are kept in {.field design$excluded_counts}."
+    ), class = c("creel_message_na_counts_excluded", "creel_message"))
+    return(list(kept = counts[!na, , drop = FALSE], excluded = counts[na, , drop = FALSE]))
+  }
+  # Camera designs report the gap at estimation, with the camera status (#215).
+  if (!identical(design_type, "camera")) {
+    creel_warn(c(
+      "{n_na} count{?s} in {.field {count_col}} {?is/are} {.val {NA}}: {.val {shown}}{more}.",
+      "i" = "An unknown count is not a zero, so the effort estimate will be {.val {NA}}.",
+      "i" = "Fill the counts, or pass {.code missing_count = \"exclude\"} if those rows
+             are placeholders for counts that were not made."
+    ), class = c("creel_warning_na_counts", "creel_warning"))
+  }
+  list(kept = counts, excluded = NULL)
 }

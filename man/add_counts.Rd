@@ -15,7 +15,8 @@ add_counts(
   period_length_col = NULL,
   unit_cols = NULL,
   allow_invalid = FALSE,
-  p_period = NULL
+  p_period = NULL,
+  missing_count = c("keep", "exclude")
 )
 }
 \arguments{
@@ -146,6 +147,15 @@ times, \code{period_length_col} must equal the total hours of the day's worked
 shifts (to 0.01 h); a length equal to that window / \code{p_period} is refused
 as applying the probability twice. Shifts that cross midnight are refused
 until #407.}
+
+\item{missing_count}{What to do with count rows whose count is \code{NA}.
+\code{"keep"} (default) keeps them: an unknown count is not a zero, so the
+effort estimate is \code{NA}, and a warning names the rows (camera designs
+report them at estimation instead). \code{"exclude"} drops them, says how many,
+and keeps them in \code{design$excluded_counts}; use it when the rows are
+placeholders for counts that were not made. Excluding treats those counts
+as missing at random within their day: the day keeps its other counts, and
+a day left with none is no longer a sampled day (GH #561).}
 }
 \value{
 A new creel_design object (list) with components:
@@ -158,6 +168,8 @@ A new creel_design object (list) with components:
 \item{psu_col}{Character name of PSU column}
 \item{survey}{Internal survey.design2 object (newly constructed)}
 \item{validation}{creel_validation object with Tier 1 results}
+\item{excluded_counts}{Count rows dropped by \code{missing_count = "exclude"},
+or NULL}
 }
 \description{
 Attaches count-side effort data to a creel_design object and constructs the
