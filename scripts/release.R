@@ -289,6 +289,12 @@ release_accepted <- function(version, main_path = ".", notes_file = NULL, main_r
     message("Published ", out)
   }
 
+  # Roadmap board -------------------------------------------------------------
+  # Only what was closed before the release branch left main shipped in it.
+  cut <- release_git(main_path, "merge-base", paste0("origin/", branch), main_ref)
+  cut_time <- release_git(main_path, "show", "-s", "--format=%cI", cut)
+  release_board_released(cut_time, dry_run = dry_run)
+
   # main ---------------------------------------------------------------------
   if (length(release_git(main_path, "status", "--porcelain", "--untracked-files=no")) > 0L) {
     release_refuse("'", main_path, "' has uncommitted changes to tracked files; main was not updated.")
@@ -360,4 +366,61 @@ release_accepted <- function(version, main_path = ".", notes_file = NULL, main_r
   cat(release_git(main_path, "diff", "--stat"), sep = "\n")
   message("Review the NEWS diff, then commit and open the PR.")
   invisible(commit)
+}
+
+#' Move roadmap items into "Released (on CRAN)" after a release is accepted.
+#'
+#' An item in the "Done" column was merged into the development version, which
+#' is not the same as shipped: anything closed after the release branch left
+#' main is in Done but not in the release. So only items closed at or before
+#' `cut_time` (the release branch's merge-base with main) move. A patch release,
+#' cut from an older branch, therefore moves nothing new; its cherry-picked
+#' fixes are moved by hand. Columns are matched by name prefix ("Done",
+#' "Released"), so the labels can be reworded on the board.
+release_board_released <- function(cut_time, owner = "chrischizinski", number = 2, dry_run = FALSE) {
+  gh_json <- function(...) {
+    out <- suppressWarnings(system2("gh", c(...), stdout = TRUE, stderr = TRUE))
+    status <- attr(out, "status")
+    if (!is.null(status) && status != 0L) {
+      message("Roadmap board not updated (gh said: ", paste(out, collapse = " "), "). Move items by hand.")
+      return(NULL)
+    }
+    jsonlite::fromJSON(paste(out, collapse = "\n"), simplifyVector = FALSE)
+  }
+  proj <- gh_json("project", "view", number, "--owner", owner, "--format", "json")
+  fields <- gh_json("project", "field-list", number, "--owner", owner, "--format", "json")
+  items <- gh_json("project", "item-list", number, "--owner", owner, "--limit", "1000", "--format", "json")
+  if (is.null(proj) || is.null(fields) || is.null(items)) return(invisible(NULL))
+  status <- Filter(function(f) identical(f$name, "Status"), fields$fields)[[1]]
+  opt <- function(prefix) Filter(function(o) startsWith(o$name, prefix), status$options)
+  done <- opt("Done"); rel <- opt("Released")
+  if (length(done) != 1L || length(rel) != 1L) {
+    message("Roadmap board: need exactly one 'Done...' and one 'Released...' status; found ",
+            length(done), " and ", length(rel), ". Nothing moved.")
+    return(invisible(NULL))
+  }
+  in_done <- Filter(function(i) identical(i$status, done[[1]]$name) && !is.null(i$content$url), items$items)
+  cut <- as.POSIXct(sub("([+-]\\d{2}):(\\d{2})$", "\\1\\2", cut_time), format = "%Y-%m-%dT%H:%M:%S%z", tz = "UTC")
+  moved <- character()
+  for (it in in_done) {
+    c <- it$content
+    api <- sprintf("repos/%s/%s/%s", c$repository, if (identical(c$type, "PullRequest")) "pulls" else "issues", c$number)
+    closed <- gh_json("api", api)
+    if (is.null(closed) || is.null(closed$closed_at)) next
+    when <- as.POSIXct(closed$closed_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    if (when > cut) next
+    if (!dry_run) {
+      ok <- gh_json("project", "item-edit", "--id", it$id, "--project-id", proj$id,
+                    "--field-id", status$id, "--single-select-option-id", rel[[1]]$id, "--format", "json")
+      if (is.null(ok)) next
+    }
+    moved <- c(moved, sprintf("#%s", c$number))
+  }
+  message(if (dry_run) "[dry run] would move " else "Roadmap board: moved ", length(moved), " of ",
+          length(in_done), " '", done[[1]]$name, "' item(s) to '", rel[[1]]$name, "'",
+          if (length(moved)) paste0(": ", paste(moved, collapse = " ")) else "", ".")
+  if (length(in_done) > length(moved)) {
+    message("  The rest closed after the release branch left main (", cut_time, "), so they are not in this release.")
+  }
+  invisible(moved)
 }
