@@ -49,7 +49,7 @@ jobs:
   copilot-review:
     # Drafts are work in progress; requiring a review per push there is noise.
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Decide whether this PR needs a Copilot review

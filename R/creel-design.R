@@ -2527,6 +2527,14 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #'   as applying the probability twice. Shifts that cross midnight are refused
 #'   until #407.
 #'
+#' @param missing_count What to do with count rows whose count is `NA`.
+#'   `"keep"` (default) keeps them: an unknown count is not a zero, so the
+#'   effort estimate is `NA`, and a warning names the rows (camera designs
+#'   report them at estimation instead). `"exclude"` drops them, says how many,
+#'   and keeps them in `design$excluded_counts`; use it when the rows are
+#'   placeholders for counts that were not made. Excluding treats those counts
+#'   as missing at random within their day: the day keeps its other counts, and
+#'   a day left with none is no longer a sampled day (GH #561).
 #' @return A new creel_design object (list) with components:
 #'   \item{calendar}{Original calendar data frame}
 #'   \item{date_col}{Character name of date column}
@@ -2537,6 +2545,8 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #'   \item{psu_col}{Character name of PSU column}
 #'   \item{survey}{Internal survey.design2 object (newly constructed)}
 #'   \item{validation}{creel_validation object with Tier 1 results}
+#'   \item{excluded_counts}{Count rows dropped by `missing_count = "exclude"`,
+#'     or NULL}
 #'
 #' @section Immutability:
 #' add_counts() follows functional programming patterns and returns a new
@@ -2663,7 +2673,8 @@ add_counts <- function(
   period_length_col = NULL,
   unit_cols = NULL,
   allow_invalid = FALSE,
-  p_period = NULL
+  p_period = NULL,
+  missing_count = c("keep", "exclude")
 ) {
   counts <- ungroup_input(counts) # GH #441
   step_supplied <- supplied_arg_names(match.call(), c("design", "counts")) # nolint: object_usage_linter
@@ -2935,6 +2946,16 @@ add_counts <- function(
   if (!is.null(design$night)) {
     check_night_records_worked(counts, design, design$date_col, "count") # nolint: object_usage_linter
   }
+
+  # Unknown counts (GH #561): reported by default, or set aside on request.
+  # After the checks above, which never read the count itself, so an excluded
+  # row is still held to a valid date, stratum and PSU.
+  missing_count <- match.arg(missing_count)
+  na_split <- split_na_counts(
+    counts, count_col_name, design$date_col, count_time_col_name, missing_count,
+    design$design_type, label_cols = c(design$section_col, psu)
+  )
+  counts <- na_split$kept
 
   # One definition of "the same sampling unit" for every check below. These had
   # drifted into three different keys, none carrying the section, so a day
@@ -3248,6 +3269,8 @@ add_counts <- function(
   # Store validation results
   new_design$validation <- validation
 
+  new_design$excluded_counts <- na_split$excluded
+
   # Preserve class
   class(new_design) <- "creel_design"
 
@@ -3257,7 +3280,8 @@ add_counts <- function(
          count_type = count_type, circuit_time = circuit_time,
          period_length_col = period_length_col_name, unit_cols = unit_cols,
          allow_invalid = allow_invalid,
-         p_period = if (is.null(p_period_vals)) NULL else as.vector(attr(p_period_vals, "source"))),
+         p_period = if (is.null(p_period_vals)) NULL else as.vector(attr(p_period_vals, "source")),
+         missing_count = missing_count),
     step_supplied, "counts", step_counts
   )
 }
@@ -3604,7 +3628,14 @@ add_sections <- function(
 #'   and it silences the warning.
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
-#'   Values should be logical (TRUE/FALSE) or coercible to logical.
+#'   Values must be logical (TRUE/FALSE) or coercible to it (0/1 included); an
+#'   `NA` flag stops `add_interviews()`, since whether that party refused is
+#'   unknown. A refused party's catch and
+#'   effort are unknown, not zero, so refused interviews are set aside: no rate
+#'   or total uses them, their rows in [add_catch()], [add_lengths()] and
+#'   [add_ages()] data are dropped with a count, and [summarize_refusals()]
+#'   still counts them. Not yet supported on bus-route and ice designs, where a
+#'   refused party is counted but not interviewed.
 #' @param date_col Character name of date column in interviews (default NULL,
 #'   which uses the design's date_col). Specify explicitly if interview data
 #'   uses a different date column name than the design calendar.
@@ -4021,6 +4052,32 @@ add_interviews <- function(
   # Match interview_type
   interview_type <- match.arg(interview_type)
 
+  # Refused interviews (GH #557): the party declined, so its catch and effort
+  # are unknown, not zero. They are set aside here, before any check reads catch
+  # or effort, and kept on the design for the refusal tables. Every estimator
+  # reads design$interviews, so none of them sees a refusal.
+  refused_rows <- NULL
+  if (!is.null(refused_col)) {
+    parts <- split_refused_interviews(interviews, refused_col, design)
+    interviews <- parts$accepted
+    refused_rows <- parts$refused
+    # A refusal skips the catch and effort checks, not the date: a refused
+    # row with no date or one outside the calendar would vanish from the
+    # refusal tables.
+    if (nrow(refused_rows) > 0L) {
+      if (anyNA(refused_rows[[date_col]])) {
+        cli::cli_abort(
+          c(
+            "{sum(is.na(refused_rows[[date_col]]))} refused interview{?s} {?has/have} no {.field {date_col}}.",
+            "i" = "A refusal is counted by date in {.fn summarize_refusals}; record its date."
+          ),
+          class = "creel_error_refused_no_date"
+        )
+      }
+      check_records_against_calendar(refused_rows, design, date_col, "interview") # GH #449
+    }
+  }
+
   # Validate interviews structure (Tier 1)
   validation <- validate_interviews_tier1(
     interviews,
@@ -4266,6 +4323,7 @@ add_interviews <- function(
   new_design$species_sought_col <- species_sought_col
   new_design$n_anglers_col <- n_anglers_col
   new_design$refused_col <- refused_col
+  new_design$refused_interviews <- refused_rows
 
   # Preserve class
   class(new_design) <- "creel_design"
@@ -5337,6 +5395,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     "interview_uid",
     rlang::caller_env()
   )
+  data <- drop_refused_records(data, catch_uid_col, design, interview_uid_col, "catch") # GH #557
   species_col <- resolve_single_col(
     rlang::enquo(species),
     data,
@@ -5754,6 +5813,7 @@ add_lengths <- function(
     "interview_uid",
     rlang::caller_env()
   )
+  data <- drop_refused_records(data, length_uid_col, design, interview_uid_col, "length") # GH #557
   species_col <- resolve_single_col(
     rlang::enquo(species),
     data,
@@ -5994,6 +6054,7 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
     "interview_uid",
     rlang::caller_env()
   )
+  data <- drop_refused_records(data, age_uid_col, design, interview_uid_col, "age") # GH #557
   species_col <- resolve_single_col(
     rlang::enquo(species),
     data,
@@ -6165,4 +6226,165 @@ preprocess_camera_timestamps <- function(timestamps, date_col, ingress_col, egre
   )
   names(agg) <- c("date", "daily_effort_hours")
   agg
+}
+
+#' Report or set aside count rows whose count is NA (GH #561)
+#'
+#' An NA count is unknown, not zero. Kept (the default), it stays a sampled
+#' observation and makes the effort estimate NA -- the same rule camera designs
+#' follow (#215), where a missing count is not a deleted row. Excluding it is a
+#' different, legitimate analysis, so it is the caller's explicit choice.
+#'
+#' @return A list: `kept` rows, and `excluded` rows (NULL when none).
+#' @keywords internal
+#' @noRd
+split_na_counts <- function(counts, count_col, date_col, time_col, missing_count, design_type,
+                            label_cols = NULL) {
+  na <- is.na(counts[[count_col]])
+  if (!any(na)) {
+    return(list(kept = counts, excluded = NULL))
+  }
+  where <- format(counts[[date_col]][na])
+  if (!is.null(time_col)) where <- paste(where, counts[[time_col]][na])
+  # a date and time can repeat across sections and sites, so name those too
+  for (lc in intersect(setdiff(label_cols, date_col), names(counts))) {
+    where <- paste(where, counts[[lc]][na])
+  }
+  shown <- utils::head(unique(where), 5) # nolint: object_usage_linter
+  more <- if (length(unique(where)) > 5) ", ..." else "" # nolint: object_usage_linter
+  n_na <- sum(na) # nolint: object_usage_linter
+  if (identical(missing_count, "exclude")) {
+    creel_inform(c(
+      "i" = "Excluded {n_na} count row{?s} with an unknown ({.val {NA}}) count: {.val {shown}}{more}.",
+      " " = "They are kept in {.field design$excluded_counts}."
+    ), class = c("creel_message_na_counts_excluded", "creel_message"))
+    return(list(kept = counts[!na, , drop = FALSE], excluded = counts[na, , drop = FALSE]))
+  }
+  # Camera designs report the gap at estimation, with the camera status (#215).
+  if (!identical(design_type, "camera")) {
+    creel_warn(c(
+      "{n_na} count{?s} in {.field {count_col}} {?is/are} {.val {NA}}: {.val {shown}}{more}.",
+      "i" = "An unknown count is not a zero, so the effort estimate will be {.val {NA}}.",
+      "i" = "Fill the counts, or pass {.code missing_count = \"exclude\"} if those rows
+             are placeholders for counts that were not made."
+    ), class = c("creel_warning_na_counts", "creel_warning"))
+  }
+  list(kept = counts, excluded = NULL)
+}
+
+#' Set refused interviews aside (GH #557)
+#'
+#' A refused interview's catch and effort are unknown. Excluding it from rates
+#' and counting it is the rule for unknowns; scoring it as a trip with whatever
+#' its catch column holds (usually 0) biases every rate toward zero.
+#'
+#' @param interviews The interview table.
+#' @param refused_col Name of the refused flag column.
+#' @param design The design the interviews join.
+#' @return A list: `accepted` and `refused` tables, the flag stored as logical.
+#' @keywords internal
+#' @noRd
+split_refused_interviews <- function(interviews, refused_col, design, call = rlang::caller_env()) {
+  raw <- interviews[[refused_col]]
+  flag <- if (is.logical(raw)) raw else suppressWarnings(as.logical(raw))
+  # as.logical() reads "1"/"0" as NA, so numeric-looking text goes through numbers
+  if (!is.logical(raw) && is.character(raw)) {
+    num <- suppressWarnings(as.numeric(raw))
+    flag[is.na(flag) & !is.na(num)] <- as.logical(num[is.na(flag) & !is.na(num)])
+  }
+  bad <- !is.na(raw) & is.na(flag)
+  if (any(bad)) {
+    cli::cli_abort(
+      c(
+        "{.arg refused} column {.field {refused_col}} holds values that are not TRUE/FALSE:
+         {.val {unique(raw[bad])}}.",
+        "i" = "Recode it to logical, or map it with {.fn creel_schema}."
+      ),
+      class = "creel_error_refused_not_logical",
+      call = call
+    )
+  }
+  if (anyNA(flag)) {
+    cli::cli_abort(
+      c(
+        "{.arg refused} column {.field {refused_col}} is {.val {NA}} on {sum(is.na(flag))} interview{?s}.",
+        "x" = "Whether these parties refused is unknown, so neither their catch nor their absence can be assumed.",
+        "i" = "Record each as TRUE or FALSE before attaching the interviews."
+      ),
+      class = "creel_error_refused_na",
+      call = call
+    )
+  }
+  interviews[[refused_col]] <- flag
+  if (any(flag) && !is.null(design$bus_route)) {
+    cli::cli_abort(
+      c(
+        "{sum(flag)} interview{?s} {?is/are} marked refused on a {design$design_type} design.",
+        "x" = "On a bus-route or ice design a refused party is counted but not interviewed,
+               and its row may carry the site's count, so it cannot simply be set aside.",
+        "i" = "Not supported yet (GH #557): remove refused rows and reflect them in
+               {.arg n_interviewed}."
+      ),
+      class = "creel_error_refused_bus_route",
+      call = call
+    )
+  }
+  if (all(flag)) {
+    cli::cli_abort(
+      c(
+        "Every interview ({length(flag)}) is marked refused.",
+        "i" = "A refused interview has unknown catch and effort, so nothing is left to estimate from."
+      ),
+      class = "creel_error_all_refused",
+      call = call
+    )
+  }
+  if (any(flag)) {
+    creel_inform(c(
+      "i" = "Set aside {sum(flag)} refused interview{?s} of {length(flag)}.",
+      " " = "A refusal's catch and effort are unknown, so no estimate uses refused
+             interviews; {.fn summarize_refusals} still counts them."
+    ), class = c("creel_message_refused_interviews_set_aside", "creel_message"))
+  }
+  list(
+    accepted = interviews[!flag, , drop = FALSE],
+    refused = interviews[flag, , drop = FALSE]
+  )
+}
+
+#' Drop the catch, length or age rows of refused interviews (GH #557)
+#'
+#' Refused interviews are set aside by [add_interviews()], so their records
+#' reference no interview in the design. Their catch is unknown, not zero: the
+#' rows are dropped with a count rather than refused as unmatched.
+#'
+#' @keywords internal
+#' @noRd
+drop_refused_records <- function(data, uid_col, design, interview_uid_col, what) {
+  refused <- design$refused_interviews
+  if (is.null(refused) || nrow(refused) == 0L || !interview_uid_col %in% names(refused)) {
+    return(data)
+  }
+  ids <- as_uid_character(refused[[interview_uid_col]])
+  rec <- as_uid_character(data[[uid_col]])
+  drop <- rec %in% ids
+  if (any(drop)) {
+    n_rows <- sum(drop) # nolint: object_usage_linter
+    n_iv <- length(unique(rec[drop])) # nolint: object_usage_linter
+    creel_inform(c(
+      "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv} refused interview{?s}.",
+      " " = "A refusal's {what} is unknown, so it is not used."
+    ), class = c("creel_message_refused_records_dropped", "creel_message"))
+  }
+  if (all(drop)) {
+    cli::cli_abort(
+      c(
+        "Every {what} row ({length(drop)}) belongs to a refused interview.",
+        "i" = "A refusal's {what} is unknown, so there is nothing to attach."
+      ),
+      class = "creel_error_all_records_refused",
+      call = rlang::caller_env()
+    )
+  }
+  data[!drop, , drop = FALSE]
 }

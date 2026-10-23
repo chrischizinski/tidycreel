@@ -110,7 +110,14 @@ and it silences the warning.}
 
 \item{refused}{Tidy selector for the refused interview flag column (optional,
 default NULL). Use bare column names (e.g., \code{refused = refused_flag}).
-Values should be logical (TRUE/FALSE) or coercible to logical.}
+Values must be logical (TRUE/FALSE) or coercible to it (0/1 included); an
+\code{NA} flag stops \code{add_interviews()}, since whether that party refused is
+unknown. A refused party's catch and
+effort are unknown, not zero, so refused interviews are set aside: no rate
+or total uses them, their rows in \code{\link[=add_catch]{add_catch()}}, \code{\link[=add_lengths]{add_lengths()}} and
+\code{\link[=add_ages]{add_ages()}} data are dropped with a count, and \code{\link[=summarize_refusals]{summarize_refusals()}}
+still counts them. Not yet supported on bus-route and ice designs, where a
+refused party is counted but not interviewed.}
 
 \item{date_col}{Character name of date column in interviews (default NULL,
 which uses the design's date_col). Specify explicitly if interview data
@@ -278,6 +285,7 @@ Other "Survey Design":
 \code{\link{prep_counts_boat_party}()},
 \code{\link{prep_counts_daily_effort}()},
 \code{\link{prep_interview_catch}()},
+\code{\link{prep_interview_totals}()},
 \code{\link{prep_interviews_trips}()},
 \code{\link{validate_creel_schema}()}
 }

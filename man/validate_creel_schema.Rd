@@ -64,6 +64,7 @@ Other "Survey Design":
 \code{\link{prep_counts_boat_party}()},
 \code{\link{prep_counts_daily_effort}()},
 \code{\link{prep_interview_catch}()},
+\code{\link{prep_interview_totals}()},
 \code{\link{prep_interviews_trips}()}
 }
 \concept{"Survey Design"}

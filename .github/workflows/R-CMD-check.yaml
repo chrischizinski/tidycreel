@@ -12,16 +12,21 @@ permissions: read-all
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (R release)
+    # The check name is matrix.config.label, not the runner. Branch protection
+    # requires "ubuntu-latest (R release)" by name, so the Linux job keeps that
+    # label while running pinned ubuntu-24.04 (GitHub moves ubuntu-latest to
+    # 26.04 between 2026-10-19 and 2026-11-19). Rename it only together with the
+    # required-check setting.
+    name: ${{ matrix.config.label }} (R release)
     timeout-minutes: 75
 
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest, r: 'release'}
-          - {os: macos-latest, r: 'release'}
-          - {os: windows-latest, r: 'release'}
+          - {os: ubuntu-24.04, label: ubuntu-latest, r: 'release'}
+          - {os: macos-latest, label: macos-latest, r: 'release'}
+          - {os: windows-latest, label: windows-latest, r: 'release'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
