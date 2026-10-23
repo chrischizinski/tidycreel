@@ -422,6 +422,15 @@ prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, s
   }
   iv_ids <- as_uid_character(interviews[[iv_uid]])
   ct_ids <- as_uid_character(catch[[ct_uid]])
+  # Each interview's whole catch would be copied onto every repeat, and then
+  # counted once per copy downstream.
+  dup <- unique(iv_ids[duplicated(iv_ids)])
+  if (length(dup)) {
+    cli::cli_abort(c(
+      "{length(dup)} interview id{?s} appear{?s/} more than once in {.arg interviews}: {.val {utils::head(dup, 5)}}.",
+      "i" = "Totals are per interview; collapse to one row per interview first."
+    ))
+  }
   orphan <- setdiff(unique(ct_ids), iv_ids)
   if (length(orphan)) {
     cli::cli_abort(c(

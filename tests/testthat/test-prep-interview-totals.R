@@ -87,3 +87,9 @@ test_that("rebuilt totals equal the shipped totals wherever the catch table cove
   expect_equal(out$catch_total[covered], as.numeric(example_interviews$catch_total[covered]))
   expect_equal(out$harvest_total[covered], as.numeric(example_interviews$catch_kept[covered]))
 })
+
+test_that("a repeated interview id is refused, not given its catch twice", {
+  iv <- data.frame(interview_id = c("a", "a"))
+  ct <- data.frame(interview_id = "a", species = "walleye", count = 2, catch_type = "harvested")
+  expect_error(pit(iv, ct), "more than once")
+})
