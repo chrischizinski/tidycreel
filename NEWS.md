@@ -193,6 +193,15 @@
 
 ## New features
 
+* `add_interviews()` gains `missing_trip_status = c("refuse", "exclude")`
+  (#561). An interview with no trip status fits neither the complete- nor the
+  incomplete-trip estimator, and `add_interviews()` refused the whole table,
+  so the rows were filtered and counted by hand. The default still refuses,
+  now naming the way through; `"exclude"` sets those interviews aside with a
+  message, keeps them in `design$excluded_interviews`, and drops their rows
+  from later `add_catch()`, `add_lengths()` and `add_ages()` data. Bus-route
+  and ice designs stop, as for refusals.
+
 * New `summarize_rws_rates()`: released-while-sought rates, completing the
   trio with `summarize_cws_rates()` and `summarize_hws_rates()` (#558). It
   reads released rows exactly as `estimate_release_rate()` does, and uses the

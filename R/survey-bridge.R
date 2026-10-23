@@ -2159,7 +2159,8 @@ validate_trip_metadata <- function(
     na_count <- sum(is.na(status_vals))
     if (na_count > 0) {
       collection$push(sprintf(
-        "Trip status column '%s' contains %d NA value(s). Trip status is required for all interviews",
+        paste0("Trip status column '%s' contains %d NA value(s). Trip status is required for all interviews; ",
+               "record it, or pass missing_trip_status = \"exclude\" to set those interviews aside"),
         trip_status_col,
         na_count
       ))
