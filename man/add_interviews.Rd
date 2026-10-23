@@ -163,6 +163,10 @@ A new creel_design object (list) with components:
 \item{interview_type}{Character interview type}
 \item{interview_survey}{Internal survey.design2 object (newly constructed)}
 \item{validation}{creel_validation object with Tier 1 results}
+\item{refused_interviews}{Interviews set aside as refused (\verb{refused =}),
+or NULL}
+\item{excluded_interviews}{Interviews set aside for having no trip status
+(\code{missing_trip_status = "exclude"}), or NULL}
 }
 \description{
 Attaches interview-side trip data (catch, effort, and optionally harvest per

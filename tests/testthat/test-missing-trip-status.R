@@ -61,7 +61,7 @@ test_that("catch rows of excluded interviews are dropped with a count", {
       catch_uid = interview_id, interview_uid = interview_id,
       species = species, count = count, catch_type = catch_type
     ),
-    "interview with no trip status"
+    "with no trip status"
   )
   expect_false(any(as.character(d2$catch$interview_id) %in% as.character(iv$interview_id[1:2])))
 })
@@ -92,4 +92,36 @@ test_that("with no NA status, exclude changes nothing", {
   b <- mts_attach(example_interviews)
   expect_null(a$excluded_interviews)
   expect_equal(q(estimate_catch_rate(a))$estimates$estimate, q(estimate_catch_rate(b))$estimates$estimate)
+})
+
+test_that("an ice design refuses to set status-less interviews aside", {
+  # Ice designs are degenerate bus routes and carry design$bus_route, so the
+  # same guard covers them: a row there can carry the site's count.
+  d <- creel_design(example_ice_sampling_frame,
+    date = date, strata = day_type, survey_type = "ice",
+    effort_type = "time_on_ice", p_period = 0.5
+  )
+  iv <- example_ice_interviews
+  iv$trip_status[1] <- NA
+  expect_error(
+    suppressMessages(add_interviews(d, iv,
+      catch = walleye_catch, effort = hours_on_ice, harvest = walleye_kept,
+      trip_status = trip_status, n_counted = n_counted,
+      n_interviewed = n_interviewed, n_anglers = n_anglers,
+      missing_trip_status = "exclude"
+    )),
+    class = "creel_error_no_trip_status_bus_route"
+  )
+})
+
+test_that("the dropped-rows message reads correctly for several excluded interviews", {
+  d <- mts_attach(with_na_status(1:2), missing_trip_status = "exclude")
+  expect_message(
+    add_catch(d, example_catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    ),
+    "interviews with no trip status",
+    class = "creel_message_no_trip_status_records_dropped"
+  )
 })

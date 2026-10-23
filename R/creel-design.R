@@ -3675,6 +3675,10 @@ add_sections <- function(
 #'   \item{interview_type}{Character interview type}
 #'   \item{interview_survey}{Internal survey.design2 object (newly constructed)}
 #'   \item{validation}{creel_validation object with Tier 1 results}
+#'   \item{refused_interviews}{Interviews set aside as refused (`refused =`),
+#'     or NULL}
+#'   \item{excluded_interviews}{Interviews set aside for having no trip status
+#'     (`missing_trip_status = "exclude"`), or NULL}
 #'
 #' @section Immutability:
 #' add_interviews() follows functional programming patterns and returns a new
@@ -6391,22 +6395,32 @@ drop_refused_records <- function(data, uid_col, design, interview_uid_col, what)
   # request, those with no trip status (GH #561). Their records reference no
   # interview in the design and are dropped with a count per reason.
   sources <- list(
-    "refused interview" = design$refused_interviews,
-    "interview with no trip status" = design$excluded_interviews
+    list(rows = design$refused_interviews, refused = TRUE),
+    list(rows = design$excluded_interviews, refused = FALSE)
   )
   rec <- as_uid_character(data[[uid_col]])
   drop <- rep(FALSE, length(rec))
-  for (why in names(sources)) {
-    src <- sources[[why]]
-    if (is.null(src) || nrow(src) == 0L || !interview_uid_col %in% names(src)) next
-    hit <- !drop & rec %in% as_uid_character(src[[interview_uid_col]])
+  for (src in sources) {
+    rows <- src$rows
+    if (is.null(rows) || nrow(rows) == 0L || !interview_uid_col %in% names(rows)) next
+    hit <- !drop & rec %in% as_uid_character(rows[[interview_uid_col]])
     if (any(hit)) {
       n_rows <- sum(hit) # nolint: object_usage_linter
       n_iv <- length(unique(rec[hit])) # nolint: object_usage_linter
-      creel_inform(c(
-        "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv} {why}{cli::qty(n_iv)}{?s}.",
-        " " = "That interview was set aside, so its {what} is not used."
-      ), class = c("creel_message_refused_records_dropped", "creel_message"))
+      # Classes are written out per reason: the warning catalogue is checked
+      # from the literal class = c(...) at each call.
+      if (src$refused) {
+        creel_inform(c(
+          "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv} refused interview{?s}.",
+          " " = "A refusal's {what} is unknown, so it is not used."
+        ), class = c("creel_message_refused_records_dropped", "creel_message"))
+      } else {
+        creel_inform(c(
+          "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv}
+                 {cli::qty(n_iv)}interview{?s} with no trip status.",
+          " " = "Those interviews were set aside, so their {what} is not used."
+        ), class = c("creel_message_no_trip_status_records_dropped", "creel_message"))
+      }
     }
     drop <- drop | hit
   }
