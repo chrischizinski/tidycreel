@@ -282,6 +282,13 @@ print on every call.
   Tier 1. Counts have repeated sampling units with no count time to tell
   them apart.
 
+- `creel_warning_na_counts`:
+
+  Tier 2. Some counts are `NA`; the effort estimate will be `NA` unless
+  they are filled or excluded with `missing_count = "exclude"` (GH
+  \#561). Not raised on camera designs, which report the gap at
+  estimation (`creel_warning_camera_na_counts`).
+
 - `creel_warning_negative_counts`:
 
   Tier 2. The count column has negative values.
@@ -409,6 +416,11 @@ is recorded like a warning, with tier 3. Silence one for one call with
 
   Tier 3. A rate uses the mean-of-ratios estimator on incomplete trips;
   complete trips are preferred where available.
+
+- `creel_message_na_counts_excluded`:
+
+  Tier 3. Count rows with an `NA` count were dropped on request
+  (`missing_count = "exclude"`).
 
 - `creel_message_no_subdesigns`:
 

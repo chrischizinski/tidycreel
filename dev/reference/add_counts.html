@@ -130,7 +130,8 @@ randomised within; supply that column and the estimate is in angler-hours.</p>
 <span>  period_length_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  unit_cols <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  allow_invalid <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  p_period <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  p_period <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  missing_count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"keep"</span>, <span class="st">"exclude"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -279,6 +280,17 @@ shifts (to 0.01 h); a length equal to that window / <code>p_period</code> is ref
 as applying the probability twice. Shifts that cross midnight are refused
 until #407.</p></dd>
 
+
+<dt id="arg-missing-count">missing_count<a class="anchor" aria-label="anchor" href="#arg-missing-count"></a></dt>
+<dd><p>What to do with count rows whose count is <code>NA</code>.
+<code>"keep"</code> (default) keeps them: an unknown count is not a zero, so the
+effort estimate is <code>NA</code>, and a warning names the rows (camera designs
+report them at estimation instead). <code>"exclude"</code> drops them, says how many,
+and keeps them in <code>design$excluded_counts</code>; use it when the rows are
+placeholders for counts that were not made. Excluding treats those counts
+as missing at random within their day: the day keeps its other counts, and
+a day left with none is no longer a sampled day (GH #561).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -309,6 +321,10 @@ until #407.</p></dd>
 
 <dt>validation</dt>
 <dd><p>creel_validation object with Tier 1 results</p></dd>
+
+<dt>excluded_counts</dt>
+<dd><p>Count rows dropped by <code>missing_count = "exclude"</code>,
+or NULL</p></dd>
 
 </dl></div>
     <div class="section level2">

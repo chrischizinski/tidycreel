@@ -378,6 +378,12 @@ failed a check and estimation continued.</p></dd>
 <dd><p>Tier 1. Counts have
 repeated sampling units with no count time to tell them apart.</p></dd>
 
+<dt><code>creel_warning_na_counts</code></dt>
+<dd><p>Tier 2. Some counts are <code>NA</code>; the
+effort estimate will be <code>NA</code> unless they are filled or excluded with
+<code>missing_count = "exclude"</code> (GH #561). Not raised on camera designs,
+which report the gap at estimation (<code>creel_warning_camera_na_counts</code>).</p></dd>
+
 <dt><code>creel_warning_negative_counts</code></dt>
 <dd><p>Tier 2. The count column has
 negative values.</p></dd>
@@ -506,6 +512,10 @@ a percentage given as a whole number.</p></dd>
 <dd><p>Tier 3. A rate uses the
 mean-of-ratios estimator on incomplete trips; complete trips are
 preferred where available.</p></dd>
+
+<dt><code>creel_message_na_counts_excluded</code></dt>
+<dd><p>Tier 3. Count rows with
+an <code>NA</code> count were dropped on request (<code>missing_count = "exclude"</code>).</p></dd>
 
 <dt><code>creel_message_no_subdesigns</code></dt>
 <dd><p>Tier 3. No survey sub-designs

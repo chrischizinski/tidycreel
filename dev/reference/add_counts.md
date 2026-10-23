@@ -35,7 +35,8 @@ add_counts(
   period_length_col = NULL,
   unit_cols = NULL,
   allow_invalid = FALSE,
-  p_period = NULL
+  p_period = NULL,
+  missing_count = c("keep", "exclude")
 )
 ```
 
@@ -204,6 +205,18 @@ add_counts(
   equal to that window / `p_period` is refused as applying the
   probability twice. Shifts that cross midnight are refused until \#407.
 
+- missing_count:
+
+  What to do with count rows whose count is `NA`. `"keep"` (default)
+  keeps them: an unknown count is not a zero, so the effort estimate is
+  `NA`, and a warning names the rows (camera designs report them at
+  estimation instead). `"exclude"` drops them, says how many, and keeps
+  them in `design$excluded_counts`; use it when the rows are
+  placeholders for counts that were not made. Excluding treats those
+  counts as missing at random within their day: the day keeps its other
+  counts, and a day left with none is no longer a sampled day (GH
+  \#561).
+
 ## Value
 
 A new creel_design object (list) with components:
@@ -243,6 +256,10 @@ A new creel_design object (list) with components:
 - validation:
 
   creel_validation object with Tier 1 results
+
+- excluded_counts:
+
+  Count rows dropped by `missing_count = "exclude"`, or NULL
 
 ## Immutability
 

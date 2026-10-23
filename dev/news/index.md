@@ -264,6 +264,19 @@
 
 ### New features
 
+- [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  gains `missing_count = c("keep", "exclude")`
+  ([\#561](https://github.com/chrischizinski/tidycreel/issues/561)). An
+  `NA` count – often a placeholder row for a scheduled count that was
+  not made – used to be named only by an unrelated “repeated sampling
+  unit” warning. It is still kept by default (an unknown count is not a
+  deleted row, as for camera designs,
+  [\#215](https://github.com/chrischizinski/tidycreel/issues/215)), and
+  the effort estimate is still `NA`, but a warning
+  (`creel_warning_na_counts`) now names the rows and the remedy.
+  `missing_count = "exclude"` drops them with a message and keeps them
+  in `design$excluded_counts`.
+
 - [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
   takes bus-route site weights as `wait_time` and `circuit_time`
   ([\#539](https://github.com/chrischizinski/tidycreel/issues/539)), the
