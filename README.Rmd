@@ -18,7 +18,8 @@ output: github_document
 [![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 [![Codecov test coverage](https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg)](https://app.codecov.io/gh/chrischizinski/tidycreel)
 [![Release](https://img.shields.io/github/v/release/chrischizinski/tidycreel?label=release&color=4CAF50)](https://github.com/chrischizinski/tidycreel/releases)
-[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/tidycreel)](https://cran.r-project.org/package=tidycreel)
+[![CRAN downloads, total](https://cranlogs.r-pkg.org/badges/grand-total/tidycreel)](https://cran.r-project.org/package=tidycreel)
+[![CRAN downloads, last month](https://cranlogs.r-pkg.org/badges/last-month/tidycreel)](https://cran.r-project.org/package=tidycreel)
 [![Roadmap](https://img.shields.io/badge/Roadmap-tidycreel-6f42c1?logo=github)](https://github.com/users/chrischizinski/projects/2)
 [![Report bug](https://img.shields.io/badge/Report%20Bug-d73a4a?logo=github)](https://github.com/chrischizinski/tidycreel/issues/new?template=bug-report.yml)
 [![Request feature](https://img.shields.io/badge/Request%20Feature-1f6feb?logo=github)](https://github.com/chrischizinski/tidycreel/issues/new?template=feature-request.yml)
@@ -28,6 +29,16 @@ output: github_document
 **Tidy Interface for Creel Survey Design, Estimation, and Reporting**
 
 tidycreel provides a pipe-friendly interface for creel survey design, data management, estimation, visualisation, and reporting. Built on the [`survey`](https://cran.r-project.org/package=survey) package for design-based inference, it lets fisheries biologists work in creel vocabulary — dates, strata, counts, effort, catch, lengths, schedules — without managing survey-package internals directly.
+
+## Development status
+
+tidycreel is stable and under active development. Its interface is not
+experimental, but new survey designs, data checks and fixes are added
+continually. CRAN releases come about every two months; a fix for a wrong
+estimate gets a patch release sooner. Between releases, the newest features
+and fixes are only in the development version on GitHub, so install that if
+you want the most current tidycreel. [NEWS](https://chrischizinski.com/tidycreel/dev/news/)
+lists what has changed since the last CRAN release.
 
 ## Installation
 
@@ -44,6 +55,12 @@ pak::pak("chrischizinski/tidycreel")
 # or with devtools
 devtools::install_github("chrischizinski/tidycreel")
 ```
+
+The [website](https://chrischizinski.com/tidycreel/) documents the CRAN
+release. Documentation for the development version on GitHub is at
+[/dev/](https://chrischizinski.com/tidycreel/dev/); corrections to the
+documentation appear there first and reach the main site with the next CRAN
+release. Check your installed version with `packageVersion("tidycreel")`.
 
 ## Survey Types
 

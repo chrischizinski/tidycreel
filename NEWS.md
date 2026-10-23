@@ -10,6 +10,19 @@
 
 ## Breaking changes
 
+* Refused interviews no longer enter rates and totals (#557).
+  `add_interviews(refused =)` stored the flag but no estimator read it, so a
+  refused party was used as an ordinary trip with whatever its catch column
+  held, usually 0. On the example data, flagging 10 complete interviews as
+  refused (catch 0) took the catch rate from 2.29 to 1.03 with `n` unchanged.
+  Refused interviews are now set aside by `add_interviews()` (with a message
+  giving the count), their rows in `add_catch()`, `add_lengths()` and
+  `add_ages()` data are dropped with a count, and `summarize_refusals()` still
+  counts them. An `NA` refused flag, or a value that is not TRUE/FALSE, now
+  stops `add_interviews()`. Bus-route and ice designs with refused rows stop
+  too: there a refused party is counted but not interviewed, which is not yet
+  supported.
+
 * Bus-route and ice totals (`estimate_effort()`, `estimate_total_catch()`,
   `estimate_total_harvest()`, `estimate_total_release()`) now stop when an
   interview row's contribution is unknown, and name each row (#542). They
@@ -186,6 +199,24 @@
   same interviews and exclusions as CWS and HWS, so where `caught` is inferred
   as harvested + released, RWS = CWS - HWS. The three now share one
   implementation, so a fix to one reaches all three.
+
+* New `prep_interview_totals()` adds each interview's `catch_total`,
+  `harvest_total` and `release_total` from a long catch table (one row per
+  interview, species and fate), so `add_interviews()` and `add_catch()` can be
+  fed from the same records instead of a hand-written aggregation (#560). It
+  applies the `add_catch()` model per species-interview pair (a pair's own
+  `caught` row, otherwise harvested + released), and its `absent` argument has
+  no default: the user states whether an interview with no catch rows caught
+  nothing (`"zero"`) or went unrecorded (`"unknown"`, giving `NA`).
+
+* `add_counts()` gains `missing_count = c("keep", "exclude")` (#561). An `NA`
+  count -- often a placeholder row for a scheduled count that was not made --
+  used to be named only by an unrelated "repeated sampling unit" warning. It is
+  still kept by default (an unknown count is not a deleted row, as for camera
+  designs, #215), and the effort estimate is still `NA`, but a warning
+  (`creel_warning_na_counts`) now names the rows and the remedy.
+  `missing_count = "exclude"` drops them with a message and keeps them in
+  `design$excluded_counts`.
 
 * `creel_design()` takes bus-route site weights as `wait_time` and
   `circuit_time` (#539), the published bus-route estimator (Robson & Jones

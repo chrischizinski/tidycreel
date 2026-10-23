@@ -220,10 +220,13 @@ summarize_refusals <- function(design) {
     ))
   }
 
-  refused_vals <- design$interviews[[design$refused_col]]
+  # add_interviews() sets refused interviews aside (GH #557); count both.
+  cols <- c(design$date_col, design$refused_col)
+  all_iv <- dplyr::bind_rows(design$interviews[cols], design$refused_interviews[cols])
+  refused_vals <- as.logical(all_iv[[design$refused_col]])
   participation <- ifelse(refused_vals, "refused", "accepted")
 
-  dates <- design$interviews[[design$date_col]]
+  dates <- all_iv[[design$date_col]]
   month_chr <- format(dates, "%B")
   month_num <- format(dates, "%m")
 
