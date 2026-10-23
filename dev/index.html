@@ -109,6 +109,11 @@
 <p><strong>Tidy Interface for Creel Survey Design, Estimation, and Reporting</strong></p>
 <p>tidycreel provides a pipe-friendly interface for creel survey design, data management, estimation, visualisation, and reporting. Built on the <a href="https://cran.r-project.org/package=survey" class="external-link"><code>survey</code></a> package for design-based inference, it lets fisheries biologists work in creel vocabulary — dates, strata, counts, effort, catch, lengths, schedules — without managing survey-package internals directly.</p>
 <div class="section level2">
+<h2 id="development-status">Development status<a class="anchor" aria-label="anchor" href="#development-status"></a>
+</h2>
+<p>tidycreel is stable and under active development. Its interface is not experimental, but new survey designs, data checks and fixes are added continually. CRAN releases come about every two months; a fix for a wrong estimate gets a patch release sooner. Between releases, the newest features and fixes are only in the development version on GitHub, so install that if you want the most current tidycreel. <a href="https://chrischizinski.com/tidycreel/dev/news/">NEWS</a> lists what has changed since the last CRAN release.</p>
+</div>
+<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -119,7 +124,7 @@
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># or with devtools</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/install-deprecated.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span><span class="op">)</span></span></code></pre></div>
 <p>The <a href="https://chrischizinski.com/tidycreel/">website</a> documents the CRAN release. Documentation for the development version on GitHub is at <a href="https://chrischizinski.com/tidycreel/dev/">/dev/</a>; corrections to the documentation appear there first and reach the main site with the next CRAN release. Check your installed version with <code>packageVersion("tidycreel")</code>.</p>
 </div>
 <div class="section level2">
@@ -726,7 +731,8 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <li><a href="https://lifecycle.r-lib.org/articles/stages.html#stable" class="external-link"><img src="https://img.shields.io/badge/lifecycle-stable-brightgreen.svg" alt="Lifecycle: stable"></a></li>
 <li><a href="https://app.codecov.io/gh/chrischizinski/tidycreel" class="external-link"><img src="https://codecov.io/gh/chrischizinski/tidycreel/graph/badge.svg" alt="Codecov test coverage"></a></li>
 <li><a href="https://github.com/chrischizinski/tidycreel/releases" class="external-link"><img src="https://img.shields.io/github/v/release/chrischizinski/tidycreel?label=release&amp;color=4CAF50" alt="Release"></a></li>
-<li><a href="https://cran.r-project.org/package=tidycreel" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/tidycreel" alt="CRAN downloads"></a></li>
+<li><a href="https://cran.r-project.org/package=tidycreel" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/grand-total/tidycreel" alt="CRAN downloads, total"></a></li>
+<li><a href="https://cran.r-project.org/package=tidycreel" class="external-link"><img src="https://cranlogs.r-pkg.org/badges/last-month/tidycreel" alt="CRAN downloads, last month"></a></li>
 <li><a href="https://github.com/users/chrischizinski/projects/2" class="external-link"><img src="https://img.shields.io/badge/Roadmap-tidycreel-6f42c1?logo=github" alt="Roadmap"></a></li>
 <li><a href="https://github.com/chrischizinski/tidycreel/issues/new?template=bug-report.yml" class="external-link"><img src="https://img.shields.io/badge/Report%20Bug-d73a4a?logo=github" alt="Report bug"></a></li>
 <li><a href="https://github.com/chrischizinski/tidycreel/issues/new?template=feature-request.yml" class="external-link"><img src="https://img.shields.io/badge/Request%20Feature-1f6feb?logo=github" alt="Request feature"></a></li>
