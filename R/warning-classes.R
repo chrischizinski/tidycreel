@@ -246,6 +246,9 @@
 #'     preferred where available.}
 #'   \item{\code{creel_message_na_counts_excluded}}{Tier 3. Count rows with
 #'     an `NA` count were dropped on request (`missing_count = "exclude"`).}
+#'   \item{\code{creel_message_no_trip_status_excluded}}{Tier 3. Interviews
+#'     with no trip status were set aside on request
+#'     (`missing_trip_status = "exclude"`, GH #561).}
 #'   \item{\code{creel_message_no_subdesigns}}{Tier 3. No survey sub-designs
 #'     were found to adjust.}
 #'   \item{\code{creel_message_nonstandard_estimator}}{Tier 3. An unusual
@@ -353,6 +356,7 @@ creel_warning_tiers <- c(
   creel_message_mor_incomplete_trips = 3L,
   creel_message_na_counts_excluded = 3L,
   creel_message_no_subdesigns = 3L,
+  creel_message_no_trip_status_excluded = 3L,
   creel_message_nonstandard_estimator = 3L,
   creel_message_refused_interviews_set_aside = 3L,
   creel_message_refused_records_dropped = 3L,

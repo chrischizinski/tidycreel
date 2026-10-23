@@ -3645,6 +3645,14 @@ add_sections <- function(
 #'   interviews (complete + incomplete) via the mean-of-ratios (MOR) estimator
 #'   rather than restricting to complete trips. Override the auto-routing by
 #'   passing \code{use_trips} or \code{estimator} explicitly.
+#' @param missing_trip_status What to do with interviews whose trip status is
+#'   `NA`. `"refuse"` (default) stops and names them: without a status an
+#'   interview belongs to neither the complete- nor the incomplete-trip
+#'   estimator. `"exclude"` sets them aside with a message, keeps them in
+#'   `design$excluded_interviews`, and drops their rows from later
+#'   [add_catch()], [add_lengths()] and [add_ages()] data. Excluding treats the
+#'   missing statuses as unrelated to catch. Not yet supported on bus-route and
+#'   ice designs (GH #561).
 #' @param allow_invalid Logical flag for validation behavior. If FALSE (default),
 #'   validation failures abort with detailed error messages. If TRUE, validation
 #'   failures generate warnings and attach interviews anyway (use with caution).
@@ -3779,7 +3787,8 @@ add_interviews <- function(
   refused = NULL,
   date_col = NULL,
   interview_type = c("access", "roving"),
-  allow_invalid = FALSE
+  allow_invalid = FALSE,
+  missing_trip_status = c("refuse", "exclude")
 ) {
   interviews <- ungroup_input(interviews) # GH #441
   step_supplied <- supplied_arg_names(match.call(), c("design", "interviews")) # nolint: object_usage_linter
@@ -4023,7 +4032,7 @@ add_interviews <- function(
     angler_method = angler_method_col, species_sought = species_sought_col,
     n_anglers = if (!is.null(n_anglers_col)) n_anglers_col else n_anglers_const,
     refused = refused_col, date_col = date_col, interview_type = interview_type,
-    allow_invalid = allow_invalid
+    allow_invalid = allow_invalid, missing_trip_status = missing_trip_status[1]
   )
 
   # Night design (GH #407): each interview moves to the night it belongs to,
@@ -4075,6 +4084,22 @@ add_interviews <- function(
         )
       }
       check_records_against_calendar(refused_rows, design, date_col, "interview") # GH #449
+    }
+  }
+
+  # Interviews with no trip status (GH #561): unknown whether the trip was
+  # complete, so neither rate estimator can use them. Refused by default (the
+  # trip-metadata check below names them); missing_trip_status = "exclude"
+  # sets them aside here, before any check reads catch or effort, and keeps
+  # them on the design.
+  missing_trip_status <- match.arg(missing_trip_status)
+  excluded_rows <- NULL
+  if (identical(missing_trip_status, "exclude")) {
+    parts <- split_no_trip_status(interviews, trip_status_col, design)
+    interviews <- parts$kept
+    excluded_rows <- parts$excluded
+    if (!is.null(excluded_rows)) {
+      check_records_against_calendar(excluded_rows, design, date_col, "interview") # GH #449
     }
   }
 
@@ -4324,6 +4349,7 @@ add_interviews <- function(
   new_design$n_anglers_col <- n_anglers_col
   new_design$refused_col <- refused_col
   new_design$refused_interviews <- refused_rows
+  new_design$excluded_interviews <- excluded_rows
 
   # Preserve class
   class(new_design) <- "creel_design"
@@ -6361,30 +6387,80 @@ split_refused_interviews <- function(interviews, refused_col, design, call = rla
 #' @keywords internal
 #' @noRd
 drop_refused_records <- function(data, uid_col, design, interview_uid_col, what) {
-  refused <- design$refused_interviews
-  if (is.null(refused) || nrow(refused) == 0L || !interview_uid_col %in% names(refused)) {
-    return(data)
-  }
-  ids <- as_uid_character(refused[[interview_uid_col]])
+  # Interviews set aside by add_interviews(): refusals (GH #557) and, on
+  # request, those with no trip status (GH #561). Their records reference no
+  # interview in the design and are dropped with a count per reason.
+  sources <- list(
+    "refused interview" = design$refused_interviews,
+    "interview with no trip status" = design$excluded_interviews
+  )
   rec <- as_uid_character(data[[uid_col]])
-  drop <- rec %in% ids
-  if (any(drop)) {
-    n_rows <- sum(drop) # nolint: object_usage_linter
-    n_iv <- length(unique(rec[drop])) # nolint: object_usage_linter
-    creel_inform(c(
-      "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv} refused interview{?s}.",
-      " " = "A refusal's {what} is unknown, so it is not used."
-    ), class = c("creel_message_refused_records_dropped", "creel_message"))
+  drop <- rep(FALSE, length(rec))
+  for (why in names(sources)) {
+    src <- sources[[why]]
+    if (is.null(src) || nrow(src) == 0L || !interview_uid_col %in% names(src)) next
+    hit <- !drop & rec %in% as_uid_character(src[[interview_uid_col]])
+    if (any(hit)) {
+      n_rows <- sum(hit) # nolint: object_usage_linter
+      n_iv <- length(unique(rec[hit])) # nolint: object_usage_linter
+      creel_inform(c(
+        "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv} {why}{cli::qty(n_iv)}{?s}.",
+        " " = "That interview was set aside, so its {what} is not used."
+      ), class = c("creel_message_refused_records_dropped", "creel_message"))
+    }
+    drop <- drop | hit
   }
-  if (all(drop)) {
+  if (length(drop) && all(drop)) {
     cli::cli_abort(
       c(
-        "Every {what} row ({length(drop)}) belongs to a refused interview.",
-        "i" = "A refusal's {what} is unknown, so there is nothing to attach."
+        "Every {what} row ({length(drop)}) belongs to an interview that was set aside.",
+        "i" = "Refused interviews and interviews with no trip status are not used, so there is nothing to attach."
       ),
       class = "creel_error_all_records_refused",
       call = rlang::caller_env()
     )
   }
   data[!drop, , drop = FALSE]
+}
+
+#' Set aside interviews with no trip status, on request (GH #561)
+#'
+#' A trip status says which rate estimator an interview belongs to; without it
+#' the interview fits neither. Refusing is the default (validate_trip_metadata()
+#' names the rows); this is the explicit, counted way through.
+#'
+#' @return A list: `kept` rows, and `excluded` rows (NULL when none).
+#' @keywords internal
+#' @noRd
+split_no_trip_status <- function(interviews, trip_status_col, design, call = rlang::caller_env()) {
+  none <- is.na(interviews[[trip_status_col]])
+  if (!any(none)) {
+    return(list(kept = interviews, excluded = NULL))
+  }
+  if (!is.null(design$bus_route)) {
+    cli::cli_abort(
+      c(
+        "{sum(none)} interview{?s} {?has/have} no trip status on a {design$design_type} design.",
+        "x" = "On a bus-route or ice design an interview row may carry the site's count, so it
+               cannot simply be set aside.",
+        "i" = "Not supported yet (GH #561): record the trip status, or remove the rows and
+               reflect them in {.arg n_interviewed}."
+      ),
+      class = "creel_error_no_trip_status_bus_route",
+      call = call
+    )
+  }
+  if (all(none)) {
+    cli::cli_abort(
+      "Every interview ({length(none)}) has no trip status; nothing is left to estimate from.",
+      class = "creel_error_all_no_trip_status",
+      call = call
+    )
+  }
+  n_none <- sum(none) # nolint: object_usage_linter
+  creel_inform(c(
+    "i" = "Excluded {n_none} interview{?s} of {length(none)} with no trip status.",
+    " " = "Kept in {.field design$excluded_interviews}; no estimate uses them."
+  ), class = c("creel_message_no_trip_status_excluded", "creel_message"))
+  list(kept = interviews[!none, , drop = FALSE], excluded = interviews[none, , drop = FALSE])
 }

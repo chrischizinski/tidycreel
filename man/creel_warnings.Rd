@@ -265,6 +265,9 @@ mean-of-ratios estimator on incomplete trips; complete trips are
 preferred where available.}
 \item{\code{creel_message_na_counts_excluded}}{Tier 3. Count rows with
 an \code{NA} count were dropped on request (\code{missing_count = "exclude"}).}
+\item{\code{creel_message_no_trip_status_excluded}}{Tier 3. Interviews
+with no trip status were set aside on request
+(\code{missing_trip_status = "exclude"}, GH #561).}
 \item{\code{creel_message_no_subdesigns}}{Tier 3. No survey sub-designs
 were found to adjust.}
 \item{\code{creel_message_nonstandard_estimator}}{Tier 3. An unusual

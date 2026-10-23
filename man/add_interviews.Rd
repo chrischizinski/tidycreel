@@ -23,7 +23,8 @@ add_interviews(
   refused = NULL,
   date_col = NULL,
   interview_type = c("access", "roving"),
-  allow_invalid = FALSE
+  allow_invalid = FALSE,
+  missing_trip_status = c("refuse", "exclude")
 )
 }
 \arguments{
@@ -133,6 +134,15 @@ passing \code{use_trips} or \code{estimator} explicitly.}
 \item{allow_invalid}{Logical flag for validation behavior. If FALSE (default),
 validation failures abort with detailed error messages. If TRUE, validation
 failures generate warnings and attach interviews anyway (use with caution).}
+
+\item{missing_trip_status}{What to do with interviews whose trip status is
+\code{NA}. \code{"refuse"} (default) stops and names them: without a status an
+interview belongs to neither the complete- nor the incomplete-trip
+estimator. \code{"exclude"} sets them aside with a message, keeps them in
+\code{design$excluded_interviews}, and drops their rows from later
+\code{\link[=add_catch]{add_catch()}}, \code{\link[=add_lengths]{add_lengths()}} and \code{\link[=add_ages]{add_ages()}} data. Excluding treats the
+missing statuses as unrelated to catch. Not yet supported on bus-route and
+ice designs (GH #561).}
 }
 \value{
 A new creel_design object (list) with components:
