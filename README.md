@@ -1,6 +1,3 @@
----
-output: github_document
----
 <!-- Generated from README.Rmd — do not edit README.md directly -->
 
 # tidycreel
@@ -51,9 +48,6 @@ Or the development version from GitHub:
 ```r
 # install.packages("pak")
 pak::pak("chrischizinski/tidycreel")
-
-# or with devtools
-devtools::install_github("chrischizinski/tidycreel")
 ```
 
 The [website](https://chrischizinski.com/tidycreel/) documents the CRAN

@@ -40,10 +40,7 @@ deliberately leaves out of scope:
 tidycreel.connect has its own repository, separate from tidycreel:
 
 ```{r install}
-# Using remotes
-remotes::install_github("chrischizinski/tidycreel.connect")
-
-# Or using pak
+# install.packages("pak")
 pak::pak("chrischizinski/tidycreel.connect")
 ```
 
