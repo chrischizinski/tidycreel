@@ -250,6 +250,11 @@
 #'     were found to adjust.}
 #'   \item{\code{creel_message_nonstandard_estimator}}{Tier 3. An unusual
 #'     combination of `use_trips` and `estimator` was requested.}
+#'   \item{\code{creel_message_refused_interviews_set_aside}}{Tier 3.
+#'     Interviews marked refused were set aside: their catch and effort are
+#'     unknown, so no estimate uses them (GH #557).}
+#'   \item{\code{creel_message_refused_records_dropped}}{Tier 3. Catch, length
+#'     or age rows of refused interviews were dropped (GH #557).}
 #'   \item{\code{creel_message_species_column_missing}}{Tier 3. The species
 #'     column is missing, so the species coverage check was skipped.}
 #'   \item{\code{creel_message_truncation_disabled}}{Tier 3. `truncate_at =
@@ -349,6 +354,8 @@ creel_warning_tiers <- c(
   creel_message_na_counts_excluded = 3L,
   creel_message_no_subdesigns = 3L,
   creel_message_nonstandard_estimator = 3L,
+  creel_message_refused_interviews_set_aside = 3L,
+  creel_message_refused_records_dropped = 3L,
   creel_message_species_column_missing = 3L,
   creel_message_truncation_disabled = 3L,
   creel_message_truncation_skipped = 3L,

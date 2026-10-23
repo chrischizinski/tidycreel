@@ -10,6 +10,19 @@
 
 ## Breaking changes
 
+* Refused interviews no longer enter rates and totals (#557).
+  `add_interviews(refused =)` stored the flag but no estimator read it, so a
+  refused party was used as an ordinary trip with whatever its catch column
+  held, usually 0. On the example data, flagging 10 complete interviews as
+  refused (catch 0) took the catch rate from 2.29 to 1.03 with `n` unchanged.
+  Refused interviews are now set aside by `add_interviews()` (with a message
+  giving the count), their rows in `add_catch()`, `add_lengths()` and
+  `add_ages()` data are dropped with a count, and `summarize_refusals()` still
+  counts them. An `NA` refused flag, or a value that is not TRUE/FALSE, now
+  stops `add_interviews()`. Bus-route and ice designs with refused rows stop
+  too: there a refused party is counted but not interviewed, which is not yet
+  supported.
+
 * Bus-route and ice totals (`estimate_effort()`, `estimate_total_catch()`,
   `estimate_total_harvest()`, `estimate_total_release()`) now stop when an
   interview row's contribution is unknown, and name each row (#542). They

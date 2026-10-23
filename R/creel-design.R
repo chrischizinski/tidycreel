@@ -3628,7 +3628,14 @@ add_sections <- function(
 #'   and it silences the warning.
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
-#'   Values should be logical (TRUE/FALSE) or coercible to logical.
+#'   Values must be logical (TRUE/FALSE) or coercible to it (0/1 included); an
+#'   `NA` flag stops `add_interviews()`, since whether that party refused is
+#'   unknown. A refused party's catch and
+#'   effort are unknown, not zero, so refused interviews are set aside: no rate
+#'   or total uses them, their rows in [add_catch()], [add_lengths()] and
+#'   [add_ages()] data are dropped with a count, and [summarize_refusals()]
+#'   still counts them. Not yet supported on bus-route and ice designs, where a
+#'   refused party is counted but not interviewed.
 #' @param date_col Character name of date column in interviews (default NULL,
 #'   which uses the design's date_col). Specify explicitly if interview data
 #'   uses a different date column name than the design calendar.
@@ -4045,6 +4052,32 @@ add_interviews <- function(
   # Match interview_type
   interview_type <- match.arg(interview_type)
 
+  # Refused interviews (GH #557): the party declined, so its catch and effort
+  # are unknown, not zero. They are set aside here, before any check reads catch
+  # or effort, and kept on the design for the refusal tables. Every estimator
+  # reads design$interviews, so none of them sees a refusal.
+  refused_rows <- NULL
+  if (!is.null(refused_col)) {
+    parts <- split_refused_interviews(interviews, refused_col, design)
+    interviews <- parts$accepted
+    refused_rows <- parts$refused
+    # A refusal skips the catch and effort checks, not the date: a refused
+    # row with no date or one outside the calendar would vanish from the
+    # refusal tables.
+    if (nrow(refused_rows) > 0L) {
+      if (anyNA(refused_rows[[date_col]])) {
+        cli::cli_abort(
+          c(
+            "{sum(is.na(refused_rows[[date_col]]))} refused interview{?s} {?has/have} no {.field {date_col}}.",
+            "i" = "A refusal is counted by date in {.fn summarize_refusals}; record its date."
+          ),
+          class = "creel_error_refused_no_date"
+        )
+      }
+      check_records_against_calendar(refused_rows, design, date_col, "interview") # GH #449
+    }
+  }
+
   # Validate interviews structure (Tier 1)
   validation <- validate_interviews_tier1(
     interviews,
@@ -4290,6 +4323,7 @@ add_interviews <- function(
   new_design$species_sought_col <- species_sought_col
   new_design$n_anglers_col <- n_anglers_col
   new_design$refused_col <- refused_col
+  new_design$refused_interviews <- refused_rows
 
   # Preserve class
   class(new_design) <- "creel_design"
@@ -5361,6 +5395,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     "interview_uid",
     rlang::caller_env()
   )
+  data <- drop_refused_records(data, catch_uid_col, design, interview_uid_col, "catch") # GH #557
   species_col <- resolve_single_col(
     rlang::enquo(species),
     data,
@@ -5778,6 +5813,7 @@ add_lengths <- function(
     "interview_uid",
     rlang::caller_env()
   )
+  data <- drop_refused_records(data, length_uid_col, design, interview_uid_col, "length") # GH #557
   species_col <- resolve_single_col(
     rlang::enquo(species),
     data,
@@ -6018,6 +6054,7 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
     "interview_uid",
     rlang::caller_env()
   )
+  data <- drop_refused_records(data, age_uid_col, design, interview_uid_col, "age") # GH #557
   species_col <- resolve_single_col(
     rlang::enquo(species),
     data,
@@ -6233,4 +6270,121 @@ split_na_counts <- function(counts, count_col, date_col, time_col, missing_count
     ), class = c("creel_warning_na_counts", "creel_warning"))
   }
   list(kept = counts, excluded = NULL)
+}
+
+#' Set refused interviews aside (GH #557)
+#'
+#' A refused interview's catch and effort are unknown. Excluding it from rates
+#' and counting it is the rule for unknowns; scoring it as a trip with whatever
+#' its catch column holds (usually 0) biases every rate toward zero.
+#'
+#' @param interviews The interview table.
+#' @param refused_col Name of the refused flag column.
+#' @param design The design the interviews join.
+#' @return A list: `accepted` and `refused` tables, the flag stored as logical.
+#' @keywords internal
+#' @noRd
+split_refused_interviews <- function(interviews, refused_col, design, call = rlang::caller_env()) {
+  raw <- interviews[[refused_col]]
+  flag <- if (is.logical(raw)) raw else suppressWarnings(as.logical(raw))
+  # as.logical() reads "1"/"0" as NA, so numeric-looking text goes through numbers
+  if (!is.logical(raw) && is.character(raw)) {
+    num <- suppressWarnings(as.numeric(raw))
+    flag[is.na(flag) & !is.na(num)] <- as.logical(num[is.na(flag) & !is.na(num)])
+  }
+  bad <- !is.na(raw) & is.na(flag)
+  if (any(bad)) {
+    cli::cli_abort(
+      c(
+        "{.arg refused} column {.field {refused_col}} holds values that are not TRUE/FALSE:
+         {.val {unique(raw[bad])}}.",
+        "i" = "Recode it to logical, or map it with {.fn creel_schema}."
+      ),
+      class = "creel_error_refused_not_logical",
+      call = call
+    )
+  }
+  if (anyNA(flag)) {
+    cli::cli_abort(
+      c(
+        "{.arg refused} column {.field {refused_col}} is {.val {NA}} on {sum(is.na(flag))} interview{?s}.",
+        "x" = "Whether these parties refused is unknown, so neither their catch nor their absence can be assumed.",
+        "i" = "Record each as TRUE or FALSE before attaching the interviews."
+      ),
+      class = "creel_error_refused_na",
+      call = call
+    )
+  }
+  interviews[[refused_col]] <- flag
+  if (any(flag) && !is.null(design$bus_route)) {
+    cli::cli_abort(
+      c(
+        "{sum(flag)} interview{?s} {?is/are} marked refused on a {design$design_type} design.",
+        "x" = "On a bus-route or ice design a refused party is counted but not interviewed,
+               and its row may carry the site's count, so it cannot simply be set aside.",
+        "i" = "Not supported yet (GH #557): remove refused rows and reflect them in
+               {.arg n_interviewed}."
+      ),
+      class = "creel_error_refused_bus_route",
+      call = call
+    )
+  }
+  if (all(flag)) {
+    cli::cli_abort(
+      c(
+        "Every interview ({length(flag)}) is marked refused.",
+        "i" = "A refused interview has unknown catch and effort, so nothing is left to estimate from."
+      ),
+      class = "creel_error_all_refused",
+      call = call
+    )
+  }
+  if (any(flag)) {
+    creel_inform(c(
+      "i" = "Set aside {sum(flag)} refused interview{?s} of {length(flag)}.",
+      " " = "A refusal's catch and effort are unknown, so no estimate uses refused
+             interviews; {.fn summarize_refusals} still counts them."
+    ), class = c("creel_message_refused_interviews_set_aside", "creel_message"))
+  }
+  list(
+    accepted = interviews[!flag, , drop = FALSE],
+    refused = interviews[flag, , drop = FALSE]
+  )
+}
+
+#' Drop the catch, length or age rows of refused interviews (GH #557)
+#'
+#' Refused interviews are set aside by [add_interviews()], so their records
+#' reference no interview in the design. Their catch is unknown, not zero: the
+#' rows are dropped with a count rather than refused as unmatched.
+#'
+#' @keywords internal
+#' @noRd
+drop_refused_records <- function(data, uid_col, design, interview_uid_col, what) {
+  refused <- design$refused_interviews
+  if (is.null(refused) || nrow(refused) == 0L || !interview_uid_col %in% names(refused)) {
+    return(data)
+  }
+  ids <- as_uid_character(refused[[interview_uid_col]])
+  rec <- as_uid_character(data[[uid_col]])
+  drop <- rec %in% ids
+  if (any(drop)) {
+    n_rows <- sum(drop) # nolint: object_usage_linter
+    n_iv <- length(unique(rec[drop])) # nolint: object_usage_linter
+    creel_inform(c(
+      "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv} refused interview{?s}.",
+      " " = "A refusal's {what} is unknown, so it is not used."
+    ), class = c("creel_message_refused_records_dropped", "creel_message"))
+  }
+  if (all(drop)) {
+    cli::cli_abort(
+      c(
+        "Every {what} row ({length(drop)}) belongs to a refused interview.",
+        "i" = "A refusal's {what} is unknown, so there is nothing to attach."
+      ),
+      class = "creel_error_all_records_refused",
+      call = rlang::caller_env()
+    )
+  }
+  data[!drop, , drop = FALSE]
 }

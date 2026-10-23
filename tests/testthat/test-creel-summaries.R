@@ -2,12 +2,14 @@
 
 # --- Shared fixtures -----------------------------------------------------------
 
-make_design_with_extended_interviews <- function() {
+make_design_with_extended_interviews <- function(inject_refusal = TRUE) {
   # nolint: object_length_linter
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
-  # Inject one refusal for USUM-01 coverage (example_interviews has all refused=FALSE)
-  example_interviews$refused[1] <- TRUE
+  # Inject one refusal for USUM-01 coverage (example_interviews has all refused=FALSE).
+  # Since #557 a refused interview is set aside, so interview 1 (which has catch
+  # rows) is absent from every summary but summarize_refusals().
+  if (inject_refusal) example_interviews$refused[1] <- TRUE
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
   )
@@ -335,7 +337,9 @@ catch_without <- function(drop_types = "caught", interview = NULL, species = NUL
 }
 
 design_with <- function(cd) {
-  d <- make_design_with_extended_interviews()
+  # No injected refusal: these tests count interview 1's catch, which a refused
+  # interview would not contribute (#557).
+  d <- make_design_with_extended_interviews(inject_refusal = FALSE)
   suppressWarnings(suppressMessages(add_catch(
     d, cd,
     catch_uid = interview_id, # nolint: object_usage_linter
