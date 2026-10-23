@@ -20,6 +20,9 @@ argument.
   : Standardize trip/interview rows for interview-based workflows
 - [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_catch.md)
   : Standardize long catch-table rows for interview-based workflows
+- [`prep_interview_totals()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_totals.md)
+  : Add each interview's catch, harvest and release totals from a catch
+  table
 - [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
   : Attach species-level catch data to a creel design
 - [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)

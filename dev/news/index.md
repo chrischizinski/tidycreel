@@ -264,6 +264,23 @@
 
 ### New features
 
+- New
+  [`prep_interview_totals()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_totals.md)
+  adds each interview’s `catch_total`, `harvest_total` and
+  `release_total` from a long catch table (one row per interview,
+  species and fate), so
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  and
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+  can be fed from the same records instead of a hand-written aggregation
+  ([\#560](https://github.com/chrischizinski/tidycreel/issues/560)). It
+  applies the
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+  model per species-interview pair (a pair’s own `caught` row, otherwise
+  harvested + released), and its `absent` argument has no default: the
+  user states whether an interview with no catch rows caught nothing
+  (`"zero"`) or went unrecorded (`"unknown"`, giving `NA`).
+
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   gains `missing_count = c("keep", "exclude")`
   ([\#561](https://github.com/chrischizinski/tidycreel/issues/561)). An

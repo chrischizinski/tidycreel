@@ -149,6 +149,7 @@ Other "Survey Design":
 [`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md),
 [`prep_counts_boat_party()`](https://chrischizinski.com/tidycreel/dev/reference/prep_counts_boat_party.md),
 [`prep_interview_catch()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_catch.md),
+[`prep_interview_totals()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interview_totals.md),
 [`prep_interviews_trips()`](https://chrischizinski.com/tidycreel/dev/reference/prep_interviews_trips.md),
 [`validate_creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_schema.md)
 
