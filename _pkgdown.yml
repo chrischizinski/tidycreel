@@ -54,6 +54,7 @@ reference:
       - add_interviews
       - prep_interviews_trips
       - prep_interview_catch
+      - prep_interview_totals
       - add_catch
       - add_lengths
       - add_ages
@@ -124,6 +125,7 @@ reference:
       - summarize_by_trip_length
       - summarize_cws_rates
       - summarize_hws_rates
+      - summarize_rws_rates
       - summarize_length_freq
       - summarize_successful_parties
       - summarize_boat_composition
