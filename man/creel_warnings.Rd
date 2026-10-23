@@ -263,6 +263,11 @@ preferred where available.}
 were found to adjust.}
 \item{\code{creel_message_nonstandard_estimator}}{Tier 3. An unusual
 combination of \code{use_trips} and \code{estimator} was requested.}
+\item{\code{creel_message_refused_interviews_set_aside}}{Tier 3.
+Interviews marked refused were set aside: their catch and effort are
+unknown, so no estimate uses them (GH #557).}
+\item{\code{creel_message_refused_records_dropped}}{Tier 3. Catch, length
+or age rows of refused interviews were dropped (GH #557).}
 \item{\code{creel_message_species_column_missing}}{Tier 3. The species
 column is missing, so the species coverage check was skipped.}
 \item{\code{creel_message_truncation_disabled}}{Tier 3. \code{truncate_at = NULL} turned short-trip truncation off.}
