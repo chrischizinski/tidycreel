@@ -193,6 +193,13 @@
 
 ## New features
 
+* New `summarize_rws_rates()`: released-while-sought rates, completing the
+  trio with `summarize_cws_rates()` and `summarize_hws_rates()` (#558). It
+  reads released rows exactly as `estimate_release_rate()` does, and uses the
+  same interviews and exclusions as CWS and HWS, so where `caught` is inferred
+  as harvested + released, RWS = CWS - HWS. The three now share one
+  implementation, so a fix to one reaches all three.
+
 * New `prep_interview_totals()` adds each interview's `catch_total`,
   `harvest_total` and `release_total` from a long catch table (one row per
   interview, species and fate), so `add_interviews()` and `add_catch()` can be

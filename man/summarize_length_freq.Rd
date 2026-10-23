@@ -109,6 +109,7 @@ Other "Reporting & Diagnostics":
 \code{\link{summarize_cws_rates}()},
 \code{\link{summarize_hws_rates}()},
 \code{\link{summarize_refusals}()},
+\code{\link{summarize_rws_rates}()},
 \code{\link{summarize_successful_parties}()},
 \code{\link{summarize_trips}()},
 \code{\link{summary.creel_estimates}()},
