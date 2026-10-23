@@ -7,7 +7,7 @@
 - tidycreel.connect has moved out of this repository into its own,
   <https://github.com/chrischizinski/tidycreel.connect>, with its
   history and open issues. Install it with
-  `remotes::install_github("chrischizinski/tidycreel.connect")`; the old
+  `pak::pak("chrischizinski/tidycreel.connect")`; the old
   `subdir = "tidycreel.connect"` install no longer works.
 
 ### Breaking changes

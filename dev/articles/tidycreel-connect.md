@@ -26,10 +26,7 @@ tidycreel.connect has its own repository, separate from tidycreel:
 
 ``` r
 
-# Using remotes
-remotes::install_github("chrischizinski/tidycreel.connect")
-
-# Or using pak
+# install.packages("pak")
 pak::pak("chrischizinski/tidycreel.connect")
 ```
 
