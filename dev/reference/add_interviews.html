@@ -239,7 +239,14 @@ and it silences the warning.</p></dd>
 <dt id="arg-refused">refused<a class="anchor" aria-label="anchor" href="#arg-refused"></a></dt>
 <dd><p>Tidy selector for the refused interview flag column (optional,
 default NULL). Use bare column names (e.g., <code>refused = refused_flag</code>).
-Values should be logical (TRUE/FALSE) or coercible to logical.</p></dd>
+Values must be logical (TRUE/FALSE) or coercible to it (0/1 included); an
+<code>NA</code> flag stops <code>add_interviews()</code>, since whether that party refused is
+unknown. A refused party's catch and
+effort are unknown, not zero, so refused interviews are set aside: no rate
+or total uses them, their rows in <code><a href="add_catch.html">add_catch()</a></code>, <code><a href="add_lengths.html">add_lengths()</a></code> and
+<code><a href="add_ages.html">add_ages()</a></code> data are dropped with a count, and <code><a href="summarize_refusals.html">summarize_refusals()</a></code>
+still counts them. Not yet supported on bus-route and ice designs, where a
+refused party is counted but not interviewed.</p></dd>
 
 
 <dt id="arg-date-col">date_col<a class="anchor" aria-label="anchor" href="#arg-date-col"></a></dt>

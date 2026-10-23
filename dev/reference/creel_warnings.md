@@ -419,6 +419,16 @@ is recorded like a warning, with tier 3. Silence one for one call with
   Tier 3. An unusual combination of `use_trips` and `estimator` was
   requested.
 
+- `creel_message_refused_interviews_set_aside`:
+
+  Tier 3. Interviews marked refused were set aside: their catch and
+  effort are unknown, so no estimate uses them (GH \#557).
+
+- `creel_message_refused_records_dropped`:
+
+  Tier 3. Catch, length or age rows of refused interviews were dropped
+  (GH \#557).
+
 - `creel_message_species_column_missing`:
 
   Tier 3. The species column is missing, so the species coverage check

@@ -167,7 +167,19 @@ add_interviews(
 
   Tidy selector for the refused interview flag column (optional, default
   NULL). Use bare column names (e.g., `refused = refused_flag`). Values
-  should be logical (TRUE/FALSE) or coercible to logical.
+  must be logical (TRUE/FALSE) or coercible to it (0/1 included); an
+  `NA` flag stops `add_interviews()`, since whether that party refused
+  is unknown. A refused party's catch and effort are unknown, not zero,
+  so refused interviews are set aside: no rate or total uses them, their
+  rows in
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  and
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)
+  data are dropped with a count, and
+  [`summarize_refusals()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_refusals.md)
+  still counts them. Not yet supported on bus-route and ice designs,
+  where a refused party is counted but not interviewed.
 
 - date_col:
 

@@ -12,6 +12,27 @@
 
 ### Breaking changes
 
+- Refused interviews no longer enter rates and totals
+  ([\#557](https://github.com/chrischizinski/tidycreel/issues/557)).
+  `add_interviews(refused =)` stored the flag but no estimator read it,
+  so a refused party was used as an ordinary trip with whatever its
+  catch column held, usually 0. On the example data, flagging 10
+  complete interviews as refused (catch 0) took the catch rate from 2.29
+  to 1.03 with `n` unchanged. Refused interviews are now set aside by
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  (with a message giving the count), their rows in
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  and
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)
+  data are dropped with a count, and
+  [`summarize_refusals()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_refusals.md)
+  still counts them. An `NA` refused flag, or a value that is not
+  TRUE/FALSE, now stops
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
+  Bus-route and ice designs with refused rows stop too: there a refused
+  party is counted but not interviewed, which is not yet supported.
+
 - Bus-route and ice totals
   ([`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
   [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
