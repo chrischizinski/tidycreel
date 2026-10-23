@@ -102,6 +102,11 @@
 <p><strong>Tidy Interface for Creel Survey Design, Estimation, and Reporting</strong></p>
 <p>tidycreel provides a pipe-friendly interface for creel survey design, data management, estimation, visualisation, and reporting. Built on the <a href="https://cran.r-project.org/package=survey" class="external-link"><code>survey</code></a> package for design-based inference, it lets fisheries biologists work in creel vocabulary — dates, strata, counts, effort, catch, lengths, schedules — without managing survey-package internals directly.</p>
 <div class="section level2">
+<h2 id="development-status">Development status<a class="anchor" aria-label="anchor" href="#development-status"></a>
+</h2>
+<p>tidycreel is stable and under active development. Its interface is not experimental, but new survey designs, data checks and fixes are added continually. CRAN releases come about every two months; a fix for a wrong estimate gets a patch release sooner. Between releases, the newest features and fixes are only in the development version on GitHub, so install that if you want the most current tidycreel. <a href="https://chrischizinski.com/tidycreel/dev/news/">NEWS</a> lists what has changed since the last CRAN release.</p>
+</div>
+<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -109,10 +114,8 @@
 <p>Or the development version from GitHub:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># or with devtools</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"chrischizinski/tidycreel"</span><span class="op">)</span></span></code></pre></div>
+<p>This website documents the CRAN release. Documentation for the development version on GitHub is at <a href="https://chrischizinski.com/tidycreel/dev/">/dev/</a>. Check your installed version with <code>packageVersion("tidycreel")</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="survey-types">Survey Types<a class="anchor" aria-label="anchor" href="#survey-types"></a>
@@ -614,7 +617,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 <span><span class="co"># The call that produces the unexpected result</span></span>
 <span><span class="fu"><a href="reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error: ...  (paste the full error message here)</span></span></code></pre></div>
-<p>The snippet should run from scratch without any additional files or setup. If reducing your data to a minimal example is not straightforward, share what you have and describe the context — that is still very helpful. The <code>reprex</code> package can automatically format and share R output if you want a polished submission: install it with <code>install.packages("reprex")</code> and run <code>reprex::reprex()</code> around your code.</p>
+<p>The snippet should run from scratch without any additional files or setup. If reducing your data to a minimal example is not straightforward, share what you have and describe the context — that is still very helpful. The <code>reprex</code> package can automatically format and share R output if you want a polished submission: install it with <code>install.packages("reprex")</code> and run <code><a href="https://reprex.tidyverse.org/reference/reprex.html" class="external-link">reprex::reprex()</a></code> around your code.</p>
 <p>For guidance on contributing code, requesting new features, or the development workflow, see <a href="https://github.com/chrischizinski/tidycreel/blob/main/CONTRIBUTING.md" class="external-link">CONTRIBUTING.md</a>.</p>
 </div>
 </div>
@@ -633,6 +636,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=tidycreel" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/chrischizinski/tidycreel/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/chrischizinski/tidycreel/issues" class="external-link">Report a bug</a></li>
 </ul>
@@ -689,7 +693,7 @@ Single-overflight effort estimation with calibrated open-hours scaling.
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>
