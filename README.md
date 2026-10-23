@@ -1,6 +1,3 @@
----
-output: github_document
----
 <!-- Generated from README.Rmd — do not edit README.md directly -->
 
 # tidycreel
@@ -22,6 +19,16 @@ output: github_document
 
 tidycreel provides a pipe-friendly interface for creel survey design, data management, estimation, visualisation, and reporting. Built on the [`survey`](https://cran.r-project.org/package=survey) package for design-based inference, it lets fisheries biologists work in creel vocabulary — dates, strata, counts, effort, catch, lengths, schedules — without managing survey-package internals directly.
 
+## Development status
+
+tidycreel is stable and under active development. Its interface is not
+experimental, but new survey designs, data checks and fixes are added
+continually. CRAN releases come about every two months; a fix for a wrong
+estimate gets a patch release sooner. Between releases, the newest features
+and fixes are only in the development version on GitHub, so install that if
+you want the most current tidycreel. [NEWS](https://chrischizinski.com/tidycreel/dev/news/)
+lists what has changed since the last CRAN release.
+
 ## Installation
 
 ```r
@@ -33,10 +40,11 @@ Or the development version from GitHub:
 ```r
 # install.packages("pak")
 pak::pak("chrischizinski/tidycreel")
-
-# or with devtools
-devtools::install_github("chrischizinski/tidycreel")
 ```
+
+This website documents the CRAN release. Documentation for the development
+version on GitHub is at [/dev/](https://chrischizinski.com/tidycreel/dev/).
+Check your installed version with `packageVersion("tidycreel")`.
 
 ## Survey Types
 
