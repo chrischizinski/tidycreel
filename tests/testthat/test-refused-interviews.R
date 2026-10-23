@@ -155,3 +155,33 @@ test_that("a saved design sets the refusals aside again when it is read back", {
   expect_equal(nrow(r$refused_interviews), 5)
   expect_equal(quiet_rate(r)$estimate, quiet_rate(d)$estimate)
 })
+
+test_that("a refused interview still needs a date in the calendar", {
+  # Skipping the catch and effort checks must not skip the date: a refused row
+  # with no date was set aside and then fell out of summarize_refusals().
+  fx <- refused_fixture(1)
+  fx$iv$date[fx$k] <- NA
+  d <- creel_design(example_calendar, date = date, strata = day_type)
+  d <- suppressWarnings(add_counts(d, example_counts))
+  expect_error(suppressWarnings(suppressMessages(add_interviews(
+    d, fx$iv,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status,
+    n_anglers = n_anglers, refused = refused
+  ))), class = "creel_error_refused_no_date")
+})
+
+test_that("a catch table holding only refused interviews' rows stops clearly", {
+  fx <- refused_fixture(1)
+  d <- refused_design(fx$iv, refused = refused)
+  catch <- data.frame(
+    interview_id = fx$iv$interview_id[fx$k], species = "walleye",
+    count = 0, catch_type = "caught"
+  )
+  expect_error(
+    suppressMessages(add_catch(d, catch,
+      catch_uid = interview_id, interview_uid = interview_id,
+      species = species, count = count, catch_type = catch_type
+    )),
+    class = "creel_error_all_records_refused"
+  )
+})

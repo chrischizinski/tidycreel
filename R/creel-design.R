@@ -3604,8 +3604,9 @@ add_sections <- function(
 #'   and it silences the warning.
 #' @param refused Tidy selector for the refused interview flag column (optional,
 #'   default NULL). Use bare column names (e.g., `refused = refused_flag`).
-#'   Values must be logical (TRUE/FALSE) or coercible to it; an `NA` is refused,
-#'   since whether that party refused is unknown. A refused party's catch and
+#'   Values must be logical (TRUE/FALSE) or coercible to it (0/1 included); an
+#'   `NA` flag stops `add_interviews()`, since whether that party refused is
+#'   unknown. A refused party's catch and
 #'   effort are unknown, not zero, so refused interviews are set aside: no rate
 #'   or total uses them, their rows in [add_catch()], [add_lengths()] and
 #'   [add_ages()] data are dropped with a count, and [summarize_refusals()]
@@ -4036,6 +4037,21 @@ add_interviews <- function(
     parts <- split_refused_interviews(interviews, refused_col, design)
     interviews <- parts$accepted
     refused_rows <- parts$refused
+    # A refusal skips the catch and effort checks, not the date: a refused
+    # row with no date or one outside the calendar would vanish from the
+    # refusal tables.
+    if (nrow(refused_rows) > 0L) {
+      if (anyNA(refused_rows[[date_col]])) {
+        cli::cli_abort(
+          c(
+            "{sum(is.na(refused_rows[[date_col]]))} refused interview{?s} {?has/have} no {.field {date_col}}.",
+            "i" = "A refusal is counted by date in {.fn summarize_refusals}; record its date."
+          ),
+          class = "creel_error_refused_no_date"
+        )
+      }
+      check_records_against_calendar(refused_rows, design, date_col, "interview") # GH #449
+    }
   }
 
   # Validate interviews structure (Tier 1)
@@ -6291,6 +6307,16 @@ drop_refused_records <- function(data, uid_col, design, interview_uid_col, what)
       "i" = "Dropped {n_rows} {what} {cli::qty(n_rows)}row{?s} from {n_iv} refused interview{?s}.",
       " " = "A refusal's {what} is unknown, so it is not used."
     ), class = c("creel_message_refused_records_dropped", "creel_message"))
+  }
+  if (all(drop)) {
+    cli::cli_abort(
+      c(
+        "Every {what} row ({length(drop)}) belongs to a refused interview.",
+        "i" = "A refusal's {what} is unknown, so there is nothing to attach."
+      ),
+      class = "creel_error_all_records_refused",
+      call = rlang::caller_env()
+    )
   }
   data[!drop, , drop = FALSE]
 }

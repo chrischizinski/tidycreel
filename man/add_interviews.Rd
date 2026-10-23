@@ -110,8 +110,9 @@ and it silences the warning.}
 
 \item{refused}{Tidy selector for the refused interview flag column (optional,
 default NULL). Use bare column names (e.g., \code{refused = refused_flag}).
-Values must be logical (TRUE/FALSE) or coercible to it; an \code{NA} is refused,
-since whether that party refused is unknown. A refused party's catch and
+Values must be logical (TRUE/FALSE) or coercible to it (0/1 included); an
+\code{NA} flag stops \code{add_interviews()}, since whether that party refused is
+unknown. A refused party's catch and
 effort are unknown, not zero, so refused interviews are set aside: no rate
 or total uses them, their rows in \code{\link[=add_catch]{add_catch()}}, \code{\link[=add_lengths]{add_lengths()}} and
 \code{\link[=add_ages]{add_ages()}} data are dropped with a count, and \code{\link[=summarize_refusals]{summarize_refusals()}}
