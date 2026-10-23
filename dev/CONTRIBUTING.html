@@ -294,6 +294,7 @@
 <li>Submit, interactively: <code>source("scripts/cran-submit.R"); cran_submit("~/Dev/tidycreel-submit")</code>. Never use the CRAN web form, and never submit from <code>main</code>.</li>
 <li>Once CRAN shows the version as published, run <code>just release-accepted 9.0.0</code>.
 <ul><li>It tags the submitted commit and publishes the GitHub release from the NEWS section.</li>
+<li>It moves roadmap items from “Done (in dev version)” to “Released (on CRAN)”, but only those closed before the release branch left <code>main</code>: anything merged later is in the development version, not this release. A patch release moves nothing new; move its cherry-picked fixes by hand.</li>
 <li>It opens a <code>chore/post-release-9.0.0</code> branch on <code>main</code>, with the released NEWS entries moved out of the development section, the version set to <code>9.0.0.9000</code>, and <code>CITATION.cff</code> and <code>CRAN-SUBMISSION</code> updated.</li>
 <li>Review that branch and open its PR.</li>
 </ul></li>

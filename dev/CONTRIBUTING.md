@@ -306,6 +306,11 @@ parts, and they refuse when something a person has to do is undone.
     `just release-accepted 9.0.0`.
     - It tags the submitted commit and publishes the GitHub release from
       the NEWS section.
+    - It moves roadmap items from “Done (in dev version)” to “Released
+      (on CRAN)”, but only those closed before the release branch left
+      `main`: anything merged later is in the development version, not
+      this release. A patch release moves nothing new; move its
+      cherry-picked fixes by hand.
     - It opens a `chore/post-release-9.0.0` branch on `main`, with the
       released NEWS entries moved out of the development section, the
       version set to `9.0.0.9000`, and `CITATION.cff` and
