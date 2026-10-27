@@ -162,7 +162,9 @@ CODEX_MODEL_LABEL="codex-cli"
 # trial 2026-10-06; score it like the rest. agy <= 1.3.0 can die at start-up on
 # "Eligibility check failed: failed to get profile picture: 403" (upstream
 # google-antigravity/antigravity-cli#621); that is reported as DID NOT RUN.
-AGY_MODEL_LABEL="agy-${AGY_MODEL:-gemini-3.1-pro-high}"
+# gemini-3.1-pro-high was retired by 2026-10-27; `agy models` lists what the
+# account can use, and AGY_MODEL overrides the default for one run.
+AGY_MODEL_LABEL="agy-${AGY_MODEL:-gemini-4-argon-high}"
 
 key() {
   if [ -n "${OPENROUTER_API_KEY:-}" ]; then
@@ -599,7 +601,7 @@ PYA
   local raw err rc=0
   raw="$(mktemp)"
   err="$(mktemp)"
-  local agy_args=(--print "$prompt" --model "${AGY_MODEL:-gemini-3.1-pro-high}"
+  local agy_args=(--print "$prompt" --model "${AGY_MODEL:-gemini-4-argon-high}"
                   --print-timeout "${AGY_TIMEOUT:-900}s")
   if [ -n "$timeout_cmd" ]; then
     "$timeout_cmd" "$(( ${AGY_TIMEOUT:-900} + 60 ))" "$agy_bin" "${agy_args[@]}" > "$raw" 2> "$err" || rc=$?
@@ -626,8 +628,23 @@ PYA
   if [ "$rc" -ne 0 ] || [ ! -s "$raw" ] ||
      grep -q -i -E "print.timeout|partial output|Eligibility check failed|^error:" "$err" ||
      head -1 "$raw" | grep -q "^jetski: no output produced"; then
-    echo "  ${AGY_MODEL_LABEL}: exited $rc / no complete review -- DID NOT RUN, not 'no findings'."
-    { tail -3 "$err"; head -1 "$raw"; } | sed "s/^/      /" >&2
+    # A retired --model name fails with "invalid model selection" followed by
+    # the model list, and the last lines of stderr are only that list: every
+    # agy round from 2026-10-16 to 10-27 failed this way while reading like a
+    # login or quota fault. Name the cause and how to pick a model instead.
+    # The message is certainly in agy's own log for the run (cli.log, a
+    # symlink to a new file per run; checked only if newer than this run's
+    # brief) and possibly in stderr. Unlike its start-up "not logged into
+    # Antigravity" noise, it never appears in a run that worked.
+    local agy_log="$HOME/.gemini/antigravity-cli/cli.log"
+    if grep -q "invalid model selection" "$err" ||
+       { [ "$agy_log" -nt "$brief" ] && grep -q "invalid model selection" "$agy_log"; }; then
+      echo "  ${AGY_MODEL_LABEL}: model not recognised by agy -- DID NOT RUN, not 'no findings'."
+      echo "      Run 'agy models' and set AGY_MODEL, or update the default here." >&2
+    else
+      echo "  ${AGY_MODEL_LABEL}: exited $rc / no complete review -- DID NOT RUN, not 'no findings'."
+      { tail -3 "$err"; head -1 "$raw"; } | sed "s/^/      /" >&2
+    fi
     rm -f "$raw" "$err"
     return 0
   fi
