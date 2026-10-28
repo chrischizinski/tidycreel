@@ -1,12 +1,14 @@
 # Data handling
 
-tidycreel is a public R package. It ships no personal data and no agency data.
+tidycreel is a public R package. It ships no personal data. The only real
+survey records it ships are the de-identified Calamus 2016 fixtures below;
+every other dataset is synthetic or aggregate.
 
 ## What this repository contains
 
 | Data | Location | Contains PII? | Notes |
 |---|---|---|---|
-| Package datasets | `data/*.rda` | no | Synthetic or aggregate examples built by `data-raw/` scripts |
+| Package datasets | tracked `data/*.rda` (listed in `.gitignore`) | no | Synthetic or aggregate examples built by `data-raw/` scripts |
 | Calamus 2016 fixtures | `inst/calamus-2016/*.csv` | no | Interview- and count-level survey records with no angler identifiers; shipped on purpose for validation |
 | Absent-zero guard baseline | `scripts/absent-zero-guard-baseline.tsv` | no | Code-location baseline for a CI check |
 
@@ -15,8 +17,9 @@ tidycreel is a public R package. It ships no personal data and no agency data.
 - Agency survey data, interview records, permit or licence data, and any
   dataset with angler names, contact details or licence numbers. These live
   in private analysis repositories or on the agency's own systems, never here.
-- Agency-specific field-name profiles: local YAML files that are never
-  committed (see `creel_schema()` and `api_field_map`).
+- Agency-specific field-name profiles: local files that are never committed
+  (column maps for `creel_schema()` here; API field maps and YAML connection
+  profiles in tidycreel.connect).
 - External validation data and the scripts that read it.
 
 ## Credentials
@@ -30,10 +33,11 @@ tidycreel is a public R package. It ships no personal data and no agency data.
 ## Safeguards
 
 - `.gitignore` is deny-by-default for data formats, archives and credential
-  files. The files listed above are whitelisted explicitly; anything else
-  needs a deliberate `git add -f` after review.
-- A local pre-commit hook (gitleaks plus a staged-file PII audit) blocks
-  staged secrets and identifier columns.
+  files. The files listed above are whitelisted by exact path; a new data
+  file needs a deliberate `git add -f` and a new whitelist line after review.
+- The maintainer's working copy has a local pre-commit hook (gitleaks plus a
+  staged-file PII audit) that blocks staged secrets and identifier columns.
+  It is not tracked, so a fresh clone does not have it.
 - Code that will touch identified data is developed and tested against
   synthetic data.
 

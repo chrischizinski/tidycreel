@@ -170,8 +170,8 @@ cran_review/
 
 # ---- pii-guard: deny-by-default for data and credentials ----
 # New data files are ignored unless whitelisted below. The package's own
-# datasets (data/*.rda) and the calamus-2016 fixtures are synthetic or
-# de-identified and stay tracked; anything else needs `git add -f` after review.
+# datasets and the calamus-2016 fixtures are synthetic or de-identified and
+# stay tracked; anything else needs `git add -f` after review.
 # Data and serialized formats
 *.csv
 *.tsv
@@ -189,11 +189,38 @@ cran_review/
 *.sqlite
 *.db
 *.accdb
-!data/*.rda
-!inst/calamus-2016/*.csv
+# Whitelist: exact approved files only, so a new file in these directories
+# still needs a reviewed `git add -f` (and a new line here).
+!data/creel_counts_toy.rda
+!data/creel_interviews_toy.rda
+!data/example_aerial_counts.rda
+!data/example_aerial_glmm_counts.rda
+!data/example_aerial_interviews.rda
+!data/example_ages.rda
+!data/example_calendar.rda
+!data/example_camera_counts.rda
+!data/example_camera_interviews.rda
+!data/example_camera_timestamps.rda
+!data/example_catch.rda
+!data/example_counts.rda
+!data/example_ice_interviews.rda
+!data/example_ice_sampling_frame.rda
+!data/example_interviews.rda
+!data/example_lengths.rda
+!data/example_roving_interviews.rda
+!data/example_season_calendar.rda
+!data/example_season_counts.rda
+!data/example_season_interviews.rda
+!data/example_sections_calendar.rda
+!data/example_sections_counts.rda
+!data/example_sections_interviews.rda
+!inst/calamus-2016/catch.csv
+!inst/calamus-2016/counts.csv
+!inst/calamus-2016/harvest_lengths.csv
+!inst/calamus-2016/interviews.csv
+!inst/calamus-2016/reference-outputs.csv
+!inst/calamus-2016/release_lengths.csv
 !scripts/absent-zero-guard-baseline.tsv
-# Agency-proprietary parameters stay out even though data/*.rda is whitelisted
-data/ngpc_creel_params.rda
 # Credentials
 *.env
 .Renviron
@@ -207,4 +234,9 @@ db_connection.R
 # Archives can bundle raw data
 *.zip
 *.7z
+*.tar
 *.tar.gz
+*.tgz
+*.gz
+*.bz2
+*.xz
