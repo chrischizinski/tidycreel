@@ -58,6 +58,7 @@ inherits(sched2, "creel_schedule")
 \seealso{
 Other "Scheduling":
 \code{\link{attach_count_times}()},
+\code{\link{creel_calendar}()},
 \code{\link{daylight_shifts}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},

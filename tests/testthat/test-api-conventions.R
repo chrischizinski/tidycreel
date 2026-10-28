@@ -65,6 +65,8 @@ family_exceptions <- c(
   mean_party_size = "data preparation",
   # Schedule helpers outside generate_*().
   attach_count_times = "scheduling",
+  # #559: builds the season calendar; nothing is drawn, so not generate_*().
+  creel_calendar = "scheduling",
   new_creel_schedule = "scheduling",
   day_length = "scheduling",
   daylight_shifts = "scheduling",
