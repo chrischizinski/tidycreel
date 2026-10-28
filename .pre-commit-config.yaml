@@ -29,3 +29,9 @@ repos:
         exclude: ^(renv/|\.lintr$|tests/testthat/_snaps/)
       - id: check-yaml
       - id: check-added-large-files
+  # Secret scan of staged changes (see DATA_HANDLING.md). Builds gitleaks
+  # from source on first run, so every clone gets the same check.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
