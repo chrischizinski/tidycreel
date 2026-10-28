@@ -122,6 +122,7 @@ by start time. Overlapping windows trigger an error.
 
 Other "Scheduling":
 [`attach_count_times()`](https://chrischizinski.com/tidycreel/dev/reference/attach_count_times.md),
+[`creel_calendar()`](https://chrischizinski.com/tidycreel/dev/reference/creel_calendar.md),
 [`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md),
 [`generate_bus_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_bus_schedule.md),
 [`generate_progressive_start()`](https://chrischizinski.com/tidycreel/dev/reference/generate_progressive_start.md),

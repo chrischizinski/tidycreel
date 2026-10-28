@@ -687,6 +687,8 @@ sampling effort across strata.
 
 Generate, validate, read, and write creel survey schedules.
 
+- [`creel_calendar()`](https://chrischizinski.com/tidycreel/dev/reference/creel_calendar.md)
+  : Build a season calendar
 - [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
   : Generate a creel survey sampling schedule
 - [`daylight_shifts()`](https://chrischizinski.com/tidycreel/dev/reference/daylight_shifts.md)

@@ -264,6 +264,25 @@
 
 ### New features
 
+- New
+  [`creel_calendar()`](https://chrischizinski.com/tidycreel/dev/reference/creel_calendar.md)
+  builds the season calendar
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+  takes
+  ([\#559](https://github.com/chrischizinski/tidycreel/issues/559)):
+  every day of the season, one row per date, with `month`, `week`,
+  `day_type` and `stratum`. Before, each analysis wrote the same
+  [`seq()`](https://rdrr.io/r/base/seq.html), weekday/weekend and month
+  x day-type code by hand, and a missed unsampled day or a doubled date
+  gave plausible wrong totals with no error. Strata are built from any
+  of `"season_block"`, `"month"`, `"week"` (week of the season, starting
+  after the weekend) and `"day_type"`. `holidays` (dates) become weekend
+  days of their stratum; `special_periods` (the table
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  takes) become strata of their own, not split by month. Holidays and
+  special periods outside the season are refused, not dropped. Holidays
+  are dates, not rules: no agency’s holiday conventions are built in.
+
 - [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
   gains `missing_trip_status = c("refuse", "exclude")`
   ([\#561](https://github.com/chrischizinski/tidycreel/issues/561)). An
