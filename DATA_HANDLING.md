@@ -35,9 +35,10 @@ every other dataset is synthetic or aggregate.
 - `.gitignore` is deny-by-default for data formats, archives and credential
   files. The files listed above are whitelisted by exact path; a new data
   file needs a deliberate `git add -f` and a new whitelist line after review.
-- The maintainer's working copy has a local pre-commit hook (gitleaks plus a
-  staged-file PII audit) that blocks staged secrets and identifier columns.
-  It is not tracked, so a fresh clone does not have it.
+- `.pre-commit-config.yaml` runs gitleaks on staged changes; run
+  `pre-commit install` once per clone to enable it. The maintainer's working
+  copy also runs a local staged-file PII audit that blocks identifier
+  columns; that audit is not tracked.
 - Code that will touch identified data is developed and tested against
   synthetic data.
 
