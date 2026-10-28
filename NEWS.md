@@ -193,6 +193,19 @@
 
 ## New features
 
+* New `creel_calendar()` builds the season calendar `creel_design()` takes
+  (#559): every day of the season, one row per date, with `month`, `week`,
+  `day_type` and `stratum`. Before, each analysis wrote the same `seq()`,
+  weekday/weekend and month x day-type code by hand, and a missed unsampled
+  day or a doubled date gave plausible wrong totals with no error. Strata are
+  built from any of `"season_block"`, `"month"`, `"week"` (week of the
+  season, starting after the weekend) and `"day_type"`. `holidays` (dates)
+  become weekend days of their stratum; `special_periods` (the table
+  `generate_schedule()` takes) become strata of their own, not split by
+  month. Holidays and special periods outside the season are refused, not
+  dropped. Holidays are dates, not rules: no agency's holiday conventions are
+  built in.
+
 * `add_interviews()` gains `missing_trip_status = c("refuse", "exclude")`
   (#561). An interview with no trip status fits neither the complete- nor the
   incomplete-trip estimator, and `add_interviews()` refused the whole table,

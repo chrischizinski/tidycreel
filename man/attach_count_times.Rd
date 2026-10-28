@@ -107,6 +107,7 @@ attach_count_times(sched2, ct)
 }
 \seealso{
 Other "Scheduling":
+\code{\link{creel_calendar}()},
 \code{\link{daylight_shifts}()},
 \code{\link{generate_bus_schedule}()},
 \code{\link{generate_count_times}()},

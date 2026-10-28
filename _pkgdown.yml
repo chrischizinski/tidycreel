@@ -178,6 +178,7 @@ reference:
     desc: >
       Generate, validate, read, and write creel survey schedules.
     contents:
+      - creel_calendar
       - generate_schedule
       - daylight_shifts
       - generate_bus_schedule
