@@ -143,7 +143,7 @@ creel_calendar <- function(
 
   weekend_wday <- resolve_weekend_days(weekend_days, 0L, call = call)
   date <- seq(start, end, by = "day")
-  wday <- lubridate::wday(date, week_start = 1)
+  wday <- as.integer(format(date, "%u")) # Monday = 1 ... Sunday = 7
   cal <- data.frame(
     date = date,
     month = as.integer(format(date, "%m")),
@@ -170,18 +170,34 @@ creel_calendar <- function(
   )
   cal$stratum <- do.call(paste, c(unname(label[strata]), sep = "_"))
 
+  # A zero-row table (e.g. a shared table filtered to a season with none)
+  # declares no special periods.
+  if (is.data.frame(special_periods) && nrow(special_periods) == 0L) {
+    special_periods <- NULL
+  }
   if (!is.null(special_periods)) {
-    special <- resolve_special_periods(date, cal$stratum, special_periods)
+    if (!is.data.frame(special_periods) ||
+          !all(c("start_date", "end_date", "label") %in% names(special_periods))) {
+      cli::cli_abort(
+        "{.arg special_periods} must be a data frame with {.field start_date}, {.field end_date} and {.field label}.",
+        call = call
+      )
+    }
+    special_periods$start_date <- calendar_date(special_periods$start_date, "special_periods$start_date", call)
+    special_periods$end_date <- calendar_date(special_periods$end_date, "special_periods$end_date", call)
     calendar_refuse_outside(
-      c(as.Date(special_periods$start_date), as.Date(special_periods$end_date)),
+      c(special_periods$start_date, special_periods$end_date),
       start, end, "special_periods", call
     )
+    special <- resolve_special_periods(date, cal$stratum, special_periods)
     labels <- as.character(special_periods$label)
     if (anyNA(labels) || any(!nzchar(labels))) {
       cli::cli_abort("{.arg special_periods} has a missing or empty {.field label}.", call = call)
     }
-    in_special <- seq_along(date) %in% match(special$audit$date, date)
-    clash <- intersect(unique(labels), cal$stratum[!in_special])
+    # Checked against every ordinary label, including ones the period's own
+    # days would have had: a period covering all of "06_weekend" must not
+    # take that name.
+    clash <- intersect(unique(labels), cal$stratum)
     if (length(clash) > 0L) {
       cli::cli_abort(
         c(
@@ -191,6 +207,7 @@ creel_calendar <- function(
         call = call
       )
     }
+    in_special <- seq_along(date) %in% match(special$audit$date, date)
     cal$day_type[in_special] <- "special"
     cal$stratum <- special$final_stratum
   }
@@ -207,7 +224,10 @@ calendar_date <- function(x, arg, call) {
   if (inherits(x, "Date")) {
     out <- x
   } else if (is.character(x)) {
+    # as.Date() parses a valid prefix and ignores the rest ("2024-01-031"
+    # would be 3 January), so the whole string must match.
     out <- as.Date(x, format = "%Y-%m-%d", optional = TRUE)
+    out[!grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x)] <- NA
   } else {
     out <- as.Date(rep(NA_character_, length(x)))
   }

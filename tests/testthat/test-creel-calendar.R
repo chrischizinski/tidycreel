@@ -173,3 +173,41 @@ test_that("ambiguous or malformed inputs are refused", {
     "overlap"
   )
 })
+
+test_that("a zero-row special_periods table declares no special periods", {
+  # A shared table filtered to a season with none must not crash or change
+  # the calendar.
+  none <- data.frame(start_date = character(), end_date = character(), label = character())
+  expect_identical(
+    creel_calendar("2024-05-01", "2024-08-31", special_periods = none),
+    creel_calendar("2024-05-01", "2024-08-31")
+  )
+})
+
+test_that("a date string must be a whole YYYY-MM-DD, in every argument", {
+  # as.Date() reads a valid prefix and drops the rest, so "2024-01-031" would
+  # silently become 3 January: a three-day season.
+  expect_error(creel_calendar("2024-01-01", "2024-01-031"), "must be dates")
+  # Special periods get the same check as start, end and holidays, not
+  # as.Date()'s guesses ("07/04/2024" read as year 7).
+  expect_error(
+    creel_calendar(
+      "2024-05-01", "2024-08-31",
+      special_periods = data.frame(start_date = "07/04/2024", end_date = "07/05/2024", label = "j")
+    ),
+    "must be dates"
+  )
+})
+
+test_that("a special period cannot take an ordinary label even when it covers that stratum", {
+  # Covering every weekend day of a one-week season, "weekend" would survive
+  # as a label while meaning special days.
+  expect_error(
+    creel_calendar(
+      "2024-05-01", "2024-05-07",
+      strata = "day_type",
+      special_periods = data.frame(start_date = "2024-05-04", end_date = "2024-05-05", label = "weekend")
+    ),
+    "ordinary stratum"
+  )
+})
