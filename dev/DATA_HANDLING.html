@@ -108,7 +108,8 @@
 <h2 id="safeguards">Safeguards<a class="anchor" aria-label="anchor" href="#safeguards"></a></h2>
 <ul><li>
 <code>.gitignore</code> is deny-by-default for data formats, archives and credential files. The files listed above are whitelisted by exact path; a new data file needs a deliberate <code>git add -f</code> and a new whitelist line after review.</li>
-<li>The maintainer’s working copy has a local pre-commit hook (gitleaks plus a staged-file PII audit) that blocks staged secrets and identifier columns. It is not tracked, so a fresh clone does not have it.</li>
+<li>
+<code>.pre-commit-config.yaml</code> runs gitleaks on staged changes; run <code>pre-commit install</code> once per clone to enable it. The maintainer’s working copy also runs a local staged-file PII audit that blocks identifier columns; that audit is not tracked.</li>
 <li>Code that will touch identified data is developed and tested against synthetic data.</li>
 </ul></div>
 <div class="section level2">
