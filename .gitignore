@@ -167,3 +167,44 @@ cheatsheet/*_files/
 
 # CRAN reviewer correspondence — local only
 cran_review/
+
+# ---- pii-guard: deny-by-default for data and credentials ----
+# New data files are ignored unless whitelisted below. The package's own
+# datasets (data/*.rda) and the calamus-2016 fixtures are synthetic or
+# de-identified and stay tracked; anything else needs `git add -f` after review.
+# Data and serialized formats
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.xlsm
+*.rds
+*.RData
+*.rda
+*.parquet
+*.feather
+*.sav
+*.dta
+*.sas7bdat
+*.sqlite
+*.db
+*.accdb
+!data/*.rda
+!inst/calamus-2016/*.csv
+!scripts/absent-zero-guard-baseline.tsv
+# Agency-proprietary parameters stay out even though data/*.rda is whitelisted
+data/ngpc_creel_params.rda
+# Credentials
+*.env
+.Renviron
+db_connection.R
+*.pem
+*.key
+# Session history (can contain pasted passwords and printed records)
+.Rapp.history
+.Rproj.user/
+.ipynb_checkpoints/
+# Archives can bundle raw data
+*.zip
+*.7z
+*.tar.gz

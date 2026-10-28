@@ -131,3 +131,5 @@
 ^CRAN-SUBMISSION$
 ^cran_review$
 ^vignettes/articles$
+^DATA_HANDLING\.md$
+^inst/validation/ngpc-field-discovery\.R$
