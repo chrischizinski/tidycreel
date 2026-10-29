@@ -193,6 +193,18 @@
 
 ## New features
 
+* `derive_angler_count(by_type = TRUE)` returns bank and boat counts as
+  separate rows with an `angler_type` column, ready for
+  `add_counts(unit_cols = c(..., "angler_type"))` and
+  `estimate_effort(by = angler_type)` (#562). Before, getting bank and boat
+  effort from one count meant calling `derive_angler_count()` twice with one
+  column zeroed each time and binding the halves, and a bind that left out
+  the `expansion_*` columns silently dropped the party-size term from the
+  boat effort standard error. Every row now carries those columns: a bank
+  row's `expansion_basis` is 0, so the party-size error is charged to boat
+  effort only. Both boat forms are labelled `"boat"`. Results equal the
+  two-call construction.
+
 * New `creel_calendar()` builds the season calendar `creel_design()` takes
   (#559): every day of the season, one row per date, with `month`, `week`,
   `day_type` and `stratum`. Before, each analysis wrote the same `seq()`,

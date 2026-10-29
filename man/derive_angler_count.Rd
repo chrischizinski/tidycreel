@@ -11,7 +11,8 @@ derive_angler_count(
   boat_count = NULL,
   party_size = NULL,
   party_size_se = NULL,
-  to = "angler_count"
+  to = "angler_count",
+  by_type = FALSE
 )
 }
 \arguments{
@@ -36,6 +37,10 @@ one, so \code{\link[=mean_party_size]{mean_party_size()}} output propagates on i
 deliberately no zero default; see the section above.}
 
 \item{to}{Name of the column to write. Defaults to \code{"angler_count"}.}
+
+\item{by_type}{If \code{TRUE}, return one row per count and angler type, with an
+\code{angler_type} column, instead of adding the components into one count.
+See "Bank and boat as separate rows". Defaults to \code{FALSE}.}
 }
 \value{
 \code{counts} with the derived column appended, and the columns consumed
@@ -44,7 +49,9 @@ superseded by the derived count and, where applicable, by
 \code{expansion_basis}. Leaving them in produced a table that varied between
 sub-counts of one sampling unit, which \code{\link[=add_counts]{add_counts()}} cannot distinguish
 from an undeclared structural dimension (GH #162). The destination column
-is never dropped, even when it is also one of the inputs.
+is never dropped, even when it is also one of the inputs. With
+\code{by_type = TRUE}, one row per input row and component instead, in input
+order, with an \code{angler_type} column.
 
 When a party-size standard error is available, four further columns are
 appended for the estimators to read: \code{expansion_basis} (the boat count,
@@ -96,8 +103,31 @@ and a count of zero are different observations and are kept different here.
 Pooling bank and boat anglers into one count assumes both are detected the
 same way and are being reported as one quantity. Where detection
 probabilities or catch rates differ between them, estimate the two as
-separate domains instead of adding them.
+separate domains instead of adding them: \code{by_type = TRUE} returns one row per
+count and angler type, ready for \code{add_counts(unit_cols = )} with
+\code{angler_type} among the unit columns.
 }
+\section{Bank and boat as separate rows}{
+
+With \code{by_type = TRUE} each input row becomes one row per component supplied,
+with an \code{angler_type} column: \code{"bank"} for \code{bank}, and \code{"boat"} for either
+boat form. The label names who was counted, not how; \code{boat_anglers} and
+\code{boat_count} cannot both be given, so a count never has two boat rows. The
+labels match \code{\link[=mean_party_size]{mean_party_size()}}'s default \code{boat_value}.
+
+When the boat component carries a party-size standard error, \strong{every} row
+carries the expansion columns. A bank row's \code{expansion_basis} is 0 -- its
+count does not depend on the party size -- and its \code{expansion_se} and
+\code{expansion_group} are those of the boat row from the same count. Building
+the bank rows separately and binding them on without these columns either
+fails to bind or, if the columns are dropped to make it bind, silently
+removes the party-size term from the effort standard error.
+
+A missing component makes only its own row missing. In the pooled form a
+missing bank count makes the whole total unknown; here the boat row of that
+count is still observed.
+}
+
 \section{The party size is an estimate}{
 
 A mean party size taken from interviews is itself estimated, and it
@@ -146,6 +176,32 @@ derive_angler_count(
   boat_count = angler_boats,
   party_size = mps
 )
+
+# Bank and boat effort reported separately
+season <- data.frame(
+  date = as.Date("2024-06-01") + 0:3,
+  day_type = c("weekday", "weekend", "weekday", "weekend"),
+  bank_anglers = c(4L, 9L, 6L, 11L),
+  angler_boats = c(3L, 7L, 2L, 8L)
+)
+long <- derive_angler_count(
+  season,
+  bank = bank_anglers,
+  boat_count = angler_boats,
+  party_size = 2.4,
+  party_size_se = 0.2,
+  by_type = TRUE
+)
+long
+
+calendar <- season[c("date", "day_type")]
+design <- creel_design(calendar, date = date, strata = day_type)
+design <- add_counts(
+  design, long,
+  count_col = "angler_count",
+  unit_cols = c("date", "day_type", "angler_type")
+)
+estimate_effort(design, by = angler_type, target = "sampled_days")
 }
 \seealso{
 \code{\link[=mean_party_size]{mean_party_size()}}, \code{\link[=add_counts]{add_counts()}}, \code{\link[=prep_counts_boat_party]{prep_counts_boat_party()}}
