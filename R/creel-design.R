@@ -3605,7 +3605,9 @@ add_sections <- function(
 #' @param angler_type Tidy selector for angler type column (optional, default
 #'   NULL). Use bare column names (e.g., `angler_type = angler_type`). Common
 #'   values are "bank" and "boat". Values are not validated; downstream summary
-#'   functions use this field.
+#'   functions use this field. Use exactly "bank" and "boat" for those types:
+#'   [mean_party_size()] and `derive_angler_count(by_type = TRUE)` match them.
+#'   A coded source can declare its codes with [creel_schema()] `value_maps`.
 #' @param angler_method Tidy selector for angler method column (optional, default
 #'   NULL). Use bare column names (e.g., `angler_method = method_code`). Records
 #'   the fishing technique employed (e.g., "fly", "spin", "bait").

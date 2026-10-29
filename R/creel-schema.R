@@ -108,7 +108,19 @@ CANONICAL_VOCABULARY <- list(
 # folds an undeclared code into whichever label the caller thought of (#532).
 # A map for one of these translates codes to any label; the map's own targets
 # are that column's vocabulary.
-FREE_LABEL_COLUMNS <- c("angler_method", "species_sought")
+#
+# angler_type is free too (#563): bank, boat, ice, pier, kayak and so on are
+# all real, and a closed list would send agencies back to recoding by hand. Two
+# of its labels do have package meaning, though -- see ANGLER_TYPE_LABELS.
+FREE_LABEL_COLUMNS <- c("angler_method", "species_sought", "angler_type")
+
+# The angler_type labels the package itself writes or matches:
+# mean_party_size(boat_value = "boat") and derive_angler_count(by_type = TRUE).
+# A map target that differs from one of these only in case or surrounding
+# space ("Boat", "BANK ") is almost certainly meant to be it, and left as is it
+# misses mean_party_size()'s default and will not line up with the count rows
+# derive_angler_count() writes -- so it gets a message, not a refusal.
+ANGLER_TYPE_LABELS <- c("bank", "boat")
 # nolint end
 
 #' Canonical vocabularies for the coded columns
@@ -120,9 +132,11 @@ FREE_LABEL_COLUMNS <- c("angler_method", "species_sought")
 #' source that codes one of these columns has to be translated before its values
 #' can be trusted — see the `value_maps` argument of [creel_schema()].
 #'
-#' `angler_method` and `species_sought` can also be mapped, but have no entry
-#' here: their labels are the agency's own, so a map for either is its own
-#' vocabulary.
+#' `angler_method`, `species_sought` and `angler_type` can also be mapped, but
+#' have no entry here: their labels are the agency's own, so a map for any of
+#' them is its own vocabulary. For `angler_type`, use `"bank"` and `"boat"`
+#' where they apply -- [mean_party_size()] and
+#' `derive_angler_count(by_type = TRUE)` match those two exactly.
 #'
 #' Exported because `tidycreel.connect` translates source codes at the fetch and
 #' has to check its targets against the same list this package filters on; a
@@ -233,6 +247,9 @@ normalize_value_maps <- function(value_maps) {
           class = "creel_error_schema_validation"
         )
       }
+      if (col == "angler_type") {
+        inform_angler_type_near_misses(map)
+      }
       next
     }
     bad <- setdiff(unname(map), valid)
@@ -249,6 +266,32 @@ normalize_value_maps <- function(value_maps) {
   }
 
   value_maps
+}
+
+# Internal: point out angler_type map targets that are near misses of the
+# labels the package matches (#563). A message, not a refusal: "Boat" is a
+# legal label, it just will not meet "boat" anywhere the package looks for it.
+#' @noRd
+#' @keywords internal
+inform_angler_type_near_misses <- function(map) {
+  targets <- unique(unname(map))
+  norm <- tolower(trimws(targets))
+  near <- targets[norm %in% ANGLER_TYPE_LABELS & !targets %in% ANGLER_TYPE_LABELS] # nolint: object_name_linter
+  if (length(near) == 0L) {
+    return(invisible(NULL))
+  }
+  suggest <- tolower(trimws(near)) # nolint: object_usage_linter
+  cli::cli_inform(
+    c(
+      "{.arg value_maps}${.field angler_type} maps to {.val {near}}.",
+      "i" = "The package matches {.val {ANGLER_TYPE_LABELS}} exactly: \\
+             {.fn mean_party_size} looks for {.val boat} by default, and \\
+             {.code derive_angler_count(by_type = TRUE)} writes {.val {ANGLER_TYPE_LABELS}}.",
+      "i" = "Map to {.val {suggest}} instead so interview and count rows line up."
+    ),
+    class = "creel_message_angler_type_label"
+  )
+  invisible(NULL)
 }
 
 # Internal: put `strata_cols` into its fully-named form.
@@ -361,7 +404,8 @@ new_creel_schema <- function(survey_type, mappings) {
 #'   design built with `strata =` aborts (GH #171).
 #' @param value_maps Source vocabularies for the coded columns, as a named list
 #'   keyed by canonical column — `trip_status`, `catch_type`, `length_type`,
-#'   and the free-label columns `angler_method` and `species_sought`.
+#'   and the free-label columns `angler_method`, `species_sought` and
+#'   `angler_type`.
 #'   Each entry is a fully named character vector mapping the source's own codes
 #'   to canonical values: `c("1" = "complete", "2" = "incomplete")`. Names are
 #'   what the source writes, values what tidycreel means.
@@ -378,6 +422,12 @@ new_creel_schema <- function(survey_type, mappings) {
 #'   to any non-empty label, `c("1" = "boat", "2" = "shore")`, and the map's own
 #'   labels serve as the vocabulary: a loader still refuses a code the map does
 #'   not declare (#532).
+#'
+#'   `angler_type` is free-label too (#563): `c("1" = "bank", "2" = "boat",
+#'   "3" = "ice")`. Use `"bank"` and `"boat"` for those two types, because
+#'   [mean_party_size()] looks for `"boat"` by default and
+#'   `derive_angler_count(by_type = TRUE)` writes `"bank"` and `"boat"`; a map
+#'   targeting `"Boat"` or `"BANK"` is accepted with a message saying so.
 #' @param catch_col Column name for catch count in interviews.
 #' @param effort_col Column name for effort (hours) in interviews.
 #' @param trip_status_col Column name for trip status in interviews.

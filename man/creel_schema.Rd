@@ -79,7 +79,8 @@ design built with \verb{strata =} aborts (GH #171).}
 
 \item{value_maps}{Source vocabularies for the coded columns, as a named list
 keyed by canonical column — \code{trip_status}, \code{catch_type}, \code{length_type},
-and the free-label columns \code{angler_method} and \code{species_sought}.
+and the free-label columns \code{angler_method}, \code{species_sought} and
+\code{angler_type}.
 Each entry is a fully named character vector mapping the source's own codes
 to canonical values: \code{c("1" = "complete", "2" = "incomplete")}. Names are
 what the source writes, values what tidycreel means.
@@ -95,7 +96,12 @@ recoded by hand afterwards — a hand recode folds an undeclared third code
 methods and target species are the agency's own. Their maps translate codes
 to any non-empty label, \code{c("1" = "boat", "2" = "shore")}, and the map's own
 labels serve as the vocabulary: a loader still refuses a code the map does
-not declare (#532).}
+not declare (#532).
+
+\code{angler_type} is free-label too (#563): \code{c("1" = "bank", "2" = "boat", "3" = "ice")}. Use \code{"bank"} and \code{"boat"} for those two types, because
+\code{\link[=mean_party_size]{mean_party_size()}} looks for \code{"boat"} by default and
+\code{derive_angler_count(by_type = TRUE)} writes \code{"bank"} and \code{"boat"}; a map
+targeting \code{"Boat"} or \code{"BANK"} is accepted with a message saying so.}
 
 \item{catch_col}{Column name for catch count in interviews.}
 
