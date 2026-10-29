@@ -99,7 +99,8 @@ propagation via the delta method. Requires a creel design with count data
 <span>  missing_sections <span class="op">=</span> <span class="st">"warn"</span>,</span>
 <span>  product_variance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"goodman"</span>, <span class="st">"first_order"</span><span class="op">)</span>,</span>
 <span>  ci_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"symmetric"</span>, <span class="st">"log"</span><span class="op">)</span>,</span>
-<span>  missing_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"exclude"</span><span class="op">)</span></span>
+<span>  missing_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"error"</span>, <span class="st">"exclude"</span><span class="op">)</span>,</span>
+<span>  rate_groups <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -222,6 +223,24 @@ ungrouped total on a sectioned design pools one rate across each section's
 strata, so an uncovered stratum there is refused under either setting; use
 <code>by</code> on the stratum column to get the covered cells and the
 <code>"exclude"</code> record.</p></dd>
+
+
+<dt id="arg-rate-groups">rate_groups<a class="anchor" aria-label="anchor" href="#arg-rate-groups"></a></dt>
+<dd><p>Optional data frame pooling release rates more coarsely
+than effort (GH #389). Key columns are every one of the design's strata
+columns and, optionally, <code>angler_type</code> (an <code>NA</code> key maps the cell whose
+type is unknown); exactly one other column names each cell's rate
+group. Each effort cell is multiplied by the rate estimated from every trip
+in its group – bank anglers pooled over a season block while boat rates
+stay monthly, say. Every effort cell and every interview must fall in a
+group, every row must match a cell, and each group must meet the usual
+10-trip floor; anything else stops. The variance treats a group's rate as
+one shared estimate across its cells and carries the covariance of cells
+counted on the same days (bank and boat on one drive). The result's
+<code>rate_groups</code> element holds the map and each group's rate, SE and <code>n</code>.
+Standard count designs only: bus-route, ice, aerial, camera and sectioned
+designs stop, as does <code>missing_rate = "exclude"</code>, and so does
+<code>by = species</code> for now.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -23,7 +23,8 @@ estimate_total_release(
   missing_sections = "warn",
   product_variance = c("goodman", "first_order"),
   ci_type = c("symmetric", "log"),
-  missing_rate = c("error", "exclude")
+  missing_rate = c("error", "exclude"),
+  rate_groups = NULL
 )
 ```
 
@@ -157,6 +158,24 @@ estimate_total_release(
   uncovered stratum there is refused under either setting; use `by` on
   the stratum column to get the covered cells and the `"exclude"`
   record.
+
+- rate_groups:
+
+  Optional data frame pooling release rates more coarsely than effort
+  (GH \#389). Key columns are every one of the design's strata columns
+  and, optionally, `angler_type` (an `NA` key maps the cell whose type
+  is unknown); exactly one other column names each cell's rate group.
+  Each effort cell is multiplied by the rate estimated from every trip
+  in its group – bank anglers pooled over a season block while boat
+  rates stay monthly, say. Every effort cell and every interview must
+  fall in a group, every row must match a cell, and each group must meet
+  the usual 10-trip floor; anything else stops. The variance treats a
+  group's rate as one shared estimate across its cells and carries the
+  covariance of cells counted on the same days (bank and boat on one
+  drive). The result's `rate_groups` element holds the map and each
+  group's rate, SE and `n`. Standard count designs only: bus-route, ice,
+  aerial, camera and sectioned designs stop, as does
+  `missing_rate = "exclude"`, and so does `by = species` for now.
 
 ## Value
 
