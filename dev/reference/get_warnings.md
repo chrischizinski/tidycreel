@@ -100,7 +100,7 @@ design <- withCallingHandlers(
 #> ℹ Added 22 interviews: 17 complete (77%), 5 incomplete (23%)
 get_warnings(design)
 #>    id                       class tier             fn
-#> 1 124 creel_warning_no_party_size    1 add_interviews
+#> 1 125 creel_warning_no_party_size    1 add_interviews
 #>                                                                                                                                                                                                                                                                    message
 #> 1 ! No `n_anglers` provided — assuming 1 angler per interview.\nℹ Pass `n_anglers = <column>` to use actual party sizes for angler-hour\n  normalization.\nℹ If the interviews really are one angler each, pass `n_anglers = 1` to state\n  that and silence this warning.
 ```

@@ -114,7 +114,8 @@ boats were counted but the people aboard could not be counted reliably.</p></li>
 <span>  boat_count <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  party_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  party_size_se <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  to <span class="op">=</span> <span class="st">"angler_count"</span></span>
+<span>  to <span class="op">=</span> <span class="st">"angler_count"</span>,</span>
+<span>  by_type <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -157,6 +158,12 @@ deliberately no zero default; see the section above.</p></dd>
 <dt id="arg-to">to<a class="anchor" aria-label="anchor" href="#arg-to"></a></dt>
 <dd><p>Name of the column to write. Defaults to <code>"angler_count"</code>.</p></dd>
 
+
+<dt id="arg-by-type">by_type<a class="anchor" aria-label="anchor" href="#arg-by-type"></a></dt>
+<dd><p>If <code>TRUE</code>, return one row per count and angler type, with an
+<code>angler_type</code> column, instead of adding the components into one count.
+See "Bank and boat as separate rows". Defaults to <code>FALSE</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -166,7 +173,9 @@ superseded by the derived count and, where applicable, by
 <code>expansion_basis</code>. Leaving them in produced a table that varied between
 sub-counts of one sampling unit, which <code><a href="add_counts.html">add_counts()</a></code> cannot distinguish
 from an undeclared structural dimension (GH #162). The destination column
-is never dropped, even when it is also one of the inputs.</p>
+is never dropped, even when it is also one of the inputs. With
+<code>by_type = TRUE</code>, one row per input row and component instead, in input
+order, with an <code>angler_type</code> column.</p>
 <p>When a party-size standard error is available, four further columns are
 appended for the estimators to read: <code>expansion_basis</code> (the boat count,
 which is what the multiplier acts on), <code>expansion_se</code>,
@@ -199,7 +208,29 @@ and a count of zero are different observations and are kept different here.</p>
 <p>Pooling bank and boat anglers into one count assumes both are detected the
 same way and are being reported as one quantity. Where detection
 probabilities or catch rates differ between them, estimate the two as
-separate domains instead of adding them.</p>
+separate domains instead of adding them: <code>by_type = TRUE</code> returns one row per
+count and angler type, ready for <code>add_counts(unit_cols = )</code> with
+<code>angler_type</code> among the unit columns.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="bank-and-boat-as-separate-rows">Bank and boat as separate rows<a class="anchor" aria-label="anchor" href="#bank-and-boat-as-separate-rows"></a></h2>
+
+
+<p>With <code>by_type = TRUE</code> each input row becomes one row per component supplied,
+with an <code>angler_type</code> column: <code>"bank"</code> for <code>bank</code>, and <code>"boat"</code> for either
+boat form. The label names who was counted, not how; <code>boat_anglers</code> and
+<code>boat_count</code> cannot both be given, so a count never has two boat rows. The
+labels match <code><a href="mean_party_size.html">mean_party_size()</a></code>'s default <code>boat_value</code>.</p>
+<p>When the boat component carries a party-size standard error, <strong>every</strong> row
+carries the expansion columns. A bank row's <code>expansion_basis</code> is 0 – its
+count does not depend on the party size – and its <code>expansion_se</code> and
+<code>expansion_group</code> are those of the boat row from the same count. Building
+the bank rows separately and binding them on without these columns either
+fails to bind or, if the columns are dropped to make it bind, silently
+removes the party-size term from the effort standard error.</p>
+<p>A missing component makes only its own row missing. In the pooled form a
+missing bank count makes the whole total unknown; here the boat row of that
+count is still observed.</p>
     </div>
     <div class="section level2">
     <h2 id="the-party-size-is-an-estimate">The party size is an estimate<a class="anchor" aria-label="anchor" href="#the-party-size-is-an-estimate"></a></h2>
@@ -285,6 +316,72 @@ returned table carries no expansion columns in that case, and
 <span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type boat_anglers angler_count</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 2024-06-01  weekday            7         10.3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 2024-06-02  weekend           16         28.6</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Bank and boat effort reported separately</span></span></span>
+<span class="r-in"><span><span class="va">season</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-01"</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0</span><span class="op">:</span><span class="fl">3</span>,</span></span>
+<span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  bank_anglers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4L</span>, <span class="fl">9L</span>, <span class="fl">6L</span>, <span class="fl">11L</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  angler_boats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3L</span>, <span class="fl">7L</span>, <span class="fl">2L</span>, <span class="fl">8L</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">long</span> <span class="op">&lt;-</span> <span class="fu">derive_angler_count</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">season</span>,</span></span>
+<span class="r-in"><span>  bank <span class="op">=</span> <span class="va">bank_anglers</span>,</span></span>
+<span class="r-in"><span>  boat_count <span class="op">=</span> <span class="va">angler_boats</span>,</span></span>
+<span class="r-in"><span>  party_size <span class="op">=</span> <span class="fl">2.4</span>,</span></span>
+<span class="r-in"><span>  party_size_se <span class="op">=</span> <span class="fl">0.2</span>,</span></span>
+<span class="r-in"><span>  by_type <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">long</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         date day_type angler_count angler_type expansion_basis expansion_se</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 2024-06-01  weekday          4.0        bank               0          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 2024-06-01  weekday          7.2        boat               3          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 2024-06-02  weekend          9.0        bank               0          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 2024-06-02  weekend         16.8        boat               7          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 2024-06-03  weekday          6.0        bank               0          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 2024-06-03  weekday          4.8        boat               2          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7 2024-06-04  weekend         11.0        bank               0          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8 2024-06-04  weekend         19.2        boat               8          0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   expansion_group expansion_of</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8               1 angler_count</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="va">season</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">design</span>, <span class="va">long</span>,</span></span>
+<span class="r-in"><span>  count_col <span class="op">=</span> <span class="st">"angler_count"</span>,</span></span>
+<span class="r-in"><span>  unit_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span>, <span class="st">"angler_type"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">angler_type</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   angler-days, not angler-hours.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   counts, period_length_col = &lt;col&gt;)`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Method: Total</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Taylor linearization</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Grouped by: angler_type</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Party-size expansion SE: 0 and 4 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 8</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   angler_type estimate    se se_between se_within ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> bank              30  2.83       2.83         0     17.8     42.2     4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> boat              48  5.25       3.39         0     25.4     70.6     4</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

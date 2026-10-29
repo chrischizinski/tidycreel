@@ -27,7 +27,8 @@ derive_angler_count(
   boat_count = NULL,
   party_size = NULL,
   party_size_se = NULL,
-  to = "angler_count"
+  to = "angler_count",
+  by_type = FALSE
 )
 ```
 
@@ -72,6 +73,12 @@ derive_angler_count(
 
   Name of the column to write. Defaults to `"angler_count"`.
 
+- by_type:
+
+  If `TRUE`, return one row per count and angler type, with an
+  `angler_type` column, instead of adding the components into one count.
+  See "Bank and boat as separate rows". Defaults to `FALSE`.
+
 ## Value
 
 `counts` with the derived column appended, and the columns consumed to
@@ -82,7 +89,8 @@ sub-counts of one sampling unit, which
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
 cannot distinguish from an undeclared structural dimension (GH \#162).
 The destination column is never dropped, even when it is also one of the
-inputs.
+inputs. With `by_type = TRUE`, one row per input row and component
+instead, in input order, with an `angler_type` column.
 
 When a party-size standard error is available, four further columns are
 appended for the estimators to read: `expansion_basis` (the boat count,
@@ -126,7 +134,32 @@ kept different here.
 Pooling bank and boat anglers into one count assumes both are detected
 the same way and are being reported as one quantity. Where detection
 probabilities or catch rates differ between them, estimate the two as
-separate domains instead of adding them.
+separate domains instead of adding them: `by_type = TRUE` returns one
+row per count and angler type, ready for `add_counts(unit_cols = )` with
+`angler_type` among the unit columns.
+
+## Bank and boat as separate rows
+
+With `by_type = TRUE` each input row becomes one row per component
+supplied, with an `angler_type` column: `"bank"` for `bank`, and
+`"boat"` for either boat form. The label names who was counted, not how;
+`boat_anglers` and `boat_count` cannot both be given, so a count never
+has two boat rows. The labels match
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md)'s
+default `boat_value`.
+
+When the boat component carries a party-size standard error, **every**
+row carries the expansion columns. A bank row's `expansion_basis` is 0 –
+its count does not depend on the party size – and its `expansion_se` and
+`expansion_group` are those of the boat row from the same count.
+Building the bank rows separately and binding them on without these
+columns either fails to bind or, if the columns are dropped to make it
+bind, silently removes the party-size term from the effort standard
+error.
+
+A missing component makes only its own row missing. In the pooled form a
+missing bank count makes the whole total unknown; here the boat row of
+that count is still observed.
 
 ## The party size is an estimate
 
@@ -218,4 +251,70 @@ derive_angler_count(
 #>         date day_type boat_anglers angler_count
 #> 1 2024-06-01  weekday            7         10.3
 #> 2 2024-06-02  weekend           16         28.6
+
+# Bank and boat effort reported separately
+season <- data.frame(
+  date = as.Date("2024-06-01") + 0:3,
+  day_type = c("weekday", "weekend", "weekday", "weekend"),
+  bank_anglers = c(4L, 9L, 6L, 11L),
+  angler_boats = c(3L, 7L, 2L, 8L)
+)
+long <- derive_angler_count(
+  season,
+  bank = bank_anglers,
+  boat_count = angler_boats,
+  party_size = 2.4,
+  party_size_se = 0.2,
+  by_type = TRUE
+)
+long
+#>         date day_type angler_count angler_type expansion_basis expansion_se
+#> 1 2024-06-01  weekday          4.0        bank               0          0.2
+#> 2 2024-06-01  weekday          7.2        boat               3          0.2
+#> 3 2024-06-02  weekend          9.0        bank               0          0.2
+#> 4 2024-06-02  weekend         16.8        boat               7          0.2
+#> 5 2024-06-03  weekday          6.0        bank               0          0.2
+#> 6 2024-06-03  weekday          4.8        boat               2          0.2
+#> 7 2024-06-04  weekend         11.0        bank               0          0.2
+#> 8 2024-06-04  weekend         19.2        boat               8          0.2
+#>   expansion_group expansion_of
+#> 1               1 angler_count
+#> 2               1 angler_count
+#> 3               1 angler_count
+#> 4               1 angler_count
+#> 5               1 angler_count
+#> 6               1 angler_count
+#> 7               1 angler_count
+#> 8               1 angler_count
+
+calendar <- season[c("date", "day_type")]
+design <- creel_design(calendar, date = date, strata = day_type)
+design <- add_counts(
+  design, long,
+  count_col = "angler_count",
+  unit_cols = c("date", "day_type", "angler_type")
+)
+estimate_effort(design, by = angler_type, target = "sampled_days")
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is in
+#>   angler-days, not angler-hours.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Grouped by: angler_type
+#> Effort target: sampled_days
+#> Party-size expansion SE: 0 and 4 (included in se)
+#> 
+#> # A tibble: 2 × 8
+#>   angler_type estimate    se se_between se_within ci_lower ci_upper     n
+#>   <chr>          <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
+#> 1 bank              30  2.83       2.83         0     17.8     42.2     4
+#> 2 boat              48  5.25       3.39         0     25.4     70.6     4
 ```
