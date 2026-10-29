@@ -488,7 +488,12 @@ declarations produced a fragile schedule.</p></dd>
 <p>Information is raised as a message, not a warning. Each carries its own
 class, <code>creel_message_&lt;fact&gt;</code>, and the parent class <code>creel_message</code>, and is
 recorded like a warning, with tier 3. Silence one for one call with
-<code>invokeRestart("muffleMessage")</code> in a <code>creel_message_&lt;fact&gt;</code> handler.</p><dl><dt><code>creel_message_argument_ignored</code></dt>
+<code>invokeRestart("muffleMessage")</code> in a <code>creel_message_&lt;fact&gt;</code> handler.</p><dl><dt><code>creel_message_angler_type_label</code></dt>
+<dd><p>Tier 3. A
+<code>value_maps</code> target for <code>angler_type</code> differs from
+<code>"bank"</code> or <code>"boat"</code> only in case or spacing (GH #563).</p></dd>
+
+<dt><code>creel_message_argument_ignored</code></dt>
 <dd><p>Tier 3. An argument has no
 effect in this call.</p></dd>
 

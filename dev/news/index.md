@@ -264,6 +264,20 @@
 
 ### New features
 
+- `creel_schema(value_maps =)` now accepts `angler_type`, as a
+  free-label column like `angler_method` and `species_sought`
+  ([\#563](https://github.com/chrischizinski/tidycreel/issues/563)). A
+  sheet that codes angler type
+  (`c("1" = "bank", "2" = "boat", "3" = "ice")`) can declare its codes
+  instead of recoding by hand, and tidycreel.connect refuses a code the
+  map does not declare rather than passing it through. Any label is
+  accepted, so ice, pier or kayak anglers can be mapped. Because
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md)
+  looks for `"boat"` and `derive_angler_count(by_type = TRUE)` writes
+  `"bank"` and `"boat"`, a target that differs from those only in case
+  or spacing (`"Boat"`, `"BANK "`) is accepted with a message suggesting
+  the exact label.
+
 - `derive_angler_count(by_type = TRUE)` returns bank and boat counts as
   separate rows with an `angler_type` column, ready for
   `add_counts(unit_cols = c(..., "angler_type"))` and

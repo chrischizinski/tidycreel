@@ -109,10 +109,11 @@ creel_schema(
 
   Source vocabularies for the coded columns, as a named list keyed by
   canonical column — `trip_status`, `catch_type`, `length_type`, and the
-  free-label columns `angler_method` and `species_sought`. Each entry is
-  a fully named character vector mapping the source's own codes to
-  canonical values: `c("1" = "complete", "2" = "incomplete")`. Names are
-  what the source writes, values what tidycreel means.
+  free-label columns `angler_method`, `species_sought` and
+  `angler_type`. Each entry is a fully named character vector mapping
+  the source's own codes to canonical values:
+  `c("1" = "complete", "2" = "incomplete")`. Names are what the source
+  writes, values what tidycreel means.
 
   Every downstream filter matches the canonical literals, so a source
   that codes these columns has to declare what its codes mean. Values
@@ -128,6 +129,15 @@ creel_schema(
   `c("1" = "boat", "2" = "shore")`, and the map's own labels serve as
   the vocabulary: a loader still refuses a code the map does not declare
   (#532).
+
+  `angler_type` is free-label too (#563):
+  `c("1" = "bank", "2" = "boat", "3" = "ice")`. Use `"bank"` and
+  `"boat"` for those two types, because
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md)
+  looks for `"boat"` by default and
+  `derive_angler_count(by_type = TRUE)` writes `"bank"` and `"boat"`; a
+  map targeting `"Boat"` or `"BANK"` is accepted with a message saying
+  so.
 
 - catch_col:
 

@@ -133,7 +133,13 @@ add_interviews(
   Tidy selector for angler type column (optional, default NULL). Use
   bare column names (e.g., `angler_type = angler_type`). Common values
   are "bank" and "boat". Values are not validated; downstream summary
-  functions use this field.
+  functions use this field. Use exactly "bank" and "boat" for those
+  types:
+  [`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md)
+  and `derive_angler_count(by_type = TRUE)` match them. A coded source
+  can declare its codes with
+  [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md)
+  `value_maps`.
 
 - angler_method:
 

@@ -157,9 +157,7 @@ and uses the base pipe `|>`.
 - **All exported functions** must include working examples
 - **Target ≥90% test coverage** with meaningful assertions
 - **Use `usethis`, `devtools`, `testthat` workflows** for development
-- **Run
-  [`devtools::check()`](https://devtools.r-lib.org/reference/check.html)
-  before submitting** pull requests
+- **Run `devtools::check()` before submitting** pull requests
 
 ### Testing Requirements
 
@@ -238,11 +236,9 @@ Before opening a PR for a non-trivial change, file an issue first so the
 approach can be discussed. This avoids duplication of effort and ensures
 the change aligns with the project direction.
 
-**Before submitting:** - \[ \] All tests pass
-([`devtools::test()`](https://devtools.r-lib.org/reference/test.html)) -
-\[ \] Package passes R CMD check
-([`devtools::check()`](https://devtools.r-lib.org/reference/check.html)) -
-\[ \] Documentation is complete and accurate - \[ \] NEWS.md updated for
+**Before submitting:** - \[ \] All tests pass (`devtools::test()`) - \[
+\] Package passes R CMD check (`devtools::check()`) - \[ \]
+Documentation is complete and accurate - \[ \] NEWS.md updated for
 user-facing changes - \[ \] Code follows tidyverse style (verified with
 [`styler::style_pkg()`](https://styler.r-lib.org/reference/style_pkg.html))
 
@@ -296,9 +292,8 @@ parts, and they refuse when something a person has to do is undone.
     - commit, and push the branch.
 3.  `just release-check`. This runs the submission guard’s dry run and
     `R CMD check --as-cran`. Every NOTE it reports must be explained in
-    `cran-comments.md`. Then run
-    [`devtools::check_win_devel()`](https://devtools.r-lib.org/reference/check_win.html)
-    and record its result in `cran-comments.md`.
+    `cran-comments.md`. Then run `devtools::check_win_devel()` and
+    record its result in `cran-comments.md`.
 4.  Submit, interactively:
     `source("scripts/cran-submit.R"); cran_submit("~/Dev/tidycreel-submit")`.
     Never use the CRAN web form, and never submit from `main`.

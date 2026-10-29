@@ -4,9 +4,11 @@ is a fixed vocabulary rather than a number: trip_status, catch_type and
 length_type. Every downstream filter compares against these literals, so a
 source that codes one of these columns has to be translated before its values
 can be trusted — see the value_maps argument of creel_schema().
-angler_method and species_sought can also be mapped, but have no entry
-here: their labels are the agency's own, so a map for either is its own
-vocabulary.
+angler_method, species_sought and angler_type can also be mapped, but
+have no entry here: their labels are the agency's own, so a map for any of
+them is its own vocabulary. For angler_type, use &quot;bank&quot; and &quot;boat&quot;
+where they apply – mean_party_size() and
+derive_angler_count(by_type = TRUE) match those two exactly.
 Exported because tidycreel.connect translates source codes at the fetch and
 has to check its targets against the same list this package filters on; a
 second copy of the vocabulary would be free to drift from this one."><meta property="og:description" content="The exact values tidycreel matches on for the three columns whose meaning
@@ -14,9 +16,11 @@ is a fixed vocabulary rather than a number: trip_status, catch_type and
 length_type. Every downstream filter compares against these literals, so a
 source that codes one of these columns has to be translated before its values
 can be trusted — see the value_maps argument of creel_schema().
-angler_method and species_sought can also be mapped, but have no entry
-here: their labels are the agency's own, so a map for either is its own
-vocabulary.
+angler_method, species_sought and angler_type can also be mapped, but
+have no entry here: their labels are the agency's own, so a map for any of
+them is its own vocabulary. For angler_type, use &quot;bank&quot; and &quot;boat&quot;
+where they apply – mean_party_size() and
+derive_angler_count(by_type = TRUE) match those two exactly.
 Exported because tidycreel.connect translates source codes at the fetch and
 has to check its targets against the same list this package filters on; a
 second copy of the vocabulary would be free to drift from this one."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
@@ -97,9 +101,11 @@ is a fixed vocabulary rather than a number: <code>trip_status</code>, <code>catc
 <code>length_type</code>. Every downstream filter compares against these literals, so a
 source that codes one of these columns has to be translated before its values
 can be trusted — see the <code>value_maps</code> argument of <code><a href="creel_schema.html">creel_schema()</a></code>.</p>
-<p><code>angler_method</code> and <code>species_sought</code> can also be mapped, but have no entry
-here: their labels are the agency's own, so a map for either is its own
-vocabulary.</p>
+<p><code>angler_method</code>, <code>species_sought</code> and <code>angler_type</code> can also be mapped, but
+have no entry here: their labels are the agency's own, so a map for any of
+them is its own vocabulary. For <code>angler_type</code>, use <code>"bank"</code> and <code>"boat"</code>
+where they apply – <code><a href="mean_party_size.html">mean_party_size()</a></code> and
+<code>derive_angler_count(by_type = TRUE)</code> match those two exactly.</p>
 <p>Exported because <code>tidycreel.connect</code> translates source codes at the fetch and
 has to check its targets against the same list this package filters on; a
 second copy of the vocabulary would be free to drift from this one.</p>

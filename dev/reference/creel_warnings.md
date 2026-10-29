@@ -391,6 +391,11 @@ class, `creel_message_<fact>`, and the parent class `creel_message`, and
 is recorded like a warning, with tier 3. Silence one for one call with
 `invokeRestart("muffleMessage")` in a `creel_message_<fact>` handler.
 
+- `creel_message_angler_type_label`:
+
+  Tier 3. A `value_maps` target for `angler_type` differs from `"bank"`
+  or `"boat"` only in case or spacing (GH \#563).
+
 - `creel_message_argument_ignored`:
 
   Tier 3. An argument has no effect in this call.

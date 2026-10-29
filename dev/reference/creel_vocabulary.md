@@ -8,9 +8,12 @@ translated before its values can be trusted — see the `value_maps`
 argument of
 [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md).
 
-`angler_method` and `species_sought` can also be mapped, but have no
-entry here: their labels are the agency's own, so a map for either is
-its own vocabulary.
+`angler_method`, `species_sought` and `angler_type` can also be mapped,
+but have no entry here: their labels are the agency's own, so a map for
+any of them is its own vocabulary. For `angler_type`, use `"bank"` and
+`"boat"` where they apply –
+[`mean_party_size()`](https://chrischizinski.com/tidycreel/dev/reference/mean_party_size.md)
+and `derive_angler_count(by_type = TRUE)` match those two exactly.
 
 Exported because `tidycreel.connect` translates source codes at the
 fetch and has to check its targets against the same list this package

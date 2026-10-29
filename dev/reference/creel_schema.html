@@ -189,7 +189,8 @@ design built with <code>strata =</code> aborts (GH #171).</p></dd>
 <dt id="arg-value-maps">value_maps<a class="anchor" aria-label="anchor" href="#arg-value-maps"></a></dt>
 <dd><p>Source vocabularies for the coded columns, as a named list
 keyed by canonical column — <code>trip_status</code>, <code>catch_type</code>, <code>length_type</code>,
-and the free-label columns <code>angler_method</code> and <code>species_sought</code>.
+and the free-label columns <code>angler_method</code>, <code>species_sought</code> and
+<code>angler_type</code>.
 Each entry is a fully named character vector mapping the source's own codes
 to canonical values: <code>c("1" = "complete", "2" = "incomplete")</code>. Names are
 what the source writes, values what tidycreel means.</p>
@@ -203,7 +204,11 @@ recoded by hand afterwards — a hand recode folds an undeclared third code
 methods and target species are the agency's own. Their maps translate codes
 to any non-empty label, <code>c("1" = "boat", "2" = "shore")</code>, and the map's own
 labels serve as the vocabulary: a loader still refuses a code the map does
-not declare (#532).</p></dd>
+not declare (#532).</p>
+<p><code>angler_type</code> is free-label too (#563): <code>c("1" = "bank", "2" = "boat", "3" = "ice")</code>. Use <code>"bank"</code> and <code>"boat"</code> for those two types, because
+<code><a href="mean_party_size.html">mean_party_size()</a></code> looks for <code>"boat"</code> by default and
+<code>derive_angler_count(by_type = TRUE)</code> writes <code>"bank"</code> and <code>"boat"</code>; a map
+targeting <code>"Boat"</code> or <code>"BANK"</code> is accepted with a message saying so.</p></dd>
 
 
 <dt id="arg-catch-col">catch_col<a class="anchor" aria-label="anchor" href="#arg-catch-col"></a></dt>
