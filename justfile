@@ -2,7 +2,10 @@ snapshot:
     git status --short
     git log --oneline -5
 
+# The absent-to-zero guard runs first: it takes about a second, and until #580
+# it ran only in CI, so a new hit cost a full CI round to find.
 test:
+    scripts/absent-zero-guard.sh
     Rscript -e 'devtools::test()'
 
 # Builds the PDF reference manual on purpose. `--no-manual` was here until
