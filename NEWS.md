@@ -203,7 +203,10 @@
   boat effort standard error. Every row now carries those columns: a bank
   row's `expansion_basis` is 0, so the party-size error is charged to boat
   effort only. Both boat forms are labelled `"boat"`. Results equal the
-  two-call construction.
+  two-call construction. A part of an estimate whose expanded-boat total is
+  zero (bank rows, or a domain with no boats) now gets a party-size term of
+  exactly 0 even when the party-size SE is unknown; before, `0 * NA` made its
+  SE `NA` for a multiplier it never used.
 
 * New `creel_calendar()` builds the season calendar `creel_design()` takes
   (#559): every day of the season, one row per date, with `month`, `week`,

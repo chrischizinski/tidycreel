@@ -4275,7 +4275,14 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
   # before squaring, while different groups add as variances. Squaring here and
   # summing left `add_expansion_covariance()` with nothing to combine, which is
   # what forced `NA` on the "partial" geometry (GH #150).
-  per_group <- as.numeric(totals[[basis_col]]) * se_vec
+  #
+  # A part whose expanded-boat total is a known zero -- bank rows from
+  # derive_angler_count(by_type = TRUE), or a domain with no boats -- did not
+  # use the multiplier at all, so its term is exactly 0 even when the
+  # multiplier's SE is unknown (0 * NA would make bank effort's SE unknown
+  # because of a boat party size it never touched; GH #562).
+  basis_total <- as.numeric(totals[[basis_col]])
+  per_group <- ifelse(!is.na(basis_total) & basis_total == 0, 0, basis_total * se_vec)
   contrib <- per_group^2
   group_labels <- as.character(totals[[group_col]])
 

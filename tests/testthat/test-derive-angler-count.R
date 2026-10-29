@@ -377,3 +377,40 @@ test_that("by_type refuses to overwrite angler_type and checks its argument", {
   # The pooled form never writes angler_type, so an existing one is left alone.
   expect_equal(derive_angler_count(counts, bank = bank_anglers)$angler_type, rep("x", 4))
 })
+
+test_that("an unknown party-size SE leaves bank effort's SE known (GH #562)", {
+  # Found by the pre-push ensemble. Bank rows carry the boat row's SE so that
+  # add_counts() sees one SE per sampling unit, but their basis is 0: bank
+  # effort never used the multiplier. 0 * NA is NA in R, so without a guard an
+  # unknown boat party-size SE made the BANK SE unknown too. Boat stays NA --
+  # that one is genuinely unknown.
+  raw <- data.frame(
+    date = as.Date("2024-06-01") + 0:11,
+    day_type = rep(c("weekday", "weekend"), 6),
+    bank_anglers = c(3, 5, 2, 4, 8, 10, 2, 4, 6, 3, 5, 7),
+    angler_boats = c(6, 2, 4, 8, 5, 5, 3, 7, 2, 6, 4, 8)
+  )
+  long <- derive_angler_count(
+    raw,
+    bank = bank_anglers, boat_count = angler_boats,
+    party_size = 2.5, party_size_se = NA_real_,
+    by_type = TRUE
+  )
+  calendar <- data.frame(date = raw$date, day_type = raw$day_type)
+  d <- suppressMessages(creel_design(calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts(
+    d, long,
+    count_col = "angler_count",
+    unit_cols = c("date", "day_type", "angler_type")
+  )))
+  res <- suppressWarnings(suppressMessages(
+    estimate_effort(d, by = angler_type, target = "sampled_days") # nolint: object_usage_linter
+  ))
+  est <- res$estimates
+  bank <- est$angler_type == "bank"
+
+  expect_equal(res$se_expansion[bank], 0)
+  expect_false(is.na(est$se[bank]))
+  expect_equal(est$se[bank], est$se_between[bank], tolerance = 1e-10)
+  expect_true(is.na(est$se[!bank]))
+})
