@@ -627,3 +627,42 @@ test_that("exact bank/boat targets and unrelated labels raise no angler_type mes
     value_maps  = list(angler_method = c("1" = "Boat"))
   ))
 })
+
+test_that("the angler_type note carries the creel_message parent class", {
+  # Callers muffle all tidycreel notes with one creel_message handler (#496).
+  # A note raised without the parent slips past it.
+  expect_message(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_type = c("1" = "Boat"))
+    ),
+    class = "creel_message"
+  )
+})
+
+test_that("no angler_type note when another value_maps entry aborts the call", {
+  # The note is about a label in a schema that is never built; the error is
+  # the only thing worth reading.
+  expect_no_message(expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(
+        angler_type = c("1" = "Boat"),
+        trip_status = c("1" = "compleet")
+      )
+    ),
+    class = "creel_error_schema_validation"
+  ))
+})
+
+test_that("two spellings of one label get one suggestion", {
+  msg <- tryCatch(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_type = c("1" = "Boat", "2" = "BOAT"))
+    ),
+    message = function(m) conditionMessage(m)
+  )
+  expect_match(msg, '"Boat" and "BOAT"')
+  expect_no_match(msg, '"boat" and "boat"')
+})

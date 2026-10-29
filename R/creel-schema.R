@@ -247,9 +247,6 @@ normalize_value_maps <- function(value_maps) {
           class = "creel_error_schema_validation"
         )
       }
-      if (col == "angler_type") {
-        inform_angler_type_near_misses(map)
-      }
       next
     }
     bad <- setdiff(unname(map), valid)
@@ -263,6 +260,12 @@ normalize_value_maps <- function(value_maps) {
         class = "creel_error_schema_validation"
       )
     }
+  }
+
+  # After every entry has passed: a note about a label is noise when the same
+  # call is about to abort over another entry.
+  if ("angler_type" %in% names(value_maps)) {
+    inform_angler_type_near_misses(value_maps[["angler_type"]])
   }
 
   value_maps
@@ -280,8 +283,8 @@ inform_angler_type_near_misses <- function(map) {
   if (length(near) == 0L) {
     return(invisible(NULL))
   }
-  suggest <- tolower(trimws(near)) # nolint: object_usage_linter
-  cli::cli_inform(
+  suggest <- unique(tolower(trimws(near))) # nolint: object_usage_linter
+  creel_inform(
     c(
       "{.arg value_maps}${.field angler_type} maps to {.val {near}}.",
       "i" = "The package matches {.val {ANGLER_TYPE_LABELS}} exactly: \\
@@ -289,7 +292,7 @@ inform_angler_type_near_misses <- function(map) {
              {.code derive_angler_count(by_type = TRUE)} writes {.val {ANGLER_TYPE_LABELS}}.",
       "i" = "Map to {.val {suggest}} instead so interview and count rows line up."
     ),
-    class = "creel_message_angler_type_label"
+    class = c("creel_message_angler_type_label", "creel_message")
   )
   invisible(NULL)
 }

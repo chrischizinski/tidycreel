@@ -231,6 +231,9 @@
 #' recorded like a warning, with tier 3. Silence one for one call with
 #' `invokeRestart("muffleMessage")` in a `creel_message_<fact>` handler.
 #' \describe{
+#'   \item{\code{creel_message_angler_type_label}}{Tier 3. A
+#'     \code{value_maps} target for \code{angler_type} differs from
+#'     \code{"bank"} or \code{"boat"} only in case or spacing (GH #563).}
 #'   \item{\code{creel_message_argument_ignored}}{Tier 3. An argument has no
 #'     effect in this call.}
 #'   \item{\code{creel_message_day_type_from_stratum}}{Tier 3. A stratum column
@@ -351,6 +354,7 @@ creel_warning_tiers <- c(
   creel_warning_trip_duration_excluded = 2L,
   creel_warning_trip_length_se_undefined = 2L,
   # Tier 3
+  creel_message_angler_type_label = 3L,
   creel_message_argument_ignored = 3L,
   creel_message_day_type_from_stratum = 3L,
   creel_message_high_zero_catch = 3L,
