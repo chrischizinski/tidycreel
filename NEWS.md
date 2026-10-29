@@ -195,8 +195,8 @@
 
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` take `rate_groups =`, a table that pools catch
-  rates more coarsely than effort (#389). Its keys are the design's strata and,
-  optionally, `angler_type`; one more column names each cell's rate group. Each
+  rates more coarsely than effort (#389). Its keys are every stratum column
+  and, optionally, `angler_type`; one more column names each cell's rate group. Each
   effort cell is multiplied by the rate from every trip in its group: bank
   anglers pooled over a season block while boat rates stay monthly, for
   example. Before, a stratum with too few trips for its own rate could only be

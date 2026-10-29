@@ -47,6 +47,20 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
   allowed_keys <- c(design$strata_cols, "angler_type")
   key_cols <- intersect(names(rate_groups), allowed_keys)
   group_col <- setdiff(names(rate_groups), allowed_keys)
+  missing_strata <- setdiff(design$strata_cols, key_cols)
+  if (length(missing_strata) > 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg rate_groups} must name every stratum column.",
+        "x" = "Missing: {.field {missing_strata}}.",
+        "i" = "Each row maps one effort cell, so the table lists every cell, \\
+               pooled or not. A table keyed by only some strata would map whole \\
+               blocks of cells it never lists, and a missing cell could not be \\
+               told from a pooled one."
+      ),
+      call = call, class = "creel_error_rate_groups"
+    )
+  }
   if (length(key_cols) == 0L || length(group_col) != 1L) {
     cli::cli_abort(
       c(
@@ -66,15 +80,10 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
       call = call, class = "creel_error_rate_groups"
     )
   }
-  if (anyNA(rate_groups[key_cols])) {
-    cli::cli_abort(
-      c(
-        "{.arg rate_groups} has a missing key value.",
-        "i" = "Every row must name the cell it maps; an {.val NA} key matches nothing."
-      ),
-      call = call, class = "creel_error_rate_groups"
-    )
-  }
+  # An NA key is allowed: it maps the cell whose value is unknown (an
+  # interview whose angler type was not recorded, say), which group_key()
+  # keeps distinct from every real label. Refusing it would leave such a cell
+  # impossible to place, and so impossible to estimate.
   key <- group_key(rate_groups, key_cols) # nolint: object_usage_linter
   if (anyDuplicated(key)) {
     cli::cli_abort(
@@ -153,15 +162,20 @@ attach_rate_groups <- function(design, spec, call = rlang::caller_env()) {
       call = call, class = "creel_error_rate_groups"
     )
   }
-  used <- unique(group_key(design$counts, spec$key_cols)) # nolint: object_usage_linter
+  # A row is in use if it places counts or interviews: an unknown-type row
+  # may map interviews only, since counts are written with known types.
+  used <- unique(c(
+    group_key(design$counts, spec$key_cols), # nolint: object_usage_linter
+    group_key(rate_group_key_frame(design$interviews, spec, design), spec$key_cols) # nolint: object_usage_linter
+  ))
   unused <- setdiff(group_key(spec$map, spec$key_cols), used) # nolint: object_usage_linter
   if (length(unused) > 0L) {
     cli::cli_abort(
       c(
         "{length(unused)} row{?s} of {.arg rate_groups} match{?es/} no effort cell.",
         "x" = "Unmatched: {.val {gsub('\u001f', ' / ', unused, fixed = TRUE)}}.",
-        "i" = "Check the key values for typos; a row that matches nothing is ignored \\
-               by nothing downstream and usually means another row is missing."
+        "i" = "Check the key values for typos: a row that places no count or \\
+               interview usually means the row meant for that cell is missing."
       ),
       call = call, class = "creel_error_rate_groups"
     )

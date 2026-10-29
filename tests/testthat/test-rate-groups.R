@@ -264,3 +264,31 @@ test_that("the same holds when bank and boat were not counted at the same times"
   expected <- rate$estimate^2 * e_all$se^2 + e_all$estimate^2 * v_r - e_all$se^2 * v_r
   expect_equal(res$estimates$se^2, expected, tolerance = 1e-8)
 })
+
+test_that("a mapping must name every stratum column", {
+  # Keyed by day_type alone in a month x day_type design, one row would map
+  # every month's weekdays without listing them, so a cell left out by mistake
+  # could not be told from one pooled on purpose.
+  design <- list(strata_cols = c("month", "day_type"))
+  rg <- data.frame(day_type = c("weekday", "weekend"), grp = c("a", "b"))
+  expect_error(
+    resolve_rate_groups(design, rg),
+    "every stratum column", class = "creel_error_rate_groups"
+  )
+})
+
+test_that("interviews of unknown angler type can be mapped with an NA key", {
+  # An unknown type is its own cell (it is not bank and not boat). Refused while
+  # unmapped, placed once the table says where it belongs -- never dropped.
+  d <- bank_boat_design()
+  d$interviews$angler_type[1] <- NA
+  rg <- bank_boat_groups()
+  expect_error(
+    estimate_total_catch(d, rate_groups = rg),
+    "in no rate group", class = "creel_error_rate_groups"
+  )
+  rg_na <- rbind(rg, data.frame(day_type = d$interviews$day_type[1], angler_type = NA, grp = "bank"))
+  res <- q(estimate_total_catch(d, target = "period_total", rate_groups = rg_na))
+  n_bank <- sum(d$interviews$angler_type %in% "bank" | is.na(d$interviews$angler_type))
+  expect_equal(res$rate_groups$rates$n[res$rate_groups$rates$grp == "bank"], n_bank)
+})

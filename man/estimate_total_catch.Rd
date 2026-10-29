@@ -136,8 +136,9 @@ strata, so an uncovered stratum there is refused under either setting; use
 \code{"exclude"} record.}
 
 \item{rate_groups}{Optional data frame pooling catch rates more coarsely
-than effort (GH #389). Key columns are the design's strata columns and,
-optionally, \code{angler_type}; exactly one other column names each cell's rate
+than effort (GH #389). Key columns are every one of the design's strata
+columns and, optionally, \code{angler_type} (an \code{NA} key maps the cell whose
+type is unknown); exactly one other column names each cell's rate
 group. Each effort cell is multiplied by the rate estimated from every trip
 in its group -- bank anglers pooled over a season block while boat rates
 stay monthly, say. Every effort cell and every interview must fall in a

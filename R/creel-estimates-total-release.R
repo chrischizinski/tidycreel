@@ -110,9 +110,10 @@
 #' So a targeted **rate** is available and a targeted **total** is not, and
 #' that is a property of the estimand rather than a gap in the implementation
 #' (GH #307).
-#' @param rate_groups Optional data frame pooling catch rates more coarsely
-#'   than effort (GH #389). Key columns are the design's strata columns and,
-#'   optionally, `angler_type`; exactly one other column names each cell's rate
+#' @param rate_groups Optional data frame pooling release rates more coarsely
+#'   than effort (GH #389). Key columns are every one of the design's strata
+#'   columns and, optionally, `angler_type` (an `NA` key maps the cell whose
+#'   type is unknown); exactly one other column names each cell's rate
 #'   group. Each effort cell is multiplied by the rate estimated from every trip
 #'   in its group -- bank anglers pooled over a season block while boat rates
 #'   stay monthly, say. Every effort cell and every interview must fall in a
