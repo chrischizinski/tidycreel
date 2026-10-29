@@ -193,6 +193,25 @@
 
 ## New features
 
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` take `rate_groups =`, a table that pools catch
+  rates more coarsely than effort (#389). Its keys are every stratum column
+  and, optionally, `angler_type`; one more column names each cell's rate group. Each
+  effort cell is multiplied by the rate from every trip in its group: bank
+  anglers pooled over a season block while boat rates stay monthly, for
+  example. Before, a stratum with too few trips for its own rate could only be
+  dropped, or the agency built E x R by hand outside the package.
+  The variance treats a group's rate as one estimate shared by its cells
+  ((E1 + E2)^2 Var(R), not E1^2 Var(R) + E2^2 Var(R)), counts its interviews
+  once, and keeps the covariance of cells counted on the same days (bank and
+  boat on one drive, paired at shared count times). With one group per stratum
+  the result equals the standard total exactly. Every effort cell and
+  interview must fall in a group, every row must match a cell, and each group
+  must have at least 10 trips; anything else stops. The result's `rate_groups`
+  element shows the map and each group's rate, SE and `n`. Standard count
+  designs only for now: bus-route, ice, aerial, camera and sectioned designs
+  stop, as does `by = species`, which is the next part of #389.
+
 * `creel_schema(value_maps =)` now accepts `angler_type`, as a free-label
   column like `angler_method` and `species_sought` (#563). A sheet that codes
   angler type (`c("1" = "bank", "2" = "boat", "3" = "ice")`) can declare its
