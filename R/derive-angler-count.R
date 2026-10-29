@@ -561,6 +561,8 @@ derive_angler_count_long <- function(counts, components, expansion, drop_cols, t
   out[["angler_type"]] <- rep(names(components), times = n)
 
   if (!is.null(expansion)) {
+    # A known zero, not a stand-in for a missing value: the basis is
+    # d(count)/d(party_size), and a bank count does not involve the party size.
     basis <- lapply(names(components), function(type) {
       if (type == "boat") expansion$basis else rep(0, n)
     })
