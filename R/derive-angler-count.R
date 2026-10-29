@@ -193,7 +193,28 @@ se_of_mean <- function(x) {
 #' Pooling bank and boat anglers into one count assumes both are detected the
 #' same way and are being reported as one quantity. Where detection
 #' probabilities or catch rates differ between them, estimate the two as
-#' separate domains instead of adding them.
+#' separate domains instead of adding them: `by_type = TRUE` returns one row per
+#' count and angler type, ready for `add_counts(unit_cols = )` with
+#' `angler_type` among the unit columns.
+#'
+#' @section Bank and boat as separate rows:
+#' With `by_type = TRUE` each input row becomes one row per component supplied,
+#' with an `angler_type` column: `"bank"` for `bank`, and `"boat"` for either
+#' boat form. The label names who was counted, not how; `boat_anglers` and
+#' `boat_count` cannot both be given, so a count never has two boat rows. The
+#' labels match [mean_party_size()]'s default `boat_value`.
+#'
+#' When the boat component carries a party-size standard error, **every** row
+#' carries the expansion columns. A bank row's `expansion_basis` is 0 -- its
+#' count does not depend on the party size -- and its `expansion_se` and
+#' `expansion_group` are those of the boat row from the same count. Building
+#' the bank rows separately and binding them on without these columns either
+#' fails to bind or, if the columns are dropped to make it bind, silently
+#' removes the party-size term from the effort standard error.
+#'
+#' A missing component makes only its own row missing. In the pooled form a
+#' missing bank count makes the whole total unknown; here the boat row of that
+#' count is still observed.
 #'
 #' @section The party size is an estimate:
 #' A mean party size taken from interviews is itself estimated, and it
@@ -228,6 +249,9 @@ se_of_mean <- function(x) {
 #'   one, so [mean_party_size()] output propagates on its own. There is
 #'   deliberately no zero default; see the section above.
 #' @param to Name of the column to write. Defaults to `"angler_count"`.
+#' @param by_type If `TRUE`, return one row per count and angler type, with an
+#'   `angler_type` column, instead of adding the components into one count.
+#'   See "Bank and boat as separate rows". Defaults to `FALSE`.
 #'
 #' @return `counts` with the derived column appended, and the columns consumed
 #'   to build it (`bank`, `boat_anglers`, `boat_count`) removed — they are
@@ -235,7 +259,9 @@ se_of_mean <- function(x) {
 #'   `expansion_basis`. Leaving them in produced a table that varied between
 #'   sub-counts of one sampling unit, which [add_counts()] cannot distinguish
 #'   from an undeclared structural dimension (GH #162). The destination column
-#'   is never dropped, even when it is also one of the inputs.
+#'   is never dropped, even when it is also one of the inputs. With
+#'   `by_type = TRUE`, one row per input row and component instead, in input
+#'   order, with an `angler_type` column.
 #'
 #'   When a party-size standard error is available, four further columns are
 #'   appended for the estimators to read: `expansion_basis` (the boat count,
@@ -291,6 +317,32 @@ se_of_mean <- function(x) {
 #'   boat_count = angler_boats,
 #'   party_size = mps
 #' )
+#'
+#' # Bank and boat effort reported separately
+#' season <- data.frame(
+#'   date = as.Date("2024-06-01") + 0:3,
+#'   day_type = c("weekday", "weekend", "weekday", "weekend"),
+#'   bank_anglers = c(4L, 9L, 6L, 11L),
+#'   angler_boats = c(3L, 7L, 2L, 8L)
+#' )
+#' long <- derive_angler_count(
+#'   season,
+#'   bank = bank_anglers,
+#'   boat_count = angler_boats,
+#'   party_size = 2.4,
+#'   party_size_se = 0.2,
+#'   by_type = TRUE
+#' )
+#' long
+#'
+#' calendar <- season[c("date", "day_type")]
+#' design <- creel_design(calendar, date = date, strata = day_type)
+#' design <- add_counts(
+#'   design, long,
+#'   count_col = "angler_count",
+#'   unit_cols = c("date", "day_type", "angler_type")
+#' )
+#' estimate_effort(design, by = angler_type, target = "sampled_days")
 derive_angler_count <- function(
   counts,
   bank = NULL,
@@ -298,13 +350,26 @@ derive_angler_count <- function(
   boat_count = NULL,
   party_size = NULL,
   party_size_se = NULL,
-  to = "angler_count"
+  to = "angler_count",
+  by_type = FALSE
 ) {
   if (!is.data.frame(counts)) {
     cli::cli_abort("{.arg counts} must be a data frame, not {.cls {class(counts)[1]}}.")
   }
   if (!is.character(to) || length(to) != 1L || is.na(to)) {
     cli::cli_abort("{.arg to} must be a single column name.")
+  }
+  if (!rlang::is_bool(by_type)) {
+    cli::cli_abort("{.arg by_type} must be TRUE or FALSE.")
+  }
+  if (by_type && identical(to, "angler_type")) {
+    cli::cli_abort("{.arg to} cannot be {.val angler_type} when {.code by_type = TRUE}, which writes that column.")
+  }
+  if (by_type && "angler_type" %in% names(counts)) {
+    cli::cli_abort(c(
+      "{.field angler_type} already exists in {.arg counts}.",
+      "i" = "{.code by_type = TRUE} writes {.field angler_type}; drop or rename the existing column first."
+    ))
   }
   if (to %in% names(counts)) {
     cli::cli_abort(c(
@@ -390,12 +455,17 @@ derive_angler_count <- function(
     as.numeric(counts[[col]])
   }
 
+  # Kept per component as well as summed, so by_type = TRUE can write each one
+  # to its own row. Named by the angler_type label the long form uses.
+  components <- list()
   total <- rep(0, nrow(counts))
   if (has_bank) {
-    total <- total + numeric_component(bank_quo, "bank")
+    components$bank <- numeric_component(bank_quo, "bank")
+    total <- total + components$bank
   }
   if (has_boat_anglers) {
-    total <- total + numeric_component(boat_anglers_quo, "boat_anglers")
+    components$boat <- numeric_component(boat_anglers_quo, "boat_anglers")
+    total <- total + components$boat
   }
   expansion <- NULL
   if (has_boat_count) {
@@ -404,7 +474,8 @@ derive_angler_count <- function(
     # as.numeric() strips the "group" attribute before the arithmetic. R
     # propagates attributes from an operand that has them, so without this the
     # grouping key would ride into the derived count column itself.
-    total <- total + boats * as.numeric(party)
+    components$boat <- boats * as.numeric(party)
+    total <- total + components$boat
 
     se_vals <- resolve_party_size_se(
       party_size_se_quo,
@@ -430,6 +501,13 @@ derive_angler_count <- function(
     }
   }
 
+  # Never drop the destination, which may legitimately be one of the inputs.
+  drop_cols <- setdiff(unique(consumed_cols), to)
+
+  if (by_type) {
+    return(derive_angler_count_long(counts, components, expansion, drop_cols, to))
+  }
+
   counts[[to]] <- total
   if (!is.null(expansion)) {
     counts[["expansion_basis"]] <- expansion$basis
@@ -437,12 +515,63 @@ derive_angler_count <- function(
     counts[["expansion_group"]] <- expansion$group
     counts[["expansion_of"]] <- expansion$of
   }
-  # Never drop the destination, which may legitimately be one of the inputs.
-  drop_cols <- setdiff(unique(consumed_cols), to)
   if (length(drop_cols) > 0L) {
     counts[drop_cols] <- NULL
   }
   counts
+}
+
+
+#' Build the long, one-row-per-angler-type form of a derived count
+#'
+#' Internal helper for `derive_angler_count(by_type = TRUE)`. Each input row
+#' becomes one row per component, in input order, so a count's bank and boat
+#' rows sit next to each other.
+#'
+#' Every row carries the expansion carriers when the boat component has them.
+#' A bank row's basis is 0, because its count does not depend on the party size
+#' at all; its standard error and group are the boat row's, because
+#' `add_counts()` requires both to be constant within a sampling unit and the
+#' two rows come from the same count.
+#'
+#' @param counts The counts table, before the derived column is added
+#' @param components Named list of per-row component values; names are the
+#'   `angler_type` labels
+#' @param expansion `NULL`, or the carrier list built for the boat component
+#' @param drop_cols Consumed input columns to remove
+#' @param to Name of the derived count column
+#'
+#' @return A data frame with `length(components)` rows per input row
+#'
+#' @keywords internal
+#' @noRd
+derive_angler_count_long <- function(counts, components, expansion, drop_cols, to) {
+  n <- nrow(counts)
+  k <- length(components)
+  # Component-major within each input row: a k x n matrix read column by
+  # column gives row 1's types, then row 2's, and so on.
+  interleave <- function(values) as.vector(do.call(rbind, values))
+
+  if (length(drop_cols) > 0L) {
+    counts[drop_cols] <- NULL
+  }
+  out <- counts[rep(seq_len(n), each = k), , drop = FALSE]
+  rownames(out) <- NULL
+  out[[to]] <- interleave(components)
+  out[["angler_type"]] <- rep(names(components), times = n)
+
+  if (!is.null(expansion)) {
+    # A known zero, not a stand-in for a missing value: the basis is
+    # d(count)/d(party_size), and a bank count does not involve the party size.
+    basis <- lapply(names(components), function(type) {
+      if (type == "boat") expansion$basis else rep(0, n)
+    })
+    out[["expansion_basis"]] <- interleave(basis)
+    out[["expansion_se"]] <- rep(expansion$se, each = k)
+    out[["expansion_group"]] <- rep(expansion$group, each = k)
+    out[["expansion_of"]] <- to
+  }
+  out
 }
 
 

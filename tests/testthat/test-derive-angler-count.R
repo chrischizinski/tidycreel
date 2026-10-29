@@ -242,3 +242,175 @@ test_that("mean_party_size output feeds derive_angler_count as a lookup", {
 
   expect_equal(out$angler_count, c(4 + 3 * 2, 2, 9 + 7 * 4, 1 + 2 * 4))
 })
+
+# by_type = TRUE: bank and boat as separate rows (GH #562) ---------------------
+
+test_that("by_type gives one row per count and type, summing back to the pooled count", {
+  # The long form is the same counts split by who was counted. Each count's
+  # rows must add to the pooled total, or the split has invented or lost anglers.
+  pooled <- derive_angler_count(
+    test_counts(),
+    bank = bank_anglers, boat_count = angler_boats, party_size = 2.5
+  )
+  long <- derive_angler_count(
+    test_counts(),
+    bank = bank_anglers, boat_count = angler_boats, party_size = 2.5,
+    by_type = TRUE
+  )
+
+  expect_equal(nrow(long), 2L * nrow(test_counts()))
+  expect_equal(long$angler_type, rep(c("bank", "boat"), 4))
+  expect_equal(long$angler_count, c(4, 7.5, 2, 0, 9, 17.5, 1, 5))
+  expect_equal(
+    as.vector(tapply(long$angler_count, rep(1:4, each = 2), sum)),
+    pooled$angler_count
+  )
+  expect_false(any(c("bank_anglers", "angler_boats") %in% names(long)))
+})
+
+test_that("by_type puts the party-size carriers on every row, bank basis 0", {
+  # A bank row does not depend on the party size, so its basis is 0. Its SE and
+  # group must match the boat row of the same count, because add_counts()
+  # refuses carriers that vary within a sampling unit.
+  long <- derive_angler_count(
+    test_counts(),
+    bank = bank_anglers, boat_count = angler_boats,
+    party_size = 2.5, party_size_se = 0.1,
+    by_type = TRUE
+  )
+  bank <- long[long$angler_type == "bank", ]
+  boat <- long[long$angler_type == "boat", ]
+
+  expect_equal(bank$expansion_basis, rep(0, 4))
+  expect_equal(boat$expansion_basis, as.numeric(test_counts()$angler_boats))
+  expect_equal(bank$expansion_se, boat$expansion_se)
+  expect_equal(bank$expansion_group, boat$expansion_group)
+  expect_true(all(long$expansion_of == "angler_count"))
+})
+
+test_that("by_type effort by angler type carries the boat party-size SE (GH #562)", {
+  # The point of the long form: separate bank and boat effort, with the boat
+  # multiplier's error reaching the boat SE and none of it charged to bank.
+  raw <- data.frame(
+    date = as.Date("2024-06-01") + 0:11,
+    day_type = rep(c("weekday", "weekend"), 6),
+    bank_anglers = c(3, 5, 2, 4, 8, 10, 2, 4, 6, 3, 5, 7),
+    angler_boats = c(6, 2, 4, 8, 5, 5, 3, 7, 2, 6, 4, 8)
+  )
+  long <- derive_angler_count(
+    raw,
+    bank = bank_anglers, boat_count = angler_boats,
+    party_size = 2.5, party_size_se = 0.1,
+    by_type = TRUE
+  )
+  calendar <- data.frame(date = raw$date, day_type = raw$day_type)
+  d <- suppressMessages(creel_design(calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts(
+    d, long,
+    count_col = "angler_count",
+    unit_cols = c("date", "day_type", "angler_type")
+  )))
+  res <- suppressWarnings(suppressMessages(
+    estimate_effort(d, by = angler_type, target = "sampled_days") # nolint: object_usage_linter
+  ))
+  est <- res$estimates
+
+  expect_equal(est$estimate[est$angler_type == "bank"], sum(raw$bank_anglers))
+  expect_equal(est$estimate[est$angler_type == "boat"], sum(raw$angler_boats) * 2.5)
+  # Written from the definition: expanded boats times the multiplier's SE.
+  boat_idx <- which(est$angler_type == "boat")
+  bank_idx <- which(est$angler_type == "bank")
+  expect_equal(res$se_expansion[boat_idx], sum(raw$angler_boats) * 0.1)
+  expect_equal(res$se_expansion[bank_idx], 0)
+  expect_gt(est$se[boat_idx], est$se_between[boat_idx])
+})
+
+test_that("by_type labels a directly counted boat component 'boat' and adds no carriers", {
+  long <- derive_angler_count(
+    test_counts(),
+    bank = bank_anglers, boat_anglers = boat_anglers,
+    by_type = TRUE
+  )
+
+  expect_equal(long$angler_type, rep(c("bank", "boat"), 4))
+  expect_equal(long$angler_count, c(4, 7, 2, 0, 9, 16, 1, 5))
+  expect_false(any(expansion_carrier_cols() %in% names(long)))
+})
+
+test_that("by_type keeps a missing component on its own row", {
+  # Pooled, an unknown bank count makes the whole total unknown. Split, the
+  # boat row of that count was still observed and must stay so.
+  counts <- test_counts()
+  counts$bank_anglers[1] <- NA
+  long <- derive_angler_count(
+    counts,
+    bank = bank_anglers, boat_anglers = boat_anglers,
+    by_type = TRUE
+  )
+
+  expect_true(is.na(long$angler_count[1]))
+  expect_equal(long$angler_count[2], 7)
+})
+
+test_that("by_type with one component returns only that type", {
+  long <- derive_angler_count(test_counts(), bank = bank_anglers, by_type = TRUE)
+
+  expect_equal(long$angler_type, rep("bank", 4))
+  expect_equal(long$angler_count, c(4, 2, 9, 1))
+})
+
+test_that("by_type refuses to overwrite angler_type and checks its argument", {
+  counts <- test_counts()
+  counts$angler_type <- "x"
+  expect_error(
+    derive_angler_count(counts, bank = bank_anglers, by_type = TRUE),
+    "already exists"
+  )
+  expect_error(
+    derive_angler_count(test_counts(), bank = bank_anglers, to = "angler_type", by_type = TRUE),
+    "cannot be"
+  )
+  expect_error(
+    derive_angler_count(test_counts(), bank = bank_anglers, by_type = NA),
+    "TRUE or FALSE"
+  )
+  # The pooled form never writes angler_type, so an existing one is left alone.
+  expect_equal(derive_angler_count(counts, bank = bank_anglers)$angler_type, rep("x", 4))
+})
+
+test_that("an unknown party-size SE leaves bank effort's SE known (GH #562)", {
+  # Found by the pre-push ensemble. Bank rows carry the boat row's SE so that
+  # add_counts() sees one SE per sampling unit, but their basis is 0: bank
+  # effort never used the multiplier. 0 * NA is NA in R, so without a guard an
+  # unknown boat party-size SE made the BANK SE unknown too. Boat stays NA --
+  # that one is genuinely unknown.
+  raw <- data.frame(
+    date = as.Date("2024-06-01") + 0:11,
+    day_type = rep(c("weekday", "weekend"), 6),
+    bank_anglers = c(3, 5, 2, 4, 8, 10, 2, 4, 6, 3, 5, 7),
+    angler_boats = c(6, 2, 4, 8, 5, 5, 3, 7, 2, 6, 4, 8)
+  )
+  long <- derive_angler_count(
+    raw,
+    bank = bank_anglers, boat_count = angler_boats,
+    party_size = 2.5, party_size_se = NA_real_,
+    by_type = TRUE
+  )
+  calendar <- data.frame(date = raw$date, day_type = raw$day_type)
+  d <- suppressMessages(creel_design(calendar, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- suppressWarnings(suppressMessages(add_counts(
+    d, long,
+    count_col = "angler_count",
+    unit_cols = c("date", "day_type", "angler_type")
+  )))
+  res <- suppressWarnings(suppressMessages(
+    estimate_effort(d, by = angler_type, target = "sampled_days") # nolint: object_usage_linter
+  ))
+  est <- res$estimates
+  bank <- est$angler_type == "bank"
+
+  expect_equal(res$se_expansion[bank], 0)
+  expect_false(is.na(est$se[bank]))
+  expect_equal(est$se[bank], est$se_between[bank], tolerance = 1e-10)
+  expect_true(is.na(est$se[!bank]))
+})
