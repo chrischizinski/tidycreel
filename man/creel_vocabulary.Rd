@@ -21,9 +21,11 @@ is a fixed vocabulary rather than a number: \code{trip_status}, \code{catch_type
 source that codes one of these columns has to be translated before its values
 can be trusted — see the \code{value_maps} argument of \code{\link[=creel_schema]{creel_schema()}}.
 
-\code{angler_method} and \code{species_sought} can also be mapped, but have no entry
-here: their labels are the agency's own, so a map for either is its own
-vocabulary.
+\code{angler_method}, \code{species_sought} and \code{angler_type} can also be mapped, but
+have no entry here: their labels are the agency's own, so a map for any of
+them is its own vocabulary. For \code{angler_type}, use \code{"bank"} and \code{"boat"}
+where they apply -- \code{\link[=mean_party_size]{mean_party_size()}} and
+\code{derive_angler_count(by_type = TRUE)} match those two exactly.
 
 Exported because \code{tidycreel.connect} translates source codes at the fetch and
 has to check its targets against the same list this package filters on; a

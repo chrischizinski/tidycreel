@@ -84,7 +84,9 @@ other designs). Values of 0 are valid (no anglers came off the water).}
 \item{angler_type}{Tidy selector for angler type column (optional, default
 NULL). Use bare column names (e.g., \code{angler_type = angler_type}). Common
 values are "bank" and "boat". Values are not validated; downstream summary
-functions use this field.}
+functions use this field. Use exactly "bank" and "boat" for those types:
+\code{\link[=mean_party_size]{mean_party_size()}} and \code{derive_angler_count(by_type = TRUE)} match them.
+A coded source can declare its codes with \code{\link[=creel_schema]{creel_schema()}} \code{value_maps}.}
 
 \item{angler_method}{Tidy selector for angler method column (optional, default
 NULL). Use bare column names (e.g., \code{angler_method = method_code}). Records

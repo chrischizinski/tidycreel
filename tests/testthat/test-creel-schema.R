@@ -568,3 +568,101 @@ test_that("value_maps refuses an NA source code", {
     class = "creel_error_schema_validation"
   )
 })
+
+## angler_type value maps (#563) -------------------------------------------------
+
+test_that("value_maps translates angler_type codes, including types beyond bank and boat", {
+  # Sheets code angler type (1 = bank, 2 = boat, 3 = ice) and users recoded by
+  # hand. Ice, pier, kayak are real types, so the targets are not a closed list.
+  s <- creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(angler_type = c("1" = "bank", "2" = "boat", "3" = "ice"))
+  )
+
+  expect_equal(s$value_maps$angler_type, c("1" = "bank", "2" = "boat", "3" = "ice"))
+  expect_false("angler_type" %in% names(creel_vocabulary()))
+})
+
+test_that("an angler_type map refuses empty labels and doubled codes like the other free-label maps", {
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_type = c("1" = "bank", "2" = NA_character_))
+    ),
+    "empty or missing label",
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_type = c("1" = "bank", "1" = "boat"))
+    ),
+    "same source code twice",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("an angler_type target that is a case variant of bank/boat gets a message", {
+  # "Boat" is a legal label but misses mean_party_size()'s default "boat" and
+  # will not line up with the rows derive_angler_count(by_type = TRUE) writes.
+  expect_message(
+    s <- creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_type = c("1" = "Bank ", "2" = "BOAT", "3" = "Ice"))
+    ),
+    class = "creel_message_angler_type_label"
+  )
+  # Accepted unchanged: a message, not a silent rewrite.
+  expect_equal(unname(s$value_maps$angler_type), c("Bank ", "BOAT", "Ice"))
+})
+
+test_that("exact bank/boat targets and unrelated labels raise no angler_type message", {
+  expect_no_message(creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(angler_type = c("1" = "bank", "2" = "boat", "3" = "Pier"))
+  ))
+  # The nudge is for angler_type only; "Boat" is an ordinary method label.
+  expect_no_message(creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(angler_method = c("1" = "Boat"))
+  ))
+})
+
+test_that("the angler_type note carries the creel_message parent class", {
+  # Callers muffle all tidycreel notes with one creel_message handler (#496).
+  # A note raised without the parent slips past it.
+  expect_message(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_type = c("1" = "Boat"))
+    ),
+    class = "creel_message"
+  )
+})
+
+test_that("no angler_type note when another value_maps entry aborts the call", {
+  # The note is about a label in a schema that is never built; the error is
+  # the only thing worth reading.
+  expect_no_message(expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(
+        angler_type = c("1" = "Boat"),
+        trip_status = c("1" = "compleet")
+      )
+    ),
+    class = "creel_error_schema_validation"
+  ))
+})
+
+test_that("two spellings of one label get one suggestion", {
+  msg <- tryCatch(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_type = c("1" = "Boat", "2" = "BOAT"))
+    ),
+    message = function(m) conditionMessage(m)
+  )
+  expect_match(msg, '"Boat" and "BOAT"')
+  expect_no_match(msg, '"boat" and "boat"')
+})
