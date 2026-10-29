@@ -117,6 +117,20 @@
 #' So a targeted **rate** is available and a targeted **total** is not, and
 #' that is a property of the estimand rather than a gap in the implementation
 #' (GH #307).
+#' @param rate_groups Optional data frame pooling catch rates more coarsely
+#'   than effort (GH #389). Key columns are the design's strata columns and,
+#'   optionally, `angler_type`; exactly one other column names each cell's rate
+#'   group. Each effort cell is multiplied by the rate estimated from every trip
+#'   in its group -- bank anglers pooled over a season block while boat rates
+#'   stay monthly, say. Every effort cell and every interview must fall in a
+#'   group, every row must match a cell, and each group must meet the usual
+#'   10-trip floor; anything else stops. The variance treats a group's rate as
+#'   one shared estimate across its cells and carries the covariance of cells
+#'   counted on the same days (bank and boat on one drive). The result's
+#'   `rate_groups` element holds the map and each group's rate, SE and `n`.
+#'   Standard count designs only: bus-route, ice, aerial, camera and sectioned
+#'   designs stop, as does `missing_rate = "exclude"`, and so does
+#'   `by = species` for now.
 #' @return A creel_estimates S3 object with method = "product-total-harvest".
 #'   The \code{estimator} component records the rate estimator this total is a
 #'   product of, as you asked for it: \code{method} names the product form and
@@ -277,7 +291,8 @@ estimate_total_harvest <- function(
   ci_method = c("delta", "bootstrap"),
   product_variance = c("goodman", "first_order"),
   ci_type = c("symmetric", "log"),
-  missing_rate = c("error", "exclude")
+  missing_rate = c("error", "exclude"),
+  rate_groups = NULL
 ) {
   # Capture by parameter BEFORE validation
   by_quo <- rlang::enquo(by)
@@ -286,6 +301,9 @@ estimate_total_harvest <- function(
   product_variance <- match.arg(product_variance)
   ci_type <- match.arg(ci_type)
   missing_rate <- match.arg(missing_rate)
+  if (!is.null(rate_groups)) {
+    refuse_rate_groups_design(design, missing_rate) # nolint: object_usage_linter
+  }
 
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
@@ -491,6 +509,15 @@ estimate_total_harvest <- function(
   # lake-wide species total for a design that has sections -- a number computed
   # without the section machinery, reported with no section column and nothing
   # saying the sectioning had been ignored (GH #255).
+  # Rates pooled by rate group (GH #389): its own product, because the stratum
+  # product treats every cell's rate as independent of every other's.
+  if (!is.null(rate_groups)) {
+    return(total_with_rate_groups( # nolint: object_usage_linter
+      design, by_quo, rate_groups, "harvest", variance, conf_level, target,
+      product_variance, ci_type
+    ))
+  }
+
   # Section dispatch guard (v0.7.0+ — only fires when add_sections() was called)
   if (!is.null(design[["sections"]])) {
     return(attach_excluded_strata( # nolint: object_usage_linter

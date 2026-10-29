@@ -18,7 +18,8 @@ estimate_total_harvest(
   ci_method = c("delta", "bootstrap"),
   product_variance = c("goodman", "first_order"),
   ci_type = c("symmetric", "log"),
-  missing_rate = c("error", "exclude")
+  missing_rate = c("error", "exclude"),
+  rate_groups = NULL
 )
 }
 \arguments{
@@ -122,6 +123,21 @@ ungrouped total on a sectioned design pools one rate across each section's
 strata, so an uncovered stratum there is refused under either setting; use
 \code{by} on the stratum column to get the covered cells and the
 \code{"exclude"} record.}
+
+\item{rate_groups}{Optional data frame pooling catch rates more coarsely
+than effort (GH #389). Key columns are the design's strata columns and,
+optionally, \code{angler_type}; exactly one other column names each cell's rate
+group. Each effort cell is multiplied by the rate estimated from every trip
+in its group -- bank anglers pooled over a season block while boat rates
+stay monthly, say. Every effort cell and every interview must fall in a
+group, every row must match a cell, and each group must meet the usual
+10-trip floor; anything else stops. The variance treats a group's rate as
+one shared estimate across its cells and carries the covariance of cells
+counted on the same days (bank and boat on one drive). The result's
+\code{rate_groups} element holds the map and each group's rate, SE and \code{n}.
+Standard count designs only: bus-route, ice, aerial, camera and sectioned
+designs stop, as does \code{missing_rate = "exclude"}, and so does
+\code{by = species} for now.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-harvest".
