@@ -121,24 +121,18 @@ estimate_effort_br <- function(
   # Compute the HT estimate: E_hat = sum(e_i / pi_i)
   if (is.null(by_vars)) {
     # Ungrouped: single total
-    total_estimate <- sum(interviews$.contribution) # nolint: object_usage_linter
     n <- nrow(interviews) # nolint: object_usage_linter
 
-    # Variance via survey package using svytotal on .contribution column
-    strata_cols <- design$strata_cols
-    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      stats::reformulate(strata_cols)
-    } else {
-      NULL
-    }
-    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
-    svy_br <- build_interview_survey( # nolint: object_usage_linter
-      interviews,
-      strata = strata_formula,
-      ids = ~.psu
-    )
-    svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+    # Variance via survey package using svytotal on .contribution column; an
+    # expanded target weights each stratum by N_h / n_h (GH #591).
+    target_svy <- br_target_survey(interviews, design, effort_target, call)
+    svy_br <- get_variance_design(target_svy$survey, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br))
+    total_estimate <- if (target_svy$augmented) { # nolint: object_usage_linter
+      as.numeric(stats::coef(svy_result))
+    } else {
+      sum(interviews$.contribution)
+    }
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
     ci <- confint(svy_result, level = conf_level)
     # Effort is bounded below by zero; the symmetric Wald bound is not.
@@ -174,19 +168,9 @@ estimate_effort_br <- function(
     # Grouped estimation (e.g., by = "circuit")
     # For by="circuit": compute per-group total, then add proportion of overall
     by_formula <- stats::reformulate(by_vars)
-    strata_cols <- design$strata_cols
-    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      stats::reformulate(strata_cols)
-    } else {
-      NULL
-    }
-    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
-    svy_br <- build_interview_survey( # nolint: object_usage_linter
-      interviews,
-      strata = strata_formula,
-      ids = ~.psu
-    )
-    svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+    target_svy <- br_target_survey(interviews, design, effort_target, call)
+    interviews <- target_svy$interviews
+    svy_br <- get_variance_design(target_svy$survey, variance_method) # nolint: object_usage_linter
     # An unknown group has to survive svyby(), which drops NA rows silently
     # (GH #317/#321). Without this the reported groups summed to 1928.7 of
     # 2997.0 expanded angler-hours and the `proportion` column summed to 0.64,
@@ -203,6 +187,9 @@ estimate_effort_br <- function(
       keep.names = FALSE
     ))
 
+    if (target_svy$augmented) {
+      svy_result <- br_drop_synthetic_groups(svy_result, interviews, by_vars, design)
+    }
     estimate <- svy_result[[".contribution"]]
     se <- svy_result[["se"]]
     # Effort is bounded below by zero; the symmetric Wald bound is not.
@@ -210,8 +197,14 @@ estimate_effort_br <- function(
     ci_upper <- svy_result[["ci_u"]]
 
     # Compute proportion of overall total for each group
-    overall_total <- sum(interviews$.contribution)
+    overall_total <- if (target_svy$augmented) {
+      sum(interviews$.contribution * interviews$.br_weight)
+    } else {
+      sum(interviews$.contribution)
+    }
     proportion <- estimate / overall_total
+    # Registered empty days are not interviews.
+    interviews <- interviews[!interviews$.synthetic, , drop = FALSE]
 
     # Per-group sample sizes
     # Counted on the group key, not with `aggregate(.count ~ ., ...)`, whose
@@ -1758,9 +1751,10 @@ estimate_total_species_br <- function(
     conf_level = conf_level,
     by_vars = c(species_col, interview_by_vars),
     unit = product_total_unit(rate_unit(design), interview_effort_unit(design)), # nolint: object_usage_linter
-    # A Horvitz-Thompson total over the sampled days: p_period is a within-day
-    # probability, so nothing here expands to unsampled calendar days (GH #520).
-    effort_target = "sampled_days"
+    # p_period is a within-day probability, so the HT total covers the sampled
+    # days (GH #520) unless the register expanded it in br_build_estimates()
+    # (GH #591); either way the label is the target the pieces used.
+    effort_target = design$total_target %||% "sampled_days"
   )
 }
 
@@ -1809,6 +1803,129 @@ validate_use_trips_br <- function(use_trips, call = rlang::caller_env()) {
 # Shared by estimate_total_catch_br(), estimate_total_harvest_br(), and
 # estimate_total_release_br() (and so by the species totals, which call them)
 
+#' The bus-route survey for an effort target (GH #591)
+#'
+#' On `"sampled_days"` with no register this is the survey the HT totals have
+#' always used: the interviews, clustered by day, unweighted, so the total is
+#' sum(e_i / pi_i) over the days worked. With a register the empty days join
+#' it as known zeros, at weight 1. An expanded target scales each stratum by N_h / n_h,
+#' the calendar's days over the days worked, as the standard designs do
+#' (Pope et al., Ch. 17 "strata estimator"; Rasmussen et al. 1998).
+#'
+#' n_h comes from the calendar's register of sampled days, not from the
+#' interviews. A worked day on which nobody fished leaves no interview, so
+#' counting interview dates would average over the fished days only and
+#' inflate the season total. Each registered day with no interview enters as a
+#' day whose total is a known 0: a row with `.contribution = 0`, flagged
+#' `.synthetic` so it is never counted as an interview or reported as a group.
+#'
+#' No finite-population correction: one period is worked per day, so the
+#' within-day variance is not identified and the with-replacement between-day
+#' variance is the one the standard path uses in that case (GH #505, Cochran
+#' 1977 eq. 10.42).
+#'
+#' @param interviews Interview rows carrying `.contribution`.
+#' @return A list: `survey` (before `get_variance_design()`), `interviews`
+#'   (with `.psu` and `.synthetic`), `augmented` (logical: the register's
+#'   empty days and weights are in the survey).
+#' @keywords internal
+#' @noRd
+br_target_survey <- function(interviews, design, target, call = rlang::caller_env()) {
+  strata_cols <- design$strata_cols
+  strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
+  sampled_col <- design$sampled_col
+  if (identical(target, "sampled_days") && is.null(sampled_col)) {
+    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+    interviews$.synthetic <- rep(FALSE, nrow(interviews))
+    svy <- build_interview_survey(interviews, strata = strata_formula, ids = ~.psu) # nolint: object_usage_linter
+    return(list(survey = svy, interviews = interviews, augmented = FALSE))
+  }
+
+  date_col <- design$date_col
+  cal <- design$calendar
+  if (is.null(sampled_col)) {
+    cli::cli_abort(
+      c(
+        "{.code target = \"{target}\"} needs the register of sampled days.",
+        "x" = "The design has no {.arg sampled} column.",
+        "i" = "Pass {.code creel_design(sampled = )}: a logical calendar column \\
+               marking every day worked, including days nobody fished."
+      ),
+      class = "creel_error_sampled_register",
+      call = call
+    )
+  }
+  worked <- cal[cal[[sampled_col]], unique(c(date_col, strata_cols)), drop = FALSE]
+  worked <- worked[!duplicated(as.character(worked[[date_col]])), , drop = FALSE]
+  pop <- stratum_population_days(cal, strata_cols, date_col) # nolint: object_usage_linter
+  smp <- dplyr::count(worked, dplyr::across(dplyr::all_of(strata_cols)), name = ".n_sampled")
+  pop <- dplyr::left_join(pop, smp, by = strata_cols)
+  unsampled <- is.na(pop$.n_sampled) & !identical(target, "sampled_days")
+  if (any(unsampled)) {
+    cells <- group_key(pop[unsampled, , drop = FALSE], strata_cols) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{sum(unsampled)} calendar {cli::qty(sum(unsampled))}strat{?um/a} {?has/have} no sampled day.",
+        "x" = "Unsampled: {.val {gsub('\u001f', ' / ', cells, fixed = TRUE)}}.",
+        "i" = "Its effort is unknown, not zero, so the expanded total cannot \\
+               include it. Use {.code target = \"sampled_days\"}, or narrow the calendar."
+      ),
+      class = "creel_error_sampled_register",
+      call = call
+    )
+  }
+
+  interviews$.synthetic <- rep(FALSE, nrow(interviews))
+  empty <- worked[!as.character(worked[[date_col]]) %in% as.character(interviews[[date_col]]), , drop = FALSE]
+  if (nrow(empty) > 0L) {
+    zero <- interviews[rep(NA_integer_, nrow(empty)), , drop = FALSE]
+    rownames(zero) <- NULL
+    for (col in names(empty)) zero[[col]] <- empty[[col]]
+    zero$.contribution <- 0
+    zero$.synthetic <- TRUE
+    interviews <- rbind(interviews, zero)
+  }
+  interviews <- dplyr::left_join(interviews, pop, by = strata_cols)
+  # With the register, the sampled-day total keeps weight 1 but still counts
+  # the empty days, which its between-day variance needs as much as the
+  # expansion does.
+  interviews$.br_weight <- if (identical(target, "sampled_days")) {
+    rep(1, nrow(interviews))
+  } else {
+    interviews$.N_avail / interviews$.n_sampled
+  }
+  interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+  key <- strata_design_key(interviews, strata_formula) # nolint: object_usage_linter
+  svy <- survey::svydesign(
+    ids = ~.psu,
+    strata = key$strata,
+    weights = ~.br_weight,
+    data = key$data,
+    nest = TRUE
+  )
+  list(survey = svy, interviews = interviews, augmented = TRUE)
+}
+
+
+#' Drop the groups made only of registered empty days
+#'
+#' An empty day's row has no circuit, site or species, so `svyby()` reports it
+#' as a group of its own when `by` names one. Its total is 0 and it describes no interview; within
+#' a real group it adds a known zero, which leaves the estimate and the
+#' domain variance unchanged.
+#' @keywords internal
+#' @noRd
+br_drop_synthetic_groups <- function(svy_result, interviews, by_vars, design) {
+  # Grouped by calendar columns alone, an empty day does belong to its group:
+  # a stratum whose worked days all came back empty has a total of 0, known.
+  if (all(by_vars %in% c(design$date_col, design$strata_cols))) {
+    return(svy_result)
+  }
+  real <- group_key(interviews[!interviews$.synthetic, , drop = FALSE], by_vars) # nolint: object_usage_linter
+  svy_result[group_key(svy_result, by_vars) %in% real, , drop = FALSE] # nolint: object_usage_linter
+}
+
+
 #' Build creel_estimates from pre-computed .contribution column
 #'
 #' @param interviews Data frame with .contribution column
@@ -1842,25 +1959,22 @@ br_build_estimates <- function(
   ci_method = "delta"
 ) {
   ci_method <- match.arg(ci_method, c("delta", "bootstrap"))
-  strata_cols <- design$strata_cols
+  # Set by the dispatching total before it gets here, as total_estimator is
+  # (GH #591).
+  target <- design$total_target %||% "sampled_days"
 
   if (is.null(by_vars)) {
-    total_estimate <- sum(interviews$.contribution) # nolint
     n <- nrow(interviews) # nolint: object_usage_linter
 
-    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      stats::reformulate(strata_cols)
-    } else {
-      NULL
-    }
-    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
-    svy_br_base <- build_interview_survey( # nolint: object_usage_linter
-      interviews,
-      strata = strata_formula,
-      ids = ~.psu
-    )
+    target_svy <- br_target_survey(interviews, design, target)
+    svy_br_base <- target_svy$survey
     svy_br_taylor <- get_variance_design(svy_br_base, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(survey::svytotal(~.contribution, svy_br_taylor))
+    total_estimate <- if (target_svy$augmented) { # nolint: object_usage_linter
+      as.numeric(stats::coef(svy_result))
+    } else {
+      sum(interviews$.contribution)
+    }
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
     ci <- confint(svy_result, level = conf_level)
     # A catch total is bounded below by zero; the symmetric Wald bound is not.
@@ -1892,24 +2006,16 @@ br_build_estimates <- function(
       conf_level = conf_level,
       by_vars = NULL,
       unit = product_total_unit(rate_unit(design), interview_effort_unit(design)), # nolint: object_usage_linter
-      effort_target = "sampled_days" # sampled days only; see estimate_total_species_br() (GH #520)
+      effort_target = target
     )
     attr(result, "site_contributions") <- site_table
     result
   } else {
     by_formula <- stats::reformulate(by_vars)
 
-    strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0) {
-      stats::reformulate(strata_cols)
-    } else {
-      NULL
-    }
-    interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
-    svy_br_base <- build_interview_survey( # nolint: object_usage_linter
-      interviews,
-      strata = strata_formula,
-      ids = ~.psu
-    )
+    target_svy <- br_target_survey(interviews, design, target)
+    interviews <- target_svy$interviews
+    svy_br_base <- target_svy$survey
     svy_br_taylor <- get_variance_design(svy_br_base, variance_method) # nolint: object_usage_linter
     # As in the grouped effort total above: without promotion the unknown group
     # is dropped from both the Taylor and the bootstrap svyby, so the two stay
@@ -1926,14 +2032,23 @@ br_build_estimates <- function(
       keep.names = FALSE
     ))
 
+    if (target_svy$augmented) {
+      svy_result <- br_drop_synthetic_groups(svy_result, interviews, by_vars, design)
+    }
     estimate <- svy_result[[".contribution"]]
     se <- svy_result[["se"]]
     # A catch total is bounded below by zero; the symmetric Wald bound is not.
     ci_lower <- pmax(0, svy_result[["ci_l"]])
     ci_upper <- svy_result[["ci_u"]]
 
-    overall_total <- sum(interviews$.contribution)
+    overall_total <- if (target_svy$augmented) {
+      sum(interviews$.contribution * interviews$.br_weight)
+    } else {
+      sum(interviews$.contribution)
+    }
     proportion <- estimate / overall_total
+    # Registered empty days are not interviews.
+    interviews <- interviews[!interviews$.synthetic, , drop = FALSE]
 
     # Counted on the group key, not with `aggregate(.count ~ ., ...)`, whose
     # formula method drops NA rows -- the unknown group now HAS a row in the
@@ -1973,6 +2088,9 @@ br_build_estimates <- function(
         ci.level = conf_level,
         keep.names = FALSE
       ))
+      if (target_svy$augmented) {
+        svy_boot_by <- br_drop_synthetic_groups(svy_boot_by, target_svy$interviews, by_vars, design)
+      }
       estimates_df$ci_lo_boot <- pmax(0, svy_boot_by[["ci_l"]])
       estimates_df$ci_hi_boot <- svy_boot_by[["ci_u"]]
     }
@@ -1986,7 +2104,7 @@ br_build_estimates <- function(
       conf_level = conf_level,
       by_vars = by_vars,
       unit = product_total_unit(rate_unit(design), interview_effort_unit(design)), # nolint: object_usage_linter
-      effort_target = "sampled_days" # sampled days only; see estimate_total_species_br() (GH #520)
+      effort_target = target
     )
     attr(result, "site_contributions") <- site_table
     result

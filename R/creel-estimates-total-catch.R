@@ -30,8 +30,9 @@
 #'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
 #'   is multiplied by CPUE so total catch stays aligned with the requested
 #'   temporal target.
-#'   Bus-route and ice designs accept only `"sampled_days"`, as
-#'   [estimate_effort()] does: they have no calendar expansion yet (#520).
+#'   Bus-route and ice designs expand to the other two only with the
+#'   calendar's register of sampled days (`creel_design(sampled = )`), as
+#'   [estimate_effort()] does (GH #591).
 #' @param use_trips Character. Which interviews contribute to CPUE:
 #'   `"complete"` uses only completed trips, `"all"` includes incomplete ones.
 #'   Default `NULL` means "not specified", which resolves to `"complete"` --
@@ -381,6 +382,8 @@ estimate_total_catch <- function(
 
   # Bus-route / ice dispatch (before standard survey NULL check)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
+    # Read by br_build_estimates(), as total_estimator is (GH #591).
+    design$total_target <- target
     # Refused rather than ignored (GH #266): these designs build a
     # Horvitz-Thompson total with no per-stratum effort x rate product, so
     # there is no cell to exclude and the argument would be inert.

@@ -383,6 +383,14 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   eq. 15.10). Encoding the waits as shares of the total wait, so that they
 #'   add up to 1, would understate the totals by the travelling fraction of
 #'   the circuit.
+#' @param sampled Bus-route and ice designs only. Tidy selector for a
+#'   logical column of `calendar` that is `TRUE` on every day that was
+#'   worked, including days on which nobody was found fishing, and `FALSE`
+#'   on the rest. It is the register of sampled days that
+#'   `target = "stratum_total"` and `"period_total"` divide by: the
+#'   interviews cannot supply it, because a worked day with no anglers leaves
+#'   no interview. Without it, those targets stop. An interview dated on a
+#'   day marked `FALSE` stops `add_interviews()` (GH #591).
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
 #'   \item{date_col}{Character name of the date column}
@@ -533,7 +541,8 @@ creel_design <- function(
   tz = NULL,
   # Appended so that existing positional calls bind as before (GH #539).
   wait_time = NULL,
-  circuit_time = NULL
+  circuit_time = NULL,
+  sampled = NULL
 ) {
   # A grouped input would carry its grouping into every dplyr step that reads
   # the stored table (GH #441).
@@ -1032,6 +1041,9 @@ creel_design <- function(
     aerial = aerial
   )
   design$night <- night
+  design$sampled_col <- resolve_sampled_register( # nolint: object_usage_linter
+    rlang::enquo(sampled), calendar, survey_type, rlang::caller_env()
+  )
   # A night design's zone is recorded even when it came from the tidycreel.tz
   # option, so the bundle does not depend on the session that reads it.
   if (!is.null(night)) step_supplied <- union(step_supplied, "tz")
@@ -1049,11 +1061,62 @@ creel_design <- function(
          camera_mode = camera_mode, h_open = h_open,
          visibility_correction = visibility_correction, visibility_se = visibility_se,
          angler_ratio = angler_ratio, angler_ratio_se = angler_ratio_se,
-         open_start = open_start),
+         open_start = open_start, sampled = design$sampled_col),
     step_supplied, "calendar", step_calendar,
     extra = list(sampling_frame = sampling_frame)
   )
   validate_creel_design(design)
+}
+
+#' Resolve the register of sampled days (GH #591)
+#'
+#' Bus-route and ice interviews are the only record of which days were
+#' worked, so a worked day on which nobody fished leaves no trace in them.
+#' Expanding to a stratum or period total needs n_h, the days sampled per
+#' stratum, including those empty ones: counting only the days with
+#' interviews averages over the fished days and inflates the season total.
+#' The register is a logical calendar column naming every sampled day.
+#'
+#' @return The column name, or `NULL` when `sampled` was not given.
+#' @keywords internal
+#' @noRd
+resolve_sampled_register <- function(sampled_quo, calendar, survey_type, call) {
+  if (rlang::quo_is_null(sampled_quo)) {
+    return(NULL)
+  }
+  if (!survey_type %in% c("bus_route", "ice")) {
+    cli::cli_abort(
+      c(
+        "{.arg sampled} applies to bus-route and ice designs only.",
+        "i" = "Other designs take their sampled days from the counts \\
+               ({.fn add_counts})."
+      ),
+      class = "creel_error_sampled_register",
+      call = call
+    )
+  }
+  col <- resolve_single_col(sampled_quo, calendar, "sampled", call)
+  x <- calendar[[col]]
+  if (!is.logical(x) || anyNA(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg sampled} must name a logical calendar column with no missing values.",
+        "x" = "{.field {col}} is {.cls {class(x)[1]}}{if (anyNA(x)) ' with missing values' else ''}.",
+        "i" = "Mark each calendar day {.val {TRUE}} if it was worked and \\
+               {.val {FALSE}} if not; an unknown day cannot be counted either way."
+      ),
+      class = "creel_error_sampled_register",
+      call = call
+    )
+  }
+  if (!any(x)) {
+    cli::cli_abort(
+      "{.arg sampled} marks no calendar day as sampled.",
+      class = "creel_error_sampled_register",
+      call = call
+    )
+  }
+  col
 }
 
 #' Low-level creel_design constructor
@@ -2241,6 +2304,30 @@ check_records_against_calendar <- function(records, design, date_col, what,
       class = "creel_error_record_outside_calendar",
       call = call
     )
+  }
+  # A record on a day the register says was not worked contradicts it: either
+  # the day was worked and the register understates n_h, or the record is
+  # misdated (GH #591).
+  sampled_col <- design$sampled_col
+  if (!is.null(sampled_col)) {
+    worked <- cal_date[cal[[sampled_col]]]
+    unworked <- known & !rec_date %in% worked
+    if (any(unworked)) {
+      bad <- unique(rec_date[unworked]) # nolint: object_usage_linter
+      cli::cli_abort(
+        c(
+          "{sum(unworked)} {what} {cli::qty(sum(unworked))}row{?s} {?is/are} dated on a day \\
+           the calendar's {.field {sampled_col}} column marks as not sampled: \\
+           {.val {utils::head(bad, 5)}}{if (length(bad) > 5) ', ...' else ''}.",
+          "x" = "Expansion divides by the number of sampled days, so a worked day \\
+                 missing from the register inflates every expanded total.",
+          "i" = "Mark the {cli::qty(length(bad))}day{?s} as sampled, or correct the \\
+                 {what} {cli::qty(length(bad))}date{?s}."
+        ),
+        class = "creel_error_sampled_register",
+        call = call
+      )
+    }
   }
 
   if (length(strata) == 0L) {
