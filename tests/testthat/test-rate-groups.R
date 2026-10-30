@@ -50,6 +50,7 @@ bank_boat_design <- function(paired = TRUE) {
       trip_status = "complete", n_anglers = 1L
     )
   }))
+  iv$interview_id <- seq_len(nrow(iv))
   d <- q(creel_design(cal, date = date, strata = day_type))
   d <- q(add_counts(d, long,
     count_col = "angler_count", count_time_col = count_time,
@@ -222,7 +223,123 @@ test_that("angler_type keys need angler-type counts", {
   )
 })
 
-test_that("rate groups by species are refused until they are supported", {
+# Two species split from each interview's catch. Bank anglers catch only
+# perch, so pike's bank rate is a known zero, not a missing one.
+add_bank_boat_species <- function(d) {
+  iv <- d$interviews
+  withr::local_seed(3892)
+  pike <- ifelse(iv$angler_type == "boat", stats::rbinom(nrow(iv), iv$catch_total, 0.4), 0L)
+  catch <- data.frame(
+    interview_id = rep(iv$interview_id, 2),
+    species = rep(c("perch", "pike"), each = nrow(iv)),
+    count = c(iv$catch_total - pike, pike),
+    catch_type = "caught"
+  )
+  q(add_catch(d, catch[catch$count > 0, ],
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+}
+
+# The season example with its catch split between two species, each with
+# harvested and released rows, so all three metrics have a species form.
+season_species_design <- function() {
+  d <- season_design()
+  iv <- example_season_interviews
+  withr::local_seed(389)
+  a <- stats::rbinom(nrow(iv), iv$catch_total, 0.6)
+  b <- iv$catch_total - a
+  ka <- pmin(iv$catch_kept, a)
+  kb <- pmin(iv$catch_kept - ka, b)
+  rows <- function(sp, caught, kept) {
+    data.frame(
+      interview_id = iv$interview_id, species = sp, count = c(kept, caught - kept),
+      catch_type = rep(c("harvested", "released"), each = nrow(iv))
+    )
+  }
+  catch <- rbind(rows("perch", a, ka), rows("pike", b, kb))
+  q(add_catch(d, catch[catch$count > 0, ],
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+}
+
+test_that("one rate group per stratum reproduces the standard species totals exactly", {
+  # The species regression anchor, for every metric: no rate shared across
+  # cells, so each species' total must be today's, SE included.
+  d <- season_species_design()
+  rg <- data.frame(day_type = c("weekday", "weekend"), grp = c("weekday", "weekend"))
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    for (tg in c("sampled_days", "period_total")) {
+      old <- q(fn(d, by = species, target = tg))$estimates
+      new <- q(fn(d, by = species, target = tg, rate_groups = rg))$estimates
+      expect_equal(new$species, old$species)
+      expect_equal(new$estimate, old$estimate, tolerance = 1e-10)
+      expect_equal(new$se, old$se, tolerance = 1e-10)
+      expect_equal(new$n, old$n)
+    }
+  }
+  old <- q(estimate_total_catch(d, by = c(species, day_type), target = "period_total"))$estimates
+  new <- q(estimate_total_catch(d, by = c(species, day_type), target = "period_total", rate_groups = rg))$estimates
+  expect_equal(new$se, old$se, tolerance = 1e-10)
+})
+
+test_that("a species' pooled rate is shared across its cells exactly as the all-species rate is", {
+  # With one species holding every fish, its total is the all-species total:
+  # same pooled rate, same (E1 + E2)^2 Var(R), same bank-boat covariance. A
+  # species loop that fed the wrong species' rates, or dropped the effort
+  # covariance, would differ here.
+  d <- bank_boat_design()
+  iv <- d$interviews
+  catch <- data.frame(interview_id = iv$interview_id, species = "perch", count = iv$catch_total, catch_type = "caught")
+  d <- q(add_catch(d, catch[catch$count > 0, ],
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+  rg <- bank_boat_groups()
+  all <- q(estimate_total_catch(d, target = "period_total", rate_groups = rg))$estimates
+  sp <- q(estimate_total_catch(d, by = species, target = "period_total", rate_groups = rg))$estimates
+  expect_equal(sp$estimate, all$estimate, tolerance = 1e-10)
+  expect_equal(sp$se, all$se, tolerance = 1e-10)
+  expect_equal(sp$n, all$n)
+})
+
+test_that("species totals under rate groups add up to the total", {
+  d <- add_bank_boat_species(bank_boat_design())
+  rg <- bank_boat_groups()
+  all <- q(estimate_total_catch(d, target = "period_total", rate_groups = rg))
+  sp <- q(estimate_total_catch(d, by = species, target = "period_total", rate_groups = rg))
+  expect_equal(sum(sp$estimates$estimate), all$estimates$estimate, tolerance = 1e-8)
+  expect_equal(sp$by_vars, "species")
+  # Each species' rates are its own: perch and pike differ in the boat groups.
+  rates <- sp$rate_groups$rates
+  expect_setequal(names(rates), c("species", "grp", "estimate", "se", "n"))
+  expect_false(isTRUE(all.equal(
+    rates$estimate[rates$species == "perch" & rates$grp == "boat_wd"],
+    rates$estimate[rates$species == "pike" & rates$grp == "boat_wd"]
+  )))
+})
+
+test_that("a species no one in a group caught gets a zero rate there, not a missing one", {
+  # Bank anglers caught no pike. Their pike rate is a known 0 with SE 0, so
+  # pike's total is boat effort times boat rates, and bank effort adds nothing
+  # to its variance.
+  d <- add_bank_boat_species(bank_boat_design())
+  rg <- bank_boat_groups()
+  res <- q(estimate_total_catch(d, by = c(species, angler_type), target = "period_total", rate_groups = rg))
+  rates <- res$rate_groups$rates
+  bank_pike <- rates[rates$species == "pike" & rates$grp == "bank", ]
+  expect_equal(bank_pike$estimate, 0)
+  expect_equal(bank_pike$se, 0)
+  est <- res$estimates
+  expect_equal(est$estimate[est$species == "pike" & est$angler_type == "bank"], 0)
+  expect_equal(est$se[est$species == "pike" & est$angler_type == "bank"], 0)
+  expect_false(anyNA(est$estimate))
+  expect_false(anyNA(est$se))
+})
+
+test_that("without catch data there is no species to group rate-group totals by", {
+  # Species is a column of the catch table only; the interviews lack it.
   d <- bank_boat_design()
   expect_error(
     estimate_total_catch(d, by = species, rate_groups = bank_boat_groups())
