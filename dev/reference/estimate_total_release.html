@@ -239,8 +239,10 @@ one shared estimate across its cells and carries the covariance of cells
 counted on the same days (bank and boat on one drive). The result's
 <code>rate_groups</code> element holds the map and each group's rate, SE and <code>n</code>.
 Standard count designs only: bus-route, ice, aerial, camera and sectioned
-designs stop, as does <code>missing_rate = "exclude"</code>, and so does
-<code>by = species</code> for now.</p></dd>
+designs stop, as does <code>missing_rate = "exclude"</code>. With
+<code>by = species</code>, each species gets its own rate per group, zero-filled
+over every trip in the group (a species no one in the group caught has a
+rate of 0), and the <code>rate_groups</code> rates carry a species column.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -192,8 +192,10 @@ estimate_total_catch(
   cells counted on the same days (bank and boat on one drive). The
   result's `rate_groups` element holds the map and each group's rate, SE
   and `n`. Standard count designs only: bus-route, ice, aerial, camera
-  and sectioned designs stop, as does `missing_rate = "exclude"`, and so
-  does `by = species` for now.
+  and sectioned designs stop, as does `missing_rate = "exclude"`. With
+  `by = species`, each species gets its own rate per group, zero-filled
+  over every trip in the group (a species no one in the group caught has
+  a rate of 0), and the `rate_groups` rates carry a species column.
 
 ## Value
 
