@@ -36,7 +36,8 @@ creel_design(
   night_date = "start",
   tz = NULL,
   wait_time = NULL,
-  circuit_time = NULL
+  circuit_time = NULL,
+  sampled = NULL
 )
 ```
 
@@ -302,6 +303,18 @@ creel_design(
   (1994, eq. 15.10). Encoding the waits as shares of the total wait, so
   that they add up to 1, would understate the totals by the travelling
   fraction of the circuit.
+
+- sampled:
+
+  Bus-route and ice designs only. Tidy selector for a logical column of
+  `calendar` that is `TRUE` on every day that was worked, including days
+  on which nobody was found fishing, and `FALSE` on the rest. It is the
+  register of sampled days that `target = "stratum_total"` and
+  `"period_total"` divide by: the interviews cannot supply it, because a
+  worked day with no anglers leaves no interview. Without it, those
+  targets stop. An interview dated on a day marked `FALSE` stops
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  (GH \#591).
 
 ## Value
 

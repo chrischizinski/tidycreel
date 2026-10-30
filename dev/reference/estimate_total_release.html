@@ -143,8 +143,9 @@ and release rate estimation, then combined via delta method.</p></dd>
 <code>"stratum_total"</code>, or <code>"period_total"</code>. This controls which effort domain
 is multiplied by release rate so total release stays aligned with the
 requested temporal target.
-Bus-route and ice designs accept only <code>"sampled_days"</code>, as
-<code><a href="estimate_effort.html">estimate_effort()</a></code> does: they have no calendar expansion yet (#520).</p></dd>
+Bus-route and ice designs expand to the other two only with the
+calendar's register of sampled days (<code>creel_design(sampled = )</code>), as
+<code><a href="estimate_effort.html">estimate_effort()</a></code> does (GH #591).</p></dd>
 
 
 <dt id="arg-use-trips">use_trips<a class="anchor" aria-label="anchor" href="#arg-use-trips"></a></dt>

@@ -198,9 +198,13 @@ ice fishing pressure is concentrated on Saturday and Sunday.</p>
 <span><span class="co">#&gt; 4         1</span></span>
 <span><span class="co">#&gt; 5         1</span></span>
 <span><span class="co">#&gt; 6         1</span></span></code></pre></div>
-<p>The sampling frame records the survey calendar and the period
-sampling probability (<code>p_period = 0.5</code> means each day had a
-50% chance of being sampled). The interview data contains 72 interviews
+<p>The sampling frame records the survey calendar, every day of which
+was worked, and the period sampling probability:
+<code>p_period = 0.5</code> means that on each worked day one of two
+periods (morning or afternoon) was covered, so each interview stands for
+twice its share of that day. It is a within-day probability, not the
+chance that a day was sampled; which days were worked is recorded
+separately, in the calendar. The interview data contains 72 interviews
 with walleye and perch catch, both effort measures, and the shelter type
 (<code>shelter_mode</code>) for each angler party.</p>
 </div>
@@ -303,6 +307,13 @@ with <code>effort_type = "time_on_ice"</code>.</p>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>819.  261.    <span style="text-decoration: underline;">3</span>308.    <span style="text-decoration: underline;">4</span>330.    72                  <span style="text-decoration: underline;">3</span>819.</span></span></code></pre></div>
+<p>This is the total over the days worked. To expand to a season with
+days that were not worked, give the calendar a logical column marking
+the worked days and pass it as <code>creel_design(sampled = )</code>;
+<code>target = "period_total"</code> then scales each stratum by its
+calendar days over its worked days. Mark a worked day on which nobody
+was out as worked too: it is a day of zero effort, and leaving it out
+would inflate the season total.</p>
 <p>To demonstrate the column-naming distinction, rebuild the design
 using <code>effort_type = "active_fishing_time"</code> and the
 <code>active_fishing_hours</code> column from the interview data. The

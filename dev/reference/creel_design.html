@@ -121,7 +121,8 @@ specifying sites, circuits, and their sampling probabilities.</p>
 <span>  night_date <span class="op">=</span> <span class="st">"start"</span>,</span>
 <span>  tz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  wait_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  circuit_time <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  circuit_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  sampled <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -362,6 +363,17 @@ exceed the circuit time. This is the weighting in Pollock et al. (1994,
 eq. 15.10). Encoding the waits as shares of the total wait, so that they
 add up to 1, would understate the totals by the travelling fraction of
 the circuit.</p></dd>
+
+
+<dt id="arg-sampled">sampled<a class="anchor" aria-label="anchor" href="#arg-sampled"></a></dt>
+<dd><p>Bus-route and ice designs only. Tidy selector for a
+logical column of <code>calendar</code> that is <code>TRUE</code> on every day that was
+worked, including days on which nobody was found fishing, and <code>FALSE</code>
+on the rest. It is the register of sampled days that
+<code>target = "stratum_total"</code> and <code>"period_total"</code> divide by: the
+interviews cannot supply it, because a worked day with no anglers leaves
+no interview. Without it, those targets stop. An interview dated on a
+day marked <code>FALSE</code> stops <code><a href="add_interviews.html">add_interviews()</a></code> (GH #591).</p></dd>
 
 </dl></div>
     <div class="section level2">

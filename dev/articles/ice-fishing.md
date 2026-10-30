@@ -93,11 +93,14 @@ head(example_ice_interviews)
 #> 6         1
 ```
 
-The sampling frame records the survey calendar and the period sampling
-probability (`p_period = 0.5` means each day had a 50% chance of being
-sampled). The interview data contains 72 interviews with walleye and
-perch catch, both effort measures, and the shelter type (`shelter_mode`)
-for each angler party.
+The sampling frame records the survey calendar, every day of which was
+worked, and the period sampling probability: `p_period = 0.5` means that
+on each worked day one of two periods (morning or afternoon) was
+covered, so each interview stands for twice its share of that day. It is
+a within-day probability, not the chance that a day was sampled; which
+days were worked is recorded separately, in the calendar. The interview
+data contains 72 interviews with walleye and perch catch, both effort
+measures, and the shelter type (`shelter_mode`) for each angler party.
 
 ## Design Construction
 
@@ -210,6 +213,14 @@ print(effort_est)
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
 #> 1    3819.  261.    3308.    4330.    72                  3819.
 ```
+
+This is the total over the days worked. To expand to a season with days
+that were not worked, give the calendar a logical column marking the
+worked days and pass it as `creel_design(sampled = )`;
+`target = "period_total"` then scales each stratum by its calendar days
+over its worked days. Mark a worked day on which nobody was out as
+worked too: it is a day of zero effort, and leaving it out would inflate
+the season total.
 
 To demonstrate the column-naming distinction, rebuild the design using
 `effort_type = "active_fishing_time"` and the `active_fishing_hours`

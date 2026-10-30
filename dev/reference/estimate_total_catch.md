@@ -71,9 +71,10 @@ estimate_total_catch(
   Options are `"sampled_days"` (default), `"stratum_total"`, or
   `"period_total"`. This controls which effort domain is multiplied by
   CPUE so total catch stays aligned with the requested temporal target.
-  Bus-route and ice designs accept only `"sampled_days"`, as
+  Bus-route and ice designs expand to the other two only with the
+  calendar's register of sampled days (`creel_design(sampled = )`), as
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-  does: they have no calendar expansion yet (#520).
+  does (GH \#591).
 
 - use_trips:
 
