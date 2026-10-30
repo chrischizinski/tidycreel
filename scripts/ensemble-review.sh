@@ -129,11 +129,25 @@ OUT_DIR=".ai/reviews"
 # ~15 runs. qwen3.8-max is not qwen3-coder (rejected above).
 #   qwen/qwen3.8-max-0902     ~$2 / $6 per M tokens
 #   google/gemini-3.8-flash   ~$0.75 / $3.75 per M tokens
+#
+# Trial result 2026-10-30 (scoreboard, Sept 2 - Oct 30):
+#   qwen3.8-max        KEPT: 23 true / 5 false in 88 runs (82%), $8.08 total.
+#   gemini-3.8-flash   DROPPED: 7 true / 32 false in 91 runs (18%), below
+#                      nemotron-3-ultra (36/71, 34%).
+# Same period: codex 150/6 (96%), deepseek-v4-pro 140/53 (73%).
+#
+# On TRIAL from 2026-10-30, same rule (drop after ~15 runs unless it beats
+# nemotron-3-ultra's precision):
+#   z-ai/glm-5.3              ~$0.08 / $3.60 per M tokens. Chosen as the best
+#     non-OpenAI, non-Anthropic model on MacroscopeBench, the one public
+#     benchmark of code REVIEW (recall 76.4%, precision 78.4%, Oct 2026), and a
+#     lab none of the others share. OpenAI models are left out because Codex is
+#     that family, and Anthropic models because the author is.
 MODELS=(
   "nvidia/nemotron-3-ultra-550b-a55b:free"
   "deepseek/deepseek-v4-pro-0813"
   "qwen/qwen3.8-max-0902"
-  "google/gemini-3.8-flash"
+  "z-ai/glm-5.3"
 )
 
 # The Codex CLI runs as a FIFTH reviewer, and it is a different kind of reviewer:
