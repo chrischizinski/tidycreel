@@ -80,6 +80,13 @@ states something, since a dropped `"caught"` row changes how the total
 is derived rather than setting it to zero. Aborts with class
 `creel_error_na_catch_count`.
 
+**Species must be known:** `species` may not contain `NA`. Species
+groupings enumerate the species present, so a fish with no species would
+count in the all-species totals and in no species' total, and the
+species rows would not add up. Give those rows a label such as
+`"unidentified"` (reported as its own species) or drop them. Aborts with
+class `creel_error_na_catch_species` (GH \#588).
+
 **Immutability:** Returns a new `creel_design` — the input is not
 modified. Calling `add_catch()` on a design that already has `$catch` is
 an error.

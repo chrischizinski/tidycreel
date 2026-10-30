@@ -12,6 +12,17 @@
 
 ### Breaking changes
 
+- [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+  refuses catch rows whose species is `NA`, with class
+  `creel_error_na_catch_species`
+  ([\#588](https://github.com/chrischizinski/tidycreel/issues/588)).
+  They were accepted, then dropped by every `by = species` grouping, so
+  their fish counted in the all-species totals and in no species row:
+  with a third of rows unlabelled, perch was reported at 455 against an
+  all-species total of 674, and nothing said the rest was missing. Label
+  those rows (for example `"unidentified"`, which is reported as its own
+  species) or drop them on purpose.
+
 - Refused interviews no longer enter rates and totals
   ([\#557](https://github.com/chrischizinski/tidycreel/issues/557)).
   `add_interviews(refused =)` stored the flag but no estimator read it,
