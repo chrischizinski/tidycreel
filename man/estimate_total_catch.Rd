@@ -52,8 +52,9 @@ and CPUE estimation, then combined via delta method.}
 \code{"stratum_total"}, or \code{"period_total"}. This controls which effort domain
 is multiplied by CPUE so total catch stays aligned with the requested
 temporal target.
-Bus-route and ice designs accept only \code{"sampled_days"}, as
-\code{\link[=estimate_effort]{estimate_effort()}} does: they have no calendar expansion yet (#520).}
+Bus-route and ice designs expand to the other two only with the
+calendar's register of sampled days (\code{creel_design(sampled = )}), as
+\code{\link[=estimate_effort]{estimate_effort()}} does (GH #591).}
 
 \item{use_trips}{Character. Which interviews contribute to CPUE:
 \code{"complete"} uses only completed trips, \code{"all"} includes incomplete ones.
