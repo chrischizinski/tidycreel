@@ -27,7 +27,8 @@ creel_design(
   night_date = "start",
   tz = NULL,
   wait_time = NULL,
-  circuit_time = NULL
+  circuit_time = NULL,
+  sampled = NULL
 )
 }
 \arguments{
@@ -224,6 +225,15 @@ exceed the circuit time. This is the weighting in Pollock et al. (1994,
 eq. 15.10). Encoding the waits as shares of the total wait, so that they
 add up to 1, would understate the totals by the travelling fraction of
 the circuit.}
+
+\item{sampled}{Bus-route and ice designs only. Tidy selector for a
+logical column of \code{calendar} that is \code{TRUE} on every day that was
+worked, including days on which nobody was found fishing, and \code{FALSE}
+on the rest. It is the register of sampled days that
+\code{target = "stratum_total"} and \code{"period_total"} divide by: the
+interviews cannot supply it, because a worked day with no anglers leaves
+no interview. Without it, those targets stop. An interview dated on a
+day marked \code{FALSE} stops \code{add_interviews()} (GH #591).}
 }
 \value{
 A \code{creel_design} S3 object (list) with components:

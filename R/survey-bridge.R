@@ -3126,9 +3126,11 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
 
 #' Refuse an expanded effort target on a design with no calendar expansion
 #'
-#' Bus-route and ice designs have no calendar expansion: their
-#' Horvitz-Thompson total covers the sampled days, so they accept only
-#' `target = "sampled_days"`. The three totals do not go through
+#' A bus-route or ice Horvitz-Thompson total covers the sampled days. It
+#' expands to a stratum or period total only through the calendar's register
+#' of sampled days (`creel_design(sampled = )`, GH #591), since the interviews
+#' cannot say which worked days were empty; without it only
+#' `target = "sampled_days"` is accepted. The three totals do not go through
 #' `estimate_effort()`, and on these designs they dropped `target` and answered
 #' a period-total request with a sampled-days total (GH #520). Raised at all
 #' four entry points for the same reason as [refuse_camera_design()]. Aerial
@@ -3139,23 +3141,29 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
 #' @param target The resolved effort target.
 #' @param call Environment for the error's call.
 #'
-#' @return NULL (invisible) unless the design type has no expansion and the
-#'   target is not `"sampled_days"`. Aborts otherwise.
+#' @return NULL (invisible) unless a bus-route or ice design asks for an
+#'   expanded target without the register of sampled days
+#'   (`creel_design(sampled = )`, GH #591). Aborts otherwise.
 #'
 #' @keywords internal
 #' @noRd
 refuse_unexpandable_target <- function(design, target, call = rlang::caller_env()) {
-  if (!isTRUE(design$design_type %in% c("bus_route", "ice")) ||
-    identical(target, "sampled_days")) {
+  expandable <- !isTRUE(design$design_type %in% c("bus_route", "ice")) ||
+    !is.null(design$sampled_col)
+  if (expandable || identical(target, "sampled_days")) {
     return(invisible(NULL))
   }
   cli::cli_abort(
     c(
-      "Expanded effort targets are not yet supported for {.val {design$design_type}} designs.",
-      "x" = "Got {.arg target = {target}}.",
-      "i" = "Use {.code target = 'sampled_days'} for now."
+      "{.code target = \"{target}\"} on a {.val {design$design_type}} design needs \\
+       the register of sampled days.",
+      "x" = "The design has no {.arg sampled} column.",
+      "i" = "Pass {.code creel_design(sampled = )}: a logical calendar column \\
+             marking every day worked, including days nobody fished. The \\
+             interviews cannot supply it, since an empty day leaves none.",
+      "i" = "Or use {.code target = \"sampled_days\"}."
     ),
-    class = "creel_error_dispatch_unsupported",
+    class = c("creel_error_sampled_register", "creel_error_dispatch_unsupported"),
     call = call
   )
 }

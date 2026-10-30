@@ -201,6 +201,28 @@
 
 ## New features
 
+* Bus-route and ice designs can now report effort and catch, harvest and
+  release totals for a stratum or the season (`target = "stratum_total"` or
+  `"period_total"`), not only for the days worked (#591). Give the calendar a
+  logical column marking every day that was worked and pass it as
+  `creel_design(sampled = )`. Each stratum's Horvitz-Thompson total over the
+  worked days is then scaled by its calendar days over its worked days, with
+  the with-replacement between-day variance. Mark days on which nobody was
+  out as worked too. The interviews cannot show them, and counting only the
+  days with interviews would inflate the season total, which is why the
+  expanded targets stop without this column. An interview dated on a day
+  marked as not worked stops `add_interviews()`. With the column present the
+  sampled-day total also counts the empty days as zero days, which widens its
+  SE; without it nothing changes. Species totals are now labelled with the
+  target they used.
+
+  `p_period` is the probability that the period worked within a day
+  (morning or afternoon) was the one covered, as the bus-route vignettes say;
+  the ice vignette had described it as the chance that a day was sampled, and
+  now does not. If you encoded day selection in `p_period`, your sampled-day
+  totals were already season totals under the wrong label. Do not also pass
+  `sampled =`, or the days are expanded twice.
+
 * `estimate_total_catch()`, `estimate_total_harvest()` and
   `estimate_total_release()` take `rate_groups =`, a table that pools catch
   rates more coarsely than effort (#389). Its keys are every stratum column
