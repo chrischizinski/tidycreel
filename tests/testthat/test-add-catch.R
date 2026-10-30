@@ -557,6 +557,28 @@ test_that("add_catch() refuses an unknown count on any catch type (CATCH-07)", {
   }
 })
 
+test_that("add_catch() refuses an unknown species and names the interview (GH #588)", {
+  # An NA species was accepted, then dropped by every species loop's
+  # sort(unique()): its fish counted in the all-species total and in no
+  # species row, so the species totals silently stopped adding up.
+  d <- make_design_with_interviews()
+  unknown <- data.frame(
+    interview_id = c(1L, 2L),
+    species = c("walleye", NA_character_),
+    count = c(3L, 4L),
+    catch_type = c("caught", "caught"),
+    stringsAsFactors = FALSE
+  )
+  err <- tryCatch(add_catch_std(d, unknown), error = function(e) e)
+  expect_s3_class(err, "creel_error_na_catch_species")
+  expect_match(conditionMessage(err), "(interview 2)", fixed = TRUE)
+
+  # The remedy the message offers works: a label is a species like any other.
+  unknown$species[2] <- "unidentified"
+  d2 <- suppressWarnings(suppressMessages(add_catch_std(d, unknown)))
+  expect_setequal(unique(d2$catch$species), c("walleye", "unidentified"))
+})
+
 test_that("an unknown harvest no longer reads as a genuine zero (CATCH-07)", {
   # The defect as measured. Same design three ways, changing only one
   # harvested count. Before the refusal, NA and 0 produced byte-identical

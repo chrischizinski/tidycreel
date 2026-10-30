@@ -61,6 +61,13 @@ states something, since a dropped \code{"caught"} row changes how the total
 is derived rather than setting it to zero. Aborts with class
 \code{creel_error_na_catch_count}.
 
+\strong{Species must be known:} \code{species} may not contain \code{NA}.
+Species groupings enumerate the species present, so a fish with no species
+would count in the all-species totals and in no species' total, and the
+species rows would not add up. Give those rows a label such as
+\code{"unidentified"} (reported as its own species) or drop them. Aborts
+with class \code{creel_error_na_catch_species} (GH #588).
+
 \strong{Immutability:} Returns a new \code{creel_design} — the input is not
 modified. Calling \code{add_catch()} on a design that already has
 \code{$catch} is an error.

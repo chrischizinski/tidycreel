@@ -5358,6 +5358,13 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #' is derived rather than setting it to zero. Aborts with class
 #' \code{creel_error_na_catch_count}.
 #'
+#' \strong{Species must be known:} \code{species} may not contain \code{NA}.
+#' Species groupings enumerate the species present, so a fish with no species
+#' would count in the all-species totals and in no species' total, and the
+#' species rows would not add up. Give those rows a label such as
+#' \code{"unidentified"} (reported as its own species) or drop them. Aborts
+#' with class \code{creel_error_na_catch_species} (GH #588).
+#'
 #' \strong{Immutability:} Returns a new \code{creel_design} — the input is not
 #' modified. Calling \code{add_catch()} on a design that already has
 #' \code{$catch} is an error.
@@ -5502,6 +5509,29 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
                released instead."
       ),
       class = "creel_error_na_catch_count",
+      call = rlang::caller_env()
+    )
+  }
+
+  # Refuse an unknown species (GH #588). Every species grouping enumerates
+  # species with sort(unique()), which drops NA, so these fish entered the
+  # all-species totals and no species row: the species totals stopped adding up
+  # to the total, with no error and no warning. Which species they were is the
+  # user's to resolve, not the package's to drop.
+  bad_species <- which(is.na(data[[species_col]]))
+  if (length(bad_species) > 0L) {
+    bad_ids <- unique(data[[catch_uid_col]][bad_species]) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{.field {species_col}} has missing values.",
+        "x" = "{.val {NA}} in {length(bad_species)} catch row{?s}
+               ({cli::qty(length(bad_ids))}interview{?s} {.val {bad_ids}}).",
+        "i" = "A fish of unknown species would count in the all-species
+               totals and in no species' total.",
+        "i" = "Give those rows a label such as {.val unidentified}, which is
+               then reported as its own species, or drop them on purpose."
+      ),
+      class = "creel_error_na_catch_species",
       call = rlang::caller_env()
     )
   }
