@@ -137,8 +137,10 @@ one shared estimate across its cells and carries the covariance of cells
 counted on the same days (bank and boat on one drive). The result's
 \code{rate_groups} element holds the map and each group's rate, SE and \code{n}.
 Standard count designs only: bus-route, ice, aerial, camera and sectioned
-designs stop, as does \code{missing_rate = "exclude"}, and so does
-\code{by = species} for now.}
+designs stop, as does \code{missing_rate = "exclude"}. With
+\code{by = species}, each species gets its own rate per group, zero-filled
+over every trip in the group (a species no one in the group caught has a
+rate of 0), and the \code{rate_groups} rates carry a species column.}
 }
 \value{
 A creel_estimates S3 object with method = "product-total-harvest".

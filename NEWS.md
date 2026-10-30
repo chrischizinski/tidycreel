@@ -218,7 +218,10 @@
   must have at least 10 trips; anything else stops. The result's `rate_groups`
   element shows the map and each group's rate, SE and `n`. Standard count
   designs only for now: bus-route, ice, aerial, camera and sectioned designs
-  stop, as does `by = species`, which is the next part of #389.
+  stop (#586). `by = species` works too: each species gets its own rate per
+  group, from every trip in the group with the species' count zero-filled, so
+  a species no one in a group caught has a known rate of 0 there. With one
+  group per stratum the species totals equal the standard ones exactly.
 
 * `creel_schema(value_maps =)` now accepts `angler_type`, as a free-label
   column like `angler_method` and `species_sought` (#563). A sheet that codes

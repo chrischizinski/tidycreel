@@ -226,27 +226,50 @@ rate_group_key_frame <- function(df, spec, design) {
 
 #' One rate per group, from every trip in the group
 #'
-#' @return A data frame with `.rate_group`, `estimate`, `se`, `n`.
+#' With `species_col`, one rate per species and group: each species' counts
+#' zero-filled over every interview, so a species nobody in the group caught
+#' has a known rate of zero, not a missing one.
+#'
+#' @return A data frame with `.rate_group`, `estimate`, `se`, `n`, and the
+#'   species column first when `species_col` is given.
 #' @keywords internal
 #' @noRd
-rate_group_rates <- function(design, metric, variance_method, conf_level) {
+rate_group_rates <- function(design, metric, variance_method, conf_level, species_col = NULL) {
   by <- ".rate_group"
-  res <- switch(metric,
-    catch = cpue_for_stratum_product(design, by, variance_method, conf_level), # nolint: object_usage_linter
-    harvest = estimate_harvest_grouped( # nolint: object_usage_linter
-      design, by, variance_method, conf_level,
-      design$total_estimator %||% "ratio-of-means"
-    ),
-    release = rpue_for_stratum_product(design, by, variance_method, conf_level) # nolint: object_usage_linter
-  )
-  out <- as.data.frame(res$estimates)
-  data.frame(
+  estimator <- design$total_estimator %||% "ratio-of-means"
+  out <- if (is.null(species_col)) {
+    res <- switch(metric,
+      catch = cpue_for_stratum_product(design, by, variance_method, conf_level), # nolint: object_usage_linter
+      harvest = estimate_harvest_grouped(design, by, variance_method, conf_level, estimator), # nolint: object_usage_linter
+      release = rpue_for_stratum_product(design, by, variance_method, conf_level) # nolint: object_usage_linter
+    )
+    as.data.frame(res$estimates)
+  } else {
+    species_fn <- switch(metric,
+      catch = estimate_cpue_species, # nolint: object_usage_linter
+      harvest = estimate_hpue_species, # nolint: object_usage_linter
+      release = estimate_release_rate_species # nolint: object_usage_linter
+    )
+    # validate = FALSE: the group floor was applied by the caller, once, to the
+    # groups -- the same trips for every species.
+    as.data.frame(species_fn(
+      design,
+      species_col = species_col, interview_by_vars = by,
+      variance_method = variance_method, conf_level = conf_level,
+      estimator = estimator, validate = FALSE
+    ))
+  }
+  rates <- data.frame(
     .rate_group = as.character(out[[by]]),
     estimate = out$estimate,
     se = out$se,
     n = out$n,
     stringsAsFactors = FALSE
   )
+  if (!is.null(species_col)) {
+    rates <- cbind(stats::setNames(out[species_col], species_col), rates)
+  }
+  rates
 }
 
 
@@ -346,8 +369,8 @@ quietly_effort <- function(expr) {
 
 #' Entry point from the three total estimators
 #'
-#' Resolves `by` the way the standard product path does, refuses a species
-#' grouping (not yet covered), and hands over.
+#' Resolves `by` the way the standard product path does, splitting off a
+#' species grouping, and hands over.
 #' @keywords internal
 #' @noRd
 total_with_rate_groups <- function(
@@ -364,26 +387,28 @@ total_with_rate_groups <- function(
 ) {
   validate_design_compatibility(design) # nolint: object_usage_linter
   by_vars <- character(0)
+  species_col <- NULL
   if (!rlang::quo_is_null(by_quo)) {
     by_info <- resolve_species_by(by_quo, design) # nolint: object_usage_linter
-    if (!is.null(by_info$species_var)) {
-      cli::cli_abort(
-        c(
-          "{.arg rate_groups} with {.code by = species} is not available yet.",
-          "i" = "Species totals with pooled rates are the next part of GH #389."
-        ),
-        call = call, class = "creel_error_rate_groups"
+    species_col <- by_info$species_var
+    if (!is.null(species_col)) {
+      # The remaining grouping columns are resolved as count-side columns, as
+      # for a total without species: effort is what they split.
+      rest <- by_info$interview_vars
+      by_quo <- if (length(rest) == 0L) rlang::quo(NULL) else rlang::quo(c(!!!rlang::syms(rest)))
+    }
+    if (!rlang::quo_is_null(by_quo)) {
+      by_vars <- eval_select_count_by( # nolint: object_usage_linter
+        by_quo, design,
+        species_route = TRUE,
+        error_call = call
       )
     }
-    by_vars <- eval_select_count_by( # nolint: object_usage_linter
-      by_quo, design,
-      species_route = TRUE,
-      error_call = call
-    )
   }
   estimate_total_rate_groups(
     design, metric, by_vars, rate_groups, variance_method, conf_level,
     target, product_variance, ci_type,
+    species_col = species_col,
     call = call
   )
 }
@@ -394,8 +419,12 @@ total_with_rate_groups <- function(
 #' @param design A design already filtered to the requested trips, with
 #'   `total_estimator` set.
 #' @param metric `"catch"`, `"harvest"` or `"release"`.
-#' @param by_vars Resolved grouping columns (may be empty).
+#' @param by_vars Resolved grouping columns (may be empty), species excluded.
 #' @param rate_groups The user's mapping table.
+#' @param species_col The species column when `by` includes species, else
+#'   `NULL`. Each species gets its own rate per group and its own total; the
+#'   species rows are reported side by side, never summed, so no covariance
+#'   between species is needed.
 #' @return A `creel_estimates` object.
 #' @keywords internal
 #' @noRd
@@ -409,6 +438,7 @@ estimate_total_rate_groups <- function(
   target,
   product_variance,
   ci_type,
+  species_col = NULL,
   call = rlang::caller_env()
 ) {
   spec <- resolve_rate_groups(design, rate_groups, call)
@@ -419,14 +449,77 @@ estimate_total_rate_groups <- function(
     design, ".rate_group",
     type = if (identical(metric, "harvest")) "harvest" else "cpue"
   )
-  rates <- rate_group_rates(design, metric, variance_method, conf_level)
+  rates <- rate_group_rates(design, metric, variance_method, conf_level, species_col)
 
-  # Effort per (row, group): the E_rg the rate terms need.
-  cell_effort <- estimate_effort_grouped( # nolint: object_usage_linter
+  # Effort per (row, group): the E_rg the rate terms need. The same for every
+  # species.
+  cell_effort <- as.data.frame(estimate_effort_grouped( # nolint: object_usage_linter
     design, c(by_vars, ".rate_group"), variance_method, conf_level,
     target = target
-  )$estimates
-  cell_effort <- as.data.frame(cell_effort)
+  )$estimates)
+
+  if (is.null(species_col)) {
+    res <- rate_group_product(
+      design, rates, cell_effort, by_vars, variance_method, conf_level,
+      target, product_variance, ci_type
+    )
+    out <- res$estimates
+    se_expansion <- res$se_expansion
+  } else {
+    all_species <- sort(unique(rates[[species_col]]))
+    pieces <- lapply(all_species, function(sp) {
+      sp_rates <- rates[rates[[species_col]] == sp, setdiff(names(rates), species_col), drop = FALSE]
+      res <- rate_group_product(
+        design, sp_rates, cell_effort, by_vars, variance_method, conf_level,
+        target, product_variance, ci_type
+      )
+      est <- res$estimates
+      est[[species_col]] <- rep(sp, nrow(est))
+      list(estimates = est[c(species_col, setdiff(names(est), species_col))], se_expansion = res$se_expansion)
+    })
+    out <- dplyr::bind_rows(lapply(pieces, `[[`, "estimates"))
+    se_exp <- lapply(pieces, `[[`, "se_expansion")
+    se_expansion <- if (all(vapply(se_exp, is.null, logical(1L)))) NULL else unlist(se_exp, use.names = FALSE)
+    by_vars <- c(species_col, by_vars)
+  }
+
+  result <- new_creel_estimates( # nolint: object_usage_linter
+    estimates = out,
+    method = paste0("product-total-", metric),
+    variance_method = variance_method,
+    design = design,
+    conf_level = conf_level,
+    by_vars = if (length(by_vars) == 0L) NULL else by_vars,
+    effort_target = target,
+    estimator = reported_estimator(design), # nolint: object_usage_linter
+    unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
+    se_expansion = se_expansion
+  )
+  # The pooling, visible: which cells used which group's rate.
+  names(rates)[names(rates) == ".rate_group"] <- spec$group_col
+  result$rate_groups <- list(map = spec$map, rates = tibble::as_tibble(rates))
+  result
+}
+
+
+#' The rate-group product for one set of group rates
+#'
+#' @param rates One rate per group: `.rate_group`, `estimate`, `se`, `n`.
+#' @param cell_effort Effort per `by_vars` x `.rate_group` cell.
+#' @return A list: `estimates` (tibble) and `se_expansion`.
+#' @keywords internal
+#' @noRd
+rate_group_product <- function(
+  design,
+  rates,
+  cell_effort,
+  by_vars,
+  variance_method,
+  conf_level,
+  target,
+  product_variance,
+  ci_type
+) {
   idx <- match(as.character(cell_effort$.rate_group), rates$.rate_group)
   r_est <- rates$estimate[idx]
   r_var <- rates$se[idx]^2
@@ -499,21 +592,5 @@ estimate_total_rate_groups <- function(
   out$ci_lower <- lower
   out$ci_upper <- upper
   out$n <- as.integer(n_row)
-
-  result <- new_creel_estimates( # nolint: object_usage_linter
-    estimates = out,
-    method = paste0("product-total-", metric),
-    variance_method = variance_method,
-    design = design,
-    conf_level = conf_level,
-    by_vars = if (length(by_vars) == 0L) NULL else by_vars,
-    effort_target = target,
-    estimator = reported_estimator(design), # nolint: object_usage_linter
-    unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
-    se_expansion = w_result$se_expansion
-  )
-  # The pooling, visible: which cells used which group's rate.
-  names(rates)[names(rates) == ".rate_group"] <- spec$group_col
-  result$rate_groups <- list(map = spec$map, rates = tibble::as_tibble(rates))
-  result
+  list(estimates = out, se_expansion = w_result$se_expansion)
 }
