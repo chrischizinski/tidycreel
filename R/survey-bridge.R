@@ -145,7 +145,14 @@ as_survey_design <- function(design) {
 #' @keywords internal
 #' @noRd
 get_variance_design <- function(design, variance_method) {
-  if (variance_method == "taylor") {
+  # Every stratum a census (sample size = population size, GH #507): the
+  # between-day variance is exactly 0 under any method, so there is nothing to
+  # resample. A replicate design built here has identical replicates and
+  # degf() = 0, which turns the interval into NaN.
+  fpc <- design$fpc
+  is_census <- !is.null(fpc$popsize) && length(fpc$popsize) > 0L &&
+    all(is.finite(fpc$popsize)) && all(fpc$popsize == fpc$sampsize)
+  if (variance_method == "taylor" || is_census) {
     design
   } else if (variance_method == "bootstrap") {
     if (has_uncorrected_strata(design)) {

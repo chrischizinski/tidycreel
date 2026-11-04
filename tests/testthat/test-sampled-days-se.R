@@ -95,3 +95,48 @@ test_that("bus-route effort is always labelled between_day_upper_bound (#507)", 
   eff <- tidy(suppressWarnings(estimate_effort(d)))
   expect_equal(eff$se_basis, "between_day_upper_bound")
 })
+
+test_that("bootstrap and jackknife on a census of days keep a finite interval (#507)", {
+  # Every stratum a census: nothing to resample. A replicate design built here
+  # has degf() = 0 and the interval came out NaN beside a finite SE.
+  d <- make_507_design(2L)
+  taylor <- tidy(suppressWarnings(estimate_effort(d, target = "sampled_days")))
+  for (v in c("bootstrap", "jackknife")) {
+    r <- tidy(suppressWarnings(estimate_effort(d, target = "sampled_days", variance = v)))
+    expect_equal(r$se, taylor$se, info = v)
+    expect_true(is.finite(r$ci_lower) && is.finite(r$ci_upper), info = v)
+    expect_equal(r$ci_lower, taylor$ci_lower, info = v)
+  }
+})
+
+test_that("expanded targets are labelled two_stage unless every day was sampled (#507)", {
+  # Eight weekdays, two counts a day. Sampling four of them leaves a day-to-day
+  # term (reduced by the correction) beside the within-day term: both are in
+  # the SE, so "within_day" would misstate it.
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:7, day_type = "weekday", stringsAsFactors = FALSE
+  )
+  build <- function(n_days) {
+    days <- cal$date[seq_len(n_days)]
+    counts <- data.frame(
+      date = rep(days, each = 2L), day_type = "weekday",
+      count_time = rep(c("am", "pm"), n_days),
+      angler_count = rep(c(10, 14), n_days) + rep(seq_len(n_days) * 10, each = 2L),
+      stringsAsFactors = FALSE
+    )
+    add_counts(
+      creel_design(cal, date = date, strata = day_type), counts,
+      count_col = "angler_count", count_time_col = count_time
+    )
+  }
+
+  part <- tidy(suppressWarnings(estimate_effort(build(4L), target = "period_total")))
+  expect_equal(part$se_basis, "two_stage")
+  # The label is true only if both components are in the SE.
+  expect_gt(part$se_between, 0)
+  expect_gt(part$se_within, 0)
+
+  full <- tidy(suppressWarnings(estimate_effort(build(8L), target = "period_total")))
+  expect_equal(full$se_basis, "within_day")
+  expect_equal(full$se_between, 0)
+})

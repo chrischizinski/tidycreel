@@ -591,13 +591,17 @@ print.creel_estimates <- function(x, ...) {
 #'   the Rasmussen two-stage formula; it is zero when a single count is
 #'   recorded per PSU and nonzero when \code{count_time_col} is supplied to
 #'   \code{add_counts()}. \code{se_basis} says which kind of standard error a
-#'   row carries: \code{"within_day"} where every sampled day has two or more
-#'   counts (the finite-population correction removes the day-to-day term, so
-#'   \code{se} is the within-day term alone; on \code{target = "sampled_days"}
-#'   the sampled days are the population), \code{"between_day_upper_bound"}
-#'   where a day has one count (the within-day variance cannot be estimated, so
-#'   the day-to-day variance is kept and is conservative; every bus-route and
-#'   ice design), and \code{"mixed"} for a row spanning both. For bus-route designs, a "site_contributions"
+#'   row carries: \code{"within_day"} for a census of days with two or more
+#'   counts a day (the finite-population correction removes the day-to-day
+#'   term, so \code{se} is the within-day term alone; always so on
+#'   \code{target = "sampled_days"}, where the sampled days are the
+#'   population), \code{"two_stage"} where days carry two or more counts but
+#'   only some were sampled (an expanded target: the corrected day-to-day term
+#'   plus the within-day term), \code{"between_day_upper_bound"} where a day
+#'   has one count (the within-day variance cannot be estimated, so the
+#'   day-to-day variance is kept and is conservative; every bus-route and ice
+#'   design), and \code{"mixed"} for a row spanning more than one kind.
+#'   \code{se_basis} is \code{NA} for a registered section with no data. For bus-route designs, a "site_contributions"
 #'   attribute is also present containing per-site e_i, pi_i, and
 #'   e_i_over_pi_i columns.
 #'
@@ -6200,18 +6204,26 @@ within_day_identified_strata <- function(design, counts_data, strata_cols) {
   vapply(split(k_d >= 2L, stratum_key), all, logical(1))
 }
 
-#' Which kind of standard error an expanded or sampled-day effort row carries
+#' Which kind of standard error an effort row carries
 #'
-#' Internal (GH #507). Where every sampled day has two or more counts the
-#' finite-population correction removes the day-to-day term and the SE is the
-#' within-day term alone (`"within_day"`). Where any day has one count the
-#' within-day variance is not estimable, the day-to-day variance keeps its
-#' within-day content, and the SE is a conservative upper bound
-#' (`"between_day_upper_bound"`). A row spanning both kinds is `"mixed"`.
-#' This is the same rule `sampled_days_target_design()` and the `period_total`
-#' design apply, read from the same `within_day_identified_strata()`.
+#' Internal (GH #507). Read from the target design that produced the variance,
+#' so the label cannot drift from the number. Per stratum:
+#'
+#' * `"within_day"`: a census of days (sample size = population size, which is
+#'   always the case for `sampled_days` where the stratum has 2+ counts a day).
+#'   The finite-population correction removes the day-to-day term and `se` is
+#'   the within-day term alone.
+#' * `"two_stage"`: 2+ counts a day but only some of the days sampled
+#'   (expanded targets). `se` is the day-to-day term, reduced by the
+#'   correction, plus the within-day term (Cochran 1977, ch. 10).
+#' * `"between_day_upper_bound"`: a day with one count, so the within-day
+#'   variance cannot be estimated; no correction is taken and the day-to-day
+#'   variance, which contains the within-day variation, is kept. Conservative.
+#'
+#' A row spanning strata of more than one kind is `"mixed"`.
 #'
 #' @param design A creel_design with counts attached.
+#' @param target Effort target the variance was computed for.
 #' @param by_vars Grouping columns of the result rows, or NULL for one row.
 #' @param keys For grouped results, the `group_key()` of each result row, in
 #'   row order. Ignored when `by_vars` is NULL.
@@ -6219,36 +6231,38 @@ within_day_identified_strata <- function(design, counts_data, strata_cols) {
 #'   otherwise.
 #' @keywords internal
 #' @noRd
-effort_se_basis <- function(design, by_vars = NULL, keys = NULL) {
-  counts_data <- design$counts
-  strata_cols <- design$strata_cols %||% character(0)
-  key_data <- counts_data
-  key_cols <- strata_cols
-  if (length(key_cols) == 0L) {
-    key_cols <- ".se_basis_stratum"
-    key_data[[key_cols]] <- ""
+effort_se_basis <- function(design, target = "sampled_days", by_vars = NULL, keys = NULL) {
+  tdes <- get_effort_target_design(design, target) # nolint: object_usage_linter
+  pop <- tdes$fpc$popsize
+  smp <- tdes$fpc$sampsize
+  n_rows <- nrow(tdes$variables)
+  kind <- if (is.null(pop)) {
+    # No correction anywhere: the design is design$survey itself.
+    rep("between_day_upper_bound", n_rows)
+  } else {
+    pop <- as.numeric(pop)
+    smp <- as.numeric(smp)
+    ifelse(
+      pop >= no_fpc_population, "between_day_upper_bound", # nolint: object_usage_linter
+      ifelse(pop == smp, "within_day", "two_stage")
+    )
   }
-  identified <- within_day_identified_strata(design, key_data, key_cols)
-  stratum_key <- group_key(key_data, key_cols) # nolint: object_usage_linter
-  row_identified <- identified[match(stratum_key, names(identified))]
 
   label_of <- function(flags) {
-    if (all(flags)) {
-      "within_day"
-    } else if (!any(flags)) {
-      "between_day_upper_bound"
-    } else {
-      "mixed"
+    u <- unique(flags)
+    if (length(u) == 1L) u else "mixed"
+  }
+  if (is.null(by_vars) || length(by_vars) == 0L || !all(by_vars %in% names(tdes$variables))) {
+    if (!is.null(by_vars) && length(by_vars) > 0L) {
+      return(rep(label_of(kind), length(keys)))
     }
+    return(label_of(kind))
   }
-  if (is.null(by_vars) || length(by_vars) == 0L) {
-    return(label_of(row_identified))
-  }
-  data_key <- group_key(counts_data, by_vars) # nolint: object_usage_linter
+  data_key <- group_key(tdes$variables, by_vars) # nolint: object_usage_linter
   vapply(
     keys,
     function(k) {
-      flags <- row_identified[data_key == k]
+      flags <- kind[data_key == k]
       # A result group with no count rows has no stratum to read; it carries no
       # within-day information, so it is the conservative kind.
       if (length(flags) == 0L) "between_day_upper_bound" else label_of(flags)
@@ -6795,7 +6809,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     ci_lower = ci_lower,
     ci_upper = ci_upper,
     n = n,
-    se_basis = effort_se_basis(design)
+    se_basis = effort_se_basis(design, target)
   )
 
   # Return creel_estimates object
@@ -7014,7 +7028,7 @@ estimate_effort_grouped <- function(
   estimates_df$ci_lower <- ci_lower
   estimates_df$ci_upper <- ci_upper
   estimates_df$n <- group_n
-  estimates_df$se_basis <- effort_se_basis(design, by_vars, result_group_keys)
+  estimates_df$se_basis <- effort_se_basis(design, target, by_vars, result_group_keys)
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)

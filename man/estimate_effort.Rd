@@ -96,13 +96,17 @@ recorded per PSU). \code{se_within} is the within-day standard error from
 the Rasmussen two-stage formula; it is zero when a single count is
 recorded per PSU and nonzero when \code{count_time_col} is supplied to
 \code{add_counts()}. \code{se_basis} says which kind of standard error a
-row carries: \code{"within_day"} where every sampled day has two or more
-counts (the finite-population correction removes the day-to-day term, so
-\code{se} is the within-day term alone; on \code{target = "sampled_days"}
-the sampled days are the population), \code{"between_day_upper_bound"}
-where a day has one count (the within-day variance cannot be estimated, so
-the day-to-day variance is kept and is conservative; every bus-route and
-ice design), and \code{"mixed"} for a row spanning both. For bus-route designs, a "site_contributions"
+row carries: \code{"within_day"} for a census of days with two or more
+counts a day (the finite-population correction removes the day-to-day
+term, so \code{se} is the within-day term alone; always so on
+\code{target = "sampled_days"}, where the sampled days are the
+population), \code{"two_stage"} where days carry two or more counts but
+only some were sampled (an expanded target: the corrected day-to-day term
+plus the within-day term), \code{"between_day_upper_bound"} where a day
+has one count (the within-day variance cannot be estimated, so the
+day-to-day variance is kept and is conservative; every bus-route and ice
+design), and \code{"mixed"} for a row spanning more than one kind.
+\code{se_basis} is \code{NA} for a registered section with no data. For bus-route designs, a "site_contributions"
 attribute is also present containing per-site e_i, pi_i, and
 e_i_over_pi_i columns.
 

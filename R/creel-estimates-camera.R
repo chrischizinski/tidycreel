@@ -417,7 +417,13 @@ estimate_effort_camera <- function(
     # Weighted total: sum(N_h * rho_h * mean_count_h)
     # Use svytotal on raw count then multiply stratum-level totals by rho
     count_formula <- stats::reformulate(count_var)
-    svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+    # Through the target helper, as the raw-count branch below: the within-day
+    # term added further down is the whole variance when every day has two or
+    # more counts (GH #507).
+    svy_design <- get_variance_design( # nolint: object_usage_linter
+      get_effort_target_design(design, "sampled_days"), # nolint: object_usage_linter
+      variance_method
+    )
     # No `na.rm = TRUE`: it made a missing count a zero-effort day (#215).
     #
     # No `suppressWarnings()` either. It used to swallow every warning svyby
@@ -627,7 +633,7 @@ estimate_effort_camera <- function(
     ci_lower = ci_lower,
     ci_upper = ci_upper,
     n = n,
-    se_basis = effort_se_basis(design)
+    se_basis = effort_se_basis(design) # nolint: object_usage_linter
   )
 
   new_creel_estimates( # nolint: object_usage_linter
