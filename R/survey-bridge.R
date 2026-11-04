@@ -159,6 +159,14 @@ get_variance_design <- function(design, variance_method) {
       suppressWarnings(survey::as.svrepdesign(design, type = "auto")),
       error = function(e) {
         msg <- conditionMessage(e)
+        # Every stratum a census: the between-day variance is exactly 0 under
+        # any method, and survey refuses to build replicates for it. The
+        # within-day term is the whole variance there -- every day of a
+        # `sampled_days` total counted twice or more (GH #507), or every day
+        # of a `period_total` sampled so (#505).
+        if (grepl("exhaustively sampled", msg, fixed = TRUE)) {
+          return(design)
+        }
         if (grepl("has only one PSU", msg, fixed = TRUE)) {
           # survey encodes: "Stratum<name>has only one PSU" (no spaces)
           strat <- regmatches(

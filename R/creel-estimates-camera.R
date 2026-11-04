@@ -559,7 +559,10 @@ estimate_effort_camera <- function(
     }
 
     count_formula <- stats::reformulate(count_var)
-    svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+    # Through the target helper, not design$survey: with two or more counts a
+    # day the within-day term below is the whole variance (GH #507).
+    target_design <- get_effort_target_design(design, "sampled_days") # nolint: object_usage_linter
+    svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(
       survey::svytotal(count_formula, svy_design)
     )
@@ -623,7 +626,8 @@ estimate_effort_camera <- function(
     se_within = se_within,
     ci_lower = ci_lower,
     ci_upper = ci_upper,
-    n = n
+    n = n,
+    se_basis = effort_se_basis(design)
   )
 
   new_creel_estimates( # nolint: object_usage_linter

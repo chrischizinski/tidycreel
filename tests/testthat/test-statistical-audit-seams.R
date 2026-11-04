@@ -225,9 +225,12 @@ test_that("metamorphic: sub-counts and their per-day means give the same effort 
 
   # The sub-count design knows something the pre-averaged one cannot: the
   # spread within each day. That must show up as a within-day component, and
-  # as a strictly larger total SE — not as a zero that looks propagated.
+  # not as a zero that looks propagated. With every sampled day counted twice
+  # the sampled days are a census, so the within-day term is the whole SE
+  # (GH #507); a larger-than-means SE would be the double count back.
   expect_gt(tidy(eff_subs)$se_within, 0)
-  expect_gt(tidy(eff_subs)$se, tidy(eff_means)$se)
+  expect_equal(tidy(eff_subs)$se, tidy(eff_subs)$se_within)
+  expect_equal(tidy(eff_subs)$se_between, 0)
 
   # The equality has to survive to a management-relevant number, not stop at
   # effort: a doubled effort propagated undiminished into total catch.

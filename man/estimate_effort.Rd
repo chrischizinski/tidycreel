@@ -84,8 +84,8 @@ emits a \code{cli_warn()} and inserts an NA row with
 }
 \value{
 A creel_estimates S3 object (list) with components: estimates
-(tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n
-columns, plus grouping columns if \code{by} is specified),
+(tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n,
+se_basis columns, plus grouping columns if \code{by} is specified),
 method (character: "total"),
 variance_method (character: reflects the variance parameter value used),
 design (reference to source creel_design), conf_level (numeric), and
@@ -95,7 +95,14 @@ by_vars (character vector of grouping variable names or NULL).
 recorded per PSU). \code{se_within} is the within-day standard error from
 the Rasmussen two-stage formula; it is zero when a single count is
 recorded per PSU and nonzero when \code{count_time_col} is supplied to
-\code{add_counts()}. For bus-route designs, a "site_contributions"
+\code{add_counts()}. \code{se_basis} says which kind of standard error a
+row carries: \code{"within_day"} where every sampled day has two or more
+counts (the finite-population correction removes the day-to-day term, so
+\code{se} is the within-day term alone; on \code{target = "sampled_days"}
+the sampled days are the population), \code{"between_day_upper_bound"}
+where a day has one count (the within-day variance cannot be estimated, so
+the day-to-day variance is kept and is conservative; every bus-route and
+ice design), and \code{"mixed"} for a row spanning both. For bus-route designs, a "site_contributions"
 attribute is also present containing per-site e_i, pi_i, and
 e_i_over_pi_i columns.
 

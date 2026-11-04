@@ -144,7 +144,10 @@ estimate_effort_br <- function(
       se = se,
       ci_lower = ci_lower,
       ci_upper = ci_upper,
-      n = n
+      n = n,
+      # Days are the PSUs and a day carries one count: the published bus-route
+      # variance, which contains the within-day variation (GH #507).
+      se_basis = "between_day_upper_bound"
     )
 
     result <- new_creel_estimates( # nolint: object_usage_linter
@@ -228,10 +231,11 @@ estimate_effort_br <- function(
     estimates_df$ci_upper <- ci_upper
     estimates_df$proportion <- proportion
     estimates_df$n <- group_n
+    estimates_df$se_basis <- "between_day_upper_bound"
     estimates_df <- tibble::as_tibble(estimates_df)
 
     # Column order: group cols, estimate cols, proportion, n
-    col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "proportion", "n")
+    col_order <- c(by_vars, "estimate", "se", "ci_lower", "ci_upper", "proportion", "n", "se_basis")
     estimates_df <- estimates_df[col_order]
 
     result <- new_creel_estimates( # nolint: object_usage_linter
