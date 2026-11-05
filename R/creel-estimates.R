@@ -5001,7 +5001,8 @@ section_within_day_cross_covariance <- function(design, target, secs) {
           sa <- section_scales(a, h)
           sb <- section_scales(b, h)
         }
-        cp <- cp + sqrt(sa[[day]] * sb[[day]]) * cp_d
+        # match(), not [[: a day ID may be "" and [[ cannot look that name up.
+        cp <- cp + sqrt(sa[match(day, names(sa))] * sb[match(day, names(sb))]) * cp_d
       }
     }
     cp

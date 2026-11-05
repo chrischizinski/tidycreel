@@ -238,3 +238,33 @@ test_that("shared-count-times lake within-day SE weights each day by its own cou
   expect_equal(res$se_within[res$section == ".lake_total"], sqrt(hand))
   expect_gt(res$se[res$section == ".lake_total"], 0)
 })
+
+test_that("an empty-string day ID still finds its covariance coefficients (#507)", {
+  # The per-section coefficients are looked up by day ID; [[ cannot find a
+  # name that is "", which a character PSU column may legitimately hold.
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:1, day_type = "weekday", day_id = c("", "d2")
+  )
+  times <- list(c(9, 15), c(8, 11, 14, 17))
+  a <- list(c(10, 16), c(20, 24, 31, 27))
+  b <- list(c(30, 41), c(50, 52, 61, 58))
+  rows <- do.call(rbind, lapply(1:2, function(i) {
+    rbind(
+      data.frame(date = cal$date[i], day_type = "weekday", day_id = cal$day_id[i],
+                 section = "A", count_time = times[[i]], n = a[[i]]),
+      data.frame(date = cal$date[i], day_type = "weekday", day_id = cal$day_id[i],
+                 section = "B", count_time = times[[i]], n = b[[i]])
+    )
+  }))
+  d <- creel_design(cal, date = date, strata = day_type)
+  d <- add_sections(d, data.frame(section = c("A", "B")), section_col = section, shared_count_times = TRUE)
+  d <- suppressWarnings(add_counts(d, rows, count_col = "n", count_time_col = count_time, psu = "day_id"))
+  res <- suppressMessages(suppressWarnings(estimate_effort(d, target = "sampled_days")))$estimates
+
+  hand <- sum(vapply(1:2, function(i) {
+    tot <- a[[i]] + b[[i]]
+    k <- length(tot)
+    sum((tot - mean(tot))^2) / (k * (k - 1))
+  }, numeric(1)))
+  expect_equal(res$se_within[res$section == ".lake_total"], sqrt(hand))
+})
