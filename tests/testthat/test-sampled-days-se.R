@@ -207,3 +207,34 @@ test_that("names the estimators write themselves are refused on every path (#507
     class = "creel_error_reserved_column"
   )
 })
+
+test_that("shared-count-times lake within-day SE weights each day by its own counts (#507)", {
+  # Two sections counted at the same times; two days with 2 and 4 counts. On a
+  # census of days the lake's within-day variance is, per day, the variance of
+  # the mean of the lake's occasion totals: sum_d ss_d / (k_d (k_d - 1)). The
+  # cross-covariance used to take one scale from the first day and apply it to
+  # the others, which misweights them when k_d differ.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:3, day_type = "weekday")
+  times <- list(c(9, 15), c(8, 11, 14, 17))
+  days <- cal$date[1:2]
+  a <- list(c(10, 16), c(20, 24, 31, 27))
+  b <- list(c(30, 41), c(50, 52, 61, 58))
+  rows <- do.call(rbind, lapply(1:2, function(i) {
+    rbind(
+      data.frame(date = days[i], day_type = "weekday", section = "A", count_time = times[[i]], n = a[[i]]),
+      data.frame(date = days[i], day_type = "weekday", section = "B", count_time = times[[i]], n = b[[i]])
+    )
+  }))
+  d <- creel_design(cal[1:2, ], date = date, strata = day_type)
+  d <- add_sections(d, data.frame(section = c("A", "B")), section_col = section, shared_count_times = TRUE)
+  d <- suppressWarnings(add_counts(d, rows, count_col = "n", count_time_col = count_time))
+  res <- suppressMessages(suppressWarnings(estimate_effort(d, target = "sampled_days")))$estimates
+
+  hand <- sum(vapply(1:2, function(i) {
+    tot <- a[[i]] + b[[i]]
+    k <- length(tot)
+    sum((tot - mean(tot))^2) / (k * (k - 1))
+  }, numeric(1)))
+  expect_equal(res$se_within[res$section == ".lake_total"], sqrt(hand))
+  expect_gt(res$se[res$section == ".lake_total"], 0)
+})

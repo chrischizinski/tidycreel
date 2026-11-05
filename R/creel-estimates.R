@@ -601,7 +601,10 @@ print.creel_estimates <- function(x, ...) {
 #'   has one count (the within-day variance cannot be estimated, so the
 #'   day-to-day variance is kept and is conservative; every bus-route and ice
 #'   design), and \code{"mixed"} for a row spanning more than one kind.
-#'   \code{se_basis} is \code{NA} for a registered section with no data. For bus-route designs, a "site_contributions"
+#'   \code{se_basis} describes the count-sampling part of \code{se} only:
+#'   a calibration (aerial visibility, angler ratio, camera) or party-size
+#'   expansion term, when present, is added on top of it whatever the label.
+#'   It is \code{NA} for a registered section with no data. For bus-route designs, a "site_contributions"
 #'   attribute is also present containing per-site e_i, pi_i, and
 #'   e_i_over_pi_i columns.
 #'
@@ -4928,7 +4931,9 @@ section_within_day_cross_covariance <- function(design, target, secs) {
   # V_A = c_A * sum_d ss_Ad, with c_A fixed by the section's own sampled days,
   # mean counts per day and target. Per stratum the covariance is the same form
   # with cross-products, over the days on which the two sections pair:
-  #   Cov_w = sqrt(c_A * c_B) * sum_d cp_d.
+  #   Cov_w = sum_d sqrt(c_Ad * c_Bd) * cp_d,
+  # with c constant across days under the pooled form and day-specific under
+  # the exact sampled-days form (GH #507).
   # Identical day samples give exactly Rasmussen's term with a cross-product for
   # the sum of squares; days the sections do not share, or share at different
   # occasions, add nothing; and by Cauchy-Schwarz the covariance never exceeds
@@ -4959,10 +4964,14 @@ section_within_day_cross_covariance <- function(design, target, secs) {
   # c_A: a section's within-day variance per unit of day sum of squares, as its
   # own row computes it. The formula is linear in the sums of squares, so it is
   # the formula at a single unit sum.
-  within_scale <- function(sec, h) {
+  # Taken per day: on `sampled_days` with 2+ counts every day the formula weights
+  # each day by its own 1 / (k_d (k_d - 1)) (GH #507), so a single scale read
+  # off the first day would misweight the others. Under the pooled form every
+  # day has the same coefficient and this is the old single scale.
+  within_scale <- function(sec, h, day) {
     days <- unique(occ_day[occ_h == h & occ_sec == sec])
-    k <- vapply(days, function(day) length(day_counts(sec, h, day)$y), numeric(1L))
-    unit_ss <- replace(numeric(length(days)), 1L, 1)
+    k <- vapply(days, function(d) length(day_counts(sec, h, d)$y), numeric(1L))
+    unit_ss <- replace(numeric(length(days)), match(day, days), 1)
     rasmussen_within_var(unit_ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
   }
   within_cov <- function(a, b, h) {
@@ -4979,12 +4988,12 @@ section_within_day_cross_covariance <- function(design, target, secs) {
         n_unpaired <<- n_unpaired + 1L
         next
       }
-      cp <- cp + sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
+      cp_d <- sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
+      if (cp_d != 0) {
+        cp <- cp + sqrt(within_scale(a, h, day) * within_scale(b, h, day)) * cp_d
+      }
     }
-    if (cp == 0) {
-      return(0)
-    }
-    sqrt(within_scale(a, h) * within_scale(b, h)) * cp
+    cp
   }
 
   n <- length(secs)

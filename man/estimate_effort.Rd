@@ -106,7 +106,10 @@ plus the within-day term), \code{"between_day_upper_bound"} where a day
 has one count (the within-day variance cannot be estimated, so the
 day-to-day variance is kept and is conservative; every bus-route and ice
 design), and \code{"mixed"} for a row spanning more than one kind.
-\code{se_basis} is \code{NA} for a registered section with no data. For bus-route designs, a "site_contributions"
+\code{se_basis} describes the count-sampling part of \code{se} only:
+a calibration (aerial visibility, angler ratio, camera) or party-size
+expansion term, when present, is added on top of it whatever the label.
+It is \code{NA} for a registered section with no data. For bus-route designs, a "site_contributions"
 attribute is also present containing per-site e_i, pi_i, and
 e_i_over_pi_i columns.
 

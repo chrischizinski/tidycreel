@@ -79,6 +79,9 @@ estimate_effort_camera <- function(
   variance_method = "taylor",
   conf_level = 0.95
 ) {
+  # Camera designs never reach estimate_effort()'s dispatcher, so the reserved
+  # names are refused here too (GH #507).
+  refuse_reserved_effort_names(design) # nolint: object_usage_linter
   counts_data <- design$counts
   if (is.null(counts_data) || nrow(counts_data) == 0L) {
     cli::cli_abort(c(
