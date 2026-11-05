@@ -253,6 +253,40 @@ test_that("add_counts() skips section validation when no sections registered", {
   expect_no_error(add_counts(design, counts))
 })
 
+# --- Section validation is order-independent (counts first, sections second) ----
+# add_counts() refuses a section that was never registered when the sections are
+# attached first. The same counts must be refused when the sections arrive
+# second; otherwise the unregistered section has no row of its own but is still
+# summed into the lake total, a believable number with no signal.
+
+section_order_counts <- function() {
+  data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03")),
+    day_type = c("weekday", "weekday", "weekend"),
+    section = c("North Inlet", "Main Basin", "South Outlet"),
+    count = c(10L, 20L, 15L),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("add_sections() refuses attached counts holding an unregistered section", {
+  design <- add_counts(make_base_design(), section_order_counts())
+  registered <- make_sections_df()[1:2, ] # South Outlet is left out
+
+  expect_error(
+    add_sections(design, registered, section_col = section), # nolint: object_usage_linter
+    regexp = "South Outlet"
+  )
+})
+
+test_that("add_sections() accepts attached counts when every section is registered", {
+  design <- add_counts(make_base_design(), section_order_counts())
+
+  expect_no_error(
+    add_sections(design, make_sections_df(), section_col = section) # nolint: object_usage_linter
+  )
+})
+
 # --- Section validation in add_interviews() ------------------------------------
 
 make_design_with_sections_and_counts <- function() {

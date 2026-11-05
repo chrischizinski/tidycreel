@@ -880,6 +880,14 @@
 
 ## Bug fixes
 
+* `add_sections()` now refuses a design whose attached counts hold a section
+  that was not registered (#595). `add_counts()` already refused this when the
+  sections were attached first; in the other order the unregistered section was
+  accepted, had no row of its own in the sectioned effort estimate, and was
+  still summed into `.lake_total`. The error names the unknown sections. A
+  design built in the other order, or with every section registered, is
+  unchanged.
+
 * The incomplete-trip messages and the `use_trips = "diagnostic"` print no
   longer refer to an internal development phase ("Phase 19") (#548). The
   diagnostic print also listed three statistical tests, two of which
