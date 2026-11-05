@@ -140,3 +140,34 @@ test_that("expanded targets are labelled two_stage unless every day was sampled 
   expect_equal(full$se_basis, "within_day")
   expect_equal(full$se_between, 0)
 })
+
+test_that("unequal counts per day use each day's own within-day variance (#507)", {
+  # The pooled Rasmussen form assumes about k_bar counts a day. With 2 and 10 it
+  # reported sqrt(2/3) against the exact sqrt(1/2 + 1/10 + 1/2 + 1/10), 25%
+  # low -- and on a census of days this term is the whole SE.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:3, day_type = "weekday")
+  ks <- c(2L, 10L, 2L, 10L)
+  counts <- do.call(rbind, lapply(seq_along(ks), function(i) {
+    x <- seq(-1, 1, length.out = ks[i])
+    data.frame(
+      date = cal$date[i], day_type = "weekday", count_time = paste0("t", seq_len(ks[i])),
+      angler_count = 100 + 10 * i + x / stats::sd(x) # sample variance exactly 1
+    )
+  }))
+  d <- add_counts(
+    creel_design(cal, date = date, strata = day_type), counts,
+    count_col = "angler_count", count_time_col = count_time
+  )
+  eff <- tidy(suppressWarnings(estimate_effort(d, target = "sampled_days")))
+  expect_equal(eff$se_within, sqrt(sum(1 / ks)))
+  expect_equal(eff$se, sqrt(sum(1 / ks)))
+})
+
+test_that("a grouping column named se_basis is refused (#507)", {
+  d <- make_507_design(2L)
+  d$counts$se_basis <- d$counts$day_type
+  expect_error(
+    suppressWarnings(estimate_effort(d, by = se_basis, target = "sampled_days")),
+    class = "creel_error_reserved_column"
+  )
+})

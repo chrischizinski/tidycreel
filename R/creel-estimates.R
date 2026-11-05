@@ -5724,6 +5724,16 @@ rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(
   if (k_bar <= 1) {
     return(0)
   } # no within-day component when k_bar = 1
+  # The sampled days are the population here, and a stratum whose every day has
+  # two or more counts takes the whole variance from this term (GH #507). The
+  # pooled form below is Rasmussen's, which assumes every day has about k_bar
+  # counts; with unequal k_d it understates -- 2 and 10 counts a day came out
+  # 25% low. The exact term is the sum of each day's own variance of its mean,
+  # s_d^2 / k_d. It equals the pooled form when every k_d is equal, and the
+  # n_sampled of a unit counted on only some days cancels out of it.
+  if (identical(target, "sampled_days") && all(k_d >= 2)) {
+    return(sum(ss_d / (k_d * (k_d - 1))))
+  }
   s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
   # For sampled_days target the between-day variance is on the sampled-day
   # scale (no expansion weights), so the within-day component must match:
@@ -6846,6 +6856,18 @@ estimate_effort_grouped <- function(
   include_calibration = FALSE
 ) {
   counts_data <- design$counts
+
+  # The result carries its own `se_basis` column (GH #507); a grouping column
+  # of that name would be overwritten by it and the group keys lost.
+  if ("se_basis" %in% by_vars) {
+    cli::cli_abort(
+      c(
+        "{.field se_basis} cannot be a grouping variable.",
+        "i" = "Effort results carry a column of that name; rename the grouping column."
+      ),
+      class = c("creel_error_reserved_column", "creel_error")
+    )
+  }
 
   # Tier 2 validation for groups
   warn_tier2_group_issues(design, by_vars) # nolint: object_usage_linter
