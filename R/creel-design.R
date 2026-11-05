@@ -1119,6 +1119,39 @@ resolve_sampled_register <- function(sampled_quo, calendar, survey_type, call) {
   col
 }
 
+#' Refuse table rows whose section was never registered (SEC-01)
+#'
+#' One check for both attach orders: `add_counts()` after `add_sections()`, and
+#' `add_sections()` after `add_counts()`. An unregistered section is for the
+#' caller to resolve; it is never dropped or registered on their behalf.
+#'
+#' @param data The table holding a section column (counts or interviews).
+#' @param sections Data frame of registered sections.
+#' @param section_col Name of the section column in both tables.
+#' @param what Noun phrase naming `data` in the message.
+#' @param hint Final advice line; may use cli markup.
+#'
+#' @return `NULL`, invisibly. Aborts when `data` holds an unregistered section.
+#'
+#' @keywords internal
+#' @noRd
+check_sections_registered <- function(data, sections, section_col, what, hint) {
+  if (!section_col %in% names(data)) {
+    return(invisible(NULL))
+  }
+  valid_sections <- sections[[section_col]]
+  bad_vals <- setdiff(unique(data[[section_col]]), valid_sections)
+  if (length(bad_vals) > 0) {
+    cli::cli_abort(c(
+      "{what} contains {length(bad_vals)} unregistered section value{?s}.",
+      "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
+      "i" = "Registered sections: {.val {valid_sections}}.",
+      "i" = hint
+    ))
+  }
+  invisible(NULL)
+}
+
 #' Low-level creel_design constructor
 #'
 #' Internal constructor that creates the creel_design structure with type
@@ -2794,19 +2827,11 @@ add_counts <- function(
 
   # Guard: validate section values against registered sections (SEC-01)
   if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
-    sec_col <- design[["section_col"]]
-    if (sec_col %in% names(counts)) {
-      valid_sections <- design[["sections"]][[sec_col]]
-      bad_vals <- setdiff(unique(counts[[sec_col]]), valid_sections)
-      if (length(bad_vals) > 0) {
-        cli::cli_abort(c(
-          "Count data contains {length(bad_vals)} unregistered section value{?s}.",
-          "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
-          "i" = "Registered sections: {.val {valid_sections}}.",
-          "i" = "Check for typos or register the section with {.fn add_sections}."
-        ))
-      }
-    }
+    check_sections_registered(
+      counts, design[["sections"]], design[["section_col"]],
+      what = "Count data",
+      hint = "Check for typos or register the section with {.fn add_sections}."
+    )
   }
 
   # Set PSU column (default to date_col for day-as-PSU)
@@ -3615,6 +3640,17 @@ add_sections <- function(
       "{.arg shared_count_times} must be {.code TRUE} or {.code FALSE}.",
       "x" = "Got {.obj_type_friendly {shared_count_times}}."
     ))
+  }
+
+  # The reverse order of the SEC-01 guard in add_counts(): counts attached
+  # first. Without this a section nobody registered has no row of its own but
+  # is still summed into the lake total.
+  if (!is.null(design[["counts"]])) {
+    check_sections_registered(
+      design[["counts"]], sections, section_col_name,
+      what = "The count data already attached to the design",
+      hint = "Register the section in {.arg sections}, or correct the counts and rebuild the design with {.fn creel_design} and {.fn add_counts}."
+    )
   }
 
   # Build new design with sections populated
