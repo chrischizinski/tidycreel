@@ -171,3 +171,39 @@ test_that("a grouping column named se_basis is refused (#507)", {
     class = "creel_error_reserved_column"
   )
 })
+
+test_that("names the estimators write themselves are refused on every path (#507)", {
+  # Sectioned: the section label column is also named se_basis.
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:3, day_type = "weekday", stringsAsFactors = FALSE
+  )
+  secs <- c("North", "South")
+  d <- creel_design(cal, date = date, strata = day_type)
+  d <- add_sections(d, data.frame(se_basis = secs, stringsAsFactors = FALSE), section_col = se_basis)
+  counts <- data.frame(
+    date = rep(cal$date, times = 2), day_type = "weekday",
+    se_basis = rep(secs, each = 4L), angler_count = c(10, 12, 14, 16, 20, 22, 24, 26),
+    stringsAsFactors = FALSE
+  )
+  d <- add_counts(d, counts, count_col = "angler_count")
+  expect_error(
+    suppressWarnings(estimate_effort(d)),
+    class = "creel_error_reserved_column"
+  )
+
+  # Bus-route: an interview column named se_basis used as the grouping variable.
+  br <- build_br_design_for_tests(4L, 8L, 40L, seed = 11L)
+  br$interviews$se_basis <- rep(c("bank", "boat"), length.out = nrow(br$interviews))
+  expect_error(
+    suppressWarnings(estimate_effort(br, by = se_basis)),
+    class = "creel_error_reserved_column"
+  )
+
+  # A count column named like the helper column the sampled-day design writes.
+  std <- make_507_design(2L)
+  std$counts$.fpc_days <- 1
+  expect_error(
+    suppressWarnings(estimate_effort(std, target = "sampled_days")),
+    class = "creel_error_reserved_column"
+  )
+})

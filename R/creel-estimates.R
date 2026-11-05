@@ -751,6 +751,8 @@ estimate_effort <- function(
     )
   }
 
+  refuse_reserved_effort_names(design) # nolint: object_usage_linter
+
   # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     refuse_unexpandable_target(design, target) # nolint: object_usage_linter
@@ -787,6 +789,7 @@ estimate_effort <- function(
       )
       by_vars_br <- names(by_cols_br)
     }
+    refuse_reserved_effort_names(design, by_vars_br) # nolint: object_usage_linter
 
     result <- estimate_effort_br(
       # nolint: object_usage_linter.
@@ -6214,6 +6217,46 @@ within_day_identified_strata <- function(design, counts_data, strata_cols) {
   vapply(split(k_d >= 2L, stratum_key), all, logical(1))
 }
 
+#' Refuse column names the effort estimators write themselves
+#'
+#' Internal (GH #507). Effort results carry an `se_basis` column, and the
+#' sampled-day design writes a `.fpc_days` column into a copy of the counts. A
+#' user column of either name would be overwritten (a grouping or section label
+#' replaced by the basis, a count column replaced by a population size) or
+#' duplicated, and the estimate would be wrong or fail late. Refused up front,
+#' on every path, with the name to change.
+#'
+#' @param design A creel_design.
+#' @param by_vars Grouping columns, or NULL.
+#' @return `invisible(NULL)`; aborts with class `creel_error_reserved_column`.
+#' @keywords internal
+#' @noRd
+refuse_reserved_effort_names <- function(design, by_vars = NULL) {
+  used_as <- c(
+    stats::setNames(rep("a grouping variable", length(by_vars)), by_vars),
+    if (!is.null(design$section_col)) stats::setNames("the section column", design$section_col)
+  )
+  if ("se_basis" %in% names(used_as)) {
+    cli::cli_abort(
+      c(
+        "{.field se_basis} cannot be {used_as[['se_basis']]}.",
+        "i" = "Effort results carry a column of that name; rename yours."
+      ),
+      class = c("creel_error_reserved_column", "creel_error")
+    )
+  }
+  if (".fpc_days" %in% names(design$counts)) {
+    cli::cli_abort(
+      c(
+        "The counts have a column named {.field .fpc_days}.",
+        "i" = "Effort estimation uses that name internally; rename the column."
+      ),
+      class = c("creel_error_reserved_column", "creel_error")
+    )
+  }
+  invisible(NULL)
+}
+
 #' Which kind of standard error an effort row carries
 #'
 #' Internal (GH #507). Read from the target design that produced the variance,
@@ -6857,17 +6900,7 @@ estimate_effort_grouped <- function(
 ) {
   counts_data <- design$counts
 
-  # The result carries its own `se_basis` column (GH #507); a grouping column
-  # of that name would be overwritten by it and the group keys lost.
-  if ("se_basis" %in% by_vars) {
-    cli::cli_abort(
-      c(
-        "{.field se_basis} cannot be a grouping variable.",
-        "i" = "Effort results carry a column of that name; rename the grouping column."
-      ),
-      class = c("creel_error_reserved_column", "creel_error")
-    )
-  }
+  refuse_reserved_effort_names(design, by_vars) # nolint: object_usage_linter
 
   # Tier 2 validation for groups
   warn_tier2_group_issues(design, by_vars) # nolint: object_usage_linter
