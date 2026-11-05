@@ -1320,3 +1320,14 @@ test_that("CEST-30: one count per day still reports se_within = 0 (GH #217)", {
   expect_equal(res$estimates$estimate, 18.9660194174757, tolerance = 1e-12)
   expect_equal(res$estimates$se, 3.2661325499868386, tolerance = 1e-12)
 })
+
+test_that("camera effort refuses a counts column named .fpc_days (#507)", {
+  # Camera designs bypass estimate_effort()'s dispatcher, so the reserved-name
+  # check has to run on this path as well.
+  d <- make_design_with_counts()
+  d$counts$.fpc_days <- 1
+  expect_error(
+    suppressWarnings(est_effort_camera(d, h_open = 14, calibration = "none")),
+    class = "creel_error_reserved_column"
+  )
+})

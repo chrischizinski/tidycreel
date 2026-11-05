@@ -79,6 +79,9 @@ estimate_effort_camera <- function(
   variance_method = "taylor",
   conf_level = 0.95
 ) {
+  # Camera designs never reach estimate_effort()'s dispatcher, so the reserved
+  # names are refused here too (GH #507).
+  refuse_reserved_effort_names(design) # nolint: object_usage_linter
   counts_data <- design$counts
   if (is.null(counts_data) || nrow(counts_data) == 0L) {
     cli::cli_abort(c(
@@ -417,7 +420,13 @@ estimate_effort_camera <- function(
     # Weighted total: sum(N_h * rho_h * mean_count_h)
     # Use svytotal on raw count then multiply stratum-level totals by rho
     count_formula <- stats::reformulate(count_var)
-    svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+    # Through the target helper, as the raw-count branch below: the within-day
+    # term added further down is the whole variance when every day has two or
+    # more counts (GH #507).
+    svy_design <- get_variance_design( # nolint: object_usage_linter
+      get_effort_target_design(design, "sampled_days"), # nolint: object_usage_linter
+      variance_method
+    )
     # No `na.rm = TRUE`: it made a missing count a zero-effort day (#215).
     #
     # No `suppressWarnings()` either. It used to swallow every warning svyby
@@ -559,7 +568,10 @@ estimate_effort_camera <- function(
     }
 
     count_formula <- stats::reformulate(count_var)
-    svy_design <- get_variance_design(design$survey, variance_method) # nolint: object_usage_linter
+    # Through the target helper, not design$survey: with two or more counts a
+    # day the within-day term below is the whole variance (GH #507).
+    target_design <- get_effort_target_design(design, "sampled_days") # nolint: object_usage_linter
+    svy_design <- get_variance_design(target_design, variance_method) # nolint: object_usage_linter
     svy_result <- suppressWarnings(
       survey::svytotal(count_formula, svy_design)
     )
@@ -623,7 +635,8 @@ estimate_effort_camera <- function(
     se_within = se_within,
     ci_lower = ci_lower,
     ci_upper = ci_upper,
-    n = n
+    n = n,
+    se_basis = effort_se_basis(design) # nolint: object_usage_linter
   )
 
   new_creel_estimates( # nolint: object_usage_linter

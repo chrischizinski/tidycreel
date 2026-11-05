@@ -145,7 +145,14 @@ as_survey_design <- function(design) {
 #' @keywords internal
 #' @noRd
 get_variance_design <- function(design, variance_method) {
-  if (variance_method == "taylor") {
+  # Every stratum a census (sample size = population size, GH #507): the
+  # between-day variance is exactly 0 under any method, so there is nothing to
+  # resample. A replicate design built here has identical replicates and
+  # degf() = 0, which turns the interval into NaN.
+  fpc <- design$fpc
+  is_census <- !is.null(fpc$popsize) && length(fpc$popsize) > 0L &&
+    all(is.finite(fpc$popsize)) && all(fpc$popsize == fpc$sampsize)
+  if (variance_method == "taylor" || is_census) {
     design
   } else if (variance_method == "bootstrap") {
     if (has_uncorrected_strata(design)) {
@@ -159,6 +166,14 @@ get_variance_design <- function(design, variance_method) {
       suppressWarnings(survey::as.svrepdesign(design, type = "auto")),
       error = function(e) {
         msg <- conditionMessage(e)
+        # Every stratum a census: the between-day variance is exactly 0 under
+        # any method, and survey refuses to build replicates for it. The
+        # within-day term is the whole variance there -- every day of a
+        # `sampled_days` total counted twice or more (GH #507), or every day
+        # of a `period_total` sampled so (#505).
+        if (grepl("exhaustively sampled", msg, fixed = TRUE)) {
+          return(design)
+        }
         if (grepl("has only one PSU", msg, fixed = TRUE)) {
           # survey encodes: "Stratum<name>has only one PSU" (no spaces)
           strat <- regmatches(

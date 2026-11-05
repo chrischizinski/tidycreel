@@ -173,7 +173,8 @@ estimate_effort_aerial <- function(
     se_within = se_within,
     ci_lower = ci_lower,
     ci_upper = ci_upper,
-    n = n
+    n = n,
+    se_basis = effort_se_basis(design, effort_target) # nolint: object_usage_linter
   )
 
   # Named components (GH #141). `visibility` is present-and-NA under the

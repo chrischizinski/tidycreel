@@ -579,8 +579,8 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{cli_abort()}. Ignored for non-sectioned designs.
 #'
 #' @return A creel_estimates S3 object (list) with components: estimates
-#'   (tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n
-#'   columns, plus grouping columns if \code{by} is specified),
+#'   (tibble with estimate, se, se_between, se_within, ci_lower, ci_upper, n,
+#'   se_basis columns, plus grouping columns if \code{by} is specified),
 #'   method (character: "total"),
 #'   variance_method (character: reflects the variance parameter value used),
 #'   design (reference to source creel_design), conf_level (numeric), and
@@ -590,7 +590,21 @@ print.creel_estimates <- function(x, ...) {
 #'   recorded per PSU). \code{se_within} is the within-day standard error from
 #'   the Rasmussen two-stage formula; it is zero when a single count is
 #'   recorded per PSU and nonzero when \code{count_time_col} is supplied to
-#'   \code{add_counts()}. For bus-route designs, a "site_contributions"
+#'   \code{add_counts()}. \code{se_basis} says which kind of standard error a
+#'   row carries: \code{"within_day"} for a census of days with two or more
+#'   counts a day (the finite-population correction removes the day-to-day
+#'   term, so the count-sampling variance is the within-day term alone; always so on
+#'   \code{target = "sampled_days"}, where the sampled days are the
+#'   population), \code{"two_stage"} where days carry two or more counts but
+#'   only some were sampled (an expanded target: the corrected day-to-day term
+#'   plus the within-day term), \code{"between_day_upper_bound"} where a day
+#'   has one count (the within-day variance cannot be estimated, so the
+#'   day-to-day variance is kept and is conservative; every bus-route and ice
+#'   design), and \code{"mixed"} for a row spanning more than one kind.
+#'   \code{se_basis} describes the count-sampling part of \code{se} only:
+#'   a calibration (aerial visibility, angler ratio, camera) or party-size
+#'   expansion term, when present, is added on top of it whatever the label.
+#'   It is \code{NA} for a registered section with no data. For bus-route designs, a "site_contributions"
 #'   attribute is also present containing per-site e_i, pi_i, and
 #'   e_i_over_pi_i columns.
 #'
@@ -740,6 +754,8 @@ estimate_effort <- function(
     )
   }
 
+  refuse_reserved_effort_names(design) # nolint: object_usage_linter
+
   # Bus-route and ice dispatch (after survey NULL check, before standard tier-2 validation)
   if (!is.null(design$design_type) && design$design_type %in% c("bus_route", "ice")) {
     refuse_unexpandable_target(design, target) # nolint: object_usage_linter
@@ -776,6 +792,7 @@ estimate_effort <- function(
       )
       by_vars_br <- names(by_cols_br)
     }
+    refuse_reserved_effort_names(design, by_vars_br) # nolint: object_usage_linter
 
     result <- estimate_effort_br(
       # nolint: object_usage_linter.
@@ -4914,7 +4931,9 @@ section_within_day_cross_covariance <- function(design, target, secs) {
   # V_A = c_A * sum_d ss_Ad, with c_A fixed by the section's own sampled days,
   # mean counts per day and target. Per stratum the covariance is the same form
   # with cross-products, over the days on which the two sections pair:
-  #   Cov_w = sqrt(c_A * c_B) * sum_d cp_d.
+  #   Cov_w = sum_d sqrt(c_Ad * c_Bd) * cp_d,
+  # with c constant across days under the pooled form and day-specific under
+  # the exact sampled-days form (GH #507).
   # Identical day samples give exactly Rasmussen's term with a cross-product for
   # the sum of squares; days the sections do not share, or share at different
   # occasions, add nothing; and by Cauchy-Schwarz the covariance never exceeds
@@ -4945,14 +4964,25 @@ section_within_day_cross_covariance <- function(design, target, secs) {
   # c_A: a section's within-day variance per unit of day sum of squares, as its
   # own row computes it. The formula is linear in the sums of squares, so it is
   # the formula at a single unit sum.
-  within_scale <- function(sec, h) {
+  # Taken per day: on `sampled_days` with 2+ counts every day the formula weights
+  # each day by its own 1 / (k_d (k_d - 1)) (GH #507), so a single scale read
+  # off the first day would misweight the others. Under the pooled form every
+  # day has the same coefficient and this is the old single scale.
+  # The coefficients of one section in one stratum, one per day, built once
+  # and reused for every paired day: rebuilding the day counts per call made
+  # the work cubic in the number of sampled days.
+  section_scales <- function(sec, h) {
     days <- unique(occ_day[occ_h == h & occ_sec == sec])
-    k <- vapply(days, function(day) length(day_counts(sec, h, day)$y), numeric(1L))
-    unit_ss <- replace(numeric(length(days)), 1L, 1)
-    rasmussen_within_var(unit_ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
+    k <- vapply(days, function(d) sum(occ_h == h & occ_day == d & occ_sec == sec), numeric(1L))
+    n_avail <- pop$.N_avail[match(h, pop_h)]
+    stats::setNames(vapply(seq_along(days), function(i) {
+      rasmussen_within_var(replace(numeric(length(days)), i, 1), k, n_avail, target) # nolint: object_usage_linter
+    }, numeric(1L)), days)
   }
   within_cov <- function(a, b, h) {
     in_h <- occ_h == h
+    sa <- NULL
+    sb <- NULL
     cp <- 0
     for (day in intersect(occ_day[in_h & occ_sec == a], occ_day[in_h & occ_sec == b])) {
       ca <- day_counts(a, h, day)
@@ -4965,12 +4995,17 @@ section_within_day_cross_covariance <- function(design, target, secs) {
         n_unpaired <<- n_unpaired + 1L
         next
       }
-      cp <- cp + sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
+      cp_d <- sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
+      if (cp_d != 0) {
+        if (is.null(sa)) {
+          sa <- section_scales(a, h)
+          sb <- section_scales(b, h)
+        }
+        # match(), not [[: a day ID may be "" and [[ cannot look that name up.
+        cp <- cp + sqrt(sa[match(day, names(sa))] * sb[match(day, names(sb))]) * cp_d
+      }
     }
-    if (cp == 0) {
-      return(0)
-    }
-    sqrt(within_scale(a, h) * within_scale(b, h)) * cp
+    cp
   }
 
   n <- length(secs)
@@ -5713,6 +5748,16 @@ rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(
   if (k_bar <= 1) {
     return(0)
   } # no within-day component when k_bar = 1
+  # The sampled days are the population here, and a stratum whose every day has
+  # two or more counts takes the whole variance from this term (GH #507). The
+  # pooled form below is Rasmussen's, which assumes every day has about k_bar
+  # counts; with unequal k_d it understates -- 2 and 10 counts a day came out
+  # 25% low. The exact term is the sum of each day's own variance of its mean,
+  # s_d^2 / k_d. It equals the pooled form when every k_d is equal, and the
+  # n_sampled of a unit counted on only some days cancels out of it.
+  if (identical(target, "sampled_days") && all(k_d >= 2)) {
+    return(sum(ss_d / (k_d * (k_d - 1))))
+  }
   s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
   # For sampled_days target the between-day variance is on the sampled-day
   # scale (no expansion weights), so the within-day component must match:
@@ -5988,7 +6033,7 @@ refuse_partial_unit_coverage <- function(design) {
 #' @noRd
 get_effort_target_design <- function(design, target) {
   if (identical(target, "sampled_days")) {
-    return(design$survey)
+    return(sampled_days_target_design(design))
   }
 
   counts_data <- design$counts
@@ -6100,6 +6145,65 @@ get_effort_target_design <- function(design, target) {
   )
 }
 
+#' The survey design for the total over the sampled days
+#'
+#' Internal (GH #507). The sampled days are the population of this target, so
+#' the #505 rule applies with N = n: a stratum whose every sampled day carries
+#' two or more counts takes the full correction, which removes the day-to-day
+#' term and leaves the within-day term as the whole variance (the two-stage
+#' estimator with every day sampled). Without the correction the between-day
+#' variance of the daily totals already contains the within-day variation
+#' (Cochran 1977, ch. 10), and adding the within-day term counted it twice. A
+#' stratum with any one-count day cannot estimate the within-day variance, so it
+#' keeps the uncorrected between-day variance, an upper bound.
+#'
+#' Where no stratum qualifies this is `design$survey` itself, so every
+#' one-count design reports what it did before.
+#'
+#' @param design A creel_design with counts attached.
+#' @return A `survey.design2` with unit weights.
+#' @keywords internal
+#' @noRd
+sampled_days_target_design <- function(design) {
+  counts_data <- design$counts
+  strata_cols <- design$strata_cols %||% character(0)
+  # An unstratified design is one stratum; group_key() needs a column for it.
+  key_data <- counts_data
+  key_cols <- strata_cols
+  if (length(key_cols) == 0L) {
+    key_cols <- ".sampled_days_stratum"
+    key_data[[key_cols]] <- ""
+  }
+  identified <- within_day_identified_strata(design, key_data, key_cols)
+  if (!any(identified)) {
+    return(design$survey)
+  }
+
+  # N = n counts sampling units, as get_effort_target_design() does for N_h / n_h.
+  stratum_key <- group_key(key_data, key_cols) # nolint: object_usage_linter
+  n_units <- vapply(
+    split(as.character(counts_data[[design$psu_col]]), stratum_key),
+    function(p) length(unique(p)),
+    numeric(1)
+  )
+  # Matched by position, not by name (see get_effort_target_design()).
+  counts_data$.fpc_days <- ifelse(
+    identified[match(stratum_key, names(identified))],
+    n_units[match(stratum_key, names(n_units))],
+    no_fpc_population
+  )
+
+  key <- strata_design_key(counts_data, design$strata_cols) # nolint: object_usage_linter
+  survey::svydesign(
+    ids = stats::reformulate(design$psu_col),
+    strata = key$strata,
+    weights = rep(1, nrow(counts_data)),
+    fpc = ~.fpc_days,
+    data = key$data,
+    nest = TRUE
+  )
+}
+
 # The population size that means "no finite-population correction" for one
 # stratum (GH #505). Not `Inf`: survey's jackknife takes (N - n) / N, which is
 # NaN at Inf. At 1e300, n / N is exactly 0 in double precision. The bootstrap
@@ -6132,6 +6236,114 @@ within_day_identified_strata <- function(design, counts_data, strata_cols) {
     k_d[is.na(k_d)] <- 1L
   }
   vapply(split(k_d >= 2L, stratum_key), all, logical(1))
+}
+
+#' Refuse column names the effort estimators write themselves
+#'
+#' Internal (GH #507). Effort results carry an `se_basis` column, and the
+#' sampled-day design writes a `.fpc_days` column into a copy of the counts. A
+#' user column of either name would be overwritten (a grouping or section label
+#' replaced by the basis, a count column replaced by a population size) or
+#' duplicated, and the estimate would be wrong or fail late. Refused up front,
+#' on every path, with the name to change.
+#'
+#' @param design A creel_design.
+#' @param by_vars Grouping columns, or NULL.
+#' @return `invisible(NULL)`; aborts with class `creel_error_reserved_column`.
+#' @keywords internal
+#' @noRd
+refuse_reserved_effort_names <- function(design, by_vars = NULL) {
+  used_as <- c(
+    stats::setNames(rep("a grouping variable", length(by_vars)), by_vars),
+    if (!is.null(design$section_col)) stats::setNames("the section column", design$section_col)
+  )
+  if ("se_basis" %in% names(used_as)) {
+    cli::cli_abort(
+      c(
+        "{.field se_basis} cannot be {used_as[['se_basis']]}.",
+        "i" = "Effort results carry a column of that name; rename yours."
+      ),
+      class = c("creel_error_reserved_column", "creel_error")
+    )
+  }
+  if (".fpc_days" %in% names(design$counts)) {
+    cli::cli_abort(
+      c(
+        "The counts have a column named {.field .fpc_days}.",
+        "i" = "Effort estimation uses that name internally; rename the column."
+      ),
+      class = c("creel_error_reserved_column", "creel_error")
+    )
+  }
+  invisible(NULL)
+}
+
+#' Which kind of standard error an effort row carries
+#'
+#' Internal (GH #507). Read from the target design that produced the variance,
+#' so the label cannot drift from the number. Per stratum:
+#'
+#' * `"within_day"`: a census of days (sample size = population size, which is
+#'   always the case for `sampled_days` where the stratum has 2+ counts a day).
+#'   The finite-population correction removes the day-to-day term and `se` is
+#'   the within-day term alone.
+#' * `"two_stage"`: 2+ counts a day but only some of the days sampled
+#'   (expanded targets). `se` is the day-to-day term, reduced by the
+#'   correction, plus the within-day term (Cochran 1977, ch. 10).
+#' * `"between_day_upper_bound"`: a day with one count, so the within-day
+#'   variance cannot be estimated; no correction is taken and the day-to-day
+#'   variance, which contains the within-day variation, is kept. Conservative.
+#'
+#' A row spanning strata of more than one kind is `"mixed"`.
+#'
+#' @param design A creel_design with counts attached.
+#' @param target Effort target the variance was computed for.
+#' @param by_vars Grouping columns of the result rows, or NULL for one row.
+#' @param keys For grouped results, the `group_key()` of each result row, in
+#'   row order. Ignored when `by_vars` is NULL.
+#' @return Character vector: one label for an ungrouped result, one per key
+#'   otherwise.
+#' @keywords internal
+#' @noRd
+effort_se_basis <- function(design, target = "sampled_days", by_vars = NULL, keys = NULL) {
+  tdes <- get_effort_target_design(design, target) # nolint: object_usage_linter
+  pop <- tdes$fpc$popsize
+  smp <- tdes$fpc$sampsize
+  n_rows <- nrow(tdes$variables)
+  kind <- if (is.null(pop)) {
+    # No correction anywhere: the design is design$survey itself.
+    rep("between_day_upper_bound", n_rows)
+  } else {
+    pop <- as.numeric(pop)
+    smp <- as.numeric(smp)
+    ifelse(
+      pop >= no_fpc_population, "between_day_upper_bound", # nolint: object_usage_linter
+      ifelse(pop == smp, "within_day", "two_stage")
+    )
+  }
+
+  label_of <- function(flags) {
+    u <- unique(flags)
+    if (length(u) == 1L) u else "mixed"
+  }
+  if (is.null(by_vars) || length(by_vars) == 0L || !all(by_vars %in% names(tdes$variables))) {
+    if (!is.null(by_vars) && length(by_vars) > 0L) {
+      return(rep(label_of(kind), length(keys)))
+    }
+    return(label_of(kind))
+  }
+  data_key <- group_key(tdes$variables, by_vars) # nolint: object_usage_linter
+  vapply(
+    keys,
+    function(k) {
+      flags <- kind[data_key == k]
+      # A result group with no count rows has no stratum to read; it carries no
+      # within-day information, so it is the conservative kind.
+      if (length(flags) == 0L) "between_day_upper_bound" else label_of(flags)
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
 }
 
 #' The lake total's within-day SE when the sections share their count times
@@ -6344,6 +6556,7 @@ estimate_effort_sections <- function(
         ci_lower = NA_real_,
         ci_upper = NA_real_,
         n = 0L,
+        se_basis = NA_character_,
         prop_of_lake_total = NA_real_,
         se_prop_of_lake_total = NA_real_,
         data_available = FALSE
@@ -6389,6 +6602,7 @@ estimate_effort_sections <- function(
         ci_lower = row$ci_lower,
         ci_upper = row$ci_upper,
         n = row$n,
+        se_basis = row$se_basis,
         prop_of_lake_total = prop,
         se_prop_of_lake_total = prop_se,
         data_available = TRUE
@@ -6519,6 +6733,11 @@ estimate_effort_sections <- function(
       ci_lower = lake_ci_lower,
       ci_upper = lake_ci_upper,
       n = nrow(design$counts),
+      # The lake is the sum of its sections: one kind if they agree, else mixed.
+      se_basis = {
+        kinds <- unique(stats::na.omit(result_df$se_basis))
+        if (length(kinds) == 1L) kinds else "mixed"
+      },
       prop_of_lake_total = 1.0,
       # A true structural zero, not an unpropagated component: the lake total's
       # share of itself is exactly 1 by construction and was never estimated.
@@ -6663,7 +6882,8 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     se_within = se_within,
     ci_lower = ci_lower,
     ci_upper = ci_upper,
-    n = n
+    n = n,
+    se_basis = effort_se_basis(design, target)
   )
 
   # Return creel_estimates object
@@ -6700,6 +6920,8 @@ estimate_effort_grouped <- function(
   include_calibration = FALSE
 ) {
   counts_data <- design$counts
+
+  refuse_reserved_effort_names(design, by_vars) # nolint: object_usage_linter
 
   # Tier 2 validation for groups
   warn_tier2_group_issues(design, by_vars) # nolint: object_usage_linter
@@ -6882,10 +7104,11 @@ estimate_effort_grouped <- function(
   estimates_df$ci_lower <- ci_lower
   estimates_df$ci_upper <- ci_upper
   estimates_df$n <- group_n
+  estimates_df$se_basis <- effort_se_basis(design, target, by_vars, result_group_keys)
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
-  col_order <- c(by_vars, "estimate", "se", "se_between", "se_within", "ci_lower", "ci_upper", "n")
+  col_order <- c(by_vars, "estimate", "se", "se_between", "se_within", "ci_lower", "ci_upper", "n", "se_basis")
   estimates_df <- estimates_df[col_order]
 
   # Return creel_estimates object
