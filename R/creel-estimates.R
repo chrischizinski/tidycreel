@@ -593,7 +593,7 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{add_counts()}. \code{se_basis} says which kind of standard error a
 #'   row carries: \code{"within_day"} for a census of days with two or more
 #'   counts a day (the finite-population correction removes the day-to-day
-#'   term, so \code{se} is the within-day term alone; always so on
+#'   term, so the count-sampling variance is the within-day term alone; always so on
 #'   \code{target = "sampled_days"}, where the sampled days are the
 #'   population), \code{"two_stage"} where days carry two or more counts but
 #'   only some were sampled (an expanded target: the corrected day-to-day term
@@ -4968,14 +4968,21 @@ section_within_day_cross_covariance <- function(design, target, secs) {
   # each day by its own 1 / (k_d (k_d - 1)) (GH #507), so a single scale read
   # off the first day would misweight the others. Under the pooled form every
   # day has the same coefficient and this is the old single scale.
-  within_scale <- function(sec, h, day) {
+  # The coefficients of one section in one stratum, one per day, built once
+  # and reused for every paired day: rebuilding the day counts per call made
+  # the work cubic in the number of sampled days.
+  section_scales <- function(sec, h) {
     days <- unique(occ_day[occ_h == h & occ_sec == sec])
-    k <- vapply(days, function(d) length(day_counts(sec, h, d)$y), numeric(1L))
-    unit_ss <- replace(numeric(length(days)), match(day, days), 1)
-    rasmussen_within_var(unit_ss, k, pop$.N_avail[match(h, pop_h)], target) # nolint: object_usage_linter
+    k <- vapply(days, function(d) sum(occ_h == h & occ_day == d & occ_sec == sec), numeric(1L))
+    n_avail <- pop$.N_avail[match(h, pop_h)]
+    stats::setNames(vapply(seq_along(days), function(i) {
+      rasmussen_within_var(replace(numeric(length(days)), i, 1), k, n_avail, target) # nolint: object_usage_linter
+    }, numeric(1L)), days)
   }
   within_cov <- function(a, b, h) {
     in_h <- occ_h == h
+    sa <- NULL
+    sb <- NULL
     cp <- 0
     for (day in intersect(occ_day[in_h & occ_sec == a], occ_day[in_h & occ_sec == b])) {
       ca <- day_counts(a, h, day)
@@ -4990,7 +4997,11 @@ section_within_day_cross_covariance <- function(design, target, secs) {
       }
       cp_d <- sum((ca$y - mean(ca$y)) * (cb$y - mean(cb$y)))
       if (cp_d != 0) {
-        cp <- cp + sqrt(within_scale(a, h, day) * within_scale(b, h, day)) * cp_d
+        if (is.null(sa)) {
+          sa <- section_scales(a, h)
+          sb <- section_scales(b, h)
+        }
+        cp <- cp + sqrt(sa[[day]] * sb[[day]]) * cp_d
       }
     }
     cp

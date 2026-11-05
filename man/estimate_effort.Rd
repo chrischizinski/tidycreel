@@ -98,7 +98,7 @@ recorded per PSU and nonzero when \code{count_time_col} is supplied to
 \code{add_counts()}. \code{se_basis} says which kind of standard error a
 row carries: \code{"within_day"} for a census of days with two or more
 counts a day (the finite-population correction removes the day-to-day
-term, so \code{se} is the within-day term alone; always so on
+term, so the count-sampling variance is the within-day term alone; always so on
 \code{target = "sampled_days"}, where the sampled days are the
 population), \code{"two_stage"} where days carry two or more counts but
 only some were sampled (an expanded target: the corrected day-to-day term
