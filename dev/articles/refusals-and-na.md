@@ -98,10 +98,10 @@ estimate_effort(weekday_only)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     2576  346.       346.         0    1866.    3286.    28
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     2576  346.       346.         0    1866.    3286.    28 between_day_upper…
 ```
 
 ### A stratum with no catch rate
@@ -253,10 +253,10 @@ aerial_effort(visibility_correction = 0.85)
 #> within_day: 0 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1   10492.  774.       774.         0    8831.   12153.    16
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1   10492.  774.       774.         0    8831.   12153.    16 between_day_upper…
 ```
 
 The correction’s standard error is supplied, so it is propagated:
@@ -276,10 +276,10 @@ aerial_effort(visibility_correction = 0.85, visibility_se = 0.04)
 #> visibility: 493.7 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1   10492.  918.       774.         0    8522.   12462.    16
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1   10492.  918.       774.         0    8522.   12462.    16 between_day_upper…
 ```
 
 No correction was studied (`"none"`). The point estimate divides by 1,
@@ -301,10 +301,10 @@ aerial_effort(visibility_correction = "none")
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     8918    NA       658.         0       NA       NA    16
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     8918    NA       658.         0       NA       NA    16 between_day_upper…
 ```
 
 The same counts give a standard error of 774, then 918, then `NA`. In

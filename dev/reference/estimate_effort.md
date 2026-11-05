@@ -110,20 +110,35 @@ estimate_effort(
 ## Value
 
 A creel_estimates S3 object (list) with components: estimates (tibble
-with estimate, se, se_between, se_within, ci_lower, ci_upper, n columns,
-plus grouping columns if `by` is specified), method (character:
-"total"), variance_method (character: reflects the variance parameter
-value used), design (reference to source creel_design), conf_level
-(numeric), and by_vars (character vector of grouping variable names or
-NULL). `se_between` is the between-day standard error from
+with estimate, se, se_between, se_within, ci_lower, ci_upper, n,
+se_basis columns, plus grouping columns if `by` is specified), method
+(character: "total"), variance_method (character: reflects the variance
+parameter value used), design (reference to source creel_design),
+conf_level (numeric), and by_vars (character vector of grouping variable
+names or NULL). `se_between` is the between-day standard error from
 [`survey::svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
 (equals `se` when a single count is recorded per PSU). `se_within` is
 the within-day standard error from the Rasmussen two-stage formula; it
 is zero when a single count is recorded per PSU and nonzero when
 `count_time_col` is supplied to
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md).
-For bus-route designs, a "site_contributions" attribute is also present
-containing per-site e_i, pi_i, and e_i_over_pi_i columns.
+`se_basis` says which kind of standard error a row carries:
+`"within_day"` for a census of days with two or more counts a day (the
+finite-population correction removes the day-to-day term, so the
+count-sampling variance is the within-day term alone; always so on
+`target = "sampled_days"`, where the sampled days are the population),
+`"two_stage"` where days carry two or more counts but only some were
+sampled (an expanded target: the corrected day-to-day term plus the
+within-day term), `"between_day_upper_bound"` where a day has one count
+(the within-day variance cannot be estimated, so the day-to-day variance
+is kept and is conservative; every bus-route and ice design), and
+`"mixed"` for a row spanning more than one kind. `se_basis` describes
+the count-sampling part of `se` only: a calibration (aerial visibility,
+angler ratio, camera) or party-size expansion term, when present, is
+added on top of it whatever the label. It is `NA` for a registered
+section with no data. For bus-route designs, a "site_contributions"
+attribute is also present containing per-site e_i, pi_i, and
+e_i_over_pi_i columns.
 
 For sectioned designs the tibble carries one row per registered section
 plus, when `aggregate_sections = TRUE`, a `.lake_total` row, and gains
@@ -253,10 +268,10 @@ print(result)
 #> Confidence level: 95%
 #> Effort target: sampled_days
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1      135  10.6       10.6         0     89.3     181.     4
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1      135  10.6       10.6         0     89.3     181.     4 between_day_upper…
 
 # Grouped by day_type
 result_grouped <- estimate_effort(design_with_counts, by = day_type)
@@ -275,11 +290,11 @@ print(result_grouped)
 #> Grouped by: day_type
 #> Effort target: sampled_days
 #> 
-#> # A tibble: 2 × 8
-#>   day_type estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday        38     8          8         0     3.58     72.4     2
-#> 2 weekend        97     7          7         0    66.9     127.      2
+#> # A tibble: 2 × 9
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
+#> 1 weekday        38     8          8         0     3.58     72.4     2 between_…
+#> 2 weekend        97     7          7         0    66.9     127.      2 between_…
 
 # Several grouping variables can be combined in `by` when the data carry them
 
@@ -296,10 +311,10 @@ print(result_boot)
 #> Confidence level: 95%
 #> Effort target: sampled_days
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1      135  9.94       9.94         0     92.2     178.     4
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1      135  9.94       9.94         0     92.2     178.     4 between_day_upper…
 
 # Jackknife variance estimation
 result_jk <- estimate_effort(design_with_counts, variance = "jackknife")
@@ -311,10 +326,10 @@ print(result_jk)
 #> Confidence level: 95%
 #> Effort target: sampled_days
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1      135  10.6       10.6         0     89.3     181.     4
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1      135  10.6       10.6         0     89.3     181.     4 between_day_upper…
 
 # Grouped estimation with bootstrap variance
 result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")

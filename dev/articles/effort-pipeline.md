@@ -88,10 +88,10 @@ estimate_effort(design, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     2400  516.       516.         0     757.    4043.     4
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     2400  516.       516.         0     757.    4043.     4 between_day_upper…
 ```
 
 By hand: daily effort is 150, 250, 350 and 450 angler-hours, a mean of
@@ -213,10 +213,10 @@ estimate_effort(design_2, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     2400  392.       365.      141.    1154.    3646.     4
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis 
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
+#> 1     2400  392.       365.      141.    1154.    3646.     4 two_stage
 ```
 
 By hand: each day’s two efforts differ by 100 angler-hours, so each
@@ -308,10 +308,10 @@ estimate_effort(design_p, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1      960  139.       139.         0     364.    1556.     3
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1      960  139.       139.         0     364.    1556.     3 between_day_upper…
 ```
 
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)

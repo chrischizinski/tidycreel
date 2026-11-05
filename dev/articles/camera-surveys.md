@@ -264,10 +264,10 @@ print(effort_counter)
 #> Count-sampling SE: 4.277 (included in se)
 #> Calibration SE: 11.71 (included in se)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     111.  12.5       12.5         0     81.4     140.     9
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     111.  12.5       12.5         0     81.4     140.     9 between_day_upper…
 ```
 
 The `estimate` column is total angler-hours across the survey period.
@@ -401,10 +401,10 @@ print(effort_ie)
 #> Count-sampling SE: 5.41 (known, but se is `NA`)
 #> Calibration SE: NA (unknown, so se is `NA`)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     43.6    NA         NA         0       NA       NA     4
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     43.6    NA         NA         0       NA       NA     4 between_day_upper…
 ```
 
 The standard error is `NA` here, and the warning above says why; that is
@@ -495,10 +495,10 @@ unit as columns, and plots with its confidence interval:
 ``` r
 
 tibble::as_tibble(effort_counter)
-#> # A tibble: 1 × 11
-#>   estimate    se se_between se_within ci_lower ci_upper     n method      
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>       
-#> 1     111.  12.5       12.5         0     81.4     140.     9 camera_ratio
+#> # A tibble: 1 × 12
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis    method
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>       <chr> 
+#> 1     111.  12.5       12.5         0     81.4     140.     9 between_da… camer…
 #> # ℹ 3 more variables: variance_method <chr>, conf_level <dbl>, unit <chr>
 
 ggplot2::autoplot(effort_counter)

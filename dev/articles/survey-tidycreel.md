@@ -98,10 +98,10 @@ svytotal(~angler_hours, count_design)
 #> angler_hours 9994.5 1286.3
 
 effort$estimates
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
 effort$unit
 #> [1] "angler-hours"
 ```

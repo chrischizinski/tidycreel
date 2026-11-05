@@ -145,8 +145,8 @@ estimate_effort(design)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 6
-#>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    3819.  261.    3308.    4330.    72                  3819.
+#> # A tibble: 1 × 7
+#>   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_on_ice
+#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>                             <dbl>
+#> 1    3819.  261.    3308.    4330.    72 between_day_upp…                  3819.
 ```

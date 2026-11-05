@@ -293,10 +293,10 @@ print(est)
 #> Count-sampling SE: 4.277 (included in se)
 #> Calibration SE: 11.71 (included in se)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     111.  12.5       12.5         0     81.4     140.     9
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     111.  12.5       12.5         0     81.4     140.     9 between_day_upper…
 
 # With party sizes the function does the normalisation itself, so the result
 # is angler-hours and is labelled as such.
@@ -313,8 +313,8 @@ print(est_ah)
 #> Count-sampling SE: 8.555 (included in se)
 #> Calibration SE: 23.41 (included in se)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     222.  24.9       24.9         0     163.     281.     9
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     222.  24.9       24.9         0     163.     281.     9 between_day_upper…
 ```

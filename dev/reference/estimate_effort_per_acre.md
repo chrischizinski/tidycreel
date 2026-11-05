@@ -88,8 +88,8 @@ estimate_effort_per_acre(effort, acres = 120)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     3.10 0.110      0.110         0     2.86     3.34    14
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     3.10 0.110      0.110         0     2.86     3.34    14 between_day_upper…
 ```

@@ -61,10 +61,10 @@ estimate_effort(design, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
 ```
 
 About 9,994 angler-hours over the 120-day season.

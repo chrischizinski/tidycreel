@@ -208,10 +208,10 @@ print(effort_est)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 6
-#>   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    3819.  261.    3308.    4330.    72                  3819.
+#> # A tibble: 1 × 7
+#>   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_on_ice
+#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>                             <dbl>
+#> 1    3819.  261.    3308.    4330.    72 between_day_upp…                  3819.
 ```
 
 This is the total over the days worked. To expand to a season with days
@@ -260,10 +260,10 @@ print(effort_aft)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 6
-#>   estimate    se ci_lower ci_upper     n total_effort_hr_active
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>                  <dbl>
-#> 1    3148.  216.    2725.    3571.    72                  3148.
+#> # A tibble: 1 × 7
+#>   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_active
+#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>                             <dbl>
+#> 1    3148.  216.    2725.    3571.    72 between_day_upp…                  3148.
 ```
 
 Active fishing hours are shorter than time-on-ice because they exclude
@@ -291,11 +291,11 @@ print(effort_by_shelter)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 2 × 8
-#>   shelter_mode estimate    se ci_lower ci_upper proportion     n
-#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <int>
-#> 1 dark_house      1867.  122.    1627.    2106.      0.489    36
-#> 2 open            1952.  216.    1529.    2375.      0.511    36
+#> # A tibble: 2 × 9
+#>   shelter_mode estimate    se ci_lower ci_upper proportion     n se_basis       
+#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <int> <chr>          
+#> 1 dark_house      1867.  122.    1627.    2106.      0.489    36 between_day_up…
+#> 2 open            1952.  216.    1529.    2375.      0.511    36 between_day_up…
 #> # ℹ 1 more variable: total_effort_hr_on_ice <dbl>
 ```
 
@@ -386,11 +386,11 @@ unit as columns, and plots with its confidence interval:
 ``` r
 
 tibble::as_tibble(effort_by_shelter)
-#> # A tibble: 2 × 13
-#>   shelter_mode estimate    se ci_lower ci_upper proportion     n
-#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <int>
-#> 1 dark_house      1867.  122.    1627.    2106.      0.489    36
-#> 2 open            1952.  216.    1529.    2375.      0.511    36
+#> # A tibble: 2 × 14
+#>   shelter_mode estimate    se ci_lower ci_upper proportion     n se_basis       
+#>   <chr>           <dbl> <dbl>    <dbl>    <dbl>      <dbl> <int> <chr>          
+#> 1 dark_house      1867.  122.    1627.    2106.      0.489    36 between_day_up…
+#> 2 open            1952.  216.    1529.    2375.      0.511    36 between_day_up…
 #> # ℹ 6 more variables: total_effort_hr_on_ice <dbl>, method <chr>,
 #> #   variance_method <chr>, conf_level <dbl>, effort_target <chr>, unit <chr>
 

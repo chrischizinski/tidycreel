@@ -459,10 +459,10 @@ and computes
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">1</span>695  248.    <span style="text-decoration: underline;">1</span>208.    <span style="text-decoration: underline;">2</span>182.    15</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis               </span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">1</span>695  248.    <span style="text-decoration: underline;">1</span>208.    <span style="text-decoration: underline;">2</span>182.    15 between_day_upper_bound</span></span>
 <span></span>
 <span><span class="co"># Inspect per-site contributions to the total</span></span>
 <span><span class="va">site_contribs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_site_contributions.html">get_site_contributions</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>

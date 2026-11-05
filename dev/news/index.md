@@ -12,6 +12,22 @@
 
 ### Breaking changes
 
+- `estimate_effort(target = "sampled_days")` no longer counts the
+  within-day variance twice
+  ([\#507](https://github.com/chrischizinski/tidycreel/issues/507)).
+  With two or more counts a day, the variance of the daily totals
+  already contains the within-day variation, and the within-day term was
+  then added on top. The sampled days are the population of that target,
+  so the day-to-day term is now removed and the SE is the within-day
+  term alone: on a fixture of 4 days with 2 counts each it falls from
+  276.9 to
+
+  100. Strata with one count a day, which includes every bus-route and
+       ice design, are unchanged. Totals, rate groups and sectioned lake
+       rows inherit the lower effort SE. Effort results gain an
+       `se_basis` column (`"within_day"`, `"between_day_upper_bound"` or
+       `"mixed"`) saying which kind of SE each row carries.
+
 - [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
   refuses catch rows whose species is `NA`, with class
   `creel_error_na_catch_species`

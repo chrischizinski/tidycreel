@@ -86,10 +86,10 @@ estimate_effort(design)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    34860 1604.      1604.         0   31639.   38081.    61
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1    34860 1604.      1604.         0   31639.   38081.    61 between_day_upper…
 estimate_effort(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -99,10 +99,10 @@ estimate_effort(design, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1   81407. 4233.      4233.         0   72909.   89904.    61
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1   81407. 4233.      4233.         0   72909.   89904.    61 between_day_upper…
 ```
 
 The first estimate is the effort on the 61 sampled days. The second is
@@ -130,14 +130,14 @@ monthly_effort
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 5 × 8
-#>   month     estimate    se se_between se_within ci_lower ci_upper     n
-#>   <fct>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 May         16882  2046.      2046.         0   12774.   20990.    10
-#> 2 June        16878. 2523.      2523.         0   11813.   21943.    14
-#> 3 July        17397. 1518.      1518.         0   14349.   20446.    12
-#> 4 August      18735. 2029.      2029.         0   14662.   22808.    13
-#> 5 September   11515   971.       971.         0    9566.   13464.    12
+#> # A tibble: 5 × 9
+#>   month     estimate    se se_between se_within ci_lower ci_upper     n se_basis
+#>   <fct>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
+#> 1 May         16882  2046.      2046.         0   12774.   20990.    10 between…
+#> 2 June        16878. 2523.      2523.         0   11813.   21943.    14 between…
+#> 3 July        17397. 1518.      1518.         0   14349.   20446.    12 between…
+#> 4 August      18735. 2029.      2029.         0   14662.   22808.    13 between…
+#> 5 September   11515   971.       971.         0    9566.   13464.    12 between…
 ```
 
 The months add up to the season total, and their standard errors add in
@@ -172,10 +172,10 @@ estimate_effort(design_dt, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1   81017. 3870.      3870.         0   73273.   88761.    61
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1   81017. 3870.      3870.         0   73273.   88761.    61 between_day_upper…
 ```
 
 about 81,000 instead of 81,400. Neither is wrong. With month strata,
@@ -263,7 +263,7 @@ joins several estimates on their grouping columns into one wide table:
 
 report <- season_summary(list(effort = monthly_effort, catch = monthly_catch))
 report$table
-#> # A tibble: 5 × 13
+#> # A tibble: 5 × 14
 #>   month     effort_estimate effort_se effort_se_between effort_se_within
 #>   <fct>               <dbl>     <dbl>             <dbl>            <dbl>
 #> 1 May                16882      2046.             2046.                0
@@ -271,9 +271,9 @@ report$table
 #> 3 July               17397.     1518.             1518.                0
 #> 4 August             18735.     2029.             2029.                0
 #> 5 September          11515       971.              971.                0
-#> # ℹ 8 more variables: effort_ci_lower <dbl>, effort_ci_upper <dbl>,
-#> #   effort_n <int>, catch_estimate <dbl>, catch_se <dbl>, catch_ci_lower <dbl>,
-#> #   catch_ci_upper <dbl>, catch_n <int>
+#> # ℹ 9 more variables: effort_ci_lower <dbl>, effort_ci_upper <dbl>,
+#> #   effort_n <int>, effort_se_basis <chr>, catch_estimate <dbl>,
+#> #   catch_se <dbl>, catch_ci_lower <dbl>, catch_ci_upper <dbl>, catch_n <int>
 ```
 
 To write it out, use any writer for data frames, or

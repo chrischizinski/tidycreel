@@ -210,10 +210,10 @@ print(effort)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     8918    NA       658.         0       NA       NA    16
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     8918    NA       658.         0       NA       NA    16 between_day_upper…
 ```
 
 The `estimate` column is the total angler-hours over the calendar given
@@ -291,10 +291,10 @@ print(effort_corr)
 #> visibility: 493.7 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1   10492.  918.       774.         0    8522.   12462.    16
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1   10492.  918.       774.         0    8522.   12462.    16 between_day_upper…
 ```
 
 Comparing the two estimates: the corrected effort is higher than the

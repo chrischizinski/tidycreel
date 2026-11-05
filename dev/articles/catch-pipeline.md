@@ -139,11 +139,11 @@ effort
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 2 × 8
-#>   day_type estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     7912  1063.      1063.         0    5753.   10071.    28
-#> 2 weekend     2082.  725.       725.         0     609.    3556.     8
+#> # A tibble: 2 × 9
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
+#> 1 weekday     7912  1063.      1063.         0    5753.   10071.    28 between_…
+#> 2 weekend     2082.  725.       725.         0     609.    3556.     8 between_…
 rate
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

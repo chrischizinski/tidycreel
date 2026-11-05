@@ -119,13 +119,13 @@ Variance Aggregation section below).
 
 effort_est <- estimate_effort(design)
 print(effort_est$estimates)
-#> # A tibble: 4 × 11
-#>   section     estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>          <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 North            269 12.3       12.3          0    242.      296.    12
-#> 2 Central          472 19.0       19.0          0    430.      514.    12
-#> 3 South            105  9.18       9.18         0     84.6     125.    12
-#> 4 .lake_total      846 39.4       39.4          0    758.      934.    36
+#> # A tibble: 4 × 12
+#>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
+#>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
+#> 1 North          269 12.3       12.3          0    242.      296.    12 between…
+#> 2 Central        472 19.0       19.0          0    430.      514.    12 between…
+#> 3 South          105  9.18       9.18         0     84.6     125.    12 between…
+#> 4 .lake_to…      846 39.4       39.4          0    758.      934.    36 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 ```
@@ -297,25 +297,25 @@ separate, non-overlapping calendars, use `method = "independent"`.
 
 # Default: accounts for cross-section covariance (shared-calendar designs)
 estimate_effort(design, method = "correlated")$estimates
-#> # A tibble: 4 × 11
-#>   section     estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>          <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 North            269 12.3       12.3          0    242.      296.    12
-#> 2 Central          472 19.0       19.0          0    430.      514.    12
-#> 3 South            105  9.18       9.18         0     84.6     125.    12
-#> 4 .lake_total      846 39.4       39.4          0    758.      934.    36
+#> # A tibble: 4 × 12
+#>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
+#>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
+#> 1 North          269 12.3       12.3          0    242.      296.    12 between…
+#> 2 Central        472 19.0       19.0          0    430.      514.    12 between…
+#> 3 South          105  9.18       9.18         0     84.6     125.    12 between…
+#> 4 .lake_to…      846 39.4       39.4          0    758.      934.    36 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 
 # Alternative: Cochran 5.2 additivity (independent crews, non-overlapping calendars)
 estimate_effort(design, method = "independent")$estimates
-#> # A tibble: 4 × 11
-#>   section     estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>          <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 North            269 12.3       12.3          0    242.      296.    12
-#> 2 Central          472 19.0       19.0          0    430.      514.    12
-#> 3 South            105  9.18       9.18         0     84.6     125.    12
-#> 4 .lake_total      846 24.4       24.4          0    792.      900.    36
+#> # A tibble: 4 × 12
+#>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
+#>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
+#> 1 North          269 12.3       12.3          0    242.      296.    12 between…
+#> 2 Central        472 19.0       19.0          0    430.      514.    12 between…
+#> 3 South          105  9.18       9.18         0     84.6     125.    12 between…
+#> 4 .lake_to…      846 24.4       24.4          0    792.      900.    36 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 ```
@@ -356,13 +356,13 @@ estimate_effort(design_missing, missing_sections = "warn")$estimates
 #> Warning: 1 missing section(s) in count data.
 #> ! Section(s) not found: "South"
 #> ℹ Inserting NA row(s) with data_available = FALSE.
-#> # A tibble: 4 × 11
-#>   section     estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>          <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 North            269  12.3       12.3         0     242.     296.    12
-#> 2 Central          472  19.0       19.0         0     430.     514.    12
-#> 3 South             NA  NA         NA          NA      NA       NA      0
-#> 4 .lake_total      741  31.1       31.1         0     672.     810.    24
+#> # A tibble: 4 × 12
+#>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
+#>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
+#> 1 North          269  12.3       12.3         0     242.     296.    12 between…
+#> 2 Central        472  19.0       19.0         0     430.     514.    12 between…
+#> 3 South           NA  NA         NA          NA      NA       NA      0 NA      
+#> 4 .lake_to…      741  31.1       31.1         0     672.     810.    24 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 ```

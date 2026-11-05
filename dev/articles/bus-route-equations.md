@@ -344,10 +344,10 @@ design <- add_interviews(design, interviews,
 
 effort <- estimate_effort(design)
 effort$estimates
-#> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     827.     0     827.     827.    16
+#> # A tibble: 1 × 6
+#>   estimate    se ci_lower ci_upper     n se_basis               
+#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>                  
+#> 1     827.     0     827.     827.    16 between_day_upper_bound
 effort$unit
 #> [1] "party-hours"
 

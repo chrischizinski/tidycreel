@@ -122,10 +122,10 @@ estimate_effort(design)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     3066  386.       386.         0    2282.    3850.    36
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     3066  386.       386.         0    2282.    3850.    36 between_day_upper…
 estimate_effort(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -135,10 +135,10 @@ estimate_effort(design, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
 ```
 
 The first estimate, the default, is the effort **on the 36 days that
@@ -172,11 +172,11 @@ estimate_effort(design, by = day_type, target = "period_total")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 2 × 8
-#>   day_type estimate    se se_between se_within ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     7912  1063.      1063.         0    5753.   10071.    28
-#> 2 weekend     2082.  725.       725.         0     609.    3556.     8
+#> # A tibble: 2 × 9
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
+#> 1 weekday     7912  1063.      1063.         0    5753.   10071.    28 between_…
+#> 2 weekend     2082.  725.       725.         0     609.    3556.     8 between_…
 ```
 
 The 86 weekdays account for most of the season’s effort, about 7,900
@@ -403,10 +403,10 @@ estimate_effort(design, target = "period_total", variance = "bootstrap")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1342.      1342.         0    7267.   12722.    36
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1    9994. 1342.      1342.         0    7267.   12722.    36 between_day_upper…
 estimate_effort(design, target = "period_total", variance = "jackknife")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -416,10 +416,10 @@ estimate_effort(design, target = "period_total", variance = "jackknife")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
 ```
 
 - **Taylor linearization** (default) is fast and appropriate for most

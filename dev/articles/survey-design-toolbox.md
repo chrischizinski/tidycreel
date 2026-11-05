@@ -154,6 +154,9 @@ design_comparison
 #>      design estimate   se    rse ci_lower ci_upper ci_width  n
 #> 1    Taylor      372 13.2 0.0354      344      401     57.4 14
 #> 2 Bootstrap      372 13.5 0.0363      343      402     58.9 14
+#>                  se_basis
+#> 1 between_day_upper_bound
+#> 2 between_day_upper_bound
 ```
 
 Because both estimates come from the same counts and interviews, the

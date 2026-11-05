@@ -132,15 +132,18 @@ design <- add_counts(design, counts)
 est <- estimate_effort(design, by = day_type)
 
 tibble::as_tibble(est)
-#> # A tibble: 2 × 13
-#>   day_type estimate    se se_between se_within ci_lower ci_upper     n method
-#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr> 
-#> 1 weekday      171.  9.67       9.67         0     150.     192.    10 total 
-#> 2 weekend      202.  8.95       8.95         0     182.     221.     4 total 
-#> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
+#> # A tibble: 2 × 14
+#>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
+#>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
+#> 1 weekday      171.  9.67       9.67         0     150.     192.    10 between_…
+#> 2 weekend      202.  8.95       8.95         0     182.     221.     4 between_…
+#> # ℹ 5 more variables: method <chr>, variance_method <chr>, conf_level <dbl>,
 #> #   effort_target <chr>, unit <chr>
 as.data.frame(est, metadata = FALSE)
 #>   day_type estimate       se se_between se_within ci_lower ci_upper  n
 #> 1  weekday    170.6 9.673790   9.673790         0 149.5226 191.6774 10
 #> 2  weekend    201.9 8.946321   8.946321         0 182.4076 221.3924  4
+#>                  se_basis
+#> 1 between_day_upper_bound
+#> 2 between_day_upper_bound
 ```

@@ -100,8 +100,8 @@ print(result)
 #> Confidence level: 95%
 #> Effort target: sampled_days
 #> 
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     372.  13.2       13.2         0     344.     401.    14
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     372.  13.2       13.2         0     344.     401.    14 between_day_upper…
 ```

@@ -251,10 +251,10 @@ design$counts$n_anglers[1]
 
 effort <- estimate_effort(design)
 effort$estimates
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     6130  249.       249.         0    5601.    6659.    18
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     6130  249.       249.         0    5601.    6659.    18 between_day_upper…
 ```
 
 The `estimate` column is the stratified total angler-hours over the 18
@@ -420,10 +420,10 @@ des_2p <- add_counts(des_2p, cnt_2p,
 
 est_2p <- estimate_effort(des_2p)
 est_2p$estimates
-#> # A tibble: 1 × 7
-#>   estimate    se se_between se_within ci_lower ci_upper     n
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     2265  101.       80.2      61.0    1985.    2545.     6
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis  
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>     
+#> 1     2265  61.0          0      61.0    2096.    2434.     6 within_day
 ```
 
 `se_within` is now estimated, from the differences between each day’s
@@ -440,15 +440,15 @@ summary_tbl <- season_summary(list(
 ))
 
 summary_tbl$table
-#> # A tibble: 1 × 17
+#> # A tibble: 1 × 18
 #>   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower
 #>             <dbl>     <dbl>             <dbl>            <dbl>           <dbl>
 #> 1            6130      249.              249.                0           5601.
-#> # ℹ 12 more variables: effort_ci_upper <dbl>, effort_n <int>,
-#> #   catch_estimate <dbl>, catch_se <dbl>, catch_ci_lower <dbl>,
-#> #   catch_ci_upper <dbl>, catch_n <int>, harvest_estimate <dbl>,
-#> #   harvest_se <dbl>, harvest_ci_lower <dbl>, harvest_ci_upper <dbl>,
-#> #   harvest_n <int>
+#> # ℹ 13 more variables: effort_ci_upper <dbl>, effort_n <int>,
+#> #   effort_se_basis <chr>, catch_estimate <dbl>, catch_se <dbl>,
+#> #   catch_ci_lower <dbl>, catch_ci_upper <dbl>, catch_n <int>,
+#> #   harvest_estimate <dbl>, harvest_se <dbl>, harvest_ci_lower <dbl>,
+#> #   harvest_ci_upper <dbl>, harvest_n <int>
 ```
 
 ## References

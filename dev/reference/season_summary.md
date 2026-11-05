@@ -109,13 +109,13 @@ result <- season_summary(list(
 #> ℹ Variance estimates may be unstable with n < 30.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 result$table
-#> # A tibble: 1 × 12
+#> # A tibble: 1 × 13
 #>   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower
 #>             <dbl>     <dbl>             <dbl>            <dbl>           <dbl>
 #> 1            372.      13.2              13.2                0            344.
-#> # ℹ 7 more variables: effort_ci_upper <dbl>, effort_n <int>,
-#> #   catch_rate_estimate <dbl>, catch_rate_se <dbl>, catch_rate_ci_lower <dbl>,
-#> #   catch_rate_ci_upper <dbl>, catch_rate_n <int>
+#> # ℹ 8 more variables: effort_ci_upper <dbl>, effort_n <int>,
+#> #   effort_se_basis <chr>, catch_rate_estimate <dbl>, catch_rate_se <dbl>,
+#> #   catch_rate_ci_lower <dbl>, catch_rate_ci_upper <dbl>, catch_rate_n <int>
 result$n_estimates
 #> [1] 2
 ```

@@ -303,10 +303,10 @@ with <code>effort_type = "time_on_ice"</code>.</p>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n total_effort_hr_on_ice</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>819.  261.    <span style="text-decoration: underline;">3</span>308.    <span style="text-decoration: underline;">4</span>330.    72                  <span style="text-decoration: underline;">3</span>819.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_on_ice</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>819.  261.    <span style="text-decoration: underline;">3</span>308.    <span style="text-decoration: underline;">4</span>330.    72 between_day_upp…                  <span style="text-decoration: underline;">3</span>819.</span></span></code></pre></div>
 <p>This is the total over the days worked. To expand to a season with
 days that were not worked, give the calendar a logical column marking
 the worked days and pass it as <code>creel_design(sampled = )</code>;
@@ -351,10 +351,10 @@ effort-type column is then labeled <code>total_effort_hr_active</code>;
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n total_effort_hr_active</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>148.  216.    <span style="text-decoration: underline;">2</span>725.    <span style="text-decoration: underline;">3</span>571.    72                  <span style="text-decoration: underline;">3</span>148.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
+<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_active</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>148.  216.    <span style="text-decoration: underline;">2</span>725.    <span style="text-decoration: underline;">3</span>571.    72 between_day_upp…                  <span style="text-decoration: underline;">3</span>148.</span></span></code></pre></div>
 <p>Active fishing hours are shorter than time-on-ice because they
 exclude travel, setup, and breaks. The difference between the two
 estimates reflects the non-fishing portion of each trip.</p>
@@ -378,11 +378,11 @@ interview data split by the grouping variable.</p>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
-<span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
+<span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n se_basis       </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36 between_day_up…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36 between_day_up…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: total_effort_hr_on_ice &lt;dbl&gt;</span></span></span></code></pre></div>
 <p>The <code>proportion</code> column shows each shelter group’s share
 of total effort. Dark-house anglers tend to fish longer hours on
@@ -465,11 +465,11 @@ uncertainty would need propagating.</p>
 and unit as columns, and plots with its confidence interval:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">effort_by_shelter</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 13</span></span></span>
-<span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 14</span></span></span>
+<span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n se_basis       </span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36 between_day_up…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36 between_day_up…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 6 more variables: total_effort_hr_on_ice &lt;dbl&gt;, method &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;, effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
 <span></span>

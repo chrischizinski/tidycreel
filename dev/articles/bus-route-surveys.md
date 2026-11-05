@@ -362,10 +362,10 @@ print(effort_est)
 #> Effort target: sampled_days
 #> Unit: angler-hours
 #> 
-#> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     1695  248.    1208.    2182.    15
+#> # A tibble: 1 × 6
+#>   estimate    se ci_lower ci_upper     n se_basis               
+#>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>                  
+#> 1     1695  248.    1208.    2182.    15 between_day_upper_bound
 
 # Inspect per-site contributions to the total
 site_contribs <- get_site_contributions(effort_est)

@@ -388,7 +388,7 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.546 sampled_days
+#> 1   GLMM 4728.548 sampled_days
 #> 2 Simple 5092.500 sampled_days
 ```
 
@@ -492,11 +492,11 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 581.6996
+#> [1] 581.6963
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 536.0946
+#> [1] 536.0896
 ```
 
 ## Results as Data

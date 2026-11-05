@@ -119,9 +119,9 @@ est <- estimate_effort(design)
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 summary(est)
 #> -- Creel Survey Summary (Total | Taylor linearization | 95%) --
-#>  Estimate    SE CI Lower CI Upper  N
-#>     372.5 13.18    343.8    401.2 14
+#>                 se_basis Estimate    SE CI Lower CI Upper  N
+#>  between_day_upper_bound    372.5 13.18    343.8    401.2 14
 as.data.frame(summary(est))
-#>   Estimate    SE CI Lower CI Upper  N
-#> 1    372.5 13.18    343.8    401.2 14
+#>                  se_basis Estimate    SE CI Lower CI Upper  N
+#> 1 between_day_upper_bound    372.5 13.18    343.8    401.2 14
 ```
