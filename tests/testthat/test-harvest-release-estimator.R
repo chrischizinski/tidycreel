@@ -385,10 +385,12 @@ test_that("an unstratified design's totals honour the estimator", {
   )) {
     f <- get(fn)
     mor <- quiet_est(
-      f, unstratified, use_trips = "all", estimator = "mor"
+      f, unstratified, use_trips = "all", estimator = "mor",
+      target = "sampled_days"
     )
     rom <- quiet_est(
-      f, unstratified, use_trips = "all", estimator = "ratio-of-means"
+      f, unstratified, use_trips = "all", estimator = "ratio-of-means",
+      target = "sampled_days"
     )
     expect_false(
       isTRUE(all.equal(first_est(mor), first_est(rom))),
@@ -425,7 +427,7 @@ test_that("bus-route and ice totals refuse a mean-of-ratios estimator", {
     ))
     for (fn in c("estimate_total_harvest", "estimate_total_release")) {
       expect_error(
-        quiet_est(get(fn), design, estimator = "mor"),
+        quiet_est(get(fn), design, estimator = "mor", target = "sampled_days"),
         "not available for",
         info = paste(fn, design_type)
       )
@@ -434,7 +436,7 @@ test_that("bus-route and ice totals refuse a mean-of-ratios estimator", {
       # the message has to carry the string the caller typed. Naming a value
       # they never passed sends them looking for a call they did not make.
       expect_error(
-        quiet_est(get(fn), design, estimator = "mortr"),
+        quiet_est(get(fn), design, estimator = "mortr", target = "sampled_days"),
         "mortr",
         info = paste(fn, design_type)
       )

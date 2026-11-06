@@ -48,12 +48,14 @@ separately and add a lake total.
 
 Whether the effort covers only the days counted or every day in the season is
 a separate choice, `target`, not a different estimator. The default,
-`"sampled_days"`, is the effort on the days counted; `"period_total"` expands
-each stratum to all its days. On the season data used below, that is 3,066
-angler-hours against about 9,994. Totals follow the effort they are given, so
-a catch total on the default target is the catch on the sampled days.
-`vignette("effort-pipeline")` explains the expansion, and the expanded targets
-are not yet available for bus-route or ice designs.
+`"period_total"`, expands each stratum to all its days; `"sampled_days"` is the
+effort on the days counted. On the season data used below, that is about 9,994
+angler-hours against 3,066. Totals follow the effort they are given, so a catch
+total on `target = "sampled_days"` is the catch on the sampled days.
+`vignette("effort-pipeline")` explains the expansion. Bus-route and ice designs
+expand only with the calendar's register of worked days
+(`creel_design(sampled = )`); without it they refuse the expanded targets,
+including the default.
 
 The pages that explain each estimator in full:
 

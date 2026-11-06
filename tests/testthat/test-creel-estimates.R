@@ -379,5 +379,5 @@ test_that("bus-route totals do not raise the party-hours warning (GH #112)", {
   # multiplies a rate by count-derived effort.
   design$n_anglers_supplied <- FALSE
 
-  expect_no_warning(suppressMessages(estimate_total_harvest(design)))
+  expect_no_warning(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
 })

@@ -78,16 +78,18 @@ weekday_only <- add_counts(weekday_only, weekday_counts,
   period_length_col = daylight_hours
 )
 
-estimate_effort(weekday_only, target = "period_total")
+estimate_effort(weekday_only)
 ```
 
 A season total needs the weekend's effort, and there is no information about
 it. Summing the weekday strata alone would report the 34 weekend days as zero
-effort. The default target asks a smaller question, the effort on the days
-that were counted, and that one has an answer:
+effort. The default target, `"period_total"`, is the season total, so the call
+above asks for it without naming it. `target = "sampled_days"` asks a smaller
+question, the effort on the days that were counted, and that one has an
+answer:
 
 ```{r unsampled-sampled-days}
-estimate_effort(weekday_only)
+estimate_effort(weekday_only, target = "sampled_days")
 ```
 
 ### A stratum with no catch rate

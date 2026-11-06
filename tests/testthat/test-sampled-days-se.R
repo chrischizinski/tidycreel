@@ -92,7 +92,7 @@ test_that("a design mixing 2-count and 1-count strata is labelled per group and 
 
 test_that("bus-route effort is always labelled between_day_upper_bound (#507)", {
   d <- build_br_design_for_tests(4L, 8L, 40L, seed = 11L)
-  eff <- tidy(suppressWarnings(estimate_effort(d)))
+  eff <- tidy(suppressWarnings(estimate_effort(d, target = "sampled_days")))
   expect_equal(eff$se_basis, "between_day_upper_bound")
 })
 
@@ -187,7 +187,7 @@ test_that("names the estimators write themselves are refused on every path (#507
   )
   d <- add_counts(d, counts, count_col = "angler_count")
   expect_error(
-    suppressWarnings(estimate_effort(d)),
+    suppressWarnings(estimate_effort(d, target = "sampled_days")),
     class = "creel_error_reserved_column"
   )
 
@@ -195,7 +195,7 @@ test_that("names the estimators write themselves are refused on every path (#507
   br <- build_br_design_for_tests(4L, 8L, 40L, seed = 11L)
   br$interviews$se_basis <- rep(c("bank", "boat"), length.out = nrow(br$interviews))
   expect_error(
-    suppressWarnings(estimate_effort(br, by = se_basis)),
+    suppressWarnings(estimate_effort(br, by = se_basis, target = "sampled_days")),
     class = "creel_error_reserved_column"
   )
 

@@ -307,12 +307,16 @@ test_that("estimate_total_catch result conf_level is 0.95 by default", {
   expect_equal(result$conf_level, 0.95)
 })
 
-test_that("estimate_total_catch defaults effort_target to sampled_days", {
+test_that("estimate_total_catch defaults effort_target to period_total (GH #487)", {
+  # Since 9.0.0 the default is the season total a user reports, not the total
+  # over the sampled days, which reads as "Total" and is a fraction of it.
   design <- make_total_catch_design()
 
-  result <- estimate_total_catch(design) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_catch(design)) # nolint: object_usage_linter
+  explicit <- suppressWarnings(estimate_total_catch(design, target = "period_total")) # nolint: object_usage_linter
 
-  expect_equal(result$effort_target, "sampled_days")
+  expect_equal(result$effort_target, "period_total")
+  expect_equal(result$estimates, explicit$estimates)
 })
 
 test_that("estimate_total_catch target='period_total' propagates expanded effort domain", {
@@ -892,26 +896,26 @@ make_br_catch_interviews <- function(design) {
 
 test_that("estimate_total_catch() dispatches to bus-route estimator for bus_route designs", {
   d <- make_br_catch_interviews(make_br_catch_design())
-  result <- estimate_total_catch(d)
+  result <- estimate_total_catch(d, target = "sampled_days")
   expect_s3_class(result, "creel_estimates")
 })
 
 test_that("estimate_total_catch() Eq. 19.5: C_hat = sum(c_i/pi_i) is positive for bus-route", {
   d <- make_br_catch_interviews(make_br_catch_design())
-  result <- estimate_total_catch(d)
+  result <- estimate_total_catch(d, target = "sampled_days")
   expect_true(result$estimates$estimate > 0)
 })
 
 test_that("estimate_total_catch() site_contributions attribute present for bus-route", {
   d <- make_br_catch_interviews(make_br_catch_design())
-  result <- estimate_total_catch(d)
+  result <- estimate_total_catch(d, target = "sampled_days")
   sc <- attr(result, "site_contributions")
   expect_false(is.null(sc))
 })
 
 test_that("get_site_contributions() works on bus-route total-catch result", {
   d <- make_br_catch_interviews(make_br_catch_design())
-  result <- estimate_total_catch(d)
+  result <- estimate_total_catch(d, target = "sampled_days")
   sc <- get_site_contributions(result)
   expect_s3_class(sc, "tbl_df")
   expect_true("pi_i" %in% names(sc))
@@ -922,7 +926,7 @@ test_that("bus-route total catch reports its own quantity, not effort (GH #111)"
   # to "Total Effort". A fish-valued total therefore plotted under an effort
   # label, with nothing in the returned object to contradict it.
   d <- make_br_catch_interviews(make_br_catch_design())
-  result <- estimate_total_catch(d)
+  result <- estimate_total_catch(d, target = "sampled_days")
 
   expect_equal(result$method, "ht-total-catch")
   expect_equal(ggplot2::autoplot(result)$labels$y, "Total Catch (fish)")
@@ -934,7 +938,7 @@ test_that("bus-route total catch labels the grouped path too (GH #111)", {
   # result mislabelled.
   d <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
   result <- suppressWarnings(suppressMessages(
-    estimate_total_catch(d, by = day_type) # nolint: object_usage_linter
+    estimate_total_catch(d, by = day_type, target = "sampled_days") # nolint: object_usage_linter
   ))
 
   expect_equal(result$method, "ht-total-catch")
@@ -946,7 +950,7 @@ test_that("bus-route total catch records its quantity in the CSV provenance (GH 
   # file gave a downstream reader no way to tell which quantity it held.
   d <- make_br_catch_interviews(make_br_catch_design())
   f <- withr::local_tempfile(fileext = ".csv")
-  write_estimates(estimate_total_catch(d), f)
+  write_estimates(estimate_total_catch(d, target = "sampled_days"), f)
 
   expect_match(
     paste(readLines(f, n = 3L), collapse = "\n"),
@@ -958,14 +962,14 @@ test_that("bus-route total catch records its quantity in the CSV provenance (GH 
 test_that("estimate_total_catch() verbose=TRUE prints bus-route dispatch message", {
   d <- make_br_catch_interviews(make_br_catch_design())
   expect_message(
-    estimate_total_catch(d, verbose = TRUE),
+    estimate_total_catch(d, verbose = TRUE, target = "sampled_days"),
     "bus-route estimator"
   )
 })
 
 test_that("estimate_total_catch() verbose=FALSE produces no dispatch message", {
   d <- make_br_catch_interviews(make_br_catch_design())
-  expect_no_message(suppressWarnings(estimate_total_catch(d, verbose = FALSE)))
+  expect_no_message(suppressWarnings(estimate_total_catch(d, verbose = FALSE, target = "sampled_days")))
 })
 
 # Section dispatch fixtures and stubs (PROD-01, PROD-02) ----
@@ -1595,7 +1599,7 @@ make_ice_total_catch_design <- function() {
 
 test_that("ICE-04: estimate_total_catch() on ice design returns valid estimates tibble", {
   design <- make_ice_total_catch_design() # nolint: object_usage_linter
-  result <- estimate_total_catch(design) # nolint: object_usage_linter
+  result <- estimate_total_catch(design, target = "sampled_days") # nolint: object_usage_linter
   expect_s3_class(result, "creel_estimates")
   expect_true("estimate" %in% names(result$estimates))
   expect_true(is.numeric(result$estimates$estimate))
@@ -1638,7 +1642,15 @@ test_that("#520: bus-route and ice totals refuse expanded targets and label samp
           info = paste(nm, fn, tg)
         )
       }
-      res <- suppressWarnings(suppressMessages(totals[[fn]](d)))
+      # Since 9.0.0 the default target is "period_total" (GH #487). Without a
+      # register these designs cannot expand, so the default refuses rather
+      # than quietly answering with the sampled days.
+      expect_error(
+        suppressWarnings(suppressMessages(totals[[fn]](d))),
+        class = "creel_error_sampled_register",
+        info = paste(nm, fn, "default")
+      )
+      res <- suppressWarnings(suppressMessages(totals[[fn]](d, target = "sampled_days")))
       expect_identical(res$effort_target, "sampled_days", info = paste(nm, fn))
     }
   }
@@ -1866,7 +1878,7 @@ test_that("bus-route total catch counts only completed trips (GH #112)", {
   design <- make_br_mixed_trips()
   n_complete <- sum(design$interviews$trip_status == "complete")
 
-  result <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+  result <- suppressWarnings(suppressMessages(estimate_total_catch(design, target = "sampled_days")))
 
   expect_equal(result$estimates$n, n_complete)
   expect_lt(result$estimates$n, nrow(design$interviews))
@@ -1878,8 +1890,8 @@ test_that("bus-route total catch and total harvest use the same rows (GH #112)",
   # not equal estimates -- they are different quantities.
   design <- make_br_mixed_trips()
 
-  catch <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
-  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  catch <- suppressWarnings(suppressMessages(estimate_total_catch(design, target = "sampled_days")))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
 
   expect_equal(catch$estimates$n, harvest$estimates$n)
 })
@@ -1891,7 +1903,7 @@ test_that("estimate_total_catch() rejects use_trips='all' on bus-route (GH #112)
   design <- make_br_mixed_trips()
 
   expect_error(
-    suppressWarnings(suppressMessages(estimate_total_catch(design, use_trips = "all"))),
+    suppressWarnings(suppressMessages(estimate_total_catch(design, use_trips = "all", target = "sampled_days"))),
     "not available"
   )
 })
@@ -1901,7 +1913,7 @@ test_that("estimate_total_catch() rejects use_trips='all' on ice designs (GH #11
   design <- build_ice_design(n_days = 8, n_interviews = 24, seed = 7)
 
   expect_error(
-    suppressWarnings(suppressMessages(estimate_total_catch(design, use_trips = "all"))),
+    suppressWarnings(suppressMessages(estimate_total_catch(design, use_trips = "all", target = "sampled_days"))),
     "not available"
   )
 })
@@ -1911,9 +1923,9 @@ test_that("estimate_total_catch() still accepts the default use_trips on bus-rou
   # nothing -- or who pass the default explicitly.
   design <- make_br_mixed_trips()
 
-  bare <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+  bare <- suppressWarnings(suppressMessages(estimate_total_catch(design, target = "sampled_days")))
   explicit <- suppressWarnings(suppressMessages(
-    estimate_total_catch(design, use_trips = "complete")
+    estimate_total_catch(design, use_trips = "complete", target = "sampled_days")
   ))
 
   expect_equal(bare$estimates$estimate, explicit$estimates$estimate)
@@ -1925,7 +1937,7 @@ test_that("bus-route totals treat rows as complete when no trip status is record
   design <- make_br_mixed_trips()
   design$trip_status_col <- NULL
 
-  result <- suppressWarnings(suppressMessages(estimate_total_catch(design)))
+  result <- suppressWarnings(suppressMessages(estimate_total_catch(design, target = "sampled_days")))
 
   expect_equal(result$estimates$n, nrow(design$interviews))
 })
@@ -1956,9 +1968,9 @@ test_that("species totals sum to the all-species total on both HT designs (findi
 
     for (quantity in names(ht_species_total_fns)) {
       total_fn <- ht_species_total_fns[[quantity]]
-      all_sp <- suppressWarnings(suppressMessages(total_fn(d)))
+      all_sp <- suppressWarnings(suppressMessages(total_fn(d, target = "sampled_days")))
       by_sp <- suppressWarnings(suppressMessages(
-        total_fn(d, by = species) # nolint: object_usage_linter
+        total_fn(d, by = species, target = "sampled_days") # nolint: object_usage_linter
       ))
 
       # A zero-vs-zero identity is unfalsifiable, so every quantity has to be
@@ -1983,10 +1995,10 @@ test_that("species totals reconcile with the species rates (finding 19)", {
   # differently from the rate path would pass the sum and fail here.
   for (type in c("bus_route", "ice")) {
     d <- build_ht_multispecies_design(type, seed = 42)
-    effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+    effort <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))$estimates[[1]][[1]]
 
     totals <- suppressWarnings(suppressMessages(
-      estimate_total_catch(d, by = species) # nolint: object_usage_linter
+      estimate_total_catch(d, by = species, target = "sampled_days") # nolint: object_usage_linter
     ))
     rates <- suppressWarnings(suppressMessages(
       estimate_catch_rate(d, by = species) # nolint: object_usage_linter
@@ -2014,10 +2026,10 @@ test_that("grouped species totals sum to the grouped all-species total (finding 
     for (quantity in names(ht_species_total_fns)) {
       total_fn <- ht_species_total_fns[[quantity]]
       all_sp <- suppressWarnings(suppressMessages(
-        total_fn(d, by = day_type) # nolint: object_usage_linter
+        total_fn(d, by = day_type, target = "sampled_days") # nolint: object_usage_linter
       ))
       by_sp <- suppressWarnings(suppressMessages(
-        total_fn(d, by = c(day_type, species)) # nolint: object_usage_linter
+        total_fn(d, by = c(day_type, species), target = "sampled_days") # nolint: object_usage_linter
       ))
 
       expect_identical(nrow(by_sp$estimates), 6L, info = paste(type, quantity))
@@ -2039,14 +2051,14 @@ test_that("species totals carry the HT weights (finding 19)", {
   for (type in c("bus_route", "ice")) {
     d <- build_ht_multispecies_design(type, seed = 42)
     base <- suppressWarnings(suppressMessages(
-      estimate_total_catch(d, by = species) # nolint: object_usage_linter
+      estimate_total_catch(d, by = species, target = "sampled_days") # nolint: object_usage_linter
     ))
 
     top <- d$interviews[[d$catch_col]] >= stats::median(d$interviews[[d$catch_col]])
     d2 <- d
     d2$interviews$.expansion[top] <- d2$interviews$.expansion[top] * 4
     bumped <- suppressWarnings(suppressMessages(
-      estimate_total_catch(d2, by = species) # nolint: object_usage_linter
+      estimate_total_catch(d2, by = species, target = "sampled_days") # nolint: object_usage_linter
     ))
 
     expect_gt(sum(bumped$estimates$estimate), sum(base$estimates$estimate))
@@ -2064,7 +2076,7 @@ test_that("species totals name the HT estimator and the quantity (finding 19)", 
 
     for (quantity in names(ht_species_total_fns)) {
       res <- suppressWarnings(suppressMessages(
-        ht_species_total_fns[[quantity]](d, by = species) # nolint: object_usage_linter
+        ht_species_total_fns[[quantity]](d, by = species, target = "sampled_days") # nolint: object_usage_linter
       ))
       expect_identical(
         res$method,
@@ -2085,7 +2097,7 @@ test_that("by = species returns a number from every HT total (finding 19)", {
 
     for (quantity in names(ht_species_total_fns)) {
       res <- suppressWarnings(suppressMessages(
-        ht_species_total_fns[[quantity]](d, by = species) # nolint: object_usage_linter
+        ht_species_total_fns[[quantity]](d, by = species, target = "sampled_days") # nolint: object_usage_linter
       ))
       expect_true(all(is.finite(res$estimates$estimate)), info = paste(type, quantity))
       expect_identical(res$estimates$species, c("bass", "panfish", "walleye"))
@@ -2101,7 +2113,7 @@ test_that("use_trips = 'all' is still rejected with species grouping (finding 19
   d <- build_ht_multispecies_design("bus_route", seed = 42)
 
   expect_error(
-    estimate_total_catch(d, by = species, use_trips = "all"), # nolint: object_usage_linter
+    estimate_total_catch(d, by = species, use_trips = "all", target = "sampled_days"), # nolint: object_usage_linter
     "not available"
   )
 })
@@ -2137,7 +2149,7 @@ test_that("bus-route and ice totals refuse a design with no complete trips by na
 
     for (fn in c("estimate_total_catch", "estimate_total_harvest", "estimate_total_release")) {
       expect_error(
-        suppressMessages(suppressWarnings(do.call(fn, list(d)))),
+        suppressMessages(suppressWarnings(do.call(fn, list(d, target = "sampled_days")))),
         "No complete trips available",
         info = paste(type, fn)
       )
@@ -2155,11 +2167,11 @@ test_that("the no-complete-trips abort names the quantity and offers a way forwa
   d$interviews[[d$trip_status_col]] <- rep("incomplete", nrow(d$interviews))
 
   expect_error(
-    suppressMessages(suppressWarnings(estimate_total_harvest(d))),
+    suppressMessages(suppressWarnings(estimate_total_harvest(d, target = "sampled_days"))),
     "total harvest estimation"
   )
   expect_error(
-    suppressMessages(suppressWarnings(estimate_total_harvest(d))),
+    suppressMessages(suppressWarnings(estimate_total_harvest(d, target = "sampled_days"))),
     "diagnostic"
   )
 })
@@ -2168,7 +2180,7 @@ test_that("a design that still has complete trips is untouched by the guard", {
   # The guard must not change any estimate that was previously produced.
   d <- build_ht_multispecies_design("bus_route", seed = 42)
   expect_no_error(
-    suppressMessages(suppressWarnings(estimate_total_harvest(d)))
+    suppressMessages(suppressWarnings(estimate_total_harvest(d, target = "sampled_days")))
   )
 })
 

@@ -37,7 +37,8 @@ sch_p_add <- function(calendar, counts, ...) {
   )))
 }
 
-sch_p_effort <- function(d) suppressWarnings(suppressMessages(estimate_effort(d)))$estimates # nolint: object_usage_linter
+# Sampled-day target named: the hand sums cover the sampled days (GH #487).
+sch_p_effort <- function(d) suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))$estimates # nolint: object_usage_linter
 
 test_that("#385: p_period is read from the schedule and expands like the explicit argument", {
   cn <- sch_p_counts(7)

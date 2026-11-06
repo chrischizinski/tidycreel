@@ -1809,7 +1809,7 @@ test_that("Eq. 19.5: H_hat = sum(h_i/pi_i) is what estimate_total_harvest() retu
   # a total came to be reported as a rate (GH #107). Eq. 19.5 is a total, so it
   # belongs to the total estimator.
   d <- make_br_harvest_interviews(make_br_harvest_design())
-  result <- estimate_total_harvest(d)
+  result <- estimate_total_harvest(d, target = "sampled_days")
   # H_hat = 37.5 + 75.0 + 2.5 + 0 + 12.5 + 8.333... = 135.833...
   expected_h_hat <- (2 * 3) /
     0.16 +
@@ -1841,8 +1841,8 @@ test_that("bus-route HPUE equals total harvest over total effort (GH #107)", {
   # HT total that is not reflected in the rate fails here.
   d <- make_br_harvest_interviews(make_br_harvest_design())
   rate <- estimate_harvest_rate(d)$estimates$estimate
-  h_total <- estimate_total_harvest(d)$estimates$estimate
-  e_total <- estimate_effort(d)$estimates$estimate
+  h_total <- estimate_total_harvest(d, target = "sampled_days")$estimates$estimate
+  e_total <- estimate_effort(d, target = "sampled_days")$estimates$estimate
 
   expect_equal(rate, h_total / e_total, tolerance = 1e-9)
 })
@@ -1854,8 +1854,8 @@ test_that("bus-route HPUE variance accounts for the harvest-effort covariance (G
   # which is why svyratio does the linearisation over both.
   d <- make_br_harvest_interviews(make_br_harvest_design())
   rate <- estimate_harvest_rate(d)$estimates
-  h <- estimate_total_harvest(d)$estimates
-  e <- estimate_effort(d)$estimates
+  h <- estimate_total_harvest(d, target = "sampled_days")$estimates
+  e <- estimate_effort(d, target = "sampled_days")$estimates
 
   naive_se <- (h$estimate / e$estimate) *
     sqrt((h$se / h$estimate)^2 + (e$se / e$estimate)^2)
@@ -2645,14 +2645,14 @@ test_that("ice rates reconcile with the ice totals the package already ships (fi
   # both reported under method "ratio-of-means-hpue" so nothing in the returned
   # object distinguished them.
   d <- build_ice_design(n_days = 8, n_interviews = 24, seed = 42)
-  effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+  effort <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))$estimates[[1]][[1]]
 
   hpue <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))
-  h_tot <- suppressWarnings(suppressMessages(estimate_total_harvest(d)))
+  h_tot <- suppressWarnings(suppressMessages(estimate_total_harvest(d, target = "sampled_days")))
   expect_equal(hpue$estimates$estimate, h_tot$estimates$estimate / effort, tolerance = 1e-9)
 
   cpue <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
-  c_tot <- suppressWarnings(suppressMessages(estimate_total_catch(d)))
+  c_tot <- suppressWarnings(suppressMessages(estimate_total_catch(d, target = "sampled_days")))
   expect_equal(cpue$estimates$estimate, c_tot$estimates$estimate / effort, tolerance = 1e-9)
 })
 
@@ -2662,10 +2662,10 @@ test_that("bus-route CPUE reconciles with the bus-route totals (finding 17)", {
   # assumed was already correct. Before the fix: 0.466438 against totals implying
   # 0.433603.
   d <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
-  effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+  effort <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))$estimates[[1]][[1]]
 
   cpue <- suppressWarnings(suppressMessages(estimate_catch_rate(d)))
-  c_tot <- suppressWarnings(suppressMessages(estimate_total_catch(d)))
+  c_tot <- suppressWarnings(suppressMessages(estimate_total_catch(d, target = "sampled_days")))
 
   expect_equal(cpue$estimates$estimate, c_tot$estimates$estimate / effort, tolerance = 1e-9)
   expect_identical(cpue$method, "ratio-of-means-cpue")
@@ -2786,10 +2786,10 @@ test_that("ice RPUE reconciles with the ice release total (finding 14)", {
   # harvest and catch twins were pinned. That is the drift pattern findings 9,
   # 15 and 16 are about, showing up in the tests rather than the code.
   d <- make_ice_release()
-  effort <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates[[1]][[1]]
+  effort <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))$estimates[[1]][[1]]
 
   rpue <- suppressWarnings(suppressMessages(estimate_release_rate(d)))
-  r_tot <- suppressWarnings(suppressMessages(estimate_total_release(d)))
+  r_tot <- suppressWarnings(suppressMessages(estimate_total_release(d, target = "sampled_days")))
 
   expect_equal(rpue$estimates$estimate, r_tot$estimates$estimate / effort, tolerance = 1e-9)
   expect_identical(rpue$method, "ratio-of-means-rpue")
@@ -2920,10 +2920,10 @@ test_that("grouped CPUE reconciles with the grouped totals on both HT designs (f
       estimate_catch_rate(d, by = day_type) # nolint: object_usage_linter
     ))
     effort <- suppressWarnings(suppressMessages(
-      estimate_effort(d, by = day_type) # nolint: object_usage_linter
+      estimate_effort(d, by = day_type, target = "sampled_days") # nolint: object_usage_linter
     ))
     total <- suppressWarnings(suppressMessages(
-      estimate_total_catch(d, by = day_type) # nolint: object_usage_linter
+      estimate_total_catch(d, by = day_type, target = "sampled_days") # nolint: object_usage_linter
     ))
 
     # The effort column is named for the effort type ("total_effort_hr_on_ice" on

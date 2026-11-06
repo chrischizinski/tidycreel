@@ -177,8 +177,8 @@ make_na_gear_br_design <- function() {
 test_that("NAGRP-10 (#321): a grouped bus-route effort total reports the unknown group", {
   d <- make_na_gear_br_design()
 
-  ungrouped <- suppressWarnings(suppressMessages(estimate_effort(d)))
-  grouped <- suppressWarnings(suppressMessages(estimate_effort(d, by = gear)))
+  ungrouped <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))
+  grouped <- suppressWarnings(suppressMessages(estimate_effort(d, by = gear, target = "sampled_days")))
 
   expect_equal(nrow(grouped$estimates), 3L)
   expect_equal(sum(grouped$estimates$n), ungrouped$estimates$n)
@@ -198,8 +198,8 @@ test_that("NAGRP-10 (#321): a grouped bus-route effort total reports the unknown
 test_that("NAGRP-11 (#321): a grouped bus-route catch total reports the unknown group", {
   d <- make_na_gear_br_design()
 
-  ungrouped <- suppressWarnings(suppressMessages(estimate_total_catch(d)))
-  grouped <- suppressWarnings(suppressMessages(estimate_total_catch(d, by = gear)))
+  ungrouped <- suppressWarnings(suppressMessages(estimate_total_catch(d, target = "sampled_days")))
+  grouped <- suppressWarnings(suppressMessages(estimate_total_catch(d, by = gear, target = "sampled_days")))
 
   expect_equal(nrow(grouped$estimates), 3L)
   expect_equal(sum(grouped$estimates$n), ungrouped$estimates$n)
@@ -308,8 +308,8 @@ test_that("NAGRP-15 (#321): a numeric grouping column is still numeric when a va
     )))
   }
 
-  clean <- suppressWarnings(suppressMessages(estimate_effort(mk(FALSE), by = depth_m)))
-  unknown <- suppressWarnings(suppressMessages(estimate_effort(mk(TRUE), by = depth_m)))
+  clean <- suppressWarnings(suppressMessages(estimate_effort(mk(FALSE), by = depth_m, target = "sampled_days")))
+  unknown <- suppressWarnings(suppressMessages(estimate_effort(mk(TRUE), by = depth_m, target = "sampled_days")))
 
   # The schema does not depend on whether a value happened to be missing.
   expect_type(clean$estimates$depth_m, "double")
@@ -341,7 +341,7 @@ test_that("NAGRP-15 (#321): a numeric grouping column is still numeric when a va
       unit_cols = c("date", "day_type", "depth_f")
     )))
   })
-  res_fac <- suppressWarnings(suppressMessages(estimate_effort(d_fac, by = depth_f)))
+  res_fac <- suppressWarnings(suppressMessages(estimate_effort(d_fac, by = depth_f, target = "sampled_days")))
   expect_true(is.factor(res_fac$estimates$depth_f))
   expect_equal(sum(is.na(res_fac$estimates$depth_f)), 1L)
   # The promoted level is gone: the unknown group is a missing value, not a

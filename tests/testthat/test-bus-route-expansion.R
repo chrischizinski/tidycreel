@@ -126,8 +126,8 @@ test_that("a design without a register keeps today's sampled-day total exactly",
   # Empty days are invisible without the register, as before; nothing about
   # the sampled_days path changes for existing designs.
   x <- br_season()
-  with_reg <- q(estimate_effort(br_design(x)))$estimates
-  without <- q(estimate_effort(br_design(x, register = FALSE)))$estimates
+  with_reg <- q(estimate_effort(br_design(x), target = "sampled_days"))$estimates
+  without <- q(estimate_effort(br_design(x, register = FALSE), target = "sampled_days"))$estimates
   expect_equal(without$estimate, with_reg$estimate, tolerance = 1e-10)
   # The register adds the empty days as zero days, which widens the
   # between-day variance; without it they are simply absent.
@@ -137,12 +137,12 @@ test_that("a design without a register keeps today's sampled-day total exactly",
 test_that("totals expand on the same basis as effort and say which target they are", {
   x <- br_season()
   d <- br_design(x)
-  sd <- q(estimate_total_catch(d))
+  sd <- q(estimate_total_catch(d, target = "sampled_days"))
   pt <- q(estimate_total_catch(d, target = "period_total"))
   expect_identical(pt$effort_target, "period_total")
   expect_identical(sd$effort_target, "sampled_days")
   # Per stratum, the period total is N_h / 8 times the sampled-day total.
-  sd_h <- q(estimate_total_catch(d, by = day_type))$estimates
+  sd_h <- q(estimate_total_catch(d, by = day_type, target = "sampled_days"))$estimates
   pt_h <- q(estimate_total_catch(d, by = day_type, target = "period_total"))$estimates
   n_pop <- table(x$cal$day_type)[sd_h$day_type]
   expect_equal(pt_h$estimate, as.numeric(n_pop) / 8 * sd_h$estimate, tolerance = 1e-10)
@@ -181,7 +181,7 @@ test_that("a calendar stratum with no worked day is refused for expansion only",
   x$iv <- x$iv[x$iv$day_type == "weekday", ]
   d <- br_design(x)
   expect_error(estimate_effort(d, target = "period_total"), class = "creel_error_sampled_register")
-  expect_no_error(q(estimate_effort(d)))
+  expect_no_error(q(estimate_effort(d, target = "sampled_days")))
 })
 
 test_that("the register must be a complete logical column, on bus-route or ice designs", {
@@ -217,7 +217,7 @@ test_that("ice designs expand through the same register", {
     trip_status = trip_status, n_counted = n_counted,
     n_interviewed = n_interviewed, n_anglers = n_anglers
   ))
-  sd <- q(estimate_effort(d))$estimates
+  sd <- q(estimate_effort(d, target = "sampled_days"))$estimates
   pt <- q(estimate_effort(d, target = "period_total"))$estimates
   # 24 calendar days, 12 worked: twice the sampled-day total and SE.
   expect_equal(pt$estimate, 2 * sd$estimate, tolerance = 1e-10)

@@ -281,12 +281,16 @@ test_that("estimate_total_harvest result conf_level is 0.95 by default", {
   expect_equal(result$conf_level, 0.95)
 })
 
-test_that("estimate_total_harvest defaults effort_target to sampled_days", {
+test_that("estimate_total_harvest defaults effort_target to period_total (GH #487)", {
+  # Since 9.0.0 the default is the season total a user reports, not the total
+  # over the sampled days, which reads as "Total" and is a fraction of it.
   design <- make_total_harvest_design()
 
-  result <- estimate_total_harvest(design) # nolint: object_usage_linter
+  result <- suppressWarnings(estimate_total_harvest(design)) # nolint: object_usage_linter
+  explicit <- suppressWarnings(estimate_total_harvest(design, target = "period_total")) # nolint: object_usage_linter
 
-  expect_equal(result$effort_target, "sampled_days")
+  expect_equal(result$effort_target, "period_total")
+  expect_equal(result$estimates, explicit$estimates)
 })
 
 test_that("estimate_total_harvest species path accepts target = 'period_total'", {
@@ -1290,7 +1294,7 @@ test_that("bus-route total harvest reports its own quantity, not effort (GH #111
   # to "Total Effort". A fish-valued total therefore plotted under an effort
   # label, with nothing in the returned object to contradict it.
   design <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
-  result <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  result <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
 
   expect_equal(result$method, "ht-total-harvest")
   expect_equal(ggplot2::autoplot(result)$labels$y, "Total Harvest (fish)")
@@ -1300,7 +1304,7 @@ test_that("ice total harvest carries the bus-route method string (GH #111)", {
   # Ice is a degenerate bus route and routes through the same HT estimator, so it
   # inherited the same effort label on a fish-valued total.
   design <- build_ice_design(n_days = 8, n_interviews = 24, seed = 7)
-  result <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  result <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
 
   expect_equal(result$method, "ht-total-harvest")
 })

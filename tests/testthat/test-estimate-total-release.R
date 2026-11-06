@@ -170,12 +170,16 @@ test_that("estimate_total_release result conf_level is 0.95 by default", {
   expect_equal(result$conf_level, 0.95)
 })
 
-test_that("estimate_total_release defaults effort_target to sampled_days", {
+test_that("estimate_total_release defaults effort_target to period_total (GH #487)", {
+  # Since 9.0.0 the default is the season total a user reports, not the total
+  # over the sampled days, which reads as "Total" and is a fraction of it.
   design <- make_total_release_design()
 
   result <- suppressWarnings(estimate_total_release(design)) # nolint: object_usage_linter
+  explicit <- suppressWarnings(estimate_total_release(design, target = "period_total")) # nolint: object_usage_linter
 
-  expect_equal(result$effort_target, "sampled_days")
+  expect_equal(result$effort_target, "period_total")
+  expect_equal(result$estimates, explicit$estimates)
 })
 
 test_that("estimate_total_release species path refuses when effort strata lack rate coverage", {
@@ -1031,8 +1035,8 @@ test_that("estimate_total_release() dispatches bus-route designs (GH #110)", {
     build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
   )
 
-  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
-  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design, target = "sampled_days")))
 
   expect_equal(release$estimates$estimate, harvest$estimates$estimate, tolerance = 1e-12)
   expect_equal(release$estimates$se, harvest$estimates$se, tolerance = 1e-12)
@@ -1045,8 +1049,8 @@ test_that("estimate_total_release() dispatches ice designs (GH #110)", {
     build_ice_design(n_days = 8, n_interviews = 24, seed = 7)
   )
 
-  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
-  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design, target = "sampled_days")))
 
   expect_equal(release$estimates$estimate, harvest$estimates$estimate, tolerance = 1e-12)
 })
@@ -1058,7 +1062,7 @@ test_that("bus-route total release reports its own quantity, not effort (GH #111
   design <- attach_release_equal_to_harvest(
     build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
   )
-  result <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  result <- suppressWarnings(suppressMessages(estimate_total_release(design, target = "sampled_days")))
 
   expect_equal(result$method, "ht-total-release")
   expect_equal(ggplot2::autoplot(result)$labels$y, "Total Release (fish)")
@@ -1074,7 +1078,7 @@ test_that("bus-route total release no longer demands add_counts() (GH #110)", {
   )
   expect_null(design$counts)
 
-  result <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  result <- suppressWarnings(suppressMessages(estimate_total_release(design, target = "sampled_days")))
   expect_s3_class(result, "creel_estimates")
   expect_true(is.finite(result$estimates$estimate))
 })
@@ -1087,8 +1091,8 @@ test_that("bus-route total release reads the release column, not the harvest one
   )
   design$catch[[design$catch_count_col]] <- design$catch[[design$catch_count_col]] * 2
 
-  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
-  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design, target = "sampled_days")))
   expect_equal(release$estimates$estimate, 2 * harvest$estimates$estimate, tolerance = 1e-12)
 })
 
@@ -1106,8 +1110,8 @@ test_that("bus-route total release counts only completed trips (GH #112)", {
     length.out = nrow(design$interviews)
   )
 
-  release <- suppressWarnings(suppressMessages(estimate_total_release(design)))
-  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  release <- suppressWarnings(suppressMessages(estimate_total_release(design, target = "sampled_days")))
+  harvest <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
 
   expect_equal(release$estimates$n, harvest$estimates$n)
   expect_lt(release$estimates$n, nrow(design$interviews))

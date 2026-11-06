@@ -57,7 +57,7 @@ design_br <- add_interviews(
   trip_status = trip_status, trip_duration = trip_duration,
   n_counted = n_counted, n_interviewed = n_interviewed
 )
-result <- estimate_effort(design_br)
+result <- estimate_effort(design_br, target = "sampled_days")
 get_site_contributions(result)
 
 }

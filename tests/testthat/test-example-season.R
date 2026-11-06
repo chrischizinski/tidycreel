@@ -53,7 +53,7 @@ test_that("season effort is each stratum's mean day times its days", {
   )
 
   season <- expect_no_warning(estimate_effort(design, target = "period_total"))
-  sampled <- estimate_effort(design)
+  sampled <- estimate_effort(design, target = "sampled_days")
   expect_equal(season$estimates$estimate, by_hand)
   expect_equal(sampled$estimates$estimate, sum(day_effort))
   expect_identical(season$unit, "angler-hours")
@@ -85,6 +85,6 @@ test_that("the tutorial's totals are in fish", {
     total$estimates$estimate,
     effort$estimates$estimate * rate$estimates$estimate
   )
-  sampled <- suppressMessages(estimate_total_catch(design, by = day_type))
+  sampled <- suppressMessages(estimate_total_catch(design, by = day_type, target = "sampled_days"))
   expect_true(all(total$estimates$estimate > sampled$estimates$estimate))
 })

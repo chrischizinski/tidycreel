@@ -147,11 +147,13 @@ name recording the effort type -- `total_effort_hr_on_ice`
 because the design was built with `effort_type = "time_on_ice"`.
 
 ```{r effort}
-effort_est <- estimate_effort(design)
+effort_est <- estimate_effort(design, target = "sampled_days")
 print(effort_est)
 ```
 
-This is the total over the days worked. To expand to a season with days that
+This is the total over the days worked, named with `target = "sampled_days"`
+because the default target is the season total, `"period_total"`, which this
+design cannot reach as built. To expand to a season with days that
 were not worked, give the calendar a logical column marking the worked days and
 pass it as `creel_design(sampled = )`; `target = "period_total"` then scales
 each stratum by its calendar days over its worked days. Mark a worked day on
@@ -185,7 +187,7 @@ design_aft <- suppressMessages(add_interviews(
   n_anglers     = n_anglers
 ))
 
-effort_aft <- estimate_effort(design_aft)
+effort_aft <- estimate_effort(design_aft, target = "sampled_days")
 print(effort_aft)
 ```
 
@@ -201,7 +203,7 @@ Horvitz-Thompson framework with the interview data split by the grouping
 variable.
 
 ```{r effort-by-shelter}
-effort_by_shelter <- estimate_effort(design, by = shelter_mode)
+effort_by_shelter <- estimate_effort(design, by = shelter_mode, target = "sampled_days")
 print(effort_by_shelter)
 ```
 
@@ -244,7 +246,7 @@ ice and bus-route designs; incomplete trips support a rate, via
 `estimate_catch_rate(use_trips = "incomplete")`, not a total.
 
 ```{r total-catch}
-total_catch_est <- estimate_total_catch(design)
+total_catch_est <- estimate_total_catch(design, target = "sampled_days")
 print(total_catch_est)
 ```
 

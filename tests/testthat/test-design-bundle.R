@@ -33,8 +33,8 @@ bd_same_design <- function(a, b) {
 }
 
 bd_same_effort <- function(a, b) {
-  ea <- bd_quiet(estimate_effort(a))$estimates
-  eb <- bd_quiet(estimate_effort(b))$estimates
+  ea <- bd_quiet(estimate_effort(a, target = "sampled_days"))$estimates
+  eb <- bd_quiet(estimate_effort(b, target = "sampled_days"))$estimates
   expect_equal(eb$estimate, ea$estimate)
   expect_equal(eb$se, ea$se)
 }

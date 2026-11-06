@@ -83,7 +83,7 @@ test_that("#422: the sampled-day effort total on two strata columns is unchanged
   # design$survey was already built on an interaction; routing it through the
   # shared key must not move it.
   d <- mcs_design()
-  r <- suppressWarnings(estimate_effort(d))$estimates
+  r <- suppressWarnings(estimate_effort(d, target = "sampled_days"))$estimates
   ref_data <- d$counts
   ref_data$.cell <- paste(ref_data$day_type, ref_data$month)
   # survey notes "No weights or probabilities supplied" for this reference.
@@ -100,7 +100,7 @@ test_that("#422: a single-PSU stratum on two columns is named readably", {
   counts$effort_hours <- seq_len(nrow(counts)) * 10
   d <- suppressMessages(creel_design(cal, date = date, strata = c(day_type, month))) # nolint: object_usage_linter
   d <- suppressWarnings(suppressMessages(add_counts(d, counts)))
-  err <- tryCatch(suppressWarnings(estimate_effort(d)), error = function(e) e)
+  err <- tryCatch(suppressWarnings(estimate_effort(d, target = "sampled_days")), error = function(e) e)
   expect_s3_class(err, "error")
   msg <- conditionMessage(err)
   expect_match(msg, "weekday / 09", fixed = TRUE)
@@ -118,5 +118,5 @@ test_that("#422: a single strata column with a non-syntactic name still builds",
   cnt$effort_hours <- c(10, 12, 14, 30, 32, 28, 31)
   d <- suppressMessages(creel_design(cal, date = date, strata = dplyr::all_of("day type"))) # nolint: object_usage_linter
   d <- suppressWarnings(suppressMessages(add_counts(d, cnt)))
-  expect_equal(suppressWarnings(estimate_effort(d))$estimates$se, 4.8648, tolerance = 1e-4)
+  expect_equal(suppressWarnings(estimate_effort(d, target = "sampled_days"))$estimates$se, 4.8648, tolerance = 1e-4)
 })

@@ -583,7 +583,7 @@ test_that("bus-route rates and totals carry units too", {
   ))
 
   rate <- suppressWarnings(suppressMessages(estimate_harvest_rate(d)))
-  total <- suppressWarnings(suppressMessages(estimate_total_harvest(d)))
+  total <- suppressWarnings(suppressMessages(estimate_total_harvest(d, target = "sampled_days")))
   # The bus-route path reaches a different constructor than the standard path,
   # which is exactly why it was returning NA while the standard path did not.
   expect_false(is.na(rate$unit))
@@ -657,8 +657,8 @@ test_that("bus-route effort takes its unit from the interviews, not the counts",
   ))
   party <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
 
-  angler_effort <- suppressWarnings(suppressMessages(estimate_effort(angler)))
-  party_effort <- suppressWarnings(suppressMessages(estimate_effort(party)))
+  angler_effort <- suppressWarnings(suppressMessages(estimate_effort(angler, target = "sampled_days")))
+  party_effort <- suppressWarnings(suppressMessages(estimate_effort(party, target = "sampled_days")))
 
   # The only difference between the two designs is whether n_anglers was
   # supplied. A hardcoded constant would report the same unit for both.
@@ -679,8 +679,8 @@ test_that("grouped bus-route effort agrees with the ungrouped total", {
   # Grouping changes which rows are summed, never what quantity they measure,
   # so the two branches of estimate_effort_br() cannot legitimately disagree.
   expect_identical(
-    suppressWarnings(suppressMessages(estimate_effort(d, by = "site")))$unit,
-    suppressWarnings(suppressMessages(estimate_effort(d)))$unit
+    suppressWarnings(suppressMessages(estimate_effort(d, by = "site", target = "sampled_days")))$unit,
+    suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))$unit
   )
 })
 
@@ -793,14 +793,14 @@ test_that("trips inherit the actor of the effort they divide", {
   # is not restricted to it: a bus-route design with no n_anglers produces
   # party-hours, and dividing that by a trip length gives party-trips.
   d <- make_trips_design()
-  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))
   trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d)))
 
   expect_identical(e$unit, "angler-hours")
   expect_identical(trips$unit, "angler-trips")
 
   br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
-  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br, target = "sampled_days")))
   br_trips <- suppressWarnings(suppressMessages(estimate_angler_trips(br_effort, br)))
 
   expect_identical(br_effort$unit, "party-hours")
@@ -850,7 +850,7 @@ test_that("grouped trips agree with ungrouped", {
 
 test_that("effort per acre composes its unit rather than assuming angler-hours", {
   d <- make_trips_design()
-  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))
 
   expect_identical(
     suppressWarnings(suppressMessages(estimate_effort_per_acre(e, acres = 500)))$unit,
@@ -860,7 +860,7 @@ test_that("effort per acre composes its unit rather than assuming angler-hours",
   # acres is a constant divisor, so whatever went in comes out per acre. A
   # hardcoded "angler-hours/acre" would silently relabel a party-hours density.
   br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
-  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br, target = "sampled_days")))
   expect_identical(
     suppressWarnings(suppressMessages(
       estimate_effort_per_acre(br_effort, acres = 500)
@@ -875,7 +875,7 @@ test_that("the effort guard checks the quantity, not the actor", {
   # whose actor these estimators carry through, so rejecting it would break the
   # bus-route path. What it does police is that the object is effort at all.
   br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
-  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br)))
+  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br, target = "sampled_days")))
   expect_identical(br_effort$unit, "party-hours")
 
   expect_no_error(
@@ -1076,7 +1076,7 @@ test_that("bus-route totals derive their unit from the interview effort (GH #213
   expect_identical(interview_effort_unit(d), "angler-hours")
   expect_identical(rate_unit(d), "fish/angler-hour")
   expect_identical(
-    suppressWarnings(suppressMessages(estimate_total_harvest(d)))$unit,
+    suppressWarnings(suppressMessages(estimate_total_harvest(d, target = "sampled_days")))$unit,
     "fish"
   )
 })

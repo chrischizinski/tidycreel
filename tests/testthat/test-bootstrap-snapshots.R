@@ -22,7 +22,7 @@
 
 test_that("SNAP-BOOT-01: estimate_total_harvest default output is stable", {
   design <- .make_br_design()
-  result <- suppressWarnings(estimate_total_harvest(design))
+  result <- suppressWarnings(estimate_total_harvest(design, target = "sampled_days"))
   expect_snapshot(tidy(result))
 })
 
@@ -30,7 +30,7 @@ test_that("SNAP-BOOT-01: estimate_total_harvest default output is stable", {
 
 test_that("SNAP-BOOT-02: estimate_total_catch default output is stable", {
   design <- .make_br_design()
-  result <- suppressWarnings(estimate_total_catch(design))
+  result <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
   expect_snapshot(tidy(result))
 })
 

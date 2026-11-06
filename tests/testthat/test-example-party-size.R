@@ -21,7 +21,7 @@ test_that("ice effort and catch rate are per angler-hour with party size", {
     trip_status = trip_status, n_counted = n_counted,
     n_interviewed = n_interviewed, n_anglers = n_anglers
   ))
-  expect_identical(estimate_effort(design)$unit, "angler-hours")
+  expect_identical(estimate_effort(design, target = "sampled_days")$unit, "angler-hours")
   expect_identical(
     suppressMessages(estimate_catch_rate(design))$unit, "fish/angler-hour"
   )

@@ -157,9 +157,11 @@ print(effort)
 The `estimate` column is the total angler-hours over the calendar given to
 `creel_design()`, and `se_between` quantifies between-day variability in the
 instantaneous counts. This calendar holds only the 16 flown days, so the total
-covers those days. If your calendar lists every day of the season, flown or not,
-ask for the season total with `target = "period_total"`; the default,
-`"sampled_days"`, totals only the days flown (see `vignette("tidycreel")`).
+covers those days: the default, `target = "period_total"`, expands each stratum
+to every day of the calendar, and here those are the days flown. If your
+calendar lists every day of the season, flown or not, the same call gives the
+season total; `target = "sampled_days"` totals only the days flown (see
+`vignette("tidycreel")`).
 
 `se`, `ci_lower` and `ci_upper` are `NA`, and that is the correct output for this
 design rather than a gap in it. `creel_design()` above was given

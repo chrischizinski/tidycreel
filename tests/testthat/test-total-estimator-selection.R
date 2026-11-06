@@ -254,8 +254,8 @@ test_that("a roving bus-route or ice design still produces its complete-trip tot
     # flip from happening, rather than happening and being undone downstream --
     # undoing it is what aborts in estimate_catch_rate() (GH #270).
     expect_equal(
-      est_of(quiet_sel(estimate_total_catch, as_roving(design))),
-      est_of(quiet_sel(estimate_total_catch, design)),
+      est_of(quiet_sel(estimate_total_catch, as_roving(design), target = "sampled_days")),
+      est_of(quiet_sel(estimate_total_catch, design, target = "sampled_days")),
       info = paste(design_type, "roving total diverged from its access total")
     )
   }
@@ -270,7 +270,7 @@ test_that("bus-route and ice totals refuse a mean-of-ratios estimator", {
     # Refused rather than ignored: accepting the argument and returning a ratio
     # of HT totals is the defect class this work removes.
     expect_error(
-      quiet_sel(estimate_total_catch, design, estimator = "mor"),
+      quiet_sel(estimate_total_catch, design, estimator = "mor", target = "sampled_days"),
       "not available for"
     )
   }

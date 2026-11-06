@@ -678,7 +678,10 @@
 #'   n_interviewed = n_interviewed,
 #'   n_anglers = n_anglers
 #' ))
-#' estimate_effort(design)
+#' # The total over the sampled days: without the calendar's register of
+#' # worked days (creel_design(sampled = )) an ice design cannot expand to the
+#' # default "period_total".
+#' estimate_effort(design, target = "sampled_days")
 #'
 #' @seealso [example_ice_sampling_frame] for the matching sampling frame,
 #'   [creel_design()], [add_interviews()], [estimate_effort()]

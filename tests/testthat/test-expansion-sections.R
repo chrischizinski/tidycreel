@@ -289,7 +289,7 @@ test_that("the partial lake SE equals the hand-combined decomposition (GH #150)"
   # section's single pooled rate scaled both groups and this was 2 * 3.825^2.
   # Pinning the arithmetic rather than the output keeps this from ratifying
   # whatever the code happens to produce.
-  result <- suppressWarnings(estimate_total_catch(sections_design(partial_section_counts())))
+  result <- suppressWarnings(estimate_total_catch(sections_design(partial_section_counts()), target = "sampled_days"))
   secs <- result$estimates[result$estimates$section != ".lake_total", ]
   components <- result$se_expansion[result$estimates$section != ".lake_total"]
 
@@ -311,8 +311,8 @@ test_that("the nested and shared section SEs are untouched by #150", {
   # 37.6203 under the pooled rate): the section SEs are now the stratified sum's,
   # and the identities pinned above (quadrature for nested, linear sum for
   # shared) still hold against them.
-  nested <- suppressWarnings(estimate_total_catch(sections_design(separate_section_counts())))
-  shared <- suppressWarnings(estimate_total_catch(sections_design(shared_section_counts())))
+  nested <- suppressWarnings(estimate_total_catch(sections_design(separate_section_counts()), target = "sampled_days"))
+  shared <- suppressWarnings(estimate_total_catch(sections_design(shared_section_counts()), target = "sampled_days"))
 
   expect_equal(lake_row(nested)$se, 39.621910, tolerance = 1e-5)
   expect_equal(lake_row(shared)$se, 39.989145, tolerance = 1e-5)

@@ -28,8 +28,9 @@
 #'   and HPUE estimation, then combined via delta method.
 #' @param conf_level Numeric confidence level (default: 0.95)
 #' @param target Character string specifying the effort domain supplied to
-#'   [estimate_effort()]. Options are `"sampled_days"` (default),
-#'   `"stratum_total"`, or `"period_total"`. This controls which effort domain
+#'   [estimate_effort()]. Options are `"period_total"` (default since
+#'   9.0.0, the season total), `"stratum_total"`, or `"sampled_days"` (the
+#'   total over the sampled days only). This controls which effort domain
 #'   is multiplied by HPUE so total harvest stays aligned with the requested
 #'   temporal target.
 #'   Bus-route and ice designs expand to the other two only with the
@@ -286,7 +287,7 @@ estimate_total_harvest <- function(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
-  target = c("sampled_days", "stratum_total", "period_total"),
+  target = c("period_total", "stratum_total", "sampled_days"),
   use_trips = NULL,
   estimator = NULL,
   truncate_at = 0.5,

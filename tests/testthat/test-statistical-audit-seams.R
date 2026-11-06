@@ -10,14 +10,14 @@ test_that("metamorphic: estimates are invariant to interview row order", {
   # behind prior finding #105 (add_counts selected its column positionally).
   design <- build_br_design_for_tests(3L, 6L, 12L, seed = 42L)
 
-  baseline_effort <- suppressWarnings(estimate_effort(design))
-  baseline_catch <- suppressWarnings(estimate_total_catch(design))
+  baseline_effort <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
+  baseline_catch <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
 
   shuffled <- design
   shuffled$interviews <- sa_shuffle_rows(shuffled$interviews, seed = 7L)
 
-  sa_expect_same_estimates(baseline_effort, suppressWarnings(estimate_effort(shuffled)))
-  sa_expect_same_estimates(baseline_catch, suppressWarnings(estimate_total_catch(shuffled)))
+  sa_expect_same_estimates(baseline_effort, suppressWarnings(estimate_effort(shuffled, target = "sampled_days")))
+  sa_expect_same_estimates(baseline_catch, suppressWarnings(estimate_total_catch(shuffled, target = "sampled_days")))
 })
 
 test_that("metamorphic: estimates are invariant to an irrelevant column", {
@@ -26,14 +26,14 @@ test_that("metamorphic: estimates are invariant to an irrelevant column", {
   # by name — the same seam class as finding #105.
   design <- build_br_design_for_tests(3L, 6L, 12L, seed = 42L)
 
-  baseline_effort <- suppressWarnings(estimate_effort(design))
-  baseline_catch <- suppressWarnings(estimate_total_catch(design))
+  baseline_effort <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
+  baseline_catch <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
 
   decorated <- design
   decorated$interviews$irrelevant_note <- seq_len(nrow(decorated$interviews))
 
-  sa_expect_same_estimates(baseline_effort, suppressWarnings(estimate_effort(decorated)))
-  sa_expect_same_estimates(baseline_catch, suppressWarnings(estimate_total_catch(decorated)))
+  sa_expect_same_estimates(baseline_effort, suppressWarnings(estimate_effort(decorated, target = "sampled_days")))
+  sa_expect_same_estimates(baseline_catch, suppressWarnings(estimate_total_catch(decorated, target = "sampled_days")))
 })
 
 test_that("reference calculation: mean_party_size matches base-R arithmetic", {
@@ -103,7 +103,7 @@ test_that("contract: every design's tidy() carries an `estimate` column (#199)",
   )
 
   for (nm in names(designs)) {
-    out <- tidy(suppressWarnings(estimate_effort(designs[[nm]])))
+    out <- tidy(suppressWarnings(estimate_effort(designs[[nm]], target = "sampled_days")))
     expect_true("estimate" %in% names(out), info = nm)
     expect_true(is.numeric(out$estimate), info = nm)
     expect_true(all(c("se", "ci_lower", "ci_upper", "n") %in% names(out)), info = nm)
@@ -114,7 +114,7 @@ test_that("contract: the ice effort-type column is an alias, not a replacement (
   # Both names, agreeing. The descriptive name is worth keeping -- it records
   # which effort type was estimated -- but not at the cost of the shared one.
   ice <- build_ice_design(8L, 40L, seed = 5L)
-  out <- tidy(suppressWarnings(estimate_effort(ice)))
+  out <- tidy(suppressWarnings(estimate_effort(ice, target = "sampled_days")))
 
   expect_true(all(c("estimate", "total_effort_hr_on_ice") %in% names(out)))
   expect_equal(out$estimate, out$total_effort_hr_on_ice)
@@ -163,8 +163,8 @@ test_that("metamorphic: partitioning interviews within a site visit leaves the S
 
   for (nm in names(designs)) {
     d <- designs[[nm]]
-    base <- tidy(suppressWarnings(estimate_effort(d)))
-    split <- tidy(suppressWarnings(estimate_effort(split_within_visit(d))))
+    base <- tidy(suppressWarnings(estimate_effort(d, target = "sampled_days")))
+    split <- tidy(suppressWarnings(estimate_effort(split_within_visit(d), target = "sampled_days")))
 
     expect_equal(base$estimate, split$estimate, info = nm)
     expect_equal(base$se, split$se, info = nm)

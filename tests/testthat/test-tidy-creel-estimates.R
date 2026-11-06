@@ -13,7 +13,7 @@
     stringsAsFactors = FALSE
   )
   d2 <- suppressMessages(suppressWarnings(add_counts(d, counts)))
-  suppressMessages(suppressWarnings(estimate_total_harvest(d2)))
+  suppressMessages(suppressWarnings(estimate_total_harvest(d2, target = "sampled_days")))
 }
 
 # Helper: build a standard instantaneous creel_estimates via estimate_total_catch
