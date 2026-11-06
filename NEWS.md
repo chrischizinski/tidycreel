@@ -39,6 +39,21 @@
   (`"within_day"`, `"between_day_upper_bound"` or `"mixed"`) saying which kind
   of SE each row carries.
 
+* The within-day variance is one estimator on every target (#405). Each
+  sampled day now contributes its own variance of its mean, at its own number
+  of counts, and the stratum's term is that sum expanded by N/n (Cochran 1977,
+  ch. 11). `"period_total"` and `"stratum_total"` used Rasmussen et al.'s
+  pooled form, which averages the number of counts over the days and equals
+  the per-day term only when every day has the same number: with 2 and 10
+  counts on alternate days of a stratum, `se_within` was 1.74 against 3.96.
+  Designs with the same number of counts every day are unchanged. A stratum
+  where any sampled day has a single count now adds no within-day term on any
+  target: it takes no finite-population correction (#505), so its day-to-day
+  term already contains the within-day variation, and the term added on top
+  counted it twice. Its SE falls slightly (64.64 to 64.55 on the same
+  stratum with 1, 3, 3 and 3 counts) and is still labelled
+  `"between_day_upper_bound"`.
+
 * `add_catch()` refuses catch rows whose species is `NA`, with class
   `creel_error_na_catch_species` (#588). They were accepted, then dropped by
   every `by = species` grouping, so their fish counted in the all-species

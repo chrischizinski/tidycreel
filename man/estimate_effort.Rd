@@ -94,10 +94,14 @@ design (reference to source creel_design), conf_level (numeric), and
 by_vars (character vector of grouping variable names or NULL).
 \code{se_between} is the between-day standard error from
 \code{survey::svytotal()} (equals \code{se} when a single count is
-recorded per PSU). \code{se_within} is the within-day standard error from
-the Rasmussen two-stage formula; it is zero when a single count is
-recorded per PSU and nonzero when \code{count_time_col} is supplied to
-\code{add_counts()}. \code{se_basis} says which kind of standard error a
+recorded per PSU). \code{se_within} is the within-day standard error, the
+second stage of the two-stage variance: each sampled day's variance of its
+mean count, at that day's own number of counts, expanded by \eqn{N_h/n_h}
+(Cochran 1977, ch. 11; Rasmussen et al. 1998 when every day has the same
+number). It is zero in a stratum where any sampled day has a single count,
+whose uncorrected day-to-day term already carries the within-day variation,
+and nonzero when \code{count_time_col} is supplied to
+\code{add_counts()} and every day has two or more counts. \code{se_basis} says which kind of standard error a
 row carries: \code{"within_day"} for a census of days with two or more
 counts a day (the finite-population correction removes the day-to-day
 term, so the count-sampling variance is the within-day term alone; always so on

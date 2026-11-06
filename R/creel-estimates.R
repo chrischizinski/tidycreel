@@ -589,10 +589,14 @@ print.creel_estimates <- function(x, ...) {
 #'   by_vars (character vector of grouping variable names or NULL).
 #'   \code{se_between} is the between-day standard error from
 #'   \code{survey::svytotal()} (equals \code{se} when a single count is
-#'   recorded per PSU). \code{se_within} is the within-day standard error from
-#'   the Rasmussen two-stage formula; it is zero when a single count is
-#'   recorded per PSU and nonzero when \code{count_time_col} is supplied to
-#'   \code{add_counts()}. \code{se_basis} says which kind of standard error a
+#'   recorded per PSU). \code{se_within} is the within-day standard error, the
+#'   second stage of the two-stage variance: each sampled day's variance of its
+#'   mean count, at that day's own number of counts, expanded by \eqn{N_h/n_h}
+#'   (Cochran 1977, ch. 11; Rasmussen et al. 1998 when every day has the same
+#'   number). It is zero in a stratum where any sampled day has a single count,
+#'   whose uncorrected day-to-day term already carries the within-day variation,
+#'   and nonzero when \code{count_time_col} is supplied to
+#'   \code{add_counts()} and every day has two or more counts. \code{se_basis} says which kind of standard error a
 #'   row carries: \code{"within_day"} for a census of days with two or more
 #'   counts a day (the finite-population correction removes the day-to-day
 #'   term, so the count-sampling variance is the within-day term alone; always so on
@@ -5553,9 +5557,12 @@ compute_within_day_var_contribution <- function(
       c(
         "i" = paste0(
           mixed_days,
-          " day(s) had nC = 1 (single count); within-day variance set to 0 for those days."
+          " day(s) had nC = 1 (single count); within-day variance cannot be estimated for those days."
         ),
-        "i" = "Total variance includes within-day component only for days with nC >= 2 (VAR-03)."
+        "i" = paste0(
+          "A stratum containing such a day adds no within-day component: its ",
+          "uncorrected between-day variance already includes it (VAR-03, GH #405)."
+        )
       )
     )
   }
@@ -5567,6 +5574,13 @@ compute_within_day_var_contribution <- function(
     combined$.strata_key <- do.call(paste, c(combined[strata_cols], sep = "\u001f"))
   }
 
+  # A stratum with any day counted once takes no finite-population correction
+  # (GH #505), and its uncorrected day-to-day term already holds the within-day
+  # variation, so it adds no within-day term (GH #405). Decided per stratum, as
+  # the correction is: within a `by` group, a stratum whose one-count day falls
+  # in another group still takes no correction.
+  identified <- vapply(split(combined$k_d >= 2L, combined$.strata_key), all, logical(1))
+
   # Determine grouping: by_vars or strata alone. Each stratum (within each
   # group) is first resolved to the grain being reported -- one row per sampled
   # day -- because the table is keyed by the full unit key and a day may carry
@@ -5577,6 +5591,7 @@ compute_within_day_var_contribution <- function(
     strata_keys <- unique(combined$.strata_key)
     v_within_total <- 0
     for (sk in strata_keys) {
+      if (!identified[[sk]]) next
       v_within_total <- v_within_total + within_day_stratum_var(
         combined[combined$.strata_key == sk, , drop = FALSE],
         design = design,
@@ -5602,6 +5617,7 @@ compute_within_day_var_contribution <- function(
       g_data <- combined[combined$.group_key == gk, , drop = FALSE]
       v_g <- 0
       for (sk in unique(g_data$.strata_key)) {
+        if (!identified[[sk]]) next
         v_g <- v_g + within_day_stratum_var(
           g_data[g_data$.strata_key == sk, , drop = FALSE],
           design = design,
@@ -5746,27 +5762,26 @@ within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, 
 #' @keywords internal
 #' @noRd
 rasmussen_within_var <- function(ss_d, k_d, n_avail, target, n_sampled = length(ss_d)) {
-  k_bar <- mean(k_d)
-  if (k_bar <= 1) {
+  # A day counted once has no within-day variance estimate. Its stratum takes no
+  # finite-population correction (GH #505), so the uncorrected day-to-day term
+  # already holds the within-day variation, and adding this term would count it
+  # twice (GH #405).
+  if (length(k_d) == 0L || any(k_d < 2)) {
     return(0)
-  } # no within-day component when k_bar = 1
-  # The sampled days are the population here, and a stratum whose every day has
-  # two or more counts takes the whole variance from this term (GH #507). The
-  # pooled form below is Rasmussen's, which assumes every day has about k_bar
-  # counts; with unequal k_d it understates -- 2 and 10 counts a day came out
-  # 25% low. The exact term is the sum of each day's own variance of its mean,
-  # s_d^2 / k_d. It equals the pooled form when every k_d is equal, and the
-  # n_sampled of a unit counted on only some days cancels out of it.
-  if (identical(target, "sampled_days") && all(k_d >= 2)) {
-    return(sum(ss_d / (k_d * (k_d - 1))))
   }
-  s2_within <- sum(ss_d) / (n_sampled * (k_bar - 1))
-  # For sampled_days target the between-day variance is on the sampled-day
-  # scale (no expansion weights), so the within-day component must match:
-  # use n_sampled not N_avail. For expanded targets (stratum/period total)
-  # the Rasmussen N_s formula applies.
+  # Each day's own variance of its mean, s_d^2 / k_d, summed and expanded by
+  # N / n: the second-stage term of the two-stage estimator (Cochran 1977,
+  # ch. 11, primary units with unequal subsamples). With every k_d equal it is
+  # Rasmussen et al.'s (1998) pooled k_bar form; with unequal k_d the pooled form
+  # understates it -- 2 and 10 counts a day came out 25% low on sampled days
+  # (GH #507) and 56% low on an expanded stratum (GH #405).
+  #
+  # sampled_days: the sampled days are the population, N = n, and n_sampled
+  # cancels. Expanded targets: N is the stratum's population days. n_sampled
+  # is the stratum's sampled days, which a unit counted on only some of them
+  # passes explicitly.
   scale_n <- if (identical(target, "sampled_days")) n_sampled else n_avail
-  (scale_n / k_bar) * s2_within
+  (scale_n / n_sampled) * sum(ss_d / (k_d * (k_d - 1)))
 }
 
 #' Refuse an expanded effort target when a calendar cell has no sampled day
