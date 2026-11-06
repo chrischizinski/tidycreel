@@ -139,11 +139,11 @@ test_that("autoplot() includes effort target in caption when present", {
   est <- make_effort_est()
   p <- ggplot2::autoplot(est)
   expect_match(p$labels$caption, "Effort target", ignore.case = FALSE)
-  expect_match(p$labels$caption, "sampled_days", ignore.case = FALSE)
+  expect_match(p$labels$caption, "period_total", ignore.case = FALSE)
 })
 
 test_that("autoplot() includes effort target in default effort title", {
   est <- make_effort_est()
   p <- ggplot2::autoplot(est)
-  expect_match(p$labels$title, "sampled_days", ignore.case = FALSE)
+  expect_match(p$labels$title, "period_total", ignore.case = FALSE)
 })

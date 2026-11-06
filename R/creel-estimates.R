@@ -538,10 +538,12 @@ print.creel_estimates <- function(x, ...) {
 #' @param conf_level Numeric confidence level for confidence intervals (default:
 #'   0.95 for 95% confidence intervals). Must be between 0 and 1.
 #' @param target Character string specifying the temporal effort target.
-#'   Options: \code{"sampled_days"} (default, current behavior: total across
-#'   sampled PSU rows only), \code{"stratum_total"} (expand sampled-day means
-#'   within calendar strata before combining), or \code{"period_total"}
-#'   (full calendar-period total after stratum expansion). For standard
+#'   Options: \code{"period_total"} (default since 9.0.0: the full
+#'   calendar-period total after stratum expansion, the season total usually
+#'   reported), \code{"stratum_total"} (expand sampled-day means within
+#'   calendar strata before combining), or \code{"sampled_days"} (the total
+#'   over the sampled days only, a fraction of the season whenever not every
+#'   day was sampled; see \code{vignette("unextrapolated-summaries")}). For standard
 #'   stratified count designs, \code{"stratum_total"} and \code{"period_total"}
 #'   use the same weighted expansion engine; the distinction is semantic and is
 #'   recorded on the returned object as \code{effort_target}. Expanded targets
@@ -693,7 +695,7 @@ estimate_effort <- function(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
-  target = c("sampled_days", "stratum_total", "period_total"),
+  target = c("period_total", "stratum_total", "sampled_days"),
   verbose = FALSE,
   aggregate_sections = TRUE,
   method = "correlated",

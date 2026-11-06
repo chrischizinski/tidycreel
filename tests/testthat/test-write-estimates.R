@@ -45,7 +45,7 @@ test_that("WRITE-02b: CSV output includes effort target when present", {
   write_estimates(eff, tmp)
   header <- paste(readLines(tmp, n = 6L), collapse = " ")
   expect_match(header, "Effort target", ignore.case = FALSE)
-  expect_match(header, "sampled_days", ignore.case = FALSE)
+  expect_match(header, "period_total", ignore.case = FALSE)
 })
 
 test_that("WRITE-03: CSV comment lines mention method and CI", {

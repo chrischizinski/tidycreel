@@ -55,7 +55,7 @@ test_that("estimate_effort() single-PSU error is a creel_error_single_psu", {
 test_that("estimate_effort() single-PSU error mentions the stratum name", {
   design <- make_single_psu_design()
   expect_error(
-    suppressWarnings(estimate_effort(design)),
+    suppressWarnings(estimate_effort(design, target = "sampled_days")),
     regexp = "weekday",
     ignore.case = TRUE
   )
@@ -90,7 +90,7 @@ test_that("estimate_effort() single-PSU error names a special stratum explicitly
   design <- suppressWarnings(add_counts(design, counts))
 
   expect_error(
-    suppressWarnings(estimate_effort(design)),
+    suppressWarnings(estimate_effort(design, target = "sampled_days")),
     regexp = "high_use",
     ignore.case = TRUE
   )

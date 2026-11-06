@@ -73,8 +73,8 @@ eff_plain_counts <- function() {
   plain
 }
 
-eff_effort <- function(counts) {
-  suppressWarnings(suppressMessages(estimate_effort(eff_design(counts))))
+eff_effort <- function(counts, ...) {
+  suppressWarnings(suppressMessages(estimate_effort(eff_design(counts), ...)))
 }
 
 eff_lake <- function(result) {
@@ -118,7 +118,9 @@ test_that("a shared multiplier combines linearly across sections", {
   # Pins the arithmetic, not the direction. One estimate spanning the sections
   # makes the contributions perfectly correlated, so they add before squaring.
   # Quadrature would give sqrt(2^2 + 1.8^2) = 2.69 instead of 3.8.
-  result <- eff_effort(eff_shared_counts())
+  # The boat sums below are over the sampled days, so the target is named: the
+  # default has been "period_total" since 9.0.0 (GH #487).
+  result <- eff_effort(eff_shared_counts(), target = "sampled_days")
   components <- result$se_expansion
   sec_components <- components[result$estimates$section != ".lake_total"]
   lake_component <- components[result$estimates$section == ".lake_total"]
@@ -220,7 +222,7 @@ test_that("groups straddling the sections resolve exactly from the decomposition
   # looked like the documented behaviour while being an argument bug.
   expect_silent(
     result <- suppressMessages(suppressWarnings(
-      estimate_effort(eff_design(eff_partial_counts()))
+      estimate_effort(eff_design(eff_partial_counts()), target = "sampled_days")
     ))
   )
 
@@ -287,7 +289,7 @@ test_that("the component survives aggregate_sections = FALSE", {
   # With no lake row there is nothing to combine, but each section still carries
   # its own component and the vector must stay aligned to the rows that remain.
   result <- suppressWarnings(suppressMessages(
-    estimate_effort(eff_design(eff_shared_counts()), aggregate_sections = FALSE)
+    estimate_effort(eff_design(eff_shared_counts()), aggregate_sections = FALSE, target = "sampled_days")
   ))
 
   expect_false(any(result$estimates$section == ".lake_total"))

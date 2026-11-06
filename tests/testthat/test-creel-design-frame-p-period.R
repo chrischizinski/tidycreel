@@ -31,8 +31,8 @@ test_that("#463: bus-route p_period = 1 is the number one, not the first column"
   expect_identical(number$bus_route$data$.pi_i, c(0.5, 0.5))
   # The estimate is what the user sees: under the old code the number gave
   # twice the effort of the column holding the same value.
-  en <- suppressMessages(suppressWarnings(estimate_effort(number)))$estimates
-  ec <- suppressMessages(suppressWarnings(estimate_effort(column)))$estimates
+  en <- suppressMessages(suppressWarnings(estimate_effort(number, target = "sampled_days")))$estimates
+  ec <- suppressMessages(suppressWarnings(estimate_effort(column, target = "sampled_days")))$estimates
   expect_equal(en$estimate, ec$estimate)
   expect_equal(en$se, ec$se)
 })

@@ -50,7 +50,8 @@ sct_design <- function(cnt, shared = FALSE, with_times = TRUE) {
   }
 }
 
-sct_est <- function(d) suppressMessages(suppressWarnings(estimate_effort(d))) # nolint: object_usage_linter
+# The hand within-day variances are of the sampled-day total (GH #487 default).
+sct_est <- function(d) suppressMessages(suppressWarnings(estimate_effort(d, target = "sampled_days"))) # nolint: object_usage_linter
 
 # The Rasmussen within-day variance of the quantity being reported, written out
 # independently of the package: add the sections up at each occasion, take the

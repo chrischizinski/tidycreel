@@ -226,14 +226,14 @@ test_that("Site C contribution to effort equals 57.5/0.20 = 287.5 (Malvestuto 19
   # lakewide daily estimate; here it is one site's contribution, but the
   # arithmetic under test -- the Horvitz-Thompson division by pi -- is the same
   # and this is the file's genuine primary-source check.
-  result <- estimate_effort(make_box20_6_example1())
+  result <- estimate_effort(make_box20_6_example1(), target = "sampled_days")
   sc <- attr(result, "site_contributions")
   site_c <- sc[sc$site == "C", ]
   expect_equal(sum(site_c$e_i_over_pi_i), 287.5, tolerance = 1e-6)
 })
 
 test_that("E_hat is sum of all site contributions (Horvitz-Thompson property)", {
-  result <- estimate_effort(make_box20_6_example1())
+  result <- estimate_effort(make_box20_6_example1(), target = "sampled_days")
   # SYNTHETIC. 847.5 is this fixture's arithmetic over four sites; Box 20.6 has
   # three landings, selects one per day, and prints no such total (#202). What
   # is under test is the Horvitz-Thompson summation property itself.
@@ -242,12 +242,12 @@ test_that("E_hat is sum of all site contributions (Horvitz-Thompson property)", 
 })
 
 test_that("estimate_effort() result class is creel_estimates for bus-route design", {
-  result <- estimate_effort(make_box20_6_example1())
+  result <- estimate_effort(make_box20_6_example1(), target = "sampled_days")
   expect_s3_class(result, "creel_estimates")
 })
 
 test_that("Bus-route effort method is 'total' (Horvitz-Thompson total estimator)", {
-  result <- estimate_effort(make_box20_6_example1())
+  result <- estimate_effort(make_box20_6_example1(), target = "sampled_days")
   expect_equal(result$method, "total")
 })
 
@@ -460,7 +460,7 @@ test_that("Landing C with enumeration expansion reproduces Box 20.6 Example 2's 
   # 627.5 is 0.036% above the unrounded 57.5 * (24/11) / 0.20 = 627.2727. The
   # tolerance below covers that rounding and nothing looser -- it is not slack
   # for an estimator disagreement.
-  result_ex2 <- estimate_effort(make_box20_6_example2())
+  result_ex2 <- estimate_effort(make_box20_6_example2(), target = "sampled_days")
   sc <- attr(result_ex2, "site_contributions")
   contribution_c <- sum(sc[sc$site == "C", "e_i_over_pi_i"])
 
@@ -469,13 +469,13 @@ test_that("Landing C with enumeration expansion reproduces Box 20.6 Example 2's 
 })
 
 test_that("E_hat with expansion is larger than E_hat without expansion (VALID-02)", {
-  result_ex1 <- estimate_effort(make_box20_6_example1())
-  result_ex2 <- estimate_effort(make_box20_6_example2())
+  result_ex1 <- estimate_effort(make_box20_6_example1(), target = "sampled_days")
+  result_ex2 <- estimate_effort(make_box20_6_example2(), target = "sampled_days")
   expect_gt(result_ex2$estimates$estimate, result_ex1$estimates$estimate)
 })
 
 test_that("Site C contribution with expansion equals (57.5 * 24/11) / 0.20", {
-  result_ex2 <- estimate_effort(make_box20_6_example2())
+  result_ex2 <- estimate_effort(make_box20_6_example2(), target = "sampled_days")
   # The 24/11 expansion is published (Box 20.6 Example 2, p. 615); applying it
   # to landing C's 57.5/0.20 is this fixture's extension.
   expansion <- 24 / 11
@@ -486,8 +486,8 @@ test_that("Site C contribution with expansion equals (57.5 * 24/11) / 0.20", {
 })
 
 test_that("Sites without expansion (A, B, D) have same contributions in Example 2 as Example 1", {
-  result_ex1 <- estimate_effort(make_box20_6_example1())
-  result_ex2 <- estimate_effort(make_box20_6_example2())
+  result_ex1 <- estimate_effort(make_box20_6_example1(), target = "sampled_days")
+  result_ex2 <- estimate_effort(make_box20_6_example2(), target = "sampled_days")
   sc1 <- attr(result_ex1, "site_contributions")
   sc2 <- attr(result_ex2, "site_contributions")
   for (s in c("A", "B", "D")) {
@@ -506,7 +506,7 @@ test_that("Sites without expansion (A, B, D) have same contributions in Example 
 
 test_that("Complete bus-route workflow: design -> data -> effort estimation succeeds (VALID-05)", {
   d <- make_box20_6_example2()
-  result <- suppressWarnings(estimate_effort(d))
+  result <- suppressWarnings(estimate_effort(d, target = "sampled_days"))
   # VALID-05: complete workflow integration
   expect_s3_class(result, "creel_estimates")
   expect_true(is.finite(result$estimates$estimate))
@@ -526,7 +526,7 @@ test_that("Complete bus-route workflow: design -> data -> harvest estimation suc
 
 test_that("Bus-route total-catch estimation succeeds with Box 20.6 data (VALID-05)", {
   d <- make_box20_6_example2()
-  result <- suppressWarnings(estimate_total_catch(d))
+  result <- suppressWarnings(estimate_total_catch(d, target = "sampled_days"))
   expect_s3_class(result, "creel_estimates")
   expect_true(is.finite(result$estimates$estimate))
   expect_true(result$estimates$estimate > 0)
@@ -534,7 +534,7 @@ test_that("Bus-route total-catch estimation succeeds with Box 20.6 data (VALID-0
 
 test_that("Grouped effort estimation by day_type returns one row (all weekday data)", {
   d <- make_box20_6_example2()
-  result <- suppressWarnings(estimate_effort(d, by = day_type))
+  result <- suppressWarnings(estimate_effort(d, by = day_type, target = "sampled_days"))
   expect_s3_class(result, "creel_estimates")
   # All dates are weekday so one group
   expect_equal(nrow(result$estimates), 1L)
@@ -570,7 +570,7 @@ test_that("Effort estimate matches manual survey::svydesign + svytotal (point es
     )
   )
   manual_result <- survey::svytotal(~.effort_contrib, svy_manual)
-  tidycreel_result <- suppressWarnings(estimate_effort(d))
+  tidycreel_result <- suppressWarnings(estimate_effort(d, target = "sampled_days"))
   expect_equal(
     tidycreel_result$estimates$estimate,
     as.numeric(coef(manual_result)),
@@ -592,7 +592,7 @@ test_that("Effort SE matches manual survey::svydesign + svytotal (tol 1e-3)", {
     )
   )
   manual_result <- survey::svytotal(~.effort_contrib, svy_manual)
-  tidycreel_result <- suppressWarnings(estimate_effort(d))
+  tidycreel_result <- suppressWarnings(estimate_effort(d, target = "sampled_days"))
   # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
   expect_equal(
     tidycreel_result$estimates$se,
@@ -620,7 +620,7 @@ test_that("Harvest estimate matches manual survey::svydesign + svytotal (point e
   # A manual svytotal is a total, so it validates the total estimator. This
   # comparison used to be made against estimate_harvest_rate(), which is how a
   # total came to be reported as a rate (GH #107).
-  tidycreel_result <- suppressWarnings(estimate_total_harvest(d))
+  tidycreel_result <- suppressWarnings(estimate_total_harvest(d, target = "sampled_days"))
   expect_equal(
     tidycreel_result$estimates$estimate,
     as.numeric(coef(manual_result)),
@@ -642,7 +642,7 @@ test_that("Harvest SE matches manual survey::svydesign + svytotal (tol 1e-3)", {
     )
   )
   manual_result <- survey::svytotal(~.harvest_contrib, svy_manual)
-  tidycreel_result <- suppressWarnings(estimate_total_harvest(d))
+  tidycreel_result <- suppressWarnings(estimate_total_harvest(d, target = "sampled_days"))
   # Per CONTEXT.md: SE tolerance 1e-3 (FPC differences acceptable)
   expect_equal(
     tidycreel_result$estimates$se,
@@ -866,7 +866,7 @@ make_box20_6_party <- function(party_size) {
 test_that("one angler per party still reproduces Box 20.6 exactly (VALID-06)", {
   # The compact restatement must be the same design as the verbose fixture, or
   # the party-size assertions below prove nothing about the published example.
-  result <- suppressWarnings(estimate_effort(make_box20_6_party(1L)))
+  result <- suppressWarnings(estimate_effort(make_box20_6_party(1L), target = "sampled_days"))
   expect_equal(result$estimates$estimate, 847.5, tolerance = 1e-6)
 })
 
@@ -874,8 +874,8 @@ test_that("bus-route effort scales with party size (VALID-06, GH #106)", {
   # Effort is angler-hours. Three anglers fishing the same hours are three times
   # the effort of one. Before #106 the estimate was invariant to party size and
   # understated the total by exactly the mean party size in any boat fishery.
-  e1 <- suppressWarnings(estimate_effort(make_box20_6_party(1L)))$estimates
-  e3 <- suppressWarnings(estimate_effort(make_box20_6_party(3L)))$estimates
+  e1 <- suppressWarnings(estimate_effort(make_box20_6_party(1L), target = "sampled_days"))$estimates
+  e3 <- suppressWarnings(estimate_effort(make_box20_6_party(3L), target = "sampled_days"))$estimates
 
   expect_equal(e3$estimate, 3 * e1$estimate, tolerance = 1e-6)
   expect_equal(e3$estimate, 2542.5, tolerance = 1e-6)
@@ -889,8 +889,8 @@ test_that("bus-route effort SE scales with party size (VALID-06, GH #106)", {
   # The SE comes from svytotal on the same contribution column, so it carries the
   # same units as the point estimate. If only the estimate were rescaled, the CV
   # would change and this would fail.
-  e1 <- suppressWarnings(estimate_effort(make_box20_6_party(1L)))$estimates
-  e3 <- suppressWarnings(estimate_effort(make_box20_6_party(3L)))$estimates
+  e1 <- suppressWarnings(estimate_effort(make_box20_6_party(1L), target = "sampled_days"))$estimates
+  e3 <- suppressWarnings(estimate_effort(make_box20_6_party(3L), target = "sampled_days"))$estimates
 
   expect_equal(e3$se, 3 * e1$se, tolerance = 1e-6)
   expect_equal(e3$se / e3$estimate, e1$se / e1$estimate, tolerance = 1e-9)
@@ -907,7 +907,7 @@ test_that("mixed party sizes give the angler-weighted total, not the party count
     varied[[design$effort_col]] * varied[[design$n_anglers_col]]
   design$interviews <- varied
 
-  result <- suppressWarnings(estimate_effort(design))
+  result <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
   # Site A contributes 30 h x 4 anglers / 0.15 = 800; the rest are unchanged.
   expect_equal(result$estimates$estimate, 800 + 160 + 287.5 + 200, tolerance = 1e-6)
 })

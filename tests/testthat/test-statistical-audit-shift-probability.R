@@ -33,7 +33,11 @@ sp_design <- function(counts, ...) {
   )))
 }
 
-sp_effort <- function(d, ...) suppressWarnings(suppressMessages(estimate_effort(d, ...)))$estimates
+# The hand calculations here are sums over the sampled days, so the target is
+# named: the default has been "period_total" since 9.0.0 (GH #487).
+sp_effort <- function(d, ..., target = "sampled_days") {
+  suppressWarnings(suppressMessages(estimate_effort(d, ..., target = target)))$estimates
+}
 
 test_that("#368: p_period = 0.5 on a 7-hour shift equals the old 14-hour workaround exactly", {
   # Same estimate AND same SE: the probability reached the within-day variance

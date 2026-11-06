@@ -3176,7 +3176,9 @@ refuse_unexpandable_target <- function(design, target, call = rlang::caller_env(
       "i" = "Pass {.code creel_design(sampled = )}: a logical calendar column \\
              marking every day worked, including days nobody fished. The \\
              interviews cannot supply it, since an empty day leaves none.",
-      "i" = "Or use {.code target = \"sampled_days\"}."
+      "i" = "Or use {.code target = \"sampled_days\"}. Since tidycreel 9.0.0 \\
+             the default target is {.val period_total}, so a call that names \\
+             no target asks for the expanded total."
     ),
     class = c("creel_error_sampled_register", "creel_error_dispatch_unsupported"),
     call = call

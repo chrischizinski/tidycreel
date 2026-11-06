@@ -184,7 +184,7 @@ test_that("#373: missing_rate = 'exclude' is refused where there is no cell to e
   # accepting the argument there would make it inert (GH #266).
   br <- build_br_design_for_tests(3, 6, 20, seed = 1)
   expect_error(
-    quiet(estimate_total_catch(br, missing_rate = "exclude")),
+    quiet(estimate_total_catch(br, missing_rate = "exclude", target = "sampled_days")),
     "does not apply"
   )
 })

@@ -193,7 +193,7 @@ test_that("#385: drawn windows feed add_counts() with the schedule's p and windo
     d, counts,
     count_col = anglers, count_time_col = count_time, period_length_col = hours
   )))
-  est <- suppressWarnings(suppressMessages(estimate_effort(out)))$estimates$estimate
+  est <- suppressWarnings(suppressMessages(estimate_effort(out, target = "sampled_days")))$estimates$estimate
   expect_equal(est, sum(tapply(counts$anglers, counts$date, mean) * 7 / 0.5), tolerance = 1e-12)
 })
 

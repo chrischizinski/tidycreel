@@ -259,7 +259,7 @@ design_daily <- add_counts(
 )
 
 # Simple aerial estimator — no diurnal correction
-simple_result <- estimate_effort(design_daily)
+simple_result <- estimate_effort(design_daily, target = "sampled_days")
 
 # GLMM result from above
 # glmm_result already computed

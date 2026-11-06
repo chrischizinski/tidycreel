@@ -177,9 +177,12 @@ design <- add_interviews(
 # argued the opposite; the script had aborted before reaching either call, so
 # the mismatch went unseen (GH #130).
 message("Running estimators...")
-eff     <- suppressWarnings(estimate_effort(design))
-cat_est <- suppressWarnings(estimate_total_catch(design))
-harv    <- suppressWarnings(estimate_total_harvest(design))
+# The reference outputs are sampled-day Horvitz-Thompson totals. The fixture
+# has no register of sampled days, so it cannot expand, and since 9.0.0 the
+# default target is "period_total" (GH #487): the target is named here.
+eff     <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
+cat_est <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
+harv    <- suppressWarnings(estimate_total_harvest(design, target = "sampled_days"))
 
 # ---- 8. Compare against reference outputs ----
 # Both the point estimate and its standard error are compared.

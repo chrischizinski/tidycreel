@@ -10,6 +10,23 @@
 
 ## Breaking changes
 
+* The default `target` of `estimate_effort()`, `estimate_total_catch()`,
+  `estimate_total_harvest()` and `estimate_total_release()` is now
+  `"period_total"`, the season total, instead of `"sampled_days"`, the total
+  over the days that were counted (#487). Both printed as "Method: Total", so
+  a default call on a partly sampled season reported a fraction of it: on
+  `example_season_*` (36 of 120 days sampled) effort was 3,066 angler-hours
+  against a season of 9,994. Every default effort and total on a design that
+  did not sample every day changes. To keep the old numbers, pass
+  `target = "sampled_days"`. A design that cannot expand now refuses a call
+  that names no target: bus-route and ice designs without the register of
+  sampled days (`creel_design(sampled = )`) raise
+  `creel_error_sampled_register`, and an expanded target still needs two
+  sampled days per stratum, every calendar stratum sampled and every count
+  unit present in each stratum. The register, unsampled-stratum and
+  missing-unit refusals name `target = "sampled_days"` as the way back; the
+  one-sampled-day error does not yet, and does not name the stratum.
+
 * `estimate_effort(target = "sampled_days")` no longer counts the within-day
   variance twice (#507). With two or more counts a day, the variance of the
   daily totals already contains the within-day variation, and the within-day

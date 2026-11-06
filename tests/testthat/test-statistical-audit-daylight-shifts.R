@@ -78,7 +78,7 @@ test_that("#368: daylight shifts drive the schedule, count times and add_counts(
   )))
   day_hours <- tapply(counts$hours, counts$date, `[`, 1)
   expected <- sum(tapply(counts$anglers, counts$date, mean) * day_hours / 0.5)
-  expect_equal(suppressWarnings(suppressMessages(estimate_effort(out)))$estimates$estimate,
+  expect_equal(suppressWarnings(suppressMessages(estimate_effort(out, target = "sampled_days")))$estimates$estimate,
                expected, tolerance = 1e-10)
 
   # A fixed 7-hour length disagrees with the daylight window and is refused.

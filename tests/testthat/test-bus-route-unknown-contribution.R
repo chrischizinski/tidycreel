@@ -54,10 +54,10 @@ test_that("#542: every bus-route total refuses parties counted but not interview
   # Before the fix effort returned 18 = (2 + 3 + 1) x 3: site B's three parties
   # on day 1 added nothing. Each total must stop rather than return a low number.
   totals <- list(
-    effort = function(...) estimate_effort(d, ...),
-    catch = function(...) estimate_total_catch(d, ...),
-    harvest = function(...) estimate_total_harvest(d, ...),
-    release = function(...) estimate_total_release(d, ...)
+    effort = function(...) estimate_effort(d, ..., target = "sampled_days"),
+    catch = function(...) estimate_total_catch(d, ..., target = "sampled_days"),
+    harvest = function(...) estimate_total_harvest(d, ..., target = "sampled_days"),
+    release = function(...) estimate_total_release(d, ..., target = "sampled_days")
   )
   for (nm in names(totals)) {
     expect_error(
@@ -75,14 +75,14 @@ test_that("#542: every bus-route total refuses parties counted but not interview
   }
   # Species totals delegate to the same totals, so they refuse too.
   expect_error(
-    suppressWarnings(estimate_total_release(d, by = species)), # nolint: object_usage_linter
+    suppressWarnings(estimate_total_release(d, by = species, target = "sampled_days")), # nolint: object_usage_linter
     class = "creel_error_unknown_contribution"
   )
 })
 
 test_that("#542: the refusal names the site-day and why it is unknown", {
   d <- br542_attach(br542_interviews())
-  err <- tryCatch(suppressWarnings(estimate_effort(d)), error = identity)
+  err <- tryCatch(suppressWarnings(estimate_effort(d, target = "sampled_days")), error = identity)
   msg <- conditionMessage(err)
   # The user has to find the row in their own data, so the date, site and
   # circuit all have to be there, with the cause.
@@ -98,7 +98,7 @@ test_that("#542: both resolutions in the message give the totals they describe",
   # Dropping the row leaves those parties out on purpose: the total is the
   # interviewed-only 18, now as the user's choice rather than a silent default.
   dropped <- br542_attach(iv[iv$n_interviewed > 0, ])
-  expect_equal(suppressWarnings(estimate_effort(dropped))$estimates$estimate, 18)
+  expect_equal(suppressWarnings(estimate_effort(dropped, target = "sampled_days"))$estimates$estimate, 18)
 
   # Imputing a per-party value (1 h, 0 fish) with n_interviewed = 1 makes it
   # stand for all 3 parties: 18 + 1 x 3/1 x 3 = 27. The three parties count.
@@ -108,8 +108,8 @@ test_that("#542: both resolutions in the message give the totals they describe",
   imputed$kept[2] <- 0
   imputed$n_interviewed[2] <- 1L
   d <- br542_attach(imputed)
-  expect_equal(suppressWarnings(estimate_effort(d))$estimates$estimate, 27)
-  expect_equal(suppressWarnings(estimate_total_catch(d))$estimates$estimate, 9)
+  expect_equal(suppressWarnings(estimate_effort(d, target = "sampled_days"))$estimates$estimate, 27)
+  expect_equal(suppressWarnings(estimate_total_catch(d, target = "sampled_days"))$estimates$estimate, 9)
 })
 
 test_that("#542: other unknown contributions are refused, not zeroed", {
@@ -122,24 +122,24 @@ test_that("#542: other unknown contributions are refused, not zeroed", {
   iv$n_interviewed[2] <- 1L
   no_effort <- iv
   no_effort$hrs[2] <- NA
-  err <- tryCatch(suppressWarnings(estimate_effort(br542_attach(no_effort))), error = identity)
+  err <- tryCatch(suppressWarnings(estimate_effort(br542_attach(no_effort), target = "sampled_days")), error = identity)
   expect_s3_class(err, "creel_error_unknown_contribution")
   expect_match(conditionMessage(err), "effort value is missing", fixed = TRUE)
   # The catch total does not need the missing effort, so it still runs.
   expect_equal(
-    suppressWarnings(estimate_total_catch(br542_attach(no_effort)))$estimates$estimate,
+    suppressWarnings(estimate_total_catch(br542_attach(no_effort), target = "sampled_days"))$estimates$estimate,
     (1 + 2 * 3 + 2 + 0) * 3
   )
 
   # A missing count dropped the row from every total with no warning at all.
   no_count <- iv
   no_count$n_counted[2] <- NA
-  err <- tryCatch(suppressWarnings(estimate_total_catch(br542_attach(no_count))), error = identity)
+  err <- tryCatch(suppressWarnings(estimate_total_catch(br542_attach(no_count), target = "sampled_days")), error = identity)
   expect_s3_class(err, "creel_error_unknown_contribution")
   expect_match(conditionMessage(err), "n_counted or n_interviewed is missing", fixed = TRUE)
 
   # Complete data are untouched: the same design with the party known is 54.
-  expect_equal(suppressWarnings(estimate_effort(br542_attach(iv)))$estimates$estimate, 54)
+  expect_equal(suppressWarnings(estimate_effort(br542_attach(iv), target = "sampled_days"))$estimates$estimate, 54)
 })
 
 test_that("#542: a 0/0 visit (nobody there) is still a true zero", {
@@ -147,8 +147,8 @@ test_that("#542: a 0/0 visit (nobody there) is still a true zero", {
   iv <- br542_interviews()
   iv$n_counted[2] <- 0L
   d <- br542_attach(iv)
-  expect_equal(suppressWarnings(estimate_effort(d))$estimates$estimate, 18)
-  expect_equal(suppressWarnings(estimate_total_catch(d))$estimates$estimate, 9)
+  expect_equal(suppressWarnings(estimate_effort(d, target = "sampled_days"))$estimates$estimate, 18)
+  expect_equal(suppressWarnings(estimate_total_catch(d, target = "sampled_days"))$estimates$estimate, 9)
 })
 
 test_that("#542: ice designs, which reuse the bus-route totals, refuse too", {
@@ -172,7 +172,7 @@ test_that("#542: ice designs, which reuse the bus-route totals, refuse too", {
     catch = walleye_catch, effort = hours_fished, # nolint: object_usage_linter
     n_counted = n_counted, n_interviewed = n_interviewed, trip_status = trip_status # nolint: object_usage_linter
   )))
-  err <- tryCatch(suppressWarnings(estimate_effort(d)), error = identity)
+  err <- tryCatch(suppressWarnings(estimate_effort(d, target = "sampled_days")), error = identity)
   expect_s3_class(err, "creel_error_unknown_contribution")
   # Ice interviews have no site or circuit column; the date still identifies the row.
   expect_match(conditionMessage(err), "date=2024-01-11: 8 counted, none interviewed", fixed = TRUE)

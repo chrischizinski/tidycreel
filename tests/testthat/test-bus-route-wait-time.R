@@ -62,7 +62,7 @@ wait_frame <- function(waits = pollock_waits, circuit_time = 360) {
 
 test_that("wait / circuit time reproduces Pollock et al. (1994) Table 15.16 effort", {
   d <- pollock_design(wait_frame(), wait_time = wait, circuit_time = circuit_min)
-  e <- suppressMessages(estimate_effort(d))
+  e <- suppressMessages(estimate_effort(d, target = "sampled_days"))
   # E = T * sum_i (1 / w_i) * sum_j e_ji / pi_j. Pollock prints 24,814.80 min
   # from site terms rounded to two decimals; unrounded it is 24,816 per day.
   published_unrounded <- 360 * sum(c(300, 390, 463, 225) / 0.5 / c(30, 30, 60, 60))
@@ -73,7 +73,7 @@ test_that("wait / circuit time reproduces Pollock et al. (1994) Table 15.16 effo
 
 test_that("wait / circuit time reproduces Pollock et al. (1994) Table 15.17 catch", {
   d <- pollock_design(wait_frame(), wait_time = wait, circuit_time = circuit_min)
-  ct <- suppressMessages(estimate_total_catch(d))
+  ct <- suppressMessages(estimate_total_catch(d, target = "sampled_days"))
   # C = 360 * (10/30 + 2/30 + 0/15 + 12/60 + 2/60) = 228 fish per day; Pollock
   # prints 227.88 from the rounded 0.633.
   expect_equal(ct$estimates$estimate, 2 * 228)
@@ -95,10 +95,10 @@ test_that("wait shares squeezed to sum to 1 understate the total by wait / circu
   # the published total.
   sf <- wait_frame()
   sf$p_site <- pollock_waits / sum(pollock_waits)
-  shares <- suppressMessages(estimate_effort(pollock_design(sf, p_site = p_site)))
+  shares <- suppressMessages(estimate_effort(pollock_design(sf, p_site = p_site), target = "sampled_days"))
   circuit <- suppressMessages(estimate_effort(
     pollock_design(wait_frame(), wait_time = wait, circuit_time = circuit_min)
-  ))
+  , target = "sampled_days"))
   expect_equal(
     shares$estimates$estimate / circuit$estimates$estimate,
     sum(pollock_waits) / 360
@@ -111,9 +111,9 @@ test_that("with no travel time the two weightings agree", {
   no_travel <- wait_frame(circuit_time = sum(pollock_waits))
   by_wait <- suppressMessages(estimate_effort(
     pollock_design(no_travel, wait_time = wait, circuit_time = circuit_min)
-  ))
+  , target = "sampled_days"))
   no_travel$p_site <- pollock_waits / sum(pollock_waits)
-  by_p <- suppressMessages(estimate_effort(pollock_design(no_travel, p_site = p_site)))
+  by_p <- suppressMessages(estimate_effort(pollock_design(no_travel, p_site = p_site), target = "sampled_days"))
   expect_equal(by_wait$estimates$estimate, by_p$estimates$estimate)
   expect_equal(by_wait$estimates$se, by_p$estimates$se)
 })
@@ -183,8 +183,8 @@ test_that("a wait-weighted bus-route design survives write_design() and read_des
   r <- suppressWarnings(suppressMessages(read_design(p)))
   expect_equal(r$bus_route$data$.pi_i, d$bus_route$data$.pi_i)
   expect_equal(
-    suppressMessages(estimate_effort(r))$estimates$estimate,
-    suppressMessages(estimate_effort(d))$estimates$estimate
+    suppressMessages(estimate_effort(r, target = "sampled_days"))$estimates$estimate,
+    suppressMessages(estimate_effort(d, target = "sampled_days"))$estimates$estimate
   )
 })
 

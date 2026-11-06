@@ -11,8 +11,8 @@ test_that("INV-04: estimate outputs stay inside confidence bounds", {
   skip_if_not_installed("quickcheck")
 
   design <- build_br_design_for_tests(3L, 6L, 8L, seed = 42L)
-  effort_fixed <- suppressWarnings(estimate_effort(design))
-  catch_fixed <- suppressWarnings(estimate_total_catch(design))
+  effort_fixed <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
+  catch_fixed <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
   harvest_fixed <- suppressWarnings(estimate_harvest_rate(design))
 
   expect_true(all(effort_fixed$estimates$ci_lower <= effort_fixed$estimates$estimate))
@@ -34,8 +34,8 @@ test_that("INV-04: estimate outputs stay inside confidence bounds", {
   quickcheck::for_all(
     design = gen_valid_creel_design(n_min = 2L),
     property = function(design) {
-      effort <- suppressWarnings(estimate_effort(design))
-      catch <- suppressWarnings(estimate_total_catch(design))
+      effort <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
+      catch <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
       harvest <- suppressWarnings(estimate_harvest_rate(design))
 
       expect_true(all(effort$estimates$ci_lower <= effort$estimates$estimate))
@@ -56,8 +56,8 @@ test_that("INV-01: standard errors are positive across estimators", {
   skip_if_not_installed("quickcheck")
 
   design <- build_br_design_for_tests(3L, 6L, 8L, seed = 42L)
-  effort_fixed <- suppressWarnings(estimate_effort(design))
-  catch_fixed <- suppressWarnings(estimate_total_catch(design))
+  effort_fixed <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
+  catch_fixed <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
   harvest_fixed <- suppressWarnings(estimate_harvest_rate(design))
 
   expect_true(all(is.finite(effort_fixed$estimates$se) & effort_fixed$estimates$se > 0))
@@ -67,8 +67,8 @@ test_that("INV-01: standard errors are positive across estimators", {
   quickcheck::for_all(
     design = gen_valid_creel_design(n_min = 2L),
     property = function(design) {
-      effort <- suppressWarnings(estimate_effort(design))
-      catch <- suppressWarnings(estimate_total_catch(design))
+      effort <- suppressWarnings(estimate_effort(design, target = "sampled_days"))
+      catch <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
       harvest <- suppressWarnings(estimate_harvest_rate(design))
 
       expect_true(all(is.finite(effort$estimates$se) & effort$estimates$se > 0))
@@ -82,7 +82,7 @@ test_that("INV-02: catch and harvest estimates are non-negative", {
   skip_if_not_installed("quickcheck")
 
   design <- build_br_design_for_tests(3L, 6L, 8L, seed = 42L)
-  catch_fixed <- suppressWarnings(estimate_total_catch(design))
+  catch_fixed <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
   harvest_fixed <- suppressWarnings(estimate_harvest_rate(design))
 
   expect_true(all(catch_fixed$estimates$estimate >= 0))
@@ -91,7 +91,7 @@ test_that("INV-02: catch and harvest estimates are non-negative", {
   quickcheck::for_all(
     design = gen_valid_creel_design(n_min = 2L),
     property = function(design) {
-      catch <- suppressWarnings(estimate_total_catch(design))
+      catch <- suppressWarnings(estimate_total_catch(design, target = "sampled_days"))
       harvest <- suppressWarnings(estimate_harvest_rate(design))
 
       expect_true(all(catch$estimates$estimate >= 0))
@@ -312,8 +312,8 @@ test_that("INV-03: ice and degenerate bus-route yield identical total catch esti
   ice_fixed <- build_ice_design(n_days = 6L, n_interviews = 10L, seed = 42L)
   br_fixed <- build_br_degenerate_design(n_days = 6L, n_interviews = 10L, seed = 42L)
 
-  ice_catch_fixed <- suppressWarnings(estimate_total_catch(ice_fixed))
-  br_catch_fixed <- suppressWarnings(estimate_total_catch(br_fixed))
+  ice_catch_fixed <- suppressWarnings(estimate_total_catch(ice_fixed, target = "sampled_days"))
+  br_catch_fixed <- suppressWarnings(estimate_total_catch(br_fixed, target = "sampled_days"))
 
   expect_equal(
     ice_catch_fixed$estimates$estimate,
@@ -335,8 +335,8 @@ test_that("INV-03: ice and degenerate bus-route yield identical total catch esti
         seed = params$seed
       )
 
-      ice_catch <- suppressWarnings(estimate_total_catch(ice_design))
-      br_catch <- suppressWarnings(estimate_total_catch(br_design))
+      ice_catch <- suppressWarnings(estimate_total_catch(ice_design, target = "sampled_days"))
+      br_catch <- suppressWarnings(estimate_total_catch(br_design, target = "sampled_days"))
 
       expect_equal(
         ice_catch$estimates$estimate,

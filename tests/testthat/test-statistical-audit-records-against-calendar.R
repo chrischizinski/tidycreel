@@ -27,7 +27,7 @@ rac_design <- function(cal, strata = rlang::quo(day_type)) {
 
 rac_effort <- function(d, counts) {
   d <- suppressWarnings(suppressMessages(add_counts(d, counts))) # nolint: object_usage_linter
-  e <- suppressWarnings(suppressMessages(estimate_effort(d)))$estimates # nolint: object_usage_linter
+  e <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))$estimates # nolint: object_usage_linter
   c(e$estimate, e$se)
 }
 

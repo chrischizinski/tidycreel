@@ -383,7 +383,7 @@ test_that("estimate_angler_trips() rejects a fish-valued total (GH #112)", {
   # The bus-route HT totals are the other way in: fish-valued, and since GH #111
   # they carry their own method strings rather than the effort string "total".
   design <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 24, seed = 42)
-  total <- suppressWarnings(suppressMessages(estimate_total_harvest(design)))
+  total <- suppressWarnings(suppressMessages(estimate_total_harvest(design, target = "sampled_days")))
 
   expect_error(
     estimate_angler_trips(total, design),

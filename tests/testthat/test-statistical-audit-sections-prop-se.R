@@ -202,7 +202,7 @@ test_that("PROPSE-10: the shares and every other column are unchanged", {
   # this stopped being a reporting fix and became a re-estimation.
   result <- suppressWarnings(estimate_total_catch(
     sections_design(shared_section_counts())
-  ))
+  , target = "sampled_days"))
   e <- result$estimates
   expect_equal(
     e$prop_of_lake_total[e$section != ".lake_total"],

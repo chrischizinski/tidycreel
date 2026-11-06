@@ -195,7 +195,7 @@ test_that("use_trips = 'all' is refused on bus-route and ice totals (GH #266)", 
 
     for (f in total_estimators) {
       expect_error(
-        quiet_total(f, design, use_trips = "all"),
+        quiet_total(f, design, use_trips = "all", target = "sampled_days"),
         "not available for",
         info = paste(f, design_type)
       )
