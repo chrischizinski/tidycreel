@@ -115,7 +115,7 @@ test_that("with every day worked, the period total is the sampled-day total", {
   x$iv <- x$iv # all 40 days worked; the ones without interviews are empty days
   d <- br_design(x)
   for (fn in list(estimate_effort, estimate_total_catch, estimate_total_harvest)) {
-    a <- q(fn(d))$estimates
+    a <- q(fn(d, target = "sampled_days"))$estimates
     b <- q(fn(d, target = "period_total"))$estimates
     expect_equal(b$estimate, a$estimate, tolerance = 1e-10)
     expect_equal(b$se, a$se, tolerance = 1e-10)

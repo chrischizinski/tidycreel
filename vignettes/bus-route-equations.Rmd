@@ -214,7 +214,7 @@ bus routes.
 expand the mean daily estimate to all $N$ days of a stratum; tidycreel does that for bus
 routes only with the calendar's register of worked days, `creel_design(sampled = )`
 (GH #591). Without it `target = "stratum_total"` or `"period_total"` is refused rather than
-ignored (GH #520). The result records `effort_target = "sampled_days"`.
+ignored (GH #520), and so is a call that names no target, since it asks for `"period_total"`. The result records `effort_target = "sampled_days"`.
 
 **R implementation:** `br_add_psu_key()` sets the PSU; `get_variance_design()` applies the
 variance method.

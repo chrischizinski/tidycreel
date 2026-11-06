@@ -118,7 +118,8 @@ test_that("a shared multiplier combines linearly across sections", {
   # Pins the arithmetic, not the direction. One estimate spanning the sections
   # makes the contributions perfectly correlated, so they add before squaring.
   # Quadrature would give sqrt(2^2 + 1.8^2) = 2.69 instead of 3.8.
-  # The boat sums below are over the sampled days (GH #487 default).
+  # The boat sums below are over the sampled days, so the target is named: the
+  # default has been "period_total" since 9.0.0 (GH #487).
   result <- eff_effort(eff_shared_counts(), target = "sampled_days")
   components <- result$se_expansion
   sec_components <- components[result$estimates$section != ".lake_total"]

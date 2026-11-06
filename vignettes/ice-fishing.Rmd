@@ -250,8 +250,8 @@ total_catch_est <- estimate_total_catch(design, target = "sampled_days")
 print(total_catch_est)
 ```
 
-The `estimate` column is the projected total walleye catch across the entire
-survey period. The standard error and 95% confidence interval come from Taylor
+The `estimate` column is the total walleye catch over the days worked. In this
+example every calendar day was worked, so it is also the season total. The standard error and 95% confidence interval come from Taylor
 linearization on the Horvitz-Thompson sum, not from the delta method — there is
 no product of two estimates here whose uncertainty would need propagating.
 
