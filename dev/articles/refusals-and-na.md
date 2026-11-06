@@ -71,7 +71,7 @@ weekday_only <- add_counts(weekday_only, weekday_counts,
   period_length_col = daylight_hours
 )
 
-estimate_effort(weekday_only, target = "period_total")
+estimate_effort(weekday_only)
 #> Error in `refuse_unsampled_cells()`:
 #> ! Expanded effort cannot be estimated: 1 calendar cell has no sampled
 #>   day.
@@ -84,12 +84,14 @@ estimate_effort(weekday_only, target = "period_total")
 
 A season total needs the weekend’s effort, and there is no information
 about it. Summing the weekday strata alone would report the 34 weekend
-days as zero effort. The default target asks a smaller question, the
-effort on the days that were counted, and that one has an answer:
+days as zero effort. The default target, `"period_total"`, is the season
+total, so the call above asks for it without naming it.
+`target = "sampled_days"` asks a smaller question, the effort on the
+days that were counted, and that one has an answer:
 
 ``` r
 
-estimate_effort(weekday_only)
+estimate_effort(weekday_only, target = "sampled_days")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -132,8 +134,8 @@ estimate_total_catch(no_weekend_rate)
 #> Error in `check_missing_rate_strata()`:
 #> ! 1 effort cell has no rate in "estimate_total_catch".
 #> ✖ No usable interviews for: day_type = weekend.
-#> ✖ Their contribution to the total is unknown, not zero: 490 effort units, 16%
-#>   of the effort being totalled.
+#> ✖ Their contribution to the total is unknown, not zero: 2082.5 effort units,
+#>   20.8% of the effort being totalled.
 #> ℹ Collect or attach interviews for that cell, or group more coarsely so it
 #>   shares a rate.
 #> ℹ `missing_rate = "exclude"` reports the total over the covered cells only, and
@@ -150,7 +152,7 @@ weekday_total <- estimate_total_catch(no_weekend_rate,
   missing_rate = "exclude"
 )
 #> Warning: 1 effort cell with no rate excluded from "estimate_total_catch".
-#> ! Excluded: day_type = weekend (490 effort units, 16%).
+#> ! Excluded: day_type = weekend (2082.5 effort units, 20.8%).
 #> ℹ The total covers the remaining cells only; see excluded_strata on the result.
 weekday_total
 #> 
@@ -158,21 +160,21 @@ weekday_total
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: fish
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     536.  136.     267.     806.   138
+#> 1    1647.  418.     820.    2475.   138
 #> 
 #> Covers the cells with a rate only. Excluded (no rate), see $excluded_strata:
-#>   day_type = weekend: 490 effort units
+#>   day_type = weekend: 2082 effort units
 weekday_total$excluded_strata
 #> # A tibble: 1 × 3
 #>   day_type effort_excluded excluded_from       
 #>   <chr>              <dbl> <chr>               
-#> 1 weekend              490 estimate_total_catch
+#> 1 weekend            2082. estimate_total_catch
 ```
 
 The warning is the point: this total is the weekday catch, not the
@@ -247,7 +249,7 @@ aerial_effort(visibility_correction = 0.85)
 #> Method: aerial_total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 774.4 (included in se)
 #> within_day: 0 (included in se)
@@ -269,7 +271,7 @@ aerial_effort(visibility_correction = 0.85, visibility_se = 0.04)
 #> Method: aerial_total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 774.4 (included in se)
 #> within_day: 0 (included in se)
@@ -294,7 +296,7 @@ aerial_effort(visibility_correction = "none")
 #> Method: aerial_total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 658.3 (known, but se is `NA`)
 #> within_day: 0 (known, but se is `NA`)

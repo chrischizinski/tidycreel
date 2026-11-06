@@ -68,8 +68,8 @@ estimate_effort(design, target = "period_total")
 ```
 
 About 9,994 angler-hours over the 120-day season.
-`target = "period_total"` asks for the season; the default,
-`"sampled_days"`, is the effort on the 36 days counted. Both kinds of
+`target = "period_total"`, the default, asks for the season;
+`"sampled_days"` is the effort on the 36 days counted. Both kinds of
 interview below use this effort.
 
 ## Access interviews

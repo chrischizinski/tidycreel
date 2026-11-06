@@ -233,11 +233,12 @@ refuse:</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider combining sparse strata or collecting more data.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `value[[3L]]()`:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Stratum <span style="color: #0000BB;">"weekend"</span> has only 1 PSU — variance cannot be estimated.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> A stratum has only 1 PSU — variance cannot be estimated.</span></span>
 <span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> A stratum must have at least 2 PSUs (e.g., 2 sampled days) for variance</span></span>
-<span><span class="co">#&gt;   estimation.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Increase the sampling rate for stratum <span style="color: #0000BB;">"weekend"</span>, or combine sparse strata</span></span>
-<span><span class="co">#&gt;   before estimation.</span></span></code></pre></div>
+<span><span class="co">#&gt;   estimation, unless every sampled day has two or more counts and the stratum</span></span>
+<span><span class="co">#&gt;   was fully sampled.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Increase the sampling rate, combine sparse strata before estimation, or, for</span></span>
+<span><span class="co">#&gt;   a stratum of a single day that was sampled, count that day more than once.</span></span></code></pre></div>
 <p><code><a href="../reference/add_counts.html">add_counts()</a></code> already warned, when the counts were
 attached, that both strata have fewer than three sampled days; the
 estimate is where the weekend’s single day becomes a refusal. The

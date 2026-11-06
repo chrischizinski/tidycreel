@@ -293,7 +293,7 @@ generic code should read, and again under a name recording the effort
 type – <code>total_effort_hr_on_ice</code> because the design was built
 with <code>effort_type = "time_on_ice"</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -307,9 +307,12 @@ with <code>effort_type = "time_on_ice"</code>.</p>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_on_ice</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>819.  261.    <span style="text-decoration: underline;">3</span>308.    <span style="text-decoration: underline;">4</span>330.    72 between_day_upp…                  <span style="text-decoration: underline;">3</span>819.</span></span></code></pre></div>
-<p>This is the total over the days worked. To expand to a season with
-days that were not worked, give the calendar a logical column marking
-the worked days and pass it as <code>creel_design(sampled = )</code>;
+<p>This is the total over the days worked, named with
+<code>target = "sampled_days"</code> because the default target is the
+season total, <code>"period_total"</code>, which this design cannot
+reach as built. To expand to a season with days that were not worked,
+give the calendar a logical column marking the worked days and pass it
+as <code>creel_design(sampled = )</code>;
 <code>target = "period_total"</code> then scales each stratum by its
 calendar days over its worked days. Mark a worked day on which nobody
 was out as worked too: it is a day of zero effort, and leaving it out
@@ -341,7 +344,7 @@ effort-type column is then labeled <code>total_effort_hr_active</code>;
 <span>  n_anglers     <span class="op">=</span> <span class="va">n_anglers</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">effort_aft</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_aft</span><span class="op">)</span></span>
+<span><span class="va">effort_aft</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design_aft</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_aft</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -367,7 +370,7 @@ to produce separate effort estimates for open-air anglers and dark-house
 anglers. This uses the same Horvitz-Thompson framework with the
 interview data split by the grouping variable.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort_by_shelter</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">shelter_mode</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">effort_by_shelter</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">shelter_mode</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_by_shelter</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -438,7 +441,7 @@ bus-route designs; incomplete trips support a rate, via
 <code>estimate_catch_rate(use_trips = "incomplete")</code>, not a
 total.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">total_catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">total_catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -452,10 +455,11 @@ total.</p>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     398.  20.6     358.     439.    60</span></span></code></pre></div>
-<p>The <code>estimate</code> column is the projected total walleye catch
-across the entire survey period. The standard error and 95% confidence
-interval come from Taylor linearization on the Horvitz-Thompson sum, not
-from the delta method — there is no product of two estimates here whose
+<p>The <code>estimate</code> column is the total walleye catch over the
+days worked. In this example every calendar day was worked, so it is
+also the season total. The standard error and 95% confidence interval
+come from Taylor linearization on the Horvitz-Thompson sum, not from the
+delta method — there is no product of two estimates here whose
 uncertainty would need propagating.</p>
 </div>
 <div class="section level2">

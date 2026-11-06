@@ -97,8 +97,8 @@ estimate_effort(design, target = "period_total")
 By hand: daily effort is 150, 250, 350 and 450 angler-hours, a mean of
 300, and $`\hat{E} = 8 \times 300 = 2{,}400`$ angler-hours.
 
-`target = "period_total"` asks for the total over all 8 days. The
-default, `target = "sampled_days"`, is the total over the 4 days counted
+`target = "period_total"`, the default, asks for the total over all 8
+days. `target = "sampled_days"` is the total over the 4 days counted
 (1,200 here);
 [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)
 shows the two side by side.

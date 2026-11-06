@@ -449,7 +449,7 @@ and computes
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><mo>∑</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>e</mi><mi>i</mi></msub><mi>/</mi><msub><mi>π</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat{E} = \sum(e_i / \pi_i)</annotation></semantics></math>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Estimate total angler-hours</span></span>
-<span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -491,9 +491,14 @@ contributes 57.5 / 0.10 = 575 angler-hours, the largest single-site
 contribution. Site D (πᵢ = 0.0125, observed effort 5 h) contributes 5 /
 0.0125 = 400 angler-hours: the crew waits there for only 10 minutes of
 each 400, so each party seen stands for many that were not.</p>
-<p>The total is over the four sampled days. Bus-route totals refuse
-<code>target = "stratum_total"</code> and <code>"period_total"</code>
-(the expansion to unsampled days is not implemented).</p>
+<p>The total is over the four sampled days, so the calls name
+<code>target = "sampled_days"</code>: the default target is
+<code>"period_total"</code>, the season total, and this design cannot
+expand to it. A bus-route design expands only with the calendar’s
+register of worked days, <code>creel_design(sampled = )</code>, since
+the interviews cannot show a worked day on which nobody was out; without
+it, <code>"stratum_total"</code> and <code>"period_total"</code> are
+refused.</p>
 </div>
 <div class="section level3">
 <h3 id="step-4-estimate-catch-and-harvest">Step 4: Estimate Catch and Harvest<a class="anchor" aria-label="anchor" href="#step-4-estimate-catch-and-harvest"></a>
@@ -518,7 +523,7 @@ each party’s fish by its inclusion probability and summing.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.058<span style="text-decoration: underline;">2</span> 0.016<span style="text-decoration: underline;">0</span>   0.026<span style="text-decoration: underline;">9</span>   0.089<span style="text-decoration: underline;">6</span>    15</span></span>
 <span></span>
 <span><span class="co"># Total fish kept (harvest) and total fish caught (kept + released)</span></span>
-<span><span class="va">harvest_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">harvest_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">harvest_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -533,7 +538,7 @@ each party’s fish by its inclusion probability and summing.</p>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     98.7  35.7     28.8     169.    15</span></span>
 <span></span>
-<span><span class="va">catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>

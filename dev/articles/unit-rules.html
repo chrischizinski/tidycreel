@@ -169,13 +169,13 @@ sampled day and the day’s length:</p>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">3</span>066  386.       386.         0    <span style="text-decoration: underline;">2</span>282.    <span style="text-decoration: underline;">3</span>850.    36 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span></code></pre></div>
 <p>The effort is in angler-hours because the package multiplied each
 count by its <code>daylight_hours</code>.</p>
 <p>Leave the period length out, and the same counts are summed as they
@@ -199,12 +199,12 @@ stand:</p>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>      219  27.6       27.6         0     163.     275.    36 between_day_upper…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     714.  91.9       91.9         0     527.     901.    36 between_day_upper…</span></span>
 <span><span class="va">effort_no_td</span><span class="op">$</span><span class="va">unit</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
 <p>The printout has no <code>Unit:</code> line, because the unit is
@@ -360,13 +360,13 @@ first:</p>
 <span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: fish</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     674.  152.     374.     973.   172</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  506.    <span style="text-decoration: underline;">1</span>231.    <span style="text-decoration: underline;">3</span>230.   172</span></span></code></pre></div>
 <p>With the rate per party-hour, the product warns and has no unit:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">total_party</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">without_party</span><span class="op">)</span></span>
@@ -381,12 +381,12 @@ first:</p>
 <span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>134.  245.     650.    <span style="text-decoration: underline;">1</span>618.   172</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>730.  804.    <span style="text-decoration: underline;">2</span>143.    <span style="text-decoration: underline;">5</span>318.   172</span></span>
 <span><span class="va">total_party</span><span class="op">$</span><span class="va">unit</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
 <p>The total is 1,134 instead of 674. Multiplying a rate per party-hour

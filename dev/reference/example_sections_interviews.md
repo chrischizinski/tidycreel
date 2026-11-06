@@ -140,7 +140,7 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: section
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total

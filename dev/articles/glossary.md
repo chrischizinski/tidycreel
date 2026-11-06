@@ -181,12 +181,13 @@ entry).
 ### Target: sampled days, stratum total, period total
 
 `target` says what an effort or total covers. The default,
-`"sampled_days"`, is the total over the days actually sampled.
-`"period_total"` expands each stratum to all its calendar days, which is
-the season total in most reports. `"stratum_total"` runs the same
-expansion on standard count designs; the returned `effort_target`
-records which was asked for. Expanded targets are not yet available for
-bus-route or ice designs.
+`"period_total"`, expands each stratum to all its calendar days, which
+is the season total in most reports. `"sampled_days"` is the total over
+the days actually sampled. `"stratum_total"` runs the same expansion on
+standard count designs; the returned `effort_target` records which was
+asked for. Bus-route and ice designs expand only with the calendar’s
+register of worked days (`creel_design(sampled = )`) and otherwise
+refuse the expanded targets.
 
 ## Trip-status and interview terms
 

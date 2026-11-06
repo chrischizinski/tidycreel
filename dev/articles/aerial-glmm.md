@@ -292,7 +292,7 @@ print(total_catch)
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
@@ -365,7 +365,7 @@ design_daily <- add_counts(
 )
 
 # Simple aerial estimator — no diurnal correction
-simple_result <- estimate_effort(design_daily)
+simple_result <- estimate_effort(design_daily, target = "sampled_days")
 
 # GLMM result from above
 # glmm_result already computed

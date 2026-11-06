@@ -165,12 +165,15 @@ raw angler counts; see that dataset for why the distinction matters to
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Expanding 12 sampled units carrying 36 count rows between them.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Rows sharing a <span style="color: #00BB00;">date</span> are summed into it first: the expansion factor is days</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   over days, not rows over rows.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: total-sections</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Taylor linearization</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: period_total</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 4 × 12</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span>

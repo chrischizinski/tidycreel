@@ -67,13 +67,13 @@ estimate_effort(with_td)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: angler-hours
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     3066  386.       386.         0    2282.    3850.    36 between_day_upper…
+#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
 ```
 
 The effort is in angler-hours because the package multiplied each count
@@ -102,12 +102,12 @@ effort_no_td
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1      219  27.6       27.6         0     163.     275.    36 between_day_upper…
+#> 1     714.  91.9       91.9         0     527.     901.    36 between_day_upper…
 effort_no_td$unit
 #> [1] NA
 ```
@@ -253,13 +253,13 @@ estimate_total_catch(with_party)
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: fish
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     674.  152.     374.     973.   172
+#> 1    2230.  506.    1231.    3230.   172
 ```
 
 With the rate per party-hour, the product warns and has no unit:
@@ -278,12 +278,12 @@ total_party
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1134.  245.     650.    1618.   172
+#> 1    3730.  804.    2143.    5318.   172
 total_party$unit
 #> [1] NA
 ```

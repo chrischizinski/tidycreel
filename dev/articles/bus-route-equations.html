@@ -389,13 +389,18 @@ component cannot be estimated separately. The day-level variance
 contains it, so the SE includes it, but tidycreel reports no separate
 within-day term for bus routes.</p>
 <p><strong>Target.</strong> The total covers the <strong>sampled
-days</strong>. Robson &amp; Jones (Eq. 13) expand the mean daily
-estimate to all
+days</strong>, and the code below names
+<code>target = "sampled_days"</code> because the default is
+<code>"period_total"</code>. Robson &amp; Jones (Eq. 13) expand the mean
+daily estimate to all
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
-days of a stratum; tidycreel does not implement that expansion for bus
-routes, and <code>target = "stratum_total"</code> or
-<code>"period_total"</code> is refused rather than ignored (GH #520).
-The result records <code>effort_target = "sampled_days"</code>.</p>
+days of a stratum; tidycreel does that for bus routes only with the
+calendar’s register of worked days,
+<code>creel_design(sampled = )</code> (GH #591). Without it
+<code>target = "stratum_total"</code> or <code>"period_total"</code> is
+refused rather than ignored (GH #520), and so is a call that names no
+target, since it asks for <code>"period_total"</code>. The result
+records <code>effort_target = "sampled_days"</code>.</p>
 <p><strong>R implementation:</strong> <code>br_add_psu_key()</code> sets
 the PSU; <code>get_variance_design()</code> applies the variance
 method.</p>
@@ -467,7 +472,7 @@ which is what this example is.</p>
 <span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 16 interviews: 16 complete (100%), 0 incomplete (0%)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="va">effort</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis               </span></span>
@@ -481,7 +486,7 @@ which is what this example is.</p>
 <span><span class="va">effort</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">/</span> <span class="fl">2</span> <span class="op">*</span> <span class="fl">60</span></span>
 <span><span class="co">#&gt; [1] 24816</span></span>
 <span></span>
-<span><span class="va">catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="co"># Per day: Pollock et al. print 227.88 from the rounded 0.633; unrounded it is 228.</span></span>
 <span><span class="va">catch</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">/</span> <span class="fl">2</span></span>
 <span><span class="co">#&gt; [1] 228</span></span></code></pre></div>

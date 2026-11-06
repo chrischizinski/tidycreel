@@ -110,7 +110,7 @@ design_br <- add_interviews(
 #> ℹ Consider combining sparse strata or collecting more data.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Added 2 interviews: 2 complete (100%), 0 incomplete (0%)
-result <- estimate_effort(design_br)
+result <- estimate_effort(design_br, target = "sampled_days")
 get_site_contributions(result)
 #> # A tibble: 2 × 5
 #>   site  circuit   e_i  pi_i e_i_over_pi_i

@@ -216,6 +216,9 @@ cross-section covariance (described in the Variance Aggregation section
 below).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Expanding 12 sampled units carrying 36 count rows between them.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Rows sharing a <span style="color: #00BB00;">date</span> are summed into it first: the expansion factor is days</span></span>
+<span><span class="co">#&gt;   over days, not rows over rows.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
@@ -378,6 +381,9 @@ If different sections have separate, non-overlapping calendars, use
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default: accounts for cross-section covariance (shared-calendar designs)</span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, method <span class="op">=</span> <span class="st">"correlated"</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Expanding 12 sampled units carrying 36 count rows between them.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Rows sharing a <span style="color: #00BB00;">date</span> are summed into it first: the expansion factor is days</span></span>
+<span><span class="co">#&gt;   over days, not rows over rows.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
@@ -390,6 +396,9 @@ If different sections have separate, non-overlapping calendars, use
 <span></span>
 <span><span class="co"># Alternative: Cochran 5.2 additivity (independent crews, non-overlapping calendars)</span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, method <span class="op">=</span> <span class="st">"independent"</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Expanding 12 sampled units carrying 36 count rows between them.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Rows sharing a <span style="color: #00BB00;">date</span> are summed into it first: the expansion factor is days</span></span>
+<span><span class="co">#&gt;   over days, not rows over rows.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
@@ -432,6 +441,9 @@ silent omission of sections that should have been observed.</p>
 <span><span class="co">#&gt; Warning: 1 missing section(s) in count data.</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Section(s) not found: <span style="color: #0000BB;">"South"</span></span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Inserting NA row(s) with <span style="color: #00BB00;">data_available = FALSE</span>.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Expanding 12 sampled units carrying 24 count rows between them.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Rows sharing a <span style="color: #00BB00;">date</span> are summed into it first: the expansion factor is days</span></span>
+<span><span class="co">#&gt;   over days, not rows over rows.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>

@@ -98,7 +98,7 @@ print(result)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          

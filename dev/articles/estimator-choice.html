@@ -179,13 +179,15 @@ calibrates counts against interview effort</td>
 estimate each section separately and add a lake total.</p>
 <p>Whether the effort covers only the days counted or every day in the
 season is a separate choice, <code>target</code>, not a different
-estimator. The default, <code>"sampled_days"</code>, is the effort on
-the days counted; <code>"period_total"</code> expands each stratum to
-all its days. On the season data used below, that is 3,066 angler-hours
-against about 9,994. Totals follow the effort they are given, so a catch
-total on the default target is the catch on the sampled days.
-<code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains the expansion, and the
-expanded targets are not yet available for bus-route or ice designs.</p>
+estimator. The default, <code>"period_total"</code>, expands each
+stratum to all its days; <code>"sampled_days"</code> is the effort on
+the days counted. On the season data used below, that is about 9,994
+angler-hours against 3,066. Totals follow the effort they are given, so
+a catch total on <code>target = "sampled_days"</code> is the catch on
+the sampled days. <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains the
+expansion. Bus-route and ice designs expand only with the calendar’s
+register of worked days (<code>creel_design(sampled = )</code>); without
+it they refuse the expanded targets, including the default.</p>
 <p>The pages that explain each estimator in full:</p>
 <ul>
 <li>instantaneous-count effort and its two-stage variance:

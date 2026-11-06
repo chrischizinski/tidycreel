@@ -216,33 +216,34 @@ give it and never assumes one.</p>
 <span><span class="co">#&gt; Method: Total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; Unit: angler-hours</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
-<span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">3</span>066  386.       386.         0    <span style="text-decoration: underline;">2</span>282.    <span style="text-decoration: underline;">3</span>850.    36 between_day_upper…</span></span>
-<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Total</span></span>
-<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span></code></pre></div>
-<p>The first estimate, the default, is the effort <strong>on the 36 days
-that were sampled</strong>: 3,066 angler-hours. The second is the effort
-<strong>over the whole 120-day season</strong>, about 9,994
-angler-hours. That season total is the number usually reported. Each
-stratum’s mean daily effort is multiplied by the number of days in that
-stratum, then the strata are added. For a season total, ask for
-<code>target = "period_total"</code>.</p>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span>
+<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
+<span><span class="co">#&gt; Method: Total</span></span>
+<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
+<span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
+<span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">3</span>066  386.       386.         0    <span style="text-decoration: underline;">2</span>282.    <span style="text-decoration: underline;">3</span>850.    36 between_day_upper…</span></span></code></pre></div>
+<p>The first estimate, the default
+(<code>target = "period_total"</code>), is the effort <strong>over the
+whole 120-day season</strong>, about 9,994 angler-hours. That season
+total is the number usually reported. Each stratum’s mean daily effort
+is multiplied by the number of days in that stratum, then the strata are
+added. The second is the effort <strong>on the 36 days that were
+sampled</strong>: 3,066 angler-hours. Ask for it with
+<code>target = "sampled_days"</code>.</p>
 <p>The standard error comes from the day-to-day variation among the
 sampled days within each stratum. With one count per day the within-day
 variation (when in the day each count happened to fall) cannot be

@@ -13,8 +13,8 @@ Two things have to be true for an estimate to cover unsampled days:
     tidycreel counts the days in each stratum from the calendar; the
     sampled days are the ones that have counts. A calendar of sampled
     days only has nothing to expand to.
-2.  **You ask for the period**, with `target = "period_total"`. The
-    default, `target = "sampled_days"`, is the total over the days that
+2.  **You ask for the period**, with `target = "period_total"`, the
+    default. `target = "sampled_days"` is the total over the days that
     were sampled.
 
 Each stratum’s mean daily effort is multiplied by the number of days in
@@ -77,7 +77,7 @@ design <- add_counts(design, counts,
   period_length_col = fishing_day
 )
 
-estimate_effort(design)
+estimate_effort(design, target = "sampled_days")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -90,7 +90,7 @@ estimate_effort(design)
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
 #> 1    34860 1604.      1604.         0   31639.   38081.    61 between_day_upper…
-estimate_effort(design, target = "period_total")
+estimate_effort(design)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -105,10 +105,10 @@ estimate_effort(design, target = "period_total")
 #> 1   81407. 4233.      4233.         0   72909.   89904.    61 between_day_upper…
 ```
 
-The first estimate is the effort on the 61 sampled days. The second is
-the season total, about 81,400 angler-hours: the number to report. The
-unit is angler-hours because each count was given the 14-hour period it
-was made in (`period_length_col`);
+The first estimate is the effort on the 61 sampled days. The second, the
+default, is the season total, about 81,400 angler-hours: the number to
+report. The unit is angler-hours because each count was given the
+14-hour period it was made in (`period_length_col`);
 [`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)
 explains why the unit is derived rather than assumed.
 
@@ -311,8 +311,8 @@ season_summary(year_effort)$table
 
 | Goal | Call |
 |----|----|
-| Effort on the sampled days | `estimate_effort(design)` |
-| Season total | full calendar, then `estimate_effort(design, target = "period_total")` |
+| Effort on the sampled days | `estimate_effort(design, target = "sampled_days")` |
+| Season total | full calendar, then `estimate_effort(design)` (the default `target = "period_total"`) |
 | Monthly totals that add to the season | `strata = c(month, day_type)`, then `by = month, target = "period_total"` |
 | Catch or harvest totals | the same `by` and `target` on [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md) / [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md) |
 | A report table | `season_summary(list(...))$table` |

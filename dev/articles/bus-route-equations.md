@@ -259,11 +259,15 @@ crew per route per day the within-day component cannot be estimated
 separately. The day-level variance contains it, so the SE includes it,
 but tidycreel reports no separate within-day term for bus routes.
 
-**Target.** The total covers the **sampled days**. Robson & Jones (Eq.
-13) expand the mean daily estimate to all $`N`$ days of a stratum;
-tidycreel does not implement that expansion for bus routes, and
-`target = "stratum_total"` or `"period_total"` is refused rather than
-ignored (GH \#520). The result records `effort_target = "sampled_days"`.
+**Target.** The total covers the **sampled days**, and the code below
+names `target = "sampled_days"` because the default is `"period_total"`.
+Robson & Jones (Eq. 13) expand the mean daily estimate to all $`N`$ days
+of a stratum; tidycreel does that for bus routes only with the
+calendar’s register of worked days, `creel_design(sampled = )` (GH
+\#591). Without it `target = "stratum_total"` or `"period_total"` is
+refused rather than ignored (GH \#520), and so is a call that names no
+target, since it asks for `"period_total"`. The result records
+`effort_target = "sampled_days"`.
 
 **R implementation:** `br_add_psu_key()` sets the PSU;
 `get_variance_design()` applies the variance method.
@@ -342,7 +346,7 @@ design <- add_interviews(design, interviews,
 
 ``` r
 
-effort <- estimate_effort(design)
+effort <- estimate_effort(design, target = "sampled_days")
 effort$estimates
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n se_basis               
@@ -356,7 +360,7 @@ effort$unit
 effort$estimates$estimate / 2 * 60
 #> [1] 24816
 
-catch <- estimate_total_catch(design)
+catch <- estimate_total_catch(design, target = "sampled_days")
 # Per day: Pollock et al. print 227.88 from the rounded 0.633; unrounded it is 228.
 catch$estimates$estimate / 2
 #> [1] 228

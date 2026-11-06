@@ -306,7 +306,7 @@ catch rate comes out per angler-hour, the unit of aerial effort.</p>
 <span><span class="co">#&gt; Method: aerial_total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 658.3 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; within_day: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
@@ -321,11 +321,12 @@ catch rate comes out per angler-hour, the unit of aerial effort.</p>
 calendar given to <code><a href="../reference/creel_design.html">creel_design()</a></code>, and
 <code>se_between</code> quantifies between-day variability in the
 instantaneous counts. This calendar holds only the 16 flown days, so the
-total covers those days. If your calendar lists every day of the season,
-flown or not, ask for the season total with
-<code>target = "period_total"</code>; the default,
-<code>"sampled_days"</code>, totals only the days flown (see
-<code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>).</p>
+total covers those days: the default,
+<code>target = "period_total"</code>, expands each stratum to every day
+of the calendar, and here those are the days flown. If your calendar
+lists every day of the season, flown or not, the same call gives the
+season total; <code>target = "sampled_days"</code> totals only the days
+flown (see <code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>).</p>
 <p><code>se</code>, <code>ci_lower</code> and <code>ci_upper</code> are
 <code>NA</code>, and that is the correct output for this design rather
 than a gap in it. <code><a href="../reference/creel_design.html">creel_design()</a></code> above was given
@@ -383,7 +384,7 @@ rather than treating 0.85 as exactly known.</p>
 <span><span class="co">#&gt; Method: aerial_total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 774.4 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
@@ -439,7 +440,7 @@ period.</p>
 <span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: fish</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>

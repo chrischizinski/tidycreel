@@ -197,7 +197,10 @@ party-hours.</p></dd>
 <span class="r-in"><span>  n_interviewed <span class="op">=</span> <span class="va">n_interviewed</span>,</span></span>
 <span class="r-in"><span>  n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span></span>
 <span class="r-in"><span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># The total over the sampled days: without the calendar's register of</span></span></span>
+<span class="r-in"><span><span class="co"># worked days (creel_design(sampled = )) an ice design cannot expand to the</span></span></span>
+<span class="r-in"><span><span class="co"># default "period_total".</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: Total</span>

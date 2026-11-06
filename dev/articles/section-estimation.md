@@ -118,6 +118,9 @@ Variance Aggregation section below).
 ``` r
 
 effort_est <- estimate_effort(design)
+#> ℹ Expanding 12 sampled units carrying 36 count rows between them.
+#> ℹ Rows sharing a date are summed into it first: the expansion factor is days
+#>   over days, not rows over rows.
 print(effort_est$estimates)
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
@@ -297,6 +300,9 @@ separate, non-overlapping calendars, use `method = "independent"`.
 
 # Default: accounts for cross-section covariance (shared-calendar designs)
 estimate_effort(design, method = "correlated")$estimates
+#> ℹ Expanding 12 sampled units carrying 36 count rows between them.
+#> ℹ Rows sharing a date are summed into it first: the expansion factor is days
+#>   over days, not rows over rows.
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
@@ -309,6 +315,9 @@ estimate_effort(design, method = "correlated")$estimates
 
 # Alternative: Cochran 5.2 additivity (independent crews, non-overlapping calendars)
 estimate_effort(design, method = "independent")$estimates
+#> ℹ Expanding 12 sampled units carrying 36 count rows between them.
+#> ℹ Rows sharing a date are summed into it first: the expansion factor is days
+#>   over days, not rows over rows.
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
@@ -356,6 +365,9 @@ estimate_effort(design_missing, missing_sections = "warn")$estimates
 #> Warning: 1 missing section(s) in count data.
 #> ! Section(s) not found: "South"
 #> ℹ Inserting NA row(s) with data_available = FALSE.
+#> ℹ Expanding 12 sampled units carrying 24 count rows between them.
+#> ℹ Rows sharing a date are summed into it first: the expansion factor is days
+#>   over days, not rows over rows.
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   

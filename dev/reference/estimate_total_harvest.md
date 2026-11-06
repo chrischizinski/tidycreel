@@ -13,7 +13,7 @@ estimate_total_harvest(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
-  target = c("sampled_days", "stratum_total", "period_total"),
+  target = c("period_total", "stratum_total", "sampled_days"),
   use_trips = NULL,
   estimator = NULL,
   truncate_at = 0.5,
@@ -69,12 +69,12 @@ estimate_total_harvest(
 
   Character string specifying the effort domain supplied to
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md).
-  Options are `"sampled_days"` (default), `"stratum_total"`, or
-  `"period_total"`. This controls which effort domain is multiplied by
-  HPUE so total harvest stays aligned with the requested temporal
-  target. Bus-route and ice designs expand to the other two only with
-  the calendar's register of sampled days (`creel_design(sampled = )`),
-  as
+  Options are `"period_total"` (default since 9.0.0, the season total),
+  `"stratum_total"`, or `"sampled_days"` (the total over the sampled
+  days only). This controls which effort domain is multiplied by HPUE so
+  total harvest stays aligned with the requested temporal target.
+  Bus-route and ice designs expand to the other two only with the
+  calendar's register of sampled days (`creel_design(sampled = )`), as
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
   does (GH \#591).
 
@@ -416,7 +416,7 @@ print(total_harvest)
 #> Method: Total Harvest (Effort × HPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n

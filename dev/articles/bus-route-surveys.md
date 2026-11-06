@@ -352,7 +352,7 @@ $`\hat{E} = \sum(e_i / \pi_i)`$.
 ``` r
 
 # Estimate total angler-hours
-effort_est <- estimate_effort(design)
+effort_est <- estimate_effort(design, target = "sampled_days")
 print(effort_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -397,9 +397,13 @@ Site D (πᵢ = 0.0125, observed effort 5 h) contributes 5 / 0.0125 = 400
 angler-hours: the crew waits there for only 10 minutes of each 400, so
 each party seen stands for many that were not.
 
-The total is over the four sampled days. Bus-route totals refuse
-`target = "stratum_total"` and `"period_total"` (the expansion to
-unsampled days is not implemented).
+The total is over the four sampled days, so the calls name
+`target = "sampled_days"`: the default target is `"period_total"`, the
+season total, and this design cannot expand to it. A bus-route design
+expands only with the calendar’s register of worked days,
+`creel_design(sampled = )`, since the interviews cannot show a worked
+day on which nobody was out; without it, `"stratum_total"` and
+`"period_total"` are refused.
 
 ### Step 4: Estimate Catch and Harvest
 
@@ -426,7 +430,7 @@ print(harvest_rate)
 #> 1   0.0582 0.0160   0.0269   0.0896    15
 
 # Total fish kept (harvest) and total fish caught (kept + released)
-harvest_est <- estimate_total_harvest(design)
+harvest_est <- estimate_total_harvest(design, target = "sampled_days")
 print(harvest_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -441,7 +445,7 @@ print(harvest_est)
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
 #> 1     98.7  35.7     28.8     169.    15
 
-catch_est <- estimate_total_catch(design)
+catch_est <- estimate_total_catch(design, target = "sampled_days")
 print(catch_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

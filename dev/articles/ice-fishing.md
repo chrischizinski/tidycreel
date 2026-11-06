@@ -198,7 +198,7 @@ was built with `effort_type = "time_on_ice"`.
 
 ``` r
 
-effort_est <- estimate_effort(design)
+effort_est <- estimate_effort(design, target = "sampled_days")
 print(effort_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -214,13 +214,15 @@ print(effort_est)
 #> 1    3819.  261.    3308.    4330.    72 between_day_upp…                  3819.
 ```
 
-This is the total over the days worked. To expand to a season with days
-that were not worked, give the calendar a logical column marking the
-worked days and pass it as `creel_design(sampled = )`;
-`target = "period_total"` then scales each stratum by its calendar days
-over its worked days. Mark a worked day on which nobody was out as
-worked too: it is a day of zero effort, and leaving it out would inflate
-the season total.
+This is the total over the days worked, named with
+`target = "sampled_days"` because the default target is the season
+total, `"period_total"`, which this design cannot reach as built. To
+expand to a season with days that were not worked, give the calendar a
+logical column marking the worked days and pass it as
+`creel_design(sampled = )`; `target = "period_total"` then scales each
+stratum by its calendar days over its worked days. Mark a worked day on
+which nobody was out as worked too: it is a day of zero effort, and
+leaving it out would inflate the season total.
 
 To demonstrate the column-naming distinction, rebuild the design using
 `effort_type = "active_fishing_time"` and the `active_fishing_hours`
@@ -250,7 +252,7 @@ design_aft <- suppressMessages(add_interviews(
   n_anglers     = n_anglers
 ))
 
-effort_aft <- estimate_effort(design_aft)
+effort_aft <- estimate_effort(design_aft, target = "sampled_days")
 print(effort_aft)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -280,7 +282,7 @@ interview data split by the grouping variable.
 
 ``` r
 
-effort_by_shelter <- estimate_effort(design, by = shelter_mode)
+effort_by_shelter <- estimate_effort(design, by = shelter_mode, target = "sampled_days")
 print(effort_by_shelter)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -356,7 +358,7 @@ incomplete trips support a rate, via
 
 ``` r
 
-total_catch_est <- estimate_total_catch(design)
+total_catch_est <- estimate_total_catch(design, target = "sampled_days")
 print(total_catch_est)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -372,11 +374,12 @@ print(total_catch_est)
 #> 1     398.  20.6     358.     439.    60
 ```
 
-The `estimate` column is the projected total walleye catch across the
-entire survey period. The standard error and 95% confidence interval
-come from Taylor linearization on the Horvitz-Thompson sum, not from the
-delta method — there is no product of two estimates here whose
-uncertainty would need propagating.
+The `estimate` column is the total walleye catch over the days worked.
+In this example every calendar day was worked, so it is also the season
+total. The standard error and 95% confidence interval come from Taylor
+linearization on the Horvitz-Thompson sum, not from the delta method —
+there is no product of two estimates here whose uncertainty would need
+propagating.
 
 ## Results as Data
 

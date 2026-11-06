@@ -203,7 +203,7 @@ print(effort)
 #> Method: aerial_total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 658.3 (known, but se is `NA`)
 #> within_day: 0 (known, but se is `NA`)
@@ -221,9 +221,11 @@ to
 [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
 and `se_between` quantifies between-day variability in the instantaneous
 counts. This calendar holds only the 16 flown days, so the total covers
-those days. If your calendar lists every day of the season, flown or
-not, ask for the season total with `target = "period_total"`; the
-default, `"sampled_days"`, totals only the days flown (see
+those days: the default, `target = "period_total"`, expands each stratum
+to every day of the calendar, and here those are the days flown. If your
+calendar lists every day of the season, flown or not, the same call
+gives the season total; `target = "sampled_days"` totals only the days
+flown (see
 [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)).
 
 `se`, `ci_lower` and `ci_upper` are `NA`, and that is the correct output
@@ -284,7 +286,7 @@ print(effort_corr)
 #> Method: aerial_total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 774.4 (included in se)
 #> within_day: 0 (included in se)
@@ -350,7 +352,7 @@ print(total_catch)
 #> Method: Total Catch (Effort × CPUE)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> Unit: fish
 #> 
 #> # A tibble: 1 × 5

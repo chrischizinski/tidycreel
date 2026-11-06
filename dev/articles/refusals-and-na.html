@@ -170,7 +170,7 @@ counted:</p>
 <span>  period_length_col <span class="op">=</span> <span class="va">daylight_hours</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">weekday_only</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">weekday_only</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `refuse_unsampled_cells()`:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Expanded effort cannot be estimated: 1 calendar cell has no sampled</span></span>
 <span><span class="co">#&gt;   day.</span></span>
@@ -181,11 +181,13 @@ counted:</p>
 <span><span class="co">#&gt;   before estimating.</span></span></code></pre></div>
 <p>A season total needs the weekend’s effort, and there is no
 information about it. Summing the weekday strata alone would report the
-34 weekend days as zero effort. The default target asks a smaller
-question, the effort on the days that were counted, and that one has an
-answer:</p>
+34 weekend days as zero effort. The default target,
+<code>"period_total"</code>, is the season total, so the call above asks
+for it without naming it. <code>target = "sampled_days"</code> asks a
+smaller question, the effort on the days that were counted, and that one
+has an answer:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">weekday_only</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">weekday_only</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Total</span></span>
@@ -226,8 +228,8 @@ has effort but no interviews, its catch is unknown:</p>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `check_missing_rate_strata()`:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 1 effort cell has no rate in <span style="color: #0000BB;">"estimate_total_catch"</span>.</span></span>
 <span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> No usable interviews for: day_type = weekend.</span></span>
-<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> Their contribution to the total is unknown, not zero: 490 effort units, 16%</span></span>
-<span><span class="co">#&gt;   of the effort being totalled.</span></span>
+<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> Their contribution to the total is unknown, not zero: 2082.5 effort units,</span></span>
+<span><span class="co">#&gt;   20.8% of the effort being totalled.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Collect or attach interviews for that cell, or group more coarsely so it</span></span>
 <span><span class="co">#&gt;   shares a rate.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> `missing_rate = "exclude"` reports the total over the covered cells only, and</span></span>
@@ -241,7 +243,7 @@ it:</p>
 <span>  missing_rate <span class="op">=</span> <span class="st">"exclude"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: 1 effort cell with no rate excluded from <span style="color: #0000BB;">"estimate_total_catch"</span>.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Excluded: day_type = weekend (490 effort units, 16%).</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Excluded: day_type = weekend (2082.5 effort units, 20.8%).</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> The total covers the remaining cells only; see <span style="color: #00BB00;">excluded_strata</span> on the result.</span></span>
 <span><span class="va">weekday_total</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -249,21 +251,21 @@ it:</p>
 <span><span class="co">#&gt; Method: Total Catch (Effort × CPUE)</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: fish</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     536.  136.     267.     806.   138</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>647.  418.     820.    <span style="text-decoration: underline;">2</span>475.   138</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covers the cells with a rate only. Excluded (no rate), see $excluded_strata:</span></span>
-<span><span class="co">#&gt;   day_type = weekend: 490 effort units</span></span>
+<span><span class="co">#&gt;   day_type = weekend: 2082 effort units</span></span>
 <span><span class="va">weekday_total</span><span class="op">$</span><span class="va">excluded_strata</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 3</span></span></span>
 <span><span class="co">#&gt;   day_type effort_excluded excluded_from       </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend              490 estimate_total_catch</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend            <span style="text-decoration: underline;">2</span>082. estimate_total_catch</span></span></code></pre></div>
 <p>The warning is the point: this total is the weekday catch, not the
 season’s, and nothing about the number says so except the warning and
 the record.</p>
@@ -363,7 +365,7 @@ sampling only:</p>
 <span><span class="co">#&gt; Method: aerial_total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 774.4 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
@@ -381,7 +383,7 @@ sampling only:</p>
 <span><span class="co">#&gt; Method: aerial_total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 774.4 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
@@ -402,7 +404,7 @@ the standard error is too:</p>
 <span><span class="co">#&gt; Method: aerial_total</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Effort target: sampled_days</span></span>
+<span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 658.3 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; within_day: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>

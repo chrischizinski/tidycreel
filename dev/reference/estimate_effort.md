@@ -13,7 +13,7 @@ estimate_effort(
   by = NULL,
   variance = "taylor",
   conf_level = 0.95,
-  target = c("sampled_days", "stratum_total", "period_total"),
+  target = c("period_total", "stratum_total", "sampled_days"),
   verbose = FALSE,
   aggregate_sections = TRUE,
   method = "correlated",
@@ -55,25 +55,28 @@ estimate_effort(
 - target:
 
   Character string specifying the temporal effort target. Options:
-  `"sampled_days"` (default, current behavior: total across sampled PSU
-  rows only), `"stratum_total"` (expand sampled-day means within
-  calendar strata before combining), or `"period_total"` (full
-  calendar-period total after stratum expansion). For standard
-  stratified count designs, `"stratum_total"` and `"period_total"` use
-  the same weighted expansion engine; the distinction is semantic and is
-  recorded on the returned object as `effort_target`. Expanded targets
-  run on standard, sectioned and aerial count designs, and on bus-route
-  and ice designs given the calendar's register of sampled days
-  (`creel_design(sampled = )`, GH \#591). There each stratum's
-  Horvitz-Thompson total over the worked days, empty ones included as
-  zeros, is scaled by N_h / n_h, with the with-replacement between-day
-  variance (one period is worked per day, so the within-day variance is
-  not identified). On an expanded target a stratum's between-day
-  variance takes the finite-population correction only when every
-  sampled day in it has two or more counts: with one count per day the
-  correction would also remove the variation from when in the day the
-  count fell, which nothing then restores, so it is left out and the
-  variance is conservative (GH \#505).
+  `"period_total"` (default since 9.0.0: the full calendar-period total
+  after stratum expansion, the season total usually reported),
+  `"stratum_total"` (expand sampled-day means within calendar strata
+  before combining), or `"sampled_days"` (the total over the sampled
+  days only, a fraction of the season whenever not every day was
+  sampled; see
+  [`vignette("unextrapolated-summaries")`](https://chrischizinski.com/tidycreel/dev/articles/unextrapolated-summaries.md)).
+  For standard stratified count designs, `"stratum_total"` and
+  `"period_total"` use the same weighted expansion engine; the
+  distinction is semantic and is recorded on the returned object as
+  `effort_target`. Expanded targets run on standard, sectioned and
+  aerial count designs, and on bus-route and ice designs given the
+  calendar's register of sampled days (`creel_design(sampled = )`, GH
+  \#591). There each stratum's Horvitz-Thompson total over the worked
+  days, empty ones included as zeros, is scaled by N_h / n_h, with the
+  with-replacement between-day variance (one period is worked per day,
+  so the within-day variance is not identified). On an expanded target a
+  stratum's between-day variance takes the finite-population correction
+  only when every sampled day in it has two or more counts: with one
+  count per day the correction would also remove the variation from when
+  in the day the count fell, which nothing then restores, so it is left
+  out and the variance is conservative (GH \#505).
 
 - verbose:
 
@@ -266,7 +269,7 @@ print(result)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
@@ -288,7 +291,7 @@ print(result_grouped)
 #> Variance: Taylor linearization
 #> Confidence level: 95%
 #> Grouped by: day_type
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 2 × 9
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
@@ -309,7 +312,7 @@ print(result_boot)
 #> Method: Total
 #> Variance: Bootstrap
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
@@ -324,7 +327,7 @@ print(result_jk)
 #> Method: Total
 #> Variance: Jackknife
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          

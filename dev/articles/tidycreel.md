@@ -119,19 +119,6 @@ estimate_effort(design)
 #> Method: Total
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
-#> Unit: angler-hours
-#> 
-#> # A tibble: 1 × 8
-#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     3066  386.       386.         0    2282.    3850.    36 between_day_upper…
-estimate_effort(design, target = "period_total")
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Total
-#> Variance: Taylor linearization
-#> Confidence level: 95%
 #> Effort target: period_total
 #> Unit: angler-hours
 #> 
@@ -139,14 +126,28 @@ estimate_effort(design, target = "period_total")
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
 #> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
+estimate_effort(design, target = "sampled_days")
+#> 
+#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
+#> Method: Total
+#> Variance: Taylor linearization
+#> Confidence level: 95%
+#> Effort target: sampled_days
+#> Unit: angler-hours
+#> 
+#> # A tibble: 1 × 8
+#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
+#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
+#> 1     3066  386.       386.         0    2282.    3850.    36 between_day_upper…
 ```
 
-The first estimate, the default, is the effort **on the 36 days that
-were sampled**: 3,066 angler-hours. The second is the effort **over the
-whole 120-day season**, about 9,994 angler-hours. That season total is
-the number usually reported. Each stratum’s mean daily effort is
-multiplied by the number of days in that stratum, then the strata are
-added. For a season total, ask for `target = "period_total"`.
+The first estimate, the default (`target = "period_total"`), is the
+effort **over the whole 120-day season**, about 9,994 angler-hours. That
+season total is the number usually reported. Each stratum’s mean daily
+effort is multiplied by the number of days in that stratum, then the
+strata are added. The second is the effort **on the 36 days that were
+sampled**: 3,066 angler-hours. Ask for it with
+`target = "sampled_days"`.
 
 The standard error comes from the day-to-day variation among the sampled
 days within each stratum. With one count per day the within-day

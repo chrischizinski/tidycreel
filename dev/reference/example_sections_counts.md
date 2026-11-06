@@ -102,12 +102,15 @@ counts <- prep_counts_daily_effort(example_sections_counts,
 )
 design <- add_counts(design, counts)
 estimate_effort(design)
+#> ℹ Expanding 12 sampled units carrying 36 count rows between them.
+#> ℹ Rows sharing a date are summed into it first: the expansion factor is days
+#>   over days, not rows over rows.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: total-sections
 #> Variance: Taylor linearization
 #> Confidence level: 95%
-#> Effort target: sampled_days
+#> Effort target: period_total
 #> 
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis

@@ -133,11 +133,12 @@ estimate_effort(one_day, variance = "taylor")
 #> ℹ Consider combining sparse strata or collecting more data.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Error in `value[[3L]]()`:
-#> ! Stratum "weekend" has only 1 PSU — variance cannot be estimated.
+#> ! A stratum has only 1 PSU — variance cannot be estimated.
 #> ✖ A stratum must have at least 2 PSUs (e.g., 2 sampled days) for variance
-#>   estimation.
-#> ℹ Increase the sampling rate for stratum "weekend", or combine sparse strata
-#>   before estimation.
+#>   estimation, unless every sampled day has two or more counts and the stratum
+#>   was fully sampled.
+#> ℹ Increase the sampling rate, combine sparse strata before estimation, or, for
+#>   a stratum of a single day that was sampled, count that day more than once.
 ```
 
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
