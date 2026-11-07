@@ -329,10 +329,40 @@ test_that("creel_calendar() columns are not flagged as unclassified domains (#60
   expect_false(any(names(cal) %in% tidycreel:::pooled_domain_candidates(d)))
 })
 
-test_that("an interview-only domain is still flagged next to calendar columns (#605)", {
-  # The fix claims calendar columns, not every column: species sought is still
-  # knowable only by asking, and still warns.
+test_that("only calendar columns fixed by the date are claimed (#605)", {
+  # A column with one value per date is classified by the counts' dates. One
+  # that varies within a date -- a calendar with a row per period -- is not,
+  # and must stay a candidate. Both are joined onto the interviews here as
+  # add_interviews() would join them.
   d <- make_pooled_domain_design(bass_multiplier = 3L)
-  d$calendar$month_label <- format(d$calendar$date, "%B")
-  expect_true("target" %in% tidycreel:::pooled_domain_candidates(d))
+  cal <- d$calendar
+  cal <- rbind(transform(cal, period = "am"), transform(cal, period = "pm"))
+  cal$per_date <- ifelse(as.integer(format(cal$date, "%d")) <= 4L, "early", "late")
+  cal$crew <- ifelse(cal$period == "am", "crew_a", "crew_b")
+  d$calendar <- cal
+  iv <- d$interviews
+  iv$per_date <- ifelse(as.integer(format(iv$date, "%d")) <= 4L, "early", "late")
+  iv$crew <- rep_len(c("crew_a", "crew_b"), nrow(iv))
+  d$interviews <- iv
+
+  cand <- tidycreel:::pooled_domain_candidates(d)
+  expect_false("per_date" %in% cand)
+  expect_true("crew" %in% cand)
+  # An interview-only domain is untouched.
+  expect_true("target" %in% cand)
+})
+
+test_that("a calendar column renamed by the join is matched by value, not name (#605)", {
+  # add_interviews() keeps an interview column that collides with a calendar
+  # column and renames the calendar copy `<name>_cal`. The interview's own
+  # column is then a genuine domain, and the `_cal` copy is the calendar's.
+  d <- make_pooled_domain_design(bass_multiplier = 3L)
+  d$calendar$stratum <- d$calendar$day_type
+  iv <- d$interviews
+  iv$stratum_cal <- d$calendar$stratum[match(iv$date, d$calendar$date)]
+  iv$stratum <- iv$target # the interview-only domain under a calendar name
+  d$interviews <- iv
+  cand <- tidycreel:::pooled_domain_candidates(d)
+  expect_true("stratum" %in% cand)
+  expect_false("stratum_cal" %in% cand)
 })
