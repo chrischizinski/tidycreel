@@ -105,11 +105,17 @@ test_that("#403: without the declaration nothing changes, even when the labels m
   lake_off <- off$estimates[off$estimates$section == ".lake_total", ]
   secs_off <- off$estimates[off$estimates$section %in% c("A", "B"), ]
   expect_equal(lake_off$se_within, sqrt(sum(secs_off$se_within^2)), tolerance = 1e-10)
-  # The per-section rows are identical either way; only the lake row differs.
+  # The per-section effort rows are identical either way; the lake row and the
+  # sections' shares of it differ. A share's SE carries the within-day
+  # covariance since #599: sections that rise and fall together keep their
+  # shares steady, so the declared shares vary less.
+  share_cols <- "se_prop_of_lake_total"
+  secs_on <- on$estimates[on$estimates$section %in% c("A", "B"), ]
   expect_equal(
-    off$estimates[off$estimates$section %in% c("A", "B"), ],
-    on$estimates[on$estimates$section %in% c("A", "B"), ]
+    secs_off[setdiff(names(secs_off), share_cols)],
+    secs_on[setdiff(names(secs_on), share_cols)]
   )
+  expect_true(all(secs_on$se_prop_of_lake_total < secs_off$se_prop_of_lake_total))
   expect_equal(lake_off$estimate, on$estimates$estimate[on$estimates$section == ".lake_total"])
 })
 
