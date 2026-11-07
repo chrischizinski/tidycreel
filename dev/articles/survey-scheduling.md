@@ -732,9 +732,11 @@ comp
 #> ✖ Completeness issues found
 #> 
 #> 
-#> ── Missing Days ──
+#> ── Sampled Days ──
 #> 
-#> ! 16 calendar day(s) with no count data
+#> weekday: 10 of 20 calendar days counted
+#> weekend: 4 of 10 calendar days counted
+#> ℹ Missing scheduled days: not checked. Pass the schedule (`schedule = `) to find scheduled days with no counts; unsampled calendar days are not missing data.
 #> 
 #> ── Low-n Strata (threshold: 10) ──
 #> 
@@ -745,18 +747,29 @@ comp
 #> (not recorded or not applicable)
 ```
 
-Here the 16 “missing” days are the days of June after the 14 that were
-sampled. They were never scheduled, so they are not missing data.
-[`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md)
-compares the counts with the whole calendar rather than with the
-schedule, and so reports every unsampled day (#391). Until that is
-fixed, read the missing-day count against the number of days you did not
-plan to sample.
+The report lists how many of each stratum’s calendar days were counted.
+It does not call the other days missing: in a sampled design most
+calendar days are meant to have no counts. A missing day is a
+*scheduled* day with no counts, and finding those needs the schedule.
+Pass it as `schedule`: the `creel_schedule` from
+[`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md),
+or any data frame of scheduled dates. Here the schedule was the first 14
+days of June plus June 20, which the crew did not count:
+
+``` r
+
+schedule <- data.frame(date = c(unique(example_counts$date), as.Date("2024-06-20")))
+comp <- check_completeness(design, schedule = schedule)
+comp$missing_days
+#>         date day_type
+#> 1 2024-06-20  weekday
+```
 
 `comp$passed` returns `TRUE` if no issues were found. When `FALSE`,
-`comp$missing_days` identifies dates that appear in the schedule but
-have no count data, and `comp$low_n_strata` identifies strata where the
-interview count is below the minimum threshold (`n_min`, default 10).
+`comp$missing_days` identifies scheduled days with no count data, and
+`comp$low_n_strata` identifies strata where the interview count is below
+the minimum threshold (`n_min`, default 10). A bus-route or ice design’s
+`sampled` register serves as the schedule when none is given.
 
 ## Assembling the Season Summary
 

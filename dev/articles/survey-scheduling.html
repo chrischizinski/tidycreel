@@ -939,9 +939,11 @@ or CPUE estimates.</p>
 <span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> Completeness issues found</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── <span style="font-weight: bold;">Missing Days</span> ──</span></span>
+<span><span class="co">#&gt; ── <span style="font-weight: bold;">Sampled Days</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 16 calendar day(s) with no count data</span></span>
+<span><span class="co">#&gt; weekday: 10 of 20 calendar days counted</span></span>
+<span><span class="co">#&gt; weekend: 4 of 10 calendar days counted</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Missing scheduled days: not checked. Pass the schedule (`schedule = `) to find scheduled days with no counts; unsampled calendar days are not missing data.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">Low-n Strata (threshold: 10)</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -950,18 +952,27 @@ or CPUE estimates.</p>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">Refusal Rates</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; (not recorded or not applicable)</span></span></code></pre></div>
-<p>Here the 16 “missing” days are the days of June after the 14 that
-were sampled. They were never scheduled, so they are not missing data.
-<code><a href="../reference/check_completeness.html">check_completeness()</a></code> compares the counts with the whole
-calendar rather than with the schedule, and so reports every unsampled
-day (#391). Until that is fixed, read the missing-day count against the
-number of days you did not plan to sample.</p>
+<p>The report lists how many of each stratum’s calendar days were
+counted. It does not call the other days missing: in a sampled design
+most calendar days are meant to have no counts. A missing day is a
+<em>scheduled</em> day with no counts, and finding those needs the
+schedule. Pass it as <code>schedule</code>: the
+<code>creel_schedule</code> from <code><a href="../reference/generate_schedule.html">generate_schedule()</a></code>, or
+any data frame of scheduled dates. Here the schedule was the first 14
+days of June plus June 20, which the crew did not count:</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">schedule</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">$</span><span class="va">date</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2024-06-20"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/check_completeness.html">check_completeness</a></span><span class="op">(</span><span class="va">design</span>, schedule <span class="op">=</span> <span class="va">schedule</span><span class="op">)</span></span>
+<span><span class="va">comp</span><span class="op">$</span><span class="va">missing_days</span></span>
+<span><span class="co">#&gt;         date day_type</span></span>
+<span><span class="co">#&gt; 1 2024-06-20  weekday</span></span></code></pre></div>
 <p><code>comp$passed</code> returns <code>TRUE</code> if no issues were
 found. When <code>FALSE</code>, <code>comp$missing_days</code>
-identifies dates that appear in the schedule but have no count data, and
+identifies scheduled days with no count data, and
 <code>comp$low_n_strata</code> identifies strata where the interview
-count is below the minimum threshold (<code>n_min</code>, default
-10).</p>
+count is below the minimum threshold (<code>n_min</code>, default 10). A
+bus-route or ice design’s <code>sampled</code> register serves as the
+schedule when none is given.</p>
 </div>
 <div class="section level2">
 <h2 id="assembling-the-season-summary">Assembling the Season Summary<a class="anchor" aria-label="anchor" href="#assembling-the-season-summary"></a>
@@ -973,7 +984,7 @@ related functions — and joins them into a single wide tibble for
 reporting or export. It performs no re-estimation; it is purely an
 assembly step that makes it easy to view all key metrics side by
 side.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run estimators first (see the tidycreel workflow vignette)</span></span>
 <span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">cpue</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
@@ -985,7 +996,7 @@ side.</p>
 and interviews, and running the estimators — is covered in the main
 tidycreel vignette. <code><a href="../reference/season_summary.html">season_summary()</a></code> is the final step that
 wraps pre-computed results for export or reporting.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">summary_tbl</span><span class="op">$</span><span class="va">table</span>, <span class="st">"season_2024_summary.xlsx"</span>, format <span class="op">=</span> <span class="st">"xlsx"</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/write_schedule.html">write_schedule()</a></code> writes any data frame or tibble, so the
 season summary table exports to CSV or xlsx with a single call. Name

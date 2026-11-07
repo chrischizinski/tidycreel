@@ -1302,6 +1302,20 @@
 
 ### Bug fixes
 
+- [`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md)
+  no longer reports every unsampled calendar day as missing
+  ([\#391](https://github.com/chrischizinski/tidycreel/issues/391)). It
+  compared the counts with the whole calendar, so a sampled season was
+  always “incomplete” (16 days on the June example, 96 of 214 on a real
+  season) and a scheduled day the crew missed was one line among them. A
+  missing day is now a scheduled day with no counts: pass the schedule
+  with the new `schedule` argument (a
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md)
+  result or any data frame of dates), or a bus-route or ice design’s
+  `sampled` register is used. Without either the missing-day check is
+  not run and does not fail `passed`. The report also lists counted
+  against calendar days per stratum (`$coverage`).
+
 - A sectioned `.lake_total` row no longer counts within-day variance
   twice where sections differ in counts per day
   ([\#599](https://github.com/chrischizinski/tidycreel/issues/599)). The

@@ -80,7 +80,7 @@ camera designs that do not collect interview data.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_completeness</span><span class="op">(</span><span class="va">design</span>, n_min <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_completeness</span><span class="op">(</span><span class="va">design</span>, n_min <span class="op">=</span> <span class="fl">10L</span>, schedule <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -95,11 +95,33 @@ camera designs that do not collect interview data.</p>
 <dd><p>Integer scalar &gt;= 1. Interview threshold below which a stratum is flagged
 as low-n. Default 10L.</p></dd>
 
+
+<dt id="arg-schedule">schedule<a class="anchor" aria-label="anchor" href="#arg-schedule"></a></dt>
+<dd><p>The days the survey scheduled: the schedule from
+<code><a href="generate_schedule.html">generate_schedule()</a></code>, or any data frame with the design's date column (or
+<code>date</code>). A logical <code>sampled</code> column, when present, keeps its <code>TRUE</code> rows.
+A missing day is a scheduled day with no counts: in a sampled design most
+calendar days are meant to have none, so without a schedule the
+missing-day check is not run (GH #391). A bus-route or ice design's
+<code>sampled</code> register is used when no schedule is given.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A creel_completeness_report object (S3 list) with:</p><dl><dt>$missing_days</dt>
-<dd><p>data.frame of calendar rows with no count data</p></dd>
+<dd><p>data.frame of scheduled days with no count data;
+zero rows when the check was not run</p></dd>
+
+<dt>$missing_days_checked</dt>
+<dd><p>logical – FALSE when no schedule was known
+or no counts are attached</p></dd>
+
+<dt>$schedule_source</dt>
+<dd><p><code>"schedule"</code>, <code>"sampled register"</code> or <code>NA</code></p></dd>
+
+<dt>$coverage</dt>
+<dd><p>data.frame of calendar days (<code>n_calendar</code>) and counted
+days (<code>n_counted</code>) per stratum</p></dd>
 
 <dt>$low_n_strata</dt>
 <dd><p>data.frame of strata below n_min, or NULL for aerial/camera</p></dd>
@@ -114,7 +136,8 @@ as low-n. Default 10L.</p></dd>
 <dd><p>character</p></dd>
 
 <dt>$passed</dt>
-<dd><p>logical – TRUE if no missing days and no low-n strata</p></dd>
+<dd><p>logical – TRUE if no missing scheduled days (when
+checked) and no low-n strata</p></dd>
 
 
 </dl></div>
@@ -175,9 +198,34 @@ as low-n. Default 10L.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BB0000;">✖</span> Completeness issues found</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Missing Days</span> ──</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Sampled Days</span> ──</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> 16 calendar day(s) with no count data</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> weekday: 10 of 20 calendar days counted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> weekend: 4 of 10 calendar days counted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Missing scheduled days: not checked. Pass the schedule (`schedule = `) to find scheduled days with no counts; unsampled calendar days are not missing data.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Low-n Strata (threshold: 10)</span> ──</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> 1 stratum/strata below n_min=10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Refusal Rates</span> ──</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (not recorded or not applicable)</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># With the schedule, a scheduled day that was not counted is reported</span></span></span>
+<span class="r-in"><span><span class="va">sched</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>date <span class="op">=</span> <span class="va">example_calendar</span><span class="op">$</span><span class="va">date</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">15</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">check_completeness</span><span class="op">(</span><span class="va">design</span>, schedule <span class="op">=</span> <span class="va">sched</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Completeness Report</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Survey type: instantaneous | n_min threshold: 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BB0000;">✖</span> Completeness issues found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Sampled Days</span> ──</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> weekday: 10 of 20 calendar days counted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> weekend: 4 of 10 calendar days counted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> 1 scheduled day with no count data (from the schedule)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Low-n Strata (threshold: 10)</span> ──</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

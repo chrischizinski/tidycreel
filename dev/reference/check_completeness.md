@@ -6,7 +6,7 @@ camera designs that do not collect interview data.
 ## Usage
 
 ``` r
-check_completeness(design, n_min = 10L)
+check_completeness(design, n_min = 10L, schedule = NULL)
 ```
 
 ## Arguments
@@ -21,13 +21,38 @@ check_completeness(design, n_min = 10L)
   Integer scalar \>= 1. Interview threshold below which a stratum is
   flagged as low-n. Default 10L.
 
+- schedule:
+
+  The days the survey scheduled: the schedule from
+  [`generate_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/generate_schedule.md),
+  or any data frame with the design's date column (or `date`). A logical
+  `sampled` column, when present, keeps its `TRUE` rows. A missing day
+  is a scheduled day with no counts: in a sampled design most calendar
+  days are meant to have none, so without a schedule the missing-day
+  check is not run (GH \#391). A bus-route or ice design's `sampled`
+  register is used when no schedule is given.
+
 ## Value
 
 A creel_completeness_report object (S3 list) with:
 
 - \$missing_days:
 
-  data.frame of calendar rows with no count data
+  data.frame of scheduled days with no count data; zero rows when the
+  check was not run
+
+- \$missing_days_checked:
+
+  logical – FALSE when no schedule was known or no counts are attached
+
+- \$schedule_source:
+
+  `"schedule"`, `"sampled register"` or `NA`
+
+- \$coverage:
+
+  data.frame of calendar days (`n_calendar`) and counted days
+  (`n_counted`) per stratum
 
 - \$low_n_strata:
 
@@ -47,7 +72,8 @@ A creel_completeness_report object (S3 list) with:
 
 - \$passed:
 
-  logical – TRUE if no missing days and no low-n strata
+  logical – TRUE if no missing scheduled days (when checked) and no
+  low-n strata
 
 ## See also
 
@@ -106,9 +132,34 @@ check_completeness(design)
 #> ✖ Completeness issues found
 #> 
 #> 
-#> ── Missing Days ──
+#> ── Sampled Days ──
 #> 
-#> ! 16 calendar day(s) with no count data
+#> weekday: 10 of 20 calendar days counted
+#> weekend: 4 of 10 calendar days counted
+#> ℹ Missing scheduled days: not checked. Pass the schedule (`schedule = `) to find scheduled days with no counts; unsampled calendar days are not missing data.
+#> 
+#> ── Low-n Strata (threshold: 10) ──
+#> 
+#> ! 1 stratum/strata below n_min=10
+#> 
+#> ── Refusal Rates ──
+#> 
+#> (not recorded or not applicable)
+
+# With the schedule, a scheduled day that was not counted is reported
+sched <- data.frame(date = example_calendar$date[1:15])
+check_completeness(design, schedule = sched)
+#> 
+#> ── Completeness Report ─────────────────────────────────────────────────────────
+#> Survey type: instantaneous | n_min threshold: 10
+#> ✖ Completeness issues found
+#> 
+#> 
+#> ── Sampled Days ──
+#> 
+#> weekday: 10 of 20 calendar days counted
+#> weekend: 4 of 10 calendar days counted
+#> ! 1 scheduled day with no count data (from the schedule)
 #> 
 #> ── Low-n Strata (threshold: 10) ──
 #> 
