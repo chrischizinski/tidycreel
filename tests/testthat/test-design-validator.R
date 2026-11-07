@@ -390,8 +390,11 @@ describe("check_completeness() — QUAL-01", {
     first_date <- unique(example_counts$date)[1]
     counts_trimmed <- example_counts[example_counts$date != first_date, ]
     d2 <- suppressWarnings(add_counts(d, counts_trimmed))
-    r <- suppressWarnings(check_completeness(d2))
-    expect_gte(nrow(r$missing_days), 1L)
+    # Missing means scheduled and not counted (#391): the schedule lists the
+    # 14 counted dates of example_counts, one of which lost its counts.
+    r <- suppressWarnings(check_completeness(d2, schedule = data.frame(date = unique(example_counts$date))))
+    expect_equal(nrow(r$missing_days), 1L)
+    expect_equal(r$missing_days$date, first_date)
   })
 
   it("aerial design -> $low_n_strata is NULL (no interview-based flags)", {

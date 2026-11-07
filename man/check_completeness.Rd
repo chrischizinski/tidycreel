@@ -4,23 +4,38 @@
 \alias{check_completeness}
 \title{Check post-season data completeness for a creel design}
 \usage{
-check_completeness(design, n_min = 10L)
+check_completeness(design, n_min = 10L, schedule = NULL)
 }
 \arguments{
 \item{design}{A creel_design object with counts (and optionally interviews) attached.}
 
 \item{n_min}{Integer scalar >= 1. Interview threshold below which a stratum is flagged
 as low-n. Default 10L.}
+
+\item{schedule}{The days the survey scheduled: the schedule from
+\code{\link[=generate_schedule]{generate_schedule()}}, or any data frame with the design's date column (or
+\code{date}). A logical \code{sampled} column, when present, keeps its \code{TRUE} rows.
+A missing day is a scheduled day with no counts: in a sampled design most
+calendar days are meant to have none, so without a schedule the
+missing-day check is not run (GH #391). A bus-route or ice design's
+\code{sampled} register is used when no schedule is given.}
 }
 \value{
 A creel_completeness_report object (S3 list) with:
 \describe{
-\item{$missing_days}{data.frame of calendar rows with no count data}
+\item{$missing_days}{data.frame of scheduled days with no count data;
+zero rows when the check was not run}
+\item{$missing_days_checked}{logical -- FALSE when no schedule was known
+or no counts are attached}
+\item{$schedule_source}{\code{"schedule"}, \code{"sampled register"} or \code{NA}}
+\item{$coverage}{data.frame of calendar days (\code{n_calendar}) and counted
+days (\code{n_counted}) per stratum}
 \item{$low_n_strata}{data.frame of strata below n_min, or NULL for aerial/camera}
 \item{$refusals}{creel_summary_refusals object or NULL}
 \item{$n_min}{integer threshold used}
 \item{$survey_type}{character}
-\item{$passed}{logical -- TRUE if no missing days and no low-n strata}
+\item{$passed}{logical -- TRUE if no missing scheduled days (when
+checked) and no low-n strata}
 }
 }
 \description{
@@ -38,6 +53,10 @@ design <- add_interviews(design, example_interviews,
   trip_status = trip_status
 )
 check_completeness(design)
+
+# With the schedule, a scheduled day that was not counted is reported
+sched <- data.frame(date = example_calendar$date[1:15])
+check_completeness(design, schedule = sched)
 
 }
 \seealso{
