@@ -3386,6 +3386,8 @@ add_counts <- function(
   # Preserve class
   class(new_design) <- "creel_design"
 
+  warn_calendar_is_census(new_design)
+
   record_step( # nolint: object_usage_linter
     new_design, "add_counts",
     list(count_col = count_col_name, psu = psu, count_time_col = count_time_col_name,
@@ -6632,4 +6634,52 @@ split_no_trip_status <- function(interviews, trip_status_col, design, call = rla
     " " = "Kept in {.field design$excluded_interviews}; no estimate uses them."
   ), class = c("creel_message_no_trip_status_excluded", "creel_message"))
   list(kept = interviews[!none, , drop = FALSE], excluded = interviews[none, , drop = FALSE])
+}
+
+#' Warn when every calendar day of every stratum has a count
+#'
+#' Internal (GH #584). The calendar is the population of days: N_h is counted
+#' from it. A calendar built from the sampled dates makes every stratum a
+#' census, and the season total (`target = "period_total"`, the default since
+#' #487) silently returns the effort of those days alone. Nothing else catches
+#' it -- #449 refuses counts outside the calendar, not a calendar too small.
+#'
+#' Only the all-strata case warns: one census stratum (a fully sampled holiday)
+#' is usually deliberate. Bus-route and ice designs are skipped, as their
+#' sampled days come from the `sampled` register, not from the counts; so are
+#' camera designs, which no estimator expands by the calendar
+#' (`estimate_effort()` refuses them and `est_effort_camera()` calibrates the
+#' counted days).
+#'
+#' @param design A creel_design with counts attached.
+#' @return `invisible(NULL)`.
+#' @keywords internal
+#' @noRd
+warn_calendar_is_census <- function(design) {
+  if (design$design_type %in% c("bus_route", "ice", "camera")) {
+    return(invisible(NULL))
+  }
+  strata_cols <- design$strata_cols %||% character(0)
+  date_col <- design$date_col
+  pop <- stratum_population_days(design$calendar, strata_cols, date_col) # nolint: object_usage_linter
+  counted <- design$counts |>
+    dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, date_col)))) |>
+    dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".n_counted")
+  cells <- dplyr::left_join(pop, counted, by = strata_cols)
+  if (anyNA(cells$.n_counted) || any(cells$.n_counted < cells$.N_avail)) {
+    return(invisible(NULL))
+  }
+  n_days <- sum(cells$.N_avail) # nolint: object_usage_linter
+  creel_warn(
+    c(
+      "Every calendar day has a count: all {n_days} day{?s} of the calendar \
+       {?was/were} sampled.",
+      "!" = "Expanded totals ({.code target = \"period_total\"}, the default) are \
+             then census totals of these days only.",
+      "i" = "If the calendar was built from the sampled dates, rebuild it with every \
+             day of the season, e.g. with {.fn creel_calendar}."
+    ),
+    class = c("creel_warning_calendar_is_census", "creel_warning")
+  )
+  invisible(NULL)
 }

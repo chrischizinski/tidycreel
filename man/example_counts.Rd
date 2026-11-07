@@ -7,7 +7,7 @@
 \format{
 A data frame with 14 rows and 3 columns:
 \describe{
-\item{date}{Survey date (Date class), matching \link{example_calendar} dates}
+\item{date}{Survey date (Date class), the sampled days of \link{example_calendar}}
 \item{day_type}{Day type stratum: "weekday" or "weekend", matching calendar}
 \item{effort_hours}{Numeric angler-hours observed on the survey date}
 }
@@ -19,7 +19,8 @@ Simulated data for package examples
 example_counts
 }
 \description{
-Sample daily effort observations matching \link{example_calendar}. One row per
+Sample daily effort observations for the first 14 days of \link{example_calendar}
+(June 1-14, 2024): the sampled days. One row per
 survey date, suitable for use with \code{\link[=add_counts]{add_counts()}} and \code{\link[=estimate_effort]{estimate_effort()}}.
 }
 \details{

@@ -27,16 +27,22 @@ test_that("a day carrying several count rows expands by days, not by rows", {
   ))
 
   # Hand Horvitz-Thompson: sum each day's sections into a day total, expand by
-  # N_h / n_h over DAYS. Every calendar day was sampled here, so the weights are
-  # 1 and the total is the sum of the counts -- 846, not the 282 that dividing
-  # by 36 rows produced.
+  # N_h / n_h over DAYS. The calendar has 13 weekdays and 6 weekend days; 6 and
+  # 6 were sampled (#584). Dividing by the 36 rows instead of the 12 days
+  # divided every weight by 3.
   day_totals <- stats::aggregate(
     effort_hours ~ date + day_type,
     data = example_sections_counts,
     FUN = sum
   )
-  expect_equal(result$estimates$estimate, sum(day_totals$effort_hours))
-  expect_equal(result$estimates$estimate, 846)
+  n_h <- table(day_totals$day_type)
+  N_h <- table(example_sections_calendar$day_type)[names(n_h)]
+  by_stratum <- tapply(day_totals$effort_hours, day_totals$day_type, sum)[names(n_h)]
+  expected <- sum(as.numeric(N_h / n_h) * by_stratum)
+  expect_equal(result$estimates$estimate, expected)
+  # The day totals sum to 846; the weekday stratum alone is expanded.
+  expect_equal(sum(day_totals$effort_hours), 846)
+  expect_gt(result$estimates$estimate, 846)
 })
 
 test_that("one row per sampled day is expanded exactly as before", {

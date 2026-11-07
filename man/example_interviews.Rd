@@ -7,7 +7,7 @@
 \format{
 A data frame with 22 rows and 12 columns:
 \describe{
-\item{date}{Interview date (Date class), matching \link{example_calendar} dates}
+\item{date}{Interview date (Date class), the sampled days of \link{example_calendar}}
 \item{hours_fished}{Numeric fishing effort in hours}
 \item{catch_total}{Integer total fish caught (kept + released)}
 \item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
@@ -34,7 +34,7 @@ example_interviews
 \description{
 Sample angler interview data demonstrating the structure required for
 \code{\link[=add_interviews]{add_interviews()}}. Contains 22 interviews from June 1-14, 2024,
-matching the \link{example_calendar} date range. Each row represents one
+the sampled days of \link{example_calendar}. Each row represents one
 angler interview with catch, harvest, effort, trip metadata, and extended
 interview attributes added in v0.5.0.
 }

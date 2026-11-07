@@ -7,7 +7,8 @@
 \format{
 A data frame with 36 rows and 4 columns:
 \describe{
-\item{date}{Survey date (Date class), matching \link{example_sections_calendar}}
+\item{date}{Survey date (Date class), the sampled days of
+\link{example_sections_calendar}}
 \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
 \item{section}{Section identifier: \code{"North"}, \code{"Central"}, or
 \code{"South"}}

@@ -218,9 +218,9 @@ estimate_effort(design, method = "independent")$estimates
 ```
 
 The section rows are identical; only the `.lake_total` standard error moves.
-On these shared days it is about 39 angler-hours with the covariance and about
-24 without it, so treating shared-calendar sections as independent would
-understate the lake-total uncertainty by roughly a third.
+On these shared days it is about 69 angler-hours with the covariance and about
+43 without it, so treating shared-calendar sections as independent would
+understate the lake-total uncertainty by more than a third.
 
 ---
 

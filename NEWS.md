@@ -28,6 +28,26 @@
   one-sampled-day refusal names the stratum and offers `"sampled_days"` where
   that day was counted at least twice, the only case it would work (#601).
 
+* `add_counts()` warns when every day of every stratum has a count, with class
+  `creel_warning_calendar_is_census` (tier 1, #584). The calendar is the
+  population of days, so a calendar built from the sampled dates makes the
+  design a census, and the season total (the default since #487) returns the
+  effort of those days alone: 2,380 angler-hours against 8,651 on a 61-day
+  season with 16 sampled days, with nothing said. One census stratum among
+  sampled ones does not warn. Bus-route and ice designs, whose sampled days
+  come from the `sampled` register, and camera designs, which no estimator
+  expands by the calendar, are not checked.
+
+* `example_calendar` now holds the 30 days of June 2024 and
+  `example_sections_calendar` the 19 days of June 3-21 (#584). Their counts
+  and interviews are unchanged and cover 14 and 12 of those days, so the
+  examples are samples of a season rather than censuses of the sampled days,
+  and every expanded total built from them is larger: effort from
+  `example_counts` is 846 angler-hours over June against 372.5 over the 14
+  sampled days, and the sectioned lake total is 1,310 against 846. Pass
+  `target = "sampled_days"`, or subset the calendar to the counted dates, to
+  reproduce the old numbers.
+
 * `estimate_effort(target = "sampled_days")` no longer counts the within-day
   variance twice (#507). With two or more counts a day, the variance of the
   daily totals already contains the within-day variation, and the within-day

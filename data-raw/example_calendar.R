@@ -1,20 +1,16 @@
 ## Script to create example_calendar dataset
-## A 14-day survey calendar with weekday/weekend strata
-## Designed to demonstrate creel_design() and provide realistic example data
+## A 30-day survey calendar (June 2024) with weekday/weekend strata.
+##
+## example_counts and example_interviews cover the first 14 days only, so the
+## toy example is a sample of the season, not a census of it: 14 of 30 days
+## (4 of 10 weekend days, 10 of 20 weekdays) were counted. Up to tidycreel
+## 8.0.0 the calendar held just those 14 days, which made every stratum a
+## census and the season total equal to the sampled-day total (GH #584).
 
+dates <- seq(as.Date("2024-06-01"), as.Date("2024-06-30"), by = "day")
 example_calendar <- data.frame(
-  date = as.Date(c(
-    "2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04",
-    "2024-06-05", "2024-06-06", "2024-06-07", "2024-06-08",
-    "2024-06-09", "2024-06-10", "2024-06-11", "2024-06-12",
-    "2024-06-13", "2024-06-14"
-  )),
-  day_type = c(
-    "weekend", "weekend", "weekday", "weekday",
-    "weekday", "weekday", "weekday", "weekend",
-    "weekend", "weekday", "weekday", "weekday",
-    "weekday", "weekday"
-  ),
+  date = dates,
+  day_type = ifelse(format(dates, "%u") %in% c("6", "7"), "weekend", "weekday"),
   stringsAsFactors = FALSE
 )
 

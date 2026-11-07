@@ -13,6 +13,23 @@ make_standard_design <- function() {
   suppressWarnings(add_counts(d, example_counts)) # nolint: object_usage_linter
 }
 
+# Every calendar day counted: example_calendar spans June and the counts cover
+# June 1-14 (#584), so the calendar is cut to the counted days.
+make_census_design_with_interviews <- function() {
+  data(example_calendar, package = "tidycreel")
+  data(example_interviews, package = "tidycreel")
+  data(example_counts, package = "tidycreel")
+  cal <- example_calendar[example_calendar$date %in% example_counts$date, ]
+  d <- suppressWarnings(
+    add_counts(creel_design(cal, date = date, strata = day_type), example_counts) # nolint: object_usage_linter
+  )
+  suppressWarnings(add_interviews(
+    d, example_interviews,
+    catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+}
+
 make_design_with_interviews <- function() {
   data(example_calendar, package = "tidycreel")
   data(example_interviews, package = "tidycreel")
@@ -357,7 +374,7 @@ describe("check_completeness() — QUAL-01", {
   })
 
   it("design with all days sampled -> $missing_days has 0 rows", {
-    d <- make_design_with_interviews()
+    d <- make_census_design_with_interviews()
     r <- suppressWarnings(check_completeness(d))
     expect_equal(nrow(r$missing_days), 0L)
   })
@@ -410,15 +427,11 @@ describe("check_completeness() — QUAL-01", {
   })
 
   it("$passed is TRUE when no missing days and all strata >= n_min", {
-    d <- make_design_with_interviews()
+    d <- make_census_design_with_interviews()
     # Use a very low n_min so all strata pass
     r <- suppressWarnings(check_completeness(d, n_min = 1L))
-    # missing_days should be 0 rows for complete data
-    if (nrow(r$missing_days) == 0L) {
-      expect_true(r$passed)
-    } else {
-      skip("example data has missing days")
-    }
+    expect_equal(nrow(r$missing_days), 0L)
+    expect_true(r$passed)
   })
 
   it("non-creel_design input triggers cli_abort()", {

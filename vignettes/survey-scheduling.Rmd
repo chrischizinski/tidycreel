@@ -532,6 +532,12 @@ comp <- check_completeness(design)
 comp
 ```
 
+Here the 16 "missing" days are the days of June after the 14 that were sampled.
+They were never scheduled, so they are not missing data. `check_completeness()`
+compares the counts with the whole calendar rather than with the schedule, and so
+reports every unsampled day (#391). Until that is fixed, read the missing-day count
+against the number of days you did not plan to sample.
+
 `comp$passed` returns `TRUE` if no issues were found. When `FALSE`, `comp$missing_days`
 identifies dates that appear in the schedule but have no count data, and
 `comp$low_n_strata` identifies strata where the interview count is below the minimum
