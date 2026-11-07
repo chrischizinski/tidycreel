@@ -299,3 +299,40 @@ test_that("PDM-12: the release screen reads releases, not catch", {
 
   expect_false(is.null(catch_mix_warning(estimate_total_release(design)))) # nolint: object_usage_linter
 })
+
+# GH #605: a calendar column is not a domain the counts failed to classify ----
+#
+# creel_calendar() returns a `stratum` label (identical to day_type here),
+# `month` and `week`. add_interviews() joins the calendar onto the interviews,
+# and the screen read `stratum` as an interview-only domain, warning that the
+# total was biased by the interview mix. The counts carry the date, and every
+# calendar column is a function of the date, so the counts classify it.
+
+test_that("creel_calendar() columns are not flagged as unclassified domains (#605)", {
+  cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
+  expect_true(all(c("stratum", "month", "week") %in% names(cal)))
+  d <- creel_design(cal,
+    date = date, strata = day_type, survey_type = "aerial",
+    visibility_correction = "none", angler_ratio = 1, angler_ratio_se = 0, h_open = 14
+  )
+  d <- suppressWarnings(add_counts(d, example_aerial_counts))
+  d <- suppressWarnings(add_interviews(d, example_aerial_interviews,
+    catch = walleye_catch, effort = hours_fished, trip_status = trip_status,
+    n_anglers = n_anglers
+  ))
+  # The calendar's label reaches the interviews -- the precondition for the bug.
+  expect_true("stratum" %in% names(d$interviews))
+  expect_no_warning(
+    suppressMessages(estimate_total_catch(d)),
+    class = "creel_warning_pooled_domain_mix"
+  )
+  expect_false(any(names(cal) %in% tidycreel:::pooled_domain_candidates(d)))
+})
+
+test_that("an interview-only domain is still flagged next to calendar columns (#605)", {
+  # The fix claims calendar columns, not every column: species sought is still
+  # knowable only by asking, and still warns.
+  d <- make_pooled_domain_design(bass_multiplier = 3L)
+  d$calendar$month_label <- format(d$calendar$date, "%B")
+  expect_true("target" %in% tidycreel:::pooled_domain_candidates(d))
+})

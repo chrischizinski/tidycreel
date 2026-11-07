@@ -2642,7 +2642,8 @@ domain_rate_spread <- function(interviews, domain_col, num_col, den_col) {
 #' Interview columns that could be a domain the counts never classified
 #'
 #' Every column the design gave a role to is claimed through one of its `*_col`
-#' fields, so what is left is genuinely unaccounted for. Restricted to
+#' fields, and every calendar column is claimed because the counts' dates
+#' classify it (GH #605), so what is left is genuinely unaccounted for. Restricted to
 #' categorical columns with 2-10 levels: a domain is something effort could have
 #' been broken down by, not a free-text note or a per-trip measurement.
 #'
@@ -2660,7 +2661,13 @@ pooled_domain_candidates <- function(design) {
     design[["strata_cols"]],
     design[["date_col"]],
     design[["psu_col"]],
-    names(design[["counts"]])
+    names(design[["counts"]]),
+    # A calendar column is a function of the date, and the counts carry the
+    # date, so the counts classify it: pooling over it within a stratum is
+    # pooling over days, the design's own assumption. creel_calendar() adds a
+    # `stratum` label, `month` and `week`, and its `stratum` was flagged as a
+    # domain the counts did not classify (GH #605).
+    names(design[["calendar"]])
   ))
 
   candidates <- setdiff(names(interviews), claimed)
