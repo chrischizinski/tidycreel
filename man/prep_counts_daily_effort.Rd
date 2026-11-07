@@ -46,8 +46,8 @@ each sampled-day estimate is built from (k_d). Required whenever
 \item{within_day_var}{Optional tidy selector for the within-day
 \strong{sum of squares} of the counts behind each sampled-day estimate, that is
 \code{sum((x - mean(x))^2)} per PSU. This is not a variance: the divisor is
-applied downstream by the estimator, which forms
-\code{sum(ss_d) / (n_sampled * (k_bar - 1))}. Supplying a variance here
+applied downstream by the estimator, which forms each day's
+\code{ss_d / (k_d * (k_d - 1))}. Supplying a variance here
 understates the within-day component by a factor of \code{k_d - 1}. Must be \code{0}
 wherever \code{n_counts} is 1, and requires \code{n_counts}.
 
