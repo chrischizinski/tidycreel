@@ -933,6 +933,14 @@
 
 ## Bug fixes
 
+* Totals no longer warn that they pool over a domain the counts do not
+  classify when that "domain" is a calendar column (#605). The calendar is
+  joined onto the interviews, and `creel_calendar()`'s `stratum` label, which
+  equals the day type, was read as an interview-only domain. A calendar
+  column with one value per date is a function of the date, which the counts
+  carry, so it is not one; a column that varies within a date (a calendar with
+  a row per period) is still screened.
+
 * `add_sections()` now refuses a design whose attached counts hold a section
   that was not registered (#595). `add_counts()` already refused this when the
   sections were attached first; in the other order the unregistered section was

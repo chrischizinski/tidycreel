@@ -2642,7 +2642,9 @@ domain_rate_spread <- function(interviews, domain_col, num_col, den_col) {
 #' Interview columns that could be a domain the counts never classified
 #'
 #' Every column the design gave a role to is claimed through one of its `*_col`
-#' fields, so what is left is genuinely unaccounted for. Restricted to
+#' fields, and a column that holds a date-fixed calendar column's values is
+#' dropped because the counts' dates classify it (GH #605), so what is left is
+#' genuinely unaccounted for. Restricted to
 #' categorical columns with 2-10 levels: a domain is something effort could have
 #' been broken down by, not a free-text note or a per-trip measurement.
 #'
@@ -2666,6 +2668,21 @@ pooled_domain_candidates <- function(design) {
   candidates <- setdiff(names(interviews), claimed)
   # Package-internal working columns are never a user domain.
   candidates <- candidates[!startsWith(candidates, ".")]
+  # A column that holds, on every interview, the value a calendar column takes
+  # on that interview's date is a function of the date, and the counts carry
+  # the date, so the counts classify it: pooling over it within a stratum is
+  # pooling over days, the design's own assumption. creel_calendar() adds a
+  # `stratum` label, `month` and `week`, and its `stratum` was flagged as a
+  # domain the counts did not classify (GH #605). Matched by value, not by
+  # name: add_interviews() renames a calendar column that collides with an
+  # interview column (`stratum_cal`), and the interview's own `stratum` is then
+  # a genuine domain. A calendar column that varies within a date is not fixed
+  # by the date and matches nothing.
+  candidates <- candidates[!vapply(
+    candidates,
+    function(nm) is_calendar_value_by_date(design, interviews, nm),
+    logical(1)
+  )]
 
   keep <- vapply(
     candidates,
@@ -2681,6 +2698,43 @@ pooled_domain_candidates <- function(design) {
   )
 
   candidates[keep]
+}
+
+#' Does an interview column hold a date-fixed calendar column's values?
+#'
+#' Internal (GH #605). TRUE when some calendar column takes one value on each
+#' date and, on every interview, `interviews[[nm]]` equals that value on the
+#' interview's date. Such a column is a function of the date, so a count's
+#' date classifies it.
+#'
+#' @param design A creel_design object.
+#' @param interviews The design's interview rows.
+#' @param nm An interview column name.
+#' @return Logical scalar.
+#' @keywords internal
+#' @noRd
+is_calendar_value_by_date <- function(design, interviews, nm) {
+  cal <- design[["calendar"]]
+  date_col <- design[["date_col"]]
+  if (is.null(cal) || is.null(date_col) || !date_col %in% names(cal) ||
+    !date_col %in% names(interviews)) {
+    return(FALSE)
+  }
+  cal_dates <- as.character(cal[[date_col]])
+  at <- match(as.character(interviews[[date_col]]), cal_dates)
+  if (anyNA(at)) {
+    return(FALSE)
+  }
+  x <- as.character(interviews[[nm]])
+  for (cc in setdiff(names(cal), date_col)) {
+    v <- as.character(cal[[cc]])
+    per_date <- tapply(v, cal_dates, function(z) length(unique(z)))
+    if (any(per_date > 1L)) next
+    if (identical(x, v[at])) {
+      return(TRUE)
+    }
+  }
+  FALSE
 }
 
 #' Warn that a total is pooled over a domain the counts never classified
