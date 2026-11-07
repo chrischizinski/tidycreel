@@ -19,8 +19,9 @@ example_sections_calendar
 }
 \description{
 A 19-day survey calendar (June 3-21, 2024) used to demonstrate the
-spatially stratified workflow with \code{\link[=add_sections]{add_sections()}}: 13 weekdays and 6
-weekend days. \link{example_sections_counts} and \link{example_sections_interviews}
+spatially stratified workflow with \code{\link[=add_sections]{add_sections()}}: 13 days labelled
+weekday and 6 labelled weekend. The labels are the ones the counts carry,
+and two weekend days are Fridays (June 14 and 21). \link{example_sections_counts} and \link{example_sections_interviews}
 cover 12 of them (6 weekdays, all 6 weekend days), so the weekday stratum
 is expanded and the weekend stratum is a census. Up to tidycreel 8.0.0 the
 calendar held only the 12 sampled days.

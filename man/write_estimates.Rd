@@ -46,7 +46,7 @@ xlsx, the data are written directly (Excel does not support comment rows).
 # Method: Total Effort | Taylor linearization | 95\% CI
 # Generated: 2024-06-15 09:32:11 UTC
 Estimate,SE,CI Lower,CI Upper,N
-372.5,13.18,343.8,401.2,14
+846,29.57,781.5,910.4,14
 }\if{html}{\out{</div>}}
 
 These lines can be skipped when reading back with

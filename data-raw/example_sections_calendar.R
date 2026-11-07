@@ -21,7 +21,7 @@ example_sections_calendar <- data.frame(
 # The days between the sampled ones that were not counted (GH #584). Without
 # them every stratum is a census and the season total is the sampled-day total.
 # The sampled days keep their labels, which example_sections_counts carries
-# (two of them, 2024-06-10 and 2024-06-14, do not match the day of the week).
+# (two of them, the Fridays 2024-06-14 and 2024-06-21, are labelled weekend).
 unsampled <- as.Date(c(
   "2024-06-11", "2024-06-12", "2024-06-13",
   "2024-06-17", "2024-06-18", "2024-06-19", "2024-06-20"
