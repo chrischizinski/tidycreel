@@ -234,11 +234,13 @@ while South has the lowest. The <code>prop_of_lake_total</code> column
 shows each section’s share of total angler-hours for the survey period,
 and <code>se_prop_of_lake_total</code> its standard error, so shares can
 be compared with the same regard for precision as the totals themselves.
-Both come from one <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> call, which accounts
-for the correlation between a section’s total and the lake-wide total
-that contains it. On the <code>.lake_total</code> row the share is
-exactly 1 with a standard error of 0 — that row’s share of itself is
-structural, not estimated.</p>
+The share and the day-to-day part of its standard error come from one
+<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> call, which accounts for the correlation
+between a section’s total and the lake-wide total that contains it; when
+days carry two or more counts, the within-day part is added to the
+standard error by the delta method. On the <code>.lake_total</code> row
+the share is exactly 1 with a standard error of 0 — that row’s share of
+itself is structural, not estimated.</p>
 <hr>
 </div>
 <div class="section level2">

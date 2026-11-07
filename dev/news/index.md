@@ -1302,6 +1302,28 @@
 
 ### Bug fixes
 
+- A sectioned `.lake_total` row no longer counts within-day variance
+  twice where sections differ in counts per day
+  ([\#599](https://github.com/chrischizinski/tidycreel/issues/599)). The
+  lake row is estimated on the pooled counts, so a stratum where any
+  section has a one-count day takes no finite-population correction, and
+  its day-to-day term already holds every section’s within-day
+  variation; the 2+-count sections’ within-day terms were added on top.
+  Those strata now add none, as on every other path since
+  [\#405](https://github.com/chrischizinski/tidycreel/issues/405), and
+  the lake row’s `se_basis` is read off the pooled design. The section
+  rows are unchanged.
+
+- A section’s `se_prop_of_lake_total` now includes the within-day part
+  of its uncertainty
+  ([\#599](https://github.com/chrischizinski/tidycreel/issues/599)). It
+  came from [`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html)
+  on the day-to-day design alone, so with two or more counts a day on
+  `target = "sampled_days"`, a census of days, it was exactly 0, and on
+  expanded targets it was too small. The within-day part is added by the
+  delta method on the share, using the sections’ within-day covariance
+  when they share count times.
+
 - An unknown (`NA`) count now makes its effort total unknown in full:
   the estimate, `se`, `se_between`, `se_within` and the interval are all
   `NA`

@@ -228,9 +228,12 @@ plus, when <code>aggregate_sections = TRUE</code>, a <code>.lake_total</code> ro
 gains <code>section</code>, <code>prop_of_lake_total</code>,
 <code>se_prop_of_lake_total</code> and <code>data_available</code> columns.
 <code>prop_of_lake_total</code> is the section's share of the lake-wide total
-and <code>se_prop_of_lake_total</code> its standard error; both come from one
-<code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> call, which accounts for the correlation between
-a domain total and the overall total containing it. On the
+and <code>se_prop_of_lake_total</code> its standard error. The share and the
+day-to-day part of its SE come from one <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code> call,
+which accounts for the correlation between a domain total and the overall
+total containing it; where days carry two or more counts the within-day
+part is added by the delta method, with the sections' within-day
+covariance when they share count times. On the
 <code>.lake_total</code> row the share is exactly 1 with a standard error of 0,
 which is structural rather than an unpropagated component: that row's share
 of itself was never estimated. A section registered by
