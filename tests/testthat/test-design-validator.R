@@ -375,7 +375,10 @@ describe("check_completeness() — QUAL-01", {
 
   it("design with all days sampled -> $missing_days has 0 rows", {
     d <- make_census_design_with_interviews()
-    r <- suppressWarnings(check_completeness(d))
+    # Every calendar day scheduled and counted: the check runs and finds none.
+    sched <- data.frame(date = unique(d$calendar$date))
+    r <- suppressWarnings(check_completeness(d, schedule = sched))
+    expect_true(r$missing_days_checked)
     expect_equal(nrow(r$missing_days), 0L)
   })
 
@@ -390,8 +393,11 @@ describe("check_completeness() — QUAL-01", {
     first_date <- unique(example_counts$date)[1]
     counts_trimmed <- example_counts[example_counts$date != first_date, ]
     d2 <- suppressWarnings(add_counts(d, counts_trimmed))
-    r <- suppressWarnings(check_completeness(d2))
-    expect_gte(nrow(r$missing_days), 1L)
+    # Missing means scheduled and not counted (#391): the schedule lists the
+    # 14 counted dates of example_counts, one of which lost its counts.
+    r <- suppressWarnings(check_completeness(d2, schedule = data.frame(date = unique(example_counts$date))))
+    expect_equal(nrow(r$missing_days), 1L)
+    expect_equal(r$missing_days$date, first_date)
   })
 
   it("aerial design -> $low_n_strata is NULL (no interview-based flags)", {
@@ -429,7 +435,9 @@ describe("check_completeness() — QUAL-01", {
   it("$passed is TRUE when no missing days and all strata >= n_min", {
     d <- make_census_design_with_interviews()
     # Use a very low n_min so all strata pass
-    r <- suppressWarnings(check_completeness(d, n_min = 1L))
+    sched <- data.frame(date = unique(d$calendar$date))
+    r <- suppressWarnings(check_completeness(d, n_min = 1L, schedule = sched))
+    expect_true(r$missing_days_checked)
     expect_equal(nrow(r$missing_days), 0L)
     expect_true(r$passed)
   })
