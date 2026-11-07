@@ -6260,16 +6260,35 @@ refuse_single_day_strata <- function(available_by_strata, sampled_by_strata, ide
     "x" = "Expanding a stratum to its calendar days needs at least 2 sampled \
            days in it, to estimate how much days differ."
   )
+  # A stratum whose calendar is its one day has no other day to sample; counted
+  # twice it would be a census (GH #505). Such a stratum is refused only when
+  # counted once, so it is never `rescuable`.
+  whole <- cells$.N_avail[bad] == 1L
+  remedy <- c(
+    if (any(!whole)) {
+      "sample another day where the calendar has more days"
+    },
+    if (any(whole)) {
+      "count the day of {cli::qty(sum(whole))}{?a/each} one-day stratum at least twice (it is then a census)"
+    },
+    "or combine sparse strata"
+  )
+  remedy <- paste0(toupper(substring(remedy[1], 1, 1)), substring(remedy[1], 2), if (length(remedy) > 1) {
+    paste0(", ", paste(remedy[-1], collapse = ", "))
+  })
   if (all(rescuable)) {
     bullets <- c(bullets,
-      "i" = "{cli::qty(n_bad)}Sample another day in {?it/each}, combine sparse strata, or use \
-             {.code target = \"sampled_days\"}: the total over the day{?s} \
-             counted, whose variance comes from {?its/their} two or more counts."
+      "i" = paste0(
+        sub(", or combine", ", combine", remedy, fixed = TRUE),
+        ", or use {.code target = \"sampled_days\"}: the total over the ",
+        "{cli::qty(n_bad)}day{?s} counted, whose variance comes from {?its/their} ",
+        "two or more counts."
+      )
     )
   } else {
     bullets <- c(bullets,
-      "i" = "{cli::qty(n_bad)}Sample another day in {?it/each} or combine sparse strata. \
-             {.code target = \"sampled_days\"} needs a stratum's one day to be \
+      "i" = paste0(remedy, "."),
+      "i" = "{.code target = \"sampled_days\"} needs a stratum's one day to be \
              counted at least twice, and {cli::qty(sum(!rescuable))}{?that/those} \
              day{?s} {?was/were} counted once."
     )
