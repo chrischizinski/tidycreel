@@ -24,8 +24,9 @@
   `creel_error_sampled_register`, and an expanded target still needs two
   sampled days per stratum, every calendar stratum sampled and every count
   unit present in each stratum. The register, unsampled-stratum and
-  missing-unit refusals name `target = "sampled_days"` as the way back; the
-  one-sampled-day error does not yet, and does not name the stratum.
+  missing-unit refusals name `target = "sampled_days"` as the way back. The
+  one-sampled-day refusal names the stratum and offers `"sampled_days"` where
+  that day was counted at least twice, the only case it would work (#601).
 
 * `estimate_effort(target = "sampled_days")` no longer counts the within-day
   variance twice (#507). With two or more counts a day, the variance of the

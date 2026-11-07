@@ -2397,10 +2397,8 @@ test_that("EDGE-04: single sampled day error message names the stratum", {
   cal <- unique(counts[, c("date", "day_type")])
   d <- creel_design(cal, date = date, strata = day_type, survey_type = "instantaneous")
   d <- suppressWarnings(add_counts(d, counts))
-  expect_error(
-    estimate_effort(d),
-    regexp = "only 1 PSU"
-  )
+  # Names both strata, on the default (expanded) target too (#601).
+  expect_error(estimate_effort(d), regexp = "\"weekday\" and \"weekend\"")
 })
 
 # ICE party size sensitivity (finding 2 / GH #106) ----

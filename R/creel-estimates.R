@@ -6133,6 +6133,7 @@ get_effort_target_design <- function(design, target) {
     expanded_counts$.N_avail,
     no_fpc_population
   )
+  refuse_single_day_strata(available_by_strata, sampled_by_strata, identified, strata_cols)
 
   # Say when a day carries more than one row, because the expansion is then
   # summing those rows into a day before expanding, and the reader should know
@@ -6222,6 +6223,58 @@ sampled_days_target_design <- function(design) {
     data = key$data,
     nest = TRUE
   )
+}
+
+#' Refuse an expanded target where a stratum has one sampled day
+#'
+#' Internal (GH #601). `survey::svyby()` refuses a one-PSU stratum without
+#' naming it, so on the expanded path the error said only "A stratum". Checked
+#' here instead, before the survey call, with the stratum's name. A stratum
+#' whose one day is its whole calendar and was counted two or more times is a
+#' census (GH #505) and is left alone.
+#'
+#' `target = "sampled_days"` is offered only where it would work: there a
+#' one-day stratum is a census, estimable when its day has two or more counts.
+#'
+#' @param available_by_strata,sampled_by_strata Strata columns with `.N_avail`
+#'   and `.n_sampled`.
+#' @param identified Named logical from `within_day_identified_strata()`.
+#' @param strata_cols Character vector of strata columns.
+#' @return `invisible(NULL)`; aborts with class `creel_error_single_psu`.
+#' @keywords internal
+#' @noRd
+refuse_single_day_strata <- function(available_by_strata, sampled_by_strata, identified, strata_cols) {
+  cells <- dplyr::left_join(sampled_by_strata, available_by_strata, by = strata_cols)
+  key <- group_key(cells, strata_cols) # nolint: object_usage_linter
+  two_counts <- identified[match(key, names(identified))] %in% TRUE
+  bad <- cells$.n_sampled == 1L & !(two_counts & cells$.N_avail == 1L)
+  if (!any(bad)) {
+    return(invisible(NULL))
+  }
+  labels <- gsub("\u001f", " / ", key[bad], fixed = TRUE) # nolint: object_usage_linter
+  rescuable <- two_counts[bad]
+  n_bad <- sum(bad) # nolint: object_usage_linter
+  bullets <- c(
+    "Strat{?um/a} {.val {labels}} {?has/have} one sampled day \u2014 the \
+     variance of an expanded total cannot be estimated.",
+    "x" = "Expanding a stratum to its calendar days needs at least 2 sampled \
+           days in it, to estimate how much days differ."
+  )
+  if (all(rescuable)) {
+    bullets <- c(bullets,
+      "i" = "{cli::qty(n_bad)}Sample another day in {?it/each}, combine sparse strata, or use \
+             {.code target = \"sampled_days\"}: the total over the day{?s} \
+             counted, whose variance comes from {?its/their} two or more counts."
+    )
+  } else {
+    bullets <- c(bullets,
+      "i" = "{cli::qty(n_bad)}Sample another day in {?it/each} or combine sparse strata. \
+             {.code target = \"sampled_days\"} needs a stratum's one day to be \
+             counted at least twice, and {cli::qty(sum(!rescuable))}{?that/those} \
+             day{?s} {?was/were} counted once."
+    )
+  }
+  cli::cli_abort(bullets, class = "creel_error_single_psu")
 }
 
 # The population size that means "no finite-population correction" for one

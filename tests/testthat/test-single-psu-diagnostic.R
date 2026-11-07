@@ -192,7 +192,9 @@ test_that("REPVAR-01: jackknife with 1-PSU per stratum raises creel_error_single
 test_that("REPVAR-02: jackknife 1-PSU error message names the stratum", {
   d <- make_repvar_design(1L)
   expect_error(
-    estimate_effort(d, variance = "jackknife"),
+    # sampled_days: the replicate design's own message. On an expanded target
+    # the one-day stratum is refused before any variance method runs (#601).
+    estimate_effort(d, variance = "jackknife", target = "sampled_days"),
     regexp = "only 1 PSU"
   )
 })
@@ -208,7 +210,9 @@ test_that("REPVAR-03: bootstrap with 1-PSU per stratum raises creel_error_single
 test_that("REPVAR-04: bootstrap 1-PSU error message mentions bootstrap", {
   d <- make_repvar_design(1L)
   expect_error(
-    estimate_effort(d, variance = "bootstrap"),
+    # sampled_days: the replicate design's own message. On an expanded target
+    # the one-day stratum is refused before any variance method runs (#601).
+    estimate_effort(d, variance = "bootstrap", target = "sampled_days"),
     regexp = "[Bb]ootstrap"
   )
 })
@@ -240,4 +244,89 @@ test_that("REPVAR-07: bootstrap and jackknife SEs are in same ballpark for 4-PSU
   expect_true(is.finite(se_jk))
   expect_lt(se_boot / se_jk, 3)
   expect_gt(se_boot / se_jk, 1 / 3)
+})
+
+# ---- GH #601: the expanded path names the stratum ----
+#
+# On period_total / stratum_total the one-PSU stratum reached survey::svyby(),
+# whose message names no stratum, so the error said only "A stratum". Since
+# #487 that was what a default call showed.
+
+make_601_design <- function(counts_per_day = 1L) {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08", "2024-06-09")),
+    day_type = c("weekday", "weekday", "weekend", "weekend")
+  )
+  days <- cal[c(1, 3, 4), ]
+  counts <- days[rep(seq_len(nrow(days)), each = counts_per_day), ]
+  counts$t <- rep(letters[seq_len(counts_per_day)], nrow(days))
+  counts$n <- seq_len(nrow(counts)) + 3
+  design <- creel_design(cal, date = date, strata = day_type)
+  if (counts_per_day == 1L) {
+    suppressWarnings(add_counts(design, counts[, c("date", "day_type", "n")]))
+  } else {
+    suppressWarnings(add_counts(design, counts, count_time_col = t))
+  }
+}
+
+test_that("expanded-target single-day error names the stratum (#601)", {
+  for (target in c("period_total", "stratum_total")) {
+    err <- expect_error(
+      suppressWarnings(estimate_effort(make_601_design(), target = target)),
+      class = "creel_error_single_psu"
+    )
+    expect_match(conditionMessage(err), "weekday", fixed = TRUE)
+    expect_no_match(conditionMessage(err), "A stratum has only", fixed = TRUE)
+  }
+  # The default target is period_total (#487), so this is the default call.
+  err <- expect_error(
+    suppressWarnings(estimate_effort(make_601_design())),
+    class = "creel_error_single_psu"
+  )
+  expect_match(conditionMessage(err), "weekday", fixed = TRUE)
+})
+
+test_that("sampled_days is offered only where it would work (#601)", {
+  # One count on the day: sampled_days fails too, so it must not be the advice.
+  one <- make_601_design(1L)
+  err <- expect_error(suppressWarnings(estimate_effort(one)), class = "creel_error_single_psu")
+  expect_match(conditionMessage(err), "counted once", fixed = TRUE)
+  expect_error(
+    suppressWarnings(estimate_effort(one, target = "sampled_days")),
+    class = "creel_error_single_psu"
+  )
+
+  # Two counts on the day: sampled_days is a census of it and estimable.
+  two <- make_601_design(2L)
+  err <- expect_error(suppressWarnings(estimate_effort(two)), class = "creel_error_single_psu")
+  expect_match(conditionMessage(err), "or use", fixed = TRUE)
+  expect_no_match(conditionMessage(err), "counted once", fixed = TRUE)
+  res <- suppressWarnings(estimate_effort(two, target = "sampled_days"))
+  expect_true(is.finite(res$estimates$se))
+})
+
+test_that("a one-day stratum that is its whole calendar, counted twice, is not refused (#601)", {
+  # A census (#505): N = n = 1 and the day has a within-day estimate.
+  cal <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
+    day_type = c("weekday", "weekday", "holiday")
+  )
+  counts <- data.frame(
+    date = rep(cal$date, each = 2), day_type = rep(cal$day_type, each = 2),
+    t = rep(c("a", "b"), 3), n = c(4, 6, 5, 9, 30, 34)
+  )
+  d <- suppressWarnings(add_counts(creel_design(cal, date = date, strata = day_type), counts, count_time_col = t))
+  res <- suppressWarnings(estimate_effort(d, target = "period_total", by = day_type))
+  expect_true(all(is.finite(res$estimates$se)))
+})
+
+test_that("a multi-column stratum is named with its parts (#601, #422)", {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04", "2024-07-01", "2024-07-02")),
+    day_type = "weekday", month = c("06", "06", "07", "07")
+  )
+  counts <- data.frame(date = cal$date[c(1, 3, 4)], day_type = "weekday", month = c("06", "07", "07"), n = 4:6)
+  d <- suppressWarnings(add_counts(creel_design(cal, date = date, strata = c(day_type, month)), counts))
+  err <- expect_error(suppressWarnings(estimate_effort(d)), class = "creel_error_single_psu")
+  expect_match(conditionMessage(err), "weekday / 06", fixed = TRUE)
 })
