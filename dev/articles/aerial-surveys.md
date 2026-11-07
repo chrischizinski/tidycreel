@@ -123,9 +123,7 @@ factor for the instantaneous count.
 # The survey period, June 3 to July 6, 2024: the days the flights stand for.
 # A calendar of the flight dates alone would make the design a census of
 # those days (#584).
-# Only date and day_type: creel_calendar() also returns month, week and a
-# stratum label, which the domain screen misreads (#605).
-aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
+aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
 
 design <- creel_design(
   aerial_cal,

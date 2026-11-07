@@ -119,7 +119,7 @@ library(tidycreel)
 
 # The season: July 2024, 23 weekdays and 8 weekend days. The counts below
 # cover 18 of them, 10 weekdays and all 8 weekend days.
-calendar <- creel_calendar("2024-07-01", "2024-07-31", strata = "day_type")[, c("date", "day_type")]
+calendar <- creel_calendar("2024-07-01", "2024-07-31", strata = "day_type")
 
 # The 18 counted days, weekdays first, as the counts below list them
 sampled <- data.frame(
@@ -404,7 +404,7 @@ days_2p <- as.Date(c(
   "2024-07-06", "2024-07-07", "2024-07-13"
 ))
 # The first two weeks of July; three days of each type are counted
-cal_2p <- creel_calendar("2024-07-01", "2024-07-14", strata = "day_type")[, c("date", "day_type")]
+cal_2p <- creel_calendar("2024-07-01", "2024-07-14", strata = "day_type")
 des_2p <- creel_design(cal_2p, date = date, strata = day_type)
 
 cnt_2p <- data.frame(

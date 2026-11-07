@@ -69,7 +69,7 @@ the diurnal curve is integrated.
 # The survey period, June 3 to July 6, 2024: the days the flights stand for.
 # A calendar of the flight dates alone would make the design a census of
 # those days (#584).
-aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
+aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
 
 design <- creel_design(
   aerial_cal,
@@ -239,7 +239,7 @@ path rather than from the GLMM.
 ``` r
 
 # A complementary design over the same survey period
-aerial_int_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
+aerial_int_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
 
 design_int <- creel_design(
   aerial_int_cal,

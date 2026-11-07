@@ -110,7 +110,7 @@ refuse:
 
 one_day <- creel_design(
   # A week of June: five weekdays, two weekend days
-  creel_calendar("2024-06-03", "2024-06-09", strata = "day_type")[, c("date", "day_type")],
+  creel_calendar("2024-06-03", "2024-06-09", strata = "day_type"),
   date = date, strata = day_type
 )
 one_day <- add_counts(one_day,

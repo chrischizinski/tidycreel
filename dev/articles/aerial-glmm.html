@@ -173,7 +173,7 @@ the window over which the diurnal curve is integrated.</p>
 <code class="sourceCode R"><span><span class="co"># The survey period, June 3 to July 6, 2024: the days the flights stand for.</span></span>
 <span><span class="co"># A calendar of the flight dates alone would make the design a census of</span></span>
 <span><span class="co"># those days (#584).</span></span>
-<span><span class="va">aerial_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-07-06"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">aerial_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-07-06"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
 <span>  <span class="va">aerial_cal</span>,</span>
@@ -325,7 +325,7 @@ a <em>different</em> design object from the one fitted above: it uses
 standard aerial path rather than from the GLMM.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># A complementary design over the same survey period</span></span>
-<span><span class="va">aerial_int_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-07-06"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">aerial_int_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-07-06"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">design_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
 <span>  <span class="va">aerial_int_cal</span>,</span>

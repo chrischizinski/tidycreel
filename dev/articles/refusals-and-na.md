@@ -223,7 +223,7 @@ all three:
 ``` r
 
 # The survey period the flights stand for (#584)
-aerial_calendar <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
+aerial_calendar <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
 
 aerial_effort <- function(...) {
   design <- creel_design(aerial_calendar,
