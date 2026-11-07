@@ -124,9 +124,12 @@ plus, when \code{aggregate_sections = TRUE}, a \code{.lake_total} row, and
 gains \code{section}, \code{prop_of_lake_total},
 \code{se_prop_of_lake_total} and \code{data_available} columns.
 \code{prop_of_lake_total} is the section's share of the lake-wide total
-and \code{se_prop_of_lake_total} its standard error; both come from one
-\code{survey::svyratio()} call, which accounts for the correlation between
-a domain total and the overall total containing it. On the
+and \code{se_prop_of_lake_total} its standard error. The share and the
+day-to-day part of its SE come from one \code{survey::svyratio()} call,
+which accounts for the correlation between a domain total and the overall
+total containing it; where days carry two or more counts the within-day
+part is added by the delta method, with the sections' within-day
+covariance when they share count times. On the
 \code{.lake_total} row the share is exactly 1 with a standard error of 0,
 which is structural rather than an unpropagated component: that row's share
 of itself was never estimated. A section registered by

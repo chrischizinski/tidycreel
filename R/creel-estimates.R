@@ -619,9 +619,12 @@ print.creel_estimates <- function(x, ...) {
 #'   gains \code{section}, \code{prop_of_lake_total},
 #'   \code{se_prop_of_lake_total} and \code{data_available} columns.
 #'   \code{prop_of_lake_total} is the section's share of the lake-wide total
-#'   and \code{se_prop_of_lake_total} its standard error; both come from one
-#'   \code{survey::svyratio()} call, which accounts for the correlation between
-#'   a domain total and the overall total containing it. On the
+#'   and \code{se_prop_of_lake_total} its standard error. The share and the
+#'   day-to-day part of its SE come from one \code{survey::svyratio()} call,
+#'   which accounts for the correlation between a domain total and the overall
+#'   total containing it; where days carry two or more counts the within-day
+#'   part is added by the delta method, with the sections' within-day
+#'   covariance when they share count times. On the
 #'   \code{.lake_total} row the share is exactly 1 with a standard error of 0,
 #'   which is structural rather than an unpropagated component: that row's share
 #'   of itself was never estimated. A section registered by
@@ -6438,6 +6441,101 @@ effort_se_basis <- function(design, target = "sampled_days", by_vars = NULL, key
   )
 }
 
+#' The design as the lake row sees it, for its within-day terms
+#'
+#' Internal (GH #599). The lake row is estimated on the pooled counts, so its
+#' finite-population correction is decided per stratum across all sections: a
+#' stratum where any section has a one-count day takes none (GH #505), and its
+#' uncorrected day-to-day term already holds every section's within-day
+#' variation. Adding a section's within-day term there counted it twice
+#' (GH #405). This copy drops the within-day data of those strata, so every
+#' within-day quantity computed from it -- per section, across sections, and
+#' for the sections' shares -- is zero there.
+#'
+#' @param design A sectioned creel_design with counts attached.
+#' @return The design, unchanged when every stratum is corrected.
+#' @keywords internal
+#' @noRd
+lake_within_day_design <- function(design) {
+  strata_cols <- design$strata_cols %||% character(0)
+  if (length(strata_cols) == 0L || is.null(design$within_day_var)) {
+    return(design)
+  }
+  identified <- within_day_identified_strata(design, design$counts, strata_cols)
+  if (all(identified)) {
+    return(design)
+  }
+  dropped <- names(identified)[!identified]
+  in_dropped <- function(df) {
+    if (is.null(df)) {
+      return(logical(0))
+    }
+    if (all(strata_cols %in% names(df))) {
+      key <- group_key(df, strata_cols) # nolint: object_usage_linter
+    } else {
+      unit <- intersect(names(df), names(design$counts))
+      at <- match(group_key(df, unit), group_key(design$counts, unit)) # nolint: object_usage_linter
+      key <- group_key(design$counts, strata_cols)[at] # nolint: object_usage_linter
+    }
+    key %in% dropped
+  }
+  design$within_day_var <- design$within_day_var[!in_dropped(design$within_day_var), , drop = FALSE]
+  if (!is.null(design$within_day_counts)) {
+    design$within_day_counts <- design$within_day_counts[!in_dropped(design$within_day_counts), , drop = FALSE]
+  }
+  design
+}
+
+#' Each present section's within-day variance and their covariances, on the lake view
+#'
+#' Internal (GH #599). Variances from the same Rasmussen term each section's
+#' effort row reports, computed on `lake_within_day_design()`; covariances from
+#' `section_within_day_cross_covariance()` when the sections share count times,
+#' else zero. Units are those of the effort rows.
+#'
+#' @return A list: `var`, named by section, and `cov`, a matrix with zero
+#'   diagonal.
+#' @keywords internal
+#' @noRd
+lake_section_within_day <- function(lake_design, secs, target) {
+  k <- aerial_effort_scale(lake_design)$multiplier %||% 1 # nolint: object_usage_linter
+  v <- vapply(secs, function(sec) {
+    sec_design <- suppressWarnings(rebuild_counts_survey(lake_design, sec)) # nolint: object_usage_linter
+    compute_within_day_var_contribution(sec_design, by_vars = NULL, target = target) * k^2 # nolint: object_usage_linter
+  }, numeric(1))
+  cov <- matrix(0, length(secs), length(secs), dimnames = list(secs, secs))
+  if (isTRUE(lake_design$shared_count_times) && length(secs) > 1L) {
+    check_shared_count_times(lake_design)
+    within <- section_within_day_cross_covariance(lake_design, target, secs)
+    for (m in within$cov) cov <- cov + m[secs, secs, drop = FALSE]
+  }
+  list(var = stats::setNames(v, secs), cov = cov)
+}
+
+#' Within-day part of a section's share of the lake total
+#'
+#' Internal (GH #599). The share's SE from `svyratio()` on the pooled design is
+#' its day-to-day part only. The within-day part, by the delta method on
+#' p = S / T with R = T - S the other sections:
+#' Var_w(p) = [(1 - p)^2 V_S - 2 p (1 - p) C_SR + p^2 V_R] / T^2.
+#' Without it a census of days with two or more counts reported a share SE of
+#' exactly 0.
+#'
+#' @param prop,estimate,total The share, the section's effort, the lake total.
+#' @param sec The section.
+#' @param wd From `lake_section_within_day()`.
+#' @return Numeric scalar variance.
+#' @keywords internal
+#' @noRd
+share_within_day_var <- function(prop, total, sec, wd) {
+  others <- setdiff(names(wd$var), sec)
+  v_s <- wd$var[[sec]]
+  v_r <- sum(wd$var[others]) + sum(wd$cov[others, others, drop = FALSE])
+  c_sr <- sum(wd$cov[sec, others])
+  max(0, ((1 - prop)^2 * v_s - 2 * prop * (1 - prop) * c_sr + prop^2 * v_r) / total^2)
+}
+
+
 #' The lake total's within-day SE when the sections share their count times
 #'
 #' Internal. Sections declared with `add_sections(shared_count_times = TRUE)` were
@@ -6708,6 +6806,31 @@ estimate_effort_sections <- function(
   # Combine section rows
   result_df <- dplyr::bind_rows(section_rows)
 
+  # Within-day terms as the lake row sees them (GH #599): a stratum the pooled
+  # design leaves uncorrected contributes none, from any section.
+  lake_wd_design <- lake_within_day_design(design)
+  lake_wd_trimmed <- !identical(lake_wd_design$within_day_var, design$within_day_var)
+  present_secs <- as.character(result_df[[section_col]][result_df$data_available])
+  lake_wd <- if (is.null(design$within_day_var) || length(present_secs) == 0L) {
+    NULL
+  } else {
+    lake_section_within_day(lake_wd_design, present_secs, target)
+  }
+
+  # A section's share takes the within-day part of its uncertainty too
+  # (GH #599); the svyratio() SE is the day-to-day part alone.
+  if (!is.null(lake_wd)) {
+    lake_sum <- sum(result_df$estimate[result_df$data_available])
+    for (r in which(result_df$data_available)) {
+      sec <- as.character(result_df[[section_col]][r])
+      p_r <- result_df$prop_of_lake_total[r]
+      if (is.na(p_r) || is.na(result_df$se_prop_of_lake_total[r]) || is.na(lake_sum) || lake_sum <= 0) next
+      result_df$se_prop_of_lake_total[r] <- sqrt(
+        result_df$se_prop_of_lake_total[r]^2 + share_within_day_var(p_r, lake_sum, sec, lake_wd)
+      )
+    }
+  }
+
   # Row-aligned party-size component. Each section's row is a single total, so
   # it carries just its own contribution; the lake row's combined one is
   # appended with the row below. `rate` is 1 throughout -- unlike the product
@@ -6764,7 +6887,15 @@ estimate_effort_sections <- function(
     # total is unavailable rather than offering the between-day figure alone as
     # though it were complete.
     lake_se_between <- agg$se
-    lake_se_within <- if (isTRUE(design$shared_count_times)) {
+    lake_se_within <- if (lake_wd_trimmed) {
+      # A stratum some section counted once is uncorrected in the pooled design,
+      # so no section adds a within-day term there (GH #599, as #405).
+      if (anyNA(result_df$se_within[result_df$data_available])) {
+        NA_real_
+      } else {
+        sqrt(max(0, sum(lake_wd$var) + sum(lake_wd$cov)))
+      }
+    } else if (isTRUE(design$shared_count_times)) {
       shared_times_lake_se_within(design, result_df, target) # nolint: object_usage_linter
     } else {
       sqrt(sum(result_df$se_within[result_df$data_available]^2))
@@ -6841,7 +6972,11 @@ estimate_effort_sections <- function(
       ci_upper = lake_ci_upper,
       n = nrow(design$counts),
       # The lake is the sum of its sections: one kind if they agree, else mixed.
-      se_basis = {
+      se_basis = if (lake_wd_trimmed) {
+        # Read off the pooled design, which is what the lake SE is now built on
+        # in those strata (GH #599).
+        effort_se_basis(design, target) # nolint: object_usage_linter
+      } else {
         kinds <- unique(stats::na.omit(result_df$se_basis))
         if (length(kinds) == 1L) kinds else "mixed"
       },
