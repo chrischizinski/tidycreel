@@ -421,7 +421,7 @@ print(total_harvest)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     225.  28.1     165.     284.    17
+#> 1     513.  68.0     368.     657.    17
 
 # Compare components
 effort_est <- estimate_effort(design)
@@ -438,7 +438,7 @@ c(
   effort_x_hpue = effort_est$estimates$estimate * hpue_est$estimates$estimate
 )
 #>         total effort_x_hpue 
-#>      224.5239      221.7674 
+#>      512.5669      503.6353 
 
 # Grouped estimation needs at least 10 interviews per group, so check
 # the sample sizes before grouping

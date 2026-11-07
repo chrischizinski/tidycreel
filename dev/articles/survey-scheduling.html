@@ -941,7 +941,7 @@ or CPUE estimates.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">Missing Days</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> No missing sampling days</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> 16 calendar day(s) with no count data</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">Low-n Strata (threshold: 10)</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -950,6 +950,12 @@ or CPUE estimates.</p>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">Refusal Rates</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; (not recorded or not applicable)</span></span></code></pre></div>
+<p>Here the 16 “missing” days are the days of June after the 14 that
+were sampled. They were never scheduled, so they are not missing data.
+<code><a href="../reference/check_completeness.html">check_completeness()</a></code> compares the counts with the whole
+calendar rather than with the schedule, and so reports every unsampled
+day (#391). Until that is fixed, read the missing-day count against the
+number of days you did not plan to sample.</p>
 <p><code>comp$passed</code> returns <code>TRUE</code> if no issues were
 found. When <code>FALSE</code>, <code>comp$missing_days</code>
 identifies dates that appear in the schedule but have no count data, and

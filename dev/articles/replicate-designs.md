@@ -109,10 +109,8 @@ refuse:
 ``` r
 
 one_day <- creel_design(
-  data.frame(
-    date     = as.Date(c("2024-06-03", "2024-06-04", "2024-06-08")),
-    day_type = c("weekday", "weekday", "weekend")
-  ),
+  # A week of June: five weekdays, two weekend days
+  creel_calendar("2024-06-03", "2024-06-09", strata = "day_type")[, c("date", "day_type")],
   date = date, strata = day_type
 )
 one_day <- add_counts(one_day,
@@ -137,8 +135,8 @@ estimate_effort(one_day, variance = "taylor")
 #>   total cannot be estimated.
 #> ✖ Expanding a stratum to its calendar days needs at least 2 sampled days in it,
 #>   to estimate how much days differ.
-#> ℹ Count the day of a one-day stratum at least twice (it is then a census), or
-#>   combine sparse strata.
+#> ℹ Sample another day where the calendar has more days, or combine sparse
+#>   strata.
 #> ℹ `target = "sampled_days"` needs a stratum's one day to be counted at least
 #>   twice, and that day was counted once.
 ```

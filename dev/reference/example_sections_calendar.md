@@ -1,13 +1,16 @@
 # Example calendar for spatially stratified creel survey
 
-A 12-day survey calendar used to demonstrate the spatially stratified
-workflow with
-[`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md).
-Contains 6 weekdays and 6 weekends from June 2024. Matches the date
-range of
+A 19-day survey calendar (June 3-21, 2024) used to demonstrate the
+spatially stratified workflow with
+[`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md):
+13 days labelled weekday and 6 labelled weekend. The labels are the ones
+the counts carry, and two weekend days are Fridays (June 14 and 21).
 [example_sections_counts](https://chrischizinski.com/tidycreel/dev/reference/example_sections_counts.md)
 and
-[example_sections_interviews](https://chrischizinski.com/tidycreel/dev/reference/example_sections_interviews.md).
+[example_sections_interviews](https://chrischizinski.com/tidycreel/dev/reference/example_sections_interviews.md)
+cover 12 of them (6 weekdays, all 6 weekend days), so the weekday
+stratum is expanded and the weekend stratum is a census. Up to tidycreel
+8.0.0 the calendar held only the 12 sampled days.
 
 ## Usage
 
@@ -17,7 +20,7 @@ example_sections_calendar
 
 ## Format
 
-A data frame with 12 rows and 2 columns:
+A data frame with 19 rows and 2 columns:
 
 - date:
 
@@ -73,7 +76,7 @@ head(example_sections_calendar)
 #> 3 2024-06-05  weekday
 #> 4 2024-06-06  weekday
 #> 5 2024-06-07  weekday
-#> 6 2024-06-10  weekday
+#> 6 2024-06-08  weekend
 
 design <- creel_design(example_sections_calendar, date = date, strata = day_type)
 print(design)
@@ -82,7 +85,7 @@ print(design)
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 12 days (2024-06-03 to 2024-06-21)
+#> Calendar: 19 days (2024-06-03 to 2024-06-21)
 #> day_type: 2 levels
 #> Counts: "none"
 #> Interviews: "none"

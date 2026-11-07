@@ -734,7 +734,7 @@ comp
 #> 
 #> ── Missing Days ──
 #> 
-#> ✔ No missing sampling days
+#> ! 16 calendar day(s) with no count data
 #> 
 #> ── Low-n Strata (threshold: 10) ──
 #> 
@@ -744,6 +744,14 @@ comp
 #> 
 #> (not recorded or not applicable)
 ```
+
+Here the 16 “missing” days are the days of June after the 14 that were
+sampled. They were never scheduled, so they are not missing data.
+[`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md)
+compares the counts with the whole calendar rather than with the
+schedule, and so reports every unsampled day (#391). Until that is
+fixed, read the missing-day count against the number of days you did not
+plan to sample.
 
 `comp$passed` returns `TRUE` if no issues were found. When `FALSE`,
 `comp$missing_days` identifies dates that appear in the schedule but

@@ -90,18 +90,20 @@ simulate_survey <- function(seed, n_complete, n_incomplete,
                             rate_complete, rate_incomplete,
                             hours_complete, hours_incomplete) {
   set.seed(seed)
+  # A 30-day season, of which the first 14 days were sampled.
   calendar <- data.frame(
-    date = seq.Date(as.Date("2024-06-01"), as.Date("2024-06-14"), by = "day"),
-    day_type = rep(c("weekday", "weekend"), length.out = 14)
+    date = seq.Date(as.Date("2024-06-01"), as.Date("2024-06-30"), by = "day"),
+    day_type = rep(c("weekday", "weekend"), length.out = 30)
   )
+  sampled <- calendar[1:14, ]
   # Angler-hours for each sampled day
   daily <- data.frame(
-    date = calendar$date, day_type = calendar$day_type,
+    date = sampled$date, day_type = sampled$day_type,
     effort_hours = round(runif(14, min = 50, max = 150))
   )
   trips <- function(n, status, hours, rate) {
     x <- data.frame(
-      date = sample(calendar$date, n, replace = TRUE),
+      date = sample(sampled$date, n, replace = TRUE),
       hours_fished = runif(n, hours[1], hours[2]),
       trip_status = status
     )

@@ -342,10 +342,8 @@ angler-ratio parts are inside <code>se</code> but not listed.</p>
 indistinguishable from a part nobody propagated. The aerial visibility
 correction shows all three:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">aerial_calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  date <span class="op">=</span> <span class="va">example_aerial_counts</span><span class="op">$</span><span class="va">date</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="va">example_aerial_counts</span><span class="op">$</span><span class="va">day_type</span></span>
-<span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># The survey period the flights stand for (#584)</span></span>
+<span><span class="va">aerial_calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-07-06"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">aerial_effort</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">aerial_calendar</span>,</span>
@@ -367,14 +365,14 @@ sampling only:</p>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
-<span><span class="co">#&gt; Count-sampling SE: 774.4 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; Count-sampling SE: 1453 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">10</span>492.  774.       774.         0    <span style="text-decoration: underline;">8</span>831.   <span style="text-decoration: underline;">12</span>153.    16 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>453.      <span style="text-decoration: underline;">1</span>453.         0   <span style="text-decoration: underline;">17</span>496.   <span style="text-decoration: underline;">23</span>730.    16 between_day_upper…</span></span></code></pre></div>
 <p>The correction’s standard error is supplied, so it is propagated:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">aerial_effort</span><span class="op">(</span>visibility_correction <span class="op">=</span> <span class="fl">0.85</span>, visibility_se <span class="op">=</span> <span class="fl">0.04</span><span class="op">)</span></span>
@@ -385,15 +383,15 @@ sampling only:</p>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
-<span><span class="co">#&gt; Count-sampling SE: 774.4 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; Count-sampling SE: 1453 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
-<span><span class="co">#&gt; visibility: 493.7 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; visibility: 970 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">10</span>492.  918.       774.         0    <span style="text-decoration: underline;">8</span>522.   <span style="text-decoration: underline;">12</span>462.    16 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>747.      <span style="text-decoration: underline;">1</span>453.         0   <span style="text-decoration: underline;">16</span>865.   <span style="text-decoration: underline;">24</span>360.    16 between_day_upper…</span></span></code></pre></div>
 <p>No correction was studied (<code>"none"</code>). The point estimate
 divides by 1, but how many anglers the observer missed is unknown, so
 the standard error is too:</p>
@@ -406,7 +404,7 @@ the standard error is too:</p>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
-<span><span class="co">#&gt; Count-sampling SE: 658.3 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
+<span><span class="co">#&gt; Count-sampling SE: 1235 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; within_day: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
@@ -414,15 +412,15 @@ the standard error is too:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">8</span>918    <span style="color: #BB0000;">NA</span>       658.         0       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16 between_day_upper…</span></span></code></pre></div>
-<p>The same counts give a standard error of 774, then 918, then
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">17</span>521    <span style="color: #BB0000;">NA</span>      <span style="text-decoration: underline;">1</span>235.         0       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16 between_day_upper…</span></span></code></pre></div>
+<p>The same counts give a standard error of 1,453, then 1,747, then
 <code>NA</code>. In the first, the visibility correction is a measured
-number whose uncertainty was not supplied, so 774 understates the total
-uncertainty by whatever that part would add (918 once it is supplied).
-In the third there is no measurement at all, and no honest standard
-error. In all three, <code>angler_ratio: 0</code> is the third state:
-<code>angler_ratio_se = 0</code> states that every person counted is an
-angler, exactly. A correction known exactly must be said to be:
+number whose uncertainty was not supplied, so 1,453 understates the
+total uncertainty by whatever that part would add (1,747 once it is
+supplied). In the third there is no measurement at all, and no honest
+standard error. In all three, <code>angler_ratio: 0</code> is the third
+state: <code>angler_ratio_se = 0</code> states that every person counted
+is an angler, exactly. A correction known exactly must be said to be:
 <code>visibility_correction = 1, visibility_se = 0</code>, for example,
 where every angler can be seen.</p>
 <div class="section level3">

@@ -59,15 +59,17 @@ count), and `time_of_flight` (decimal hour of each overflight).
 
 ## Building the Aerial Design
 
-Build an aerial `creel_design` from the survey dates and attach the
+Build an aerial `creel_design` over the survey period and attach the
 count data. The `h_open = 14` argument specifies the number of hours the
 fishery is open each day; it sets the length of the window over which
 the diurnal curve is integrated.
 
 ``` r
 
-aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
-aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+# The survey period, June 3 to July 6, 2024: the days the flights stand for.
+# A calendar of the flight dates alone would make the design a census of
+# those days (#584).
+aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 design <- creel_design(
   aerial_cal,
@@ -91,7 +93,7 @@ print(design)
 #> Type: "aerial"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 12 days (2024-06-03 to 2024-07-06)
+#> Calendar: 34 days (2024-06-03 to 2024-07-06)
 #> day_type: 2 levels
 #> Counts: 48 observations
 #> PSU column: date
@@ -236,9 +238,8 @@ path rather than from the GLMM.
 
 ``` r
 
-# Build a complementary design with matching interview dates
-aerial_int_cal <- unique(example_aerial_counts[, c("date", "day_type")])
-aerial_int_cal <- aerial_int_cal[order(aerial_int_cal$date), ]
+# A complementary design over the same survey period
+aerial_int_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 design_int <- creel_design(
   aerial_int_cal,
@@ -297,7 +298,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    3508.    NA       NA       NA    48
+#> 1    7178.    NA       NA       NA    48
 ```
 
 This example leaves out on purpose the party size that
@@ -388,7 +389,7 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.546 sampled_days
+#> 1   GLMM 4728.548 sampled_days
 #> 2 Simple 5092.500 sampled_days
 ```
 
@@ -492,11 +493,11 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 581.6996
+#> [1] 581.6963
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 536.0946
+#> [1] 536.0896
 ```
 
 ## Results as Data

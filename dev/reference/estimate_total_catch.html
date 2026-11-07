@@ -481,7 +481,7 @@ factor (GH #213).</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     364.  47.9     262.     466.    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     830.  115.     585.    <span style="text-decoration: underline;">1</span>075.    17</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Compare components</span></span></span>
 <span class="r-in"><span><span class="va">effort_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
@@ -498,7 +498,7 @@ factor (GH #213).</p>
 <span class="r-in"><span>  effort_x_cpue <span class="op">=</span> <span class="va">effort_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">*</span> <span class="va">cpue_est</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         total effort_x_cpue </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      363.9368      360.3721 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      829.9579      818.4074 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped estimation needs at least 10 interviews per group, so check</span></span></span>
 <span class="r-in"><span><span class="co"># the sample sizes before grouping</span></span></span>

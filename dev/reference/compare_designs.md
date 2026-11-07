@@ -121,10 +121,10 @@ compare_designs(list(overall = est_all, by_day_type = est_grp))
 #> ── Survey Design Comparison ────────────────────────────────────────────────────
 #> 3 row(s), 2 design(s)
 #> 
-#>        design estimate    se    rse ci_lower ci_upper ci_width  n
-#> 1     overall      372 13.18 0.0354      344      401     57.4 14
-#> 2 by_day_type      171  9.67 0.0567      150      192     42.2 10
-#> 3 by_day_type      202  8.95 0.0443      182      221     39.0  4
+#>        design estimate   se    rse ci_lower ci_upper ci_width  n
+#> 1     overall      846 29.6 0.0350      782      910    128.9 14
+#> 2 by_day_type      341 19.3 0.0567      299      383     84.3 10
+#> 3 by_day_type      505 22.4 0.0443      456      553     97.5  4
 #>                  se_basis day_type
 #> 1 between_day_upper_bound       NA
 #> 2 between_day_upper_bound  weekday

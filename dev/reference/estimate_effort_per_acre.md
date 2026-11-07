@@ -91,5 +91,5 @@ estimate_effort_per_acre(effort, acres = 120)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     3.10 0.110      0.110         0     2.86     3.34    14 between_day_upper…
+#> 1     7.05 0.246      0.246         0     6.51     7.59    14 between_day_upper…
 ```

@@ -359,6 +359,11 @@ returned table carries no expansion columns in that case, and
 <span class="r-in"><span>  count_col <span class="op">=</span> <span class="st">"angler_count"</span>,</span></span>
 <span class="r-in"><span>  unit_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span>, <span class="st">"angler_type"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Every calendar day has a count: all 4 days of the calendar were sampled.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Expanded totals (`target = "period_total"`, the default) are then census</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   totals of these days only.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the calendar was built from the sampled dates, rebuild it with every day</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   of the season, e.g. with `creel_calendar()`.</span>
 <span class="r-in"><span><span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">angler_type</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>

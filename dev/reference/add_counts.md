@@ -363,6 +363,11 @@ counts_ready <- prep_counts_daily_effort(
 )
 
 design_with_counts <- add_counts(design, counts_ready)
+#> Warning: Every calendar day has a count: all 4 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 print(design_with_counts)
 #> 
 #> ── Creel Survey Design ─────────────────────────────────────────────────────────
@@ -389,6 +394,11 @@ counts_with_day_psu <- data.frame(
 )
 
 design2 <- add_counts(design, counts_with_day_psu, psu = "day_id")
+#> Warning: Every calendar day has a count: all 4 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 
 # Compatibility path: multiple counts per day (within-day variance via count_time_col)
 # Two circuits per day: "am" and "pm"
@@ -407,6 +417,11 @@ multi_counts <- data.frame(
 design_multi <- add_counts(design3, multi_counts,
   count_time_col = count_time # nolint: object_usage_linter
 )
+#> Warning: Every calendar day has a count: all 4 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 
 # Compatibility path: progressive count type (Ê_d = C x circuit_time x kappa)
 calendar3 <- data.frame(
@@ -427,4 +442,9 @@ design_prog <- add_counts(
   circuit_time = 2,
   period_length_col = shift_hours # nolint: object_usage_linter
 )
+#> Warning: Every calendar day has a count: all 4 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 ```

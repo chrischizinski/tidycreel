@@ -197,7 +197,7 @@ use:</p>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
 <span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">14</span> days (2024-06-01 to 2024-06-14)</span></span>
+<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">30</span> days (2024-06-01 to 2024-06-30)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">14</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
@@ -456,8 +456,9 @@ truncated, give <code>"lower-upper"</code> labels
 <p>For pressure-weighted estimates broken down by species, use the
 estimators. These combine the effort estimate with species-specific
 catch rates from the interview and catch data, using the ratio of means
-for these complete trips. The calendar lists only the sampled days, so
-the totals are totals over those days.</p>
+for these complete trips. The calendar holds the 30 days of June and the
+counts cover the first 14, so these are season totals: the sampled days
+are expanded to the calendar days of each stratum.</p>
 <p>The example is small, 17 complete trips, so the rate calls warn that
 the sample is small for a ratio estimator, and the species totals warn
 that the weekend rate rests on fewer than 10 trips. Both are about
@@ -510,9 +511,9 @@ precision, and the standard errors reflect them.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   species estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        63.2  21.9    16.5     110.     17</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     27.2  10.4     5.10     49.3    17</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    190.   46.0    92.3     288.     17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass       131.   46.4     32.0     230.    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     68.1  25.9     12.8     123.    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    449.  111.     211.      686.    17</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="total-harvest-by-species">Total Harvest by Species<a class="anchor" aria-label="anchor" href="#total-harvest-by-species"></a>
@@ -530,9 +531,9 @@ precision, and the standard errors reflect them.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   species estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        29.8  9.84     8.82     50.8    17</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     18.1  6.92     3.40     32.9    17</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    131.  31.4     64.4     198.     17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        59.6  19.7    17.6     102.     17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     45.4  17.3     8.50     82.2    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    308.   75.8   146.      470.     17</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="release-rate-and-total-releases-by-species">Release Rate and Total Releases by Species<a class="anchor" aria-label="anchor" href="#release-rate-and-total-releases-by-species"></a>
@@ -565,9 +566,9 @@ precision, and the standard errors reflect them.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   species estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass       33.4  14.1      3.43     63.5    17</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     9.07  3.46     1.70     16.4    17</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    58.9  18.8     18.9      98.9    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> bass        71.4 32.1      3.03    140.     17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> panfish     22.7  8.65     4.25     41.1    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> walleye    141.  46.2     42.1     239.     17</span></span></code></pre></div>
 <p>For grouped estimates combining calendar strata with species, use
 <code>by = c(day_type, species)</code>. See
 <code><a href="../articles/interview-estimation.html">vignette("interview-estimation")</a></code> for the complete

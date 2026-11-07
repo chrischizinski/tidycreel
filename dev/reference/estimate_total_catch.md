@@ -435,7 +435,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     364.  47.9     262.     466.    17
+#> 1     830.  115.     585.    1075.    17
 
 # Compare components
 effort_est <- estimate_effort(design)
@@ -452,7 +452,7 @@ c(
   effort_x_cpue = effort_est$estimates$estimate * cpue_est$estimates$estimate
 )
 #>         total effort_x_cpue 
-#>      363.9368      360.3721 
+#>      829.9579      818.4074 
 
 # Grouped estimation needs at least 10 interviews per group, so check
 # the sample sizes before grouping

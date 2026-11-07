@@ -94,6 +94,11 @@ counts <- data.frame(
 )
 
 design2 <- add_counts(design, counts)
+#> Warning: Every calendar day has a count: all 4 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 
 # Extract survey object for advanced use
 svy <- as_creel_svydesign(design2)

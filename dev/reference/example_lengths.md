@@ -108,7 +108,7 @@ print(design)
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
+#> Calendar: 30 days (2024-06-01 to 2024-06-30)
 #> day_type: 2 levels
 #> Counts: "none"
 #> Interviews: 22 observations

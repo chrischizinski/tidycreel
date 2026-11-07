@@ -90,7 +90,7 @@ print(design)
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
+#> Calendar: 30 days (2024-06-01 to 2024-06-30)
 #> day_type: 2 levels
 #> Counts: 14 observations
 #> PSU column: date
@@ -372,8 +372,9 @@ summarize_length_freq(design, type = "catch", by = species, bin_width = 25)
 For pressure-weighted estimates broken down by species, use the
 estimators. These combine the effort estimate with species-specific
 catch rates from the interview and catch data, using the ratio of means
-for these complete trips. The calendar lists only the sampled days, so
-the totals are totals over those days.
+for these complete trips. The calendar holds the 30 days of June and the
+counts cover the first 14, so these are season totals: the sampled days
+are expanded to the calendar days of each stratum.
 
 The example is small, 17 complete trips, so the rate calls warn that the
 sample is small for a ratio estimator, and the species totals warn that
@@ -429,9 +430,9 @@ estimate_total_catch(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        63.2  21.9    16.5     110.     17
-#> 2 panfish     27.2  10.4     5.10     49.3    17
-#> 3 walleye    190.   46.0    92.3     288.     17
+#> 1 bass       131.   46.4     32.0     230.    17
+#> 2 panfish     68.1  25.9     12.8     123.    17
+#> 3 walleye    449.  111.     211.      686.    17
 ```
 
 ### Total Harvest by Species
@@ -450,9 +451,9 @@ estimate_total_harvest(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        29.8  9.84     8.82     50.8    17
-#> 2 panfish     18.1  6.92     3.40     32.9    17
-#> 3 walleye    131.  31.4     64.4     198.     17
+#> 1 bass        59.6  19.7    17.6     102.     17
+#> 2 panfish     45.4  17.3     8.50     82.2    17
+#> 3 walleye    308.   75.8   146.      470.     17
 ```
 
 ### Release Rate and Total Releases by Species
@@ -486,9 +487,9 @@ estimate_total_release(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass       33.4  14.1      3.43     63.5    17
-#> 2 panfish     9.07  3.46     1.70     16.4    17
-#> 3 walleye    58.9  18.8     18.9      98.9    17
+#> 1 bass        71.4 32.1      3.03    140.     17
+#> 2 panfish     22.7  8.65     4.25     41.1    17
+#> 3 walleye    141.  46.2     42.1     239.     17
 ```
 
 For grouped estimates combining calendar strata with species, use

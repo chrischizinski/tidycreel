@@ -233,8 +233,9 @@ Other "Estimation":
 ``` r
 data(example_aerial_glmm_counts)
 
-aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
-aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+# The survey period the flights stand for, not the flight dates alone
+aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
+aerial_cal <- aerial_cal[, c("date", "day_type")]
 design <- creel_design(
   aerial_cal,
   date = date,
@@ -317,7 +318,7 @@ print(by_day)
 #> 2 weekend     1960.  312.       312.        NA    1347.    2572.    16
 # SE of the summed total: use the joint covariance, not quadrature
 sqrt(sum(by_day$strata_vcov))
-#> [1] 581.6996
+#> [1] 581.6963
 
 # Bootstrap CIs. `nboot` is held low here so the example stays fast on a
 # check machine; use at least 1000 replicates for real inference. The block

@@ -167,7 +167,7 @@ without <code><a href="../reference/add_sections.html">add_sections()</a></code>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
 <span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">12</span> days (2024-06-03 to 2024-06-21)</span></span>
+<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">19</span> days (2024-06-03 to 2024-06-21)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">36</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
@@ -223,10 +223,10 @@ below).</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North          269 12.3       12.3          0    242.      296.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central        472 19.0       19.0          0    430.      514.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South          105  9.18       9.18         0     84.6     125.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…      846 39.4       39.4          0    758.      934.    36 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North         414.  21.6       21.6         0     365.     462.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central       731   33.3       33.3         0     657.     805.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South         166.  16.1       16.1         0     130.     201.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…    <span style="text-decoration: underline;">1</span>310.  69.3       69.3         0    <span style="text-decoration: underline;">1</span>156.    <span style="text-decoration: underline;">1</span>465.    36 between…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <p>Central has the highest fishing effort among the three sections,
@@ -319,10 +319,10 @@ it.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se ci_lower ci_upper     n prop_of_lake_total</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           285.  20.3     237.     333.     9              0.226</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central         717.  30.1     646.     788.     9              0.569</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           259.  22.8     205.     313.     9              0.205</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>261.  64.8    <span style="text-decoration: underline;">1</span>126.    <span style="text-decoration: underline;">1</span>396.     3              1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           439.  38.4     348.     530.     9              0.226</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central        <span style="text-decoration: underline;">1</span>100.  51.2     979.    <span style="text-decoration: underline;">1</span>221.     9              0.566</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           406.  39.3     313.     499.     9              0.209</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>945. 114.     <span style="text-decoration: underline;">1</span>708.    <span style="text-decoration: underline;">2</span>181.     3              1    </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: se_prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <p>The call warns that two rate cells rest on fewer than 10 trips. A
 sectioned total builds a rate for each section within each day type, and
@@ -345,10 +345,10 @@ its share of itself is 1 by construction rather than estimated.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se ci_lower ci_upper     n prop_of_lake_total</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           166.  13.5     134.     198.     9              0.203</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central         472.  23.3     416.     527.     9              0.576</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           181.  15.9     143.     218.     9              0.221</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total     818.  44.4     726.     910.     3              1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           253.  26.0     191.     314.     9              0.202</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central         719.  40.0     625.     814.     9              0.574</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           281.  27.4     216.     346.     9              0.224</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>253.  77.7    <span style="text-decoration: underline;">1</span>092.    <span style="text-decoration: underline;">1</span>415.     3              1    </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: se_prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <hr>
 </div>
@@ -387,10 +387,10 @@ If different sections have separate, non-overlapping calendars, use
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North          269 12.3       12.3          0    242.      296.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central        472 19.0       19.0          0    430.      514.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South          105  9.18       9.18         0     84.6     125.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…      846 39.4       39.4          0    758.      934.    36 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North         414.  21.6       21.6         0     365.     462.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central       731   33.3       33.3         0     657.     805.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South         166.  16.1       16.1         0     130.     201.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…    <span style="text-decoration: underline;">1</span>310.  69.3       69.3         0    <span style="text-decoration: underline;">1</span>156.    <span style="text-decoration: underline;">1</span>465.    36 between…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span>
 <span></span>
@@ -402,17 +402,17 @@ If different sections have separate, non-overlapping calendars, use
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North          269 12.3       12.3          0    242.      296.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central        472 19.0       19.0          0    430.      514.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South          105  9.18       9.18         0     84.6     125.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…      846 24.4       24.4          0    792.      900.    36 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North         414.  21.6       21.6         0     365.     462.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central       731   33.3       33.3         0     657.     805.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South         166.  16.1       16.1         0     130.     201.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…    <span style="text-decoration: underline;">1</span>310.  42.8       42.8         0    <span style="text-decoration: underline;">1</span>215.    <span style="text-decoration: underline;">1</span>406.    36 between…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <p>The section rows are identical; only the <code>.lake_total</code>
-standard error moves. On these shared days it is about 39 angler-hours
-with the covariance and about 24 without it, so treating shared-calendar
+standard error moves. On these shared days it is about 69 angler-hours
+with the covariance and about 43 without it, so treating shared-calendar
 sections as independent would understate the lake-total uncertainty by
-roughly a third.</p>
+more than a third.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -447,10 +447,10 @@ silent omission of sections that should have been observed.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 12</span></span></span>
 <span><span class="co">#&gt;   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North          269  12.3       12.3         0     242.     296.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central        472  19.0       19.0         0     430.     514.    12 between…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           <span style="color: #BB0000;">NA</span>  <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>          <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>      0 <span style="color: #BB0000;">NA</span>      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…      741  31.1       31.1         0     672.     810.    24 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North         414.  21.6       21.6         0     365.     462.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central       731   33.3       33.3         0     657.     805.    12 between…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South          <span style="color: #BB0000;">NA</span>   <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>          <span style="color: #BB0000;">NA</span>      <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>      0 <span style="color: #BB0000;">NA</span>      </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_to…    <span style="text-decoration: underline;">1</span>145.  54.3       54.3         0    <span style="text-decoration: underline;">1</span>024.    <span style="text-decoration: underline;">1</span>266.    24 between…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3 more variables: prop_of_lake_total &lt;dbl&gt;, se_prop_of_lake_total &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <p>To turn warnings into errors (for automated pipelines), use

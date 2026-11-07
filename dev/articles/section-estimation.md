@@ -63,7 +63,7 @@ print(design)
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 12 days (2024-06-03 to 2024-06-21)
+#> Calendar: 19 days (2024-06-03 to 2024-06-21)
 #> day_type: 2 levels
 #> Counts: 36 observations
 #> PSU column: date
@@ -125,10 +125,10 @@ print(effort_est$estimates)
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
-#> 1 North          269 12.3       12.3          0    242.      296.    12 between…
-#> 2 Central        472 19.0       19.0          0    430.      514.    12 between…
-#> 3 South          105  9.18       9.18         0     84.6     125.    12 between…
-#> 4 .lake_to…      846 39.4       39.4          0    758.      934.    36 between…
+#> 1 North         414.  21.6       21.6         0     365.     462.    12 between…
+#> 2 Central       731   33.3       33.3         0     657.     805.    12 between…
+#> 3 South         166.  16.1       16.1         0     130.     201.    12 between…
+#> 4 .lake_to…    1310.  69.3       69.3         0    1156.    1465.    36 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 ```
@@ -231,10 +231,10 @@ print(catch_est$estimates)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           285.  20.3     237.     333.     9              0.226
-#> 2 Central         717.  30.1     646.     788.     9              0.569
-#> 3 South           259.  22.8     205.     313.     9              0.205
-#> 4 .lake_total    1261.  64.8    1126.    1396.     3              1    
+#> 1 North           439.  38.4     348.     530.     9              0.226
+#> 2 Central        1100.  51.2     979.    1221.     9              0.566
+#> 3 South           406.  39.3     313.     499.     9              0.209
+#> 4 .lake_total    1945. 114.     1708.    2181.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
@@ -262,10 +262,10 @@ print(harvest_est$estimates)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           166.  13.5     134.     198.     9              0.203
-#> 2 Central         472.  23.3     416.     527.     9              0.576
-#> 3 South           181.  15.9     143.     218.     9              0.221
-#> 4 .lake_total     818.  44.4     726.     910.     3              1    
+#> 1 North           253.  26.0     191.     314.     9              0.202
+#> 2 Central         719.  40.0     625.     814.     9              0.574
+#> 3 South           281.  27.4     216.     346.     9              0.224
+#> 4 .lake_total    1253.  77.7    1092.    1415.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
@@ -306,10 +306,10 @@ estimate_effort(design, method = "correlated")$estimates
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
-#> 1 North          269 12.3       12.3          0    242.      296.    12 between…
-#> 2 Central        472 19.0       19.0          0    430.      514.    12 between…
-#> 3 South          105  9.18       9.18         0     84.6     125.    12 between…
-#> 4 .lake_to…      846 39.4       39.4          0    758.      934.    36 between…
+#> 1 North         414.  21.6       21.6         0     365.     462.    12 between…
+#> 2 Central       731   33.3       33.3         0     657.     805.    12 between…
+#> 3 South         166.  16.1       16.1         0     130.     201.    12 between…
+#> 4 .lake_to…    1310.  69.3       69.3         0    1156.    1465.    36 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 
@@ -321,19 +321,19 @@ estimate_effort(design, method = "independent")$estimates
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
-#> 1 North          269 12.3       12.3          0    242.      296.    12 between…
-#> 2 Central        472 19.0       19.0          0    430.      514.    12 between…
-#> 3 South          105  9.18       9.18         0     84.6     125.    12 between…
-#> 4 .lake_to…      846 24.4       24.4          0    792.      900.    36 between…
+#> 1 North         414.  21.6       21.6         0     365.     462.    12 between…
+#> 2 Central       731   33.3       33.3         0     657.     805.    12 between…
+#> 3 South         166.  16.1       16.1         0     130.     201.    12 between…
+#> 4 .lake_to…    1310.  42.8       42.8         0    1215.    1406.    36 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 ```
 
 The section rows are identical; only the `.lake_total` standard error
-moves. On these shared days it is about 39 angler-hours with the
-covariance and about 24 without it, so treating shared-calendar sections
-as independent would understate the lake-total uncertainty by roughly a
-third.
+moves. On these shared days it is about 69 angler-hours with the
+covariance and about 43 without it, so treating shared-calendar sections
+as independent would understate the lake-total uncertainty by more than
+a third.
 
 ------------------------------------------------------------------------
 
@@ -371,10 +371,10 @@ estimate_effort(design_missing, missing_sections = "warn")$estimates
 #> # A tibble: 4 × 12
 #>   section   estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <chr>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
-#> 1 North          269  12.3       12.3         0     242.     296.    12 between…
-#> 2 Central        472  19.0       19.0         0     430.     514.    12 between…
-#> 3 South           NA  NA         NA          NA      NA       NA      0 NA      
-#> 4 .lake_to…      741  31.1       31.1         0     672.     810.    24 between…
+#> 1 North         414.  21.6       21.6         0     365.     462.    12 between…
+#> 2 Central       731   33.3       33.3         0     657.     805.    12 between…
+#> 3 South          NA   NA         NA          NA      NA       NA      0 NA      
+#> 4 .lake_to…    1145.  54.3       54.3         0    1024.    1266.    24 between…
 #> # ℹ 3 more variables: prop_of_lake_total <dbl>, se_prop_of_lake_total <dbl>,
 #> #   data_available <lgl>
 ```

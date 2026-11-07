@@ -425,6 +425,11 @@ allows the same creel_design calendar to be used with different PSU structures.<
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">design_with_counts</span> <span class="op">&lt;-</span> <span class="fu">add_counts</span><span class="op">(</span><span class="va">design</span>, <span class="va">counts_ready</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Every calendar day has a count: all 4 days of the calendar were sampled.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Expanded totals (`target = "period_total"`, the default) are then census</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   totals of these days only.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the calendar was built from the sampled dates, rebuild it with every day</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   of the season, e.g. with `creel_calendar()`.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design_with_counts</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Design</span> <span style="color: #00BBBB;">─────────────────────────────────────────────────────────</span></span>
@@ -451,6 +456,11 @@ allows the same creel_design calendar to be used with different PSU structures.<
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">design2</span> <span class="op">&lt;-</span> <span class="fu">add_counts</span><span class="op">(</span><span class="va">design</span>, <span class="va">counts_with_day_psu</span>, psu <span class="op">=</span> <span class="st">"day_id"</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Every calendar day has a count: all 4 days of the calendar were sampled.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Expanded totals (`target = "period_total"`, the default) are then census</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   totals of these days only.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the calendar was built from the sampled dates, rebuild it with every day</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   of the season, e.g. with `creel_calendar()`.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Compatibility path: multiple counts per day (within-day variance via count_time_col)</span></span></span>
 <span class="r-in"><span><span class="co"># Two circuits per day: "am" and "pm"</span></span></span>
@@ -469,6 +479,11 @@ allows the same creel_design calendar to be used with different PSU structures.<
 <span class="r-in"><span><span class="va">design_multi</span> <span class="op">&lt;-</span> <span class="fu">add_counts</span><span class="op">(</span><span class="va">design3</span>, <span class="va">multi_counts</span>,</span></span>
 <span class="r-in"><span>  count_time_col <span class="op">=</span> <span class="va">count_time</span> <span class="co"># nolint: object_usage_linter</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Every calendar day has a count: all 4 days of the calendar were sampled.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Expanded totals (`target = "period_total"`, the default) are then census</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   totals of these days only.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the calendar was built from the sampled dates, rebuild it with every day</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   of the season, e.g. with `creel_calendar()`.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Compatibility path: progressive count type (Ê_d = C x circuit_time x kappa)</span></span></span>
 <span class="r-in"><span><span class="va">calendar3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
@@ -489,6 +504,11 @@ allows the same creel_design calendar to be used with different PSU structures.<
 <span class="r-in"><span>  circuit_time <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>  period_length_col <span class="op">=</span> <span class="va">shift_hours</span> <span class="co"># nolint: object_usage_linter</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Every calendar day has a count: all 4 days of the calendar were sampled.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Expanded totals (`target = "period_total"`, the default) are then census</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   totals of these days only.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the calendar was built from the sampled dates, rebuild it with every day</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   of the season, e.g. with `creel_calendar()`.</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

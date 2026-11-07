@@ -2,11 +2,10 @@
 
 Sample angler interview data demonstrating the structure required for
 [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
-Contains 22 interviews from June 1-14, 2024, matching the
-[example_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md)
-date range. Each row represents one angler interview with catch,
-harvest, effort, trip metadata, and extended interview attributes added
-in v0.5.0.
+Contains 22 interviews from June 1-14, 2024, the sampled days of
+[example_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md).
+Each row represents one angler interview with catch, harvest, effort,
+trip metadata, and extended interview attributes added in v0.5.0.
 
 ## Usage
 
@@ -20,9 +19,8 @@ A data frame with 22 rows and 12 columns:
 
 - date:
 
-  Interview date (Date class), matching
+  Interview date (Date class), the sampled days of
   [example_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md)
-  dates
 
 - hours_fished:
 
@@ -154,7 +152,7 @@ print(design)
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
+#> Calendar: 30 days (2024-06-01 to 2024-06-30)
 #> day_type: 2 levels
 #> Counts: "none"
 #> Interviews: 22 observations

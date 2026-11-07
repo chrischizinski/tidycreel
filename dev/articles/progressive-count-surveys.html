@@ -247,8 +247,9 @@ it is the subject of the section below.</p>
 <p>A progressive count dataset needs:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Calendar</strong> — sampled dates with
-<code>day_type</code>. The calendar carries no hours column:
+<strong>Calendar</strong> — every day of the season with
+<code>day_type</code>, sampled or not (<code><a href="../reference/creel_calendar.html">creel_calendar()</a></code>
+builds one). The calendar carries no hours column:
 <code><a href="../reference/creel_design.html">creel_design()</a></code> reads only the date and the strata, so
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>T</mi><mi>d</mi></msub><annotation encoding="application/x-tex">T_d</annotation></semantics></math>
 must travel with the counts.</li>
@@ -276,20 +277,23 @@ estimator looks for the open hours.</li>
 <p>We survey a 25-km reservoir access road on 18 sampled days in July. A
 single crew completes the full circuit in 2 hours
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">\tau = 2</annotation></semantics></math>
-h). The access road is open 10 hours per day. The calendar below lists
-only the sampled days, so the totals on this page are totals over those
-days; <code><a href="../articles/temporal-extrapolation.html">vignette("temporal-extrapolation")</a></code> shows how to
-expand to a whole season.</p>
+h). The access road is open 10 hours per day. The calendar is the whole
+of July, so the totals on this page are season totals: each stratum’s
+sampled days are expanded to its calendar days
+(<code><a href="../articles/temporal-extrapolation.html">vignette("temporal-extrapolation")</a></code> explains the
+expansion).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 18 sampled days: 10 weekdays and 8 weekend days</span></span>
-<span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span><span class="co"># The season: July 2024, 23 weekdays and 8 weekend days. The counts below</span></span>
+<span><span class="co"># cover 18 of them, 10 weekdays and all 8 weekend days.</span></span>
+<span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-07-01"</span>, <span class="st">"2024-07-31"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># The 18 counted days, weekdays first, as the counts below list them</span></span>
+<span><span class="va">sampled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>    <span class="co"># Weekdays</span></span>
 <span>    <span class="st">"2024-07-01"</span>, <span class="st">"2024-07-02"</span>, <span class="st">"2024-07-03"</span>, <span class="st">"2024-07-04"</span>, <span class="st">"2024-07-05"</span>,</span>
 <span>    <span class="st">"2024-07-09"</span>, <span class="st">"2024-07-10"</span>, <span class="st">"2024-07-11"</span>, <span class="st">"2024-07-12"</span>, <span class="st">"2024-07-16"</span>,</span>
-<span>    <span class="co"># Weekends</span></span>
 <span>    <span class="st">"2024-07-06"</span>, <span class="st">"2024-07-07"</span>, <span class="st">"2024-07-13"</span>, <span class="st">"2024-07-14"</span>,</span>
 <span>    <span class="st">"2024-07-20"</span>, <span class="st">"2024-07-21"</span>, <span class="st">"2024-07-27"</span>, <span class="st">"2024-07-28"</span></span>
 <span>  <span class="op">)</span><span class="op">)</span>,</span>
@@ -303,7 +307,7 @@ expand to a whole season.</p>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
 <span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">18</span> days (2024-07-01 to 2024-07-28)</span></span>
+<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">31</span> days (2024-07-01 to 2024-07-31)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">"none"</span></span></span>
 <span><span class="co">#&gt; Interviews: <span style="color: #0000BB;">"none"</span></span></span>
@@ -344,7 +348,7 @@ enforced where it applies — at scheduling time, by
 <span>  open_end      <span class="op">=</span> <span class="st">"16:00"</span>,</span>
 <span>  circuit_time  <span class="op">=</span> <span class="fl">2</span>,          <span class="co"># τ = 2 h; T = 10 h → k = 5 valid starts</span></span>
 <span>  strategy      <span class="op">=</span> <span class="st">"discrete"</span>,</span>
-<span>  n             <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">calendar</span><span class="op">)</span>,</span>
+<span>  n             <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sampled</span><span class="op">)</span>,  <span class="co"># one start per sampled day</span></span>
 <span>  seed          <span class="op">=</span> <span class="fl">42</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">starts</span></span></code></pre></div>
@@ -366,8 +370,8 @@ weather).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  date <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">date</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">day_type</span>,</span>
+<span>  date <span class="op">=</span> <span class="va">sampled</span><span class="op">$</span><span class="va">date</span>,</span>
+<span>  day_type <span class="op">=</span> <span class="va">sampled</span><span class="op">$</span><span class="va">day_type</span>,</span>
 <span>  n_anglers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="co"># Weekday counts: moderate activity</span></span>
 <span>    <span class="fl">18L</span>, <span class="fl">22L</span>, <span class="fl">15L</span>, <span class="fl">12L</span>, <span class="fl">25L</span>, <span class="fl">20L</span>, <span class="fl">17L</span>, <span class="fl">14L</span>, <span class="fl">23L</span>, <span class="fl">19L</span>,</span>
@@ -417,13 +421,14 @@ angler-hours):</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">6</span>130  249.       249.         0    <span style="text-decoration: underline;">5</span>601.    <span style="text-decoration: underline;">6</span>659.    18 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">8</span>535  369.       369.         0    <span style="text-decoration: underline;">7</span>754.    <span style="text-decoration: underline;">9</span>316.    18 between_day_upper…</span></span></code></pre></div>
 <p>The <code>estimate</code> column is the stratified total angler-hours
-over the 18 sampled days, and <code>se</code> its standard error. With
-one circuit per day <code>se_within</code> is reported as 0. That does
-not mean effort was steady through the day: the day-to-day term contains
-the within-day variation, but with one circuit per day it cannot be
-separated out, so the 0 stands for “not estimated”.</p>
+for July, expanded from the 18 sampled days, and <code>se</code> its
+standard error. With one circuit per day <code>se_within</code> is
+reported as 0. That does not mean effort was steady through the day: the
+day-to-day term contains the within-day variation, but with one circuit
+per day it cannot be separated out, so the 0 stands for “not
+estimated”.</p>
 </div>
 <div class="section level3">
 <h3 id="adding-interviews">Adding Interviews<a class="anchor" aria-label="anchor" href="#adding-interviews"></a>
@@ -434,11 +439,11 @@ Attach them exactly as in any other survey type:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span><span class="va">n_int</span> <span class="op">&lt;-</span> <span class="fl">120</span> <span class="co"># interviews collected across the season</span></span>
 <span></span>
-<span><span class="va">int_dates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">calendar</span><span class="op">$</span><span class="va">date</span>, <span class="va">n_int</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">int_dates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">sampled</span><span class="op">$</span><span class="va">date</span>, <span class="va">n_int</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">catch_total</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="va">n_int</span>, lambda <span class="op">=</span> <span class="fl">2.1</span><span class="op">)</span></span>
 <span><span class="va">interviews</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  date <span class="op">=</span> <span class="va">int_dates</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">day_type</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">int_dates</span>, <span class="va">calendar</span><span class="op">$</span><span class="va">date</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  day_type <span class="op">=</span> <span class="va">sampled</span><span class="op">$</span><span class="va">day_type</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">int_dates</span>, <span class="va">sampled</span><span class="op">$</span><span class="va">date</span><span class="op">)</span><span class="op">]</span>,</span>
 <span>  trip_status <span class="op">=</span> <span class="st">"complete"</span>,</span>
 <span>  hours_fished <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_int</span>, mean <span class="op">=</span> <span class="fl">3.8</span>, sd <span class="op">=</span> <span class="fl">1.3</span><span class="op">)</span>, <span class="fl">0.5</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  catch_total <span class="op">=</span> <span class="va">catch_total</span>,</span>
@@ -470,7 +475,7 @@ Attach them exactly as in any other survey type:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>846.  305.    <span style="text-decoration: underline;">3</span>243.    <span style="text-decoration: underline;">4</span>450.   120</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">5</span>209.  398.    <span style="text-decoration: underline;">4</span>422.    <span style="text-decoration: underline;">5</span>997.   120</span></span></code></pre></div>
 <p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> multiplies each day type’s effort
 by that day type’s catch rate and adds the products. Its standard error
 combines the two estimates’ variances, treating effort and rate as
@@ -493,7 +498,7 @@ formula and that assumption.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     966.  129.     711.    <span style="text-decoration: underline;">1</span>222.   120</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>370.  169.    <span style="text-decoration: underline;">1</span>036.    <span style="text-decoration: underline;">1</span>704.   120</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -508,9 +513,10 @@ h circuit on a day with
 open hours.</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>E</mi><mo accent="true">̂</mo></mover><mi>d</mi></msub><mo>=</mo><mn>234</mn><mo>×</mo><mn>8</mn><mo>=</mo><mn>1</mn><mo>,</mo><mn>872</mn><mrow><mspace width="0.333em"></mspace><mtext mathvariant="normal"> angler-hours</mtext></mrow></mrow><annotation encoding="application/x-tex">\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}</annotation></semantics></math></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cal_pope</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Four days in the period, two of them counted</span></span>
+<span><span class="va">cal_pope</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  date     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span>, <span class="st">"2024-06-03"</span>, <span class="st">"2024-06-04"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  day_type <span class="op">=</span> <span class="st">"weekday"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">des_pope</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal_pope</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span></span>
@@ -551,10 +557,8 @@ of its circuits’
 <span>  <span class="st">"2024-07-01"</span>, <span class="st">"2024-07-02"</span>, <span class="st">"2024-07-03"</span>,</span>
 <span>  <span class="st">"2024-07-06"</span>, <span class="st">"2024-07-07"</span>, <span class="st">"2024-07-13"</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">cal_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  date     <span class="op">=</span> <span class="va">days_2p</span>,</span>
-<span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekend"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
+<span><span class="co"># The first two weeks of July; three days of each type are counted</span></span>
+<span><span class="va">cal_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-07-01"</span>, <span class="st">"2024-07-14"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">des_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal_2p</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cnt_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -575,9 +579,9 @@ of its circuits’
 <span><span class="va">est_2p</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">des_2p</span><span class="op">)</span></span>
 <span><span class="va">est_2p</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
-<span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis  </span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>265  61.0          0      61.0    <span style="text-decoration: underline;">2</span>096.    <span style="text-decoration: underline;">2</span>434.     6 within_day</span></span></code></pre></div>
+<span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis </span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">4</span>240  124.       89.4      85.8    <span style="text-decoration: underline;">3</span>896.    <span style="text-decoration: underline;">4</span>584.     6 two_stage</span></span></code></pre></div>
 <p><code>se_within</code> is now estimated, from the differences between
 each day’s morning and evening circuits, and the total is in
 angler-hours.</p>
@@ -596,7 +600,7 @@ angler-hours.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 18</span></span></span>
 <span><span class="co">#&gt;   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower</span></span>
 <span><span class="co">#&gt;             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>            <span style="text-decoration: underline;">6</span>130      249.              249.                0           <span style="text-decoration: underline;">5</span>601.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>            <span style="text-decoration: underline;">8</span>535      369.              369.                0           <span style="text-decoration: underline;">7</span>754.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 13 more variables: effort_ci_upper &lt;dbl&gt;, effort_n &lt;int&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   effort_se_basis &lt;chr&gt;, catch_estimate &lt;dbl&gt;, catch_se &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   catch_ci_lower &lt;dbl&gt;, catch_ci_upper &lt;dbl&gt;, catch_n &lt;int&gt;,</span></span></span>

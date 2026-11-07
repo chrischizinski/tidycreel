@@ -120,12 +120,12 @@ factor for the instantaneous count.
 
 ``` r
 
-# Build the survey calendar from the unique count dates
-aerial_cal <- data.frame(
-  date = example_aerial_counts$date,
-  day_type = example_aerial_counts$day_type,
-  stringsAsFactors = FALSE
-)
+# The survey period, June 3 to July 6, 2024: the days the flights stand for.
+# A calendar of the flight dates alone would make the design a census of
+# those days (#584).
+# Only date and day_type: creel_calendar() also returns month, week and a
+# stratum label, which the domain screen misreads (#605).
+aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 design <- creel_design(
   aerial_cal,
@@ -144,7 +144,7 @@ print(design)
 #> Type: "aerial"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 16 days (2024-06-03 to 2024-07-06)
+#> Calendar: 34 days (2024-06-03 to 2024-07-06)
 #> day_type: 2 levels
 #> Counts: "none"
 #> Interviews: "none"
@@ -205,7 +205,7 @@ print(effort)
 #> Confidence level: 95%
 #> Effort target: period_total
 #> Unit: angler-hours
-#> Count-sampling SE: 658.3 (known, but se is `NA`)
+#> Count-sampling SE: 1235 (known, but se is `NA`)
 #> within_day: 0 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
@@ -213,7 +213,7 @@ print(effort)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     8918    NA       658.         0       NA       NA    16 between_day_upper…
+#> 1    17521    NA      1235.         0       NA       NA    16 between_day_upper…
 ```
 
 The `estimate` column is the total angler-hours over the calendar given
@@ -288,15 +288,15 @@ print(effort_corr)
 #> Confidence level: 95%
 #> Effort target: period_total
 #> Unit: angler-hours
-#> Count-sampling SE: 774.4 (included in se)
+#> Count-sampling SE: 1453 (included in se)
 #> within_day: 0 (included in se)
-#> visibility: 493.7 (included in se)
+#> visibility: 970 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10492.  918.       774.         0    8522.   12462.    16 between_day_upper…
+#> 1   20613. 1747.      1453.         0   16865.   24360.    16 between_day_upper…
 ```
 
 Comparing the two estimates: the corrected effort is higher than the
@@ -309,8 +309,8 @@ cat(
   "Uncorrected effort:", round(effort$estimate[[1]], 0), "angler-hours\n",
   "Corrected effort (v=0.85):", round(effort_corr$estimate[[1]], 0), "angler-hours\n"
 )
-#> Uncorrected effort: 8918 angler-hours
-#>  Corrected effort (v=0.85): 10492 angler-hours
+#> Uncorrected effort: 17521 angler-hours
+#>  Corrected effort (v=0.85): 20613 angler-hours
 ```
 
 ## Interview-Based Catch Estimation
@@ -358,7 +358,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1838.    NA       NA       NA    48
+#> 1    3848.    NA       NA       NA    48
 ```
 
 The delta-method standard error on total catch accounts for variance in
@@ -380,7 +380,7 @@ tibble::as_tibble(total_catch)
 #> # A tibble: 1 × 11
 #>   estimate    se ci_lower ci_upper     n method        estimator variance_method
 #>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>         <chr>     <chr>          
-#> 1    1838.    NA       NA       NA    48 product-tota… ratio-of… taylor         
+#> 1    3848.    NA       NA       NA    48 product-tota… ratio-of… taylor         
 #> # ℹ 3 more variables: conf_level <dbl>, effort_target <chr>, unit <chr>
 
 ggplot2::autoplot(effort_corr)

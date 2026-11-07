@@ -124,5 +124,5 @@ estimate_angler_trips(effort, design)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     161.  16.9     126.     197.    22
+#> 1     367.  38.4     287.     447.    22
 ```

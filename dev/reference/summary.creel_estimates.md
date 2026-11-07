@@ -120,8 +120,8 @@ est <- estimate_effort(design)
 summary(est)
 #> -- Creel Survey Summary (Total | Taylor linearization | 95%) --
 #>                 se_basis Estimate    SE CI Lower CI Upper  N
-#>  between_day_upper_bound    372.5 13.18    343.8    401.2 14
+#>  between_day_upper_bound      846 29.57    781.5    910.4 14
 as.data.frame(summary(est))
 #>                  se_basis Estimate    SE CI Lower CI Upper  N
-#> 1 between_day_upper_bound    372.5 13.18    343.8    401.2 14
+#> 1 between_day_upper_bound      846 29.57    781.5    910.4 14
 ```

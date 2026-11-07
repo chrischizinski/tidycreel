@@ -294,6 +294,11 @@ design <- add_counts(
   count_col = "angler_count",
   unit_cols = c("date", "day_type", "angler_type")
 )
+#> Warning: Every calendar day has a count: all 4 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 estimate_effort(design, by = angler_type, target = "sampled_days")
 #> Warning: Instantaneous counts were expanded without a period length.
 #> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the

@@ -111,10 +111,14 @@ changing only the variance method.
 
 ``` r
 
+data("example_calendar")
 data("example_counts")
 data("example_interviews")
 
-calendar <- unique(example_counts[, c("date", "day_type")])
+# The calendar is the season, June 2024; the counts cover 14 of its 30 days.
+# A calendar built from the counted dates would make the design a census of
+# those days (#584).
+calendar <- example_calendar
 
 # example_counts holds angler-hours for each sampled day, so it goes in through
 # prep_counts_daily_effort() rather than as instantaneous counts
@@ -152,8 +156,8 @@ design_comparison
 #> 2 row(s), 2 design(s)
 #> 
 #>      design estimate   se    rse ci_lower ci_upper ci_width  n
-#> 1    Taylor      372 13.2 0.0354      344      401     57.4 14
-#> 2 Bootstrap      372 13.5 0.0363      343      402     58.9 14
+#> 1    Taylor      846 29.6 0.0350      782      910      129 14
+#> 2 Bootstrap      846 30.1 0.0355      780      911      131 14
 #>                  se_basis
 #> 1 between_day_upper_bound
 #> 2 between_day_upper_bound

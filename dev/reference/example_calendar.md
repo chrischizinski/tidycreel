@@ -3,8 +3,15 @@
 A sample survey calendar dataset demonstrating the structure required
 for
 [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md).
-Contains 14 days (June 1-14, 2024) with weekday/weekend strata,
-representing a two-week survey period.
+Contains the 30 days of June 2024 with weekday/weekend strata: the
+season the survey stands for.
+[example_counts](https://chrischizinski.com/tidycreel/dev/reference/example_counts.md)
+and
+[example_interviews](https://chrischizinski.com/tidycreel/dev/reference/example_interviews.md)
+cover June 1-14, so 14 of the 30 days were sampled (4 of 10 weekend
+days, 10 of 20 weekdays) and the season total expands them. Up to
+tidycreel 8.0.0 the calendar held only those 14 days, which made the
+example a census.
 
 ## Usage
 
@@ -14,11 +21,11 @@ example_calendar
 
 ## Format
 
-A data frame with 14 rows and 2 columns:
+A data frame with 30 rows and 2 columns:
 
 - date:
 
-  Survey date (Date class), June 1-14, 2024
+  Calendar date (Date class), June 1-30, 2024
 
 - day_type:
 
@@ -81,7 +88,7 @@ print(design)
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
+#> Calendar: 30 days (2024-06-01 to 2024-06-30)
 #> day_type: 2 levels
 #> Counts: "none"
 #> Interviews: "none"

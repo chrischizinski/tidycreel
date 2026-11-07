@@ -112,7 +112,7 @@ result$table
 #> # A tibble: 1 × 13
 #>   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower
 #>             <dbl>     <dbl>             <dbl>            <dbl>           <dbl>
-#> 1            372.      13.2              13.2                0            344.
+#> 1            846.      29.6              29.6                0            782.
 #> # ℹ 8 more variables: effort_ci_upper <dbl>, effort_n <int>,
 #> #   effort_se_basis <chr>, catch_rate_estimate <dbl>, catch_rate_se <dbl>,
 #> #   catch_rate_ci_lower <dbl>, catch_rate_ci_upper <dbl>, catch_rate_n <int>

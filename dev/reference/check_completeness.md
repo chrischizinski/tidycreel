@@ -108,7 +108,7 @@ check_completeness(design)
 #> 
 #> ── Missing Days ──
 #> 
-#> ✔ No missing sampling days
+#> ! 16 calendar day(s) with no count data
 #> 
 #> ── Low-n Strata (threshold: 10) ──
 #> 

@@ -155,20 +155,21 @@ inspection points in a creel survey workflow:</p>
 <h3 id="before-attaching-counts">Before attaching counts<a class="anchor" aria-label="anchor" href="#before-attaching-counts"></a>
 </h3>
 <p>Once you have built a <code>creel_design</code> object from a
-calendar, <code><a href="../reference/plot_design.html">plot_design()</a></code> shows the number of sampled days
-per stratum.</p>
+calendar, <code><a href="../reference/plot_design.html">plot_design()</a></code> shows the number of calendar days
+in each stratum: the days its sampled days will be expanded to.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Build a design from the bundled example calendar</span></span>
+<code class="sourceCode R"><span><span class="co"># Build a design from the bundled example calendar (June 2024)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_calendar"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_counts"</span><span class="op">)</span></span>
-<span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/plot_design.html">plot_design</a></span><span class="op">(</span><span class="va">design</span>, title <span class="op">=</span> <span class="st">"Sample sizes by stratum"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/plot_design.html">plot_design</a></span><span class="op">(</span><span class="va">design</span>, title <span class="op">=</span> <span class="st">"Calendar days by stratum"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="visualisation_files/figure-html/design-no-counts-1.png" class="r-plt" alt="" width="100%"></p>
-<p>The bar chart makes it immediately clear whether weekday and weekend
-strata are balanced. A tall weekday bar with a short weekend bar signals
-that estimates for the weekend stratum will carry higher
-uncertainty.</p>
+<p>June has 20 weekdays and 10 weekend days. These are the population
+sizes
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>N</mi><mi>h</mi></msub><annotation encoding="application/x-tex">N_h</annotation></semantics></math>;
+how many of them were sampled shows once the counts are attached,
+below.</p>
 </div>
 <div class="section level3">
 <h3 id="after-attaching-counts">After attaching counts<a class="anchor" aria-label="anchor" href="#after-attaching-counts"></a>

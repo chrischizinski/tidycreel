@@ -104,6 +104,13 @@ print on every call.
 
 ## What an estimate covers
 
+- `creel_warning_calendar_is_census`:
+
+  Tier 1. Every calendar day of every stratum has a count, so the
+  expanded totals (the default `"period_total"`) are census totals of
+  those days. A calendar built from the sampled dates understates the
+  season (GH \#584).
+
 - `creel_warning_missing_sections`:
 
   Tier 1. One or more sections are missing from the count or interview

@@ -53,7 +53,7 @@ print(effort_est)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     372.  13.2       13.2         0     344.     401.    14 between_day_upper…
+#> 1     846.  29.6       29.6         0     782.     910.    14 between_day_upper…
 ```
 
 `example_counts` records angler-hours for each sampled day, so it goes
@@ -66,8 +66,9 @@ no period length was given. The estimate is in angler-hours, as the data
 say. The printout has no `Unit:` line, because the package did not see
 how those angler-hours were made and so reports the unit as unknown
 ([`vignette("unit-rules")`](https://chrischizinski.com/tidycreel/dev/articles/unit-rules.md)).
-The calendar lists only the 14 sampled days, so this is the total over
-those days.
+The calendar holds the 30 days of June and the counts cover the first
+14, so this is the season total: each stratum’s sampled days are
+expanded to its calendar days (10 of 20 weekdays, 4 of 10 weekend days).
 
 ## Adding Interview Data
 
@@ -110,7 +111,7 @@ print(design)
 #> Type: "instantaneous"
 #> Date column: date
 #> Strata: day_type
-#> Calendar: 14 days (2024-06-01 to 2024-06-14)
+#> Calendar: 30 days (2024-06-01 to 2024-06-30)
 #> day_type: 2 levels
 #> Counts: 14 observations
 #> PSU column: date
@@ -217,7 +218,7 @@ print(total_catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     364.  47.9     262.     466.    17
+#> 1     830.  115.     585.    1075.    17
 ```
 
 The total is built stratum by stratum: each day type’s effort times that
@@ -284,7 +285,7 @@ print(total_harvest_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     225.  28.1     165.     284.    17
+#> 1     513.  68.0     368.     657.    17
 ```
 
 Harvest estimation uses the same ratio-of-means approach as CPUE, but
@@ -538,7 +539,7 @@ print(effort)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     372.  13.2       13.2         0     344.     401.    14 between_day_upper…
+#> 1     846.  29.6       29.6         0     782.     910.    14 between_day_upper…
 print(total_catch)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -550,7 +551,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     364.  47.9     262.     466.    17
+#> 1     830.  115.     585.    1075.    17
 print(total_harvest)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -562,7 +563,7 @@ print(total_harvest)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     225.  28.1     165.     284.    17
+#> 1     513.  68.0     368.     657.    17
 ```
 
 The same warnings appear here as in the sections above, for the same

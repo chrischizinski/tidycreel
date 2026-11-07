@@ -137,7 +137,7 @@ guard.</p></dd>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># Method: Total Effort | Taylor linearization | 95% CI</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># Generated: 2024-06-15 09:32:11 UTC</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>Estimate,SE,CI Lower,CI Upper,N</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fl">372.5</span>,<span class="fl">13.18</span>,<span class="fl">343.8</span>,<span class="fl">401.2</span>,<span class="dv">14</span></span></code></pre><p></p></div>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="dv">846</span>,<span class="fl">29.57</span>,<span class="fl">781.5</span>,<span class="fl">910.4</span>,<span class="dv">14</span></span></code></pre><p></p></div>
 <p>These lines can be skipped when reading back with
 <code>utils::read.csv(path, comment.char = "#")</code>.</p>
 <p><strong>xlsx format</strong> — The data are written without a comment header since Excel
@@ -181,7 +181,8 @@ does not natively support comment rows. Row 1 will be the column headers.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_counts"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_interviews"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_calendar"</span>, package <span class="op">=</span> <span class="st">"tidycreel"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cal</span> <span class="op">&lt;-</span> <span class="va">example_calendar</span> <span class="co"># the season; the counts cover 14 of its 30 days</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">cal</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="co"># nolint</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
@@ -203,7 +204,7 @@ does not natively support comment rows. Row 1 will be the column headers.</p>
 <span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">tmp</span>, comment.char <span class="op">=</span> <span class="st">"#"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">out</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate       se se_between se_within ci_lower ci_upper  n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    372.5 13.17645   13.17645         0  343.791  401.209 14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   845.95 29.57293   29.57293         0 781.5161 910.3839 14</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  se_basis</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 between_day_upper_bound</span>
 <span class="r-in"><span></span></span>

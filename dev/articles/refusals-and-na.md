@@ -222,10 +222,8 @@ all three:
 
 ``` r
 
-aerial_calendar <- unique(data.frame(
-  date = example_aerial_counts$date,
-  day_type = example_aerial_counts$day_type
-))
+# The survey period the flights stand for (#584)
+aerial_calendar <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 aerial_effort <- function(...) {
   design <- creel_design(aerial_calendar,
@@ -251,14 +249,14 @@ aerial_effort(visibility_correction = 0.85)
 #> Confidence level: 95%
 #> Effort target: period_total
 #> Unit: angler-hours
-#> Count-sampling SE: 774.4 (included in se)
+#> Count-sampling SE: 1453 (included in se)
 #> within_day: 0 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10492.  774.       774.         0    8831.   12153.    16 between_day_upper…
+#> 1   20613. 1453.      1453.         0   17496.   23730.    16 between_day_upper…
 ```
 
 The correction’s standard error is supplied, so it is propagated:
@@ -273,15 +271,15 @@ aerial_effort(visibility_correction = 0.85, visibility_se = 0.04)
 #> Confidence level: 95%
 #> Effort target: period_total
 #> Unit: angler-hours
-#> Count-sampling SE: 774.4 (included in se)
+#> Count-sampling SE: 1453 (included in se)
 #> within_day: 0 (included in se)
-#> visibility: 493.7 (included in se)
+#> visibility: 970 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10492.  918.       774.         0    8522.   12462.    16 between_day_upper…
+#> 1   20613. 1747.      1453.         0   16865.   24360.    16 between_day_upper…
 ```
 
 No correction was studied (`"none"`). The point estimate divides by 1,
@@ -298,7 +296,7 @@ aerial_effort(visibility_correction = "none")
 #> Confidence level: 95%
 #> Effort target: period_total
 #> Unit: angler-hours
-#> Count-sampling SE: 658.3 (known, but se is `NA`)
+#> Count-sampling SE: 1235 (known, but se is `NA`)
 #> within_day: 0 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
@@ -306,15 +304,15 @@ aerial_effort(visibility_correction = "none")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     8918    NA       658.         0       NA       NA    16 between_day_upper…
+#> 1    17521    NA      1235.         0       NA       NA    16 between_day_upper…
 ```
 
-The same counts give a standard error of 774, then 918, then `NA`. In
-the first, the visibility correction is a measured number whose
-uncertainty was not supplied, so 774 understates the total uncertainty
-by whatever that part would add (918 once it is supplied). In the third
-there is no measurement at all, and no honest standard error. In all
-three, `angler_ratio: 0` is the third state: `angler_ratio_se = 0`
+The same counts give a standard error of 1,453, then 1,747, then `NA`.
+In the first, the visibility correction is a measured number whose
+uncertainty was not supplied, so 1,453 understates the total uncertainty
+by whatever that part would add (1,747 once it is supplied). In the
+third there is no measurement at all, and no honest standard error. In
+all three, `angler_ratio: 0` is the third state: `angler_ratio_se = 0`
 states that every person counted is an angler, exactly. A correction
 known exactly must be said to be:
 `visibility_correction = 1, visibility_se = 0`, for example, where every

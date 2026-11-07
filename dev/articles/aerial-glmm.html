@@ -165,13 +165,15 @@ season.</p>
 <div class="section level2">
 <h2 id="building-the-aerial-design">Building the Aerial Design<a class="anchor" aria-label="anchor" href="#building-the-aerial-design"></a>
 </h2>
-<p>Build an aerial <code>creel_design</code> from the survey dates and
+<p>Build an aerial <code>creel_design</code> over the survey period and
 attach the count data. The <code>h_open = 14</code> argument specifies
 the number of hours the fishery is open each day; it sets the length of
 the window over which the diurnal curve is integrated.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">aerial_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_aerial_glmm_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">aerial_cal</span> <span class="op">&lt;-</span> <span class="va">aerial_cal</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">aerial_cal</span><span class="op">$</span><span class="va">date</span><span class="op">)</span>, <span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="co"># The survey period, June 3 to July 6, 2024: the days the flights stand for.</span></span>
+<span><span class="co"># A calendar of the flight dates alone would make the design a census of</span></span>
+<span><span class="co"># those days (#584).</span></span>
+<span><span class="va">aerial_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-07-06"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
 <span>  <span class="va">aerial_cal</span>,</span>
@@ -195,7 +197,7 @@ the window over which the diurnal curve is integrated.</p>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"aerial"</span></span></span>
 <span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
 <span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">12</span> days (2024-06-03 to 2024-07-06)</span></span>
+<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">34</span> days (2024-06-03 to 2024-07-06)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">48</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
@@ -322,9 +324,8 @@ a <em>different</em> design object from the one fitted above: it uses
 <code>example_aerial_counts</code>, and its effort comes from the
 standard aerial path rather than from the GLMM.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Build a complementary design with matching interview dates</span></span>
-<span><span class="va">aerial_int_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_aerial_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">aerial_int_cal</span> <span class="op">&lt;-</span> <span class="va">aerial_int_cal</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">aerial_int_cal</span><span class="op">$</span><span class="va">date</span><span class="op">)</span>, <span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="co"># A complementary design over the same survey period</span></span>
+<span><span class="va">aerial_int_cal</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_calendar.html">creel_calendar</a></span><span class="op">(</span><span class="st">"2024-06-03"</span>, <span class="st">"2024-07-06"</span>, strata <span class="op">=</span> <span class="st">"day_type"</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
 <span><span class="va">design_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span></span>
 <span>  <span class="va">aerial_int_cal</span>,</span>
@@ -383,7 +384,7 @@ standard aerial path rather than from the GLMM.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>508.    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">7</span>178.    <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p>This example leaves out on purpose the party size that
 <code>example_aerial_interviews</code> carries (<code>n_anglers</code>),
 to show what happens without it. <code><a href="../reference/add_interviews.html">add_interviews()</a></code> warns
@@ -469,7 +470,7 @@ large.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   method estimate       target</span></span>
-<span><span class="co">#&gt; 1   GLMM 4728.546 sampled_days</span></span>
+<span><span class="co">#&gt; 1   GLMM 4728.548 sampled_days</span></span>
 <span><span class="co">#&gt; 2 Simple 5092.500 sampled_days</span></span></code></pre></div>
 <p>The <code>target</code> column is worth checking rather than
 assuming. Both estimators report <code>sampled_days</code>, so the two
@@ -565,11 +566,11 @@ understates it.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># SE of the summed total, from the joint covariance</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 581.6996</span></span>
+<span><span class="co">#&gt; [1] 581.6963</span></span>
 <span></span>
 <span><span class="co"># The quadrature sum, shown only to compare -- it understates the SE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 536.0946</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 536.0896</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="results-as-data">Results as Data<a class="anchor" aria-label="anchor" href="#results-as-data"></a>

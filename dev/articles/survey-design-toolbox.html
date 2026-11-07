@@ -211,10 +211,14 @@ helps compare multiple <code>creel_estimates</code> objects on a common
 scale. In this example we estimate total effort twice from the same
 dataset, changing only the variance method.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_counts"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_calendar"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_counts"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_interviews"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co"># The calendar is the season, June 2024; the counts cover 14 of its 30 days.</span></span>
+<span><span class="co"># A calendar built from the counted dates would make the design a census of</span></span>
+<span><span class="co"># those days (#584).</span></span>
+<span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="va">example_calendar</span></span>
 <span></span>
 <span><span class="co"># example_counts holds angler-hours for each sampled day, so it goes in through</span></span>
 <span><span class="co"># prep_counts_daily_effort() rather than as instantaneous counts</span></span>
@@ -249,8 +253,8 @@ dataset, changing only the variance method.</p>
 <span><span class="co">#&gt; 2 row(s), 2 design(s)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;      design estimate   se    rse ci_lower ci_upper ci_width  n</span></span>
-<span><span class="co">#&gt; 1    Taylor      372 13.2 0.0354      344      401     57.4 14</span></span>
-<span><span class="co">#&gt; 2 Bootstrap      372 13.5 0.0363      343      402     58.9 14</span></span>
+<span><span class="co">#&gt; 1    Taylor      846 29.6 0.0350      782      910      129 14</span></span>
+<span><span class="co">#&gt; 2 Bootstrap      846 30.1 0.0355      780      911      131 14</span></span>
 <span><span class="co">#&gt;                  se_basis</span></span>
 <span><span class="co">#&gt; 1 between_day_upper_bound</span></span>
 <span><span class="co">#&gt; 2 between_day_upper_bound</span></span></code></pre></div>

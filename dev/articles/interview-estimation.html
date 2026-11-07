@@ -169,7 +169,7 @@ package picks the estimator from the interview type.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     372.  13.2       13.2         0     344.     401.    14 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     846.  29.6       29.6         0     782.     910.    14 between_day_upper…</span></span></code></pre></div>
 <p><code>example_counts</code> records angler-hours for each sampled
 day, so it goes in through <code><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort()</a></code>.
 Passed to <code><a href="../reference/add_counts.html">add_counts()</a></code> directly it would be read as
@@ -177,8 +177,10 @@ instantaneous counts, with a warning that no period length was given.
 The estimate is in angler-hours, as the data say. The printout has no
 <code>Unit:</code> line, because the package did not see how those
 angler-hours were made and so reports the unit as unknown
-(<code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code>). The calendar lists only the 14
-sampled days, so this is the total over those days.</p>
+(<code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code>). The calendar holds the 30 days of
+June and the counts cover the first 14, so this is the season total:
+each stratum’s sampled days are expanded to its calendar days (10 of 20
+weekdays, 4 of 10 weekend days).</p>
 </div>
 <div class="section level2">
 <h2 id="adding-interview-data">Adding Interview Data<a class="anchor" aria-label="anchor" href="#adding-interview-data"></a>
@@ -220,7 +222,7 @@ complete trips:</p>
 <span><span class="co">#&gt; Type: <span style="color: #0000BB;">"instantaneous"</span></span></span>
 <span><span class="co">#&gt; Date column: <span style="color: #00BB00;">date</span></span></span>
 <span><span class="co">#&gt; Strata: <span style="color: #00BB00;">day_type</span></span></span>
-<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">14</span> days (2024-06-01 to 2024-06-14)</span></span>
+<span><span class="co">#&gt; Calendar: <span style="color: #0000BB;">30</span> days (2024-06-01 to 2024-06-30)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">day_type</span>: <span style="color: #0000BB;">2</span> levels</span></span>
 <span><span class="co">#&gt; Counts: <span style="color: #0000BB;">14</span> observations</span></span>
 <span><span class="co">#&gt; PSU column: <span style="color: #00BB00;">date</span></span></span>
@@ -320,7 +322,7 @@ catch:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     364.  47.9     262.     466.    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     830.  115.     585.    <span style="text-decoration: underline;">1</span>075.    17</span></span></code></pre></div>
 <p>The total is built stratum by stratum: each day type’s effort times
 that day type’s catch rate, then added. The variance of each product
 uses Goodman’s (1960) unbiased estimator by default,
@@ -386,7 +388,7 @@ total harvest:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     225.  28.1     165.     284.    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     513.  68.0     368.     657.    17</span></span></code></pre></div>
 <p>Harvest estimation uses the same ratio-of-means approach as CPUE, but
 with the harvest column (<code>catch_kept</code>) as the numerator. As
 expected, total harvest is lower than total catch since not all caught
@@ -622,7 +624,7 @@ delta method.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     372.  13.2       13.2         0     344.     401.    14 between_day_upper…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     846.  29.6       29.6         0     782.     910.    14 between_day_upper…</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_catch</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -634,7 +636,7 @@ delta method.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     364.  47.9     262.     466.    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     830.  115.     585.    <span style="text-decoration: underline;">1</span>075.    17</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">total_harvest</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -646,7 +648,7 @@ delta method.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     225.  28.1     165.     284.    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     513.  68.0     368.     657.    17</span></span></code></pre></div>
 <p>The same warnings appear here as in the sections above, for the same
 reasons.</p>
 </div>

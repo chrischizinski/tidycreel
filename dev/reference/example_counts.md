@@ -1,8 +1,9 @@
 # Example count data for creel survey
 
-Sample daily effort observations matching
-[example_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md).
-One row per survey date, suitable for use with
+Sample daily effort observations for the first 14 days of
+[example_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md)
+(June 1-14, 2024): the sampled days. One row per survey date, suitable
+for use with
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
 and
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md).
@@ -19,9 +20,8 @@ A data frame with 14 rows and 3 columns:
 
 - date:
 
-  Survey date (Date class), matching
+  Survey date (Date class), the sampled days of
   [example_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_calendar.md)
-  dates
 
 - day_type:
 
@@ -103,5 +103,5 @@ print(result)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     372.  13.2       13.2         0     344.     401.    14 between_day_upper…
+#> 1     846.  29.6       29.6         0     782.     910.    14 between_day_upper…
 ```

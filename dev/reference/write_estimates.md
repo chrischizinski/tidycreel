@@ -60,7 +60,7 @@ write_estimates(
     # Method: Total Effort | Taylor linearization | 95% CI
     # Generated: 2024-06-15 09:32:11 UTC
     Estimate,SE,CI Lower,CI Upper,N
-    372.5,13.18,343.8,401.2,14
+    846,29.57,781.5,910.4,14
 
 These lines can be skipped when reading back with
 `utils::read.csv(path, comment.char = "#")`.
@@ -109,7 +109,8 @@ Other "Reporting & Diagnostics":
 ``` r
 data("example_counts")
 data("example_interviews")
-cal <- unique(example_counts[, c("date", "day_type")])
+data("example_calendar", package = "tidycreel")
+cal <- example_calendar # the season; the counts cover 14 of its 30 days
 design <- suppressWarnings(
   creel_design(cal, date = date, strata = day_type) # nolint
 )
@@ -131,7 +132,7 @@ write_estimates(eff, tmp)
 out <- utils::read.csv(tmp, comment.char = "#")
 out
 #>   estimate       se se_between se_within ci_lower ci_upper  n
-#> 1    372.5 13.17645   13.17645         0  343.791  401.209 14
+#> 1   845.95 29.57293   29.57293         0 781.5161 910.3839 14
 #>                  se_basis
 #> 1 between_day_upper_bound
 ```

@@ -117,6 +117,11 @@ design <- creel_design(
   h_open = 14
 )
 design <- add_counts(design, example_aerial_counts)
+#> Warning: Every calendar day has a count: all 16 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 design <- add_interviews(
   design,
   example_aerial_interviews,

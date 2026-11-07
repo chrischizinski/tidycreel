@@ -198,7 +198,13 @@ inferred.</p></dd>
     <h2 id="what-an-estimate-covers">What an estimate covers<a class="anchor" aria-label="anchor" href="#what-an-estimate-covers"></a></h2>
 
 
-<dl><dt><code>creel_warning_missing_sections</code></dt>
+<dl><dt><code>creel_warning_calendar_is_census</code></dt>
+<dd><p>Tier 1. Every calendar
+day of every stratum has a count, so the expanded totals (the default
+<code>"period_total"</code>) are census totals of those days. A calendar built
+from the sampled dates understates the season (GH #584).</p></dd>
+
+<dt><code>creel_warning_missing_sections</code></dt>
 <dd><p>Tier 1. One or more sections
 are missing from the count or interview data and are not in the
 estimate.</p></dd>
