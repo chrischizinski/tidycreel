@@ -42,7 +42,8 @@
 #' @examples
 #' data("example_counts")
 #' data("example_interviews")
-#' cal <- unique(example_counts[, c("date", "day_type")])
+#' data("example_calendar", package = "tidycreel")
+#' cal <- example_calendar # the season; the counts cover 14 of its 30 days
 #' design <- suppressWarnings(
 #'   creel_design(cal, date = date, strata = day_type) # nolint
 #' )

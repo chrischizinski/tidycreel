@@ -79,6 +79,10 @@ inferred.}
 \section{What an estimate covers}{
 
 \describe{
+\item{\code{creel_warning_calendar_is_census}}{Tier 1. Every calendar
+day of every stratum has a count, so the expanded totals (the default
+\code{"period_total"}) are census totals of those days. A calendar built
+from the sampled dates understates the season (GH #584).}
 \item{\code{creel_warning_missing_sections}}{Tier 1. One or more sections
 are missing from the count or interview data and are not in the
 estimate.}

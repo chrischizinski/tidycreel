@@ -42,20 +42,21 @@ library(ggplot2)
 ### Before attaching counts
 
 Once you have built a `creel_design` object from a calendar, `plot_design()`
-shows the number of sampled days per stratum.
+shows the number of calendar days in each stratum: the days its sampled days
+will be expanded to.
 
 ```{r design-no-counts}
-# Build a design from the bundled example calendar
+# Build a design from the bundled example calendar (June 2024)
+data("example_calendar")
 data("example_counts")
-cal <- unique(example_counts[, c("date", "day_type")])
-design <- creel_design(cal, date = date, strata = day_type)
+design <- creel_design(example_calendar, date = date, strata = day_type)
 
-plot_design(design, title = "Sample sizes by stratum")
+plot_design(design, title = "Calendar days by stratum")
 ```
 
-The bar chart makes it immediately clear whether weekday and weekend strata
-are balanced. A tall weekday bar with a short weekend bar signals that
-estimates for the weekend stratum will carry higher uncertainty.
+June has 20 weekdays and 10 weekend days. These are the population sizes
+$N_h$; how many of them were sampled shows once the counts are attached,
+below.
 
 ### After attaching counts
 

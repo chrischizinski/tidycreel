@@ -107,10 +107,14 @@ Once a survey has been completed, `compare_designs()` helps compare multiple
 effort twice from the same dataset, changing only the variance method.
 
 ```{r compare-setup, message = FALSE}
+data("example_calendar")
 data("example_counts")
 data("example_interviews")
 
-calendar <- unique(example_counts[, c("date", "day_type")])
+# The calendar is the season, June 2024; the counts cover 14 of its 30 days.
+# A calendar built from the counted dates would make the design a census of
+# those days (#584).
+calendar <- example_calendar
 
 # example_counts holds angler-hours for each sampled day, so it goes in through
 # prep_counts_daily_effort() rather than as instantaneous counts

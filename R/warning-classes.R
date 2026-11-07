@@ -72,6 +72,10 @@
 #'
 #' @section What an estimate covers:
 #' \describe{
+#'   \item{\code{creel_warning_calendar_is_census}}{Tier 1. Every calendar
+#'     day of every stratum has a count, so the expanded totals (the default
+#'     \code{"period_total"}) are census totals of those days. A calendar built
+#'     from the sampled dates understates the season (GH #584).}
 #'   \item{\code{creel_warning_missing_sections}}{Tier 1. One or more sections
 #'     are missing from the count or interview data and are not in the
 #'     estimate.}
@@ -289,6 +293,7 @@ creel_warning_tiers <- c(
   creel_warning_asymmetric_coverage = 1L,
   creel_warning_bin_vcov_unavailable = 1L,
   creel_warning_bootstrap_ignores_strata = 1L,
+  creel_warning_calendar_is_census = 1L,
   creel_warning_camera_unit_ambiguous = 1L,
   creel_warning_catch_is_stratum_total = 1L,
   creel_warning_circuit_time_ignored = 1L,

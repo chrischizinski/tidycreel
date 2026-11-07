@@ -59,7 +59,9 @@ be read as instantaneous counts, with a warning that no period length was
 given. The estimate is in angler-hours, as the data say. The printout has no
 `Unit:` line, because the package did not see how those angler-hours were made
 and so reports the unit as unknown (`vignette("unit-rules")`). The calendar
-lists only the 14 sampled days, so this is the total over those days.
+holds the 30 days of June and the counts cover the first 14, so this is the
+season total: each stratum's sampled days are expanded to its calendar days
+(10 of 20 weekdays, 4 of 10 weekend days).
 
 ## Adding Interview Data
 

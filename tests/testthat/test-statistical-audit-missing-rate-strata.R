@@ -96,9 +96,10 @@ test_that("#373: the refusal names the uncovered cell and its share of effort", 
   )
   msg <- conditionMessage(err)
   expect_match(msg, "weekend")
-  # 201.9 of 372.5 effort units: the share is what tells a user whether this is
-  # a corner or most of the season.
-  expect_match(msg, "54.2%", fixed = TRUE)
+  # 504.75 of 845.95 season effort units (weekend 201.9 x 10/4, weekday
+  # 170.6 x 20/10; example_calendar is June, #584): the share is what tells a
+  # user whether this is a corner or most of the season.
+  expect_match(msg, "59.7%", fixed = TRUE)
   expect_match(msg, "missing_rate", fixed = TRUE)
 })
 
@@ -196,7 +197,7 @@ test_that("#373: a printed total over part of the effort says so", {
   expect_match(printed, "excluded_strata", fixed = TRUE)
   # Named, not only counted: two totals excluding different cells of equal
   # effort would otherwise print identically.
-  expect_match(printed, "day_type = weekend: 201.9 effort units", fixed = TRUE)
+  expect_match(printed, "day_type = weekend: 504.8 effort units", fixed = TRUE)
   full <- quiet(estimate_total_catch(mrs_design(weekend_incomplete = FALSE)))
   expect_no_match(paste(format(full), collapse = "\n"), "excluded_strata", fixed = TRUE)
 })

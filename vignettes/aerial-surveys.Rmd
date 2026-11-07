@@ -99,12 +99,12 @@ required for aerial surveys — it specifies the number of hours the fishery is
 open each day, which sets the expansion factor for the instantaneous count.
 
 ```{r calendar}
-# Build the survey calendar from the unique count dates
-aerial_cal <- data.frame(
-  date = example_aerial_counts$date,
-  day_type = example_aerial_counts$day_type,
-  stringsAsFactors = FALSE
-)
+# The survey period, June 3 to July 6, 2024: the days the flights stand for.
+# A calendar of the flight dates alone would make the design a census of
+# those days (#584).
+# Only date and day_type: creel_calendar() also returns month, week and a
+# stratum label, which the domain screen misreads (#605).
+aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 design <- creel_design(
   aerial_cal,

@@ -65,14 +65,16 @@ The four columns are `date`, `day_type`, `n_anglers` (instantaneous count), and
 
 ## Building the Aerial Design
 
-Build an aerial `creel_design` from the survey dates and attach the count data.
+Build an aerial `creel_design` over the survey period and attach the count data.
 The `h_open = 14` argument specifies the number of hours the fishery is open
 each day; it sets the length of the window over which the diurnal curve is
 integrated.
 
 ```{r design}
-aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
-aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+# The survey period, June 3 to July 6, 2024: the days the flights stand for.
+# A calendar of the flight dates alone would make the design a census of
+# those days (#584).
+aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 design <- creel_design(
   aerial_cal,
@@ -176,9 +178,8 @@ design object from the one fitted above: it uses `example_aerial_counts`, and
 its effort comes from the standard aerial path rather than from the GLMM.
 
 ```{r downstream}
-# Build a complementary design with matching interview dates
-aerial_int_cal <- unique(example_aerial_counts[, c("date", "day_type")])
-aerial_int_cal <- aerial_int_cal[order(aerial_int_cal$date), ]
+# A complementary design over the same survey period
+aerial_int_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 design_int <- creel_design(
   aerial_int_cal,

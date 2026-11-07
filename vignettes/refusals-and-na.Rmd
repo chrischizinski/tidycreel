@@ -163,10 +163,8 @@ The three are kept apart because a zero is otherwise indistinguishable from a
 part nobody propagated. The aerial visibility correction shows all three:
 
 ```{r aerial-calendar}
-aerial_calendar <- unique(data.frame(
-  date = example_aerial_counts$date,
-  day_type = example_aerial_counts$day_type
-))
+# The survey period the flights stand for (#584)
+aerial_calendar <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")[, c("date", "day_type")]
 
 aerial_effort <- function(...) {
   design <- creel_design(aerial_calendar,
@@ -199,10 +197,10 @@ many anglers the observer missed is unknown, so the standard error is too:
 aerial_effort(visibility_correction = "none")
 ```
 
-The same counts give a standard error of 774, then 918, then `NA`. In the
+The same counts give a standard error of 1,453, then 1,747, then `NA`. In the
 first, the visibility correction is a measured number whose uncertainty was
-not supplied, so 774 understates the total uncertainty by whatever that part
-would add (918 once it is supplied). In the third there is no measurement at
+not supplied, so 1,453 understates the total uncertainty by whatever that part
+would add (1,747 once it is supplied). In the third there is no measurement at
 all, and no honest standard error. In all three, `angler_ratio: 0` is the third
 state: `angler_ratio_se = 0` states that every person counted is an angler,
 exactly. A correction known exactly

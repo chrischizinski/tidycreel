@@ -19,7 +19,8 @@ make_na_gear_design <- function(n_per_group = 16L) {
   data(example_counts, package = "tidycreel")
   n <- 3L * n_per_group
   iv <- data.frame(
-    date = rep(example_calendar$date, length.out = n),
+    # The counted days, June 1-14; example_calendar runs to June 30 (#584).
+    date = rep(seq(as.Date("2024-06-01"), as.Date("2024-06-14"), by = "day"), length.out = n),
     hours_fished = rep(c(2, 3, 4), length.out = n),
     catch_total = rep(c(4, 6, 9), length.out = n),
     catch_kept = rep(c(2, 3, 5), length.out = n),
@@ -103,7 +104,8 @@ make_na_zone_design <- function() {
   cnt$zone <- rep(c("north", "south", NA_character_), length.out = nrow(cnt))
   n <- 48L
   iv <- data.frame(
-    date = rep(example_calendar$date, length.out = n),
+    # The counted days, June 1-14; example_calendar runs to June 30 (#584).
+    date = rep(seq(as.Date("2024-06-01"), as.Date("2024-06-14"), by = "day"), length.out = n),
     hours_fished = rep(c(2, 3, 4), length.out = n),
     catch_total = rep(c(4, 6, 9), length.out = n),
     catch_kept = rep(c(2, 3, 5), length.out = n),
@@ -234,7 +236,8 @@ test_that("NAGRP-13 (#321): a group labelled \"NA\" is not the unknown group", {
   data(example_counts, package = "tidycreel")
   n <- 48L
   iv <- data.frame(
-    date = rep(example_calendar$date, length.out = n),
+    # The counted days, June 1-14; example_calendar runs to June 30 (#584).
+    date = rep(seq(as.Date("2024-06-01"), as.Date("2024-06-14"), by = "day"), length.out = n),
     hours_fished = rep(c(2, 3, 4), length.out = n),
     catch_total = rep(c(4, 6, 9), length.out = n),
     catch_kept = rep(c(2, 3, 5), length.out = n),
@@ -408,7 +411,8 @@ test_that("NAGRP-17 (#321): the sample-size floor names the unknown group distin
   data(example_counts, package = "tidycreel")
   n <- 18L
   iv <- data.frame(
-    date = rep(example_calendar$date, length.out = n),
+    # The counted days, June 1-14; example_calendar runs to June 30 (#584).
+    date = rep(seq(as.Date("2024-06-01"), as.Date("2024-06-14"), by = "day"), length.out = n),
     hours_fished = rep(c(2, 3, 4), length.out = n),
     catch_total = rep(c(4, 6, 9), length.out = n),
     catch_kept = rep(c(2, 3, 5), length.out = n),

@@ -237,8 +237,9 @@ summarize_length_freq(design, type = "catch", by = species, bin_width = 25)
 
 For pressure-weighted estimates broken down by species, use the estimators. These
 combine the effort estimate with species-specific catch rates from the interview and
-catch data, using the ratio of means for these complete trips. The calendar lists only
-the sampled days, so the totals are totals over those days.
+catch data, using the ratio of means for these complete trips. The calendar holds the
+30 days of June and the counts cover the first 14, so these are season totals: the
+sampled days are expanded to the calendar days of each stratum.
 
 The example is small, 17 complete trips, so the rate calls warn that the sample is
 small for a ratio estimator, and the species totals warn that the weekend rate rests on

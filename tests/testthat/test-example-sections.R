@@ -5,7 +5,8 @@
 test_that("example_sections_calendar loads with correct structure", {
   data("example_sections_calendar", package = "tidycreel")
   expect_s3_class(example_sections_calendar, "data.frame")
-  expect_equal(nrow(example_sections_calendar), 12L)
+  # 19 calendar days, 12 of them sampled (#584).
+  expect_equal(nrow(example_sections_calendar), 19L)
   expect_true(all(c("date", "day_type") %in% names(example_sections_calendar)))
   expect_s3_class(example_sections_calendar$date, "Date")
 })
@@ -13,7 +14,7 @@ test_that("example_sections_calendar loads with correct structure", {
 test_that("example_sections_calendar day_type contains only weekday and weekend", {
   data("example_sections_calendar", package = "tidycreel")
   expect_true(all(example_sections_calendar$day_type %in% c("weekday", "weekend")))
-  expect_equal(sum(example_sections_calendar$day_type == "weekday"), 6L)
+  expect_equal(sum(example_sections_calendar$day_type == "weekday"), 13L)
   expect_equal(sum(example_sections_calendar$day_type == "weekend"), 6L)
 })
 

@@ -5,9 +5,9 @@
 \alias{example_calendar}
 \title{Example calendar data for creel survey}
 \format{
-A data frame with 14 rows and 2 columns:
+A data frame with 30 rows and 2 columns:
 \describe{
-\item{date}{Survey date (Date class), June 1-14, 2024}
+\item{date}{Calendar date (Date class), June 1-30, 2024}
 \item{day_type}{Day type stratum: "weekday" or "weekend"}
 }
 }
@@ -19,8 +19,12 @@ example_calendar
 }
 \description{
 A sample survey calendar dataset demonstrating the structure required for
-\code{\link[=creel_design]{creel_design()}}. Contains 14 days (June 1-14, 2024) with weekday/weekend
-strata, representing a two-week survey period.
+\code{\link[=creel_design]{creel_design()}}. Contains the 30 days of June 2024 with weekday/weekend
+strata: the season the survey stands for. \link{example_counts} and
+\link{example_interviews} cover June 1-14, so 14 of the 30 days were sampled
+(4 of 10 weekend days, 10 of 20 weekdays) and the season total expands them.
+Up to tidycreel 8.0.0 the calendar held only those 14 days, which made the
+example a census.
 }
 \examples{
 # Load and inspect

@@ -29,7 +29,7 @@ test_that("default strata are month x day type, labelled as connect labels them"
 test_that("a day-type calendar matches the hand-built example calendar and its estimates", {
   # The replacement for hand-written seq() + format("%u") code must give the
   # same population days and the same effort estimate.
-  cal <- creel_calendar("2024-06-01", "2024-06-14", strata = "day_type")
+  cal <- creel_calendar("2024-06-01", "2024-06-30", strata = "day_type")
   expect_identical(format(cal$date), format(example_calendar$date))
   expect_identical(cal$day_type, example_calendar$day_type)
 

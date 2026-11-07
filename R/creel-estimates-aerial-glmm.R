@@ -140,8 +140,9 @@
 #' @examplesIf rlang::is_installed("lme4")
 #' data(example_aerial_glmm_counts)
 #'
-#' aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")])
-#' aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+#' # The survey period the flights stand for, not the flight dates alone
+#' aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
+#' aerial_cal <- aerial_cal[, c("date", "day_type")]
 #' design <- creel_design(
 #'   aerial_cal,
 #'   date = date,

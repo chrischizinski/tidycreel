@@ -157,12 +157,16 @@
 #' Example calendar data for creel survey
 #'
 #' A sample survey calendar dataset demonstrating the structure required for
-#' [creel_design()]. Contains 14 days (June 1-14, 2024) with weekday/weekend
-#' strata, representing a two-week survey period.
+#' [creel_design()]. Contains the 30 days of June 2024 with weekday/weekend
+#' strata: the season the survey stands for. [example_counts] and
+#' [example_interviews] cover June 1-14, so 14 of the 30 days were sampled
+#' (4 of 10 weekend days, 10 of 20 weekdays) and the season total expands them.
+#' Up to tidycreel 8.0.0 the calendar held only those 14 days, which made the
+#' example a census.
 #'
-#' @format A data frame with 14 rows and 2 columns:
+#' @format A data frame with 30 rows and 2 columns:
 #' \describe{
-#'   \item{date}{Survey date (Date class), June 1-14, 2024}
+#'   \item{date}{Calendar date (Date class), June 1-30, 2024}
 #'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
 #' }
 #'
@@ -184,7 +188,8 @@
 
 #' Example count data for creel survey
 #'
-#' Sample daily effort observations matching [example_calendar]. One row per
+#' Sample daily effort observations for the first 14 days of [example_calendar]
+#' (June 1-14, 2024): the sampled days. One row per
 #' survey date, suitable for use with [add_counts()] and [estimate_effort()].
 #'
 #' The effort column holds angler-hours, not raw angler counts. Pass it
@@ -195,7 +200,7 @@
 #'
 #' @format A data frame with 14 rows and 3 columns:
 #' \describe{
-#'   \item{date}{Survey date (Date class), matching [example_calendar] dates}
+#'   \item{date}{Survey date (Date class), the sampled days of [example_calendar]}
 #'   \item{day_type}{Day type stratum: "weekday" or "weekend", matching calendar}
 #'   \item{effort_hours}{Numeric angler-hours observed on the survey date}
 #' }
@@ -224,13 +229,13 @@
 #'
 #' Sample angler interview data demonstrating the structure required for
 #' [add_interviews()]. Contains 22 interviews from June 1-14, 2024,
-#' matching the [example_calendar] date range. Each row represents one
+#' the sampled days of [example_calendar]. Each row represents one
 #' angler interview with catch, harvest, effort, trip metadata, and extended
 #' interview attributes added in v0.5.0.
 #'
 #' @format A data frame with 22 rows and 12 columns:
 #' \describe{
-#'   \item{date}{Interview date (Date class), matching [example_calendar] dates}
+#'   \item{date}{Interview date (Date class), the sampled days of [example_calendar]}
 #'   \item{hours_fished}{Numeric fishing effort in hours}
 #'   \item{catch_total}{Integer total fish caught (kept + released)}
 #'   \item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
@@ -453,12 +458,14 @@
 
 #' Example calendar for spatially stratified creel survey
 #'
-#' A 12-day survey calendar used to demonstrate the spatially stratified
-#' workflow with [add_sections()]. Contains 6 weekdays and 6 weekends from
-#' June 2024. Matches the date range of [example_sections_counts] and
-#' [example_sections_interviews].
+#' A 19-day survey calendar (June 3-21, 2024) used to demonstrate the
+#' spatially stratified workflow with [add_sections()]: 13 weekdays and 6
+#' weekend days. [example_sections_counts] and [example_sections_interviews]
+#' cover 12 of them (6 weekdays, all 6 weekend days), so the weekday stratum
+#' is expanded and the weekend stratum is a census. Up to tidycreel 8.0.0 the
+#' calendar held only the 12 sampled days.
 #'
-#' @format A data frame with 12 rows and 2 columns:
+#' @format A data frame with 19 rows and 2 columns:
 #' \describe{
 #'   \item{date}{Survey date (Date class), June 2024}
 #'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
@@ -492,7 +499,8 @@
 #'
 #' @format A data frame with 36 rows and 4 columns:
 #' \describe{
-#'   \item{date}{Survey date (Date class), matching [example_sections_calendar]}
+#'   \item{date}{Survey date (Date class), the sampled days of
+#'     [example_sections_calendar]}
 #'   \item{day_type}{Day type stratum: \code{"weekday"} or \code{"weekend"}}
 #'   \item{section}{Section identifier: \code{"North"}, \code{"Central"}, or
 #'     \code{"South"}}
@@ -975,11 +983,9 @@
 #' # The workflow below fits a GLMM, so it needs lme4 (a Suggests).
 #' if (rlang::is_installed("lme4")) {
 #' # Build an aerial design and estimate effort with GLMM correction
-#' aerial_cal <- data.frame(
-#'   date = unique(example_aerial_glmm_counts$date),
-#'   day_type = unique(example_aerial_glmm_counts[, c("date", "day_type")])[["day_type"]],
-#'   stringsAsFactors = FALSE
-#' )
+#' # The survey period the flights stand for, not the flight dates alone
+#' aerial_cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
+#' aerial_cal <- aerial_cal[, c("date", "day_type")]
 #' design <- creel_design(
 #'   aerial_cal,
 #'   date = date,

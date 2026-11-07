@@ -89,7 +89,8 @@ of the section below.
 
 A progressive count dataset needs:
 
-1. **Calendar** — sampled dates with `day_type`. The calendar carries no hours
+1. **Calendar** — every day of the season with `day_type`, sampled or not
+   (`creel_calendar()` builds one). The calendar carries no hours
    column: `creel_design()` reads only the date and the strata, so $T_d$ must
    travel with the counts.
 2. **Count data** — one row per sampled day with raw angler count ($C$) and
@@ -103,20 +104,22 @@ A progressive count dataset needs:
 
 We survey a 25-km reservoir access road on 18 sampled days in July. A single
 crew completes the full circuit in 2 hours ($\tau = 2$ h). The access road is open
-10 hours per day. The calendar below lists only the sampled days, so the totals
-on this page are totals over those days; `vignette("temporal-extrapolation")`
-shows how to expand to a whole season.
+10 hours per day. The calendar is the whole of July, so the totals on this page
+are season totals: each stratum's sampled days are expanded to its calendar days
+(`vignette("temporal-extrapolation")` explains the expansion).
 
 ```{r setup-design, message = FALSE}
 library(tidycreel)
 
-# 18 sampled days: 10 weekdays and 8 weekend days
-calendar <- data.frame(
+# The season: July 2024, 23 weekdays and 8 weekend days. The counts below
+# cover 18 of them, 10 weekdays and all 8 weekend days.
+calendar <- creel_calendar("2024-07-01", "2024-07-31", strata = "day_type")[, c("date", "day_type")]
+
+# The 18 counted days, weekdays first, as the counts below list them
+sampled <- data.frame(
   date = as.Date(c(
-    # Weekdays
     "2024-07-01", "2024-07-02", "2024-07-03", "2024-07-04", "2024-07-05",
     "2024-07-09", "2024-07-10", "2024-07-11", "2024-07-12", "2024-07-16",
-    # Weekends
     "2024-07-06", "2024-07-07", "2024-07-13", "2024-07-14",
     "2024-07-20", "2024-07-21", "2024-07-27", "2024-07-28"
   )),
@@ -157,7 +160,7 @@ starts <- generate_progressive_start(
   open_end      = "16:00",
   circuit_time  = 2,          # τ = 2 h; T = 10 h → k = 5 valid starts
   strategy      = "discrete",
-  n             = nrow(calendar),
+  n             = nrow(sampled),  # one start per sampled day
   seed          = 42
 )
 starts
@@ -177,8 +180,8 @@ early due to weather).
 ```{r count-data, message = FALSE}
 set.seed(7)
 counts <- data.frame(
-  date = calendar$date,
-  day_type = calendar$day_type,
+  date = sampled$date,
+  day_type = sampled$day_type,
   n_anglers = c(
     # Weekday counts: moderate activity
     18L, 22L, 15L, 12L, 25L, 20L, 17L, 14L, 23L, 19L,
@@ -221,8 +224,8 @@ effort <- estimate_effort(design)
 effort$estimates
 ```
 
-The `estimate` column is the stratified total angler-hours over the 18 sampled
-days, and `se` its standard error. With one circuit per day `se_within` is
+The `estimate` column is the stratified total angler-hours for July, expanded
+from the 18 sampled days, and `se` its standard error. With one circuit per day `se_within` is
 reported as 0. That does not mean effort was steady through the day: the
 day-to-day term contains the within-day variation, but with one circuit per day
 it cannot be separated out, so the 0 stands for "not estimated".
@@ -236,11 +239,11 @@ as in any other survey type:
 set.seed(7)
 n_int <- 120 # interviews collected across the season
 
-int_dates <- sample(calendar$date, n_int, replace = TRUE)
+int_dates <- sample(sampled$date, n_int, replace = TRUE)
 catch_total <- rpois(n_int, lambda = 2.1)
 interviews <- data.frame(
   date = int_dates,
-  day_type = calendar$day_type[match(int_dates, calendar$date)],
+  day_type = sampled$day_type[match(int_dates, sampled$date)],
   trip_status = "complete",
   hours_fished = round(pmax(rnorm(n_int, mean = 3.8, sd = 1.3), 0.5), 1),
   catch_total = catch_total,
@@ -290,9 +293,10 @@ during a $\tau = 2$ h circuit on a day with $T_d = 8$ open hours.
 $$\hat{E}_d = 234 \times 8 = 1{,}872 \text{ angler-hours}$$
 
 ```{r pope, message = FALSE}
+# Four days in the period, two of them counted
 cal_pope <- data.frame(
-  date     = as.Date(c("2024-06-01", "2024-06-02")),
-  day_type = c("weekday", "weekday")
+  date     = as.Date(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04")),
+  day_type = "weekday"
 )
 des_pope <- creel_design(cal_pope, date = date, strata = day_type)
 
@@ -329,10 +333,8 @@ days_2p <- as.Date(c(
   "2024-07-01", "2024-07-02", "2024-07-03",
   "2024-07-06", "2024-07-07", "2024-07-13"
 ))
-cal_2p <- data.frame(
-  date     = days_2p,
-  day_type = rep(c("weekday", "weekend"), each = 3)
-)
+# The first two weeks of July; three days of each type are counted
+cal_2p <- creel_calendar("2024-07-01", "2024-07-14", strata = "day_type")[, c("date", "day_type")]
 des_2p <- creel_design(cal_2p, date = date, strata = day_type)
 
 cnt_2p <- data.frame(
