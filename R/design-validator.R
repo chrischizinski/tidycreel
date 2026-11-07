@@ -249,71 +249,138 @@ new_creel_completeness_report <- function(
   )
 }
 
-#' The days the survey scheduled, from a schedule or the sampled register
+#' The calendar rows the survey scheduled, from a schedule or the sampled register
 #'
 #' Internal (GH #391). A day missing from the counts is missing data only if it
 #' was scheduled: in a sampled design most calendar days are meant to have no
-#' counts.
+#' counts. A schedule is matched to the calendar on the date and on every
+#' strata column it carries, so a schedule that drew one period of a day
+#' schedules that period only.
 #'
-#' @return A list: `dates` (Date vector, or NULL when no schedule is known) and
-#'   `source` ("schedule", "sampled register" or NA).
+#' @return A list: `rows` (the scheduled calendar rows, date and strata
+#'   columns; NULL when no schedule is known) and `source` ("schedule",
+#'   "sampled register" or NA).
 #' @keywords internal
 #' @noRd
 scheduled_days <- function(design, schedule, call = rlang::caller_env()) {
   date_col <- design$date_col
+  cal <- design$calendar
+  keep_cols <- intersect(c(date_col, design$strata_cols), names(cal))
+  refuse <- function(msg) {
+    cli::cli_abort(msg, class = "creel_error_schedule_invalid", call = call)
+  }
   if (!is.null(schedule)) {
     if (!is.data.frame(schedule)) {
-      cli::cli_abort(
-        c(
-          "{.arg schedule} must be a data frame of scheduled days.",
-          "x" = "It is {.cls {class(schedule)[1]}}.",
-          "i" = "Pass the {.cls creel_schedule} from {.fn generate_schedule} or a data frame with a date column."
-        ),
-        class = "creel_error_schedule_invalid",
-        call = call
-      )
+      refuse(c(
+        "{.arg schedule} must be a data frame of scheduled days.",
+        "x" = "It is {.cls {class(schedule)[1]}}.",
+        "i" = "Pass the schedule from {.fn generate_schedule} or a data frame with a date column."
+      ))
     }
     col <- if (date_col %in% names(schedule)) date_col else if ("date" %in% names(schedule)) "date" else NULL
     if (is.null(col)) {
       looked <- unique(c(date_col, "date")) # nolint: object_usage_linter
-      cli::cli_abort(
-        c(
-          "{.arg schedule} has no date column.",
-          "x" = "Looked for {.field {looked}}.",
-          "i" = "Name the scheduled dates {.field {date_col}}."
-        ),
-        class = "creel_error_schedule_invalid",
-        call = call
-      )
+      refuse(c(
+        "{.arg schedule} has no date column.",
+        "x" = "Looked for {.field {looked}}.",
+        "i" = "Name the scheduled dates {.field {date_col}}."
+      ))
     }
-    keep <- if (is.logical(schedule[["sampled"]])) schedule[["sampled"]] %in% TRUE else rep(TRUE, nrow(schedule))
-    dates <- unique(as.Date(schedule[[col]][keep]))
-    outside <- sort(dates[!dates %in% as.Date(design$calendar[[date_col]])])
+    if ("sampled" %in% names(schedule)) {
+      flag <- schedule[["sampled"]]
+      if (!is.logical(flag) || anyNA(flag)) {
+        refuse(c(
+          "{.arg schedule}'s {.field sampled} column must be logical with no {.val NA}.",
+          "x" = "It is {.cls {class(flag)[1]}}{if (is.logical(flag)) ' holding NA' else ''}.",
+          "i" = "Mark each row {.val TRUE} (scheduled) or {.val FALSE}."
+        ))
+      }
+      schedule <- schedule[flag, , drop = FALSE]
+    }
+    if (nrow(schedule) == 0L) {
+      refuse(c(
+        "{.arg schedule} lists no scheduled day.",
+        "i" = "Pass the days the survey planned to sample."
+      ))
+    }
+    dates <- schedule_dates(schedule[[col]])
+    if (anyNA(dates)) {
+      n_bad <- sum(is.na(dates)) # nolint: object_usage_linter
+      refuse(c(
+        "{n_bad} scheduled date{?s} {?is/are} missing or not a date.",
+        "i" = "Give the dates as {.cls Date} or as {.val YYYY-MM-DD} text."
+      ))
+    }
+    outside <- sort(unique(dates[!dates %in% as.Date(cal[[date_col]])]))
     if (length(outside) > 0L) {
       shown <- format(utils::head(outside, 5L)) # nolint: object_usage_linter
-      cli::cli_abort(
-        c(
-          "{length(outside)} scheduled date{?s} {?is/are} not in the design calendar.",
-          "x" = "Not in the calendar: {.val {shown}}.",
-          "i" = "The schedule and the calendar must describe the same season."
-        ),
-        class = "creel_error_schedule_invalid",
-        call = call
-      )
+      refuse(c(
+        "{length(outside)} scheduled date{?s} {?is/are} not in the design calendar.",
+        "x" = "Not in the calendar: {.val {shown}}.",
+        "i" = "The schedule and the calendar must describe the same season."
+      ))
     }
-    return(list(dates = dates, source = "schedule"))
+    match_cols <- c(date_col, intersect(setdiff(keep_cols, date_col), names(schedule)))
+    sched_keys <- schedule[match_cols]
+    names(sched_keys)[1] <- date_col
+    sched_keys[[date_col]] <- dates
+    rows <- unique(cal[keep_cols])
+    rows[[date_col]] <- as.Date(rows[[date_col]])
+    hit <- group_key(rows, match_cols) %in% group_key(sched_keys, match_cols) # nolint: object_usage_linter
+    return(list(rows = rows[hit, , drop = FALSE], source = "schedule"))
   }
   if (!is.null(design$sampled_col)) {
-    cal <- design$calendar
-    worked <- cal[[design$date_col]][cal[[design$sampled_col]] %in% TRUE]
-    return(list(dates = unique(as.Date(worked)), source = "sampled register"))
+    rows <- unique(cal[cal[[design$sampled_col]] %in% TRUE, keep_cols, drop = FALSE])
+    rows[[date_col]] <- as.Date(rows[[date_col]])
+    return(list(rows = rows, source = "sampled register"))
   }
-  list(dates = NULL, source = NA_character_)
+  list(rows = NULL, source = NA_character_)
+}
+
+#' Schedule dates as Date, with NA for anything that is not one
+#'
+#' A date-time keeps the calendar date of its own time zone; `as.Date()` would
+#' convert it in UTC and move an evening to the next day.
+#'
+#' @keywords internal
+#' @noRd
+schedule_dates <- function(x) {
+  if (inherits(x, "Date")) {
+    return(x)
+  }
+  if (inherits(x, "POSIXt")) {
+    return(as.Date(format(x, "%Y-%m-%d")))
+  }
+  out <- suppressWarnings(as.Date(as.character(x), format = "%Y-%m-%d", optional = TRUE))
+  out
+}
+
+#' Count rows that carry a known count
+#'
+#' A kept `NA` count (`add_counts(missing_count = "keep")`, or a camera outage)
+#' is a row with no count in it, so it does not make its day counted.
+#'
+#' @keywords internal
+#' @noRd
+known_count_rows <- function(design) {
+  counts <- design$counts
+  count_var <- tryCatch(
+    resolve_count_col( # nolint: object_usage_linter
+      counts = counts,
+      excluded = c(design$date_col, design$strata_cols, design$psu_col, design$section_col),
+      count_col = design$count_col
+    ),
+    error = function(e) NULL
+  )
+  if (is.null(count_var) || !count_var %in% names(counts)) {
+    return(counts)
+  }
+  counts[!is.na(counts[[count_var]]), , drop = FALSE]
 }
 
 #' Calendar days and counted days per stratum
 #'
-#' Internal (GH #391).
+#' Internal (GH #391). `n_counted` is NA when no counts are attached.
 #'
 #' @keywords internal
 #' @noRd
@@ -323,7 +390,7 @@ sampling_coverage <- function(design) {
   if (is.null(design$counts)) {
     pop$n_counted <- NA_integer_
   } else {
-    counted <- design$counts |>
+    counted <- known_count_rows(design) |>
       dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, design$date_col)))) |>
       dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = "n_counted")
     pop <- dplyr::left_join(pop, counted, by = strata_cols)
@@ -335,15 +402,20 @@ sampling_coverage <- function(design) {
   as.data.frame(pop)
 }
 
-find_missing_days <- function(design, scheduled) {
-  keep_cols <- intersect(c(design$date_col, design$strata_cols), names(design$calendar))
-  cal <- design$calendar
-  sched <- cal[as.Date(cal[[design$date_col]]) %in% scheduled, keep_cols, drop = FALSE]
-  if (is.null(design$counts)) {
-    return(unique(sched))
-  }
-  count_dates <- as.Date(unique(design$counts[[design$date_col]]))
-  unique(sched[!as.Date(sched[[design$date_col]]) %in% count_dates, , drop = FALSE])
+#' Scheduled calendar rows with no known count, by date and stratum
+#'
+#' @keywords internal
+#' @noRd
+find_missing_days <- function(design, scheduled_rows) {
+  key_cols <- names(scheduled_rows)
+  counted <- known_count_rows(design)
+  counted_key_cols <- intersect(key_cols, names(counted))
+  obs <- unique(counted[counted_key_cols])
+  obs[[design$date_col]] <- as.Date(obs[[design$date_col]])
+  missing <- !group_key(scheduled_rows, counted_key_cols) %in% group_key(obs, counted_key_cols) # nolint: object_usage_linter
+  out <- scheduled_rows[missing, , drop = FALSE]
+  rownames(out) <- NULL
+  out
 }
 
 find_low_n_strata <- function(design, n_min) {
@@ -438,9 +510,9 @@ check_completeness <- function(design, n_min = 10L, schedule = NULL) {
   # A missing day is a scheduled day without counts, so the check needs both.
   # Bus-route and ice designs often carry no counts at all: their effort comes
   # from interviews, and a worked day with nobody fishing leaves none.
-  missing_days_checked <- !is.null(sched$dates) && !is.null(design$counts)
+  missing_days_checked <- !is.null(sched$rows) && !is.null(design$counts)
   missing_days <- if (missing_days_checked) {
-    find_missing_days(design, sched$dates)
+    find_missing_days(design, sched$rows)
   } else {
     keep_cols <- intersect(c(design$date_col, design$strata_cols), names(design$calendar))
     design$calendar[0L, keep_cols, drop = FALSE]
@@ -502,14 +574,21 @@ format.creel_completeness_report <- function(x, ...) {
       cov <- x$coverage
       lab_cols <- setdiff(names(cov), c("n_calendar", "n_counted"))
       labs <- if (length(lab_cols) == 0L) "all" else do.call(paste, c(cov[lab_cols], sep = " / "))
+      no_counts <- all(is.na(cov$n_counted))
       for (i in seq_len(nrow(cov))) {
         lab <- labs[[i]] # nolint: object_usage_linter
         cnt <- cov$n_counted[[i]] # nolint: object_usage_linter
         tot <- cov$n_calendar[[i]] # nolint: object_usage_linter
-        cli::cli_text("{lab}: {cnt} of {tot} calendar day{?s} counted")
+        if (no_counts) {
+          cli::cli_text("{lab}: {tot} calendar day{?s}")
+        } else {
+          cli::cli_text("{lab}: {cnt} of {tot} calendar day{?s} counted")
+        }
       }
+    } else {
+      no_counts <- FALSE
     }
-    if (!isTRUE(x$missing_days_checked) && !is.na(x$schedule_source)) {
+    if (!isTRUE(x$missing_days_checked) && no_counts) {
       cli::cli_alert_info("Missing scheduled days: not checked, because no counts are attached.")
     } else if (!isTRUE(x$missing_days_checked)) {
       cli::cli_alert_info(paste(
@@ -523,7 +602,15 @@ format.creel_completeness_report <- function(x, ...) {
     } else {
       n_miss <- nrow(x$missing_days) # nolint: object_usage_linter
       src <- x$schedule_source # nolint: object_usage_linter
-      cli::cli_alert_warning("{n_miss} scheduled day{?s} with no count data (from the {src})")
+      date_col <- names(x$missing_days)[1]
+      n_dates <- length(unique(x$missing_days[[date_col]])) # nolint: object_usage_linter
+      if (n_dates == n_miss) {
+        cli::cli_alert_warning("{n_miss} scheduled day{?s} with no count data (from the {src})")
+      } else {
+        cli::cli_alert_warning(
+          "{n_miss} scheduled day-stratum cell{?s}, on {n_dates} day{?s}, with no count data (from the {src})"
+        )
+      }
     }
 
     # Low-n strata section

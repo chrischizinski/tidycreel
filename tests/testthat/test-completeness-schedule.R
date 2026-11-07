@@ -74,9 +74,11 @@ test_that("a generate_schedule() schedule is accepted (#391)", {
   )
   r <- check_completeness(design_391(), n_min = 1L, schedule = sched)
   expect_true(r$missing_days_checked)
-  # Every reported day is a scheduled day without counts.
-  expect_true(all(r$missing_days$date %in% as.Date(sched$date)))
-  expect_false(any(r$missing_days$date %in% example_counts$date))
+  # Exactly the scheduled days without counts -- a set, not just a subset, so
+  # an empty result cannot pass by being empty.
+  expected <- setdiff(as.Date(sched$date), as.Date(example_counts$date))
+  expect_gt(length(expected), 0L)
+  expect_setequal(r$missing_days$date, expected)
 })
 
 test_that("the sampled register is the schedule, but needs counts to check (#391)", {
@@ -105,4 +107,77 @@ test_that("the sampled register is the schedule, but needs counts to check (#391
   expect_false(r$missing_days_checked)
   expect_equal(nrow(r$missing_days), 0L)
   expect_match(paste(format(r), collapse = "\n"), "no counts are attached", fixed = TRUE)
+})
+
+test_that("a stratum missed on a day another stratum was counted is reported (#391, review)", {
+  # Two periods a day, as strata. On June 4 only the am period was counted.
+  cal <- data.frame(
+    date = rep(as.Date("2024-06-03") + 0:3, each = 2),
+    period = rep(c("am", "pm"), 4)
+  )
+  counts <- data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-03", "2024-06-04")),
+    period = c("am", "pm", "am"), n = c(4, 6, 5)
+  )
+  d <- q391(add_counts(creel_design(cal, date = date, strata = period), counts))
+  r <- check_completeness(d, schedule = data.frame(date = as.Date(c("2024-06-03", "2024-06-04"))))
+  expect_equal(nrow(r$missing_days), 1L)
+  expect_equal(r$missing_days$period, "pm")
+  expect_equal(r$missing_days$date, as.Date("2024-06-04"))
+  # A schedule that drew the am period only schedules that period.
+  r2 <- check_completeness(d, schedule = data.frame(
+    date = as.Date(c("2024-06-03", "2024-06-04")), period = "am"
+  ))
+  expect_equal(nrow(r2$missing_days), 0L)
+})
+
+test_that("a count row holding NA does not make its day counted (#391, review)", {
+  cnt <- example_counts
+  cnt$effort_hours[cnt$date == as.Date("2024-06-03")] <- NA
+  r <- check_completeness(design_391(cnt), n_min = 1L, schedule = data.frame(date = unique(example_counts$date)))
+  expect_equal(r$missing_days$date, as.Date("2024-06-03"))
+  wk <- r$coverage[r$coverage$day_type == "weekday", ]
+  expect_equal(wk$n_counted, 9L)
+})
+
+test_that("schedule dates and sampled flags are validated (#391, review)", {
+  d <- design_391()
+  bad <- list(
+    data.frame(date = "not-a-date"),
+    data.frame(date = c("2024-06-01", "")),
+    data.frame(date = as.Date(NA)),
+    data.frame(date = "06/20/2024"),
+    data.frame(date = example_calendar$date, sampled = as.integer(example_calendar$date %in% example_counts$date)),
+    data.frame(date = example_calendar$date, sampled = NA),
+    data.frame(date = as.Date(character(0))),
+    data.frame(date = example_calendar$date, sampled = FALSE)
+  )
+  for (i in seq_along(bad)) {
+    expect_error(check_completeness(d, schedule = bad[[i]]), class = "creel_error_schedule_invalid", info = i)
+  }
+})
+
+test_that("a date-time schedule keeps its own calendar date (#391, review)", {
+  # 20:00 in Chicago is 01:00 the next day in UTC; as.Date() would move it.
+  when <- as.POSIXct(c(paste(unique(example_counts$date), "08:00:00"), "2024-06-20 20:00:00"), tz = "America/Chicago")
+  r <- check_completeness(design_391(), n_min = 1L, schedule = data.frame(date = when))
+  expect_equal(r$missing_days$date, as.Date("2024-06-20"))
+})
+
+test_that("a design without counts prints no NA and says why nothing was checked (#391, review)", {
+  cal <- data.frame(date = as.Date("2024-01-10") + 0:3, day_type = c("weekday", "weekday", "weekend", "weekend"))
+  iv <- data.frame(
+    date = cal$date, day_type = cal$day_type, hours_fished = c(2, 1.5, 3, 2.5),
+    catch_total = c(1L, 2L, 0L, 3L), trip_status = "complete",
+    n_counted = c(5L, 8L, 10L, 7L), n_interviewed = c(3L, 4L, 5L, 4L)
+  )
+  d <- q391(creel_design(cal, date = date, strata = day_type, survey_type = "ice", effort_type = "time_on_ice", p_period = 0.5))
+  d <- q391(add_interviews(d, iv,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  ))
+  out <- paste(format(q391(check_completeness(d, n_min = 1L))), collapse = "\n")
+  expect_no_match(out, "NA of", fixed = TRUE)
+  expect_match(out, "no counts are attached", fixed = TRUE)
+  expect_no_match(out, "Pass the schedule", fixed = TRUE)
 })
