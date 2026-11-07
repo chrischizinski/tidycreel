@@ -225,8 +225,25 @@ $`s_w^2 = 4 \times 5{,}000 / (4 \times 1) = 5{,}000`$. The within-day
 variance is $`8 \times 5{,}000 / 2 = 20{,}000`$, an SE of 141.4. The
 total SE is $`\sqrt{133{,}333 + 20{,}000} = 391.6`$.
 
-The formula assumes every sampled day in a stratum has the same number
-of counts. Days with different numbers of counts are open as \#405.
+The formula above assumes every sampled day in a stratum has the same
+number of counts. When they differ, each day contributes its own
+variance of its mean, and the within-day term is
+
+``` math
+\frac{N_h}{n_h} \sum_i \frac{s_i^2}{k_i}
+```
+
+where $`s_i^2`$ is the variance of day $`i`$’s $`k_i`$ efforts (Cochran
+1977, section 11.2, primary units with unequal subsamples). With every
+$`k_i = k`$ it is the term above. Up to tidycreel 8.0.0 the expanded
+targets pooled the days at the mean number of counts instead, which is
+not the same number when the counts differ (#405).
+
+A stratum where any sampled day has one count takes no within-day term
+at all. Its between-day term carries no correction, and so already
+contains the within-day variation of every day; adding a within-day term
+on top counted it twice. Up to tidycreel 8.0.0 such a stratum still
+added a within-day term from its days with two or more counts (#405).
 
 ### More days or more counts per day?
 
@@ -339,12 +356,14 @@ In every case the stratum total is $`N_h`$ times the mean daily effort
 and strata are added. The between-day term carries the finite-population
 correction only when every sampled day in the stratum has two or more
 counts, because only then is the within-day variation it would remove
-put back.
+put back. A stratum with a one-count day takes neither the correction
+nor a within-day term.
 
 ## References
 
 - Cochran, W. G. (1977). *Sampling Techniques*, 3rd edition. Wiley, New
-  York. Chapter 10, subsampling with units of equal size.
+  York. Chapter 10, subsampling with units of equal size; chapter 11,
+  units of unequal sizes.
 - Hoenig, J. M., Robson, D. S., Jones, C. M., and Pollock, K. H. (1993).
   Scheduling counts in the instantaneous and progressive count methods
   for estimating sportfishing effort. *North American Journal of

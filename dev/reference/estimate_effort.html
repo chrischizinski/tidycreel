@@ -199,15 +199,19 @@ design (reference to source creel_design), conf_level (numeric), and
 by_vars (character vector of grouping variable names or NULL).
 <code>se_between</code> is the between-day standard error from
 <code><a href="https://rdrr.io/pkg/survey/man/surveysummary.html" class="external-link">survey::svytotal()</a></code> (equals <code>se</code> when a single count is
-recorded per PSU). <code>se_within</code> is the within-day standard error from
-the Rasmussen two-stage formula; it is zero when a single count is
-recorded per PSU and nonzero when <code>count_time_col</code> is supplied to
-<code><a href="add_counts.html">add_counts()</a></code>. <code>se_basis</code> says which kind of standard error a
+recorded per PSU). <code>se_within</code> is the within-day standard error, the
+second stage of the two-stage variance: each sampled day's variance of its
+mean count, at that day's own number of counts, expanded by \(N_h/n_h\)
+(Cochran 1977, ch. 11; Rasmussen et al. 1998 when every day has the same
+number). It is zero in a stratum where any sampled day has a single count,
+whose uncorrected day-to-day term already carries the within-day variation,
+and nonzero when <code>count_time_col</code> is supplied to
+<code><a href="add_counts.html">add_counts()</a></code> and every day has two or more counts. <code>se_basis</code> says which kind of standard error a
 row carries: <code>"within_day"</code> for a census of days with two or more
 counts a day (the finite-population correction removes the day-to-day
-term, so the count-sampling variance is the within-day term alone; always so on
+term, so the count-sampling variance is the within-day term alone; on
 <code>target = "sampled_days"</code>, where the sampled days are the
-population), <code>"two_stage"</code> where days carry two or more counts but
+population, every stratum whose days all have two or more counts), <code>"two_stage"</code> where days carry two or more counts but
 only some were sampled (an expanded target: the corrected day-to-day term
 plus the within-day term), <code>"between_day_upper_bound"</code> where a day
 has one count (the within-day variance cannot be estimated, so the

@@ -338,9 +338,27 @@ The within-day variance is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>8</mn><mo>×</mo><mn>5</mn><mo>,</mo><mn>000</mn><mi>/</mi><mn>2</mn><mo>=</mo><mn>20</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">8 \times 5{,}000 / 2 = 20{,}000</annotation></semantics></math>,
 an SE of 141.4. The total SE is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msqrt><mrow><mn>133</mn><mo>,</mo><mn>333</mn><mo>+</mo><mn>20</mn><mo>,</mo><mn>000</mn></mrow></msqrt><mo>=</mo><mn>391.6</mn></mrow><annotation encoding="application/x-tex">\sqrt{133{,}333 + 20{,}000} = 391.6</annotation></semantics></math>.</p>
-<p>The formula assumes every sampled day in a stratum has the same
-number of counts. Days with different numbers of counts are open as
-#405.</p>
+<p>The formula above assumes every sampled day in a stratum has the same
+number of counts. When they differ, each day contributes its own
+variance of its mean, and the within-day term is</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><msub><mi>N</mi><mi>h</mi></msub><msub><mi>n</mi><mi>h</mi></msub></mfrac><munder><mo>∑</mo><mi>i</mi></munder><mfrac><msubsup><mi>s</mi><mi>i</mi><mn>2</mn></msubsup><msub><mi>k</mi><mi>i</mi></msub></mfrac></mrow><annotation encoding="application/x-tex">\frac{N_h}{n_h} \sum_i \frac{s_i^2}{k_i}</annotation></semantics></math></p>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>s</mi><mi>i</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">s_i^2</annotation></semantics></math>
+is the variance of day
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>’s
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>k</mi><mi>i</mi></msub><annotation encoding="application/x-tex">k_i</annotation></semantics></math>
+efforts (Cochran 1977, section 11.2, primary units with unequal
+subsamples). With every
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>k</mi><mi>i</mi></msub><mo>=</mo><mi>k</mi></mrow><annotation encoding="application/x-tex">k_i = k</annotation></semantics></math>
+it is the term above. Up to tidycreel 8.0.0 the expanded targets pooled
+the days at the mean number of counts instead, which is not the same
+number when the counts differ (#405).</p>
+<p>A stratum where any sampled day has one count takes no within-day
+term at all. Its between-day term carries no correction, and so already
+contains the within-day variation of every day; adding a within-day term
+on top counted it twice. Up to tidycreel 8.0.0 such a stratum still
+added a within-day term from its days with two or more counts
+(#405).</p>
 <div class="section level3">
 <h3 id="more-days-or-more-counts-per-day">More days or more counts per day?<a class="anchor" aria-label="anchor" href="#more-days-or-more-counts-per-day"></a>
 </h3>
@@ -491,14 +509,16 @@ instantaneous counts per day</td>
 times the mean daily effort and strata are added. The between-day term
 carries the finite-population correction only when every sampled day in
 the stratum has two or more counts, because only then is the within-day
-variation it would remove put back.</p>
+variation it would remove put back. A stratum with a one-count day takes
+neither the correction nor a within-day term.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
 <ul>
 <li>Cochran, W. G. (1977). <em>Sampling Techniques</em>, 3rd edition.
-Wiley, New York. Chapter 10, subsampling with units of equal size.</li>
+Wiley, New York. Chapter 10, subsampling with units of equal size;
+chapter 11, units of unequal sizes.</li>
 <li>Hoenig, J. M., Robson, D. S., Jones, C. M., and Pollock, K. H.
 (1993). Scheduling counts in the instantaneous and progressive count
 methods for estimating sportfishing effort. <em>North American Journal

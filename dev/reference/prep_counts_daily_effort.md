@@ -85,10 +85,10 @@ prep_counts_daily_effort(
   Optional tidy selector for the within-day **sum of squares** of the
   counts behind each sampled-day estimate, that is
   `sum((x - mean(x))^2)` per PSU. This is not a variance: the divisor is
-  applied downstream by the estimator, which forms
-  `sum(ss_d) / (n_sampled * (k_bar - 1))`. Supplying a variance here
-  understates the within-day component by a factor of `k_d - 1`. Must be
-  `0` wherever `n_counts` is 1, and requires `n_counts`.
+  applied downstream by the estimator, which forms each day's
+  `ss_d / (k_d * (k_d - 1))`. Supplying a variance here understates the
+  within-day component by a factor of `k_d - 1`. Must be `0` wherever
+  `n_counts` is 1, and requires `n_counts`.
 
   Supply it on the raw `daily_effort` values you pass in; it is rescaled
   into `daily_effort` squared units on output, multiplied by

@@ -121,15 +121,20 @@ conf_level (numeric), and by_vars (character vector of grouping variable
 names or NULL). `se_between` is the between-day standard error from
 [`survey::svytotal()`](https://rdrr.io/pkg/survey/man/surveysummary.html)
 (equals `se` when a single count is recorded per PSU). `se_within` is
-the within-day standard error from the Rasmussen two-stage formula; it
-is zero when a single count is recorded per PSU and nonzero when
-`count_time_col` is supplied to
-[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md).
-`se_basis` says which kind of standard error a row carries:
-`"within_day"` for a census of days with two or more counts a day (the
-finite-population correction removes the day-to-day term, so the
-count-sampling variance is the within-day term alone; always so on
-`target = "sampled_days"`, where the sampled days are the population),
+the within-day standard error, the second stage of the two-stage
+variance: each sampled day's variance of its mean count, at that day's
+own number of counts, expanded by \\N_h/n_h\\ (Cochran 1977, ch. 11;
+Rasmussen et al. 1998 when every day has the same number). It is zero in
+a stratum where any sampled day has a single count, whose uncorrected
+day-to-day term already carries the within-day variation, and nonzero
+when `count_time_col` is supplied to
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+and every day has two or more counts. `se_basis` says which kind of
+standard error a row carries: `"within_day"` for a census of days with
+two or more counts a day (the finite-population correction removes the
+day-to-day term, so the count-sampling variance is the within-day term
+alone; on `target = "sampled_days"`, where the sampled days are the
+population, every stratum whose days all have two or more counts),
 `"two_stage"` where days carry two or more counts but only some were
 sampled (an expanded target: the corrected day-to-day term plus the
 within-day term), `"between_day_upper_bound"` where a day has one count
