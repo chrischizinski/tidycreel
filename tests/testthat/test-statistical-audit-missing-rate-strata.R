@@ -197,7 +197,10 @@ test_that("#373: a printed total over part of the effort says so", {
   expect_match(printed, "excluded_strata", fixed = TRUE)
   # Named, not only counted: two totals excluding different cells of equal
   # effort would otherwise print identically.
-  expect_match(printed, "day_type = weekend: 504.8 effort units", fixed = TRUE)
+  # 504.75 exactly (201.9 x 10/4) sits on the 4-significant-figure rounding
+  # boundary, and the sum lands either side of it by platform: 504.8 on macOS,
+  # 504.7 on the CI runners.
+  expect_match(printed, "day_type = weekend: 504\\.[78] effort units")
   full <- quiet(estimate_total_catch(mrs_design(weekend_incomplete = FALSE)))
   expect_no_match(paste(format(full), collapse = "\n"), "excluded_strata", fixed = TRUE)
 })
