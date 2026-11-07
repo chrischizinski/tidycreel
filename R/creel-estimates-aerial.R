@@ -67,6 +67,14 @@ estimate_effort_aerial <- function(
   )
   count_formula <- stats::reformulate(count_var)
 
+  # An unknown count makes the total unknown in every part (GH #566), as in
+  # estimate_effort_total(): the survey call gets 0 and the result NA.
+  reported_design <- design
+  na_count <- is.na(counts_data[[count_var]])
+  if (any(na_count)) {
+    design <- fill_unknown_counts(design, count_var) # nolint: object_usage_linter
+  }
+
   # Get appropriate survey design for variance method. An expanded target
   # reweights the sampled days to the calendar (N_h / n_h), as for a ground
   # count: total = M x mean daily effort, Smucker et al. (2010) eq. 4 (GH #519).
@@ -166,6 +174,16 @@ estimate_effort_aerial <- function(
 
   n <- nrow(counts_data)
 
+  if (any(na_count)) {
+    estimate <- se <- se_between <- se_within <- ci_lower <- ci_upper <- NA_real_
+    if (!is.null(se_visibility)) se_visibility <- NA_real_
+    if (!is.null(se_angler_ratio)) se_angler_ratio <- NA_real_
+    if (!is.null(se_expansion)) se_expansion[] <- NA_real_
+    if (!is.null(expansion_decomposition)) {
+      expansion_decomposition <- lapply(expansion_decomposition, function(x) x * NA_real_)
+    }
+  }
+
   estimates_df <- tibble::tibble(
     estimate = estimate,
     se = se,
@@ -201,7 +219,7 @@ estimate_effort_aerial <- function(
     expansion_decomposition = expansion_decomposition, # nolint: object_usage_linter
     method = "aerial_total",
     variance_method = variance_method,
-    design = design,
+    design = reported_design,
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = effort_target,

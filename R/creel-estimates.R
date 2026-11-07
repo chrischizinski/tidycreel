@@ -6685,6 +6685,9 @@ estimate_effort_sections <- function(
       )
       prop <- prop_ratio$estimate
       prop_se <- prop_ratio$se
+      # An unknown count leaves the share unknown; svyratio() reports its SE
+      # as NaN there, and an unknown SE is NA (GH #566).
+      if (is.na(prop)) prop_se <- NA_real_
       section_rows[[sec]] <- tibble::tibble(
         !!section_col := sec,
         estimate = row$estimate,
@@ -6807,6 +6810,18 @@ estimate_effort_sections <- function(
         # section's own component would square it.
         list(combine_section_decompositions(unit_rate, decomp_present)) # nolint: object_usage_linter
       )
+    }
+
+    # A lake total that includes an unknown count is unknown in every part
+    # (GH #566). The between-section aggregation runs on the survey design as
+    # attached, where survey can report a numeric SE beside the NA total.
+    if (is.na(lake_est)) {
+      lake_se_between <- lake_se_within <- lake_se <- NA_real_
+      if (!is.null(expansion_vec)) {
+        se_expansion[length(se_expansion)] <- NA_real_
+        expansion_decomposition[[length(expansion_decomposition)]] <-
+          expansion_decomposition[[length(expansion_decomposition)]] * NA_real_
+      }
     }
 
     # CI for lake total using full-design df

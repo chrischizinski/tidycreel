@@ -65,13 +65,24 @@ test_that("a section with an unknown count is unknown, the others are not (#566)
     sc,
     count_col = effort_hours
   ))
-  e <- q566(estimate_effort(d, target = "sampled_days"))$estimates
-  north <- e[e$section == "North", ]
-  for (col in c("estimate", "se", "se_between", "se_within")) {
-    expect_true(is.na(north[[col]]), label = col)
+  for (target in c("period_total", "sampled_days")) {
+    for (method in c("correlated", "independent")) {
+      lbl <- paste(target, method)
+      e <- q566(estimate_effort(d, target = target, method = method))$estimates
+      north <- e[e$section == "North", ]
+      lake <- e[e$section == ".lake_total", ]
+      for (col in c("estimate", "se", "se_between", "se_within", "ci_lower", "ci_upper")) {
+        expect_true(is.na(north[[col]]), label = paste(lbl, "North", col))
+        # The lake row includes North: every part unknown, se_between too
+        # (independent sections kept a numeric between-section SE, review).
+        expect_true(is.na(lake[[col]]), label = paste(lbl, "lake", col))
+      }
+      expect_true(all(is.finite(e$se[e$section %in% c("Central", "South")])), label = lbl)
+      # Shares of an unknown lake total are unknown: NA, never NaN.
+      sec <- e[e$section != ".lake_total", ]
+      expect_false(any(is.nan(sec$se_prop_of_lake_total)), label = lbl)
+    }
   }
-  expect_true(is.na(e$se[e$section == ".lake_total"]))
-  expect_true(all(is.finite(e$se[e$section %in% c("Central", "South")])))
 })
 
 test_that("the totals built on an unknown effort are unknown (#566)", {
@@ -85,5 +96,21 @@ test_that("the totals built on an unknown effort are unknown (#566)", {
       expect_true(is.na(e$estimate))
       expect_true(is.na(e$se))
     }
+  }
+})
+
+test_that("an aerial total with an unknown count is unknown in every part (#566)", {
+  ac <- example_aerial_counts
+  cc <- setdiff(names(ac), c("date", "day_type"))[1]
+  ac[[cc]][1] <- NA
+  cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
+  d <- q566(add_counts(creel_design(cal,
+    date = date, strata = day_type, survey_type = "aerial",
+    visibility_correction = "none", angler_ratio = 0.9, angler_ratio_se = 0.05, h_open = 14
+  ), ac))
+  for (target in c("period_total", "sampled_days")) {
+    r <- q566(estimate_effort(d, target = target))
+    for (col in se_cols) expect_true(is.na(r$estimates[[col]]), label = paste(target, col))
+    expect_true(all(is.na(unlist(r$se_components))), label = target)
   }
 })
