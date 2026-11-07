@@ -599,9 +599,9 @@ print.creel_estimates <- function(x, ...) {
 #'   \code{add_counts()} and every day has two or more counts. \code{se_basis} says which kind of standard error a
 #'   row carries: \code{"within_day"} for a census of days with two or more
 #'   counts a day (the finite-population correction removes the day-to-day
-#'   term, so the count-sampling variance is the within-day term alone; always so on
+#'   term, so the count-sampling variance is the within-day term alone; on
 #'   \code{target = "sampled_days"}, where the sampled days are the
-#'   population), \code{"two_stage"} where days carry two or more counts but
+#'   population, every stratum whose days all have two or more counts), \code{"two_stage"} where days carry two or more counts but
 #'   only some were sampled (an expanded target: the corrected day-to-day term
 #'   plus the within-day term), \code{"between_day_upper_bound"} where a day
 #'   has one count (the within-day variance cannot be estimated, so the
@@ -4970,10 +4970,10 @@ section_within_day_cross_covariance <- function(design, target, secs) {
   # c_A: a section's within-day variance per unit of day sum of squares, as its
   # own row computes it. The formula is linear in the sums of squares, so it is
   # the formula at a single unit sum.
-  # Taken per day: on `sampled_days` with 2+ counts every day the formula weights
-  # each day by its own 1 / (k_d (k_d - 1)) (GH #507), so a single scale read
-  # off the first day would misweight the others. Under the pooled form every
-  # day has the same coefficient and this is the old single scale.
+  # Taken per day: the formula weights each day by its own 1 / (k_d (k_d - 1))
+  # on every target (GH #507, #405), so a single scale read off the first day
+  # would misweight the others. A section-stratum with a one-count day has
+  # every coefficient 0, as its own within-day term is.
   # The coefficients of one section in one stratum, one per day, built once
   # and reused for every paired day: rebuilding the day counts per call made
   # the work cubic in the number of sampled days.
@@ -5551,8 +5551,11 @@ compute_within_day_var_contribution <- function(
   combined$k_d[is.na(combined$k_d)] <- 1L
 
   # VAR-03: emit informational message if mixed k_d
-  mixed_days <- sum(combined$k_d == 1L)
-  if (mixed_days > 0 && mixed_days < nrow(combined)) {
+  # Counted in days, not rows: a day carrying several units (bank and boat, or
+  # sections) has a row for each.
+  one_count <- combined$k_d == 1L
+  mixed_days <- length(unique(as.character(combined[[design$psu_col]][one_count])))
+  if (any(one_count) && !all(one_count)) {
     cli::cli_inform(
       c(
         "i" = paste0(

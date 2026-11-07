@@ -37,8 +37,8 @@
 #' @param within_day_var Optional tidy selector for the within-day
 #'   **sum of squares** of the counts behind each sampled-day estimate, that is
 #'   `sum((x - mean(x))^2)` per PSU. This is not a variance: the divisor is
-#'   applied downstream by the estimator, which forms
-#'   `sum(ss_d) / (n_sampled * (k_bar - 1))`. Supplying a variance here
+#'   applied downstream by the estimator, which forms each day's
+#'   `ss_d / (k_d * (k_d - 1))`. Supplying a variance here
 #'   understates the within-day component by a factor of `k_d - 1`. Must be `0`
 #'   wherever `n_counts` is 1, and requires `n_counts`.
 #'
@@ -326,8 +326,8 @@ prep_counts_daily_effort <- function(
 #' @param within_day_var Optional tidy selector for the within-day
 #'   **sum of squares** of the counts behind each sampled-day estimate, that is
 #'   `sum((x - mean(x))^2)` per PSU. This is not a variance: the divisor is
-#'   applied downstream by the estimator, which forms
-#'   `sum(ss_d) / (n_sampled * (k_bar - 1))`. Supplying a variance here
+#'   applied downstream by the estimator, which forms each day's
+#'   `ss_d / (k_d * (k_d - 1))`. Supplying a variance here
 #'   understates the within-day component by a factor of `k_d - 1`. Must be `0`
 #'   wherever `n_counts` is 1, and requires `n_counts`.
 #'
@@ -654,8 +654,8 @@ prep_counts_boat_party <- function(
 #' Validate the within-day variance inputs to the prep_counts_* functions
 #'
 #' `within_day_var` is consumed as a per-PSU **sum of squares**, not a variance:
-#' `compute_within_day_var_contribution()` forms
-#' `sum(ss_d) / (n_sampled * (k_bar - 1))`, supplying the divisor itself. It also
+#' `compute_within_day_var_contribution()` forms each day's
+#' `ss_d / (k_d * (k_d - 1))`, supplying the divisor itself. It also
 #' needs `k_d`, which is what `n_counts` carries, so the two columns are only
 #' usable together. Before GH #109 both were written to the output tibble and
 #' never read by `add_counts()`, so a within-day component supplied here was

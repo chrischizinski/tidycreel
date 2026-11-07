@@ -104,9 +104,9 @@ and nonzero when \code{count_time_col} is supplied to
 \code{add_counts()} and every day has two or more counts. \code{se_basis} says which kind of standard error a
 row carries: \code{"within_day"} for a census of days with two or more
 counts a day (the finite-population correction removes the day-to-day
-term, so the count-sampling variance is the within-day term alone; always so on
+term, so the count-sampling variance is the within-day term alone; on
 \code{target = "sampled_days"}, where the sampled days are the
-population), \code{"two_stage"} where days carry two or more counts but
+population, every stratum whose days all have two or more counts), \code{"two_stage"} where days carry two or more counts but
 only some were sampled (an expanded target: the corrected day-to-day term
 plus the within-day term), \code{"between_day_upper_bound"} where a day
 has one count (the within-day variance cannot be estimated, so the
