@@ -933,6 +933,15 @@
 
 ## Bug fixes
 
+* An unknown (`NA`) count now makes its effort total unknown in full: the
+  estimate, `se`, `se_between`, `se_within` and the interval are all `NA`
+  (#566), as on camera designs since #215. On `target = "sampled_days"` the
+  estimate was `NA` beside a numeric SE (13.68 on `example_counts` with one
+  count unknown), a group holding the unknown count reported an SE of `NaN`,
+  and the bootstrap and jackknife aborted with survey's "All replicates
+  contained NAs" on every target. Groups and sections without an unknown count
+  are unaffected, and the replicate methods now estimate them.
+
 * Totals no longer warn that they pool over a domain the counts do not
   classify when that "domain" is a calendar column (#605). The calendar is
   joined onto the interviews, and `creel_calendar()`'s `stratum` label, which

@@ -6884,6 +6884,17 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     )
   }
 
+  # An unknown count makes the total unknown, with every SE part unknown too
+  # (GH #566, as camera designs since #215). survey does not do that on its
+  # own: with no finite-population correction svytotal() returns an NA total
+  # beside a numeric SE, and the replicate methods abort. The survey call is
+  # given 0 for the unknown counts and the result is set to NA afterwards.
+  reported_design <- design
+  na_count <- is.na(counts_data[[count_var]])
+  if (any(na_count)) {
+    design <- fill_unknown_counts(design, count_var)
+  }
+
   # Create formula
   count_formula <- stats::reformulate(count_var)
 
@@ -6966,6 +6977,15 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
 
   n <- nrow(counts_data)
 
+  if (any(na_count)) {
+    estimate <- NA_real_
+    se <- se_between <- se_within <- ci_lower <- ci_upper <- NA_real_
+    if (!is.null(se_expansion)) se_expansion[] <- NA_real_
+    if (!is.null(expansion_decomposition)) {
+      expansion_decomposition <- lapply(expansion_decomposition, function(x) x * NA_real_)
+    }
+  }
+
   # Build estimates tibble
   estimates_df <- tibble::tibble(
     estimate = estimate,
@@ -6984,7 +7004,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     estimates = estimates_df,
     method = "total",
     variance_method = variance_method,
-    design = design,
+    design = reported_design,
     conf_level = conf_level,
     by_vars = NULL,
     effort_target = target,
@@ -6997,6 +7017,27 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
   )
   result$aerial_calibration_rel_var <- aerial$rel_var
   result
+}
+
+#' A copy of the design whose unknown counts are 0, for the survey call
+#'
+#' Internal (GH #566). The estimators set every total that includes an unknown
+#' count to NA afterwards; the zeros only keep `survey` from returning a
+#' numeric SE beside an NA total, or aborting on the replicate methods.
+#'
+#' @param design A creel_design with counts attached.
+#' @param count_var The count column.
+#' @return The design, with `counts` filled and `survey` rebuilt.
+#' @keywords internal
+#' @noRd
+fill_unknown_counts <- function(design, count_var) {
+  # Not "unknown means zero": the zeros never reach a reported number. Every
+  # total, group or section that includes one of these rows is set to NA by
+  # the caller, and a total that does not include them takes nothing from them
+  # (a domain total multiplies another domain's rows by 0).
+  design$counts[[count_var]][is.na(design$counts[[count_var]])] <- 0
+  design$survey <- construct_survey_design(design) # nolint: object_usage_linter
+  design
 }
 
 #' Grouped total estimation using svyby (Phase 5 logic)
@@ -7024,6 +7065,17 @@ estimate_effort_grouped <- function(
     excluded = c(design$date_col, design$strata_cols, design$psu_col),
     count_col = design$count_col
   )
+
+  # An unknown count makes its group's total unknown, with every SE part
+  # unknown (GH #566); the other groups are unaffected, since a domain total
+  # takes nothing from another domain's rows. The survey call is given 0 for
+  # the unknown counts and the affected groups are set to NA afterwards.
+  reported_design <- design
+  na_count <- is.na(counts_data[[count_var]])
+  na_group_keys <- unique(group_key(counts_data[na_count, , drop = FALSE], by_vars)) # nolint: object_usage_linter
+  if (any(na_count)) {
+    design <- fill_unknown_counts(design, count_var)
+  }
 
   # Build formulas for svyby
   count_formula <- stats::reformulate(count_var)
@@ -7198,6 +7250,23 @@ estimate_effort_grouped <- function(
   estimates_df$n <- group_n
   estimates_df$se_basis <- effort_se_basis(design, target, by_vars, result_group_keys)
 
+  unknown <- result_group_keys %in% na_group_keys
+  if (any(unknown)) {
+    for (col in c("estimate", "se", "se_between", "se_within", "ci_lower", "ci_upper")) {
+      estimates_df[[col]][unknown] <- NA_real_
+    }
+    if (!is.null(se_expansion)) se_expansion[unknown] <- NA_real_
+    if (!is.null(expansion_decomposition)) {
+      expansion_decomposition[unknown] <- lapply(expansion_decomposition[unknown], function(x) x * NA_real_)
+    }
+    if (!is.null(se_components_grouped)) {
+      se_components_grouped <- lapply(se_components_grouped, function(x) {
+        if (length(x) == length(unknown)) x[unknown] <- NA_real_
+        x
+      })
+    }
+  }
+
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
   col_order <- c(by_vars, "estimate", "se", "se_between", "se_within", "ci_lower", "ci_upper", "n", "se_basis")
@@ -7209,7 +7278,7 @@ estimate_effort_grouped <- function(
     estimates = estimates_df,
     method = "total",
     variance_method = variance_method,
-    design = design,
+    design = reported_design,
     conf_level = conf_level,
     by_vars = by_vars,
     effort_target = target,
