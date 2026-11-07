@@ -132,13 +132,15 @@ estimate_effort(one_day, variance = "taylor")
 #> ! Sparse strata produce unstable variance estimates.
 #> ℹ Consider combining sparse strata or collecting more data.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Error in `value[[3L]]()`:
-#> ! A stratum has only 1 PSU — variance cannot be estimated.
-#> ✖ A stratum must have at least 2 PSUs (e.g., 2 sampled days) for variance
-#>   estimation, unless every sampled day has two or more counts and the stratum
-#>   was fully sampled.
-#> ℹ Increase the sampling rate, combine sparse strata before estimation, or, for
-#>   a stratum of a single day that was sampled, count that day more than once.
+#> Error in `refuse_single_day_strata()`:
+#> ! Stratum "weekend" has one sampled day — the variance of an expanded
+#>   total cannot be estimated.
+#> ✖ Expanding a stratum to its calendar days needs at least 2 sampled days in it,
+#>   to estimate how much days differ.
+#> ℹ Count the day of a one-day stratum at least twice (it is then a census), or
+#>   combine sparse strata.
+#> ℹ `target = "sampled_days"` needs a stratum's one day to be counted at least
+#>   twice, and that day was counted once.
 ```
 
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
