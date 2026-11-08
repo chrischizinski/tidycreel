@@ -204,33 +204,29 @@ print(effort)
 #> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 1235 (known, but se is `NA`)
-#> within_day: 0 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    17521    NA      1235.         0       NA       NA    16 between_day_upper…
+#> 1    17521    NA      1235.        NA       NA       NA    16 between_day_upper…
 ```
 
 The `estimate` column is the total angler-hours over the calendar given
 to
 [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
-and `se_between` quantifies between-day variability in the instantaneous
-counts. This calendar holds only the 16 flown days, so the total covers
-those days: the default, `target = "period_total"`, expands each stratum
-to every day of the calendar, and here those are the days flown. If your
-calendar lists every day of the season, flown or not, the same call
-gives the season total; `target = "sampled_days"` totals only the days
-flown (see
+June 3 to July 6, expanded from the 16 days flown, and `se` its standard
+error, from the between-day variability in the instantaneous counts and
+the uncertainty in the calibration. `target = "sampled_days"` totals
+only the days flown (see
 [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)).
 
 `se`, `ci_lower` and `ci_upper` are `NA`, and that is the correct output
 for this design rather than a gap in it.
 [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
 above was given `visibility_correction = "none"`, which declares that no
-detection study was done. The between-day component is known, but a
+detection study was done. The count-sampling component is known, but a
 component of the total’s uncertainty is not, and a standard error that
 silently omitted it would describe a survey more precise than this one.
 `NA` says the uncertainty was never propagated; `0` would say it was
@@ -287,14 +283,13 @@ print(effort_corr)
 #> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 1453 (included in se)
-#> within_day: 0 (included in se)
 #> visibility: 970 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   20613. 1747.      1453.         0   16865.   24360.    16 between_day_upper…
+#> 1   20613. 1747.      1453.        NA   16865.   24360.    16 between_day_upper…
 ```
 
 Comparing the two estimates: the corrected effort is higher than the

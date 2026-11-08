@@ -421,14 +421,14 @@ angler-hours):</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">8</span>535  369.       369.         0    <span style="text-decoration: underline;">7</span>754.    <span style="text-decoration: underline;">9</span>316.    18 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">8</span>535  369.       369.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">7</span>754.    <span style="text-decoration: underline;">9</span>316.    18 between_day_upper…</span></span></code></pre></div>
 <p>The <code>estimate</code> column is the stratified total angler-hours
 for July, expanded from the 18 sampled days, and <code>se</code> its
 standard error. With one circuit per day <code>se_within</code> is
-reported as 0. That does not mean effort was steady through the day: the
-day-to-day term contains the within-day variation, but with one circuit
-per day it cannot be separated out, so the 0 stands for “not
-estimated”.</p>
+<code>NA</code>. That does not mean anything is missing from
+<code>se</code>: the day-to-day variation, <code>se_between</code>,
+contains the within-day variation, but with one circuit per day the
+within-day part cannot be estimated on its own.</p>
 </div>
 <div class="section level3">
 <h3 id="adding-interviews">Adding Interviews<a class="anchor" aria-label="anchor" href="#adding-interviews"></a>
@@ -600,7 +600,7 @@ angler-hours.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 18</span></span></span>
 <span><span class="co">#&gt;   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower</span></span>
 <span><span class="co">#&gt;             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>            <span style="text-decoration: underline;">8</span>535      369.              369.                0           <span style="text-decoration: underline;">7</span>754.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>            <span style="text-decoration: underline;">8</span>535      369.              369.               <span style="color: #BB0000;">NA</span>           <span style="text-decoration: underline;">7</span>754.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 13 more variables: effort_ci_upper &lt;dbl&gt;, effort_n &lt;int&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   effort_se_basis &lt;chr&gt;, catch_estimate &lt;dbl&gt;, catch_se &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   catch_ci_lower &lt;dbl&gt;, catch_ci_upper &lt;dbl&gt;, catch_n &lt;int&gt;,</span></span></span>

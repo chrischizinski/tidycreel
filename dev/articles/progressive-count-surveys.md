@@ -259,15 +259,15 @@ effort$estimates
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     8535  369.       369.         0    7754.    9316.    18 between_day_upper…
+#> 1     8535  369.       369.        NA    7754.    9316.    18 between_day_upper…
 ```
 
 The `estimate` column is the stratified total angler-hours for July,
 expanded from the 18 sampled days, and `se` its standard error. With one
-circuit per day `se_within` is reported as 0. That does not mean effort
-was steady through the day: the day-to-day term contains the within-day
-variation, but with one circuit per day it cannot be separated out, so
-the 0 stands for “not estimated”.
+circuit per day `se_within` is `NA`. That does not mean anything is
+missing from `se`: the day-to-day variation, `se_between`, contains the
+within-day variation, but with one circuit per day the within-day part
+cannot be estimated on its own.
 
 ### Adding Interviews
 
@@ -447,7 +447,7 @@ summary_tbl$table
 #> # A tibble: 1 × 18
 #>   effort_estimate effort_se effort_se_between effort_se_within effort_ci_lower
 #>             <dbl>     <dbl>             <dbl>            <dbl>           <dbl>
-#> 1            8535      369.              369.                0           7754.
+#> 1            8535      369.              369.               NA           7754.
 #> # ℹ 13 more variables: effort_ci_upper <dbl>, effort_n <int>,
 #> #   effort_se_basis <chr>, catch_estimate <dbl>, catch_se <dbl>,
 #> #   catch_ci_lower <dbl>, catch_ci_upper <dbl>, catch_n <int>,

@@ -124,14 +124,18 @@ names or NULL). `se_between` is the between-day standard error from
 the within-day standard error, the second stage of the two-stage
 variance: each sampled day's variance of its mean count, at that day's
 own number of counts, expanded by \\N_h/n_h\\ (Cochran 1977, ch. 11;
-Rasmussen et al. 1998 when every day has the same number). It is zero in
-a stratum where any sampled day has a single count, whose uncorrected
-day-to-day term already carries the within-day variation, and nonzero
-when `count_time_col` is supplied to
-[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
-and every day has two or more counts. `se_basis` says which kind of
-standard error a row carries: `"within_day"` for a census of days with
-two or more counts a day (the finite-population correction removes the
+Rasmussen et al. 1998 when every day has the same number). A stratum
+where any sampled day has a single count adds no within-day term: its
+uncorrected day-to-day term already carries the within-day variation.
+When that is true of every stratum in a row
+(`se_basis = "between_day_upper_bound"`), `se_between` is the whole
+count-sampling standard error, within-day variation included, and
+`se_within` is `NA`: the within-day part cannot be estimated separately
+there, which is not the same as its being zero. On a `"mixed"` row
+`se_within` is the within-day term of the strata that identify one, and
+`se_between` holds the rest. `se_basis` says which kind of standard
+error a row carries: `"within_day"` for a census of days with two or
+more counts a day (the finite-population correction removes the
 day-to-day term, so the count-sampling variance is the within-day term
 alone; on `target = "sampled_days"`, where the sampled days are the
 population, every stratum whose days all have two or more counts),
@@ -286,7 +290,7 @@ print(result)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1      135  10.6       10.6         0     89.3     181.     4 between_day_upper…
+#> 1      135  10.6       10.6        NA     89.3     181.     4 between_day_upper…
 
 # Grouped by day_type
 result_grouped <- estimate_effort(design_with_counts, by = day_type)
@@ -308,8 +312,8 @@ print(result_grouped)
 #> # A tibble: 2 × 9
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
-#> 1 weekday        38     8          8         0     3.58     72.4     2 between_…
-#> 2 weekend        97     7          7         0    66.9     127.      2 between_…
+#> 1 weekday        38     8          8        NA     3.58     72.4     2 between_…
+#> 2 weekend        97     7          7        NA    66.9     127.      2 between_…
 
 # Several grouping variables can be combined in `by` when the data carry them
 
@@ -329,7 +333,7 @@ print(result_boot)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1      135  9.94       9.94         0     92.2     178.     4 between_day_upper…
+#> 1      135  9.94       9.94        NA     92.2     178.     4 between_day_upper…
 
 # Jackknife variance estimation
 result_jk <- estimate_effort(design_with_counts, variance = "jackknife")
@@ -344,7 +348,7 @@ print(result_jk)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1      135  10.6       10.6         0     89.3     181.     4 between_day_upper…
+#> 1      135  10.6       10.6        NA     89.3     181.     4 between_day_upper…
 
 # Grouped estimation with bootstrap variance
 result_grouped_boot <- estimate_effort(design_with_counts, by = day_type, variance = "bootstrap")

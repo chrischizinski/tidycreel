@@ -89,7 +89,7 @@ estimate_effort(design, target = "sampled_days")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    34860 1604.      1604.         0   31639.   38081.    61 between_day_upper…
+#> 1    34860 1604.      1604.        NA   31639.   38081.    61 between_day_upper…
 estimate_effort(design)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ estimate_effort(design)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   81407. 4233.      4233.         0   72909.   89904.    61 between_day_upper…
+#> 1   81407. 4233.      4233.        NA   72909.   89904.    61 between_day_upper…
 ```
 
 The first estimate is the effort on the 61 sampled days. The second, the
@@ -133,11 +133,11 @@ monthly_effort
 #> # A tibble: 5 × 9
 #>   month     estimate    se se_between se_within ci_lower ci_upper     n se_basis
 #>   <fct>        <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>   
-#> 1 May         16882  2046.      2046.         0   12774.   20990.    10 between…
-#> 2 June        16878. 2523.      2523.         0   11813.   21943.    14 between…
-#> 3 July        17397. 1518.      1518.         0   14349.   20446.    12 between…
-#> 4 August      18735. 2029.      2029.         0   14662.   22808.    13 between…
-#> 5 September   11515   971.       971.         0    9566.   13464.    12 between…
+#> 1 May         16882  2046.      2046.        NA   12774.   20990.    10 between…
+#> 2 June        16878. 2523.      2523.        NA   11813.   21943.    14 between…
+#> 3 July        17397. 1518.      1518.        NA   14349.   20446.    12 between…
+#> 4 August      18735. 2029.      2029.        NA   14662.   22808.    13 between…
+#> 5 September   11515   971.       971.        NA    9566.   13464.    12 between…
 ```
 
 The months add up to the season total, and their standard errors add in
@@ -175,7 +175,7 @@ estimate_effort(design_dt, target = "period_total")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   81017. 3870.      3870.         0   73273.   88761.    61 between_day_upper…
+#> 1   81017. 3870.      3870.        NA   73273.   88761.    61 between_day_upper…
 ```
 
 about 81,000 instead of 81,400. Neither is wrong. With month strata,
@@ -266,11 +266,11 @@ report$table
 #> # A tibble: 5 × 14
 #>   month     effort_estimate effort_se effort_se_between effort_se_within
 #>   <fct>               <dbl>     <dbl>             <dbl>            <dbl>
-#> 1 May                16882      2046.             2046.                0
-#> 2 June               16878.     2523.             2523.                0
-#> 3 July               17397.     1518.             1518.                0
-#> 4 August             18735.     2029.             2029.                0
-#> 5 September          11515       971.              971.                0
+#> 1 May                16882      2046.             2046.               NA
+#> 2 June               16878.     2523.             2523.               NA
+#> 3 July               17397.     1518.             1518.               NA
+#> 4 August             18735.     2029.             2029.               NA
+#> 5 September          11515       971.              971.               NA
 #> # ℹ 9 more variables: effort_ci_lower <dbl>, effort_ci_upper <dbl>,
 #> #   effort_n <int>, effort_se_basis <chr>, catch_estimate <dbl>,
 #> #   catch_se <dbl>, catch_ci_lower <dbl>, catch_ci_upper <dbl>, catch_n <int>

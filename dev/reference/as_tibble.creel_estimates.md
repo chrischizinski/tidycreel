@@ -135,14 +135,14 @@ tibble::as_tibble(est)
 #> # A tibble: 2 × 14
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
-#> 1 weekday      341.  19.3       19.3         0     299.     383.    10 between_…
-#> 2 weekend      505.  22.4       22.4         0     456.     553.     4 between_…
+#> 1 weekday      341.  19.3       19.3        NA     299.     383.    10 between_…
+#> 2 weekend      505.  22.4       22.4        NA     456.     553.     4 between_…
 #> # ℹ 5 more variables: method <chr>, variance_method <chr>, conf_level <dbl>,
 #> #   effort_target <chr>, unit <chr>
 as.data.frame(est, metadata = FALSE)
 #>   day_type estimate       se se_between se_within ci_lower ci_upper  n
-#> 1  weekday   341.20 19.34758   19.34758         0 299.0452 383.3548 10
-#> 2  weekend   504.75 22.36580   22.36580         0 456.0191 553.4809  4
+#> 1  weekday   341.20 19.34758   19.34758        NA 299.0452 383.3548 10
+#> 2  weekend   504.75 22.36580   22.36580        NA 456.0191 553.4809  4
 #>                  se_basis
 #> 1 between_day_upper_bound
 #> 2 between_day_upper_bound

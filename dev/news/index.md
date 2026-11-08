@@ -37,6 +37,24 @@
   counted at least twice, the only case it would work
   ([\#601](https://github.com/chrischizinski/tidycreel/issues/601)).
 
+- [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  reports `se_within` as `NA`, not `0`, on a row whose every stratum has
+  a day with one count (`se_basis = "between_day_upper_bound"`,
+  [\#504](https://github.com/chrischizinski/tidycreel/issues/504)). With
+  one count a day the day-to-day variance already contains the
+  within-day variation, so `se_between` is the whole count-sampling
+  standard error and `se` is unchanged; what cannot be done is
+  estimating the within-day part separately, and a `0` read as a
+  within-day variance that was measured and found to be absent.
+  `se_between` keeps its value. A `"mixed"` row keeps both numbers:
+  `se_within` is the within-day term of the strata with two or more
+  counts every day. On such aerial results the `within_day` SE component
+  is folded into `count_sampling`, which then holds the whole
+  count-sampling SE, rather than reported as `0`. The sectioned lake
+  row’s `se` is unchanged. Code that rebuilds `se` as
+  `sqrt(se_between^2 + se_within^2)` now gets `NA` on those rows; read
+  `se` instead.
+
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   warns when every day of every stratum has a count, with class
   `creel_warning_calendar_is_census` (tier 1,

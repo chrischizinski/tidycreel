@@ -203,10 +203,15 @@ recorded per PSU). <code>se_within</code> is the within-day standard error, the
 second stage of the two-stage variance: each sampled day's variance of its
 mean count, at that day's own number of counts, expanded by \(N_h/n_h\)
 (Cochran 1977, ch. 11; Rasmussen et al. 1998 when every day has the same
-number). It is zero in a stratum where any sampled day has a single count,
-whose uncorrected day-to-day term already carries the within-day variation,
-and nonzero when <code>count_time_col</code> is supplied to
-<code><a href="add_counts.html">add_counts()</a></code> and every day has two or more counts. <code>se_basis</code> says which kind of standard error a
+number). A stratum where any sampled day has a single count adds no
+within-day term: its uncorrected day-to-day term already carries the
+within-day variation. When that is true of every stratum in a row
+(<code>se_basis = "between_day_upper_bound"</code>), <code>se_between</code> is the
+whole count-sampling standard error, within-day variation included, and
+<code>se_within</code> is <code>NA</code>: the within-day part cannot be estimated
+separately there, which is not the same as its being zero. On a
+<code>"mixed"</code> row <code>se_within</code> is the within-day term of the strata
+that identify one, and <code>se_between</code> holds the rest. <code>se_basis</code> says which kind of standard error a
 row carries: <code>"within_day"</code> for a census of days with two or more
 counts a day (the finite-population correction removes the day-to-day
 term, so the count-sampling variance is the within-day term alone; on
@@ -347,7 +352,7 @@ which build their own effort by this route.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 8</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  10.6       10.6         0     89.3     181.     4 between_day_upper…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  10.6       10.6        <span style="color: #BB0000;">NA</span>     89.3     181.     4 between_day_upper…</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped by day_type</span></span></span>
 <span class="r-in"><span><span class="va">result_grouped</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort</span><span class="op">(</span><span class="va">design_with_counts</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
@@ -369,8 +374,8 @@ which build their own effort by this route.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 9</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday        38     8          8         0     3.58     72.4     2 between_…</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend        97     7          7         0    66.9     127.      2 between_…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday        38     8          8        <span style="color: #BB0000;">NA</span>     3.58     72.4     2 between_…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend        97     7          7        <span style="color: #BB0000;">NA</span>    66.9     127.      2 between_…</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Several grouping variables can be combined in `by` when the data carry them</span></span></span>
 <span class="r-in"><span></span></span>
@@ -390,7 +395,7 @@ which build their own effort by this route.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 8</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  9.94       9.94         0     92.2     178.     4 between_day_upper…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  9.94       9.94        <span style="color: #BB0000;">NA</span>     92.2     178.     4 between_day_upper…</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Jackknife variance estimation</span></span></span>
 <span class="r-in"><span><span class="va">result_jk</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort</span><span class="op">(</span><span class="va">design_with_counts</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span></span>
@@ -405,7 +410,7 @@ which build their own effort by this route.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 8</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  10.6       10.6         0     89.3     181.     4 between_day_upper…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>      135  10.6       10.6        <span style="color: #BB0000;">NA</span>     89.3     181.     4 between_day_upper…</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped estimation with bootstrap variance</span></span></span>
 <span class="r-in"><span><span class="va">result_grouped_boot</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort</span><span class="op">(</span><span class="va">design_with_counts</span>, by <span class="op">=</span> <span class="va">day_type</span>, variance <span class="op">=</span> <span class="st">"bootstrap"</span><span class="op">)</span></span></span>

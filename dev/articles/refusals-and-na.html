@@ -199,7 +199,7 @@ has an answer:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>576  346.       346.         0    <span style="text-decoration: underline;">1</span>866.    <span style="text-decoration: underline;">3</span>286.    28 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>576  346.       346.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">1</span>866.    <span style="text-decoration: underline;">3</span>286.    28 between_day_upper…</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="a-stratum-with-no-catch-rate">A stratum with no catch rate<a class="anchor" aria-label="anchor" href="#a-stratum-with-no-catch-rate"></a>
@@ -366,13 +366,12 @@ sampling only:</p>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 1453 (included in <span style="color: #00BB00;">se</span>)</span></span>
-<span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>453.      <span style="text-decoration: underline;">1</span>453.         0   <span style="text-decoration: underline;">17</span>496.   <span style="text-decoration: underline;">23</span>730.    16 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>453.      <span style="text-decoration: underline;">1</span>453.        <span style="color: #BB0000;">NA</span>   <span style="text-decoration: underline;">17</span>496.   <span style="text-decoration: underline;">23</span>730.    16 between_day_upper…</span></span></code></pre></div>
 <p>The correction’s standard error is supplied, so it is propagated:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">aerial_effort</span><span class="op">(</span>visibility_correction <span class="op">=</span> <span class="fl">0.85</span>, visibility_se <span class="op">=</span> <span class="fl">0.04</span><span class="op">)</span></span>
@@ -384,14 +383,13 @@ sampling only:</p>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 1453 (included in <span style="color: #00BB00;">se</span>)</span></span>
-<span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; visibility: 970 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>747.      <span style="text-decoration: underline;">1</span>453.         0   <span style="text-decoration: underline;">16</span>865.   <span style="text-decoration: underline;">24</span>360.    16 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>747.      <span style="text-decoration: underline;">1</span>453.        <span style="color: #BB0000;">NA</span>   <span style="text-decoration: underline;">16</span>865.   <span style="text-decoration: underline;">24</span>360.    16 between_day_upper…</span></span></code></pre></div>
 <p>No correction was studied (<code>"none"</code>). The point estimate
 divides by 1, but how many anglers the observer missed is unknown, so
 the standard error is too:</p>
@@ -405,14 +403,13 @@ the standard error is too:</p>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 1235 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
-<span><span class="co">#&gt; within_day: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">17</span>521    <span style="color: #BB0000;">NA</span>      <span style="text-decoration: underline;">1</span>235.         0       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">17</span>521    <span style="color: #BB0000;">NA</span>      <span style="text-decoration: underline;">1</span>235.        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16 between_day_upper…</span></span></code></pre></div>
 <p>The same counts give a standard error of 1,453, then 1,747, then
 <code>NA</code>. In the first, the visibility correction is a measured
 number whose uncertainty was not supplied, so 1,453 understates the
@@ -424,16 +421,17 @@ is an angler, exactly. A correction known exactly must be said to be:
 <code>visibility_correction = 1, visibility_se = 0</code>, for example,
 where every angler can be seen.</p>
 <div class="section level3">
-<h3 id="one-exception-se_within-with-one-count-per-day">One exception: <code>se_within</code> with one count per day<a class="anchor" aria-label="anchor" href="#one-exception-se_within-with-one-count-per-day"></a>
+<h3 id="an-na-beside-a-known-se-se_within-with-one-count-per-day">An <code>NA</code> beside a known <code>se</code>:
+<code>se_within</code> with one count per day<a class="anchor" aria-label="anchor" href="#an-na-beside-a-known-se-se_within-with-one-count-per-day"></a>
 </h3>
 <p>With one count per day, <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> reports
-<code>se_within = 0</code>. It is not a measured zero: with a single
-count the variation within a day cannot be separated from the variation
-between days, and both are in <code>se_between</code>. So
-<code>se</code> is right, and only the split is not identified.
-<code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains this, and reporting it
-as <code>NA</code> instead is proposed for the next major release (issue
-#504).</p>
+<code>se_within = NA</code> while <code>se</code> is a number. Nothing
+is missing from <code>se</code>: with a single count the variation
+within a day cannot be separated from the variation between days, and
+both are in <code>se_between</code>. Only the within-day part on its own
+is not identified, so only it is <code>NA</code>. Up to tidycreel 8.0.0
+it was reported as <code>0</code>, a zero that read as measured (#504).
+<code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains this.</p>
 </div>
 </div>
 <div class="section level2">

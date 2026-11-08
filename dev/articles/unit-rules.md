@@ -73,7 +73,7 @@ estimate_effort(with_td)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
+#> 1    9994. 1286.      1286.        NA    7380.   12609.    36 between_day_upper…
 ```
 
 The effort is in angler-hours because the package multiplied each count
@@ -107,7 +107,7 @@ effort_no_td
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     714.  91.9       91.9         0     527.     901.    36 between_day_upper…
+#> 1     714.  91.9       91.9        NA     527.     901.    36 between_day_upper…
 effort_no_td$unit
 #> [1] NA
 ```

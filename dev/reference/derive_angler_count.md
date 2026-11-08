@@ -320,7 +320,7 @@ estimate_effort(design, by = angler_type, target = "sampled_days")
 #> # A tibble: 2 × 9
 #>   angler_type estimate    se se_between se_within ci_lower ci_upper     n
 #>   <chr>          <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 bank              30  2.83       2.83         0     17.8     42.2     4
-#> 2 boat              48  5.25       3.39         0     25.4     70.6     4
+#> 1 bank              30  2.83       2.83        NA     17.8     42.2     4
+#> 2 boat              48  5.25       3.39        NA     25.4     70.6     4
 #> # ℹ 1 more variable: se_basis <chr>
 ```

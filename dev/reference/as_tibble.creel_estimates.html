@@ -200,14 +200,14 @@ every row and is visible if it is dropped.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 14</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday      341.  19.3       19.3         0     299.     383.    10 between_…</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend      505.  22.4       22.4         0     456.     553.     4 between_…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday      341.  19.3       19.3        <span style="color: #BB0000;">NA</span>     299.     383.    10 between_…</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend      505.  22.4       22.4        <span style="color: #BB0000;">NA</span>     456.     553.     4 between_…</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 5 more variables: method &lt;chr&gt;, variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">est</span>, metadata <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate       se se_between se_within ci_lower ci_upper  n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  weekday   341.20 19.34758   19.34758         0 299.0452 383.3548 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  weekend   504.75 22.36580   22.36580         0 456.0191 553.4809  4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  weekday   341.20 19.34758   19.34758        NA 299.0452 383.3548 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  weekend   504.75 22.36580   22.36580        NA 456.0191 553.4809  4</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  se_basis</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1 between_day_upper_bound</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 between_day_upper_bound</span>

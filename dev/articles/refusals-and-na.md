@@ -103,7 +103,7 @@ estimate_effort(weekday_only, target = "sampled_days")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     2576  346.       346.         0    1866.    3286.    28 between_day_upper…
+#> 1     2576  346.       346.        NA    1866.    3286.    28 between_day_upper…
 ```
 
 ### A stratum with no catch rate
@@ -250,13 +250,12 @@ aerial_effort(visibility_correction = 0.85)
 #> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 1453 (included in se)
-#> within_day: 0 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   20613. 1453.      1453.         0   17496.   23730.    16 between_day_upper…
+#> 1   20613. 1453.      1453.        NA   17496.   23730.    16 between_day_upper…
 ```
 
 The correction’s standard error is supplied, so it is propagated:
@@ -272,14 +271,13 @@ aerial_effort(visibility_correction = 0.85, visibility_se = 0.04)
 #> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 1453 (included in se)
-#> within_day: 0 (included in se)
 #> visibility: 970 (included in se)
 #> angler_ratio: 0 (included in se)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   20613. 1747.      1453.         0   16865.   24360.    16 between_day_upper…
+#> 1   20613. 1747.      1453.        NA   16865.   24360.    16 between_day_upper…
 ```
 
 No correction was studied (`"none"`). The point estimate divides by 1,
@@ -297,14 +295,13 @@ aerial_effort(visibility_correction = "none")
 #> Effort target: period_total
 #> Unit: angler-hours
 #> Count-sampling SE: 1235 (known, but se is `NA`)
-#> within_day: 0 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    17521    NA      1235.         0       NA       NA    16 between_day_upper…
+#> 1    17521    NA      1235.        NA       NA       NA    16 between_day_upper…
 ```
 
 The same counts give a standard error of 1,453, then 1,747, then `NA`.
@@ -318,17 +315,18 @@ known exactly must be said to be:
 `visibility_correction = 1, visibility_se = 0`, for example, where every
 angler can be seen.
 
-### One exception: `se_within` with one count per day
+### An `NA` beside a known `se`: `se_within` with one count per day
 
 With one count per day,
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-reports `se_within = 0`. It is not a measured zero: with a single count
-the variation within a day cannot be separated from the variation
-between days, and both are in `se_between`. So `se` is right, and only
-the split is not identified.
+reports `se_within = NA` while `se` is a number. Nothing is missing from
+`se`: with a single count the variation within a day cannot be separated
+from the variation between days, and both are in `se_between`. Only the
+within-day part on its own is not identified, so only it is `NA`. Up to
+tidycreel 8.0.0 it was reported as `0`, a zero that read as measured
+(#504).
 [`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)
-explains this, and reporting it as `NA` instead is proposed for the next
-major release (issue \#504).
+explains this.
 
 ## Kinds of refusal
 

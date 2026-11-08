@@ -101,7 +101,7 @@ effort$estimates
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
+#> 1    9994. 1286.      1286.        NA    7380.   12609.    36 between_day_upper…
 effort$unit
 #> [1] "angler-hours"
 ```

@@ -307,29 +307,24 @@ catch rate comes out per angler-hour, the unit of aerial effort.</p>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 1235 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
-<span><span class="co">#&gt; within_day: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">17</span>521    <span style="color: #BB0000;">NA</span>      <span style="text-decoration: underline;">1</span>235.         0       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">17</span>521    <span style="color: #BB0000;">NA</span>      <span style="text-decoration: underline;">1</span>235.        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    16 between_day_upper…</span></span></code></pre></div>
 <p>The <code>estimate</code> column is the total angler-hours over the
-calendar given to <code><a href="../reference/creel_design.html">creel_design()</a></code>, and
-<code>se_between</code> quantifies between-day variability in the
-instantaneous counts. This calendar holds only the 16 flown days, so the
-total covers those days: the default,
-<code>target = "period_total"</code>, expands each stratum to every day
-of the calendar, and here those are the days flown. If your calendar
-lists every day of the season, flown or not, the same call gives the
-season total; <code>target = "sampled_days"</code> totals only the days
-flown (see <code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>).</p>
+calendar given to <code><a href="../reference/creel_design.html">creel_design()</a></code>, June 3 to July 6,
+expanded from the 16 days flown, and <code>se</code> its standard error,
+from the between-day variability in the instantaneous counts and the
+uncertainty in the calibration. <code>target = "sampled_days"</code>
+totals only the days flown (see <code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>).</p>
 <p><code>se</code>, <code>ci_lower</code> and <code>ci_upper</code> are
 <code>NA</code>, and that is the correct output for this design rather
 than a gap in it. <code><a href="../reference/creel_design.html">creel_design()</a></code> above was given
 <code>visibility_correction = "none"</code>, which declares that no
-detection study was done. The between-day component is known, but a
+detection study was done. The count-sampling component is known, but a
 component of the total’s uncertainty is not, and a standard error that
 silently omitted it would describe a survey more precise than this one.
 <code>NA</code> says the uncertainty was never propagated;
@@ -385,14 +380,13 @@ rather than treating 0.85 as exactly known.</p>
 <span><span class="co">#&gt; Effort target: period_total</span></span>
 <span><span class="co">#&gt; Unit: angler-hours</span></span>
 <span><span class="co">#&gt; Count-sampling SE: 1453 (included in <span style="color: #00BB00;">se</span>)</span></span>
-<span><span class="co">#&gt; within_day: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; visibility: 970 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>747.      <span style="text-decoration: underline;">1</span>453.         0   <span style="text-decoration: underline;">16</span>865.   <span style="text-decoration: underline;">24</span>360.    16 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">20</span>613. <span style="text-decoration: underline;">1</span>747.      <span style="text-decoration: underline;">1</span>453.        <span style="color: #BB0000;">NA</span>   <span style="text-decoration: underline;">16</span>865.   <span style="text-decoration: underline;">24</span>360.    16 between_day_upper…</span></span></code></pre></div>
 <p>Comparing the two estimates: the corrected effort is higher than the
 uncorrected estimate because the visibility correction inflates the
 count to account for undetected anglers.</p>

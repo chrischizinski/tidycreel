@@ -132,7 +132,7 @@ write_estimates(eff, tmp)
 out <- utils::read.csv(tmp, comment.char = "#")
 out
 #>   estimate       se se_between se_within ci_lower ci_upper  n
-#> 1   845.95 29.57293   29.57293         0 781.5161 910.3839 14
+#> 1   845.95 29.57293   29.57293        NA 781.5161 910.3839 14
 #>                  se_basis
 #> 1 between_day_upper_bound
 ```

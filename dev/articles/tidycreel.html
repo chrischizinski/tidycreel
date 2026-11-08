@@ -222,7 +222,7 @@ give it and never assumes one.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -235,7 +235,7 @@ give it and never assumes one.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">3</span>066  386.       386.         0    <span style="text-decoration: underline;">2</span>282.    <span style="text-decoration: underline;">3</span>850.    36 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">3</span>066  386.       386.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>282.    <span style="text-decoration: underline;">3</span>850.    36 between_day_upper…</span></span></code></pre></div>
 <p>The first estimate, the default
 (<code>target = "period_total"</code>), is the effort <strong>over the
 whole 120-day season</strong>, about 9,994 angler-hours. That season
@@ -246,12 +246,14 @@ sampled</strong>: 3,066 angler-hours. Ask for it with
 <code>target = "sampled_days"</code>.</p>
 <p>The standard error comes from the day-to-day variation among the
 sampled days within each stratum. With one count per day the within-day
-variation (when in the day each count happened to fall) cannot be
-estimated separately, so <code>se_within</code> is 0 as a placeholder,
-not because activity was steady through the day. It becomes non-zero
-when a day has several counts. With one count per day the standard error
-also leaves out the finite-population correction, so it is slightly
-conservative; <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains why.</p>
+variation (when in the day each count happened to fall) is inside that
+day-to-day variation but cannot be estimated separately, so
+<code>se_within</code> is <code>NA</code>; <code>se</code> and
+<code>se_between</code>, which hold it, are complete. It becomes a
+number when every day has several counts. With one count per day the
+standard error also leaves out the finite-population correction, so it
+is slightly conservative; <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code>
+explains why.</p>
 <p>Estimates can be broken down by any column in the design with
 <code>by</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -268,8 +270,8 @@ conservative; <code><a href="../articles/effort-pipeline.html">vignette("effort-
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912  <span style="text-decoration: underline;">1</span>063.      <span style="text-decoration: underline;">1</span>063.         0    <span style="text-decoration: underline;">5</span>753.   <span style="text-decoration: underline;">10</span>071.    28 between_…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  725.       725.         0     609.    <span style="text-decoration: underline;">3</span>556.     8 between_…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912  <span style="text-decoration: underline;">1</span>063.      <span style="text-decoration: underline;">1</span>063.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">5</span>753.   <span style="text-decoration: underline;">10</span>071.    28 between_…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  725.       725.        <span style="color: #BB0000;">NA</span>     609.    <span style="text-decoration: underline;">3</span>556.     8 between_…</span></span></code></pre></div>
 <p>The 86 weekdays account for most of the season’s effort, about 7,900
 angler-hours to the weekends’ 2,100. Per day, the two are closer: about
 92 angler-hours on an average weekday and 61 on an average weekend
@@ -475,7 +477,7 @@ estimate built on it:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>342.      <span style="text-decoration: underline;">1</span>342.         0    <span style="text-decoration: underline;">7</span>267.   <span style="text-decoration: underline;">12</span>722.    36 between_day_upper…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>342.      <span style="text-decoration: underline;">1</span>342.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">7</span>267.   <span style="text-decoration: underline;">12</span>722.    36 between_day_upper…</span></span>
 <span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span>, variance <span class="op">=</span> <span class="st">"jackknife"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -488,7 +490,7 @@ estimate built on it:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.         0    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span></code></pre></div>
 <ul>
 <li>
 <strong>Taylor linearization</strong> (default) is fast and

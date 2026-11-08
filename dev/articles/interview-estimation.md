@@ -53,7 +53,7 @@ print(effort_est)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     846.  29.6       29.6         0     782.     910.    14 between_day_upper…
+#> 1     846.  29.6       29.6        NA     782.     910.    14 between_day_upper…
 ```
 
 `example_counts` records angler-hours for each sampled day, so it goes
@@ -539,7 +539,7 @@ print(effort)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     846.  29.6       29.6         0     782.     910.    14 between_day_upper…
+#> 1     846.  29.6       29.6        NA     782.     910.    14 between_day_upper…
 print(total_catch)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

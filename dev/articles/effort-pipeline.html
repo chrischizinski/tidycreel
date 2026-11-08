@@ -194,7 +194,7 @@ per day on a 10-hour fishing day:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>400  516.       516.         0     757.    <span style="text-decoration: underline;">4</span>043.     4 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">2</span>400  516.       516.        <span style="color: #BB0000;">NA</span>     757.    <span style="text-decoration: underline;">4</span>043.     4 between_day_upper…</span></span></code></pre></div>
 <p>By hand: daily effort is 150, 250, 350 and 450 angler-hours, a mean
 of 300, and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>E</mi><mo accent="true">̂</mo></mover><mo>=</mo><mn>8</mn><mo>×</mo><mn>300</mn><mo>=</mo><mn>2</mn><mo>,</mo><mn>400</mn></mrow><annotation encoding="application/x-tex">\hat{E} = 8 \times 300 = 2{,}400</annotation></semantics></math>
@@ -250,16 +250,21 @@ correction was applied in every case, and single-count standard errors
 were too small (#505).</p>
 </div>
 <div class="section level3">
-<h3 id="one-count-per-day-se_within-is-0-and-what-that-means">One count per day: <code>se_within</code> is 0, and what that
-means<a class="anchor" aria-label="anchor" href="#one-count-per-day-se_within-is-0-and-what-that-means"></a>
+<h3 id="one-count-per-day-se_within-is-na-and-what-that-means">One count per day: <code>se_within</code> is <code>NA</code>, and
+what that means<a class="anchor" aria-label="anchor" href="#one-count-per-day-se_within-is-na-and-what-that-means"></a>
 </h3>
-<p>With one count per day, <code>se_within</code> is reported as 0. That
-does <strong>not</strong> mean the number of anglers was steady through
-the day:
+<p>With one count per day, <code>se_within</code> is reported as
+<code>NA</code>, and <code>se_basis</code> as
+<code>"between_day_upper_bound"</code>. Nothing is missing from
+<code>se</code>:
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>s</mi><mi>b</mi><mn>2</mn></msubsup><annotation encoding="application/x-tex">s_b^2</annotation></semantics></math>
-contains the within-day variation, but with one count per day it cannot
-be separated out. The 0 is a placeholder for “not estimated”; #504
-proposes reporting <code>NA</code> there instead.</p>
+contains the within-day variation, because where in the day each count
+fell is part of why the daily efforts differ, so <code>se_between</code>
+is the whole count-sampling standard error. What one count a day cannot
+do is estimate the within-day part on its own. <code>NA</code> says
+that; a <code>0</code> would say the within-day variation was measured
+and found to be absent, and up to tidycreel 8.0.0 that is what these
+rows reported (#504).</p>
 </div>
 </div>
 <div class="section level2">
@@ -448,7 +453,7 @@ is the legitimate all-day circuit of Robson (1961).</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>      960  139.       139.         0     364.    <span style="text-decoration: underline;">1</span>556.     3 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>      960  139.       139.        <span style="color: #BB0000;">NA</span>     364.    <span style="text-decoration: underline;">1</span>556.     3 between_day_upper…</span></span></code></pre></div>
 <p><code><a href="../reference/add_counts.html">add_counts()</a></code> stores each day’s
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mi>d</mi></msub><mo>×</mo><msub><mi>T</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">C_d \times T_d</annotation></semantics></math>:
 120, 160 and 200 angler-hours. The total is
@@ -484,7 +489,8 @@ conditions.</p>
 <td>One instantaneous count per day</td>
 <td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>c</mi><mi>i</mi></msub><msub><mi>T</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">c_i T_i</annotation></semantics></math></td>
 <td>between days, no FPC</td>
-<td>0: not estimated (#504)</td>
+<td>
+<code>NA</code>: inside <code>se_between</code> (#504)</td>
 </tr>
 <tr class="even">
 <td>
@@ -500,7 +506,8 @@ instantaneous counts per day</td>
 <td>One progressive circuit per day</td>
 <td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mi>d</mi></msub><msub><mi>T</mi><mi>d</mi></msub></mrow><annotation encoding="application/x-tex">C_d T_d</annotation></semantics></math></td>
 <td>between days, no FPC</td>
-<td>0: not estimated (#504)</td>
+<td>
+<code>NA</code>: inside <code>se_between</code> (#504)</td>
 </tr>
 </tbody>
 </table>

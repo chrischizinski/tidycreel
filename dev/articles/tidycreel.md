@@ -125,7 +125,7 @@ estimate_effort(design)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
+#> 1    9994. 1286.      1286.        NA    7380.   12609.    36 between_day_upper…
 estimate_effort(design, target = "sampled_days")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ estimate_effort(design, target = "sampled_days")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     3066  386.       386.         0    2282.    3850.    36 between_day_upper…
+#> 1     3066  386.       386.        NA    2282.    3850.    36 between_day_upper…
 ```
 
 The first estimate, the default (`target = "period_total"`), is the
@@ -151,11 +151,12 @@ sampled**: 3,066 angler-hours. Ask for it with
 
 The standard error comes from the day-to-day variation among the sampled
 days within each stratum. With one count per day the within-day
-variation (when in the day each count happened to fall) cannot be
-estimated separately, so `se_within` is 0 as a placeholder, not because
-activity was steady through the day. It becomes non-zero when a day has
-several counts. With one count per day the standard error also leaves
-out the finite-population correction, so it is slightly conservative;
+variation (when in the day each count happened to fall) is inside that
+day-to-day variation but cannot be estimated separately, so `se_within`
+is `NA`; `se` and `se_between`, which hold it, are complete. It becomes
+a number when every day has several counts. With one count per day the
+standard error also leaves out the finite-population correction, so it
+is slightly conservative;
 [`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)
 explains why.
 
@@ -176,8 +177,8 @@ estimate_effort(design, by = day_type, target = "period_total")
 #> # A tibble: 2 × 9
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
-#> 1 weekday     7912  1063.      1063.         0    5753.   10071.    28 between_…
-#> 2 weekend     2082.  725.       725.         0     609.    3556.     8 between_…
+#> 1 weekday     7912  1063.      1063.        NA    5753.   10071.    28 between_…
+#> 2 weekend     2082.  725.       725.        NA     609.    3556.     8 between_…
 ```
 
 The 86 weekdays account for most of the season’s effort, about 7,900
@@ -407,7 +408,7 @@ estimate_effort(design, target = "period_total", variance = "bootstrap")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    9994. 1342.      1342.         0    7267.   12722.    36 between_day_upper…
+#> 1    9994. 1342.      1342.        NA    7267.   12722.    36 between_day_upper…
 estimate_effort(design, target = "period_total", variance = "jackknife")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -420,7 +421,7 @@ estimate_effort(design, target = "period_total", variance = "jackknife")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    9994. 1286.      1286.         0    7380.   12609.    36 between_day_upper…
+#> 1    9994. 1286.      1286.        NA    7380.   12609.    36 between_day_upper…
 ```
 
 - **Taylor linearization** (default) is fast and appropriate for most
