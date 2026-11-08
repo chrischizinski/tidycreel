@@ -200,8 +200,8 @@ get_variance_design <- function(design, variance_method, call = rlang::caller_en
                 "A stratum must have at least 2 PSUs for jackknife ",
                 "resampling."
               ),
-              # Not "use variance = 'taylor'": no method can estimate a
-              # one-PSU stratum's variance, and Taylor refuses it too (#503).
+              # Not "use variance = 'taylor'": one PSU gives no day-to-day
+              # variation under any method, and Taylor refuses it too (#503).
               "i" = paste0(
                 "Increase the sampling rate for stratum ",
                 "{.val {strat_label}}, or combine sparse strata before ",

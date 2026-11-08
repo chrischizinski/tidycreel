@@ -950,8 +950,9 @@
 
 * The jackknife and bootstrap errors for a stratum with one sampled day no
   longer suggest `variance = "taylor"`, which refuses the same design (#503).
-  No method can estimate the variance of a one-day stratum; all three errors
-  now give the same remedies: sample more days or combine sparse strata. The
+  One sampled day gives no day-to-day variation to measure, under any method;
+  all three errors now give the same remedies: sample more days or combine
+  sparse strata. The
   Taylor and jackknife errors also name the estimator they came from, where
   they printed as ``Error in `value[[3L]]()` ``.
 
