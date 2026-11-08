@@ -1320,6 +1320,15 @@
 
 ### Bug fixes
 
+- The jackknife and bootstrap errors for a stratum with one sampled day
+  no longer suggest `variance = "taylor"`, which refuses the same design
+  ([\#503](https://github.com/chrischizinski/tidycreel/issues/503)). One
+  sampled day gives no day-to-day variation to measure, under any
+  method; all three errors now give the same remedies: sample more days
+  or combine sparse strata. The Taylor and jackknife errors also name
+  the estimator they came from, where they printed as
+  `` Error in `value[[3L]]()` ``.
+
 - [`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md)
   no longer reports every unsampled calendar day as missing
   ([\#391](https://github.com/chrischizinski/tidycreel/issues/391)). It
