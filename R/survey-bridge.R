@@ -139,12 +139,14 @@ as_survey_design <- function(design) {
 #'
 #' @param design Survey design object (survey.design2 from survey::svydesign)
 #' @param variance_method Character string: "taylor", "bootstrap", or "jackknife"
+#' @param call The frame a single-PSU error is reported from; without it cli
+#'   names the `tryCatch()` handler, `value[[3L]]()` (#503).
 #'
 #' @return Survey design object: original for Taylor, svrepdesign for bootstrap/jackknife
 #'
 #' @keywords internal
 #' @noRd
-get_variance_design <- function(design, variance_method) {
+get_variance_design <- function(design, variance_method, call = rlang::caller_env()) {
   # Every stratum a census (sample size = population size, GH #507): the
   # between-day variance is exactly 0 under any method, so there is nothing to
   # resample. A replicate design built here has identical replicates and
@@ -198,12 +200,16 @@ get_variance_design <- function(design, variance_method) {
                 "A stratum must have at least 2 PSUs for jackknife ",
                 "resampling."
               ),
+              # Not "use variance = 'taylor'": one PSU gives no day-to-day
+              # variation under any method, and Taylor refuses it too (#503).
               "i" = paste0(
                 "Increase the sampling rate for stratum ",
-                "{.val {strat_label}}, or use {.code variance = 'taylor'}."
+                "{.val {strat_label}}, or combine sparse strata before ",
+                "estimation."
               )
             ),
-            class = "creel_error_single_psu"
+            class = "creel_error_single_psu",
+            call = call
           )
         }
         stop(e)

@@ -330,3 +330,45 @@ test_that("a multi-column stratum is named with its parts (#601, #422)", {
   err <- expect_error(suppressWarnings(estimate_effort(d)), class = "creel_error_single_psu")
   expect_match(conditionMessage(err), "weekday / 06", fixed = TRUE)
 })
+
+# ---- #503: single-PSU advice names no method that also refuses ----------------
+
+test_that("#503: no single-PSU error sends the user to a method that refuses the same design", {
+  # A one-day stratum has no day-to-day variation to measure, so every
+  # variance method refuses it. The jackknife and bootstrap errors used to say
+  # "or use variance = 'taylor'", which sent the user from one refusal to the
+  # next. Each method is checked to refuse, so naming any of them would be the
+  # same dead end.
+  d <- make_repvar_design(1L)
+  for (v in c("taylor", "jackknife", "bootstrap")) {
+    err <- expect_error(
+      suppressWarnings(estimate_effort(d, variance = v, target = "sampled_days")),
+      class = "creel_error_single_psu"
+    )
+    msg <- cli::ansi_strip(conditionMessage(err))
+    expect_no_match(msg, "variance =", fixed = TRUE)
+    expect_no_match(msg, "taylor", ignore.case = TRUE)
+    expect_match(msg, "combine sparse strata", fixed = TRUE)
+  }
+})
+
+test_that("#503: a single-PSU error raised in a tryCatch() handler names a function, not the handler", {
+  # Without `call =`, cli reports the handler, which prints as
+  # "Error in `value[[3L]]()`".
+  d <- make_repvar_design(1L)
+  for (v in c("taylor", "jackknife")) {
+    for (by_type in c(FALSE, TRUE)) {
+      err <- expect_error(
+        suppressWarnings(if (by_type) {
+          estimate_effort(d, variance = v, target = "sampled_days", by = day_type)
+        } else {
+          estimate_effort(d, variance = v, target = "sampled_days")
+        }),
+        class = "creel_error_single_psu"
+      )
+      fn <- deparse(conditionCall(err)[[1]])
+      expect_false(grepl("value[[", fn, fixed = TRUE), info = paste(v, by_type, fn))
+      expect_match(fn, "^estimate_effort", info = paste(v, by_type))
+    }
+  }
+})
