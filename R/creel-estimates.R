@@ -8,10 +8,12 @@ NULL
 #' Wrap a survey package call and re-raise single-PSU errors as cli_abort
 #'
 #' @param expr An expression that calls a survey function (svytotal, svyby, etc.)
+#' @param call The frame the error is reported from. Without it cli names the
+#'   `tryCatch()` handler, which prints as `value[[3L]]()` (#503).
 #' @return The result of the expression, or a structured cli_abort on single-PSU
 #' @keywords internal
 #' @noRd
-wrap_survey_call <- function(expr) {
+wrap_survey_call <- function(expr, call = rlang::caller_env()) {
   tryCatch(
     suppressWarnings(expr),
     error = function(e) {
@@ -35,7 +37,8 @@ wrap_survey_call <- function(expr) {
             or combine sparse strata before estimation."
             )
           ),
-          class = "creel_error_single_psu"
+          class = "creel_error_single_psu",
+          call = call
         )
       }
       # svyby() words the same condition without naming the stratum. Since
@@ -52,7 +55,8 @@ wrap_survey_call <- function(expr) {
               estimation, or, for a stratum of a single day that was sampled, \\
               count that day more than once."
           ),
-          class = "creel_error_single_psu"
+          class = "creel_error_single_psu",
+          call = call
         )
       }
       stop(e)
@@ -7131,9 +7135,11 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
           "Bootstrap resampling requires at least 2 PSUs ",
           "(sampled days) per stratum."
         ),
+        # Not "use variance = 'taylor'": Taylor refuses a one-PSU stratum too
+        # (#503).
         "i" = paste0(
-          "Increase the sampling rate or use ",
-          "{.code variance = 'taylor'} for single-PSU strata."
+          "Increase the sampling rate, or combine sparse strata before ",
+          "estimation."
         )
       ),
       class = "creel_error_single_psu"

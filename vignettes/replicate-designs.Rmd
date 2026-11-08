@@ -127,9 +127,9 @@ estimate_effort(one_day, variance = "taylor")
 `add_counts()` already warned, when the counts were attached, that both
 strata have fewer than three sampled days; the estimate is where the weekend's
 single day becomes a refusal. The remedies are the ones the error gives: sample more days in that stratum,
-or merge it with a similar stratum before estimating. (The jackknife and
-bootstrap errors currently suggest switching to Taylor, which refuses the
-same design; that is #503.)
+or merge it with a similar stratum before estimating. The jackknife and
+bootstrap errors give the same remedies: switching methods does not help,
+because none of them can estimate this stratum's variance.
 
 ## References
 
