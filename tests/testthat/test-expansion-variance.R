@@ -52,9 +52,12 @@ test_that("total se absorbs the expansion component", {
   result <- suppressWarnings(estimate_effort(expansion_design(counts)))
   est <- result$estimates
 
+  # One count a day: the within-day part is inside se_between and se_within
+  # is NA, not identified (GH #504), so the decomposition has no third term.
+  expect_true(all(is.na(est$se_within)))
   expect_equal(
     est$se,
-    sqrt(est$se_between^2 + est$se_within^2 + result$se_expansion^2),
+    sqrt(est$se_between^2 + result$se_expansion^2),
     tolerance = 1e-10
   )
 })
@@ -191,9 +194,12 @@ test_that("a grouped estimate carries one expansion component per group", {
   )
 
   expect_equal(result$se_expansion, expected)
+  # One count a day: the within-day part is inside se_between and se_within
+  # is NA, not identified (GH #504), so the decomposition has no third term.
+  expect_true(all(is.na(est$se_within)))
   expect_equal(
     est$se,
-    sqrt(est$se_between^2 + est$se_within^2 + result$se_expansion^2),
+    sqrt(est$se_between^2 + result$se_expansion^2),
     tolerance = 1e-10
   )
 })
@@ -961,9 +967,12 @@ test_that("EXPVAR-NA-01 (#317): the unknown group keeps its expansion component"
 
   # And it reaches the reported SE, which is what a zeroed component would not.
   est <- res$estimates[na_idx, ]
+  # One count a day: the within-day part is inside se_between and se_within
+  # is NA, not identified (GH #504), so the decomposition has no third term.
+  expect_true(is.na(est$se_within))
   expect_equal(
     est$se,
-    sqrt(est$se_between^2 + est$se_within^2 + res$se_expansion[na_idx]^2),
+    sqrt(est$se_between^2 + res$se_expansion[na_idx]^2),
     tolerance = 1e-10
   )
   expect_gt(est$se, est$se_between)

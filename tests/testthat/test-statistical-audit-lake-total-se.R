@@ -143,12 +143,13 @@ test_that("the independent method carries the within-day component too", {
 
 test_that("one count per day leaves the lake total's se unchanged", {
   # The complement, and the reason no existing test failed: with a single count
-  # per day there is no within-day variance to add, so the component is a true
-  # 0 and the reported se is still the between-day figure. A fix that inflated
-  # this case would be adding variance that the design does not contain.
+  # per day there is no within-day variance to add, and the reported se is
+  # still the between-day figure. A fix that inflated this case would be adding
+  # variance that the design does not contain. The component itself is not
+  # identified there, so it is reported as NA rather than 0 (GH #504).
   est <- lts_effort(lts_design(spread_a = 0, spread_b = 0, repeat_counts = FALSE))
   lake <- est[est$section == ".lake_total", ]
 
-  expect_identical(lake$se_within, 0)
+  expect_identical(lake$se_within, NA_real_)
   expect_equal(lake$se, lake$se_between)
 })

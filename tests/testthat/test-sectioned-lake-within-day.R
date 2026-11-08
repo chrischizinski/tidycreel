@@ -73,7 +73,8 @@ test_that("with every stratum uncorrected the lake row is the day-to-day bound a
   f <- make_599(k_north = 2L, k_south = 1L, k_weekend = 1L)
   for (target in c("sampled_days", "stratum_total")) {
     lake <- lake_row(q599(estimate_effort(f$design, target = target))$estimates)
-    expect_equal(lake$se_within, 0, label = target)
+    # Not identified on the lake row either: NA, not a measured 0 (#504).
+    expect_true(is.na(lake$se_within), label = target)
     expect_equal(lake$se, lake$se_between, label = target)
     expect_equal(lake$se_basis, "between_day_upper_bound", label = target)
   }

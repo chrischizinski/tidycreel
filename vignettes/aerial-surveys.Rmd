@@ -153,18 +153,15 @@ print(effort)
 ```
 
 The `estimate` column is the total angler-hours over the calendar given to
-`creel_design()`, and `se_between` quantifies between-day variability in the
-instantaneous counts. This calendar holds only the 16 flown days, so the total
-covers those days: the default, `target = "period_total"`, expands each stratum
-to every day of the calendar, and here those are the days flown. If your
-calendar lists every day of the season, flown or not, the same call gives the
-season total; `target = "sampled_days"` totals only the days flown (see
-`vignette("tidycreel")`).
+`creel_design()`, June 3 to July 6, expanded from the 16 days flown, and `se`
+its standard error, from the between-day variability in the instantaneous
+counts and the uncertainty in the calibration. `target = "sampled_days"` totals
+only the days flown (see `vignette("tidycreel")`).
 
 `se`, `ci_lower` and `ci_upper` are `NA`, and that is the correct output for this
 design rather than a gap in it. `creel_design()` above was given
 `visibility_correction = "none"`, which declares that no detection study was
-done. The between-day component is known, but a component of the total's
+done. The count-sampling component is known, but a component of the total's
 uncertainty is not, and a standard error that silently omitted it would describe
 a survey more precise than this one. `NA` says the uncertainty was never
 propagated; `0` would say it was measured and found to be nothing. The next

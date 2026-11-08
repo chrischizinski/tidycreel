@@ -194,7 +194,10 @@ test_that("a design without expansion reports no component and keeps its SE", {
 
   expect_null(result$se_expansion)
   lake <- eff_lake(result)
-  expect_equal(lake$se, sqrt(lake$se_between^2 + lake$se_within^2))
+  # One count a day: the within-day part is inside se_between and se_within
+  # is NA, not identified (GH #504), so the decomposition has no third term.
+  expect_true(is.na(lake$se_within))
+  expect_equal(lake$se, lake$se_between)
 })
 
 eff_partial_counts <- function() {

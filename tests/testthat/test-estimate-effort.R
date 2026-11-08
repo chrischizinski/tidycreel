@@ -1440,9 +1440,11 @@ test_that("estimate_effort() SE unchanged for single-count-per-day data (VAR-01)
   design_single <- add_counts(design_single, example_counts) # nolint: object_usage_linter
 
   result_single <- suppressWarnings(estimate_effort(design_single)) # nolint: object_usage_linter
-  # VAR-01: within_day_var is NULL -> se_within = 0, se_between = se (total)
+  # VAR-01: one count a day -> se_between = se (total). The within-day part
+  # is inside it and cannot be estimated on its own, so se_within is NA, not a
+  # measured 0 (GH #504).
   expect_equal(result_single$estimates$se_between, result_single$estimates$se)
-  expect_equal(result_single$estimates$se_within, 0)
+  expect_true(is.na(result_single$estimates$se_within))
 })
 
 test_that("estimate_effort() SE is larger with within-day variance (VAR-02)", {
@@ -2153,9 +2155,12 @@ describe("Phase 47: Aerial effort", {
       expected_component,
       tolerance = 1e-9
     )
+    # One flight a day: the within-day part is inside se_between and se_within
+    # is NA, not identified (GH #504), so there is no within-day term here.
+    expect_true(is.na(res$estimates$se_within))
     expect_equal(
       res$estimates$se,
-      sqrt(res$estimates$se_between^2 + res$estimates$se_within^2 + expected_component^2),
+      sqrt(res$estimates$se_between^2 + expected_component^2),
       tolerance = 1e-9
     )
   })
