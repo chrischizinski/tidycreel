@@ -99,7 +99,8 @@ test_that("a stratum with a one-count day carries no within-day term on any targ
     row <- weekday_row(f$design, target)
     # The day-to-day term is uncorrected and already holds the within-day
     # variation; the within-day term on top of it counted that twice.
-    expect_equal(row$se_within, 0, label = target)
+    # No within-day term is added, and none is reported: NA (#504).
+    expect_true(is.na(row$se_within), label = target)
     expect_equal(row$se, row$se_between, label = target)
     expect_equal(row$se_basis, "between_day_upper_bound", label = target)
   }
@@ -121,5 +122,7 @@ test_that("the one-count rule is per stratum, not per by group (#405)", {
   e <- tidy(suppressWarnings(suppressMessages(
     estimate_effort(f$design, target = "stratum_total", by = half)
   )))
-  expect_equal(e$se_within, rep(0, nrow(e)))
+  # Not identified in either half: NA, not a measured 0 (#504).
+  expect_true(all(is.na(e$se_within)))
+  expect_equal(e$se, e$se_between)
 })

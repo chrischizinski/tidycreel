@@ -107,9 +107,10 @@ with `target = "sampled_days"`.
 
 The standard error comes from the day-to-day variation among the sampled days
 within each stratum. With one count per day the within-day variation (when in
-the day each count happened to fall) cannot be estimated separately, so
-`se_within` is 0 as a placeholder, not because activity was steady through the
-day. It becomes non-zero when a day has several counts. With one count per day
+the day each count happened to fall) is inside that day-to-day variation but
+cannot be estimated separately, so `se_within` is `NA`; `se` and `se_between`,
+which hold it, are complete. It becomes a number when every day has several
+counts. With one count per day
 the standard error also leaves out the finite-population correction, so it is
 slightly conservative; `vignette("effort-pipeline")` explains why.
 

@@ -98,10 +98,15 @@ recorded per PSU). \code{se_within} is the within-day standard error, the
 second stage of the two-stage variance: each sampled day's variance of its
 mean count, at that day's own number of counts, expanded by \eqn{N_h/n_h}
 (Cochran 1977, ch. 11; Rasmussen et al. 1998 when every day has the same
-number). It is zero in a stratum where any sampled day has a single count,
-whose uncorrected day-to-day term already carries the within-day variation,
-and nonzero when \code{count_time_col} is supplied to
-\code{add_counts()} and every day has two or more counts. \code{se_basis} says which kind of standard error a
+number). A stratum where any sampled day has a single count adds no
+within-day term: its uncorrected day-to-day term already carries the
+within-day variation. When that is true of every stratum in a row
+(\code{se_basis = "between_day_upper_bound"}), \code{se_between} is the
+whole count-sampling standard error, within-day variation included, and
+\code{se_within} is \code{NA}: the within-day part cannot be estimated
+separately there, which is not the same as its being zero. On a
+\code{"mixed"} row \code{se_within} is the within-day term of the strata
+that identify one, and \code{se_between} holds the rest. \code{se_basis} says which kind of standard error a
 row carries: \code{"within_day"} for a census of days with two or more
 counts a day (the finite-population correction removes the day-to-day
 term, so the count-sampling variance is the within-day term alone; on

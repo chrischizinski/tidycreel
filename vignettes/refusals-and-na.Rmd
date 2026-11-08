@@ -207,14 +207,14 @@ exactly. A correction known exactly
 must be said to be: `visibility_correction = 1, visibility_se = 0`, for
 example, where every angler can be seen.
 
-### One exception: `se_within` with one count per day
+### An `NA` beside a known `se`: `se_within` with one count per day
 
-With one count per day, `estimate_effort()` reports `se_within = 0`. It is not
-a measured zero: with a single count the variation within a day cannot be
-separated from the variation between days, and both are in `se_between`. So
-`se` is right, and only the split is not identified. `vignette("effort-pipeline")`
-explains this, and reporting it as `NA` instead is proposed for the next major
-release (issue #504).
+With one count per day, `estimate_effort()` reports `se_within = NA` while
+`se` is a number. Nothing is missing from `se`: with a single count the
+variation within a day cannot be separated from the variation between days,
+and both are in `se_between`. Only the within-day part on its own is not
+identified, so only it is `NA`. Up to tidycreel 8.0.0 it was reported as `0`, a
+zero that read as measured (#504). `vignette("effort-pipeline")` explains this.
 
 ## Kinds of refusal
 

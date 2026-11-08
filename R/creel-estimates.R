@@ -593,10 +593,15 @@ print.creel_estimates <- function(x, ...) {
 #'   second stage of the two-stage variance: each sampled day's variance of its
 #'   mean count, at that day's own number of counts, expanded by \eqn{N_h/n_h}
 #'   (Cochran 1977, ch. 11; Rasmussen et al. 1998 when every day has the same
-#'   number). It is zero in a stratum where any sampled day has a single count,
-#'   whose uncorrected day-to-day term already carries the within-day variation,
-#'   and nonzero when \code{count_time_col} is supplied to
-#'   \code{add_counts()} and every day has two or more counts. \code{se_basis} says which kind of standard error a
+#'   number). A stratum where any sampled day has a single count adds no
+#'   within-day term: its uncorrected day-to-day term already carries the
+#'   within-day variation. When that is true of every stratum in a row
+#'   (\code{se_basis = "between_day_upper_bound"}), \code{se_between} is the
+#'   whole count-sampling standard error, within-day variation included, and
+#'   \code{se_within} is \code{NA}: the within-day part cannot be estimated
+#'   separately there, which is not the same as its being zero. On a
+#'   \code{"mixed"} row \code{se_within} is the within-day term of the strata
+#'   that identify one, and \code{se_between} holds the rest. \code{se_basis} says which kind of standard error a
 #'   row carries: \code{"within_day"} for a census of days with two or more
 #'   counts a day (the finite-population correction removes the day-to-day
 #'   term, so the count-sampling variance is the within-day term alone; on
@@ -861,12 +866,14 @@ estimate_effort <- function(
         species_route = FALSE,
         error_call = rlang::caller_env()
       )
-      return(estimate_effort_grouped( # nolint: object_usage_linter
+      return(mask_unidentified_se_split(estimate_effort_grouped( # nolint: object_usage_linter
         design, by_vars, variance, conf_level,
         target = target, include_calibration = TRUE
-      ))
+      )))
     }
-    return(estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target)) # nolint: object_usage_linter
+    return(mask_unidentified_se_split( # nolint: object_usage_linter
+      estimate_effort_aerial(design, variance, conf_level, verbose, effort_target = target) # nolint
+    ))
   }
 
   # The sectioned estimator groups by section only; `by` was dropped without
@@ -896,7 +903,7 @@ estimate_effort <- function(
     # Expanded targets run through per-section estimate_effort_total() and a
     # target-aware lake total (GH #231); hand-checked against the stratified
     # expansion, estimate and SE, per section and for the lake total (GH #520).
-    return(estimate_effort_sections(
+    return(mask_unidentified_se_split(estimate_effort_sections( # nolint: object_usage_linter
       # nolint: object_usage_linter
       design,
       variance,
@@ -905,7 +912,7 @@ estimate_effort <- function(
       method,
       missing_sections,
       target = target
-    ))
+    )))
   }
 
   # Tier 2 validation - data quality checks (warnings only)
@@ -914,7 +921,9 @@ estimate_effort <- function(
   # Route to grouped or ungrouped estimation
   if (rlang::quo_is_null(by_quo)) {
     # Ungrouped estimation (Phase 4 behavior)
-    return(estimate_effort_total(design, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(mask_unidentified_se_split( # nolint: object_usage_linter
+      estimate_effort_total(design, variance, conf_level, target = target) # nolint: object_usage_linter
+    ))
   } else {
     # Grouped estimation (Phase 5 behavior)
     # Resolve by parameter to column names
@@ -925,7 +934,9 @@ estimate_effort <- function(
       error_call = rlang::caller_env()
     )
 
-    return(estimate_effort_grouped(design, by_vars, variance, conf_level, target = target)) # nolint: object_usage_linter
+    return(mask_unidentified_se_split( # nolint: object_usage_linter
+      estimate_effort_grouped(design, by_vars, variance, conf_level, target = target) # nolint: object_usage_linter
+    ))
   }
 }
 
@@ -6400,6 +6411,48 @@ refuse_reserved_effort_names <- function(design, by_vars = NULL) {
 #'   otherwise.
 #' @keywords internal
 #' @noRd
+#' Report the within-day term only where it is identified
+#'
+#' Internal (GH #504). On a row whose every stratum has a one-count day
+#' (`se_basis == "between_day_upper_bound"`), the day-to-day SE already holds
+#' the within-day variation, and there is nothing to estimate the within-day
+#' part from separately. Reporting `se_within = 0` read as "measured, and there
+#' is none"; it becomes `NA`. `se_between` is kept: it is the count-sampling
+#' SE, known and correct, and on a design with a party-size expansion or an
+#' aerial calibration term it is the only place that SE is reported apart from
+#' the other terms of `se`. `se` is untouched.
+#'
+#' Applied at the exported `estimate_effort()` boundary only. Internal callers
+#' keep the numbers: the sectioned lake row adds each section's `se_within`,
+#' where a one-count section contributes a true 0 to the sum, and an `NA` there
+#' would turn a correct lake `se` into `NA`.
+#'
+#' A `within_day` SE component (aerial) is dropped, not set to `NA`, when no
+#' row identifies it: `NA` in `se_components` means unknown, which `print()`
+#' reports as making `se` unknown. The `count_sampling` component stays; it is
+#' the count-sampling SE and is known.
+#'
+#' @param result A `creel_estimates` object from an effort estimator.
+#' @return `result`, with `se_within` masked on unidentified rows.
+#' @keywords internal
+#' @noRd
+mask_unidentified_se_split <- function(result) {
+  est <- result$estimates
+  if (!all(c("se_basis", "se_within") %in% names(est))) {
+    return(result)
+  }
+  unidentified <- !is.na(est$se_basis) & est$se_basis == "between_day_upper_bound"
+  if (!any(unidentified)) {
+    return(result)
+  }
+  est$se_within[unidentified] <- NA_real_
+  result$estimates <- est
+  if (all(unidentified) && "within_day" %in% names(result$se_components)) {
+    result$se_components$within_day <- NULL
+  }
+  result
+}
+
 effort_se_basis <- function(design, target = "sampled_days", by_vars = NULL, keys = NULL) {
   tdes <- get_effort_target_design(design, target) # nolint: object_usage_linter
   pop <- tdes$fpc$popsize

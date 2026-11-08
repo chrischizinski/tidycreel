@@ -225,10 +225,10 @@ effort$estimates
 ```
 
 The `estimate` column is the stratified total angler-hours for July, expanded
-from the 18 sampled days, and `se` its standard error. With one circuit per day `se_within` is
-reported as 0. That does not mean effort was steady through the day: the
-day-to-day term contains the within-day variation, but with one circuit per day
-it cannot be separated out, so the 0 stands for "not estimated".
+from the 18 sampled days, and `se` its standard error. With one circuit per day
+`se_within` is `NA`. That does not mean anything is missing from `se`: the
+day-to-day variation, `se_between`, contains the within-day variation, but with
+one circuit per day the within-day part cannot be estimated on its own.
 
 ### Adding Interviews
 
