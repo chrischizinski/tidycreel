@@ -106,7 +106,7 @@ test_that("sectioned: se_within goes NA on every row but the lake se, built from
   expect_true(all(is.finite(reported$se)))
 })
 
-test_that("aerial: the within_day component is dropped, not reported as an unknown", {
+test_that("aerial: the within_day component is folded into count_sampling", {
   cal <- data.frame(
     date = example_aerial_counts$date,
     day_type = example_aerial_counts$day_type
@@ -121,11 +121,53 @@ test_that("aerial: the within_day component is dropped, not reported as an unkno
 
   expect_identical(res$estimates$se_basis, "between_day_upper_bound")
   expect_true(is.na(res$estimates$se_within))
-  # NA in se_components means "unknown, so se is NA" to print(); this one is
-  # not unknown, it is folded into count_sampling, so it is absent.
+  # NA in se_components means "unknown, so se is NA" to print(), and 0 would
+  # read as measured; it is inside count_sampling, which is the whole
+  # count-sampling SE, as se_between is.
   expect_false("within_day" %in% names(res$se_components))
-  expect_true(is.finite(res$se_components$count_sampling))
+  expect_equal(res$se_components$count_sampling, res$estimates$se_between)
   expect_true(is.finite(res$estimates$se))
+})
+
+test_that("grouped aerial with mixed rows: no 0 within_day for the one-flight group", {
+  # Weekday flown twice a day, weekend once.
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:9,
+    day_type = rep(c("weekday", "weekend"), each = 5)
+  )
+  cnt <- rbind(
+    data.frame(
+      date = rep(cal$date[1:3], each = 2), day_type = "weekday",
+      flight = rep(1:2, 3), n_anglers = c(10, 16, 22, 18, 12, 9)
+    ),
+    data.frame(
+      date = cal$date[6:8], day_type = "weekend", flight = 1L,
+      n_anglers = c(40, 52, 47)
+    )
+  )
+  d <- creel_design(cal,
+    date = date, strata = day_type, survey_type = "aerial",
+    visibility_correction = 0.8, visibility_se = 0.05,
+    angler_ratio = 1, angler_ratio_se = 0, h_open = 12
+  )
+  d <- suppressWarnings(add_counts(d, cnt, count_time_col = flight))
+  res <- suppressWarnings(estimate_effort(d, by = day_type))
+  est <- res$estimates
+  wk <- est$day_type == "weekday"
+
+  expect_identical(est$se_basis[!wk], "between_day_upper_bound")
+  expect_true(is.na(est$se_within[!wk]))
+  expect_true(est$se_within[wk] > 0)
+  expect_false("within_day" %in% names(res$se_components))
+  # Every row's count-sampling component is its whole count-sampling SE: the
+  # day-to-day and within-day terms where both exist, se_between alone where
+  # the within-day term is inside it.
+  expect_equal(
+    res$se_components$count_sampling[wk],
+    sqrt(est$se_between[wk]^2 + est$se_within[wk]^2)
+  )
+  expect_equal(res$se_components$count_sampling[!wk], est$se_between[!wk])
+  expect_true(all(is.finite(est$se)))
 })
 
 test_that("a party-size expansion keeps the count-sampling SE beside it", {

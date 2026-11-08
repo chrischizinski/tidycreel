@@ -6427,10 +6427,13 @@ refuse_reserved_effort_names <- function(design, by_vars = NULL) {
 #' where a one-count section contributes a true 0 to the sum, and an `NA` there
 #' would turn a correct lake `se` into `NA`.
 #'
-#' A `within_day` SE component (aerial) is dropped, not set to `NA`, when no
-#' row identifies it: `NA` in `se_components` means unknown, which `print()`
-#' reports as making `se` unknown. The `count_sampling` component stays; it is
-#' the count-sampling SE and is known.
+#' An aerial result also lists `count_sampling` and `within_day` SE
+#' components. When any row is unidentified, the two are folded into one
+#' `count_sampling` component, `sqrt(count_sampling^2 + within_day^2)` per row,
+#' and `within_day` is removed: the whole count-sampling SE, as `se_between` is
+#' on those rows. Leaving `within_day` would show a 0 for a row that did not
+#' estimate it, and `NA` there means "unknown, so `se` is unknown" to
+#' `print()`. Folding keeps every part of `se` listed.
 #'
 #' @param result A `creel_estimates` object from an effort estimator.
 #' @return `result`, with `se_within` masked on unidentified rows.
@@ -6447,8 +6450,11 @@ mask_unidentified_se_split <- function(result) {
   }
   est$se_within[unidentified] <- NA_real_
   result$estimates <- est
-  if (all(unidentified) && "within_day" %in% names(result$se_components)) {
-    result$se_components$within_day <- NULL
+  comps <- result$se_components
+  if (all(c("count_sampling", "within_day") %in% names(comps))) {
+    comps$count_sampling <- sqrt(comps$count_sampling^2 + comps$within_day^2)
+    comps$within_day <- NULL
+    result$se_components <- comps
   }
   result
 }
