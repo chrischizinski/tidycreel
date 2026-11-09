@@ -1320,6 +1320,27 @@
 
 ### Bug fixes
 
+- `variance = "bootstrap"` no longer reports zero variance for a stratum
+  with one sampled day
+  ([\#613](https://github.com/chrischizinski/tidycreel/issues/613)). The
+  bootstrap resamples a stratum’s days with replacement, so with one day
+  every replicate drew that same day and the stratum contributed nothing
+  to the SE. Where other strata had two or more days, the result was a
+  finite SE that left the stratum out, and a grouped row for it read
+  `se = 0`. Where every stratum had one day, a grouped call returned
+  `se = NaN`. These designs now refuse with `creel_error_single_psu`, as
+  Taylor and the jackknife already did. A one-day stratum that is its
+  whole calendar and was counted twice is still estimated: its
+  day-to-day variance really is 0, and the within-day term carries it.
+
+  Such a fully sampled stratum also no longer inflates the other
+  strata’s bootstrap SE. The bootstrap scale uses the average number of
+  days per stratum, and a census stratum’s one day pulled that average
+  down: beside a stratum of three sampled days it doubled that stratum’s
+  bootstrap variance. The scale is now taken over the strata that are
+  not a census. This changes bootstrap SEs on designs that mix a census
+  stratum with sampled ones; Taylor and jackknife SEs are unchanged.
+
 - The jackknife and bootstrap errors for a stratum with one sampled day
   no longer suggest `variance = "taylor"`, which refuses the same design
   ([\#503](https://github.com/chrischizinski/tidycreel/issues/503)). One
