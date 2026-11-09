@@ -23,6 +23,13 @@ install that if you want the most current tidycreel.
 [NEWS](https://chrischizinski.com/tidycreel/dev/news/) lists what has
 changed since the last CRAN release.
 
+To hear about new releases by email, join the
+[tidycreel-announce](https://groups.google.com/g/tidycreel-announce)
+mailing list; no GitHub or Google account is needed, just send an email
+to <tidycreel-announce+subscribe@googlegroups.com>. It carries each CRAN
+release and a monthly digest of the development version, and only the
+maintainer posts.
+
 ## Installation
 
 ``` r

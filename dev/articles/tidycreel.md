@@ -452,3 +452,8 @@ access interviews, with weekday and weekend strata. From here:
   mark-recapture designs.
 - [`vignette("glossary")`](https://chrischizinski.com/tidycreel/dev/articles/glossary.md)
   defines the terms used throughout.
+
+To hear about new releases, join the
+[tidycreel-announce](https://groups.google.com/g/tidycreel-announce)
+mailing list, or send an email to
+<tidycreel-announce+subscribe@googlegroups.com>.
