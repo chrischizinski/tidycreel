@@ -450,4 +450,35 @@ test_that("#613: a one-day stratum that is its whole calendar, counted twice, is
   expect_gt(boot$se[we], 0)
   # Its SE is the within-day term alone under either method.
   expect_equal(boot$se[we], taylor$se[taylor$day_type == "weekend"])
+
+  # Nor may it change the other strata's bootstrap variance. Averaged into the
+  # PSUs per stratum, the census's one PSU shrank that count from 3 to 1.5 and
+  # doubled the weekday's bootstrap variance (ensemble review). With the same
+  # seed, the weekday's day-to-day SE must be what it is with no weekend at all.
+  weekday_only <- suppressWarnings(add_counts(
+    creel_design(cal[cal$day_type == "weekday", ], date = date, strata = day_type),
+    cnt[cnt$day_type == "weekday", ],
+    count_time_col = t
+  ))
+  set.seed(1)
+  alone <- suppressWarnings(estimate_effort(weekday_only, variance = "bootstrap"))$estimates
+  expect_equal(boot$se_between[!we], alone$se_between)
+})
+
+test_that("#613: a census stratum labelled with the empty string is not refused", {
+  # The census exemption is looked up per stratum; a name lookup never matches
+  # "", which refused a stratum Taylor and the jackknife estimate. Called on
+  # the survey design directly: an end-to-end effort estimate on a "" stratum
+  # fails earlier, in the within-day term (#614).
+  df <- data.frame(
+    strat = c("a", "a", "a", ""), day = c(1, 2, 3, 4),
+    y = c(10, 14, 9, 30), pop = c(5, 5, 5, 1)
+  )
+  svy <- survey::svydesign(ids = ~day, strata = ~strat, fpc = ~pop, data = df)
+  expect_null(refuse_single_psu_bootstrap(svy))
+
+  # The same stratum not fully sampled is refused.
+  df$pop[4] <- 2
+  svy <- survey::svydesign(ids = ~day, strata = ~strat, fpc = ~pop, data = df)
+  expect_error(refuse_single_psu_bootstrap(svy), class = "creel_error_single_psu")
 })

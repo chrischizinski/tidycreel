@@ -158,7 +158,9 @@ get_variance_design <- function(design, variance_method, call = rlang::caller_en
     design
   } else if (variance_method == "bootstrap") {
     refuse_single_psu_bootstrap(design, call = call)
-    if (has_uncorrected_strata(design)) {
+    # A census stratum must not enter the scale either (#613), so survey's own
+    # as.svrepdesign(), which averages over every stratum, is not used then.
+    if (has_uncorrected_strata(design) || has_census_strata(design)) {
       return(bootstrap_mixed_fpc(design, replicates = 500))
     }
     suppressWarnings(
@@ -248,7 +250,9 @@ refuse_single_psu_bootstrap <- function(design, call = rlang::caller_env()) {
   pop <- design$fpc$popsize
   if (!is.null(pop) && length(pop) > 0L) {
     pop_h <- tapply(pop[, 1], strata, `[`, 1L)
-    one <- one[!(is.finite(pop_h[one]) & pop_h[one] == 1)]
+    # By position: a stratum labelled "" is accepted, and `pop_h[""]` is NA.
+    pop_one <- pop_h[match(one, names(pop_h))]
+    one <- one[!(is.finite(pop_one) & pop_one == 1)]
   }
   if (length(one) == 0L) {
     return(invisible(NULL))
@@ -256,12 +260,15 @@ refuse_single_psu_bootstrap <- function(design, call = rlang::caller_env()) {
   labels <- gsub("\u001f", " / ", one, fixed = TRUE) # nolint: object_usage_linter
   cli::cli_abort(
     c(
-      "Strat{?um/a} {.val {labels}} {?has/have} only 1 PSU \u2014 bootstrap \
-       variance cannot be estimated.",
-      "x" = "Resampling one PSU draws the same one every time, so the \
-             bootstrap would report that stratum's variance as 0.",
-      "i" = "Increase the sampling rate, or combine sparse strata before \
-             estimation."
+      paste0(
+        "Strat{?um/a} {.val {labels}} {?has/have} only 1 PSU \u2014 ",
+        "bootstrap variance cannot be estimated."
+      ),
+      "x" = paste0(
+        "Resampling one PSU draws the same one every time, so the ",
+        "bootstrap would report that stratum's variance as 0."
+      ),
+      "i" = "Increase the sampling rate, or combine sparse strata before estimation."
     ),
     class = "creel_error_single_psu",
     call = call
@@ -280,16 +287,32 @@ has_uncorrected_strata <- function(design) {
   !is.null(pop) && any(pop[, 1] >= no_fpc_population) # nolint: object_usage_linter
 }
 
-#' Bootstrap replicates when only some strata take the FPC
+#' Does a design fully sample some strata (population = sample size)?
 #'
-#' Internal (GH #505). survey's Canty-Davison bootstrap resamples a stratum
+#' Internal (GH #613). Such a stratum has a between-day variance of exactly 0.
+#'
+#' @keywords internal
+#' @noRd
+has_census_strata <- function(design) {
+  pop <- design$fpc$popsize
+  !is.null(pop) && length(pop) > 0L &&
+    any(is.finite(pop[, 1]) & pop[, 1] == design$fpc$sampsize[, 1])
+}
+
+#' Bootstrap replicates when only some strata take the FPC, or some are a census
+#'
+#' Internal (GH #505, #613). survey's Canty-Davison bootstrap resamples a stratum
 #' either with a finite population (`fpc` given) or without one (`fpc = NULL`),
 #' but takes one choice for the whole design, and a population of
 #' `no_fpc_population` units cannot be built. Strata are resampled
 #' independently, so the two groups are drawn separately -- each with
 #' `survey::bootweights()`, exactly as `as.svrepdesign()` would draw it -- and
 #' their weights put back in row order. The scale is the one `bootweights()`
-#' computes, taken over all strata together.
+#' computes, taken over the strata that are not a census. A census stratum's
+#' replicates never vary, so it adds nothing to the variance, but averaged into
+#' the PSUs per stratum it shrank that count and inflated the scale: a census
+#' stratum of one day beside a stratum of three days doubled the latter's
+#' bootstrap variance (#613).
 #'
 #' @param design A `survey.design2` from get_effort_target_design().
 #' @param replicates Number of bootstrap replicates.
@@ -318,8 +341,10 @@ bootstrap_mixed_fpc <- function(design, replicates) {
     repweights[rows, ] <- as.matrix(r$repweights)
   }
 
-  ustrata <- strata[!duplicated(psu)]
-  psu_per_stratum <- 1 / mean(1 / table(ustrata))
+  census <- is.finite(pop) & pop == design$fpc$sampsize[, 1]
+  first <- !duplicated(paste(strata, psu, sep = "\r"))
+  ustrata <- strata[first & !census]
+  psu_per_stratum <- 1 / mean(1 / table(droplevels(as.factor(ustrata))))
   survey::svrepdesign(
     variables = design$variables,
     repweights = repweights,

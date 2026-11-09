@@ -959,6 +959,14 @@
   whole calendar and was counted twice is still estimated: its day-to-day
   variance really is 0, and the within-day term carries it.
 
+  Such a fully sampled stratum also no longer inflates the other strata's
+  bootstrap SE. The bootstrap scale uses the average number of days per
+  stratum, and a census stratum's one day pulled that average down: beside a
+  stratum of three sampled days it doubled that stratum's bootstrap variance.
+  The scale is now taken over the strata that are not a census. This changes
+  bootstrap SEs on designs that mix a census stratum with sampled ones;
+  Taylor and jackknife SEs are unchanged.
+
 * The jackknife and bootstrap errors for a stratum with one sampled day no
   longer suggest `variance = "taylor"`, which refuses the same design (#503).
   One sampled day gives no day-to-day variation to measure, under any method;
