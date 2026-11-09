@@ -157,6 +157,7 @@ get_variance_design <- function(design, variance_method, call = rlang::caller_en
   if (variance_method == "taylor" || is_census) {
     design
   } else if (variance_method == "bootstrap") {
+    refuse_single_psu_bootstrap(design, call = call)
     if (has_uncorrected_strata(design)) {
       return(bootstrap_mixed_fpc(design, replicates = 500))
     }
@@ -216,6 +217,55 @@ get_variance_design <- function(design, variance_method, call = rlang::caller_en
       }
     )
   }
+}
+
+#' Refuse a bootstrap where a stratum has one PSU and is not a census
+#'
+#' Internal (GH #613). The Canty-Davison bootstrap resamples `n_h` of a
+#' stratum's `n_h` PSUs, so with one PSU every replicate draws the same day:
+#' the stratum's replicate weights never vary and its variance comes out as 0.
+#' Mixed with strata of two or more PSUs the result is a finite SE that leaves
+#' that stratum out -- a grouped row read `se = 0` -- and with every stratum at
+#' one PSU the scale divides by `n - 1 = 0` and the SE is NaN. Taylor and the
+#' jackknife refuse the same design, so the bootstrap does too. A one-PSU
+#' stratum that is a census (N = n = 1) is not refused: its between-day
+#' variance is exactly 0 and the within-day term carries it (#505).
+#'
+#' @param design A `survey.design2`.
+#' @param call The frame the error is reported from.
+#' @return `invisible(NULL)`; aborts with class `creel_error_single_psu`.
+#' @keywords internal
+#' @noRd
+refuse_single_psu_bootstrap <- function(design, call = rlang::caller_env()) {
+  strata <- design$strata[, 1]
+  psu <- design$cluster[, 1]
+  first <- !duplicated(paste(strata, psu, sep = "\r"))
+  n_psu <- table(strata[first])
+  one <- names(n_psu)[n_psu == 1L]
+  if (length(one) == 0L) {
+    return(invisible(NULL))
+  }
+  pop <- design$fpc$popsize
+  if (!is.null(pop) && length(pop) > 0L) {
+    pop_h <- tapply(pop[, 1], strata, `[`, 1L)
+    one <- one[!(is.finite(pop_h[one]) & pop_h[one] == 1)]
+  }
+  if (length(one) == 0L) {
+    return(invisible(NULL))
+  }
+  labels <- gsub("\u001f", " / ", one, fixed = TRUE) # nolint: object_usage_linter
+  cli::cli_abort(
+    c(
+      "Strat{?um/a} {.val {labels}} {?has/have} only 1 PSU \u2014 bootstrap \
+       variance cannot be estimated.",
+      "x" = "Resampling one PSU draws the same one every time, so the \
+             bootstrap would report that stratum's variance as 0.",
+      "i" = "Increase the sampling rate, or combine sparse strata before \
+             estimation."
+    ),
+    class = "creel_error_single_psu",
+    call = call
+  )
 }
 
 #' Does a design leave some strata without a finite-population correction?

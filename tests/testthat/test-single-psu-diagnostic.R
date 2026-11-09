@@ -372,3 +372,82 @@ test_that("#503: a single-PSU error raised in a tryCatch() handler names a funct
     }
   }
 })
+
+# ---- #613: the bootstrap refuses a one-PSU stratum, as Taylor and the jackknife do
+
+# Weekday: 3 of 5 days sampled. Weekend: 1 of 2 days sampled, so one PSU in a
+# stratum that is not a census.
+make_one_psu_mixed_design <- function() {
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:6,
+    day_type = c(rep("weekday", 5), rep("weekend", 2))
+  )
+  cnt <- data.frame(
+    date = cal$date[c(1, 2, 3, 6)], day_type = cal$day_type[c(1, 2, 3, 6)],
+    count = c(10L, 14L, 9L, 30L), site = c("a", "b", "a", "b")
+  )
+  suppressWarnings(add_counts(creel_design(cal, date = date, strata = day_type), cnt))
+}
+
+test_that("#613: bootstrap refuses one one-PSU stratum among several instead of giving it zero variance", {
+  # The Canty-Davison bootstrap resamples n_h of n_h PSUs; with n_h = 1 every
+  # replicate draws the same day, so the stratum's variance came out as 0. The
+  # ungrouped SE silently left the weekend out, and `by = day_type` reported the
+  # weekend with se = 0 -- a zero that reads as "measured, no uncertainty".
+  d <- make_one_psu_mixed_design()
+  calls <- list(
+    function() estimate_effort(d, variance = "bootstrap", target = "sampled_days"),
+    function() estimate_effort(d, variance = "bootstrap", target = "sampled_days", by = day_type),
+    function() estimate_effort(d, variance = "bootstrap", target = "sampled_days", by = site)
+  )
+  for (f in calls) {
+    set.seed(1)
+    err <- expect_error(suppressWarnings(f()), class = "creel_error_single_psu")
+    msg <- cli::ansi_strip(conditionMessage(err))
+    expect_match(msg, "weekend", fixed = TRUE)
+    expect_match(msg, "combine sparse strata", fixed = TRUE)
+  }
+  # The other two methods refuse the same design; the bootstrap now agrees.
+  for (v in c("taylor", "jackknife")) {
+    expect_error(
+      suppressWarnings(estimate_effort(d, variance = v, target = "sampled_days", by = day_type)),
+      class = "creel_error_single_psu"
+    )
+  }
+})
+
+test_that("#613: grouped bootstrap on all one-PSU strata refuses instead of returning NaN", {
+  d <- make_repvar_design(1L)
+  set.seed(1)
+  expect_error(
+    suppressWarnings(estimate_effort(d, variance = "bootstrap", target = "sampled_days", by = day_type)),
+    class = "creel_error_single_psu"
+  )
+})
+
+test_that("#613: a one-day stratum that is its whole calendar, counted twice, is still estimated by bootstrap", {
+  # N = n = 1: the between-day variance is exactly 0 and the within-day term
+  # carries the stratum (#505). This one-PSU stratum is a census, not missing
+  # information, so the refusal must not reach it.
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:5,
+    day_type = c(rep("weekday", 5), "weekend")
+  )
+  cnt <- data.frame(
+    date = rep(cal$date[c(1, 2, 3, 6)], each = 2),
+    day_type = rep(cal$day_type[c(1, 2, 3, 6)], each = 2),
+    t = rep(1:2, 4), count = c(10, 14, 9, 12, 20, 16, 30, 26)
+  )
+  d <- suppressWarnings(add_counts(
+    creel_design(cal, date = date, strata = day_type), cnt,
+    count_time_col = t
+  ))
+  set.seed(1)
+  boot <- suppressWarnings(estimate_effort(d, variance = "bootstrap", by = day_type))$estimates
+  taylor <- suppressWarnings(estimate_effort(d, variance = "taylor", by = day_type))$estimates
+  we <- boot$day_type == "weekend"
+  expect_true(all(is.finite(boot$se)))
+  expect_gt(boot$se[we], 0)
+  # Its SE is the within-day term alone under either method.
+  expect_equal(boot$se[we], taylor$se[taylor$day_type == "weekend"])
+})
