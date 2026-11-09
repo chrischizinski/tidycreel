@@ -4309,7 +4309,9 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
     keep.names = FALSE
   ))
 
-  se_vec <- as.numeric(se_by_group[as.character(totals[[group_col]])])
+  # By position: `x[""]` is NA, and a party-size group may be labelled ""
+  # (GH #614).
+  se_vec <- as.numeric(se_by_group[match(as.character(totals[[group_col]]), names(se_by_group))])
 
   # NA standard errors propagate deliberately: a multiplier whose uncertainty
   # could not be estimated yields an unknown total SE, not a smaller one.
@@ -4347,10 +4349,13 @@ compute_expansion_var_contribution <- function(design, svy_design, by_vars = NUL
   out <- vapply(split(contrib, group_keys), sum, numeric(1L))
   # Keyed exactly like `out`, so every call site that subsets the scalar
   # component by part key can subset the decomposition with the same keys.
-  attr(out, "decomposition") <- lapply(
+  # By position, not `[names(out)]`: a list indexed by the name "" returns
+  # NULL (GH #614).
+  decomposition <- lapply(
     split(seq_along(per_group), group_keys),
     function(i) stats::setNames(per_group[i], group_labels[i])
-  )[names(out)]
+  )
+  attr(out, "decomposition") <- decomposition[match(names(out), names(decomposition))]
   out
 }
 
@@ -5601,6 +5606,14 @@ compute_within_day_var_contribution <- function(
   # the correction is: within a `by` group, a stratum whose one-count day falls
   # in another group still takes no correction.
   identified <- vapply(split(combined$k_d >= 2L, combined$.strata_key), all, logical(1))
+  # Every lookup by stratum or group key below goes by position: R never
+  # matches an empty name, so `x[[""]]` aborts, `x[""]` is NA and
+  # `x[""] <- v` appends a new element instead of filling the existing one
+  # (GH #614). `""` is a legal stratum label everywhere else.
+  stratum_rule <- function(sk) identified[[match(sk, names(identified))]]
+  stratum_days <- function(sk) {
+    as.integer(available_by_strata[match(sk, names(available_by_strata))])
+  }
 
   # Determine grouping: by_vars or strata alone. Each stratum (within each
   # group) is first resolved to the grain being reported -- one row per sampled
@@ -5612,13 +5625,13 @@ compute_within_day_var_contribution <- function(
     strata_keys <- unique(combined$.strata_key)
     v_within_total <- 0
     for (sk in strata_keys) {
-      if (!identified[[sk]]) next
+      if (!stratum_rule(sk)) next
       v_within_total <- v_within_total + within_day_stratum_var(
         combined[combined$.strata_key == sk, , drop = FALSE],
         design = design,
         key_cols = key_cols,
         grain_cols = grain_cols,
-        n_avail = as.integer(available_by_strata[sk]),
+        n_avail = stratum_days(sk),
         target = target
       )
     }
@@ -5634,21 +5647,21 @@ compute_within_day_var_contribution <- function(
       numeric(length(group_keys)),
       group_keys
     )
-    for (gk in group_keys) {
-      g_data <- combined[combined$.group_key == gk, , drop = FALSE]
+    for (i in seq_along(group_keys)) {
+      g_data <- combined[combined$.group_key == group_keys[[i]], , drop = FALSE]
       v_g <- 0
       for (sk in unique(g_data$.strata_key)) {
-        if (!identified[[sk]]) next
+        if (!stratum_rule(sk)) next
         v_g <- v_g + within_day_stratum_var(
           g_data[g_data$.strata_key == sk, , drop = FALSE],
           design = design,
           key_cols = key_cols,
           grain_cols = grain_cols,
-          n_avail = as.integer(available_by_strata[sk]),
+          n_avail = stratum_days(sk),
           target = target
         )
       }
-      v_within_by_group[gk] <- v_g
+      v_within_by_group[[i]] <- v_g
     }
     v_within_by_group
   }
@@ -7356,7 +7369,7 @@ estimate_effort_grouped <- function(
 
   # Match within-day variance to svyby row order
   if (length(var_within_named) >= 1 && !is.null(names(var_within_named))) {
-    var_within_vec <- as.numeric(var_within_named[result_group_keys])
+    var_within_vec <- as.numeric(var_within_named[match(result_group_keys, names(var_within_named))])
     # Testing the KEY, not the value, exactly as the expansion branch below
     # does. An absent key means the group has no sampled unit carrying a
     # within-day component, so zero. A present key holding NA would mean the
@@ -7376,7 +7389,7 @@ estimate_effort_grouped <- function(
     se_expansion <- NULL
     expansion_decomposition <- NULL
   } else {
-    var_expansion_vec <- as.numeric(var_expansion_named[result_group_keys])
+    var_expansion_vec <- as.numeric(var_expansion_named[match(result_group_keys, names(var_expansion_named))])
     # An absent key means the group contributed no expanded boats, so zero. A
     # present key holding NA means the multiplier's uncertainty is unknown and
     # must stay NA. Testing the key, not the value, keeps the two apart.
@@ -7390,7 +7403,7 @@ estimate_effort_grouped <- function(
     expansion_decomposition <- lapply(
       seq_along(result_group_keys),
       function(i) {
-        if (absent[[i]]) numeric(0) else decomp_named[[result_group_keys[[i]]]]
+        if (absent[[i]]) numeric(0) else decomp_named[[match(result_group_keys[[i]], names(decomp_named))]]
       }
     )
   }

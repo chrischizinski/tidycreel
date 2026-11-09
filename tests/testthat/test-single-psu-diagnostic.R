@@ -467,9 +467,9 @@ test_that("#613: a one-day stratum that is its whole calendar, counted twice, is
 
 test_that("#613: a census stratum labelled with the empty string is not refused", {
   # The census exemption is looked up per stratum; a name lookup never matches
-  # "", which refused a stratum Taylor and the jackknife estimate. Called on
-  # the survey design directly: an end-to-end effort estimate on a "" stratum
-  # fails earlier, in the within-day term (#614).
+  # "", which refused a stratum Taylor and the jackknife estimate. Checked on
+  # the survey design directly, then end to end below now that the within-day
+  # term also reaches a "" stratum (#614).
   df <- data.frame(
     strat = c("a", "a", "a", ""), day = c(1, 2, 3, 4),
     y = c(10, 14, 9, 30), pop = c(5, 5, 5, 1)
@@ -481,4 +481,21 @@ test_that("#613: a census stratum labelled with the empty string is not refused"
   df$pop[4] <- 2
   svy <- survey::svydesign(ids = ~day, strata = ~strat, fpc = ~pop, data = df)
   expect_error(refuse_single_psu_bootstrap(svy), class = "creel_error_single_psu")
+
+  # End to end: a "" stratum that is its whole calendar (one day) and was
+  # counted twice is a census, and the bootstrap estimates it.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:5, day_type = c(rep("weekday", 5), ""))
+  cnt <- data.frame(
+    date = rep(cal$date[c(1, 2, 3, 6)], each = 2),
+    day_type = rep(cal$day_type[c(1, 2, 3, 6)], each = 2),
+    t = rep(1:2, 4), count = c(10, 14, 9, 12, 20, 16, 30, 26)
+  )
+  design <- suppressWarnings(suppressMessages(
+    add_counts(creel_design(cal, date = date, strata = day_type), cnt, count_time_col = t)
+  ))
+  set.seed(613)
+  est <- suppressWarnings(suppressMessages(
+    estimate_effort(design, target = "period_total", variance = "bootstrap")
+  ))$estimates
+  expect_true(is.finite(est$se))
 })

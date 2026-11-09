@@ -1331,3 +1331,36 @@ test_that("camera effort refuses a counts column named .fpc_days (#507)", {
     class = "creel_error_reserved_column"
   )
 })
+
+test_that("CEST-30: a stratum labelled \"\" keeps its within-day term (GH #614)", {
+  # The ratio path reads each stratum's within-day variance back by name, and
+  # R never matches the empty name, so a "" stratum's term was NA and the
+  # estimate's SE unknown although every count was there. Renaming the label
+  # must not move a number.
+  relabel <- function(df, to) {
+    df$day_type[df$day_type == "weekend"] <- to
+    df
+  }
+  camera_run <- function(label) {
+    cal <- relabel(data.frame(
+      date = as.Date(c("2024-06-03", "2024-06-04", "2024-06-05", "2024-06-08", "2024-06-09")),
+      day_type = c("weekday", "weekday", "weekday", "weekend", "weekend")
+    ), label)
+    design <- suppressWarnings(creel_design(
+      cal,
+      date = date, strata = day_type, # nolint
+      survey_type = "camera", camera_mode = "counter"
+    ))
+    design <- suppressWarnings(add_counts(
+      design, relabel(make_subdaily_counts(30), label),
+      count_time_col = count_time # nolint
+    ))
+    est <- suppressWarnings(
+      est_effort_camera(design, interviews = relabel(make_interviews(), label))
+    )$estimates
+    unlist(est[c("estimate", "se", "se_within")])
+  }
+  blank <- camera_run("")
+  expect_equal(blank, camera_run("weekend"))
+  expect_false(anyNA(blank))
+})

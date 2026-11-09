@@ -169,3 +169,68 @@ test_that("grouping by a unit_cols column returns per-group within-day variance"
   expect_identical(est$se_within[est$gear == "bank"], 0)
   expect_gt(est$se_within[est$gear == "boat"], 0)
 })
+
+# A stratum's label is a key, not data: renaming it must not move a number
+# (GH #614). The within-day term looked each stratum up by name, and R never
+# matches the empty name -- `x[[""]]` aborts, `x[""]` is NA, and `x[""] <- v`
+# appends a second "" element instead of filling the first, which would leave
+# that group's within-day variance at the zero it was initialised with.
+# "" is a legal stratum label everywhere else in the package.
+empty_label_design <- function(label) {
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:5,
+    day_type = c(rep("weekday", 5), label)
+  )
+  cnt <- data.frame(
+    date = rep(cal$date[c(1, 2, 3, 6)], each = 2),
+    day_type = rep(cal$day_type[c(1, 2, 3, 6)], each = 2),
+    t = rep(1:2, 4),
+    count = c(10, 14, 9, 12, 20, 16, 30, 26)
+  )
+  suppressWarnings(suppressMessages(
+    add_counts(creel_design(cal, date = date, strata = day_type), cnt, count_time_col = t)
+  ))
+}
+
+empty_label_effort <- function(design, target, variance, grouped) {
+  set.seed(614)
+  est <- suppressWarnings(suppressMessages(
+    if (grouped) {
+      estimate_effort(design, target = target, variance = variance, by = day_type)
+    } else {
+      estimate_effort(design, target = target, variance = variance)
+    }
+  ))$estimates
+  est <- as.data.frame(est)
+  # Compare by label, not row position: "" sorts first and "weekend" last.
+  if (grouped) {
+    est$day_type[est$day_type == "weekend"] <- ""
+    est <- est[order(est$day_type), , drop = FALSE]
+  }
+  cols <- intersect(c("day_type", "estimate", "se", "se_between", "se_within"), names(est))
+  `rownames<-`(est[cols], NULL)
+}
+
+test_that("a stratum labelled \"\" gets the effort and SEs it gets under any other label", {
+  blank <- empty_label_design("")
+  named <- empty_label_design("weekend")
+  for (target in c("sampled_days", "period_total")) {
+    for (variance in c("taylor", "jackknife", "bootstrap")) {
+      for (grouped in c(FALSE, TRUE)) {
+        expect_equal(
+          empty_label_effort(blank, target, variance, grouped),
+          empty_label_effort(named, target, variance, grouped),
+          info = paste(target, variance, if (grouped) "by day_type" else "pooled")
+        )
+      }
+    }
+  }
+})
+
+test_that("the \"\" group's within-day term is filled, not left at its initial zero", {
+  # The grouped producer assigned each group's term by name. With "" that
+  # appended a duplicate and the consumer read the untouched 0 -- a confident
+  # zero for a component that was measured (GH #614, #317).
+  est <- empty_label_effort(empty_label_design(""), "sampled_days", "taylor", grouped = TRUE)
+  expect_gt(est$se_within[est$day_type == ""], 0)
+})
