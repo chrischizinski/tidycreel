@@ -1,0 +1,44 @@
+# Monthly reminder to write the development-version blog post and send the
+# [dev] email to tidycreel-announce. Opens one issue on the 1st of each month,
+# unless that month's issue is already open. The process is in CONTRIBUTING.md
+# under "Releases".
+name: dev-post-reminder
+
+on:
+  schedule:
+    - cron: "0 14 1 * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Open this month's reminder issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          month=$(date -u +"%B %Y")
+          title="Monthly dev update: $month"
+          num=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" \
+            --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)
+          if [ -n "$num" ]; then
+            echo "#$num is already open; nothing to do."
+            exit 0
+          fi
+          {
+            echo "Time for the $month development update."
+            echo
+            echo "- [ ] Draft the post from the development section of NEWS.md (entries since the last update): what changes users' numbers, and why"
+            echo "- [ ] Edit, set \`draft: false\`, push the website's \`master\` (that deploys)"
+            echo "- [ ] Check the post loads and appears in https://chrischizinski.com/blog-tidycreel.xml"
+            echo "- [ ] Email \`[dev] tidycreel development update, $month\` to tidycreel-announce@googlegroups.com: three to five lines and the post link"
+            echo "- [ ] Close this issue"
+            echo
+            echo "If a CRAN release goes out this month, its \`[CRAN]\` email (CONTRIBUTING.md, release step 6) can cover the same ground; close this issue with a note instead."
+          } > body.md
+          gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body-file body.md --label documentation

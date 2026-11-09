@@ -270,6 +270,10 @@ Monday. If any platform is not OK, or CRAN has set a deadline, it opens an
 issue titled "CRAN checks are not all OK", or updates the one already open.
 Close the issue once CRAN shows OK.
 
+`.github/workflows/dev-post-reminder.yaml` opens an issue titled "Monthly dev
+update: <month>" on the 1st of each month, with the checklist for the
+development blog post and the `[dev]` email. Close it once both are out.
+
 ## Recognition
 
 Contributors are recognized in:
