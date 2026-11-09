@@ -33,8 +33,13 @@ navbar:
   type: dark
   structure:
     left: [intro, reference, articles, news]
-    right: [book, github]
+    right: [updates, book, github]
   components:
+    updates:
+      text: Get updates
+      icon: fa-envelope
+      href: https://groups.google.com/g/tidycreel-announce
+      aria-label: "Join the tidycreel-announce mailing list"
     book:
       text: Book
       icon: fa-book
