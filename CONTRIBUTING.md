@@ -260,6 +260,10 @@ and they refuse when something a person has to do is undone.
      released NEWS entries moved out of the development section, the version
      set to `9.0.0.9000`, and `CITATION.cff` and `CRAN-SUBMISSION` updated.
    - Review that branch and open its PR.
+6. Email the release to <tidycreel-announce@googlegroups.com>, subject
+   `[CRAN] tidycreel 9.0.0`, with the NEWS section as the body. Say whether
+   any estimate changes. Development digests go to the same list monthly,
+   subject `[dev] ...`.
 
 `.github/workflows/cran-checks.yaml` reads CRAN's own check results every
 Monday. If any platform is not OK, or CRAN has set a deadline, it opens an
