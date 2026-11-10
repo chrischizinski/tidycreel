@@ -3857,6 +3857,11 @@ add_sections <- function(
 #' - Design column presence (date_col exists in interview data)
 #' - No NA values in date column
 #' - Interview dates exist in design calendar
+#' - Interview dates fall on days the calendar marks as worked, when it marks
+#'   them (a `p_period`, `period_id` or `sampled` column, as
+#'   `generate_schedule(include_all = TRUE)` writes): an interview on a day the
+#'   schedule did not draw is refused with class
+#'   `creel_error_interview_unsampled_day`
 #' - Catch and effort columns exist and are numeric
 #' - Harvest column exists and is numeric (if provided)
 #' - Harvest <= catch consistency (if harvest provided)
@@ -4277,6 +4282,8 @@ add_interviews <- function(
   check_records_against_calendar(interviews, design, date_col, "interview") # GH #449
   if (!is.null(design$night)) {
     check_night_records_worked(interviews, design, date_col, "interview") # nolint: object_usage_linter
+  } else {
+    check_day_records_worked(interviews, design, date_col, "interview") # nolint: object_usage_linter
   }
 
   # Validate trip metadata

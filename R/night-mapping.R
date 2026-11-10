@@ -294,6 +294,48 @@ check_night_records_worked <- function(records, design, date_col, what, call = r
   invisible(NULL)
 }
 
+#' Refuse interviews dated on a day the schedule did not sample (day designs)
+#'
+#' Internal (GH #454). The day-design twin of [check_night_records_worked()].
+#' A calendar that records which days were worked (`p_period`, `period_id` or
+#' `sampled`, as `generate_schedule(include_all = TRUE)` writes it) says which
+#' days were drawn. An interview on any other day was not selected by the
+#' design, yet it joined its stratum and entered the rate and every total
+#' built on it with no message. Counts on such days were already refused. The
+#' interviews are the user's to resolve -- drop them or correct their dates --
+#' so they are refused, never dropped. A calendar with none of those columns
+#' marks no day as unsampled and is not checked.
+#'
+#' @keywords internal
+#' @noRd
+check_day_records_worked <- function(records, design, date_col, what, call = rlang::caller_env()) {
+  cal <- design$calendar
+  worked <- calendar_worked_rows(cal)
+  if (is.null(worked)) {
+    return(invisible(NULL))
+  }
+  rec_day <- format(records[[date_col]])
+  sampled <- rec_day %in% format(cal[[design$date_col]][worked])
+  if (!all(sampled)) {
+    bad <- sort(unique(rec_day[!sampled]))
+    shown <- utils::head(bad, 10L) # nolint: object_usage_linter
+    n_rec <- sum(!sampled) # nolint: object_usage_linter
+    more <- if (length(bad) > 10L) ", ..." else "" # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{n_rec} {what}{cli::qty(n_rec)}{?s} {?is/are} dated on {length(bad)} \
+         day{?s} the schedule did not sample: {.val {shown}}{more}.",
+        "x" = "The calendar marks which days were worked, and these were not drawn.",
+        "i" = "Correct the dates, or drop these {what}s before attaching them: an {what} \
+               the design did not select cannot be weighted with the ones it did."
+      ),
+      class = c("creel_error_interview_unsampled_day", "creel_error"),
+      call = call
+    )
+  }
+  invisible(NULL)
+}
+
 #' Real elapsed hours of each calendar shift on a night design
 #'
 #' Internal (GH #407). `shift_hours`, where the schedule carries it, is the
