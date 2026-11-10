@@ -190,7 +190,8 @@ test_that("grouped species estimate returns expected species totals", {
   caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
   reported <- tapply(caught[[d$catch_count_col]], caught[[d$catch_species_col]], sum)
   # Before #310 these were the measured counts: walleye 13, bass 13, panfish 11.
-  expect_equal(as.numeric(reported[["walleye"]]), 33)
+  # 33 until #569 gave every example interview catch rows.
+  expect_equal(as.numeric(reported[["walleye"]]), 36)
 })
 
 test_that("grouped output includes by variable and keeps percent near 100 within group", {
@@ -912,16 +913,18 @@ test_that("EST-LD-30 (#317): the reported total derives per species-interview pa
   totals <- stats::setNames(round(got$x, 6), key)
 
   # Reported catch per species x gear under the per-pair rule. The old
-  # per-table rule counted only the "caught" rows and returned
-  # panfish/bank 7, walleye/bank 18, bass/boat 5, walleye/boat 15 -- so these
+  # per-table rule counted only the "caught" rows and returns
+  # panfish/bank 15, walleye/bank 21, bass/boat 5, walleye/boat 15 -- so these
   # values fail against it, which is what makes the test discriminating.
-  expect_equal(totals[["panfish bank"]], 10)
-  expect_equal(totals[["walleye bank"]], 28)
-  expect_equal(totals[["bass boat"]], 18)
-  expect_equal(totals[["walleye boat"]], 27)
+  # (Values moved when #569 gave every example interview catch rows.)
+  expect_equal(totals[["panfish bank"]], 19)
+  expect_equal(totals[["walleye bank"]], 33)
+  expect_equal(totals[["bass boat"]], 22)
+  expect_equal(totals[["walleye boat"]], 33)
 
-  # And the gear parts still sum to the species whole (#319 pinned 55 / 25 / 13).
-  expect_equal(totals[["walleye bank"]] + totals[["walleye boat"]], 55)
+  # And the gear parts still sum to the species whole (#319 pinned 55 before
+  # #569 added catch rows for ten interviews).
+  expect_equal(totals[["walleye bank"]] + totals[["walleye boat"]], 66)
 })
 
 test_that("EST-LD-31 (#317): refuses per group, not per species", {

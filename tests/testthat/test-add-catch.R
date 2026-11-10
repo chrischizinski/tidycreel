@@ -620,15 +620,16 @@ test_that("an unknown harvest no longer reads as a genuine zero (CATCH-07)", {
     as.data.frame(res)$mean_rate[[1]]
   }
 
-  # The known count is what the pair actually recorded.
-  expect_equal(rate_for(5L), 0.2332251, tolerance = 1e-6)
+  # The known count is what the pair actually recorded. (0.2332251 and 0.16829
+  # below until #569 gave every example interview catch rows.)
+  expect_equal(rate_for(5L), 0.2622655, tolerance = 1e-6)
 
   # A GENUINE zero still reads as a zero -- the documented behaviour, and the
   # thing the refusal must not break.
-  expect_equal(rate_for(0L), 0.16829, tolerance = 1e-5)
+  expect_equal(rate_for(0L), 0.1973304, tolerance = 1e-6)
 
   # An UNKNOWN count is refused rather than quietly reported as that same
-  # 0.16829. This is the assertion that fails against the old code, where the
+  # 0.1973304. This is the assertion that fails against the old code, where the
   # two were indistinguishable.
   cd_na <- example_catch
   cd_na$count[target(cd_na)] <- NA_integer_

@@ -9,7 +9,7 @@
 #       sum(count) == catch_total for that interview
 #   - sum(count[catch_type == "harvested"]) per interview == catch_kept
 #   - Species: "walleye", "bass", "panfish"
-#   - At least 10 of 22 interviews have catch rows
+#   - Every interview has catch rows: all 22 caught at least one fish (#569)
 #   - At least one interview has all three catch_types for the same species
 #   - At least several with only "harvested", one or two with only "released"
 #   - At least one with "caught" + "harvested" + "released"
@@ -147,6 +147,82 @@ example_catch <- data.frame(
   stringsAsFactors = FALSE
 )
 
+# The ten interviews below were added for #569. Until then example_catch covered
+# only 12 of the 22 interviews, and add_catch() reads an interview with no catch
+# rows as one that caught nothing -- so species results on the shipped data
+# counted those ten parties as catching nothing while catch_total counted their
+# fish (catch rate 0.73 from this table against 0.97 from catch_total). Every
+# interview in example_interviews caught at least one fish, so every interview
+# has rows here. The splits are hand-set and satisfy the same identities as the
+# rows above: caught rows sum to catch_total, harvested rows to catch_kept.
+example_catch_569 <- data.frame(
+  interview_id = c(
+    # Interview 3: catch_total=2, catch_kept=1 -- bass harv=1, rel=1
+    3L, 3L,
+    # Interview 4: catch_total=3, catch_kept=2 -- walleye caught=3, harv=2, rel=1
+    4L, 4L, 4L,
+    # Interview 7: catch_total=1, catch_kept=0 -- panfish released only
+    7L,
+    # Interview 10: catch_total=3, catch_kept=1 -- panfish caught=3, harv=1, rel=2
+    10L, 10L, 10L,
+    # Interview 15: catch_total=5, catch_kept=3
+    # walleye harv=2, rel=1; panfish harv=1, rel=1
+    15L, 15L, 15L, 15L,
+    # Interview 16: catch_total=2, catch_kept=1 -- walleye harv=1, rel=1
+    16L, 16L,
+    # Interview 17: catch_total=6, catch_kept=4 -- bass caught=6, harv=4, rel=2
+    17L, 17L, 17L,
+    # Interview 18: catch_total=4, catch_kept=2
+    # walleye harv=1, rel=1; bass harv=1, rel=1
+    18L, 18L, 18L, 18L,
+    # Interview 19: catch_total=5, catch_kept=3 -- panfish caught=5, harv=3, rel=2
+    19L, 19L, 19L,
+    # Interview 21: catch_total=3, catch_kept=1 -- walleye harv=1; bass rel=2
+    21L, 21L
+  ),
+  species = c(
+    "bass", "bass",
+    "walleye", "walleye", "walleye",
+    "panfish",
+    "panfish", "panfish", "panfish",
+    "walleye", "walleye", "panfish", "panfish",
+    "walleye", "walleye",
+    "bass", "bass", "bass",
+    "walleye", "walleye", "bass", "bass",
+    "panfish", "panfish", "panfish",
+    "walleye", "bass"
+  ),
+  count = c(
+    1L, 1L,
+    3L, 2L, 1L,
+    1L,
+    3L, 1L, 2L,
+    2L, 1L, 1L, 1L,
+    1L, 1L,
+    6L, 4L, 2L,
+    1L, 1L, 1L, 1L,
+    5L, 3L, 2L,
+    1L, 2L
+  ),
+  catch_type = c(
+    "harvested", "released",
+    "caught", "harvested", "released",
+    "released",
+    "caught", "harvested", "released",
+    "harvested", "released", "harvested", "released",
+    "harvested", "released",
+    "caught", "harvested", "released",
+    "harvested", "released", "harvested", "released",
+    "caught", "harvested", "released",
+    "harvested", "released"
+  ),
+  stringsAsFactors = FALSE
+)
+example_catch <- rbind(example_catch, example_catch_569)
+example_catch <- example_catch[order(example_catch$interview_id, seq_len(nrow(example_catch))), ]
+rownames(example_catch) <- NULL
+rm(example_catch_569)
+
 # Quality checks
 stopifnot(all(example_catch$catch_type %in% c("caught", "harvested", "released")))
 stopifnot(all(example_catch$interview_id %in% 1L:22L))
@@ -172,6 +248,9 @@ for (iid in interviews_with_caught) {
     ))
   }
 }
+
+# Every interview caught fish, so every interview must have catch rows (#569)
+stopifnot(setequal(unique(example_catch$interview_id), example_interviews$interview_id))
 
 # Verify harvested totals match catch_kept in example_interviews
 interviews_with_data <- unique(example_catch$interview_id)

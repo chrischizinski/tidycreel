@@ -986,6 +986,15 @@
   estimate was wrong. Only the routes that perform the join refuse; elsewhere
   such a column is an ordinary extra column.
 
+* `example_catch` now has species rows for all 22 interviews in
+  `example_interviews`, not 12 (#569). `add_catch()` reads an interview with no
+  catch rows as one that caught nothing, so species results on the shipped data
+  counted ten parties as fishless while `catch_total` counted their fish: on the
+  example design the species totals summed to 1,525 fish against an overall
+  total of 1,955. The two tables now agree interview by interview, and species
+  rates and totals sum to the overall ones. Example and vignette numbers that
+  use `example_catch` change accordingly; no estimator changed.
+
 * `variance = "bootstrap"` no longer reports zero variance for a stratum with
   one sampled day (#613). The bootstrap resamples a stratum's days with
   replacement, so with one day every replicate drew that same day and the
