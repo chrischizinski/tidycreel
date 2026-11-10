@@ -3256,8 +3256,8 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
         "catch estimator to multiply it by."
       ),
       "i" = paste(
-        "A total from this function would multiply a rate per angler-hour by a",
-        "count of arrivals and report the product as fish."
+        "A total from this function would multiply a catch rate per hour of",
+        "effort by a count of arrivals and report the product as fish."
       )
     )
   }
