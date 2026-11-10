@@ -7459,7 +7459,7 @@ estimate_effort_grouped <- function(
   # keys avoids both that and the merge, which could reorder the rows the
   # estimates are already aligned to.
   n_by_key <- table(group_key(counts_data, by_vars))
-  group_n <- as.integer(n_by_key[result_group_keys])
+  group_n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
   # A group svyby reported but the counts do not contain has no sampled units,
   # which is a count of zero rather than an unknown one.
   group_n[is.na(group_n)] <- 0L
@@ -7787,7 +7787,7 @@ estimate_cpue_grouped <- function(
   # rows the estimates are already aligned to.
   result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
   n_by_key <- table(group_key(interviews_data, by_vars))
-  group_n <- as.integer(n_by_key[result_group_keys])
+  group_n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
   # Testing the KEY, not the value, exactly as the variance components do. An
   # absent key means svyby reported a group the interviews do not contain, so
   # it has no sampled units -- a count of zero rather than an unknown one.
@@ -9118,7 +9118,7 @@ estimate_harvest_grouped <- function(
   # rows the estimates are already aligned to.
   result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
   n_by_key <- table(group_key(interviews_data, by_vars))
-  group_n <- as.integer(n_by_key[result_group_keys])
+  group_n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
   # Testing the KEY, not the value, exactly as the variance components do. An
   # absent key means svyby reported a group the interviews do not contain, so
   # it has no sampled units -- a count of zero rather than an unknown one.

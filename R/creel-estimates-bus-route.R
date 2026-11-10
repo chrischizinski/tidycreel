@@ -217,7 +217,7 @@ estimate_effort_br <- function(
     # preserve the row order the estimates are already aligned to.
     result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
     n_by_key <- table(group_key(interviews, by_vars))
-    group_n <- as.integer(n_by_key[result_group_keys])
+    group_n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
     # Testing the KEY, not the value. An absent key means svyby reported a
     # group the interviews do not contain, so it has no sampled units -- a
     # count of zero rather than an unknown one.
@@ -634,7 +634,7 @@ br_harvest_rate_estimates <- function(
   # A catch rate is bounded below by zero; the symmetric Wald bound is not.
   estimates_df$ci_lower <- pmax(0, svy_result[["ci_l"]])
   estimates_df$ci_upper <- svy_result[["ci_u"]]
-  estimates_df$n <- as.integer(n_by_key[result_group_keys])
+  estimates_df$n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
   # Testing the KEY, not the value. An absent key means svyby reported a group
   # the interviews do not contain, so it has no sampled units -- a count of
   # zero rather than an unknown one.
@@ -2061,7 +2061,7 @@ br_build_estimates <- function(
     # preserve the row order the estimates are already aligned to.
     result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
     n_by_key <- table(group_key(interviews, by_vars))
-    group_n <- as.integer(n_by_key[result_group_keys])
+    group_n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
     # Testing the KEY, not the value. An absent key means svyby reported a
     # group the interviews do not contain, so it has no sampled units -- a
     # count of zero rather than an unknown one.

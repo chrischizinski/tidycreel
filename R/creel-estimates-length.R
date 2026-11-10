@@ -1144,10 +1144,13 @@ est_mean_length <- function(ld, conf_level = NULL) {
 #' @noRd
 bin_vcov_for <- function(ld, rows, key) {
   mats <- attr(ld, "bin_vcov")
-  if (is.null(mats) || is.null(mats[[key]])) {
+  # By position: R never matches the empty name, so `mats[[""]]` is NULL and a
+  # group labelled "" lost its covariance (GH #618).
+  idx <- match(key, names(mats))
+  if (is.null(mats) || is.na(idx) || is.null(mats[[idx]])) {
     return(NULL)
   }
-  m <- mats[[key]]
+  m <- mats[[idx]]
   labs <- as.character(rows$length_bin)
   if (anyNA(labs) || !all(labs %in% rownames(m))) {
     return(NULL)
