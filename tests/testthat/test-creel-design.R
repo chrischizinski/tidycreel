@@ -2032,3 +2032,45 @@ test_that("compute_angler_effort() honours the same n_anglers contract (GH audit
   expect_equal(compute_angler_effort(df, hours, party)$.angler_effort, c(2, 12))
   expect_error(compute_angler_effort(df, hours, 0), "positive party size")
 })
+
+test_that("#471: a variable holding a party size is a party size, not a column position", {
+  # The literal fix above left variables behind: `n <- 2; n_anglers = n`
+  # reached tidyselect and selected column 2. In example_interviews that is
+  # hours_fished, so angler-hours silently became hours squared -- 161.25 in
+  # total against 113 for a party of two -- with no warning.
+  data(example_interviews, envir = environment())
+  base <- make_na_base()
+  attach_with <- function(na) {
+    suppressMessages(suppressWarnings(add_interviews(
+      base, example_interviews,
+      catch = catch_total, effort = hours_fished, n_anglers = !!na, # nolint: object_usage_linter
+      trip_status = trip_status # nolint: object_usage_linter
+    )))
+  }
+  n <- 2
+  d <- attach_with(rlang::quo(n))
+  expect_equal(d$interviews[[".angler_effort"]], example_interviews$hours_fished * 2)
+
+  # A variable holding a column NAME is that column, as is all_of().
+  nm <- "n_anglers"
+  by_col <- example_interviews$hours_fished * example_interviews$n_anglers
+  expect_equal(attach_with(rlang::quo(nm))$interviews[[".angler_effort"]], by_col)
+  expect_equal(
+    attach_with(rlang::quo(tidyselect::all_of(nm)))$interviews[[".angler_effort"]], by_col
+  )
+  # A column wins over a variable of the same name (data masking).
+  n_anglers <- 5 # nolint: object_usage_linter
+  expect_equal(attach_with(rlang::quo(n_anglers))$interviews[[".angler_effort"]], by_col)
+
+  # Several numbers are refused, not read as several column positions.
+  v <- c(1, 2)
+  expect_error(attach_with(rlang::quo(v)), class = "creel_error_invalid_input")
+})
+
+test_that("#471: compute_angler_effort() reads a variable as a party size too", {
+  df <- data.frame(hours = c(2, 4), party = c(1, 3), decoy = c(9, 9))
+  m <- 3
+  expect_equal(compute_angler_effort(df, hours, m)$.angler_effort, c(6, 12))
+  col <- "party"
+  expect_equal(compute_angler_effort(df, hours, col)$.angler_effort, c(2, 12))
+})

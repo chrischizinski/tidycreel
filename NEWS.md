@@ -948,6 +948,14 @@
 
 ## Bug fixes
 
+* `add_interviews()` and `compute_angler_effort()` now read a variable holding
+  a number as a party size (#471). A written-out `n_anglers = 2` already was,
+  but `n <- 2; n_anglers = n` reached tidyselect, which read the 2 as a column
+  position. On `example_interviews` column 2 is `hours_fished`, so angler-hours
+  silently became hours squared: 161.25 in total against 113 for parties of
+  two. A variable holding a column name selects that column, a column still
+  wins over a variable of the same name, and several numbers are refused.
+
 * Effort estimates no longer fail, or lose a variance component, when a
   stratum, a `by` group or a party-size group is labelled `""` (#614). The
   within-day and party-size terms looked each group up by name, and R never
