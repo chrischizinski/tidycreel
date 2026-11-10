@@ -358,9 +358,11 @@ test_that("#547: an explicit format still works for a name that implies none", {
   expect_false(is_zip(p))
   expect_error(write_schedule(sched_547(), withr::local_tempfile(fileext = ".txt")),
                class = "creel_error_write_format")
-  # .xls is the legacy binary format: "auto" does not write xlsx content there,
-  # and CSV under that name is refused as a contradiction.
+  # .xls is the legacy binary format, which neither writer produces, so no
+  # format is written under that name.
   xls <- withr::local_tempfile(fileext = ".xls")
-  expect_error(write_schedule(sched_547(), xls), class = "creel_error_write_format")
-  expect_error(write_schedule(sched_547(), xls, format = "csv"), class = "creel_error_write_format")
+  for (f in c("auto", "csv", "xlsx")) {
+    expect_error(write_schedule(sched_547(), xls, format = f), class = "creel_error_write_format", info = f)
+  }
+  expect_false(file.exists(xls))
 })

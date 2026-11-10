@@ -138,10 +138,11 @@ coerce_schedule_columns <- function(df) {
 #' @noRd
 resolve_write_format <- function(path, format, call = rlang::caller_env()) {
   ext <- tolower(tools::file_ext(path))
-  implied <- switch(ext, csv = "csv", xlsx = "xlsx", xls = "xlsx", NA_character_)
+  # .xls is the legacy binary format, which neither writer produces: it implies
+  # a format of its own, so every format is refused for it.
+  implied <- switch(ext, csv = "csv", xlsx = "xlsx", xls = "xls", NA_character_)
   if (identical(format, "auto")) {
-    # .xls is the legacy binary format, which neither writer produces.
-    if (is.na(implied) || identical(ext, "xls")) {
+    if (!implied %in% c("csv", "xlsx")) {
       cli::cli_abort(c(
         "Cannot infer the file format from {.path {path}}.",
         "i" = "Use a {.val .csv} or {.val .xlsx} extension, or set {.arg format}."
@@ -150,10 +151,15 @@ resolve_write_format <- function(path, format, call = rlang::caller_env()) {
     return(implied)
   }
   if (!is.na(implied) && !identical(implied, format)) {
+    hint <- if (identical(implied, "xls")) {
+      "Neither writer produces .xls; use a {.val .csv} or {.val .xlsx} extension."
+    } else {
+      "Change the extension, or drop {.arg format} to use the one the name implies."
+    }
     cli::cli_abort(c(
       "{.arg format} is {.val {format}}, but {.path {path}} names an {.val {implied}} file.",
       "x" = "The file would hold {format} content under a .{ext} name.",
-      "i" = "Change the extension, or drop {.arg format} to use the one the name implies."
+      "i" = hint
     ), class = c("creel_error_write_format", "creel_error"), call = call)
   }
   format
