@@ -158,10 +158,11 @@ add_interviews(
   Number of anglers in the party. Either a bare column name (e.g.
   `n_anglers = party_size`) or a single positive number stating a
   constant party size (e.g. `n_anglers = 1` when every interview is one
-  angler). A bare number is read as a party size, **not** as a
-  tidyselect column position, so `n_anglers = 1` means one angler per
-  party rather than "column 1". Values must be positive and finite;
-  missing and non-integer values warn.
+  angler). A number, written out or held in a variable, is read as a
+  party size, **not** as a tidyselect column position, so
+  `n_anglers = 1` means one angler per party rather than "column 1"; a
+  variable holding a column name selects that column. Values must be
+  positive and finite; missing and non-integer values warn.
 
   When omitted, effort is left un-normalised and a `cli_warn()` message
   states the assumption. In that case the rate estimators return

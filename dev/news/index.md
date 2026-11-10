@@ -1335,6 +1335,19 @@
 
 ### Bug fixes
 
+- [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  and
+  [`compute_angler_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.md)
+  now read a variable holding a number as a party size
+  ([\#471](https://github.com/chrischizinski/tidycreel/issues/471)). A
+  written-out `n_anglers = 2` already was, but `n <- 2; n_anglers = n`
+  reached tidyselect, which read the 2 as a column position. On
+  `example_interviews` column 2 is `hours_fished`, so angler-hours
+  silently became hours squared: 161.25 in total against 113 for parties
+  of two. A variable holding a column name selects that column, a column
+  still wins over a variable of the same name, and several numbers are
+  refused.
+
 - `%||%` is now imported from rlang
   ([\#482](https://github.com/chrischizinski/tidycreel/issues/482)). The
   package used it in 21 files but took it from base R, which exports it

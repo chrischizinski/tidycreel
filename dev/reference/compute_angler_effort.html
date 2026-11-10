@@ -112,8 +112,9 @@ internally by <code><a href="add_interviews.html">add_interviews</a></code> when
 <dd><p>Number of anglers in the party. Either a bare column name
 (e.g. <code>n_anglers = party_size</code>) or a single positive number stating a
 constant party size (e.g. <code>n_anglers = 1</code> for individual-level
-interviews). A bare number is read as a party size, <strong>not</strong> as a tidyselect
-column position. Values must be positive and finite.</p></dd>
+interviews). A number, written out or held in a variable, is read as a
+party size, <strong>not</strong> as a tidyselect column position; a variable holding a
+column name selects that column. Values must be positive and finite.</p></dd>
 
 </dl></div>
     <div class="section level2">
