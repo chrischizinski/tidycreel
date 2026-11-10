@@ -1320,6 +1320,20 @@
 
 ### Bug fixes
 
+- Effort estimates no longer fail, or lose a variance component, when a
+  stratum, a `by` group or a party-size group is labelled `""`
+  ([\#614](https://github.com/chrischizinski/tidycreel/issues/614)). The
+  within-day and party-size terms looked each group up by name, and R
+  never matches the empty name. With two or more counts a day, every
+  effort estimate stopped with “subscript out of bounds”, under every
+  variance method. In the party-size
+  ([`derive_angler_count()`](https://chrischizinski.com/tidycreel/dev/reference/derive_angler_count.md))
+  term, the `""` group’s multiplier SE read as `NA`, so its effort SE
+  was reported as unknown although the SE had been supplied. Camera
+  ratio estimates had the same problem with their within-day term.
+  Lookups are now by position, and a `""` label gives the same estimate
+  and SEs as any other label. Other labels are unaffected.
+
 - `variance = "bootstrap"` no longer reports zero variance for a stratum
   with one sampled day
   ([\#613](https://github.com/chrischizinski/tidycreel/issues/613)). The
