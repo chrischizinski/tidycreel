@@ -35,7 +35,7 @@ reserved_count_design <- function(extra = NULL) {
 }
 
 test_that("#600: a count column named like an expansion helper is refused by name", {
-  for (nm in c(".N_avail", ".n_sampled", ".expansion_weight")) {
+  for (nm in c(".N_avail", ".n_sampled")) {
     d <- reserved_count_design(nm)
     err <- expect_error(
       quiet(estimate_effort(d, target = "period_total")),
@@ -51,6 +51,16 @@ test_that("#600: a count column named like an expansion helper is refused by nam
       info = nm
     )
   }
+})
+
+test_that("#600: a count column named .expansion_weight is not refused", {
+  # No join adds it: the weight is assigned onto the internal copy after the
+  # joins, so the user's column is replaced there and never read. Refusing it
+  # would break a call that gives the right answer.
+  expect_equal(
+    quiet(estimate_effort(reserved_count_design(".expansion_weight"), target = "period_total"))$estimates,
+    quiet(estimate_effort(reserved_count_design(), target = "period_total"))$estimates
+  )
 })
 
 test_that("#600: a count column named ss_d or k_d is refused by name", {
@@ -145,8 +155,12 @@ test_that("#600: a bus-route interview column named .N_avail or .n_sampled is re
       n_counted = n_counted, n_interviewed = n_interviewed, n_anglers = 1 # nolint: object_usage_linter
     ))
   }
+  base <- quiet(estimate_effort(mk(), target = "sampled_days"))$estimates
   expect_true(is.finite(quiet(estimate_effort(mk(), target = "period_total"))$estimates$estimate))
   for (nm in c(".N_avail", ".n_sampled")) {
+    # The sampled-day total joins the same table but never reads it, so the
+    # clash is harmless there and is not refused.
+    expect_equal(quiet(estimate_effort(mk(nm), target = "sampled_days"))$estimates, base, info = nm)
     err <- expect_error(
       quiet(estimate_effort(mk(nm), target = "period_total")),
       class = "creel_error_reserved_column",

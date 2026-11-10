@@ -977,9 +977,9 @@
 * A count or interview column whose name an estimator joins on internally is
   now refused by name, with class `creel_error_reserved_column` (#600). The
   names are:
-  * counts: `.N_avail`, `.n_sampled`, `.expansion_weight`, `ss_d`, `k_d`;
+  * counts: `.N_avail` and `.n_sampled` (expanded targets), `ss_d`, `k_d`;
   * interviews: `.species_count`, `.release_count`, and `.N_avail` and
-    `.n_sampled` on bus-route designs with `sampled =`.
+    `.n_sampled` on bus-route designs with `sampled =` (expanded targets).
 
   Before, the join suffixed both copies and the estimate stopped with
   "replacement has 0 rows", which named neither the column nor the fix. No

@@ -6127,7 +6127,7 @@ get_effort_target_design <- function(design, target) {
     dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, psu_col)))) |>
     dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".n_sampled")
 
-  refuse_reserved_join_columns(counts_data, c(".N_avail", ".n_sampled", ".expansion_weight"), "counts")
+  refuse_reserved_join_columns(counts_data, c(".N_avail", ".n_sampled"), "counts")
   expanded_counts <- counts_data |>
     dplyr::left_join(available_by_strata, by = strata_cols) |>
     dplyr::left_join(sampled_by_strata, by = strata_cols)
