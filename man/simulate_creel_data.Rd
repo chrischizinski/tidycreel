@@ -120,7 +120,7 @@ anglers present, not effort; effort is that count multiplied by the length of
 the period the count was randomised within (Hoenig et al. 1993).
 \code{estimate_effort()} expands whatever numeric column it is given and
 cannot tell the two apart, so handing it \code{total_anglers} yields
-angler-days silently mislabelled as angler-hours. When \code{lat} or
+a sum of head counts silently mislabelled as angler-hours. When \code{lat} or
 \code{daylight_hours} is supplied the counts table carries three numeric
 columns and \code{\link{add_counts}} will not guess between them: name the one
 you mean with
@@ -212,7 +212,7 @@ counts2 <- sim2$counts[, c("date", "day_type", "count_time", "angler_hours")]
 design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
   add_counts(
     counts2,
-    count_col = angler_hours, # counts alone are angler-days, not effort
+    count_col = angler_hours, # a head count alone is not effort
     count_time_col = count_time
   ) |>
   add_interviews(

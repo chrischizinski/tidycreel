@@ -55,8 +55,9 @@ every call.
 
 \describe{
 \item{\code{creel_warning_no_period_length}}{Tier 1. Instantaneous counts
-were expanded without a period length, so effort is the counts summed
-over days (angler-days for an angler count), not angler-hours.}
+were expanded without a period length, so the result is the counts summed
+over days (for an angler count, the anglers present at the counted
+moments), not angler-hours.}
 \item{\code{creel_warning_no_party_size}}{Tier 1. No party size was given,
 so each interview counts as one angler. If interviews are parties, rates
 are per party-hour, not per angler-hour.}

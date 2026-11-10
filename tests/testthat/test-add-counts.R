@@ -936,7 +936,12 @@ test_that("estimate_effort() warns when instantaneous counts carry no T_d", {
   cnt <- make_instantaneous_counts_varying_td()
   d <- add_counts(design, cnt[, c("date", "day_type", "n_anglers")])
 
-  expect_warning(estimate_effort(d), regexp = "angler-days")
+  expect_warning(estimate_effort(d), class = "creel_warning_no_period_length")
+  # #509: the message must not name a unit the sum is not.
+  w <- tryCatch(estimate_effort(add_counts(design, cnt[, c("date", "day_type", "n_anglers")])),
+    creel_warning_no_period_length = function(w) w
+  )
+  expect_no_match(conditionMessage(w), "angler-days", fixed = TRUE)
 })
 
 test_that("estimate_effort() does not warn once T_d is supplied", {
@@ -946,7 +951,7 @@ test_that("estimate_effort() does not warn once T_d is supplied", {
     period_length_col = shift_hours # nolint: object_usage_linter
   )
 
-  expect_no_warning(estimate_effort(d), message = "angler-days")
+  expect_no_warning(estimate_effort(d), class = "creel_warning_no_period_length")
 })
 
 test_that("estimate_effort() does not warn on progressive designs", {
@@ -959,7 +964,7 @@ test_that("estimate_effort() does not warn on progressive designs", {
     period_length_col = shift_hours # nolint: object_usage_linter
   )
 
-  expect_no_warning(estimate_effort(d), message = "angler-days")
+  expect_no_warning(estimate_effort(d), class = "creel_warning_no_period_length")
 })
 
 # Finding 21: aerial designs already carry their period length as h_open -------
