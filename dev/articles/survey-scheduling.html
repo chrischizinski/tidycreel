@@ -509,10 +509,9 @@ application) or xlsx (for direct field printing).
 <code><a href="../reference/read_schedule.html">read_schedule()</a></code> reloads the file with correct column types,
 so the schedule round-trips without type coercion issues.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Save for field crews. The format is not read from the file name, so name it</span></span>
-<span><span class="co"># for xlsx.</span></span>
+<code class="sourceCode R"><span><span class="co"># Save for field crews. The format comes from the file name.</span></span>
 <span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">sched</span>, <span class="st">"count_schedule_2024.csv"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">sched</span>, <span class="st">"count_schedule_2024.xlsx"</span>, format <span class="op">=</span> <span class="st">"xlsx"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/write_schedule.html">write_schedule</a></span><span class="op">(</span><span class="va">sched</span>, <span class="st">"count_schedule_2024.xlsx"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Reload — column types are preserved automatically</span></span>
 <span><span class="va">sched_reload</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_schedule.html">read_schedule</a></span><span class="op">(</span><span class="st">"count_schedule_2024.csv"</span><span class="op">)</span></span>

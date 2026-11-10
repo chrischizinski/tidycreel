@@ -310,10 +310,9 @@ without type coercion issues.
 
 ``` r
 
-# Save for field crews. The format is not read from the file name, so name it
-# for xlsx.
+# Save for field crews. The format comes from the file name.
 write_schedule(sched, "count_schedule_2024.csv")
-write_schedule(sched, "count_schedule_2024.xlsx", format = "xlsx")
+write_schedule(sched, "count_schedule_2024.xlsx")
 
 # Reload — column types are preserved automatically
 sched_reload <- read_schedule("count_schedule_2024.csv")

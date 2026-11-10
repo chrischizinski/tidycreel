@@ -105,16 +105,17 @@ xlsx, the data are written directly (Excel does not support comment rows).</p>
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>
-<dd><p>File path for the output. The extension (<code>.csv</code> or <code>.xlsx</code>)
-determines the format; alternatively, use the <code>format</code> argument to
-override.</p></dd>
+<dd><p>File path for the output. With <code>format = "auto"</code> its
+extension (<code>.csv</code> or <code>.xlsx</code>) sets the format.</p></dd>
 
 
 <dt id="arg-format">format<a class="anchor" aria-label="anchor" href="#arg-format"></a></dt>
-<dd><p>One of <code>"csv"</code> (default) or <code>"xlsx"</code>. When <code>"csv"</code>, a
-comment header is prepended. When <code>"xlsx"</code>,
-<code><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">writexl::write_xlsx()</a></code> is used behind an <code><a href="https://rlang.r-lib.org/reference/is_installed.html" class="external-link">rlang::check_installed()</a></code>
-guard.</p></dd>
+<dd><p>One of <code>"auto"</code> (default), <code>"csv"</code> or <code>"xlsx"</code>. <code>"auto"</code>
+takes the format from the extension of <code>path</code> and refuses any other
+extension. An explicit format is used for a path with any other extension,
+but refused when the extension names the other format. When <code>"csv"</code>, a
+comment header is prepended. When <code>"xlsx"</code>, <code><a href="https://docs.ropensci.org/writexl//reference/write_xlsx.html" class="external-link">writexl::write_xlsx()</a></code> is
+used behind an <code><a href="https://rlang.r-lib.org/reference/is_installed.html" class="external-link">rlang::check_installed()</a></code> guard.</p></dd>
 
 
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>

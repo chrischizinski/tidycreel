@@ -1,13 +1,18 @@
 # Write a creel schedule to a CSV or xlsx file
 
-Exports a `creel_schedule` object to disk. The default format is CSV
-using base R (no extra dependencies). The `"xlsx"` format requires the
-writexl package; an informative error is raised if it is not installed.
+Exports a `creel_schedule` object to disk, as CSV using base R (no extra
+dependencies) or as xlsx. The `"xlsx"` format requires the writexl
+package; an informative error is raised if it is not installed.
 
 ## Usage
 
 ``` r
-write_schedule(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE)
+write_schedule(
+  schedule,
+  path,
+  format = c("auto", "csv", "xlsx"),
+  overwrite = FALSE
+)
 ```
 
 ## Arguments
@@ -18,16 +23,20 @@ write_schedule(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE)
 
 - path:
 
-  File path for the output file.
+  File path for the output file. With `format = "auto"` its extension
+  (`.csv` or `.xlsx`) sets the format.
 
 - format:
 
-  One of `"csv"` (default) or `"xlsx"`. When `"csv"`, the file is
-  written with
+  One of `"auto"` (default), `"csv"` or `"xlsx"`. `"auto"` takes the
+  format from the extension of `path` and refuses any other extension.
+  An explicit format is used for a path with any other extension, but
+  refused when the extension names the other format, so a `.xlsx` file
+  never holds CSV text. `"csv"` is written with
   [`utils::write.csv()`](https://rdrr.io/r/utils/write.table.html) (no
-  row names). When `"xlsx"`,
+  row names); `"xlsx"` with
   [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
-  is used behind an
+  behind an
   [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html)
   guard.
 

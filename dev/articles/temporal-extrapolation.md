@@ -277,18 +277,14 @@ report$table
 ```
 
 To write it out, use any writer for data frames, or
-[`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
-with the format named:
+[`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md),
+which takes the format from the file name:
 
 ``` r
 
 write_schedule(report$table, "season_2024.csv")
-write_schedule(report$table, "season_2024.xlsx", format = "xlsx")
+write_schedule(report$table, "season_2024.xlsx")
 ```
-
-[`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
-does not read the format from the file name, so an `.xlsx` name without
-`format = "xlsx"` gets CSV text.
 
 ## Several years
 

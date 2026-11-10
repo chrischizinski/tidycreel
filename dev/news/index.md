@@ -12,6 +12,21 @@
 
 ### Breaking changes
 
+- [`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
+  now takes the file format from the file name, like
+  [`write_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/write_estimates.md):
+  its `format` default is `"auto"`, not `"csv"`
+  ([\#547](https://github.com/chrischizinski/tidycreel/issues/547)).
+  Before, `write_schedule(x, "season.xlsx")` wrote comma-separated text
+  under an `.xlsx` name, which Excel would not open, with no error. Both
+  writers now refuse a `format` that contradicts the extension
+  (`format = "csv"` with a `.xlsx` name, or the reverse) before writing
+  anything, with class `creel_error_write_format`. A name with any other
+  extension needs an explicit `format`, as
+  [`write_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/write_estimates.md)
+  already required. Calls whose extension matched their format are
+  unchanged.
+
 - The default `target` of
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
   [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),

@@ -26,13 +26,16 @@ write_estimates(
 
 - path:
 
-  File path for the output. The extension (`.csv` or `.xlsx`) determines
-  the format; alternatively, use the `format` argument to override.
+  File path for the output. With `format = "auto"` its extension (`.csv`
+  or `.xlsx`) sets the format.
 
 - format:
 
-  One of `"csv"` (default) or `"xlsx"`. When `"csv"`, a comment header
-  is prepended. When `"xlsx"`,
+  One of `"auto"` (default), `"csv"` or `"xlsx"`. `"auto"` takes the
+  format from the extension of `path` and refuses any other extension.
+  An explicit format is used for a path with any other extension, but
+  refused when the extension names the other format. When `"csv"`, a
+  comment header is prepended. When `"xlsx"`,
   [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
   is used behind an
   [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html)
