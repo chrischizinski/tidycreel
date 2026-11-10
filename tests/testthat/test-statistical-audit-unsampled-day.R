@@ -78,10 +78,12 @@ test_that("#454: a sampled = FALSE day is unsampled too", {
   )
   iv <- ud_interviews(cal, cal$date[c(1, 3)])
   d <- ud_q(creel_design(cal, date = date, strata = day_type)) # nolint: object_usage_linter
-  expect_error(
+  err <- expect_error(
     ud_q(add_interviews(d, iv,
       catch = catch, effort = hours, trip_status = trip_status, n_anglers = 1 # nolint: object_usage_linter
     )),
     class = "creel_error_interview_unsampled_day"
   )
+  # Interviews and days are counted separately: three interviews, one day.
+  expect_match(conditionMessage(err), "3 interviews are dated on 1 day the", fixed = TRUE)
 })
