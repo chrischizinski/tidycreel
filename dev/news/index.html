@@ -268,6 +268,12 @@
 </ul><p>Estimates and SEs for non-empty labels are unchanged.</p>
 </li>
 <li>
+<p>A count or interview column whose name an estimator joins on internally is now refused by name, with class <code>creel_error_reserved_column</code> (<a href="https://github.com/chrischizinski/tidycreel/issues/600" class="external-link">#600</a>). The names are:</p>
+<ul><li>counts: <code>.N_avail</code> and <code>.n_sampled</code> (expanded targets), <code>ss_d</code>, <code>k_d</code>;</li>
+<li>interviews: <code>.species_count</code>, <code>.release_count</code>, and <code>.N_avail</code> and <code>.n_sampled</code> on bus-route designs with <code>sampled =</code> (expanded targets).</li>
+</ul><p>Before, the join suffixed both copies and the estimate stopped with “replacement has 0 rows”, which named neither the column nor the fix. No estimate was wrong. Only the routes that perform the join refuse; elsewhere such a column is an ordinary extra column.</p>
+</li>
+<li>
 <p><code>variance = "bootstrap"</code> no longer reports zero variance for a stratum with one sampled day (<a href="https://github.com/chrischizinski/tidycreel/issues/613" class="external-link">#613</a>). The bootstrap resamples a stratum’s days with replacement, so with one day every replicate drew that same day and the stratum contributed nothing to the SE. Where other strata had two or more days, the result was a finite SE that left the stratum out, and a grouped row for it read <code>se = 0</code>. Where every stratum had one day, a grouped call returned <code>se = NaN</code>. These designs now refuse with <code>creel_error_single_psu</code>, as Taylor and the jackknife already did. A one-day stratum that is its whole calendar and was counted twice is still estimated: its day-to-day variance really is 0, and the within-day term carries it.</p>
 <p>Such a fully sampled stratum also no longer inflates the other strata’s bootstrap SE. The bootstrap scale uses the average number of days per stratum, and a census stratum’s one day pulled that average down: beside a stratum of three sampled days it doubled that stratum’s bootstrap variance. The scale is now taken over the strata that are not a census. This changes bootstrap SEs on designs that mix a census stratum with sampled ones; Taylor and jackknife SEs are unchanged.</p>
 </li>
