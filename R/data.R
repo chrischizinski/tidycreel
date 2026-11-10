@@ -237,8 +237,10 @@
 #' \describe{
 #'   \item{date}{Interview date (Date class), the sampled days of [example_calendar]}
 #'   \item{hours_fished}{Numeric fishing effort in hours}
-#'   \item{catch_total}{Integer total fish caught (kept + released)}
-#'   \item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
+#'   \item{catch_total}{Integer total fish caught (kept + released); equals the
+#'     interview's reported catch summed over species in [example_catch]}
+#'   \item{catch_kept}{Integer fish kept (harvest), always <= catch_total; equals
+#'     the sum of the interview's harvested rows in [example_catch]}
 #'   \item{trip_status}{Character trip completion status ("complete" or "incomplete")}
 #'   \item{trip_duration}{Numeric trip duration in hours}
 #'   \item{interview_id}{Integer interview identifier (1 to 22), primary join key
@@ -301,9 +303,18 @@
 #' Example species catch data for creel survey
 #'
 #' Long-format species-level catch data linked to [example_interviews]. Contains
-#' catch, harvest, and release counts per species per interview for 12 of the 22
-#' interviews. Interviews with zero total catch have no rows in this dataset
-#' (zero-catch anglers are represented by absence).
+#' catch, harvest, and release counts per species per interview for all 22
+#' interviews, and agrees with them: for every interview the species catches
+#' (each derived as [add_catch()] documents) sum to its `catch_total`, and the harvested counts to its `catch_kept`.
+#' Species-level results built from this table therefore add up to the overall
+#' results built from those columns. A species an angler did not catch has no
+#' row; [add_catch()] reads a missing row as zero, so an interview with no catch
+#' at all would simply have no rows.
+#'
+#' Some species-interview pairs carry a `"caught"` row and their
+#' `"harvested"`/`"released"` breakdown; others carry only the breakdown, whose
+#' sum is then that pair's catch. See [add_catch()] for how each pair's total is
+#' derived.
 #'
 #' @format A data frame with columns:
 #' \describe{
