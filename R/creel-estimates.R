@@ -4154,6 +4154,7 @@ make_species_catch_for_interviews <- function(design, species_val, catch_type_va
   # nolint: object_length_linter
   catch_df <- design[["catch"]]
   interviews <- design$interviews
+  refuse_reserved_join_columns(interviews, ".species_count", "interviews")
 
   uid_col <- design$catch_interview_uid_col
   species_col <- design$catch_species_col
@@ -4196,6 +4197,7 @@ make_species_catch_for_interviews <- function(design, species_val, catch_type_va
 #' @keywords internal
 #' @noRd
 estimate_release_build_data <- function(design, species = NULL) {
+  refuse_reserved_join_columns(design$interviews, ".release_count", "interviews")
   catch_df <- design[["catch"]]
   uid_col <- design$catch_interview_uid_col
   count_col <- design$catch_count_col
@@ -5563,6 +5565,7 @@ compute_within_day_var_contribution <- function(
   # one, so each section summed the lake-wide ss_d, and n_sampled below counted
   # the multiplied rows rather than the sampled units.
   key_cols <- within_day_key_cols(wdv) # nolint: object_usage_linter
+  refuse_reserved_join_columns(counts_data, setdiff(names(wdv), key_cols), "counts")
   combined <- merge(counts_data, wdv, by = key_cols, all.x = TRUE, sort = FALSE)
 
   # These NAs come from the left join above, never from the table itself: a PSU
@@ -6124,6 +6127,7 @@ get_effort_target_design <- function(design, target) {
     dplyr::distinct(dplyr::across(dplyr::all_of(c(strata_cols, psu_col)))) |>
     dplyr::count(dplyr::across(dplyr::all_of(strata_cols)), name = ".n_sampled")
 
+  refuse_reserved_join_columns(counts_data, c(".N_avail", ".n_sampled"), "counts")
   expanded_counts <- counts_data |>
     dplyr::left_join(available_by_strata, by = strata_cols) |>
     dplyr::left_join(sampled_by_strata, by = strata_cols)
@@ -6394,6 +6398,34 @@ refuse_reserved_effort_names <- function(design, by_vars = NULL) {
       c(
         "The counts have a column named {.field .fpc_days}.",
         "i" = "Effort estimation uses that name internally; rename the column."
+      ),
+      class = c("creel_error_reserved_column", "creel_error")
+    )
+  }
+  invisible(NULL)
+}
+
+#' Refuse a user column that a join would collide with
+#'
+#' Internal (GH #600). A join whose right-hand table brings a column the
+#' left-hand data already has suffixes both (`.x`/`.y`), so the helper column
+#' the next line reads is `NULL` and the estimator fails with a base-R
+#' "replacement has 0 rows" that names neither the column nor the fix. Called
+#' immediately before each such join, with the names the join adds.
+#'
+#' @param data The user-supplied table about to be joined onto.
+#' @param reserved Character vector of the column names the join adds.
+#' @param what Plural noun naming `data` for the message ("counts", "interviews").
+#' @keywords internal
+#' @noRd
+refuse_reserved_join_columns <- function(data, reserved, what) {
+  hit <- intersect(reserved, names(data))
+  if (length(hit) > 0L) {
+    cli::cli_abort(
+      c(
+        "The {what} have {cli::qty(length(hit))}{?a column/columns} named {.field {hit}}.",
+        "i" = "Estimation adds {cli::qty(length(hit))}{?that name/those names} \\
+               internally; rename {cli::qty(length(hit))}{?it/them}."
       ),
       class = c("creel_error_reserved_column", "creel_error")
     )

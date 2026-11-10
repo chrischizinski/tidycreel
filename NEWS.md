@@ -974,6 +974,18 @@
 
   Estimates and SEs for non-empty labels are unchanged.
 
+* A count or interview column whose name an estimator joins on internally is
+  now refused by name, with class `creel_error_reserved_column` (#600). The
+  names are:
+  * counts: `.N_avail` and `.n_sampled` (expanded targets), `ss_d`, `k_d`;
+  * interviews: `.species_count`, `.release_count`, and `.N_avail` and
+    `.n_sampled` on bus-route designs with `sampled =` (expanded targets).
+
+  Before, the join suffixed both copies and the estimate stopped with
+  "replacement has 0 rows", which named neither the column nor the fix. No
+  estimate was wrong. Only the routes that perform the join refuse; elsewhere
+  such a column is an ordinary extra column.
+
 * `variance = "bootstrap"` no longer reports zero variance for a stratum with
   one sampled day (#613). The bootstrap resamples a stratum's days with
   replacement, so with one day every replicate drew that same day and the
