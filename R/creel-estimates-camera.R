@@ -502,7 +502,8 @@ estimate_effort_camera <- function(
         by_vars = strata_cols,
         target = "sampled_days"
       )
-      sum(rho_matched^2 * as.numeric(wd_by_stratum[strata_order]))
+      # By position: `x[""]` is NA, and "" is a legal stratum label (GH #614).
+      sum(rho_matched^2 * as.numeric(wd_by_stratum[match(strata_order, names(wd_by_stratum))]))
     }
     method_label <- "camera_ratio"
     # effort_unit_label was set above, where the party-size decision was made.

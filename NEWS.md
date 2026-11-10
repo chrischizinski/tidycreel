@@ -948,6 +948,17 @@
 
 ## Bug fixes
 
+* Effort estimates no longer fail, or lose a variance component, when a
+  stratum, a `by` group or a party-size group is labelled `""` (#614). The
+  within-day and party-size terms looked each group up by name, and R never
+  matches the empty name. With two or more counts a day, every effort estimate
+  stopped with "subscript out of bounds", under every variance method. In the
+  party-size (`derive_angler_count()`) term, the `""` group's multiplier SE
+  read as `NA`, so its effort SE was reported as unknown although the SE had
+  been supplied. Camera ratio estimates had the same problem with their
+  within-day term. Lookups are now by position, and a `""` label gives the
+  same estimate and SEs as any other label. Other labels are unaffected.
+
 * `variance = "bootstrap"` no longer reports zero variance for a stratum with
   one sampled day (#613). The bootstrap resamples a stratum's days with
   replacement, so with one day every replicate drew that same day and the

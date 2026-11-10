@@ -977,3 +977,42 @@ test_that("EXPVAR-NA-01 (#317): the unknown group keeps its expansion component"
   )
   expect_gt(est$se, est$se_between)
 })
+
+test_that("a stratum labelled \"\" keeps its party-size component (GH #614)", {
+  # The component is looked up per party-size group and per by= group by name,
+  # and R never matches the empty name: the "" group's multiplier SE read as
+  # NA, so its effort SE became unknown although the SE was supplied. Renaming
+  # the label must not move a number.
+  expansion_run <- function(label) {
+    calendar <- data.frame(
+      date = as.Date("2024-06-01") + 0:5,
+      day_type = rep(c("weekday", label), 3)
+    )
+    raw <- data.frame(
+      date = calendar$date, day_type = calendar$day_type,
+      bank_anglers = c(3, 5, 2, 4, 8, 10), angler_boats = c(6, 2, 4, 8, 5, 5)
+    )
+    lookup <- data.frame(day_type = c("weekday", label), mean_party_size = c(2, 3))
+    attr(lookup, "se") <- stats::setNames(c(0.1, 0.2), c("weekday", label))
+    counts <- derive_angler_count(raw, bank = bank_anglers, boat_count = angler_boats, party_size = lookup)
+    design <- suppressWarnings(add_counts(
+      creel_design(calendar, date = date, strata = day_type), counts,
+      count_col = "angler_count"
+    ))
+    pooled <- suppressWarnings(estimate_effort(design))
+    grouped <- suppressWarnings(estimate_effort(design, by = day_type))
+    # Compare by label, not position: "" sorts first and "weekend" last.
+    at <- order(grouped$estimates$day_type != "weekday")
+    list(
+      pooled_se = pooled$estimates$se,
+      pooled_expansion = pooled$se_expansion,
+      pooled_terms = sort(unname(pooled$expansion_decomposition[[1]])),
+      grouped_se = grouped$estimates$se[at],
+      grouped_expansion = grouped$se_expansion[at],
+      grouped_terms = lapply(grouped$expansion_decomposition[at], unname)
+    )
+  }
+  blank <- expansion_run("")
+  expect_equal(blank, expansion_run("weekend"))
+  expect_false(anyNA(blank$grouped_expansion))
+})
