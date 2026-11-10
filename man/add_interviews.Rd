@@ -99,9 +99,10 @@ Records the species the angler was targeting during the interview.}
 \item{n_anglers}{Number of anglers in the party. Either a bare column name
 (e.g. \code{n_anglers = party_size}) or a single positive number stating a
 constant party size (e.g. \code{n_anglers = 1} when every interview is one
-angler). A bare number is read as a party size, \strong{not} as a tidyselect
-column position, so \code{n_anglers = 1} means one angler per party rather
-than "column 1". Values must be positive and finite; missing and
+angler). A number, written out or held in a variable, is read as a party
+size, \strong{not} as a tidyselect column position, so \code{n_anglers = 1}
+means one angler per party rather than "column 1"; a variable holding a
+column name selects that column. Values must be positive and finite; missing and
 non-integer values warn.
 
 When omitted, effort is left un-normalised and a \code{cli_warn()} message

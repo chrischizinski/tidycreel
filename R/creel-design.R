@@ -69,8 +69,9 @@ compute_effort <- function(data, trip_start, interview_time, time_fished = NULL)
 #' @param n_anglers Number of anglers in the party. Either a bare column name
 #'   (e.g. \code{n_anglers = party_size}) or a single positive number stating a
 #'   constant party size (e.g. \code{n_anglers = 1} for individual-level
-#'   interviews). A bare number is read as a party size, **not** as a tidyselect
-#'   column position. Values must be positive and finite.
+#'   interviews). A number, written out or held in a variable, is read as a
+#'   party size, **not** as a tidyselect column position; a variable holding a
+#'   column name selects that column. Values must be positive and finite.
 #'
 #' @return The input data frame with an added \code{.angler_effort} column
 #'   (numeric, angler-hours). Existing columns are preserved.
@@ -88,40 +89,60 @@ compute_angler_effort <- function(data, effort, n_anglers) {
 
   e_col <- names(tidyselect::eval_select(e_quo, data))
 
-  # Same contract as add_interviews(): a bare number is a party size, not a
-  # tidyselect column position.
-  na_lit <- party_size_literal(rlang::quo_get_expr(na_quo))
-  if (!is.null(na_lit)) {
-    validate_party_size(na_lit, "n_anglers", allow_missing = FALSE)
-    data[[".angler_effort"]] <- data[[e_col]] * na_lit
+  # Same contract as add_interviews(): a number, literal or in a variable, is
+  # a party size, not a tidyselect column position (GH #471).
+  na <- resolve_n_anglers(na_quo, data)
+  if (!is.null(na$value)) {
+    validate_party_size(na$value, "n_anglers", allow_missing = FALSE)
+    data[[".angler_effort"]] <- data[[e_col]] * na$value
     return(data)
   }
 
-  na_col <- names(tidyselect::eval_select(na_quo, data))
+  na_col <- na$col
   validate_party_size(data[[na_col]], paste0("n_anglers (column ", na_col, ")"))
 
   data[[".angler_effort"]] <- data[[e_col]] * data[[na_col]]
   data
 }
 
-# Is this `n_anglers` expression a stated constant rather than a column selector?
+# Resolve an `n_anglers` argument to a constant party size or a column.
 #
-# Returns the number, or NULL when the expression should be resolved as a column.
-# Unary minus has to be handled explicitly: `-2` parses as a call, not a numeric
-# literal, and tidyselect reads it as "every column except the second" -- which
-# reports a column-count error rather than saying the party size is negative.
-party_size_literal <- function(expr) {
-  if (is.numeric(expr) && length(expr) == 1L) {
-    return(expr)
+# Returns list(value = <number>) or list(col = <column name>).
+#
+# Column or number is decided from the expression, never by handing a number to
+# tidyselect, which reads a whole number as a column POSITION: `n_anglers = 1`
+# once selected column 1, and `n <- 2; n_anglers = n` still did (GH #471), so a
+# variable holding a party size silently made the second column the multiplier.
+# The rule is the one #464 set for `p_period`:
+#   - an expression naming a column of `data` is that column (data masking: a
+#     column wins over a variable of the same name);
+#   - otherwise the expression is evaluated: a number is the party size, and a
+#     string naming a column is that column;
+#   - anything else (a tidyselect helper such as all_of()) goes to tidyselect.
+# Unary minus needs no special case: `-2` evaluates to -2, which the party-size
+# check refuses as a party of no anglers, instead of tidyselect reading it as
+# "every column except the second".
+resolve_n_anglers <- function(quo, data, call = rlang::caller_env()) {
+  expr <- rlang::quo_get_expr(quo)
+  names_a_column <- (is.symbol(expr) || is.character(expr)) && length(expr) == 1L &&
+    as.character(expr) %in% names(data)
+  if (!names_a_column) {
+    evaluated <- tryCatch(rlang::eval_tidy(quo), error = function(e) e)
+    if (is.numeric(evaluated)) {
+      if (length(evaluated) != 1L) {
+        cli::cli_abort(c(
+          "{.arg n_anglers} must be a column or a single number.",
+          "x" = "Got a numeric vector of length {length(evaluated)}.",
+          "i" = "A number is a party size for every interview, never a column position."
+        ), class = c("creel_error_invalid_input", "creel_error"), call = call)
+      }
+      return(list(value = evaluated))
+    }
+    if (is.character(evaluated) && length(evaluated) == 1L && evaluated %in% names(data)) {
+      return(list(col = evaluated))
+    }
   }
-  if (
-    rlang::is_call(expr, "-", n = 1L) &&
-      is.numeric(expr[[2L]]) &&
-      length(expr[[2L]]) == 1L
-  ) {
-    return(-expr[[2L]])
-  }
-  NULL
+  list(col = resolve_single_col(quo, data, "n_anglers", call)) # nolint: object_usage_linter
 }
 
 # Validate a party size, whether stated as a constant or read from a column.
@@ -3758,9 +3779,10 @@ add_sections <- function(
 #' @param n_anglers Number of anglers in the party. Either a bare column name
 #'   (e.g. \code{n_anglers = party_size}) or a single positive number stating a
 #'   constant party size (e.g. \code{n_anglers = 1} when every interview is one
-#'   angler). A bare number is read as a party size, **not** as a tidyselect
-#'   column position, so \code{n_anglers = 1} means one angler per party rather
-#'   than "column 1". Values must be positive and finite; missing and
+#'   angler). A number, written out or held in a variable, is read as a party
+#'   size, **not** as a tidyselect column position, so \code{n_anglers = 1}
+#'   means one angler per party rather than "column 1"; a variable holding a
+#'   column name selects that column. Values must be positive and finite; missing and
 #'   non-integer values warn.
 #'
 #'   When omitted, effort is left un-normalised and a \code{cli_warn()} message
@@ -4113,30 +4135,30 @@ add_interviews <- function(
 
   # Resolve n_anglers, which is either a constant party size or a column.
   #
-  # A bare number is a party size, not a tidyselect position. Reading it as a
+  # A number is a party size, not a tidyselect position. Reading it as a
   # position -- the tidyselect default, and what this did before -- meant
   # `n_anglers = 1L`, the value in this function's own signature, silently
-  # selected column 1 and multiplied effort by whatever it held.
+  # selected column 1 and multiplied effort by whatever it held; a variable
+  # holding the number still did until GH #471.
   n_anglers_col <- NULL
   n_anglers_const <- NULL
   if (!n_anglers_missing) {
     n_anglers_quo <- rlang::enquo(n_anglers)
-    n_anglers_lit <- party_size_literal(rlang::quo_get_expr(n_anglers_quo))
-    if (!is.null(n_anglers_lit)) {
+    n_anglers_res <- if (rlang::quo_is_null(n_anglers_quo)) {
+      list()
+    } else {
+      resolve_n_anglers(n_anglers_quo, interviews, rlang::caller_env())
+    }
+    if (!is.null(n_anglers_res$value)) {
       validate_party_size(
-        n_anglers_lit,
+        n_anglers_res$value,
         "n_anglers",
         rlang::caller_env(),
         allow_missing = FALSE
       )
-      n_anglers_const <- n_anglers_lit
-    } else if (!rlang::quo_is_null(n_anglers_quo)) {
-      n_anglers_col <- resolve_single_col(
-        n_anglers_quo,
-        interviews,
-        "n_anglers",
-        rlang::caller_env()
-      )
+      n_anglers_const <- n_anglers_res$value
+    } else if (!is.null(n_anglers_res$col)) {
+      n_anglers_col <- n_anglers_res$col
       validate_party_size(
         interviews[[n_anglers_col]],
         paste0("n_anglers (column ", n_anglers_col, ")"),
