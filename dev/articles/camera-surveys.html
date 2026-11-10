@@ -523,10 +523,11 @@ the interviews and does not involve the camera at all:</p>
 <span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> A camera count is a daily ingress total -- a count of arrivals -- not an</span></span>
 <span><span class="co">#&gt;   instantaneous count of anglers present, so summing it over days gives</span></span>
 <span><span class="co">#&gt;   arrivals rather than effort.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Camera designs estimate effort only. `est_effort_camera()` returns</span></span>
-<span><span class="co">#&gt;   angler-hours; there is no camera catch estimator to multiply them by.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> A total from this function would multiply a rate per angler-hour by a count</span></span>
-<span><span class="co">#&gt;   of arrivals and report the product as fish.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Camera designs estimate effort only. `est_effort_camera()` returns effort</span></span>
+<span><span class="co">#&gt;   (angler-hours when given `n_anglers`); there is no camera catch estimator to</span></span>
+<span><span class="co">#&gt;   multiply it by.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> A total from this function would multiply a catch rate per hour of effort by</span></span>
+<span><span class="co">#&gt;   a count of arrivals and report the product as fish.</span></span></code></pre></div>
 <p>A total is the product of a rate and an effort, and this function
 builds its own effort by the generic route — the one that sums arrivals.
 It would therefore multiply a rate per angler-hour by a count of

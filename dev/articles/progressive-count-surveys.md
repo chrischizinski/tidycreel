@@ -74,11 +74,10 @@ Two further cautions from the same paper:
   assumes constant travel speed; stopping to interview breaks it and is
   one of the four errors Hoenig et al. single out. Interview on a
   separate pass.
-- **The count estimates angler-days of effort, not the number of
-  trips.** Reading $`C`$ as a trip count “results in a negative bias
-  that can be severe” (Hoenig et al. 1993). $`C`$ counts anglers
-  present, and an angler fishing all day is counted once per circuit —
-  not once per trip.
+- **The count is of anglers present, not of trips.** Reading $`C`$ as a
+  trip count “results in a negative bias that can be severe” (Hoenig et
+  al. 1993). $`C`$ counts anglers present, and an angler fishing all day
+  is counted once per circuit — not once per trip.
 
 Scheduling the circuit start correctly is the fourth condition, and it
 is the subject of the section below.

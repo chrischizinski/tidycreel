@@ -294,7 +294,7 @@ anglers present, not effort; effort is that count multiplied by the length of
 the period the count was randomised within (Hoenig et al. 1993).
 <code><a href="estimate_effort.html">estimate_effort()</a></code> expands whatever numeric column it is given and
 cannot tell the two apart, so handing it <code>total_anglers</code> yields
-angler-days silently mislabelled as angler-hours. When <code>lat</code> or
+a sum of head counts silently mislabelled as angler-hours. When <code>lat</code> or
 <code>daylight_hours</code> is supplied the counts table carries three numeric
 columns and <code><a href="add_counts.html">add_counts</a></code> will not guess between them: name the one
 you mean with
@@ -414,7 +414,7 @@ Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70: 483–491.
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">sim2</span><span class="op">$</span><span class="va">schedule</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">counts2</span>,</span></span>
-<span class="r-in"><span>    count_col <span class="op">=</span> <span class="va">angler_hours</span>, <span class="co"># counts alone are angler-days, not effort</span></span></span>
+<span class="r-in"><span>    count_col <span class="op">=</span> <span class="va">angler_hours</span>, <span class="co"># a head count alone is not effort</span></span></span>
 <span class="r-in"><span>    count_time_col <span class="op">=</span> <span class="va">count_time</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span> <span class="op">|&gt;</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="add_interviews.html">add_interviews</a></span><span class="op">(</span></span></span>

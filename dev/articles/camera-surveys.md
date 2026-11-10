@@ -462,10 +462,11 @@ estimate_total_catch(design_catch)
 #> ✖ A camera count is a daily ingress total -- a count of arrivals -- not an
 #>   instantaneous count of anglers present, so summing it over days gives
 #>   arrivals rather than effort.
-#> ℹ Camera designs estimate effort only. `est_effort_camera()` returns
-#>   angler-hours; there is no camera catch estimator to multiply them by.
-#> ℹ A total from this function would multiply a rate per angler-hour by a count
-#>   of arrivals and report the product as fish.
+#> ℹ Camera designs estimate effort only. `est_effort_camera()` returns effort
+#>   (angler-hours when given `n_anglers`); there is no camera catch estimator to
+#>   multiply it by.
+#> ℹ A total from this function would multiply a catch rate per hour of effort by
+#>   a count of arrivals and report the product as fish.
 ```
 
 A total is the product of a rate and an effort, and this function builds

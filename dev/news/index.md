@@ -1335,6 +1335,18 @@
 
 ### Bug fixes
 
+- Two messages no longer state a unit the result is not
+  ([\#509](https://github.com/chrischizinski/tidycreel/issues/509),
+  [\#510](https://github.com/chrischizinski/tidycreel/issues/510)). The
+  period-length warning said instantaneous counts summed without a
+  period length are in “angler-days”; an angler-day is one angler
+  fishing one day, and a sum of head counts is the anglers present at
+  the counted moments. It now says so, and that the package cannot tell
+  which unit the column is in. The camera refusal on the totals said
+  [`est_effort_camera()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera.md)
+  returns angler-hours; it does only when given `n_anglers`. Only
+  messages and documentation change; no estimate or unit does.
+
 - [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
   and
   [`compute_angler_effort()`](https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.md)

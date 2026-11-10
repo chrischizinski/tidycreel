@@ -182,8 +182,10 @@ display or export.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   angler-days, not angler-hours.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is the anglers</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   present at the counted moments, not angler-hours: a count becomes effort only</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   when multiplied by its period length. The package cannot tell which unit the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   column is in.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   counts, period_length_col = &lt;col&gt;)`.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>

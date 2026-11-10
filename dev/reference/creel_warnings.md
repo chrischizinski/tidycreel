@@ -67,8 +67,8 @@ print on every call.
 - `creel_warning_no_period_length`:
 
   Tier 1. Instantaneous counts were expanded without a period length, so
-  effort is the counts summed over days (angler-days for an angler
-  count), not angler-hours.
+  the result is the counts summed over days (for an angler count, the
+  anglers present at the counted moments), not angler-hours.
 
 - `creel_warning_no_party_size`:
 

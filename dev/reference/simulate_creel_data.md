@@ -186,9 +186,9 @@ effort; effort is that count multiplied by the length of the period the
 count was randomised within (Hoenig et al. 1993).
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
 expands whatever numeric column it is given and cannot tell the two
-apart, so handing it `total_anglers` yields angler-days silently
-mislabelled as angler-hours. When `lat` or `daylight_hours` is supplied
-the counts table carries three numeric columns and
+apart, so handing it `total_anglers` yields a sum of head counts
+silently mislabelled as angler-hours. When `lat` or `daylight_hours` is
+supplied the counts table carries three numeric columns and
 [`add_counts`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
 will not guess between them: name the one you mean with
 `add_counts(design, sim$counts, count_col = angler_hours)`.
@@ -321,7 +321,7 @@ counts2 <- sim2$counts[, c("date", "day_type", "count_time", "angler_hours")]
 design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
   add_counts(
     counts2,
-    count_col = angler_hours, # counts alone are angler-days, not effort
+    count_col = angler_hours, # a head count alone is not effort
     count_time_col = count_time
   ) |>
   add_interviews(

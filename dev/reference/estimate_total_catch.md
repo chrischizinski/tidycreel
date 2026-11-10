@@ -397,8 +397,10 @@ total_catch <- estimate_total_catch(design)
 #> Warning: Instantaneous counts were expanded without a period length.
 #> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
 #>   count column summed over days.
-#> ! If that column holds an instantaneous angler count, the result is in
-#>   angler-days, not angler-hours.
+#> ! If that column holds an instantaneous angler count, the result is the anglers
+#>   present at the counted moments, not angler-hours: a count becomes effort only
+#>   when multiplied by its period length. The package cannot tell which unit the
+#>   column is in.
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.

@@ -189,8 +189,10 @@ stand:</p>
 <span><span class="co">#&gt; Warning: Instantaneous counts were expanded without a period length.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span></span>
 <span><span class="co">#&gt;   count column summed over days.</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is in</span></span>
-<span><span class="co">#&gt;   angler-days, not angler-hours.</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is the anglers</span></span>
+<span><span class="co">#&gt;   present at the counted moments, not angler-hours: a count becomes effort only</span></span>
+<span><span class="co">#&gt;   when multiplied by its period length. The package cannot tell which unit the</span></span>
+<span><span class="co">#&gt;   column is in.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span></span>
 <span><span class="co">#&gt;   counts, period_length_col = &lt;col&gt;)`.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
