@@ -51,13 +51,15 @@ test_that("a design with every target recorded is unchanged (TGT-01)", {
   # invisible: with nothing missing there is nothing to exclude.
   #
   # The rates moved in GH #372, from 0.6667 / 0.3929: CWS read only the optional
-  # "caught" rows, and 10 of the example's 18 species-interview pairs have none,
-  # so their catch counted as zero. 0.8601 / 0.7725 are the hand-computed means
-  # with each pair's total taken as add_catch() documents it.
+  # "caught" rows, and 19 of the example's 31 species-interview pairs have none,
+  # so their catch counted as zero (that rule still gives 0.6667 / 0.3929).
+  # 1.0396 / 0.9947 are the hand-computed means with each pair's total taken as
+  # add_catch() documents it. They were 0.8601 / 0.7725 until #569 gave every
+  # example interview catch rows.
   result <- summarize_cws_rates(ut_design(), by = "angler_type")
   expect_equal(result$angler_type, c("bank", "boat"))
   expect_equal(result$N, c(13L, 9L))
-  expect_equal(round(result$mean_rate, 4), c(0.8601, 0.7725))
+  expect_equal(round(result$mean_rate, 4), c(1.0396, 0.9947))
   expect_equal(result$n_unknown_target, c(0L, 0L))
 })
 

@@ -222,9 +222,13 @@ test_that("est_biomass() biomass_se uses the bins' covariance, not just its diag
 
     # And the cross-bin terms actually move it: the old independence form is
     # the same expression with the off-diagonals zeroed, so if the two agreed
-    # this test would pass against the defect it exists to catch.
+    # this test would pass against the defect it exists to catch. The direction
+    # is not fixed -- the shared rescaling makes bins covary positively, the
+    # split of a fixed total makes them covary negatively -- so the test asks
+    # for a difference, not a sign. On the example data the covariance moves
+    # the SE by 3.7% to 33% across species (walleye down since #569).
     independence_se <- sqrt(sum(w_h^2 * rows$se^2))
-    expect_gt(actual_se, independence_se)
+    expect_gt(abs(actual_se / independence_se - 1), 0.01, label = paste("cov effect for", sp))
   }
 })
 

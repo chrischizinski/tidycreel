@@ -996,6 +996,15 @@
   estimate was wrong. Only the routes that perform the join refuse; elsewhere
   such a column is an ordinary extra column.
 
+* `example_catch` now has species rows for all 22 interviews in
+  `example_interviews`, not 12 (#569). `add_catch()` reads an interview with no
+  catch rows as one that caught nothing, so species results on the shipped data
+  counted ten parties as fishless while `catch_total` counted their fish: on the
+  example design the species totals summed to 1,525 fish against an overall
+  total of 1,955. The two tables now agree interview by interview, and species
+  rates and totals sum to the overall ones. Example and vignette numbers that
+  use `example_catch` change accordingly; no estimator changed.
+
 * `variance = "bootstrap"` no longer reports zero variance for a stratum with
   one sampled day (#613). The bootstrap resamples a stratum's days with
   replacement, so with one day every replicate drew that same day and the
@@ -1075,6 +1084,17 @@
   still summed into `.lake_total`. The error names the unknown sections. A
   design built in the other order, or with every section registered, is
   unchanged.
+
+* `add_sections()` now also refuses a design whose attached interviews hold a
+  section that was not registered (#597). `add_interviews()` already refused
+  this when the sections were attached first. In the other order, sectioned
+  estimators silently dropped those interviews from every rate and total: on
+  the sections example, mistyping four South interviews left South's catch
+  rate resting on 5 interviews instead of 9 and moved the lake catch total,
+  with no warning. Interviews set aside as refused or for having no trip status
+  are checked too, so both orders refuse the same designs. Catch, length and
+  age records take their section from their interview and are covered by the
+  same check.
 
 * The incomplete-trip messages and the `use_trips = "diagnostic"` print no
   longer refer to an internal development phase ("Phase 19") (#548). The

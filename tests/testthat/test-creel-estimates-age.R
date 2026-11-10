@@ -236,7 +236,8 @@ test_that("AGD-21 by = species returns expected per-species totals", {
   }
   caught <- d[["catch"]][d[["catch"]][[d$catch_type_col]] == "caught", , drop = FALSE]
   reported <- tapply(caught[[d$catch_count_col]], caught[[d$catch_species_col]], sum)
-  expect_equal(as.numeric(reported[["walleye"]]), 33)
+  # 33 until #569 gave every example interview catch rows.
+  expect_equal(as.numeric(reported[["walleye"]]), 36)
 })
 
 test_that("AGD-22 percent sums to 100 within each species group", {
@@ -512,11 +513,12 @@ test_that("AGD-43 (#317): the age path derives the reported total per pair too",
   totals <- stats::setNames(round(got$x, 6), paste(got$species, got$gear))
 
   # Per-pair reported catch. The old per-table rule counted "caught" rows only
-  # and gave panfish/bank 7, walleye/bank 18, bass/boat 5, walleye/boat 15.
-  expect_equal(totals[["panfish bank"]], 10)
-  expect_equal(totals[["walleye bank"]], 28)
-  expect_equal(totals[["bass boat"]], 18)
-  expect_equal(totals[["walleye boat"]], 27)
+  # and gives panfish/bank 15, walleye/bank 21, bass/boat 5, walleye/boat 15.
+  # (Values moved when #569 gave every example interview catch rows.)
+  expect_equal(totals[["panfish bank"]], 19)
+  expect_equal(totals[["walleye bank"]], 33)
+  expect_equal(totals[["bass boat"]], 22)
+  expect_equal(totals[["walleye boat"]], 33)
 })
 
 test_that("AGD-44 (#317): the age path refuses per group, not per species", {

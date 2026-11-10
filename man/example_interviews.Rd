@@ -9,8 +9,10 @@ A data frame with 22 rows and 12 columns:
 \describe{
 \item{date}{Interview date (Date class), the sampled days of \link{example_calendar}}
 \item{hours_fished}{Numeric fishing effort in hours}
-\item{catch_total}{Integer total fish caught (kept + released)}
-\item{catch_kept}{Integer fish kept (harvest), always <= catch_total}
+\item{catch_total}{Integer total fish caught (kept + released); equals the
+interview's reported catch summed over species in \link{example_catch}}
+\item{catch_kept}{Integer fish kept (harvest), always <= catch_total; equals
+the sum of the interview's harvested rows in \link{example_catch}}
 \item{trip_status}{Character trip completion status ("complete" or "incomplete")}
 \item{trip_duration}{Numeric trip duration in hours}
 \item{interview_id}{Integer interview identifier (1 to 22), primary join key

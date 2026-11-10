@@ -175,8 +175,9 @@ test_that("a design with no missing grouping value is unchanged (UNK-11)", {
   expect_equal(nrow(result), 6L)
   expect_false(any(result$species_sought == "Unknown"))
   expect_equal(result$N_total, c(5L, 3L, 5L, 1L, 2L, 6L))
-  expect_equal(result$N_successful, c(1L, 1L, 4L, 1L, 0L, 3L))
-  expect_equal(result$percent, c(20.0, 33.3, 80.0, 100.0, 0.0, 50.0))
+  # Values moved when #569 gave every example interview catch rows.
+  expect_equal(result$N_successful, c(2L, 2L, 4L, 1L, 1L, 4L))
+  expect_equal(result$percent, c(40.0, 66.7, 80.0, 100.0, 50.0, 66.7))
 
   types <- summarize_by_angler_type(ug_design())
   expect_equal(sum(types$N), ug_n_interviews())

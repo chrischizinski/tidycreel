@@ -77,19 +77,42 @@ test_that("unknown counts, unknown fates and orphan rows are refused", {
   expect_error(pit(iv, ct), "not in")
 })
 
-test_that("rebuilt totals equal the shipped totals wherever the catch table covers the interview", {
-  # example_catch covers 12 of the 22 example interviews (GH #569); where it
-  # does, the rebuilt totals must be the shipped catch_total and catch_kept.
+test_that("rebuilt totals equal the shipped totals for every example interview", {
+  # GH #569: example_catch once covered 12 of the 22 interviews, so species
+  # results on the shipped data counted ten parties as catching nothing. Every
+  # interview caught fish, so the catch table must cover all of them and
+  # rebuild exactly the shipped catch_total and catch_kept.
   bare <- example_interviews[setdiff(names(example_interviews), c("catch_total", "catch_kept"))]
   out <- pit(bare, example_catch)
-  covered <- example_interviews$interview_id %in% example_catch$interview_id
-  expect_gt(sum(covered), 10)
-  expect_equal(out$catch_total[covered], as.numeric(example_interviews$catch_total[covered]))
-  expect_equal(out$harvest_total[covered], as.numeric(example_interviews$catch_kept[covered]))
+  expect_setequal(unique(example_catch$interview_id), example_interviews$interview_id)
+  expect_equal(out$catch_total, as.numeric(example_interviews$catch_total))
+  expect_equal(out$harvest_total, as.numeric(example_interviews$catch_kept))
 })
 
 test_that("a repeated interview id is refused, not given its catch twice", {
   iv <- data.frame(interview_id = c("a", "a"))
   ct <- data.frame(interview_id = "a", species = "walleye", count = 2, catch_type = "harvested")
   expect_error(pit(iv, ct), "more than once")
+})
+
+test_that("species estimates on the example data sum to the overall estimates (#569)", {
+  # What the coverage gap broke in practice: with ten interviews missing from
+  # example_catch, the species totals summed to 1,525 fish against 1,955 from
+  # catch_total. The example data must not teach that the two can disagree.
+  q <- function(x) suppressWarnings(suppressMessages(x))
+  d <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_counts(d, example_counts)
+  d <- q(add_interviews(d, example_interviews,
+    catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+    trip_status = trip_status # nolint: object_usage_linter
+  ))
+  d <- q(add_catch(d, example_catch,
+    catch_uid = interview_id, interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+  ))
+  for (f in list(estimate_catch_rate, estimate_total_catch, estimate_harvest_rate, estimate_total_harvest)) {
+    overall <- q(f(d))$estimates$estimate
+    by_species <- q(f(d, by = species))$estimates$estimate # nolint: object_usage_linter
+    expect_equal(sum(by_species), overall, tolerance = 1e-10)
+  }
 })
