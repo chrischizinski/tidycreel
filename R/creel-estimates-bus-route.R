@@ -1889,6 +1889,7 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
     zero$.synthetic <- TRUE
     interviews <- rbind(interviews, zero)
   }
+  refuse_reserved_join_columns(interviews, setdiff(names(pop), strata_cols), "interviews") # nolint: object_usage_linter
   interviews <- dplyr::left_join(interviews, pop, by = strata_cols)
   # With the register, the sampled-day total keeps weight 1 but still counts
   # the empty days, which its between-day variance needs as much as the
