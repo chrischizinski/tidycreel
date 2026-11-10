@@ -15,14 +15,15 @@ write_estimates(
 \arguments{
 \item{x}{A \code{creel_estimates} or \code{creel_summary} object.}
 
-\item{path}{File path for the output. The extension (\code{.csv} or \code{.xlsx})
-determines the format; alternatively, use the \code{format} argument to
-override.}
+\item{path}{File path for the output. With \code{format = "auto"} its
+extension (\code{.csv} or \code{.xlsx}) sets the format.}
 
-\item{format}{One of \code{"csv"} (default) or \code{"xlsx"}. When \code{"csv"}, a
-comment header is prepended. When \code{"xlsx"},
-\code{\link[writexl:write_xlsx]{writexl::write_xlsx()}} is used behind an \code{\link[rlang:is_installed]{rlang::check_installed()}}
-guard.}
+\item{format}{One of \code{"auto"} (default), \code{"csv"} or \code{"xlsx"}. \code{"auto"}
+takes the format from the extension of \code{path} and refuses any other
+extension. An explicit format is used for a path with any other extension,
+but refused when the extension names the other format. When \code{"csv"}, a
+comment header is prepended. When \code{"xlsx"}, \code{\link[writexl:write_xlsx]{writexl::write_xlsx()}} is
+used behind an \code{\link[rlang:is_installed]{rlang::check_installed()}} guard.}
 
 \item{overwrite}{Logical; if \code{FALSE} (default) an error is raised when
 \code{path} already exists.}

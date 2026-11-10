@@ -122,19 +122,65 @@ coerce_schedule_columns <- function(df) {
   df
 }
 
+#' Decide the file format a writer uses, from `format` and the path's extension
+#'
+#' Shared by [write_schedule()] and [write_estimates()] (GH #547). `"auto"`
+#' takes the format from a `.csv` or `.xlsx` extension and refuses any other.
+#' An explicit format is used as given unless the extension names the other
+#' format, which is refused: a `.xlsx` file holding CSV text is one Excel will
+#' not open, and nothing in R would have said so.
+#'
+#' @param path Output path.
+#' @param format `"auto"`, `"csv"` or `"xlsx"`, already matched.
+#' @param call Environment of the user-facing caller, for the error.
+#' @return `"csv"` or `"xlsx"`.
+#' @keywords internal
+#' @noRd
+resolve_write_format <- function(path, format, call = rlang::caller_env()) {
+  ext <- tolower(tools::file_ext(path))
+  # .xls is the legacy binary format, which neither writer produces: it implies
+  # a format of its own, so every format is refused for it.
+  implied <- switch(ext, csv = "csv", xlsx = "xlsx", xls = "xls", NA_character_)
+  if (identical(format, "auto")) {
+    if (!implied %in% c("csv", "xlsx")) {
+      cli::cli_abort(c(
+        "Cannot infer the file format from {.path {path}}.",
+        "i" = "Use a {.val .csv} or {.val .xlsx} extension, or set {.arg format}."
+      ), class = c("creel_error_write_format", "creel_error"), call = call)
+    }
+    return(implied)
+  }
+  if (!is.na(implied) && !identical(implied, format)) {
+    hint <- if (identical(implied, "xls")) {
+      "Neither writer produces .xls; use a {.val .csv} or {.val .xlsx} extension."
+    } else {
+      "Change the extension, or drop {.arg format} to use the one the name implies."
+    }
+    cli::cli_abort(c(
+      "{.arg format} is {.val {format}}, but {.path {path}} names an {.val {implied}} file.",
+      "x" = "The file would hold {format} content under a .{ext} name.",
+      "i" = hint
+    ), class = c("creel_error_write_format", "creel_error"), call = call)
+  }
+  format
+}
+
 #' Write a creel schedule to a CSV or xlsx file
 #'
-#' Exports a `creel_schedule` object to disk. The default format is CSV using
-#' base R (no extra dependencies). The `"xlsx"` format requires the
-#' \pkg{writexl} package; an informative error is raised if it is not
-#' installed.
+#' Exports a `creel_schedule` object to disk, as CSV using base R (no extra
+#' dependencies) or as xlsx. The `"xlsx"` format requires the \pkg{writexl}
+#' package; an informative error is raised if it is not installed.
 #'
 #' @param schedule A `creel_schedule` object (or plain data frame) to export.
-#' @param path File path for the output file.
-#' @param format One of `"csv"` (default) or `"xlsx"`. When `"csv"`, the file
-#'   is written with [utils::write.csv()] (no row names). When `"xlsx"`,
-#'   [writexl::write_xlsx()] is used behind an [rlang::check_installed()]
-#'   guard.
+#' @param path File path for the output file. With `format = "auto"` its
+#'   extension (`.csv` or `.xlsx`) sets the format.
+#' @param format One of `"auto"` (default), `"csv"` or `"xlsx"`. `"auto"`
+#'   takes the format from the extension of `path` and refuses any other
+#'   extension. An explicit format is used for a path with any other extension,
+#'   but refused when the extension names the other format, so a `.xlsx` file
+#'   never holds CSV text. `"csv"` is written with [utils::write.csv()] (no row
+#'   names); `"xlsx"` with [writexl::write_xlsx()] behind an
+#'   [rlang::check_installed()] guard.
 #' @param overwrite Logical. If `FALSE` (default), aborts with an error when
 #'   `path` already exists. Set `TRUE` to replace an existing file.
 #'
@@ -152,14 +198,14 @@ coerce_schedule_columns <- function(df) {
 #'
 #' @family "Scheduling"
 #' @export
-write_schedule <- function(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE) {
+write_schedule <- function(schedule, path, format = c("auto", "csv", "xlsx"), overwrite = FALSE) {
   if (!overwrite && file.exists(path)) {
     cli::cli_abort(c(
       "File already exists: {.path {path}}",
       "i" = "Set {.code overwrite = TRUE} to replace it."
     ))
   }
-  format <- match.arg(format)
+  format <- resolve_write_format(path, match.arg(format))
   if (format == "xlsx") {
     rlang::check_installed("writexl", reason = "to write xlsx schedule files")
     writexl::write_xlsx(schedule, path)

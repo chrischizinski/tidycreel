@@ -128,3 +128,16 @@ test_that("WRITE-11: write_estimates() writes a readable xlsx file with correct 
   expect_no_error(readxl::read_xlsx(tmp))
   expect_equal(nrow(readxl::read_xlsx(tmp)), nrow(tidy(estimates)))
 })
+
+test_that("#547: write_estimates() refuses a format that contradicts the extension", {
+  # "auto" already followed the extension; an explicit format did not, so
+  # format = "csv" on an .xlsx name wrote CSV text there.
+  eff <- .make_eff()
+  x <- tempfile(fileext = ".xlsx")
+  expect_error(write_estimates(eff, x, format = "csv"), class = "creel_error_write_format")
+  expect_false(file.exists(x))
+  p <- tempfile(fileext = ".txt")
+  on.exit(unlink(p))
+  write_estimates(eff, p, format = "csv")
+  expect_true(file.exists(p))
+})
