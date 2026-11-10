@@ -175,16 +175,13 @@ report <- season_summary(list(effort = monthly_effort, catch = monthly_catch))
 report$table
 ```
 
-To write it out, use any writer for data frames, or `write_schedule()` with the
-format named:
+To write it out, use any writer for data frames, or `write_schedule()`, which
+takes the format from the file name:
 
 ```{r export, eval = FALSE}
 write_schedule(report$table, "season_2024.csv")
-write_schedule(report$table, "season_2024.xlsx", format = "xlsx")
+write_schedule(report$table, "season_2024.xlsx")
 ```
-
-`write_schedule()` does not read the format from the file name, so an `.xlsx`
-name without `format = "xlsx"` gets CSV text.
 
 ## Several years
 

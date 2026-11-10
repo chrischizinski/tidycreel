@@ -312,3 +312,55 @@ test_that("SCHED-04: non-numeric window labels survive the round trip as charact
   expect_type(result$window_id, "character")
   expect_identical(result$window_id, c("AM", "PM"))
 })
+
+# ---- #547: the format follows the file name ----------------------------------
+# write_schedule() once took its format from `format` alone, default "csv", so
+# write_schedule(x, "f.xlsx") wrote comma-separated text under an .xlsx name:
+# Excel would not open it and nothing in R said so.
+
+sched_547 <- function() {
+  generate_schedule("2024-06-01", "2024-06-14",
+    n_periods = 1, sampling_rate = c(weekday = 0.5, weekend = 0.5), seed = 1
+  )
+}
+
+is_zip <- function(path) {
+  # An xlsx file is a zip archive; CSV text is not.
+  identical(readBin(path, "raw", 2L), as.raw(c(0x50, 0x4b)))
+}
+
+test_that("#547: write_schedule() takes the format from the extension", {
+  skip_if_not_installed("writexl")
+  x <- withr::local_tempfile(fileext = ".xlsx")
+  write_schedule(sched_547(), x)
+  expect_true(is_zip(x))
+  x2 <- withr::local_tempfile(fileext = ".XLSX")
+  write_schedule(sched_547(), x2)
+  expect_true(is_zip(x2))
+  csv <- withr::local_tempfile(fileext = ".csv")
+  write_schedule(sched_547(), csv)
+  expect_false(is_zip(csv))
+  expect_s3_class(read_schedule(csv), "creel_schedule")
+})
+
+test_that("#547: a format that contradicts the extension is refused, before any file is written", {
+  x <- withr::local_tempfile(fileext = ".xlsx")
+  expect_error(write_schedule(sched_547(), x, format = "csv"), class = "creel_error_write_format")
+  expect_false(file.exists(x))
+  csv <- withr::local_tempfile(fileext = ".csv")
+  expect_error(write_schedule(sched_547(), csv, format = "xlsx"), class = "creel_error_write_format")
+  expect_false(file.exists(csv))
+})
+
+test_that("#547: an explicit format still works for a name that implies none", {
+  p <- withr::local_tempfile(fileext = ".txt")
+  write_schedule(sched_547(), p, format = "csv")
+  expect_false(is_zip(p))
+  expect_error(write_schedule(sched_547(), withr::local_tempfile(fileext = ".txt")),
+               class = "creel_error_write_format")
+  # .xls is the legacy binary format: "auto" does not write xlsx content there,
+  # and CSV under that name is refused as a contradiction.
+  xls <- withr::local_tempfile(fileext = ".xls")
+  expect_error(write_schedule(sched_547(), xls), class = "creel_error_write_format")
+  expect_error(write_schedule(sched_547(), xls, format = "csv"), class = "creel_error_write_format")
+})
