@@ -1389,8 +1389,10 @@ warn_missing_period_length <- function(design) {
         "estimate is the count column summed over days."
       ),
       "!" = paste(
-        "If that column holds an instantaneous angler count, the result is in",
-        "angler-days, not angler-hours."
+        "If that column holds an instantaneous angler count, the result is the",
+        "anglers present at the counted moments, not angler-hours: a count",
+        "becomes effort only when multiplied by its period length. The package",
+        "cannot tell which unit the column is in."
       ),
       "i" = paste(
         "Supply the period each count was randomised within:",
@@ -3250,7 +3252,8 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
     c(
       "i" = paste(
         "Camera designs estimate effort only. {.fn est_effort_camera} returns",
-        "angler-hours; there is no camera catch estimator to multiply them by."
+        "effort (angler-hours when given {.arg n_anglers}); there is no camera",
+        "catch estimator to multiply it by."
       ),
       "i" = paste(
         "A total from this function would multiply a rate per angler-hour by a",

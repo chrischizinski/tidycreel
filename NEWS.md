@@ -948,6 +948,15 @@
 
 ## Bug fixes
 
+* Two messages no longer state a unit the result is not (#509, #510). The
+  period-length warning said instantaneous counts summed without a period
+  length are in "angler-days"; an angler-day is one angler fishing one day,
+  and a sum of head counts is the anglers present at the counted moments. It
+  now says so, and that the package cannot tell which unit the column is in.
+  The camera refusal on the totals said `est_effort_camera()` returns
+  angler-hours; it does only when given `n_anglers`. Only messages and
+  documentation change; no estimate or unit does.
+
 * Effort estimates no longer fail, or lose a variance component, when a
   stratum, a `by` group or a party-size group is labelled `""` (#614). The
   within-day and party-size terms looked each group up by name, and R never
