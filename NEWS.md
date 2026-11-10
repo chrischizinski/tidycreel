@@ -948,6 +948,11 @@
 
 ## Bug fixes
 
+* `%||%` is now imported from rlang (#482). The package used it in 21 files
+  but took it from base R, which exports it only since R 4.4.0, while
+  DESCRIPTION declares R >= 4.1.0. On R 4.1 to 4.3 any code path reaching it
+  failed with "could not find function". Nothing changes on R 4.4 and later.
+
 * Effort estimates no longer fail, or lose a variance component, when a
   stratum, a `by` group or a party-size group is labelled `""` (#614). The
   within-day and party-size terms looked each group up by name, and R never
