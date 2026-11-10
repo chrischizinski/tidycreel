@@ -351,13 +351,15 @@ design_with <- function(cd) {
 }
 
 test_that("SSP-01 (#329): a party recording only dispositions counts as successful", {
-  # Four pairs in the SHIPPED example catch have no `caught` row and positive
-  # dispositions -- interviews 11, 12 and 14 (walleye) and 13 (bass) -- so this
-  # was not hypothetical: those parties demonstrably caught their sought
-  # species and were all reported unsuccessful. The total was 6; it is 10.
+  # Eight pairs in the SHIPPED example catch have no `caught` row and positive
+  # dispositions for the sought species -- interviews 11, 12, 14 and 18
+  # (walleye), 3 and 13 (bass), 7 and 15 (panfish) -- so this is not
+  # hypothetical: those parties demonstrably caught their sought species. The
+  # caught-rows-only rule reports 6 successful parties; the right count is 14
+  # (10 until #569 gave every example interview catch rows).
   d <- design_with(example_catch)
   result <- summarize_successful_parties(d)
-  expect_equal(sum(result$N_successful), 10L)
+  expect_equal(sum(result$N_successful), 14L)
 })
 
 test_that("SSP-02 (#329): omitting the optional caught rows does not change the answer", {

@@ -23,9 +23,19 @@ example_catch
 }
 \description{
 Long-format species-level catch data linked to \link{example_interviews}. Contains
-catch, harvest, and release counts per species per interview for 12 of the 22
-interviews. Interviews with zero total catch have no rows in this dataset
-(zero-catch anglers are represented by absence).
+catch, harvest, and release counts per species per interview for all 22
+interviews, and agrees with them: for every interview the species catches
+(each derived as \code{\link[=add_catch]{add_catch()}} documents) sum to its \code{catch_total}, and the harvested counts to its \code{catch_kept}.
+Species-level results built from this table therefore add up to the overall
+results built from those columns. A species an angler did not catch has no
+row; \code{\link[=add_catch]{add_catch()}} reads a missing row as zero, so an interview with no catch
+at all would simply have no rows.
+}
+\details{
+Some species-interview pairs carry a \code{"caught"} row and their
+\code{"harvested"}/\code{"released"} breakdown; others carry only the breakdown, whose
+sum is then that pair's catch. See \code{\link[=add_catch]{add_catch()}} for how each pair's total is
+derived.
 }
 \examples{
 data(example_calendar)
