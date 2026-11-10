@@ -157,7 +157,7 @@ print(design)
 #> Harvest: catch_kept
 #> Trip status: 17 complete, 5 incomplete
 #> Survey: <survey.design2> (constructed)
-#> Catch Data: 42 rows, 3 species
-#> caught: 8, harvested: 17, released: 17
+#> Catch Data: 69 rows, 3 species
+#> caught: 12, harvested: 28, released: 29
 #> Sections: "none"
 ```

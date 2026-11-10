@@ -110,8 +110,8 @@ print(design)
 #> Party size: n_anglers
 #> Refused: refused
 #> Survey: <survey.design2> (constructed)
-#> Catch Data: 42 rows, 3 species
-#> caught: 8, harvested: 17, released: 17
+#> Catch Data: 69 rows, 3 species
+#> caught: 12, harvested: 28, released: 29
 #> Length Data: 20 rows, 3 species, length: 155–512 mm
 #> harvest: 14 individual
 #> release: 6 binned
@@ -198,12 +198,12 @@ recorded in catch data), broken down by angler type and species sought.
 
 summarize_successful_parties(design)
 #>   angler_type species_sought N_total N_successful percent
-#> 1        bank           bass       5            1    20.0
-#> 2        bank        panfish       3            1    33.3
+#> 1        bank           bass       5            2    40.0
+#> 2        bank        panfish       3            2    66.7
 #> 3        bank        walleye       5            4    80.0
 #> 4        boat           bass       1            1   100.0
-#> 5        boat        panfish       2            0     0.0
-#> 6        boat        walleye       6            3    50.0
+#> 5        boat        panfish       2            1    50.0
+#> 6        boat        walleye       6            4    66.7
 ```
 
 ### Trip Length Distribution
@@ -251,9 +251,9 @@ summarize_cws_rates(design, by = species_sought)
 #> 2        panfish  5                0                0                    0
 #> 3        walleye 11                0                0                    0
 #>   mean_rate        se  ci_lower  ci_upper
-#> 1 0.1854167 0.1330890 0.0000000 0.5275328
-#> 2 0.2333333 0.2333333 0.0000000 0.8811705
-#> 3 0.6293290 0.2163859 0.1471911 1.1114669
+#> 1 0.2594907 0.1330632 0.0000000 0.6015406
+#> 2 0.5333333 0.2438123 0.0000000 1.2102648
+#> 3 0.6596320 0.2095878 0.1926414 1.1266227
 ```
 
 ### CWS Rates Collapsed Across All Groupings
@@ -262,9 +262,9 @@ summarize_cws_rates(design, by = species_sought)
 
 summarize_cws_rates(design, by = NULL)
 #>    N n_unknown_target n_unknown_effort n_nonpositive_effort mean_rate        se
-#> 1 22                0                0                    0  0.418263 0.1295774
-#>   ci_lower ci_upper
-#> 1 0.148792 0.687734
+#> 1 22                0                0                    0 0.5217983 0.1246164
+#>    ci_lower  ci_upper
+#> 1 0.2626443 0.7809524
 ```
 
 ### HWS Rates
@@ -276,10 +276,10 @@ summarize_hws_rates(design, by = species_sought)
 #> 1           bass  6                0                0                    0
 #> 2        panfish  5                0                0                    0
 #> 3        walleye 11                0                0                    0
-#>   mean_rate        se   ci_lower  ci_upper
-#> 1 0.0312500 0.0312500 0.00000000 0.1115807
-#> 2 0.1333333 0.1333333 0.00000000 0.5035260
-#> 3 0.3887987 0.1322997 0.09401668 0.6835807
+#>    mean_rate         se  ci_lower  ci_upper
+#> 1 0.06828704 0.04342052 0.0000000 0.1799030
+#> 2 0.18333333 0.13017083 0.0000000 0.5447455
+#> 3 0.40395022 0.12866465 0.1172675 0.6906329
 ```
 
 **Interpretation guidance:** these are rates, not proportions. A CWS of
@@ -401,9 +401,9 @@ estimate_catch_rate(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.205  0.0743  0.0590     0.350    17
-#> 2 panfish   0.0558 0.0311 -0.00518    0.117    17
-#> 3 walleye   0.465  0.0957  0.278      0.653    17
+#> 1 bass       0.298 0.0835   0.134     0.461    17
+#> 2 panfish    0.158 0.0697   0.0216    0.295    17
+#> 3 walleye    0.512 0.0895   0.336     0.687    17
 ```
 
 ### Total Catch by Species
@@ -430,9 +430,9 @@ estimate_total_catch(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass       131.   46.4     32.0     230.    17
-#> 2 panfish     68.1  25.9     12.8     123.    17
-#> 3 walleye    449.  111.     211.      686.    17
+#> 1 bass        197.  57.0     75.6     318.    17
+#> 2 panfish     139.  45.5     42.5     236.    17
+#> 3 walleye     493. 111.     258.      729.    17
 ```
 
 ### Total Harvest by Species
@@ -451,9 +451,9 @@ estimate_total_harvest(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        59.6  19.7    17.6     102.     17
-#> 2 panfish     45.4  17.3     8.50     82.2    17
-#> 3 walleye    308.   75.8   146.      470.     17
+#> 1 bass        98.0  27.5     39.4     157.    17
+#> 2 panfish     78.4  24.9     25.3     131.    17
+#> 3 walleye    336.   75.3    176.      497.    17
 ```
 
 ### Release Rate and Total Releases by Species
@@ -472,9 +472,9 @@ estimate_release_rate(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.102  0.0407  0.0225    0.182     17
-#> 2 panfish   0.0186 0.0104 -0.00173   0.0389    17
-#> 3 walleye   0.140  0.0385  0.0640    0.215     17
+#> 1 bass      0.140  0.0432  0.0548     0.224    17
+#> 2 panfish   0.0744 0.0340  0.00783    0.141    17
+#> 3 walleye   0.158  0.0378  0.0841     0.232    17
 estimate_total_release(design, by = species)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -487,9 +487,9 @@ estimate_total_release(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        71.4 32.1      3.03    140.     17
-#> 2 panfish     22.7  8.65     4.25     41.1    17
-#> 3 walleye    141.  46.2     42.1     239.     17
+#> 1 bass        99.0  35.3     23.8     174.    17
+#> 2 panfish     61.1  22.5     13.3     109.    17
+#> 3 walleye    157.   46.2     58.7     256.    17
 ```
 
 For grouped estimates combining calendar strata with species, use

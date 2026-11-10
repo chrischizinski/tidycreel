@@ -135,27 +135,17 @@ design <- add_ages(design, example_ages,
 
 est_age_distribution(design, by = species)
 #> Warning: ! Age totals were rescaled onto the reported catch.
-#> ℹ Measured fish (weighted): 18; reported: 93 -- a factor of 5.17.
+#> ℹ Measured fish (weighted): 18; reported: 127 -- a factor of 7.06.
 #> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
 #>   from the measured subsample. Shares (percent) are unaffected.
-#>   species age estimate       se   ci_lower  ci_upper percent cumulative_percent
-#> 1    bass   2 10.00000 4.233202  1.7030763 18.296924    40.0               40.0
-#> 2    bass   3 15.00000 6.524569  2.2120798 27.787920    60.0              100.0
-#> 3 panfish   0  3.25000 1.899150 -0.4722657  6.972266    25.0               25.0
-#> 4 panfish   1  6.50000 4.023369 -1.3856588 14.385659    50.0               75.0
-#> 5 panfish   2  3.25000 3.991201 -4.5726107 11.072611    25.0              100.0
-#> 6 walleye   3 12.22222 4.069220  4.2466972 20.197747    22.2               22.2
-#> 7 walleye   4 18.33333 6.136191  6.3066208 30.360046    33.3               55.6
-#> 8 walleye   5 12.22222 4.069220  4.2466972 20.197747    22.2               77.8
-#> 9 walleye   6 12.22222 8.491868 -4.4215332 28.865978    22.2              100.0
-#>   n
-#> 1 3
-#> 2 3
-#> 3 2
-#> 4 2
-#> 5 2
-#> 6 3
-#> 7 3
-#> 8 3
-#> 9 3
+#>   species age estimate       se  ci_lower ci_upper percent cumulative_percent n
+#> 1    bass   2 14.80000 4.983867  5.031800 24.56820    40.0               40.0 3
+#> 2    bass   3 22.20000 7.485693  7.528311 36.87169    60.0              100.0 3
+#> 3 panfish   0  6.00000 3.677777 -1.208310 13.20831    25.0               25.0 2
+#> 4 panfish   1 12.00000 4.648028  2.890032 21.10997    50.0               75.0 2
+#> 5 panfish   2  6.00000 6.022960 -5.804784 17.80478    25.0              100.0 2
+#> 6 walleye   3 14.66667 4.096348  6.637973 22.69536    22.2               22.2 3
+#> 7 walleye   4 22.00000 6.653846  8.958702 35.04130    33.3               55.6 3
+#> 8 walleye   5 14.66667 4.096348  6.637973 22.69536    22.2               77.8 3
+#> 9 walleye   6 14.66667 9.737619 -4.418715 33.75205    22.2              100.0 3
 ```

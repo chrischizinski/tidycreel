@@ -365,18 +365,18 @@ total_rel <- estimate_total_release(design)
 #>   counts, period_length_col = <col>)`.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: `estimate_total_release()` is pooling over domains the counts do not classify:
-#> angler_type, angler_method, and species_sought.
-#> ! The rate differs across their levels in these interviews (angler_type: bank
-#>   0.222, boat 0.306, angler_method: artificial 0.333, bait 0.217, fly 0.276,
-#>   and species_sought: bass 0.218, panfish 0, walleye 0.293), so the total
-#>   depends on the interview sample's mix over those domains.
+#> angler_method and species_sought.
+#> ! The rate differs across their levels in these interviews (angler_method:
+#>   artificial 0.455, bait 0.317, fly 0.414 and species_sought: bass 0.4, panfish
+#>   0.6, walleye 0.347), so the total depends on the interview sample's mix over
+#>   those domains.
 #> ℹ Without the domain in the counts the total is `E_total * rate_pooled`,
 #>   weighted by the interview mix rather than the effort mix. Interview selection
 #>   is not proportional to effort by construction (Malvestuto 1996).
 #> ℹ This is a risk, not an error: the counts carry no composition to check
 #>   against, so it cannot be verified from the data.
-#> ℹ Classifying angler_type, angler_method, and species_sought in the count data
-#>   removes the assumption -- the total becomes `sum(E_h * rate_h)`.
+#> ℹ Classifying angler_method and species_sought in the count data removes the
+#>   assumption -- the total becomes `sum(E_h * rate_h)`.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> Warning: 1 rate cell in "estimate_total_release" rests on fewer than 10 trips.
 #> • day_type=weekend: n=7
@@ -397,7 +397,7 @@ print(total_rel)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     235.  50.9     126.     343.    17
+#> 1     317.  54.4     201.     433.    17
 
 # Total releases by species
 total_rel_sp <- estimate_total_release(design, by = species)
@@ -413,7 +413,7 @@ print(total_rel_sp)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        71.4 32.1      3.03    140.     17
-#> 2 panfish     22.7  8.65     4.25     41.1    17
-#> 3 walleye    141.  46.2     42.1     239.     17
+#> 1 bass        99.0  35.3     23.8     174.    17
+#> 2 panfish     61.1  22.5     13.3     109.    17
+#> 3 walleye    157.   46.2     58.7     256.    17
 ```

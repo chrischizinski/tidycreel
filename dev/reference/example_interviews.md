@@ -28,11 +28,15 @@ A data frame with 22 rows and 12 columns:
 
 - catch_total:
 
-  Integer total fish caught (kept + released)
+  Integer total fish caught (kept + released); equals the interview's
+  reported catch summed over species in
+  [example_catch](https://chrischizinski.com/tidycreel/dev/reference/example_catch.md)
 
 - catch_kept:
 
-  Integer fish kept (harvest), always \<= catch_total
+  Integer fish kept (harvest), always \<= catch_total; equals the sum of
+  the interview's harvested rows in
+  [example_catch](https://chrischizinski.com/tidycreel/dev/reference/example_catch.md)
 
 - trip_status:
 

@@ -102,10 +102,12 @@ interview attributes added in v0.5.0.</p>
 <dd><p>Numeric fishing effort in hours</p></dd>
 
 <dt>catch_total</dt>
-<dd><p>Integer total fish caught (kept + released)</p></dd>
+<dd><p>Integer total fish caught (kept + released); equals the
+interview's reported catch summed over species in <a href="example_catch.html">example_catch</a></p></dd>
 
 <dt>catch_kept</dt>
-<dd><p>Integer fish kept (harvest), always &lt;= catch_total</p></dd>
+<dd><p>Integer fish kept (harvest), always &lt;= catch_total; equals
+the sum of the interview's harvested rows in <a href="example_catch.html">example_catch</a></p></dd>
 
 <dt>trip_status</dt>
 <dd><p>Character trip completion status ("complete" or "incomplete")</p></dd>

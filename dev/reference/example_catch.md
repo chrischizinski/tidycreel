@@ -3,8 +3,16 @@
 Long-format species-level catch data linked to
 [example_interviews](https://chrischizinski.com/tidycreel/dev/reference/example_interviews.md).
 Contains catch, harvest, and release counts per species per interview
-for 12 of the 22 interviews. Interviews with zero total catch have no
-rows in this dataset (zero-catch anglers are represented by absence).
+for all 22 interviews, and agrees with them: for every interview the
+species catches (each derived as
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+documents) sum to its `catch_total`, and the harvested counts to its
+`catch_kept`. Species-level results built from this table therefore add
+up to the overall results built from those columns. A species an angler
+did not catch has no row;
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+reads a missing row as zero, so an interview with no catch at all would
+simply have no rows.
 
 ## Usage
 
@@ -37,6 +45,14 @@ A data frame with columns:
 ## Source
 
 Simulated data for package examples
+
+## Details
+
+Some species-interview pairs carry a `"caught"` row and their
+`"harvested"`/`"released"` breakdown; others carry only the breakdown,
+whose sum is then that pair's catch. See
+[`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md)
+for how each pair's total is derived.
 
 ## See also
 
@@ -132,7 +148,7 @@ print(design)
 #> Harvest: harvest_total
 #> Trip status: 17 complete, 5 incomplete
 #> Survey: <survey.design2> (constructed)
-#> Catch Data: 42 rows, 3 species
-#> caught: 8, harvested: 17, released: 17
+#> Catch Data: 69 rows, 3 species
+#> caught: 12, harvested: 28, released: 29
 #> Sections: "none"
 ```

@@ -214,12 +214,12 @@ design <- add_lengths(design, example_lengths,
 
 ld <- est_length_distribution(design, by = species, bin_width = 25)
 #> Warning: ! Length totals were rescaled onto the reported catch.
-#> ℹ Measured fish (weighted): 37; reported: 93 -- a factor of 2.51.
+#> ℹ Measured fish (weighted): 37; reported: 127 -- a factor of 3.43.
 #> ℹ estimate, se and the confidence bounds describe the REPORTED catch, estimated
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_biomass(ld, a = 0.0088, b = 3.1)
 #>   species biomass_estimate biomass_se biomass_ci_lower biomass_ci_upper
-#> 1    bass         10998601  4518118.7        2143251.0         19853951
-#> 2 panfish          1564991   854445.1        -109691.1          3239672
-#> 3 walleye         73939205 22890156.6       29075322.1        118803087
+#> 1    bass         16277929  4873444.0        6726154.5         25829704
+#> 2 panfish          2889213   964609.1         998614.2          4779812
+#> 3 walleye         88727045 22187752.5       45239849.6        132214241
 ```

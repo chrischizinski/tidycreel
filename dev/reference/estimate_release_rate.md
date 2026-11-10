@@ -258,9 +258,9 @@ print(rpue)
 #> Unit: fish/party-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.615 0.105    0.409    0.822    17
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1    0.879 0.0478    0.785    0.973    17
 
 # Per-species release rates
 rpue_by_species <- estimate_release_rate(design, by = species)
@@ -278,7 +278,7 @@ print(rpue_by_species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.242  0.0904  0.0645    0.419     17
-#> 2 panfish   0.0440 0.0268 -0.00849   0.0964    17
-#> 3 walleye   0.330  0.0870  0.159     0.500     17
+#> 1 bass       0.330 0.0897   0.154     0.505    17
+#> 2 panfish    0.176 0.0708   0.0370    0.315    17
+#> 3 walleye    0.374 0.0820   0.213     0.534    17
 ```

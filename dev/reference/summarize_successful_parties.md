@@ -119,10 +119,10 @@ d <- add_catch(d, example_catch,
 )
 summarize_successful_parties(d)
 #>   angler_type species_sought N_total N_successful percent
-#> 1        bank           bass       5            1    20.0
-#> 2        bank        panfish       3            1    33.3
+#> 1        bank           bass       5            2    40.0
+#> 2        bank        panfish       3            2    66.7
 #> 3        bank        walleye       5            4    80.0
 #> 4        boat           bass       1            1   100.0
-#> 5        boat        panfish       2            0     0.0
-#> 6        boat        walleye       6            3    50.0
+#> 5        boat        panfish       2            1    50.0
+#> 6        boat        walleye       6            4    66.7
 ```
