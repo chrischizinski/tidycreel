@@ -1066,6 +1066,17 @@
   design built in the other order, or with every section registered, is
   unchanged.
 
+* `add_sections()` now also refuses a design whose attached interviews hold a
+  section that was not registered (#597). `add_interviews()` already refused
+  this when the sections were attached first. In the other order, sectioned
+  estimators silently dropped those interviews from every rate and total: on
+  the sections example, mistyping four South interviews left South's catch
+  rate resting on 5 interviews instead of 9 and moved the lake catch total,
+  with no warning. Interviews set aside as refused or for having no trip status
+  are checked too, so both orders refuse the same designs. Catch, length and
+  age records take their section from their interview and are covered by the
+  same check.
+
 * The incomplete-trip messages and the `use_trips = "diagnostic"` print no
   longer refer to an internal development phase ("Phase 19") (#548). The
   diagnostic print also listed three statistical tests, two of which
