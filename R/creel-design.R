@@ -1142,8 +1142,8 @@ resolve_sampled_register <- function(sampled_quo, calendar, survey_type, call) {
 
 #' Refuse table rows whose section was never registered (SEC-01)
 #'
-#' One check for both attach orders: `add_counts()` after `add_sections()`, and
-#' `add_sections()` after `add_counts()`. An unregistered section is for the
+#' One check for both attach orders: `add_counts()` or `add_interviews()` after
+#' `add_sections()`, and `add_sections()` after either (#595, #597). An unregistered section is for the
 #' caller to resolve; it is never dropped or registered on their behalf.
 #'
 #' @param data The table holding a section column (counts or interviews).
@@ -3675,6 +3675,22 @@ add_sections <- function(
       hint = "Register the section in {.arg sections}, or correct the counts and rebuild the design with {.fn creel_design} and {.fn add_counts}."
     )
   }
+  # The same for interviews (#597). Sectioned estimators split the interviews
+  # by section, so an interview whose section is not registered belongs to no
+  # row and is dropped from every rate and total without a word. Interviews set
+  # aside as refused or with no trip status are checked too: add_interviews()
+  # checks every row it is given when the sections come first, and both orders
+  # must refuse the same designs.
+  attached_interviews <- list(
+    design[["interviews"]], design[["refused_interviews"]], design[["excluded_interviews"]]
+  )
+  for (iv in attached_interviews[!vapply(attached_interviews, is.null, logical(1))]) {
+    check_sections_registered(
+      iv, sections, section_col_name,
+      what = "The interview data already attached to the design",
+      hint = "Register the section in {.arg sections}, or correct the interviews and rebuild the design with {.fn creel_design} and {.fn add_interviews}."
+    )
+  }
 
   # Build new design with sections populated
   new_design <- design
@@ -3973,19 +3989,11 @@ add_interviews <- function(
 
   # Guard: validate section values against registered sections (SEC-01)
   if (!is.null(design[["sections"]]) && !is.null(design[["section_col"]])) {
-    sec_col <- design[["section_col"]]
-    if (sec_col %in% names(interviews)) {
-      valid_sections <- design[["sections"]][[sec_col]]
-      bad_vals <- setdiff(unique(interviews[[sec_col]]), valid_sections)
-      if (length(bad_vals) > 0) {
-        cli::cli_abort(c(
-          "Interview data contains {length(bad_vals)} unregistered section value{?s}.",
-          "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
-          "i" = "Registered sections: {.val {valid_sections}}.",
-          "i" = "Check for typos or register the section with {.fn add_sections}."
-        ))
-      }
-    }
+    check_sections_registered(
+      interviews, design[["sections"]], design[["section_col"]],
+      what = "Interview data",
+      hint = "Check for typos or register the section with {.fn add_sections}."
+    )
   }
 
   # Resolve tidy selectors

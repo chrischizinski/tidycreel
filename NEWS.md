@@ -10,6 +10,16 @@
 
 ## Breaking changes
 
+* `write_schedule()` now takes the file format from the file name, like
+  `write_estimates()`: its `format` default is `"auto"`, not `"csv"` (#547).
+  Before, `write_schedule(x, "season.xlsx")` wrote comma-separated text under
+  an `.xlsx` name, which Excel would not open, with no error. Both writers now
+  refuse a `format` that contradicts the extension (`format = "csv"` with a
+  `.xlsx` name, or the reverse) before writing anything, with class
+  `creel_error_write_format`. A name with any other extension needs an
+  explicit `format`, as `write_estimates()` already required. Calls whose
+  extension matched their format are unchanged.
+
 * The default `target` of `estimate_effort()`, `estimate_total_catch()`,
   `estimate_total_harvest()` and `estimate_total_release()` is now
   `"period_total"`, the season total, instead of `"sampled_days"`, the total
@@ -956,6 +966,11 @@
   two. A variable holding a column name selects that column, a column still
   wins over a variable of the same name, and several numbers are refused.
 
+* `%||%` is now imported from rlang (#482). The package used it in 21 files
+  but took it from base R, which exports it only since R 4.4.0, while
+  DESCRIPTION declares R >= 4.1.0. On R 4.1 to 4.3 any code path reaching it
+  failed with "could not find function". Nothing changes on R 4.4 and later.
+
 * Effort estimates no longer fail, or lose a variance component, when a
   stratum, a `by` group or a party-size group is labelled `""` (#614). The
   within-day and party-size terms looked each group up by name, and R never
@@ -1082,6 +1097,17 @@
   still summed into `.lake_total`. The error names the unknown sections. A
   design built in the other order, or with every section registered, is
   unchanged.
+
+* `add_sections()` now also refuses a design whose attached interviews hold a
+  section that was not registered (#597). `add_interviews()` already refused
+  this when the sections were attached first. In the other order, sectioned
+  estimators silently dropped those interviews from every rate and total: on
+  the sections example, mistyping four South interviews left South's catch
+  rate resting on 5 interviews instead of 9 and moved the lake catch total,
+  with no warning. Interviews set aside as refused or for having no trip status
+  are checked too, so both orders refuse the same designs. Catch, length and
+  age records take their section from their interview and are covered by the
+  same check.
 
 * The incomplete-trip messages and the `use_trips = "diagnostic"` print no
   longer refer to an internal development phase ("Phase 19") (#548). The
