@@ -2063,7 +2063,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
     group_key <- rep("all", nrow(n_agg))
   }
   group_totals <- tapply(n_agg$N, group_key, sum)
-  n_agg$percent <- round(n_agg$N / group_totals[group_key] * 100, 1)
+  n_agg$percent <- round(n_agg$N / group_totals[match(group_key, names(group_totals))] * 100, 1)
 
   # cumulative_percent: cumsum within each group key (for-loop avoids ordering subtlety)
   n_agg$cumulative_percent <- NA_real_

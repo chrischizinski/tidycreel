@@ -361,7 +361,7 @@ as_hybrid_svydesign <- function(
     ))
   }
   for (fr in frames) {
-    frac <- fraction[[fr]]
+    frac <- fraction[[match(fr, names(fraction))]]
     if (!is.numeric(frac) || is.null(names(frac))) {
       cli::cli_abort(
         "{.arg fraction[[\"{fr}\"]]} must be a named numeric vector."
@@ -625,7 +625,7 @@ as_hybrid_svydesign <- function(
     function(x) length(unique(x))
   )
   n_sampled_days <- as.numeric(n_days[combined$.hybrid_stratum])
-  n_pop_days <- as.numeric(pop_days[row_stratum])
+  n_pop_days <- as.numeric(pop_days[match(row_stratum, names(pop_days))])
 
   # The within-day fraction expands the access points covered, or the route
   # coverage achieved, to the whole of a sampled day. N_h / n_h expands the
@@ -646,7 +646,8 @@ as_hybrid_svydesign <- function(
   within_day <- numeric(nrow(combined))
   for (fr in frames) {
     rows <- which(row_frame == fr)
-    within_day[rows] <- unname(fraction[[fr]][row_stratum[rows]])
+    frac <- fraction[[match(fr, names(fraction))]]
+    within_day[rows] <- unname(frac[match(row_stratum[rows], names(frac))])
   }
   combined$weight <- unname(
     (1 / within_day) * (n_pop_days / n_sampled_days)

@@ -959,6 +959,21 @@
   within-day term. Lookups are now by position, and a `""` label gives the
   same estimate and SEs as any other label. Other labels are unaffected.
 
+* The remaining places that looked a group up by name now go by position, so a
+  stratum, `by` group, species, site or frame labelled `""` is treated like any
+  other label (#618).
+  * `est_mean_length()`, `est_biomass()` and `est_compliance()` grouped by a
+    `""` species lost the cross-bin covariance. They fell back to independent
+    bins, with a warning that blamed subsetting, and reported an SE that was
+    too small: 13% too small for mean length on the example data.
+  * The `n` column of grouped effort, catch and harvest rates, and bus-route
+    totals and rates, read `NA` for a `""` group. For effort it read `0`. In
+    both cases the estimate beside it was correct.
+  * `summarize_length_freq()` gave `NA` percentages for a `""` group.
+  * `as_hybrid_svydesign()` refused a `""` stratum or frame.
+
+  Estimates and SEs for non-empty labels are unchanged.
+
 * `variance = "bootstrap"` no longer reports zero variance for a stratum with
   one sampled day (#613). The bootstrap resamples a stratum's days with
   replacement, so with one day every replicate drew that same day and the
