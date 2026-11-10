@@ -6,13 +6,14 @@
 #' xlsx, the data are written directly (Excel does not support comment rows).
 #'
 #' @param x A `creel_estimates` or `creel_summary` object.
-#' @param path File path for the output. The extension (`.csv` or `.xlsx`)
-#'   determines the format; alternatively, use the `format` argument to
-#'   override.
-#' @param format One of `"csv"` (default) or `"xlsx"`. When `"csv"`, a
-#'   comment header is prepended. When `"xlsx"`,
-#'   [writexl::write_xlsx()] is used behind an [rlang::check_installed()]
-#'   guard.
+#' @param path File path for the output. With `format = "auto"` its
+#'   extension (`.csv` or `.xlsx`) sets the format.
+#' @param format One of `"auto"` (default), `"csv"` or `"xlsx"`. `"auto"`
+#'   takes the format from the extension of `path` and refuses any other
+#'   extension. An explicit format is used for a path with any other extension,
+#'   but refused when the extension names the other format. When `"csv"`, a
+#'   comment header is prepended. When `"xlsx"`, [writexl::write_xlsx()] is
+#'   used behind an [rlang::check_installed()] guard.
 #' @param overwrite Logical; if `FALSE` (default) an error is raised when
 #'   `path` already exists.
 #' @param ... Currently unused; reserved for future arguments.
@@ -95,22 +96,7 @@ write_estimates <- function(
   }
 
   # ---- Format detection -------------------------------------------------------
-  format <- match.arg(format)
-  if (format == "auto") {
-    ext <- tolower(tools::file_ext(path))
-    format <- switch(
-      ext,
-      csv = "csv",
-      xlsx = "xlsx",
-      cli::cli_abort(c(
-        "Cannot infer format from extension {.val .{ext}}.",
-        "i" = paste0(
-          "Use a {.val .csv} or {.val .xlsx} extension, ",
-          "or set {.arg format} explicitly."
-        )
-      ))
-    )
-  }
+  format <- resolve_write_format(path, match.arg(format)) # nolint: object_usage_linter
 
   # ---- Extract data frame -----------------------------------------------------
   df <- if (inherits(x, "creel_summary")) {

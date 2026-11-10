@@ -4,17 +4,26 @@
 \alias{write_schedule}
 \title{Write a creel schedule to a CSV or xlsx file}
 \usage{
-write_schedule(schedule, path, format = c("csv", "xlsx"), overwrite = FALSE)
+write_schedule(
+  schedule,
+  path,
+  format = c("auto", "csv", "xlsx"),
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{schedule}{A \code{creel_schedule} object (or plain data frame) to export.}
 
-\item{path}{File path for the output file.}
+\item{path}{File path for the output file. With \code{format = "auto"} its
+extension (\code{.csv} or \code{.xlsx}) sets the format.}
 
-\item{format}{One of \code{"csv"} (default) or \code{"xlsx"}. When \code{"csv"}, the file
-is written with \code{\link[utils:write.table]{utils::write.csv()}} (no row names). When \code{"xlsx"},
-\code{\link[writexl:write_xlsx]{writexl::write_xlsx()}} is used behind an \code{\link[rlang:is_installed]{rlang::check_installed()}}
-guard.}
+\item{format}{One of \code{"auto"} (default), \code{"csv"} or \code{"xlsx"}. \code{"auto"}
+takes the format from the extension of \code{path} and refuses any other
+extension. An explicit format is used for a path with any other extension,
+but refused when the extension names the other format, so a \code{.xlsx} file
+never holds CSV text. \code{"csv"} is written with \code{\link[utils:write.table]{utils::write.csv()}} (no row
+names); \code{"xlsx"} with \code{\link[writexl:write_xlsx]{writexl::write_xlsx()}} behind an
+\code{\link[rlang:is_installed]{rlang::check_installed()}} guard.}
 
 \item{overwrite}{Logical. If \code{FALSE} (default), aborts with an error when
 \code{path} already exists. Set \code{TRUE} to replace an existing file.}
@@ -23,10 +32,9 @@ guard.}
 \code{path}, returned invisibly.
 }
 \description{
-Exports a \code{creel_schedule} object to disk. The default format is CSV using
-base R (no extra dependencies). The \code{"xlsx"} format requires the
-\pkg{writexl} package; an informative error is raised if it is not
-installed.
+Exports a \code{creel_schedule} object to disk, as CSV using base R (no extra
+dependencies) or as xlsx. The \code{"xlsx"} format requires the \pkg{writexl}
+package; an informative error is raised if it is not installed.
 }
 \examples{
 sched <- generate_schedule(
