@@ -344,6 +344,24 @@ check_day_records_worked <- function(records, design, date_col, what, call = rla
   invisible(NULL)
 }
 
+#' Refuse interviews on a day or night the schedule did not work
+#'
+#' Internal (GH #630). Kept, refused and excluded interviews all pass through
+#' here: a refused or excluded row never enters a rate, but it is counted in
+#' the refusal and exclusion tables, and a row dated on an unworked day is a
+#' data error there too. Night designs map rows before they are split, so
+#' every row already carries its night date.
+#'
+#' @keywords internal
+#' @noRd
+check_interviews_worked <- function(records, design, date_col, call = rlang::caller_env()) {
+  if (!is.null(design$night)) {
+    check_night_records_worked(records, design, date_col, "interview", call = call)
+  } else {
+    check_day_records_worked(records, design, date_col, "interview", call = call)
+  }
+}
+
 #' Real elapsed hours of each calendar shift on a night design
 #'
 #' Internal (GH #407). `shift_hours`, where the schedule carries it, is the
