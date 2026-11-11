@@ -289,6 +289,26 @@
   now an error instead of an understated SE (#373). Report `by` the unit
   column, or attach the raw counts with `count_time_col`.
 
+## Deprecated
+
+* `adjust_nonresponse()` is deprecated: it does not change any estimate, and
+  never has (#633). Response rates of 0.5 on weekdays and 0.9 on weekends left
+  the catch rate, total catch and effort identical. It now warns on every call
+  and will be removed in a later major release.
+  - The count-side branch read a design field no step sets
+    (`counts_survey`; `add_counts()` stores `survey`), so it never ran. An
+    instantaneous count has no respondent, so there is no count-side
+    nonresponse to adjust.
+  - The interview side re-weighted a survey object the rate estimators never
+    read: they rebuild it from the interviews. Even if they read it, a weight
+    that is the same for every interview in a stratum cancels in that
+    stratum's catch rate, and so in every total built as stratum effort times
+    stratum rate.
+
+  Record refusals with `add_interviews(refused = )` and report them with
+  `summarize_refusals()`. The diagnostics the function attaches are still
+  returned.
+
 ## New features
 
 * Bus-route and ice designs can now report effort and catch, harvest and

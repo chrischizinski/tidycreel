@@ -2,7 +2,7 @@
 % Please edit documentation in R/nonresponse-adjust.R
 \name{adjust_nonresponse}
 \alias{adjust_nonresponse}
-\title{Adjust a creel design for nonresponse bias}
+\title{Adjust a creel design for nonresponse bias (deprecated)}
 \usage{
 adjust_nonresponse(
   design,
@@ -37,20 +37,34 @@ directly with population totals from your sampling frame.}
 \code{response_rates} (default: \code{"stratum"}).}
 }
 \value{
-The input \code{creel_design} with adjusted weights. The updated
+The input \code{creel_design}, whose estimates are unchanged. The
 design includes an attribute \code{"nonresponse_diagnostics"} (a tibble
 with columns \code{stratum}, \code{n_sampled}, \code{n_responded},
 \code{response_rate}, \code{weight_adjustment}) that can be retrieved
 with \code{attr(result, "nonresponse_diagnostics")}.
 }
 \description{
-Applies nonresponse weighting to a \code{creel_design} object by scaling
-survey weights within each stratum by the inverse of the observed response
-rate. The adjustment uses \code{\link[survey]{postStratify}} (default) or
-\code{\link[survey]{calibrate}} to update the internal
-\code{\link[survey]{svydesign}} object, so all downstream estimators
-(\code{\link{estimate_effort}}, \code{\link{estimate_catch_rate}}, etc.)
-automatically use the corrected weights.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+\code{adjust_nonresponse()} does not change any estimate, and never has (GH
+#633). It is deprecated in tidycreel 9.0.0 and will be removed in a later
+major release.
+\itemize{
+\item \strong{Counts have no nonresponse.} An instantaneous count has no respondent
+(Pollock, Jones and Brown 1994 rate count-side refusals as not
+applicable). The count-side branch read a field no step sets, so it never
+ran.
+\item \strong{A per-stratum adjustment cancels.} Every interview in a stratum is
+multiplied by the same factor, which cancels in that stratum's catch rate
+and so in every total built as stratum effort times stratum rate. The
+rate estimators rebuild their survey from the interviews and never read
+the re-weighted one.
+}
+
+Record refusals instead with \code{add_interviews(refused = )} and report them
+with \code{\link[=summarize_refusals]{summarize_refusals()}}. The diagnostics this function attaches
+(response rate and weight factor per stratum) are still returned, with a
+deprecation warning on every call.
 }
 \section{Adjustment method}{
 
@@ -84,7 +98,7 @@ resp <- data.frame(
   n_sampled   = c(80L, 60L),
   n_responded = c(72L, 48L)
 )
-adj_design <- adjust_nonresponse(design, resp)
+adj_design <- suppressWarnings(adjust_nonresponse(design, resp))
 attr(adj_design, "nonresponse_diagnostics")
 
 }

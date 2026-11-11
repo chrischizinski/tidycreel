@@ -1,12 +1,26 @@
-#' Adjust a creel design for nonresponse bias
+#' Adjust a creel design for nonresponse bias (deprecated)
 #'
-#' Applies nonresponse weighting to a \code{creel_design} object by scaling
-#' survey weights within each stratum by the inverse of the observed response
-#' rate. The adjustment uses \code{\link[survey]{postStratify}} (default) or
-#' \code{\link[survey]{calibrate}} to update the internal
-#' \code{\link[survey]{svydesign}} object, so all downstream estimators
-#' (\code{\link{estimate_effort}}, \code{\link{estimate_catch_rate}}, etc.)
-#' automatically use the corrected weights.
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' `adjust_nonresponse()` does not change any estimate, and never has (GH
+#' #633). It is deprecated in tidycreel 9.0.0 and will be removed in a later
+#' major release.
+#'
+#' * **Counts have no nonresponse.** An instantaneous count has no respondent
+#'   (Pollock, Jones and Brown 1994 rate count-side refusals as not
+#'   applicable). The count-side branch read a field no step sets, so it never
+#'   ran.
+#' * **A per-stratum adjustment cancels.** Every interview in a stratum is
+#'   multiplied by the same factor, which cancels in that stratum's catch rate
+#'   and so in every total built as stratum effort times stratum rate. The
+#'   rate estimators rebuild their survey from the interviews and never read
+#'   the re-weighted one.
+#'
+#' Record refusals instead with `add_interviews(refused = )` and report them
+#' with [summarize_refusals()]. The diagnostics this function attaches
+#' (response rate and weight factor per stratum) are still returned, with a
+#' deprecation warning on every call.
 #'
 #' @param design A \code{creel_design} object with at least one survey
 #'   sub-object already attached (\code{\link{add_counts}} or
@@ -29,7 +43,7 @@
 #' @param stratum_col Character. Name of the stratum column in
 #'   \code{response_rates} (default: \code{"stratum"}).
 #'
-#' @return The input \code{creel_design} with adjusted weights. The updated
+#' @return The input \code{creel_design}, whose estimates are unchanged. The
 #'   design includes an attribute \code{"nonresponse_diagnostics"} (a tibble
 #'   with columns \code{stratum}, \code{n_sampled}, \code{n_responded},
 #'   \code{response_rate}, \code{weight_adjustment}) that can be retrieved
@@ -73,7 +87,7 @@
 #'   n_sampled   = c(80L, 60L),
 #'   n_responded = c(72L, 48L)
 #' )
-#' adj_design <- adjust_nonresponse(design, resp)
+#' adj_design <- suppressWarnings(adjust_nonresponse(design, resp))
 #' attr(adj_design, "nonresponse_diagnostics")
 #'
 #' @family "Reporting & Diagnostics"
@@ -84,6 +98,23 @@ adjust_nonresponse <- function(
   method = c("postStratify", "calibrate"),
   stratum_col = "stratum"
 ) {
+  # GH #633: every call, not once per session -- a user who believes the
+  # estimates are adjusted must be told each time they run it.
+  lifecycle::deprecate_warn(
+    when = "9.0.0",
+    what = "adjust_nonresponse()",
+    details = c(
+      x = paste(
+        "It does not change any estimate: counts have no nonresponse, and a",
+        "per-stratum weight cancels in each stratum's catch rate."
+      ),
+      i = paste(
+        "Record refusals with `add_interviews(refused = )` and report them",
+        "with `summarize_refusals()`."
+      )
+    ),
+    always = TRUE
+  )
   method <- match.arg(method)
 
   # Input validation -----------------------------------------------------------
