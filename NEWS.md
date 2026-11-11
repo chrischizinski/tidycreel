@@ -967,6 +967,8 @@
   message. Counts on such days and interviews on night designs were already
   refused. The error counts the interviews and names the days; correct the
   dates or drop them. A calendar that marks no day as unsampled is unchanged.
+  A survey that drew its interview days separately from its count days
+  cannot yet say so, and is refused rather than pooled (#628).
 
 * Two messages no longer state a unit the result is not (#509, #510). The
   period-length warning said instantaneous counts summed without a period
