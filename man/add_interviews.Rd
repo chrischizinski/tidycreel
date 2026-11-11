@@ -199,6 +199,11 @@ add_interviews() performs Tier 1 validation:
 \item Design column presence (date_col exists in interview data)
 \item No NA values in date column
 \item Interview dates exist in design calendar
+\item Interview dates fall on days the calendar marks as worked, when it marks
+them (a \code{p_period}, \code{period_id} or \code{sampled} column, as
+\code{generate_schedule(include_all = TRUE)} writes): an interview on a day the
+schedule did not draw is refused with class
+\code{creel_error_interview_unsampled_day}
 \item Catch and effort columns exist and are numeric
 \item Harvest column exists and is numeric (if provided)
 \item Harvest <= catch consistency (if harvest provided)
