@@ -68,6 +68,9 @@ deprecation warning on every call.
 }
 \section{Adjustment method}{
 
+This describes the factors reported in \code{"nonresponse_diagnostics"}. No
+estimator reads the re-weighted survey (see Description).
+
 For each stratum \eqn{h}:
 \deqn{response\_rate_h = n\_responded_h / n\_sampled_h}
 \deqn{weight\_adjustment_h = 1 / response\_rate_h}
