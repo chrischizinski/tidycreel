@@ -958,6 +958,16 @@
 
 ## Bug fixes
 
+* A design's own register of worked days now decides alone which days were
+  worked (#630). On bus-route and ice designs that name it
+  (`creel_design(sampled = )`), the #454 check also read any literal
+  `sampled`, `p_period` or `period_id` column in the calendar, so a column
+  of that name that meant something else refused interviews on days the
+  register says were worked. The three refusals of a record on an unworked
+  day (#591's register check, #454's day check and the night check) now
+  share the class `creel_error_record_unworked_day`, so one handler catches
+  them all; their own classes are unchanged.
+
 * `add_interviews()` now refuses, on day designs, an interview dated on a day
   the calendar marks as not sampled (#454), with class
   `creel_error_interview_unsampled_day`. A calendar from

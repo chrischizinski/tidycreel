@@ -2378,7 +2378,7 @@ check_records_against_calendar <- function(records, design, date_col, what,
           "i" = "Mark the {cli::qty(length(bad))}day{?s} as sampled, or correct the \\
                  {what} {cli::qty(length(bad))}date{?s}."
         ),
-        class = "creel_error_sampled_register",
+        class = c("creel_error_sampled_register", "creel_error_record_unworked_day"),
         call = call
       )
     }
