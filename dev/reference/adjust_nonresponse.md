@@ -1,17 +1,28 @@
-# Adjust a creel design for nonresponse bias
+# Adjust a creel design for nonresponse bias (deprecated)
 
-Applies nonresponse weighting to a `creel_design` object by scaling
-survey weights within each stratum by the inverse of the observed
-response rate. The adjustment uses
-[`postStratify`](https://rdrr.io/pkg/survey/man/postStratify.html)
-(default) or
-[`calibrate`](https://rdrr.io/pkg/survey/man/calibrate.html) to update
-the internal
-[`svydesign`](https://rdrr.io/pkg/survey/man/svydesign.html) object, so
-all downstream estimators
-([`estimate_effort`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
-[`estimate_catch_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
-etc.) automatically use the corrected weights.
+**\[deprecated\]**
+
+`adjust_nonresponse()` does not change any estimate, and never has (GH
+\#633). It is deprecated in tidycreel 9.0.0 and will be removed in a
+later major release.
+
+- **Counts have no nonresponse.** An instantaneous count has no
+  respondent (Pollock, Jones and Brown 1994 rate count-side refusals as
+  not applicable). The count-side branch read a field no step sets, so
+  it never ran.
+
+- **A per-stratum adjustment cancels.** Every interview in a stratum is
+  multiplied by the same factor, which cancels in that stratum's catch
+  rate and so in every total built as stratum effort times stratum rate.
+  The rate estimators rebuild their survey from the interviews and never
+  read the re-weighted one.
+
+Record refusals instead with `add_interviews(refused = )` and report
+them with
+[`summarize_refusals()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_refusals.md).
+The diagnostics this function attaches (response rate and weight factor
+per stratum) are still returned, with a deprecation warning on every
+call.
 
 ## Usage
 
@@ -69,13 +80,16 @@ adjust_nonresponse(
 
 ## Value
 
-The input `creel_design` with adjusted weights. The updated design
+The input `creel_design`, whose estimates are unchanged. The design
 includes an attribute `"nonresponse_diagnostics"` (a tibble with columns
 `stratum`, `n_sampled`, `n_responded`, `response_rate`,
 `weight_adjustment`) that can be retrieved with
 `attr(result, "nonresponse_diagnostics")`.
 
 ## Adjustment method
+
+This describes the factors reported in `"nonresponse_diagnostics"`. No
+estimator reads the re-weighted survey (see Description).
 
 For each stratum \\h\\: \$\$response\\rate_h = n\\responded_h /
 n\\sampled_h\$\$ \$\$weight\\adjustment_h = 1 / response\\rate_h\$\$
@@ -149,7 +163,7 @@ resp <- data.frame(
   n_sampled   = c(80L, 60L),
   n_responded = c(72L, 48L)
 )
-adj_design <- adjust_nonresponse(design, resp)
+adj_design <- suppressWarnings(adjust_nonresponse(design, resp))
 attr(adj_design, "nonresponse_diagnostics")
 #> # A tibble: 2 × 5
 #>   stratum n_sampled n_responded response_rate weight_adjustment

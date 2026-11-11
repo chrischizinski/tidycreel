@@ -187,7 +187,8 @@ check data completeness, and inspect estimate output.
   : Compare Taylor linearization vs. replicate variance for creel
   estimates
 - [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md)
-  : Adjust a creel design for nonresponse bias
+  **\[deprecated\]** : Adjust a creel design for nonresponse bias
+  (deprecated)
 - [`validate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/validate_creel_data.md)
   : Validate creel survey data frames
 - [`print(`*`<creel_data_validation>`*`)`](https://chrischizinski.com/tidycreel/dev/reference/print.creel_data_validation.md)
