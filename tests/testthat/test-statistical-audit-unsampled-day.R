@@ -150,3 +150,58 @@ test_that("#630: the same unworked day is refused under one class, however the c
     class = "creel_error_record_unworked_day"
   )
 })
+
+# GH #630 (part 3): refused interviews, and those set aside by
+# missing_trip_status = "exclude", skipped the worked-day check. They never
+# enter a rate, but they are counted in the refusal and exclusion tables, so a
+# row on a day the schedule never drew was counted there with no message.
+
+ud_attach_extra <- function(cal, iv, ...) {
+  worked <- cal$date[!is.na(cal$p_period)]
+  cnt <- data.frame(
+    date = worked, day_type = cal$day_type[match(worked, cal$date)],
+    period_id = 1L, count = 20, hrs = 8
+  )
+  d <- ud_q(creel_design(cal, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- ud_q(add_counts(d, cnt, count_col = count, period_length_col = hrs)) # nolint: object_usage_linter
+  ud_q(add_interviews(d, iv,
+    catch = catch, effort = hours, trip_status = trip_status, n_anglers = 1, ... # nolint: object_usage_linter
+  ))
+}
+
+test_that("#630: a refused interview on an unsampled day is refused too", {
+  cal <- ud_calendar()
+  worked <- cal$date[!is.na(cal$p_period)]
+  off <- setdiff(cal$date, worked)[1]
+  iv <- rbind(ud_interviews(cal, worked), ud_interviews(cal, off)[1, ])
+  iv$refused <- c(rep(FALSE, nrow(iv) - 1L), TRUE)
+  err <- expect_error(
+    ud_attach_extra(cal, iv, refused = refused), # nolint: object_usage_linter
+    class = "creel_error_record_unworked_day"
+  )
+  expect_match(conditionMessage(err), format(off), fixed = TRUE)
+  # Named as a refusal, and not told it "cannot be weighted": it never is.
+  expect_match(conditionMessage(err), "1 refused interview is dated", fixed = TRUE)
+  expect_no_match(conditionMessage(err), "weighted", fixed = TRUE)
+  # The same refused row on a worked day is accepted and counted as a refusal.
+  iv_ok <- iv
+  iv_ok$date[nrow(iv_ok)] <- worked[1]
+  iv_ok$day_type[nrow(iv_ok)] <- cal$day_type[match(worked[1], cal$date)]
+  expect_no_error(ud_attach_extra(cal, iv_ok, refused = refused)) # nolint: object_usage_linter
+})
+
+test_that("#630: an excluded no-trip-status interview on an unsampled day is refused too", {
+  cal <- ud_calendar()
+  worked <- cal$date[!is.na(cal$p_period)]
+  off <- setdiff(cal$date, worked)[1]
+  extra <- ud_interviews(cal, off)[1, ]
+  extra$trip_status <- NA
+  iv <- rbind(ud_interviews(cal, worked), extra)
+  expect_error(
+    ud_attach_extra(cal, iv, missing_trip_status = "exclude"),
+    class = "creel_error_record_unworked_day"
+  )
+  iv$date[nrow(iv)] <- worked[1]
+  iv$day_type[nrow(iv)] <- cal$day_type[match(worked[1], cal$date)]
+  expect_no_error(ud_attach_extra(cal, iv, missing_trip_status = "exclude"))
+})

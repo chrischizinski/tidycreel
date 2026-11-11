@@ -329,19 +329,43 @@ check_day_records_worked <- function(records, design, date_col, what, call = rla
     shown <- utils::head(bad, 10L) # nolint: object_usage_linter
     n_rec <- sum(!sampled) # nolint: object_usage_linter
     more <- if (length(bad) > 10L) ", ..." else "" # nolint: object_usage_linter
+    # A refused or excluded row is never weighted; it is counted in its table.
+    why <- if (identical(what, "interview")) { # nolint: object_usage_linter
+      "an interview the design did not select cannot be weighted with the ones it did."
+    } else {
+      "each is counted in the {what} table by its date, and the design did not select that date."
+    }
     cli::cli_abort(
       c(
         "{n_rec} {what}{cli::qty(n_rec)}{?s} {?is/are} dated on {length(bad)} \
          day{?s} the schedule did not sample: {.val {shown}}{more}.",
         "x" = "The calendar marks which days were worked, and these were not drawn.",
-        "i" = "Correct the dates, or drop these {what}s before attaching them: an {what} \
-               the design did not select cannot be weighted with the ones it did."
+        "i" = paste("Correct the dates, or drop these {what}s before attaching them:", why)
       ),
       class = c("creel_error_interview_unsampled_day", "creel_error_record_unworked_day", "creel_error"),
       call = call
     )
   }
   invisible(NULL)
+}
+
+#' Refuse interviews on a day or night the schedule did not work
+#'
+#' Internal (GH #630). Kept, refused and excluded interviews all pass through
+#' here: a refused or excluded row never enters a rate, but it is counted in
+#' the refusal and exclusion tables, and a row dated on an unworked day is a
+#' data error there too. Night designs map rows before they are split, so
+#' every row already carries its night date.
+#'
+#' @keywords internal
+#' @noRd
+check_interviews_worked <- function(records, design, date_col, what = "interview",
+                                    call = rlang::caller_env()) {
+  if (!is.null(design$night)) {
+    check_night_records_worked(records, design, date_col, what, call = call)
+  } else {
+    check_day_records_worked(records, design, date_col, what, call = call)
+  }
 }
 
 #' Real elapsed hours of each calendar shift on a night design

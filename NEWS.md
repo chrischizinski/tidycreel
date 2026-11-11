@@ -966,7 +966,10 @@
   register says were worked. The three refusals of a record on an unworked
   day (#591's register check, #454's day check and the night check) now
   share the class `creel_error_record_unworked_day`, so one handler catches
-  them all; their own classes are unchanged.
+  them all; their own classes are unchanged. Refused interviews, and those
+  set aside by `missing_trip_status = "exclude"`, are now held to the same
+  check: they never enter a rate, but a row on a day the schedule never drew
+  was counted in the refusal and exclusion tables with no message.
 
 * `add_interviews()` now refuses, on day designs, an interview dated on a day
   the calendar marks as not sampled (#454), with class

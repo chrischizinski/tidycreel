@@ -4250,6 +4250,7 @@ add_interviews <- function(
         )
       }
       check_records_against_calendar(refused_rows, design, date_col, "interview") # GH #449
+      check_interviews_worked(refused_rows, design, date_col, "refused interview") # GH #630
     }
   }
 
@@ -4266,6 +4267,7 @@ add_interviews <- function(
     excluded_rows <- parts$excluded
     if (!is.null(excluded_rows)) {
       check_records_against_calendar(excluded_rows, design, date_col, "interview") # GH #449
+      check_interviews_worked(excluded_rows, design, date_col, "excluded interview") # GH #630
     }
   }
 
@@ -4280,11 +4282,7 @@ add_interviews <- function(
     allow_invalid
   ) # nolint: object_usage_linter
   check_records_against_calendar(interviews, design, date_col, "interview") # GH #449
-  if (!is.null(design$night)) {
-    check_night_records_worked(interviews, design, date_col, "interview") # nolint: object_usage_linter
-  } else {
-    check_day_records_worked(interviews, design, date_col, "interview") # nolint: object_usage_linter
-  }
+  check_interviews_worked(interviews, design, date_col) # GH #454
 
   # Validate trip metadata
   validate_trip_metadata(
