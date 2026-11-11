@@ -180,6 +180,9 @@ test_that("#630: a refused interview on an unsampled day is refused too", {
     class = "creel_error_record_unworked_day"
   )
   expect_match(conditionMessage(err), format(off), fixed = TRUE)
+  # Named as a refusal, and not told it "cannot be weighted": it never is.
+  expect_match(conditionMessage(err), "1 refused interview is dated", fixed = TRUE)
+  expect_no_match(conditionMessage(err), "weighted", fixed = TRUE)
   # The same refused row on a worked day is accepted and counted as a refusal.
   iv_ok <- iv
   iv_ok$date[nrow(iv_ok)] <- worked[1]

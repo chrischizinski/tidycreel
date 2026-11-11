@@ -4250,7 +4250,7 @@ add_interviews <- function(
         )
       }
       check_records_against_calendar(refused_rows, design, date_col, "interview") # GH #449
-      check_interviews_worked(refused_rows, design, date_col) # GH #630
+      check_interviews_worked(refused_rows, design, date_col, "refused interview") # GH #630
     }
   }
 
@@ -4267,7 +4267,7 @@ add_interviews <- function(
     excluded_rows <- parts$excluded
     if (!is.null(excluded_rows)) {
       check_records_against_calendar(excluded_rows, design, date_col, "interview") # GH #449
-      check_interviews_worked(excluded_rows, design, date_col) # GH #630
+      check_interviews_worked(excluded_rows, design, date_col, "excluded interview") # GH #630
     }
   }
 
