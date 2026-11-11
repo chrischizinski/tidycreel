@@ -145,6 +145,7 @@ test_that("a design saved in one session keeps new warnings in the next", {
   rates <- data.frame(
     day_type = c("weekday", "weekend"), n_sampled = c(10, 10), n_responded = c(4, 9)
   )
+  withr::local_options(lifecycle_verbosity = "quiet") # deprecated (#633)
   adjusted <- raised(adjust_nonresponse(design, rates, stratum_col = "day_type"))
   expect_true("creel_warning_low_response_rate" %in% adjusted$classes)
   w <- get_warnings(adjusted$value)
@@ -158,6 +159,7 @@ test_that("adjust_nonresponse() keeps its warnings on the design it returns", {
   rates <- data.frame(
     day_type = c("weekday", "weekend"), n_sampled = c(10, 10), n_responded = c(4, 9)
   )
+  withr::local_options(lifecycle_verbosity = "quiet") # deprecated (#633)
   out <- raised(adjust_nonresponse(design, rates, stratum_col = "day_type"))
   expect_setequal(get_warnings(out$value)$class, out$classes)
   expect_gt(length(out$classes), 0)
