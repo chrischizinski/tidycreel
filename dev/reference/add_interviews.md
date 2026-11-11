@@ -327,6 +327,12 @@ add_interviews() performs Tier 1 validation:
 
 - Interview dates exist in design calendar
 
+- Interview dates fall on days the calendar marks as worked, when it
+  marks them (a `p_period`, `period_id` or `sampled` column, as
+  `generate_schedule(include_all = TRUE)` writes): an interview on a day
+  the schedule did not draw is refused with class
+  `creel_error_interview_unsampled_day`
+
 - Catch and effort columns exist and are numeric
 
 - Harvest column exists and is numeric (if provided)
