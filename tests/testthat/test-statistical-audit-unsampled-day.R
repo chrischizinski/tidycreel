@@ -87,3 +87,66 @@ test_that("#454: a sampled = FALSE day is unsampled too", {
   # Interviews and days are counted separately: three interviews, one day.
   expect_match(conditionMessage(err), "3 interviews are dated on 1 day the", fixed = TRUE)
 })
+
+# GH #630: "which days were worked" had two sources. A bus-route or ice design
+# names its register (`creel_design(sampled = )`) and #591 checks interviews
+# against it; the #454 check read only the literal p_period / period_id /
+# sampled columns. A calendar whose literal `sampled` column means something
+# else then refused interviews on days the register says were worked. The
+# register now decides alone when it is named, and both refusals share one
+# class to catch.
+
+ud_bus <- function(cal, iv_days, register = "worked") {
+  frame <- data.frame(site = "S1", circuit = "C1", p_site = 1, p_period = 0.5)
+  iv <- data.frame(
+    date = iv_days, day_type = cal$day_type[match(iv_days, cal$date)],
+    site = "S1", circuit = "C1", hours = 2, catch = 1L, trip_status = "complete",
+    n_counted = 1L, n_interviewed = 1L
+  )
+  d <- ud_q(creel_design(cal, # nolint: object_usage_linter
+    date = date, strata = day_type, survey_type = "bus_route",
+    sampling_frame = frame, site = site, circuit = circuit,
+    p_site = p_site, p_period = p_period, sampled = !!rlang::sym(register)
+  ))
+  ud_q(add_interviews(d, iv, # nolint: object_usage_linter
+    catch = catch, effort = hours, trip_status = trip_status, n_anglers = 1,
+    n_counted = n_counted, n_interviewed = n_interviewed
+  ))
+}
+
+ud_bus_calendar <- function() {
+  dates <- as.Date("2024-06-01") + 0:13
+  cal <- data.frame(
+    date = dates,
+    day_type = ifelse(format(dates, "%u") %in% c("6", "7"), "weekend", "weekday")
+  )
+  cal$worked <- seq_along(dates) %% 2 == 1
+  cal
+}
+
+test_that("#630: a named register decides alone, over an unrelated literal `sampled` column", {
+  cal <- ud_bus_calendar()
+  cal$sampled <- FALSE # some other flag; the register is `worked`
+  worked_days <- cal$date[cal$worked]
+  d <- ud_bus(cal, worked_days)
+  expect_equal(nrow(d$interviews), length(worked_days))
+})
+
+test_that("#630: the same unworked day is refused under one class, however the calendar says so", {
+  cal <- ud_bus_calendar()
+  off <- cal$date[!cal$worked][1]
+  on <- cal$date[cal$worked][1:2]
+  # Named register (bus-route, #591).
+  expect_error(ud_bus(cal, c(on, off)), class = "creel_error_record_unworked_day")
+  # Literal `sampled` column on a day design (#454).
+  cal2 <- cal
+  cal2$sampled <- cal2$worked
+  d <- ud_q(creel_design(cal2, date = date, strata = day_type)) # nolint: object_usage_linter
+  iv <- ud_interviews(cal2, c(on, off))
+  expect_error(
+    ud_q(add_interviews(d, iv, # nolint: object_usage_linter
+      catch = catch, effort = hours, trip_status = trip_status, n_anglers = 1
+    )),
+    class = "creel_error_record_unworked_day"
+  )
+})

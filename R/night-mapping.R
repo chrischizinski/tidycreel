@@ -226,9 +226,17 @@ night_survey_dates <- function(dates, times, night, what, time_arg, call = rlang
 #' probability, no period or `sampled` FALSE was not worked. `NULL` when the
 #' calendar does not say.
 #'
+#' A design that names its register (`creel_design(sampled = )`, GH #591)
+#' answers the question itself: that column decides alone (GH #630), so a
+#' literal `sampled` or `p_period` column meaning something else cannot
+#' overrule it.
+#'
 #' @keywords internal
 #' @noRd
-calendar_worked_rows <- function(cal) {
+calendar_worked_rows <- function(cal, sampled_col = NULL) {
+  if (!is.null(sampled_col)) {
+    return(cal[[sampled_col]] %in% TRUE)
+  }
   cols <- intersect(c("p_period", "period_id", "sampled"), names(cal))
   if (length(cols) == 0L) {
     return(NULL)
@@ -253,7 +261,7 @@ calendar_worked_rows <- function(cal) {
 #' @noRd
 check_night_records_worked <- function(records, design, date_col, what, call = rlang::caller_env()) {
   cal <- design$calendar
-  worked <- calendar_worked_rows(cal)
+  worked <- calendar_worked_rows(cal, design$sampled_col)
   if (is.null(worked)) {
     return(invisible(NULL))
   }
@@ -269,7 +277,7 @@ check_night_records_worked <- function(records, design, date_col, what, call = r
         "i" = "Records carry their calendar date: a 00:45 record belongs to the night before. \\
                A record already dated by its night is moved back a day too far."
       ),
-      class = "creel_error_night_record_unsampled",
+      class = c("creel_error_night_record_unsampled", "creel_error_record_unworked_day"),
       call = call
     )
   }
@@ -310,7 +318,7 @@ check_night_records_worked <- function(records, design, date_col, what, call = r
 #' @noRd
 check_day_records_worked <- function(records, design, date_col, what, call = rlang::caller_env()) {
   cal <- design$calendar
-  worked <- calendar_worked_rows(cal)
+  worked <- calendar_worked_rows(cal, design$sampled_col)
   if (is.null(worked)) {
     return(invisible(NULL))
   }
@@ -329,7 +337,7 @@ check_day_records_worked <- function(records, design, date_col, what, call = rla
         "i" = "Correct the dates, or drop these {what}s before attaching them: an {what} \
                the design did not select cannot be weighted with the ones it did."
       ),
-      class = c("creel_error_interview_unsampled_day", "creel_error"),
+      class = c("creel_error_interview_unsampled_day", "creel_error_record_unworked_day", "creel_error"),
       call = call
     )
   }
