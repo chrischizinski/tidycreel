@@ -329,6 +329,9 @@ estimate_total_harvest <- function(
     ))
   }
 
+  # A column the design names must still be in its table (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
+
   # Resolved by the same rule estimate_harvest_rate() uses, in the one place the
   # per-metric rule lives, so this total and its own rate function cannot
   # disagree about which estimator the design calls for (GH #268). Since GH #271

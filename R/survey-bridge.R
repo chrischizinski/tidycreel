@@ -13,9 +13,10 @@
 #'
 #' @param design A creel_design object with counts attached via \code{\link{add_counts}}
 #'
-#' @return A survey.design2 object (from survey::svydesign). Due to R's
-#'   copy-on-modify semantics, modifications to the returned object will not
-#'   affect the internal design$survey object.
+#' @return A survey.design2 object (from survey::svydesign), built from the
+#'   counts the design holds when it is called, the same counts
+#'   [estimate_effort()] uses. Modifying the returned object does not change
+#'   the design.
 #'
 #' @section Note:
 #' This function gives a message, once per design (see [creel_warnings]),
@@ -83,9 +84,12 @@ as_creel_svydesign <- function(design) {
     class = c("creel_message_internal_svydesign", "creel_message")
   )
 
-  # Return design$survey
-  # R's copy-on-modify semantics ensure modifications don't affect original
-  design$survey
+  # Built from the counts the design holds now, not the survey stored at
+  # add_counts() time: the estimators rebuild from design$counts, so after an
+  # edit to the counts the stored survey described different data than
+  # estimate_effort() used (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
+  construct_survey_design(design) # nolint: object_usage_linter
 }
 
 #' Extract internal survey design object (deprecated)

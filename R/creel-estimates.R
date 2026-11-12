@@ -740,6 +740,9 @@ estimate_effort <- function(
     ))
   }
 
+  # A column the design names must still be in its table (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
+
   # Camera designs have no branch in the dispatch chain below and would fall
   # through to the instantaneous path, which sums the count column (GH #214).
   # Refused before the survey check so a camera design is told which function it
@@ -1302,6 +1305,9 @@ estimate_catch_rate <- function(
       "i" = "Create a design with {.fn creel_design}."
     ))
   }
+
+  # A column the design names must still be in its table (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
 
   # Validate design$interview_survey exists
   if (is.null(design$interview_survey)) {
@@ -2274,6 +2280,9 @@ estimate_harvest_rate <- function(
     ))
   }
 
+  # A column the design names must still be in its table (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
+
   # Validate design$interview_survey exists (skip for bus-route/ice: they use
   # interviews, not counts)
   if (
@@ -2795,6 +2804,9 @@ estimate_release_rate <- function(
       "i" = "Create a design with {.fn creel_design}."
     ))
   }
+
+  # A column the design names must still be in its table (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
 
   # Validate catch data exists
   if (is.null(design[["catch"]])) {

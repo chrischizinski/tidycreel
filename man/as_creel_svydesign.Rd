@@ -10,9 +10,10 @@ as_creel_svydesign(design)
 \item{design}{A creel_design object with counts attached via \code{\link{add_counts}}}
 }
 \value{
-A survey.design2 object (from survey::svydesign). Due to R's
-copy-on-modify semantics, modifications to the returned object will not
-affect the internal design$survey object.
+A survey.design2 object (from survey::svydesign), built from the
+counts the design holds when it is called, the same counts
+\code{\link[=estimate_effort]{estimate_effort()}} uses. Modifying the returned object does not change
+the design.
 }
 \description{
 Provides power users with direct access to the internal survey.design2 object
