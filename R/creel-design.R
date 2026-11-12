@@ -1873,69 +1873,89 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
   invisible(NULL)
 }
 
-#' Resolve the period selection probability for add_counts()
-#'
-#' Internal (GH #368). `p_period` is the probability that the counted period
-#' (shift) was the one worked on that sampled day: either a single number or a
-#' column of `counts`, in (0, 1]. It needs a period length to divide, and is
-#' refused where the design already carries the period term itself.
-#'
-#' @return `NULL` when `p_period` is absent, otherwise a numeric vector with one
-#'   value per count row and a `"source"` attribute (the number, or the column
-#'   name) for the design to record.
-#'
-#' @keywords internal
-#' @noRd
-# p_period of a bus-route or ice design: a column of the sampling frame, or one
-# number (#463). As in resolve_count_p_period(), column or number is decided
-# from the expression, never by trying tidyselect first: tidyselect reads a
-# bare whole number as a column POSITION, so `p_period = 1` selected the
-# frame's first column and the inclusion probability silently became p_site^2.
-# Returns list(col, value), exactly one of them non-NULL. `frame` is NULL when
-# there is no sampling frame, and then only a number is possible.
-resolve_frame_p_period <- function(p_period_quo, frame, call) {
+# Column or number, decided from the expression (GH #463, #466), for both
+# p_period resolvers: creel_design() reads it against the sampling frame,
+# add_counts() against the counts. Never by trying tidyselect first: tidyselect
+# reads a whole number as a column POSITION, so `p_period = 1` selected the
+# first column. Accepts a column by name or string, a tidyselect helper
+# (all_of(), any_of(), ...), a variable holding a column name, or one number.
+# Returns list(col, value), exactly one of them non-NULL. `table` is NULL when
+# there is no table, and then only a number is possible.
+resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class, call) {
+  # tidyselect's own errors carry no class; the caller's is added, with
+  # tidyselect's message kept as the cause.
+  select_col <- function() {
+    tryCatch(
+      resolve_single_col(p_period_quo, table, "p_period", call),
+      error = function(e) {
+        cli::cli_abort(
+          "{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1].",
+          class = error_class, call = call, parent = e
+        )
+      }
+    )
+  }
   expr <- rlang::quo_get_expr(p_period_quo)
-  names_a_column <- !is.null(frame) && (is.symbol(expr) || is.character(expr)) &&
-    length(expr) == 1L && as.character(expr) %in% names(frame)
-  value <- NULL
-  col <- NULL
-  # A tidyselect helper (all_of(), any_of(), ...) is known by the namespace of
-  # its function, not its name; evaluating one outside a selection is
-  # deprecated, so it goes straight to tidyselect.
-  is_selector <- !is.null(frame) && rlang::is_call(expr) && identical(tryCatch(
+  names_a_column <- !is.null(table) && (is.symbol(expr) || is.character(expr)) &&
+    length(expr) == 1L && as.character(expr) %in% names(table)
+  # A tidyselect helper is known by the namespace of its function, not its
+  # name; evaluating one outside a selection is deprecated, so it goes straight
+  # to tidyselect.
+  is_selector <- !is.null(table) && rlang::is_call(expr) && identical(tryCatch(
     environmentName(environment(rlang::eval_tidy(expr[[1]], env = rlang::quo_get_env(p_period_quo)))),
     error = function(e) ""
   ), "tidyselect")
   if (names_a_column || is_selector) {
-    col <- resolve_single_col(p_period_quo, frame, "p_period", call)
-  } else {
-    evaluated <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) e)
-    if (is.numeric(evaluated) && length(evaluated) == 1L) {
-      value <- evaluated
-    } else if (is.character(evaluated) && length(evaluated) == 1L) {
-      # A variable holding a column name.
-      if (is.null(frame) || !evaluated %in% names(frame)) {
-        cli::cli_abort(
-          c("{.arg p_period} must be a column of {.arg sampling_frame} or a single number in (0, 1].",
-            "x" = "{.val {evaluated}} is not a column of {.arg sampling_frame}."),
-          class = "creel_error_invalid_input", call = call
-        )
-      }
-      col <- evaluated
-    } else if (!is.null(frame)) {
-      # A tidyselect helper such as all_of(), or an expression that failed to
-      # evaluate: tidyselect resolves it or reports why not. Never reached by a
-      # number, so a number is never a column position.
-      col <- resolve_single_col(p_period_quo, frame, "p_period", call)
-    } else {
+    return(list(col = select_col(), value = NULL))
+  }
+  evaluated <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) e)
+  if (is.numeric(evaluated)) {
+    # Any number, of any length, is a probability and never a position.
+    if (length(evaluated) != 1L) {
       cli::cli_abort(
-        c("{.arg p_period} must be a single number in (0, 1] when there is no {.arg sampling_frame}.",
-          "x" = if (inherits(evaluated, "error")) conditionMessage(evaluated) else
-            "Got {.cls {class(evaluated)[1]}} of length {length(evaluated)}."),
-        class = "creel_error_invalid_input", call = call
+        c("{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1].",
+          "x" = "Got a numeric vector of length {length(evaluated)}."),
+        class = error_class, call = call
       )
     }
+    return(list(col = NULL, value = evaluated))
   }
+  if (is.character(evaluated) && length(evaluated) == 1L) {
+    # A variable holding a column name.
+    if (is.null(table) || !evaluated %in% names(table)) {
+      cli::cli_abort(
+        c("{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1].",
+          "x" = "{.val {evaluated}} is not a column of {.arg {table_arg}}."),
+        class = error_class, call = call
+      )
+    }
+    return(list(col = evaluated, value = NULL))
+  }
+  if (!is.null(table)) {
+    # Anything else -- an expression that failed to evaluate, or a value that
+    # is neither a number nor a name: tidyselect resolves it or says why.
+    # Never reached by a number, so a number is never a column position.
+    return(list(col = select_col(), value = NULL))
+  }
+  cli::cli_abort(
+    c(if (is.null(table)) {
+      "{.arg p_period} must be a single number in (0, 1] when there is no {.arg {table_arg}}."
+    } else {
+      "{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1]."
+    },
+      "x" = if (inherits(evaluated, "error")) conditionMessage(evaluated) else
+        "Got {.cls {class(evaluated)[1]}} of length {length(evaluated)}."),
+    class = error_class, call = call
+  )
+}
+
+# p_period of a bus-route or ice design: a column of the sampling frame, or one
+# number (#463). `frame` is NULL when there is no sampling frame.
+resolve_frame_p_period <- function(p_period_quo, frame, call) {
+  src <- resolve_p_period_source(p_period_quo, frame, "sampling_frame",
+                                 "creel_error_invalid_input", call)
+  col <- src$col
+  value <- src$value
   vals <- if (is.null(col)) value else frame[[col]]
   if (!is.numeric(vals) || any(is.na(vals) | vals <= 0 | vals > 1)) {
     cli::cli_abort(
@@ -1951,6 +1971,19 @@ resolve_frame_p_period <- function(p_period_quo, frame, call) {
   list(col = col, value = value)
 }
 
+#' Resolve the period selection probability for add_counts()
+#'
+#' Internal (GH #368). `p_period` is the probability that the counted period
+#' (shift) was the one worked on that sampled day: either a single number or a
+#' column of `counts`, in (0, 1]. It needs a period length to divide, and is
+#' refused where the design already carries the period term itself.
+#'
+#' @return `NULL` when `p_period` is absent, otherwise a numeric vector with one
+#'   value per count row and a `"source"` attribute (the number, or the column
+#'   name) for the design to record.
+#'
+#' @keywords internal
+#' @noRd
 resolve_count_p_period <- function(p_period_quo, counts, design, period_length_col_name,
                                    period_vals = NULL, counts_are_effort = FALSE,
                                    call = rlang::caller_env()) {
@@ -2003,31 +2036,16 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
   # first: tidyselect reads a bare whole number as a column POSITION, so
   # `p_period = 1` selected the first column (the date) instead of meaning
   # "the period was certain to be worked".
-  expr <- rlang::quo_get_expr(p_period_quo)
-  names_a_column <- (is.symbol(expr) || is.character(expr)) &&
-    length(expr) == 1L && as.character(expr) %in% names(counts)
-  col <- if (names_a_column) {
-    resolve_single_col(p_period_quo, counts, "p_period", call)
-  } else {
-    NULL
-  }
+  # One rule with creel_design(): see resolve_p_period_source() (GH #466).
+  src <- resolve_p_period_source(p_period_quo, counts, "counts",
+                                 "creel_error_p_period_invalid", call)
+  col <- src$col
   if (!is.null(col)) {
     vals <- counts[[col]]
     source <- col
   } else {
-    vals <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) NULL)
-    if (!is.numeric(vals) || length(vals) != 1L) {
-      cli::cli_abort(
-        c(
-          "{.arg p_period} must be a column of {.arg counts} or a single number in (0, 1].",
-          "x" = "Got {.cls {class(vals)[1]}} of length {length(vals)}."
-        ),
-        class = "creel_error_p_period_invalid",
-        call = call
-      )
-    }
-    source <- vals
-    vals <- rep(vals, nrow(counts))
+    source <- src$value
+    vals <- rep(src$value, nrow(counts))
   }
 
   bad <- !is.numeric(vals) | is.na(vals) | !is.finite(vals) | vals <= 0 | vals > 1

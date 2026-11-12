@@ -992,6 +992,14 @@
 
 ## Bug fixes
 
+* `add_counts()` and `creel_design()` now read `p_period` with one rule
+  (#466). `add_counts()` treated only a bare column name or a string as a
+  column, so `p_period = all_of("pp")` and a variable holding a column name
+  failed there while `creel_design()` accepted them; both work in both now.
+  Each keeps its own error class. A numeric vector such as `c(1, 2)` is
+  refused as "not a single number" in both: on a bus-route or ice sampling
+  frame it was handed to tidyselect, which read it as column positions.
+
 * The sectioned totals (`estimate_total_catch()`, `estimate_total_harvest()`,
   `estimate_total_release()`) now report the `.lake_total` row as `NA`, with
   `data_available = FALSE`, when no section has an estimate (#637). The lake
