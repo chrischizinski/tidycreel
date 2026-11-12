@@ -65,6 +65,9 @@ bad values and listing valid options.
 \code{add_sections()} is optional for single-section surveys. Call it when your
 survey covers multiple named sections and you want early detection of
 mislabelled data (e.g. "NRTH" instead of "NORTH").
+
+Sections are refused on aerial, bus-route and ice designs: no estimator
+splits those designs by section, so the sections would be silently ignored.
 }
 \section{Validation performed by downstream functions}{
 
