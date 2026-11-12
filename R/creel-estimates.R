@@ -3987,7 +3987,7 @@ screen_by_vars <- function(vars, by_quo, data, design, extra_key_cols = characte
         "x" = "It holds one value per interview, so every group would be a single
                interview and no within-group variance could be estimated.",
         "i" = "Group by a column that repeats across interviews, such as
-               {.field {design$strata_col}} or a trip attribute."
+               {.field {design$strata_cols}} or a trip attribute."
       ),
       class = "creel_error_key_in_by",
       call = error_call

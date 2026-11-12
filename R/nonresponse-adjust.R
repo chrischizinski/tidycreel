@@ -218,15 +218,8 @@ adjust_nonresponse <- function(
   # Determine which sub-design(s) to adjust
   adjusted_design <- design
 
-  if (!is.null(design$counts_survey)) {
-    adjusted_design$counts_survey <- apply_nonresponse_weights(
-      design$counts_survey,
-      design$strata_cols,
-      diagnostics,
-      method = method
-    )
-  }
-
+  # No count-side branch: it read design$counts_survey, a field no step sets,
+  # so it never ran (GH #633), and an unknown field name now errors (#594).
   if (!is.null(design$interview_survey)) {
     adjusted_design$interview_survey <- apply_nonresponse_weights(
       design$interview_survey,
@@ -236,11 +229,11 @@ adjust_nonresponse <- function(
     )
   }
 
-  if (is.null(design$counts_survey) && is.null(design$interview_survey)) {
+  if (is.null(design$interview_survey)) {
     creel_inform(c(
       "No survey sub-designs found to adjust.",
       "i" = paste0(
-        "Call {.fn add_counts} or {.fn add_interviews} before ",
+        "Call {.fn add_interviews} before ",
         "{.fn adjust_nonresponse}."
       )
     ),
