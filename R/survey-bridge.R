@@ -72,6 +72,10 @@ as_creel_svydesign <- function(design) {
     ))
   }
 
+  # Before the notice below, which prints once per design: a refused call
+  # must not spend it. Counts only: this survey is built from them alone.
+  check_design_columns(design, tables = "counts") # nolint: object_usage_linter
+
   # Prints once per design (GH #496).
   # cli_warn(), not rlang::warn(): the latter does not evaluate cli markup, so
   # the {.fn} field printed literally to the user.
@@ -88,7 +92,6 @@ as_creel_svydesign <- function(design) {
   # add_counts() time: the estimators rebuild from design$counts, so after an
   # edit to the counts the stored survey described different data than
   # estimate_effort() used (GH #594).
-  check_design_columns(design) # nolint: object_usage_linter
   construct_survey_design(design) # nolint: object_usage_linter
 }
 

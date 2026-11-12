@@ -992,8 +992,10 @@
   "object 'catch_total' not found"; dropping the effort column let the
   catch rate run on regardless. The check runs at the end of `add_counts()`
   and `add_interviews()`, and at the start of `estimate_effort()`, the rate
-  estimators, the three totals, and the age and length estimators. Editing
-  values or subsetting rows is still followed, as before.
+  estimators, the three totals, and the age and length estimators;
+  `as_creel_svydesign()` checks the counts only, since it is built from
+  them alone. Editing values or subsetting rows is still followed, as
+  before.
 
 * A design's own register of worked days now decides alone which days were
   worked (#630). On bus-route and ice designs that name it

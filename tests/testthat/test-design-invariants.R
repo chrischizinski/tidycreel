@@ -98,6 +98,60 @@ test_that("#594: the column check runs in every total and the harvest rate", {
   }
 })
 
+test_that("#594: release, age and length estimators refuse a missing column too", {
+  data("example_catch", package = "tidycreel", envir = environment())
+  data("example_lengths", package = "tidycreel", envir = environment())
+  data("example_ages", package = "tidycreel", envir = environment())
+  d <- inv_design()
+  d <- suppressMessages(add_catch(d, example_catch,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+  d <- suppressMessages(add_lengths(d, example_lengths,
+    length_uid = interview_id, interview_uid = interview_id,
+    species = species, length = length, length_type = length_type,
+    count = count, release_format = "binned"
+  ))
+  d <- suppressMessages(add_ages(d, example_ages,
+    age_uid = interview_id, interview_uid = interview_id,
+    species = species, age = age, age_type = age_type
+  ))
+  # Each runs on the intact design, so the refusal below is the check's.
+  run <- list(
+    total_release = function(d) estimate_total_release(d),
+    age = function(d) est_age_distribution(d, by = species),
+    length = function(d) est_length_distribution(d, by = species, bin_width = 25)
+  )
+  for (f in run) expect_no_error(suppressWarnings(suppressMessages(f(d))))
+  d$interviews$angler_type <- NULL
+  for (nm in names(run)) {
+    expect_error(
+      suppressWarnings(suppressMessages(run[[nm]](d))),
+      class = "creel_error_design_column_missing",
+      info = nm
+    )
+  }
+})
+
+test_that("#594: as_creel_svydesign() checks only the counts it is built from", {
+  d <- inv_design()
+  d$interviews$angler_type <- NULL
+  expect_no_error(suppressMessages(as_creel_svydesign(d)))
+  d$counts$effort_hours <- NULL
+  expect_error(
+    suppressMessages(as_creel_svydesign(d)),
+    class = "creel_error_design_column_missing"
+  )
+})
+
+test_that("#594: a refused as_creel_svydesign() does not spend its one-time notice", {
+  d <- inv_design()
+  broken <- d
+  broken$counts$effort_hours <- NULL
+  expect_error(suppressMessages(as_creel_svydesign(broken)))
+  expect_message(as_creel_svydesign(d), class = "creel_message_internal_svydesign")
+})
+
 test_that("#594: a design whose columns are all present estimates as before", {
   d <- inv_design()
   expect_no_error(suppressWarnings(suppressMessages(estimate_total_catch(d))))

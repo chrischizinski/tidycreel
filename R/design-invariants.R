@@ -32,14 +32,20 @@ design_interview_column_fields <- c(
 #' Check that each column a design names is in the table it names
 #'
 #' @param design A creel_design.
+#' @param tables Which tables to check: `"counts"`, `"interviews"`, or both.
 #' @param call Environment for the error's call.
 #' @return `design`, invisibly. Aborts with class
 #'   `creel_error_design_column_missing` naming the field and the column.
 #' @keywords internal
 #' @noRd
-check_design_columns <- function(design, call = rlang::caller_env()) {
-  check_table_columns(design, "counts", design_count_column_fields, call)
-  check_table_columns(design, "interviews", design_interview_column_fields, call)
+check_design_columns <- function(design, tables = c("counts", "interviews"),
+                                 call = rlang::caller_env()) {
+  if ("counts" %in% tables) {
+    check_table_columns(design, "counts", design_count_column_fields, call)
+  }
+  if ("interviews" %in% tables) {
+    check_table_columns(design, "interviews", design_interview_column_fields, call)
+  }
   invisible(design)
 }
 
