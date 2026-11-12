@@ -1882,6 +1882,19 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
 # Returns list(col, value), exactly one of them non-NULL. `table` is NULL when
 # there is no table, and then only a number is possible.
 resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class, call) {
+  # tidyselect's own errors carry no class; the caller's is added, with
+  # tidyselect's message kept as the cause.
+  select_col <- function() {
+    tryCatch(
+      resolve_single_col(p_period_quo, table, "p_period", call),
+      error = function(e) {
+        cli::cli_abort(
+          "{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1].",
+          class = error_class, call = call, parent = e
+        )
+      }
+    )
+  }
   expr <- rlang::quo_get_expr(p_period_quo)
   names_a_column <- !is.null(table) && (is.symbol(expr) || is.character(expr)) &&
     length(expr) == 1L && as.character(expr) %in% names(table)
@@ -1893,7 +1906,7 @@ resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class,
     error = function(e) ""
   ), "tidyselect")
   if (names_a_column || is_selector) {
-    return(list(col = resolve_single_col(p_period_quo, table, "p_period", call), value = NULL))
+    return(list(col = select_col(), value = NULL))
   }
   evaluated <- tryCatch(rlang::eval_tidy(p_period_quo), error = function(e) e)
   if (is.numeric(evaluated)) {
@@ -1918,9 +1931,11 @@ resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class,
     }
     return(list(col = evaluated, value = NULL))
   }
-  if (!is.null(table) && inherits(evaluated, "error")) {
-    # An expression that failed to evaluate: tidyselect resolves it or says why.
-    return(list(col = resolve_single_col(p_period_quo, table, "p_period", call), value = NULL))
+  if (!is.null(table)) {
+    # Anything else -- an expression that failed to evaluate, or a value that
+    # is neither a number nor a name: tidyselect resolves it or says why.
+    # Never reached by a number, so a number is never a column position.
+    return(list(col = select_col(), value = NULL))
   }
   cli::cli_abort(
     c(if (is.null(table)) {

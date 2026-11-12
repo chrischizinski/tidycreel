@@ -62,3 +62,10 @@ test_that("#466: a numeric vector is refused, never read as column positions", {
     class = "creel_error_invalid_input"
   )
 })
+
+test_that("#466: an unknown name keeps add_counts()'s error class", {
+  # The shared resolver hands an expression that fails to evaluate to
+  # tidyselect, whose errors carry no class; the caller's class is added.
+  expect_error(cpp_add(p_period = not_a_variable_anywhere), class = "creel_error_p_period_invalid")
+  expect_error(cpp_add(p_period = tidyselect::all_of("nope")), class = "creel_error_p_period_invalid")
+})
