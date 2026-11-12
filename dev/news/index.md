@@ -1376,6 +1376,21 @@
 
 ### Bug fixes
 
+- [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  and
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+  now read `p_period` with one rule
+  ([\#466](https://github.com/chrischizinski/tidycreel/issues/466)).
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  treated only a bare column name or a string as a column, so
+  `p_period = all_of("pp")` and a variable holding a column name failed
+  there while
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
+  accepted them; both work in both now. Each keeps its own error class.
+  A numeric vector such as `c(1, 2)` is refused as “not a single number”
+  in both: on a bus-route or ice sampling frame it was handed to
+  tidyselect, which read it as column positions.
+
 - The sectioned totals
   ([`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
   [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md),
