@@ -997,7 +997,10 @@
   (#470). Every estimator handles these designs before its section branch,
   and the bus-route estimators never read the sections, so registered
   sections were accepted and then dropped from every estimate with no
-  message: a user who asked for sections got lake-wide results.
+  message: a user who asked for sections got lake-wide results. A design
+  saved before this change with sections registered still estimates as it
+  did; a design bundle holding such a design no longer rebuilds until the
+  `add_sections()` step is removed.
 
 * `add_counts()` and `creel_design()` now read `p_period` with one rule
   (#466). `add_counts()` treated only a bare column name or a string as a

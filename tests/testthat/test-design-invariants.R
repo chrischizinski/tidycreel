@@ -318,3 +318,17 @@ test_that("#638: bus-route and ice designs refuse sections, which no estimator u
     "ice"
   )
 })
+
+test_that("#638: a bus-route design saved with sections before #638 still estimates", {
+  # add_sections() refuses these now, but an object built earlier carries the
+  # sections; no estimator reads them, so it is estimated as it always was.
+  d <- build_br_design_for_tests(3, 8, 30, seed = 1)
+  legacy <- unclass(d)
+  legacy$sections <- data.frame(section = c("A", "B"))
+  legacy$section_col <- "section"
+  class(legacy) <- "creel_design"
+  expect_equal(
+    suppressWarnings(suppressMessages(estimate_catch_rate(legacy)))$estimates$estimate,
+    suppressWarnings(suppressMessages(estimate_catch_rate(d)))$estimates$estimate
+  )
+})

@@ -3607,8 +3607,8 @@ add_sections <- function(
     cli::cli_abort(
       c(
         "Sections are not supported on {design_label} designs.",
-        "x" = "The {design_label} estimators work by site and circuit; none \
-               splits the estimate by section, so the sections would be ignored.",
+        "x" = "The {design_label} estimators work by site; none splits the \\
+               estimate by section, so the sections would be ignored.",
         "i" = "Estimate the {design_label} design without sections."
       ),
       class = "creel_error_dispatch_unsupported"
