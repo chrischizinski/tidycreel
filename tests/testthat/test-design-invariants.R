@@ -298,12 +298,37 @@ test_that("#594: a design whose section_col field was deleted is refused, not le
   )
 })
 
-test_that("#594: bus-route sections, which no estimator uses, are not checked", {
-  # Bus-route and ice designs dispatch before the section branch, so their
-  # estimates do not depend on a section column; main accepted this design and
-  # the check must not start refusing it.
+test_that("#638: bus-route and ice designs refuse sections, which no estimator uses", {
+  # Every estimator dispatches these designs before its section branch, so
+  # sections were accepted and then dropped from every estimate in silence.
+  br <- build_br_design_for_tests(3, 8, 30, seed = 1)
+  ice <- build_ice_design(8, 30, seed = 1)
+  for (d in list(br, ice)) {
+    expect_error(
+      add_sections(d, data.frame(section = c("A", "B")), section_col = section),
+      class = "creel_error_dispatch_unsupported"
+    )
+  }
+  expect_error(
+    add_sections(br, data.frame(section = c("A", "B")), section_col = section),
+    "bus-route"
+  )
+  expect_error(
+    add_sections(ice, data.frame(section = c("A", "B")), section_col = section),
+    "ice"
+  )
+})
+
+test_that("#638: a bus-route design saved with sections before #638 still estimates", {
+  # add_sections() refuses these now, but an object built earlier carries the
+  # sections; no estimator reads them, so it is estimated as it always was.
   d <- build_br_design_for_tests(3, 8, 30, seed = 1)
-  expect_no_error(suppressWarnings(suppressMessages(
-    add_sections(d, data.frame(section = c("A", "B")), section_col = section)
-  )))
+  legacy <- unclass(d)
+  legacy$sections <- data.frame(section = c("A", "B"))
+  legacy$section_col <- "section"
+  class(legacy) <- "creel_design"
+  expect_equal(
+    suppressWarnings(suppressMessages(estimate_catch_rate(legacy)))$estimates$estimate,
+    suppressWarnings(suppressMessages(estimate_catch_rate(d)))$estimates$estimate
+  )
 })

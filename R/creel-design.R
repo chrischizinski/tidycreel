@@ -3453,6 +3453,9 @@ add_counts <- function(
 #' survey covers multiple named sections and you want early detection of
 #' mislabelled data (e.g. "NRTH" instead of "NORTH").
 #'
+#' Sections are refused on aerial, bus-route and ice designs: no estimator
+#' splits those designs by section, so the sections would be silently ignored.
+#'
 #' @param design A `creel_design` object (created with [creel_design()]).
 #' @param sections A data frame with one row per section. Must contain the
 #'   column identified by `section_col`. Optional metadata columns are
@@ -3590,6 +3593,23 @@ add_sections <- function(
         "x" = "Aerial effort is estimated for the whole water body; no estimator \\
                splits it by section.",
         "i" = "Estimate the aerial design without sections."
+      ),
+      class = "creel_error_dispatch_unsupported"
+    )
+  }
+
+  # Guard: the same for bus-route and ice designs (GH #638). Every estimator
+  # dispatches them before its section branch, and the bus-route estimators
+  # never read the sections, so registered sections were dropped from every
+  # estimate with no message: the user asked for sections and got lake totals.
+  if (isTRUE(design$design_type %in% c("bus_route", "ice"))) {
+    design_label <- if (identical(design$design_type, "ice")) "ice" else "bus-route" # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "Sections are not supported on {design_label} designs.",
+        "x" = "The {design_label} estimators work by site; none splits the \\
+               estimate by section, so the sections would be ignored.",
+        "i" = "Estimate the {design_label} design without sections."
       ),
       class = "creel_error_dispatch_unsupported"
     )

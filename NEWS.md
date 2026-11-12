@@ -992,6 +992,16 @@
 
 ## Bug fixes
 
+* `add_sections()` now refuses bus-route and ice designs (#638), with class
+  `creel_error_dispatch_unsupported`, as it already refused aerial designs
+  (#470). Every estimator handles these designs before its section branch,
+  and the bus-route estimators never read the sections, so registered
+  sections were accepted and then dropped from every estimate with no
+  message: a user who asked for sections got lake-wide results. A design
+  saved before this change with sections registered still estimates as it
+  did; a design bundle holding such a design no longer rebuilds until the
+  `add_sections()` step is removed.
+
 * `add_counts()` and `creel_design()` now read `p_period` with one rule
   (#466). `add_counts()` treated only a bare column name or a string as a
   column, so `p_period = all_of("pp")` and a variable holding a column name

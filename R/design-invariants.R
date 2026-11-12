@@ -87,9 +87,10 @@ check_design_columns <- function(design, tables = names(design_column_fields),
 #' @noRd
 check_design_sections <- function(design, call) {
   sections <- design[["sections"]]
-  # Bus-route and ice designs dispatch before the section branch of every
-  # estimator, so their sections are never used; refusing their data over a
-  # section column would refuse designs whose estimates do not depend on it.
+  # add_sections() refuses bus-route and ice designs (GH #638). A design saved
+  # before that can still carry sections; every estimator dispatches these
+  # designs before its section branch and never reads them, so it is estimated
+  # without them, as it always was, rather than refused here.
   if (!is.data.frame(sections) ||
     isTRUE(design$design_type %in% c("bus_route", "ice"))) {
     return(invisible(NULL))
