@@ -986,6 +986,28 @@
   were unaffected; the escape hatch now describes the same data they use.
   No estimate changes.
 
+* A sectioned design whose data and registered sections disagree is now
+  refused at the start of every estimator (#594), with class
+  `creel_error_design_section_unregistered` or
+  `creel_error_design_column_missing`. `add_sections()`, `add_counts()` and
+  `add_interviews()` already refused these at attach; a direct edit got
+  past them. Dropping a section from `design$sections` left `estimate_effort()`'s
+  lake total including it while `estimate_total_catch()`'s left it out
+  (1310 vs 1539 of 1945 on the example data), and renaming the section
+  column made `estimate_total_catch()` report a lake total of 0. Counts or
+  interviews with no section column at all could be attached to a sectioned
+  design without any edit, and gave the same lake total of 0 with SE 0;
+  `add_counts()` and `add_interviews()` now refuse them. Bus-route and ice
+  designs are not checked: their estimators never use sections.
+
+* The column check below extends to the catch, length, age and section
+  tables (#594): a renamed or dropped column there now gives an error that
+  names the field, where it gave "`x` and `y` must share the same src" or
+  "arguments imply differing number of rows". Catch, length and age rows
+  whose interview was later removed from `design$interviews` are still
+  accepted; every estimate already matches a design built from the filtered
+  data.
+
 * A design that names a column its counts or interviews no longer have is
   refused by name, with class `creel_error_design_column_missing` (#594).
   Dropping or renaming, say, the catch column after `add_interviews()` gave
