@@ -165,7 +165,10 @@
 #'   error is built from. The \code{.lake_total} row reports
 #'   \code{se_prop_of_lake_total = 0}: its share of itself is exactly 1 by
 #'   construction and was never estimated. A section with no data reports
-#'   \code{NA} for both. Neither column is produced on the grouped path.
+#'   \code{NA} for both. If no section has an estimate, the
+#'   \code{.lake_total} row is \code{NA} throughout, with
+#'   \code{data_available = FALSE}: the lake total is unknown, not 0. Neither
+#'   column is produced on the grouped path.
 #'
 #' @details
 #' Total catch is computed as Effort × CPUE. Variance is propagated using the
@@ -1345,6 +1348,16 @@ estimate_total_catch_sections <- function(
       lake_est + t_crit * lake_se
     }
 
+    # No section has an estimate: the lake total is unknown, not the 0 that
+    # sum() of nothing gives, and its share of itself is not defined (GH #637).
+    no_lake <- nrow(present_rows) == 0L
+    if (no_lake) {
+      lake_est <- lake_se <- lake_ci_lower <- lake_ci_upper <- NA_real_
+      if (!is.null(se_expansion)) {
+        se_expansion[length(se_expansion)] <- NA_real_
+      }
+    }
+
     lake_row <- tibble::tibble(
       !!section_col := ".lake_total",
       estimate = lake_est,
@@ -1352,9 +1365,9 @@ estimate_total_catch_sections <- function(
       ci_lower = lake_ci_lower,
       ci_upper = lake_ci_upper,
       n = nrow(present_rows),
-      prop_of_lake_total = 1.0,
-      se_prop_of_lake_total = 0,
-      data_available = TRUE
+      prop_of_lake_total = if (no_lake) NA_real_ else 1.0,
+      se_prop_of_lake_total = if (no_lake) NA_real_ else 0,
+      data_available = !no_lake
     )
     result_df <- dplyr::bind_rows(result_df, lake_row)
   }
