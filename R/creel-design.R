@@ -3701,6 +3701,7 @@ add_sections <- function(
   new_design$section_description_col <- section_description_col
   new_design$section_area_col <- section_area_col
   new_design$section_shoreline_col <- section_shoreline_col
+  check_design_columns(new_design) # GH #594
 
   record_step( # nolint: object_usage_linter
     new_design, "add_sections",
@@ -5852,6 +5853,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   new_design$catch_count_col <- count_col
   new_design$catch_type_col <- catch_type_col
   class(new_design) <- "creel_design"
+  check_design_columns(new_design) # GH #594
   record_step( # nolint: object_usage_linter
     new_design, "add_catch",
     list(catch_uid = catch_uid_col, interview_uid = interview_uid_col, species = species_col,
@@ -6190,6 +6192,7 @@ add_lengths <- function(
   new_design$lengths_release_bin_unit <- release_bin_unit
   new_design$lengths_release_bin_width <- release_bin_width
   class(new_design) <- "creel_design"
+  check_design_columns(new_design) # GH #594
   record_step( # nolint: object_usage_linter
     new_design, "add_lengths",
     list(length_uid = length_uid_col, interview_uid = interview_uid_col, species = species_col,
@@ -6349,6 +6352,7 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
   new_design$ages_age_col <- age_col
   new_design$ages_type_col <- type_col
   class(new_design) <- "creel_design"
+  check_design_columns(new_design) # GH #594
   record_step( # nolint: object_usage_linter
     new_design, "add_ages",
     list(age_uid = age_uid_col, interview_uid = interview_uid_col, species = species_col,
