@@ -83,3 +83,28 @@ test_that("#594: every field a built design carries is in the known-field list",
     )
   }
 })
+
+test_that("#594: single-bracket reads are guarded too", {
+  d <- fd_design()
+  expect_error(d["conunt_col"], class = "creel_error_design_unknown_field")
+  expect_error(d[c("calendar", "conunt_col")], class = "creel_error_design_unknown_field")
+  expect_named(d[c("date_col", "strata_cols")], c("date_col", "strata_cols"))
+  expect_identical(length(d[]), length(unclass(d)))
+})
+
+test_that("#594: an unknown field cannot be set, so nothing is set that cannot be read", {
+  d <- fd_design()
+  expect_error(d$conunt_col <- "x", class = "creel_error_design_unknown_field")
+  expect_error(d[["conunt_col"]] <- "x", class = "creel_error_design_unknown_field")
+  d$count_col <- "count"
+  expect_identical(d$count_col, "count")
+  d[["count_col"]] <- NULL
+  expect_null(d$count_col)
+})
+
+test_that("#594: an NA field name errors without a list of NA suggestions", {
+  d <- fd_design()
+  err <- tryCatch(d[[NA_character_]], error = function(e) e)
+  expect_s3_class(err, "creel_error_design_unknown_field")
+  expect_false(grepl("Did you mean", conditionMessage(err)))
+})

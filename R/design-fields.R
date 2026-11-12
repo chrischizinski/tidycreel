@@ -7,9 +7,10 @@
 # (#633). R's `$` also matches a prefix, so design$strata_col silently read
 # strata_cols.
 #
-# `$` and `[[` on a creel_design therefore check the name against this list.
-# A known field that is not set yet still reads as NULL; any other name is an
-# error. Matching is exact.
+# `$`, `[[` and `[` on a creel_design therefore check the name against this
+# list, and so do `$<-` and `[[<-`: a field that could be set but not read back
+# would fail late. A known field that is not set yet still reads as NULL; any
+# other name is an error. Matching is exact.
 #
 # The list is the set of fields the package sets, observed by logging every
 # read and write across the test suite (2026-11-12) and checked against the
@@ -58,7 +59,11 @@ check_design_field <- function(name, call) {
   if (name %in% creel_design_fields) {
     return(invisible(NULL))
   }
-  close <- creel_design_fields[utils::adist(name, creel_design_fields) <= 2]
+  close <- if (is.na(name)) {
+    character(0)
+  } else {
+    creel_design_fields[utils::adist(name, creel_design_fields) <= 2]
+  }
   cli::cli_abort(
     c(
       "{.val {name}} is not a field of a {.cls creel_design}.",
@@ -85,4 +90,26 @@ check_design_field <- function(name, call) {
     check_design_field(i, call = rlang::caller_env())
   }
   .subset2(x, i, ...)
+}
+
+#' @export
+`[.creel_design` <- function(x, i, ...) {
+  if (!missing(i) && is.character(i)) {
+    for (name in i) check_design_field(name, call = rlang::caller_env())
+  }
+  NextMethod()
+}
+
+#' @export
+`$<-.creel_design` <- function(x, name, value) {
+  check_design_field(name, call = rlang::caller_env())
+  NextMethod()
+}
+
+#' @export
+`[[<-.creel_design` <- function(x, i, value) {
+  if (is.character(i) && length(i) == 1L) {
+    check_design_field(i, call = rlang::caller_env())
+  }
+  NextMethod()
 }

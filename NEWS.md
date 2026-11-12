@@ -17,7 +17,9 @@
   never attached. `$` no longer matches a prefix either: `design$strata_col`
   silently returned `strata_cols` and now errors. A known field that is not
   set yet, such as `design$catch` before `add_catch()`, still returns
-  `NULL`, and `design[["sections"]]` behaves the same way. Three reads of
+  `NULL`. `design[["x"]]` and `design["x"]` are checked the same way, and
+  so is setting a field (`design$conunt_col <- ...`), so nothing can be set
+  that cannot be read back. Three reads of
   fields no step sets were found and fixed: an error message that named
   `strata_col`, the count branch of the deprecated `adjust_nonresponse()`
   (#633), and four tests that read a non-existent `species_col`.
