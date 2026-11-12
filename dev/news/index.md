@@ -1376,6 +1376,19 @@
 
 ### Bug fixes
 
+- The sectioned totals
+  ([`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md),
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md))
+  now report the `.lake_total` row as `NA`, with
+  `data_available = FALSE`, when no section has an estimate
+  ([\#637](https://github.com/chrischizinski/tidycreel/issues/637)). The
+  lake total was the sum of the sections that had one, and the sum of
+  none is 0, so an unknown total was reported as 0 with a standard error
+  of 0. [\#594](https://github.com/chrischizinski/tidycreel/issues/594)
+  closed the inputs known to reach this; the totals no longer depend on
+  that.
+
 - [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)
   now builds its survey from the counts the design holds when it is
   called
