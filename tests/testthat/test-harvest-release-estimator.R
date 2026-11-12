@@ -51,7 +51,7 @@ first_est <- function(x) x$estimates$estimate[1]
 test_that("harvest and release rates honour the estimator on every path", {
   sectioned <- estimator_design()
   flat <- flatten_est(sectioned)
-  species_col <- sectioned$species_col %||% "species"
+  species_col <- sectioned$catch_species_col %||% "species"
 
   paths <- list(
     ungrouped = list(design = flat, args = list()),
@@ -94,7 +94,7 @@ test_that("harvest and release rates honour the estimator on every path", {
 test_that("a roving design routes harvest and release to all-trip MOR", {
   sectioned <- estimator_design()
   flat <- flatten_est(sectioned)
-  species_col <- sectioned$species_col %||% "species"
+  species_col <- sectioned$catch_species_col %||% "species"
 
   paths <- list(
     ungrouped = list(design = flat, args = list()),
@@ -322,7 +322,7 @@ test_that("a roving bus-route or ice design still gives its complete-trip rate",
 test_that("the harvest and release totals follow their own rate functions", {
   sectioned <- estimator_design()
   flat <- flatten_est(sectioned)
-  species_col <- sectioned$species_col %||% "species"
+  species_col <- sectioned$catch_species_col %||% "species"
 
   paths <- list(
     ungrouped = list(design = flat, args = list()),

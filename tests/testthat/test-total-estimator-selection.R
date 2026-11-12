@@ -87,7 +87,7 @@ test_that("the roving auto-route changes the total it replaces", {
 test_that("every dispatch path honours the roving auto-route", {
   sectioned <- roving_selection_design()
   flat <- drop_sections_sel(sectioned)
-  species_col <- sectioned$species_col %||% "species"
+  species_col <- sectioned$catch_species_col %||% "species"
 
   paths <- list(
     ungrouped = list(design = flat, args = list()),
