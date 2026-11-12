@@ -288,3 +288,22 @@ test_that("#594: an intact sectioned design estimates as before", {
   d <- inv_sections()
   expect_no_error(est_quiet(estimate_total_catch, d))
 })
+
+test_that("#594: a design whose section_col field was deleted is refused, not let through", {
+  d <- inv_sections()
+  d$section_col <- NULL
+  expect_error(
+    est_quiet(estimate_total_catch, d),
+    class = "creel_error_design_column_missing"
+  )
+})
+
+test_that("#594: bus-route sections, which no estimator uses, are not checked", {
+  # Bus-route and ice designs dispatch before the section branch, so their
+  # estimates do not depend on a section column; main accepted this design and
+  # the check must not start refusing it.
+  d <- build_br_design_for_tests(3, 8, 30, seed = 1)
+  expect_no_error(suppressWarnings(suppressMessages(
+    add_sections(d, data.frame(section = c("A", "B")), section_col = section)
+  )))
+})

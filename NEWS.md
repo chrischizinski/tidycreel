@@ -997,7 +997,8 @@
   column made `estimate_total_catch()` report a lake total of 0. Counts or
   interviews with no section column at all could be attached to a sectioned
   design without any edit, and gave the same lake total of 0 with SE 0;
-  `add_counts()` and `add_interviews()` now refuse them.
+  `add_counts()` and `add_interviews()` now refuse them. Bus-route and ice
+  designs are not checked: their estimators never use sections.
 
 * The column check below extends to the catch, length, age and section
   tables (#594): a renamed or dropped column there now gives an error that

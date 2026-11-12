@@ -87,10 +87,27 @@ check_design_columns <- function(design, tables = names(design_column_fields),
 #' @noRd
 check_design_sections <- function(design, call) {
   sections <- design[["sections"]]
-  section_col <- design[["section_col"]]
-  if (!is.data.frame(sections) || !is.character(section_col) ||
-    !section_col %in% names(sections)) {
+  # Bus-route and ice designs dispatch before the section branch of every
+  # estimator, so their sections are never used; refusing their data over a
+  # section column would refuse designs whose estimates do not depend on it.
+  if (!is.data.frame(sections) ||
+    isTRUE(design$design_type %in% c("bus_route", "ice"))) {
     return(invisible(NULL))
+  }
+  section_col <- design[["section_col"]]
+  if (!is.character(section_col) || length(section_col) != 1L) {
+    cli::cli_abort(
+      c(
+        "The design has sections but no section column.",
+        "x" = "{.field design$section_col} is missing, though {.code design$sections} is set.",
+        "i" = "Restore it, or register the sections again on a fresh {.fn creel_design}."
+      ),
+      class = c("creel_error_design_column_missing", "creel_error"),
+      call = call
+    )
+  }
+  if (!section_col %in% names(sections)) {
+    return(invisible(NULL)) # check_table_columns() names this one
   }
   registered <- sections[[section_col]]
   tables <- c("counts", "interviews", "refused_interviews", "excluded_interviews")
