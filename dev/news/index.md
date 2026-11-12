@@ -1376,6 +1376,22 @@
 
 ### Bug fixes
 
+- [`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md)
+  now refuses bus-route and ice designs
+  ([\#638](https://github.com/chrischizinski/tidycreel/issues/638)),
+  with class `creel_error_dispatch_unsupported`, as it already refused
+  aerial designs
+  ([\#470](https://github.com/chrischizinski/tidycreel/issues/470)).
+  Every estimator handles these designs before its section branch, and
+  the bus-route estimators never read the sections, so registered
+  sections were accepted and then dropped from every estimate with no
+  message: a user who asked for sections got lake-wide results. A design
+  saved before this change with sections registered still estimates as
+  it did; a design bundle holding such a design no longer rebuilds until
+  the
+  [`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md)
+  step is removed.
+
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   and
   [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)

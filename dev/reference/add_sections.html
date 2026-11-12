@@ -6,14 +6,18 @@ Unrecognised section values abort with an informative error identifying the
 bad values and listing valid options.
 add_sections() is optional for single-section surveys. Call it when your
 survey covers multiple named sections and you want early detection of
-mislabelled data (e.g. &quot;NRTH&quot; instead of &quot;NORTH&quot;)."><meta property="og:description" content="Attaches a sections registry to a creel_design object. Once sections are
+mislabelled data (e.g. &quot;NRTH&quot; instead of &quot;NORTH&quot;).
+Sections are refused on aerial, bus-route and ice designs: no estimator
+splits those designs by section, so the sections would be silently ignored."><meta property="og:description" content="Attaches a sections registry to a creel_design object. Once sections are
 registered, all subsequent calls to add_counts() and add_interviews()
 validate that every row's section value matches a registered section name.
 Unrecognised section values abort with an informative error identifying the
 bad values and listing valid options.
 add_sections() is optional for single-section surveys. Call it when your
 survey covers multiple named sections and you want early detection of
-mislabelled data (e.g. &quot;NRTH&quot; instead of &quot;NORTH&quot;)."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
+mislabelled data (e.g. &quot;NRTH&quot; instead of &quot;NORTH&quot;).
+Sections are refused on aerial, bus-route and ice designs: no estimator
+splits those designs by section, so the sections would be silently ignored."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -95,6 +99,8 @@ bad values and listing valid options.</p>
 <p><code>add_sections()</code> is optional for single-section surveys. Call it when your
 survey covers multiple named sections and you want early detection of
 mislabelled data (e.g. "NRTH" instead of "NORTH").</p>
+<p>Sections are refused on aerial, bus-route and ice designs: no estimator
+splits those designs by section, so the sections would be silently ignored.</p>
     </div>
 
     <div class="section level2">
