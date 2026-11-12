@@ -25,9 +25,10 @@ as_creel_svydesign(design)
 
 ## Value
 
-A survey.design2 object (from survey::svydesign). Due to R's
-copy-on-modify semantics, modifications to the returned object will not
-affect the internal design\$survey object.
+A survey.design2 object (from survey::svydesign), built from the counts
+the design holds when it is called, the same counts
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+uses. Modifying the returned object does not change the design.
 
 ## Note
 

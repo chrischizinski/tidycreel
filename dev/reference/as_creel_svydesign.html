@@ -106,9 +106,10 @@ risks if the returned object is modified incorrectly.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A survey.design2 object (from survey::svydesign). Due to R's
-copy-on-modify semantics, modifications to the returned object will not
-affect the internal design$survey object.</p>
+    <p>A survey.design2 object (from survey::svydesign), built from the
+counts the design holds when it is called, the same counts
+<code><a href="estimate_effort.html">estimate_effort()</a></code> uses. Modifying the returned object does not change
+the design.</p>
     </div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>

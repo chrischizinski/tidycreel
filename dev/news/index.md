@@ -1358,6 +1358,35 @@
 
 ### Bug fixes
 
+- [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)
+  now builds its survey from the counts the design holds when it is
+  called
+  ([\#594](https://github.com/chrischizinski/tidycreel/issues/594)). It
+  returned the survey stored when
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  ran, so after an edit such as `design$counts <- design$counts[-1, ]`
+  it described 14 days while the counts held 13. The estimators already
+  rebuild from `design$counts` and were unaffected; the escape hatch now
+  describes the same data they use. No estimate changes.
+
+- A design that names a column its counts or interviews no longer have
+  is refused by name, with class `creel_error_design_column_missing`
+  ([\#594](https://github.com/chrischizinski/tidycreel/issues/594)).
+  Dropping or renaming, say, the catch column after
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  gave “object ‘catch_total’ not found”; dropping the effort column let
+  the catch rate run on regardless. The check runs at the end of
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  and
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+  and at the start of
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
+  the rate estimators, the three totals, and the age and length
+  estimators;
+  [`as_creel_svydesign()`](https://chrischizinski.com/tidycreel/dev/reference/as_creel_svydesign.md)
+  checks the counts only, since it is built from them alone. Editing
+  values or subsetting rows is still followed, as before.
+
 - A design’s own register of worked days now decides alone which days
   were worked
   ([\#630](https://github.com/chrischizinski/tidycreel/issues/630)). On
