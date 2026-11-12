@@ -12,6 +12,24 @@
 
 ### Breaking changes
 
+- Reading a field that is not part of a `creel_design` is now an error
+  ([\#594](https://github.com/chrischizinski/tidycreel/issues/594)),
+  with class `creel_error_design_unknown_field` and a suggestion for a
+  close name. `design$conunt_col` returned `NULL`, which the package
+  reads as “not attached”, so a misspelled field passed for a table that
+  was never attached. `$` no longer matches a prefix either:
+  `design$strata_col` silently returned `strata_cols` and now errors. A
+  known field that is not set yet, such as `design$catch` before
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  still returns `NULL`. `design[["x"]]` and `design["x"]` are checked
+  the same way, and so is setting a field (`design$conunt_col <- ...`),
+  so nothing can be set that cannot be read back. Three reads of fields
+  no step sets were found and fixed: an error message that named
+  `strata_col`, the count branch of the deprecated
+  [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md)
+  ([\#633](https://github.com/chrischizinski/tidycreel/issues/633)), and
+  four tests that read a non-existent `species_col`.
+
 - [`write_schedule()`](https://chrischizinski.com/tidycreel/dev/reference/write_schedule.md)
   now takes the file format from the file name, like
   [`write_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/write_estimates.md):
