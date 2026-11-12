@@ -3406,6 +3406,7 @@ add_counts <- function(
 
   # Preserve class
   class(new_design) <- "creel_design"
+  check_design_columns(new_design) # GH #594
 
   warn_calendar_is_census(new_design)
 
@@ -4519,6 +4520,7 @@ add_interviews <- function(
 
   # Preserve class
   class(new_design) <- "creel_design"
+  check_design_columns(new_design) # GH #594
 
   record_step( # nolint: object_usage_linter
     new_design, "add_interviews", step_args, step_supplied, "interviews", step_interviews

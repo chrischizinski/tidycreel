@@ -133,6 +133,9 @@ est_length_distribution <- function(
     ))
   }
 
+  # A column the design names must still be in its table (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
+
   if (is.null(design$interviews) || is.null(design$interview_survey)) {
     cli::cli_abort(c(
       "No interview survey available.",

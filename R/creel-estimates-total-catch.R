@@ -345,6 +345,9 @@ estimate_total_catch <- function(
     ))
   }
 
+  # A column the design names must still be in its table (GH #594).
+  check_design_columns(design) # nolint: object_usage_linter
+
   # Resolved once, before any dispatch, and by the same rule estimate_catch_rate()
   # uses -- so a roving design's total and its own rate function cannot disagree
   # about which estimator the design calls for (GH #268). Resolution precedes the
