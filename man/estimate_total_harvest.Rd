@@ -162,7 +162,10 @@ section variances and covariance the \code{.lake_total} row's own standard
 error is built from. The \code{.lake_total} row reports
 \code{se_prop_of_lake_total = 0}: its share of itself is exactly 1 by
 construction and was never estimated. A section with no data reports
-\code{NA} for both. Neither column is produced on the grouped path.
+\code{NA} for both. If no section has an estimate, the
+\code{.lake_total} row is \code{NA} throughout, with
+\code{data_available = FALSE}: the lake total is unknown, not 0. Neither
+column is produced on the grouped path.
 }
 \description{
 Computes total harvest estimates by multiplying effort × HPUE with variance
