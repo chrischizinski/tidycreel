@@ -56,5 +56,8 @@ for (nm in c("catch", "harvest", "release")) {
     expect_true(is.na(r$lake$se))
     expect_true(is.na(r$lake$ci_lower) && is.na(r$lake$ci_upper))
     expect_false(r$lake$data_available)
+    # Its share of itself is undefined too, not 1 with SE 0.
+    expect_true(is.na(r$lake$prop_of_lake_total))
+    expect_true(is.na(r$lake$se_prop_of_lake_total))
   })
 }
