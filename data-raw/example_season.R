@@ -1,4 +1,9 @@
 ## Script to create the example_season_* datasets
+##
+## NOT REPRODUCIBLE AS WRITTEN since GH #494 changed simulate_creel_data():
+## `catch_per_trip` is refused and the encounter model changed, so this script
+## no longer recreates the committed .rda files. They are regenerated in the
+## follow-up to #494 (access mode, catch accruing over hours fished).
 ## One simulated 120-day season (May 1 - August 28, 2024) with weekday/weekend
 ## strata, 36 sampled days, one instantaneous count per sampled day and access
 ## interviews. Used by the Getting Started vignette to show a complete season:

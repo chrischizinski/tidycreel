@@ -11,7 +11,8 @@ simulate_creel_data(
   day_types = NULL,
   species = "walleye",
   species_weights = NULL,
-  p_complete = 0.75,
+  interview_type = c("access", "roving"),
+  p_complete = NULL,
   p_zero_catch = 0.4,
   n_anglers_per_day = NULL,
   start_date = Sys.Date(),
@@ -24,8 +25,9 @@ simulate_creel_data(
 \arguments{
 \item{params}{Named list of distributional parameters. Required. Must
 include named sub-lists: \code{effort} (with \code{gamma_shape}, \code{gamma_rate} for
-\code{\link[=rgamma]{rgamma()}}); \code{party} (with \code{mean} party size for \code{\link[=rpois]{rpois()}}); \code{catch_per_trip}
-(with \code{mean} and \code{nb_size} for \code{\link[=rnbinom]{rnbinom()}}); \code{harvest} (with \code{mean_pct}
+\code{\link[=rgamma]{rgamma()}}); \code{party} (with \code{mean} party size for \code{\link[=rpois]{rpois()}}); \code{catch_rate}
+(with \code{mean}, the catch per angler-hour, and \code{nb_size} for \code{\link[=rnbinom]{rnbinom()}});
+\code{harvest} (with \code{mean_pct}
 as a percentage, e.g. \code{35} for 35\%); \code{counts} (with \code{mean_total_anglers},
 used when \code{n_anglers_per_day = NULL}).}
 
@@ -36,7 +38,11 @@ used when \code{n_anglers_per_day = NULL}).}
 
 \item{day_types}{Named \strong{numeric} vector of stratum proportions, e.g.
 \code{c(weekday = 5/7, weekend = 2/7)}. Names become the \code{day_type}
-values in the output. When \code{NULL} (default), uses a single stratum
+values in the output. When the names are exactly \code{weekday} and
+\code{weekend}, each day's label comes from its date (Saturday and Sunday
+are weekends) and the proportions are ignored; any other names are
+assigned to days at random in the stated proportions. When \code{NULL}
+(default), uses a single stratum
 \code{"all"}. \strong{Note:} passing a character vector (e.g.
 \code{c("weekday", "weekend")}) will error — the vector must be numeric
 with named elements.}
@@ -48,8 +54,13 @@ with named elements.}
 \item{species_weights}{Numeric vector. Relative catch weight per species.
 Must be same length as \code{species}. Default equal weights.}
 
-\item{p_complete}{Numeric in (0, 1]. Probability a trip is complete
-(intercepted at trip end). Default \code{0.75}.}
+\item{interview_type}{\code{"access"} (default) or \code{"roving"}: how the
+clerk meets parties, and so whether trips are complete or incomplete. See
+Details. Simulate twice for a survey that collects both.}
+
+\item{p_complete}{Removed in tidycreel 9.0.0; supplying it is an error.
+\code{interview_type} now decides trip status. The old argument mixed
+complete and incomplete trips in one length-biased draw (GH #494).}
 
 \item{p_zero_catch}{Numeric in [0, 1). Probability a trip has zero total
 catch (zero-inflation). Default \code{0.40}. \strong{Note:} this cannot
@@ -88,19 +99,21 @@ gave.}
 Default \code{NULL}.}
 }
 \value{
-A named list with four data frames:
+A named list with four data frames and the true rates:
 \describe{
 \item{\code{schedule}}{Full-season calendar, one row per day. Columns:
 \code{date}, \code{day_type}, \code{sampled} (logical). Pass directly
 to \code{\link{creel_design}} as the \code{calendar} argument.
-Unsampled days have day_type assigned proportionally from
-\code{day_types}.}
+Day types follow \code{day_types} as described there.}
 \item{\code{interviews}}{One row per intercepted angler party. Columns:
 \code{date}, \code{day_type}, \code{interview_id}, \code{trip_status}
-(\code{"complete"} or \code{"incomplete"}), \code{hours_fished},
-\code{trip_duration} (total trip length; equals \code{hours_fished} for
-complete trips), \code{n_anglers}, \code{catch_total}, \code{catch_kept},
-\code{species_sought}.}
+(\code{"complete"} for access, \code{"incomplete"} for roving),
+\code{hours_fished} and \code{trip_duration} (both the time fished at
+the interview, as a clerk records it), \code{true_trip_length} (the
+whole simulated trip; simulation truth no clerk observes on a roving
+interview -- do not pass it to \code{\link{add_interviews}}),
+\code{n_anglers}, \code{catch_total} and \code{catch_kept} (both so
+far), \code{species_sought}.}
 \item{\code{counts}}{One row per instantaneous count. Columns:
 \code{date}, \code{day_type}, \code{count_time} (integer index
 1…\code{n_counts_per_day}) and \code{total_anglers}, plus
@@ -112,6 +125,8 @@ complete trips), \code{n_anglers}, \code{catch_total}, \code{catch_kept},
 \item{\code{catch}}{Long-format catch table. Columns: \code{interview_id},
 \code{species}, \code{count}, \code{catch_type} (\code{"caught"},
 \code{"harvested"}, \code{"released"}).}
+\item{\code{truth}}{A list of the population values estimators should
+recover: \code{catch_rate} and \code{harvest_rate}, per angler-hour.}
 }
 
 \strong{Pass \code{angler_hours}, not \code{total_anglers}, to
@@ -159,21 +174,40 @@ below draw from distributions.
 \item \strong{Day level}: Sample \code{n_sampled_days} days from the
 season. Each sampled day draws the number of angler trips arriving from
 a Negative Binomial distribution.
-\item \strong{Trip level}: Each trip draws effort (hr) from a Gamma
-distribution, party size from a zero-truncated Poisson, and trip
-completion from a Bernoulli draw.
-\item \strong{Catch level}: Each complete or incomplete trip draws total
-catch from a Negative Binomial; harvest is Binomial given total catch.
-\item \strong{Roving clerk}: Interview probability is proportional to
-trip length (length-biased sampling). Incomplete trips contribute
-elapsed effort, not total effort.
+\item \strong{Trip level}: Each trip draws its length (hr) from a Gamma
+distribution and its party size from a Poisson (at least 1).
+\item \strong{Interview level}, set by \code{interview_type}:
+\code{"access"} -- the clerk meets parties as they leave, every party
+with the same chance (70\\% of the day's parties), and records the whole
+trip; \code{"roving"} -- the clerk meets parties while they fish, each
+with a chance proportional to its trip length (a quarter of the day's
+parties on average), at a uniformly random point in the trip, and
+records the time fished so far (at least 0.1 h). This is the sampling
+difference Pollock et al. (1997) base the choice of catch-rate
+estimator on.
+\item \strong{Catch level}: Catch accrues over the time fished. A party
+catches nothing with probability \code{p_zero_catch}; otherwise its
+catch so far is Negative Binomial with mean
+\code{catch_rate$mean * n_anglers * hours_fished / (1 - p_zero_catch)},
+so the population catch rate (total catch over total angler-hours) is
+exactly \code{catch_rate$mean}. Harvest is Binomial given catch.
 }
+
+Because catch accrues, the ratio of means on access interviews and the
+(truncated) mean of ratios on roving interviews both target
+\code{truth$catch_rate}. Before tidycreel 9.0.0 each party drew one
+whole-trip catch regardless of time fished, so an incomplete trip carried
+the whole trip's catch over the hours fished so far and inflated any
+roving catch rate (GH #494).
+
+The instantaneous counts are drawn independently of the simulated trips, so
+the function reports no true total effort or catch, only the true rates.
 }
 \examples{
 my_params <- list(
   effort         = list(gamma_shape = 2.0, gamma_rate = 0.8),
   party          = list(mean = 1.5),
-  catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+  catch_rate     = list(mean = 0.25, nb_size = 0.5), # fish per angler-hour
   harvest        = list(mean_pct = 35),
   counts         = list(mean_total_anglers = 10)
 )
@@ -191,6 +225,7 @@ head(sim$schedule)
 head(sim$interviews)
 head(sim$counts)
 head(sim$catch)
+sim$truth$catch_rate
 
 # Multi-stratum simulation with day_types (named numeric vector).
 # `lat` derives the daily fishing period from day_length(), which adds the
@@ -201,6 +236,7 @@ sim2 <- simulate_creel_data(
   season_days    = 90,
   n_sampled_days = 20,
   day_types      = c(weekday = 5/7, weekend = 2/7),
+  interview_type = "roving",
   lat            = 40.699
 )
 
@@ -236,6 +272,11 @@ Greene, C.J., Hoenig, J.M., Barrowman, N.J. & Pollock, K.H. (1995). Programs
 to simulate catch rate estimation in a roving creel survey of anglers. DFO
 Atlantic Fisheries Research Document 95/99. Department of Fisheries and
 Oceans, St. John's, NL.
+
+Pollock, K.H., Hoenig, J.M., Jones, C.M., Robson, D.S. & Greene, C.J.
+(1997). Catch rate estimation for roving and access point surveys. N. Am. J.
+Fish. Manage. 17: 11–19.
+\doi{10.1577/1548-8675(1997)017<0011:CREFRA>2.3.CO;2}
 
 Petrere, M. Jr., Giacomini, H.C. & De Marco, P. Jr. (2010).
 Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70: 483–491.

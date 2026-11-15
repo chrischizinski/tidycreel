@@ -2,9 +2,9 @@
 ## Roving interviews for the 36 sampled days of example_season_calendar, used
 ## by the instantaneous-count How-to vignette alongside example_season_counts.
 ##
-## Written instead of using simulate_creel_data() because that function gives
+## Written instead of using simulate_creel_data() because that function gave
 ## an incomplete trip the whole trip's catch over the hours fished so far
-## (GH #494), which inflates any roving (mean-of-ratios) catch rate.
+## (GH #494, fixed since), which inflated any roving (mean-of-ratios) catch rate.
 ##
 ## How the data are generated:
 ## - A roving clerk meets parties while they fish, so a party's chance of

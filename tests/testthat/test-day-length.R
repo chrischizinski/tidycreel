@@ -115,7 +115,7 @@ test_that("simulate_creel_data() omits the daylight columns when given no locati
     params = list(
       effort = list(gamma_shape = 2, gamma_rate = 0.8),
       party = list(mean = 1.5),
-      catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+      catch_rate = list(mean = 0.25, nb_size = 0.5),
       harvest = list(mean_pct = 35),
       counts = list(mean_total_anglers = 10)
     ),
@@ -132,7 +132,7 @@ test_that("simulate_creel_data(lat=) derives T per date and angler_hours from it
     params = list(
       effort = list(gamma_shape = 2, gamma_rate = 0.8),
       party = list(mean = 1.5),
-      catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+      catch_rate = list(mean = 0.25, nb_size = 0.5),
       harvest = list(mean_pct = 35),
       counts = list(mean_total_anglers = 10)
     ),
@@ -162,7 +162,7 @@ test_that("simulate_creel_data() rejects lat and daylight_hours together", {
       params = list(
         effort = list(gamma_shape = 2, gamma_rate = 0.8),
         party = list(mean = 1.5),
-        catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+        catch_rate = list(mean = 0.25, nb_size = 0.5),
         harvest = list(mean_pct = 35),
         counts = list(mean_total_anglers = 10)
       ),
