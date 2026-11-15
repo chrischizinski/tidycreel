@@ -32,11 +32,10 @@ allowed <- list(
   `camera-surveys` = c("has one paired interview/count day"),
   `aerial-surveys` = character(),
   # The page omits n_anglers on purpose to show the party-hour warning
-  # (decision on #478) and keeps the GLMM's one-row-per-flight counts (#643).
-  # Each is explained in the text. The glmer.nb "iteration limit reached"
-  # warning is gone since #492 regenerated the example with overdispersed counts.
+  # (decision on #478), explained in the text. Since #643 one design with
+  # count_time_col serves both estimators, so add_counts() no longer warns
+  # about repeated sampling units; since #492 glmer.nb converges.
   `aerial-glmm` = c(
-    "repeated sampling units, with no count time",
     "No `n_anglers` provided",
     "Rate and effort may be in different units"
   ),
