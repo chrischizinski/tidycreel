@@ -4,17 +4,21 @@
 \alias{reallocate_strata}
 \title{Compute Neyman-optimal sample allocation across strata}
 \usage{
-reallocate_strata(n_total, N_h, s2_h)
+reallocate_strata(n_total, N_h, s2_h, min_n = 2L)
 }
 \arguments{
 \item{n_total}{Positive integer. Total sampling days available across all
-strata.}
+strata. Must be at least \code{sum(pmin(min_n, N_h))} and at most \code{sum(N_h)}.}
 
-\item{N_h}{Named numeric vector. Total available days per stratum. Values
-must be >= 1.}
+\item{N_h}{Named numeric vector. Total available days per stratum: whole
+numbers >= 1.}
 
 \item{s2_h}{Numeric vector of the same length as \code{N_h}. Pilot variance of
 effort per day per stratum. Values must be >= 0.}
+
+\item{min_n}{Positive integer. The fewest days any stratum may get, so its
+variance can be estimated. Default \code{2}. A stratum with fewer days than
+\code{min_n} is sampled completely.}
 }
 \value{
 A named integer vector. Elements named after strata in \code{N_h} give the
@@ -26,10 +30,27 @@ Neyman optimal allocation formula (Cochran 1977 eq. 5.24), which assigns more
 days to strata with larger variability and more calendar days.
 }
 \details{
-Neyman allocation: \code{n_h = ceiling(n_total * (N_h * sqrt(s2_h)) / sum(N_h * sqrt(s2_h)))}.
+Neyman allocation (Cochran 1977 eq. 5.24) gives stratum \eqn{h} the share
+\eqn{n \, N_h s_h / \sum N_h s_h} of the \code{n_total} days. The result is a
+plan the season can carry out:
+\itemize{
+\item \strong{No stratum gets more days than it has, and every stratum gets at least
+\code{min_n}} (or all its days, if it has fewer), so its variance can be
+estimated. The share is \eqn{\lambda N_h s_h} clamped to that range, with
+\eqn{\lambda} chosen so the shares spend \code{n_total}: a stratum held at its
+cap or floor frees or takes days, and the others absorb them in proportion
+to their Neyman weights. This is the Neyman allocation with bounds.
+Strata with zero pilot variance stay at the floor unless every other
+stratum is full.
+\item \strong{The days sum to \code{n_total} exactly.} Shares are rounded by largest
+remainder: each stratum gets the whole part of its share, and the days
+left over go to the largest fractional parts.
+}
 
-Because each stratum's allocation is ceiling-ed independently, the sum of
-returned values may slightly exceed \code{n_total}.
+An \code{n_total} larger than the season (\code{sum(N_h)}) or too small to give every
+stratum its floor is refused. Before tidycreel 9.0.0 each share was rounded
+up independently and nothing was capped, so the plan could exceed both the
+budget and a stratum's days (GH #384).
 }
 \examples{
 reallocate_strata(
