@@ -410,17 +410,36 @@ simulate_strata_collapse <- function(audit, merge_strata) {
 #' days to strata with larger variability and more calendar days.
 #'
 #' @param n_total Positive integer. Total sampling days available across all
-#'   strata.
-#' @param N_h Named numeric vector. Total available days per stratum. Values
-#'   must be >= 1.
+#'   strata. Must be at least `sum(pmin(min_n, N_h))` and at most `sum(N_h)`.
+#' @param N_h Named numeric vector. Total available days per stratum: whole
+#'   numbers >= 1.
 #' @param s2_h Numeric vector of the same length as `N_h`. Pilot variance of
 #'   effort per day per stratum. Values must be >= 0.
+#' @param min_n Positive integer. The fewest days any stratum may get, so its
+#'   variance can be estimated. Default `2`. A stratum with fewer days than
+#'   `min_n` is sampled completely.
 #'
 #' @details
-#' Neyman allocation: `n_h = ceiling(n_total * (N_h * sqrt(s2_h)) / sum(N_h * sqrt(s2_h)))`.
+#' Neyman allocation (Cochran 1977 eq. 5.24) gives stratum \eqn{h} the share
+#' \eqn{n \, N_h s_h / \sum N_h s_h} of the `n_total` days. The result is a
+#' plan the season can carry out:
 #'
-#' Because each stratum's allocation is ceiling-ed independently, the sum of
-#' returned values may slightly exceed `n_total`.
+#' - **No stratum gets more days than it has, and every stratum gets at least
+#'   `min_n`** (or all its days, if it has fewer), so its variance can be
+#'   estimated. The share is \eqn{\lambda N_h s_h} clamped to that range, with
+#'   \eqn{\lambda} chosen so the shares spend `n_total`: a stratum held at its
+#'   cap or floor frees or takes days, and the others absorb them in proportion
+#'   to their Neyman weights. This is the Neyman allocation with bounds.
+#'   Strata with zero pilot variance stay at the floor unless every other
+#'   stratum is full.
+#' - **The days sum to `n_total` exactly.** Shares are rounded by largest
+#'   remainder: each stratum gets the whole part of its share, and the days
+#'   left over go to the largest fractional parts.
+#'
+#' An `n_total` larger than the season (`sum(N_h)`) or too small to give every
+#' stratum its floor is refused. Before tidycreel 9.0.0 each share was rounded
+#' up independently and nothing was capped, so the plan could exceed both the
+#' budget and a stratum's days (GH #384).
 #'
 #' @return A named integer vector. Elements named after strata in `N_h` give the
 #'   Neyman-optimal sampling days per stratum.
@@ -437,15 +456,111 @@ simulate_strata_collapse <- function(audit, merge_strata) {
 #'   N_h     = c(weekday = 65, weekend = 28),
 #'   s2_h    = c(400, 500)
 #' )
-reallocate_strata <- function(n_total, N_h, s2_h) {
-  # nolint: object_name_linter
-  checkmate::assert_integerish(n_total, lower = 1, len = 1)
-  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named") # nolint: object_name_linter
-  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h)) # nolint: object_name_linter
+reallocate_strata <- function(n_total, N_h, s2_h, min_n = 2L) {
+  # nolint start: object_name_linter
+  checkmate::assert_integerish(n_total, lower = 1, len = 1, any.missing = FALSE)
+  checkmate::assert_integerish(N_h, lower = 1, min.len = 1, any.missing = FALSE, names = "named")
+  checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h))
+  checkmate::assert_int(min_n, lower = 1)
+  if (anyNA(s2_h) || any(!is.finite(s2_h))) {
+    # audit_strata() reports NA for a stratum with one sampled day: its
+    # variance is unknown, and choosing a value for it is the caller's call.
+    cli::cli_abort(
+      c(
+        "{.arg s2_h} has a missing or infinite variance for {.val {names(N_h)[!is.finite(s2_h)]}}.",
+        "i" = "A stratum with one sampled day has no variance estimate; supply a pilot value or merge the stratum."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+  # Integer-ish doubles (29 - 3.6e-15) pass the checks above; work in exact
+  # whole numbers so the rounding below cannot drop a day.
+  n_total <- as.integer(round(n_total))
+  N_h <- round(N_h)
 
-  alloc_weights <- N_h * sqrt(s2_h) # nolint: object_name_linter
-  n_h_opt <- ceiling(n_total * alloc_weights / sum(alloc_weights)) # nolint: object_name_linter
-  names(n_h_opt) <- names(N_h) # nolint: object_name_linter
-  storage.mode(n_h_opt) <- "integer"
-  n_h_opt # nolint: object_name_linter
+  floor_h <- pmin(min_n, N_h)
+  if (n_total > sum(N_h) || n_total < sum(floor_h)) {
+    cli::cli_abort(
+      c(
+        "{.arg n_total} = {n_total} cannot be allocated across these strata.",
+        "x" = if (n_total > sum(N_h)) {
+          "The strata have {sum(N_h)} day{?s} in all."
+        } else {
+          "Giving every stratum at least {.arg min_n} = {min_n} day{?s} (or all its days, if fewer) needs {sum(floor_h)}."
+        },
+        "i" = "Choose {.arg n_total} between {sum(floor_h)} and {sum(N_h)}."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+
+  # Continuous Neyman shares within bounds. Minimising the stratified variance
+  # sum(N_h^2 s2_h / n_h) subject to floor_h <= n_h <= N_h and sum(n_h) =
+  # n_total gives n_h = clamp(lambda * N_h * s_h, floor_h, N_h) for the lambda
+  # that spends n_total (the bounded form of Cochran eq. 5.24). The sum is
+  # nondecreasing in lambda, so bisection finds it. Fixing capped strata one
+  # pass at a time instead can strand the others below their floor when the
+  # budget is tight.
+  w <- N_h * sqrt(s2_h)
+  share <- bounded_shares(n_total, w, floor_h, N_h)
+  # Strata with zero variance stay at their floor under Neyman weights. If the
+  # others are all full and days remain, give those days by stratum size.
+  if (sum(share) < n_total - 1e-9) {
+    zero <- w <= 0
+    share[zero] <- bounded_shares(
+      n_total - sum(share[!zero]), N_h[zero], floor_h[zero], N_h[zero]
+    )
+  }
+
+  # Largest-remainder rounding: whole parts first, leftover days to the
+  # largest fractional parts. Shares lie within [floor_h, N_h], so whole parts
+  # respect the floor and a stratum with a fractional part has room for one
+  # more day.
+  n_h <- floor(share + 1e-9)
+  short <- n_total - sum(n_h)
+  if (short > 0) {
+    frac <- share - n_h
+    n_h[order(-frac)[seq_len(short)]] <- n_h[order(-frac)[seq_len(short)]] + 1
+  }
+
+  n_h <- as.integer(round(n_h))
+  names(n_h) <- names(N_h)
+  # The plan must be feasible; anything else is a bug here, never a result.
+  if (sum(n_h) != n_total || any(n_h > N_h) || any(n_h < floor_h)) {
+    cli::cli_abort(
+      "Internal error: the allocation broke its bounds or its total.",
+      class = "creel_error_internal"
+    )
+  }
+  n_h
+  # nolint end: object_name_linter
+}
+
+# clamp(lambda * w, lo, hi) summed to `total`, by bisection on log(lambda).
+# Returns lo where w is 0. Assumes 0 < lo and sum(lo) <= total; returns hi
+# everywhere w > 0 when even that cannot reach total. Internal to
+# reallocate_strata() (GH #384).
+#
+# The bracket runs from the lambda that holds every weighted stratum at its
+# floor to the one that puts every one at its cap, and the search is on the
+# log scale: weights can span many orders of magnitude (a pilot variance of
+# 1e-120 beside 400), where halving a linear bracket 200 times never reaches
+# the answer and the shares overspend the budget.
+#' @noRd
+bounded_shares <- function(total, w, lo, hi) {
+  at <- function(lambda) pmin(hi, pmax(lo, lambda * w))
+  pos <- w > 0
+  if (!any(pos)) {
+    return(lo)
+  }
+  upper <- log(max(hi[pos] / w[pos]))
+  if (sum(at(exp(upper))) <= total) {
+    return(at(exp(upper)))
+  }
+  lower <- log(min(lo[pos] / w[pos]))
+  for (i in seq_len(200L)) {
+    mid <- (lower + upper) / 2
+    if (sum(at(exp(mid))) < total) lower <- mid else upper <- mid
+  }
+  at(exp(upper))
 }
