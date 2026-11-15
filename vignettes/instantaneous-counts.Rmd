@@ -65,7 +65,7 @@ the unit of effort is unknown and `estimate_effort()` warns.
 estimate_effort(design, target = "period_total")
 ```
 
-About 9,994 angler-hours over the 120-day season. `target = "period_total"`,
+About 10,022 angler-hours over the 120-day season. `target = "period_total"`,
 the default, asks for the season; `"sampled_days"` is the effort on the 36
 days counted. Both kinds of interview below use this effort.
 
@@ -86,10 +86,10 @@ access_catch
 ```
 
 `interview_type` is left at `"access"`. The catch rate is a ratio of means
-over the 172 complete trips: total catch divided by total angler-hours, about
-0.22 fish per angler-hour. The 59 incomplete trips are left out, because a
+over the 201 complete trips: total catch divided by total angler-hours, about
+0.20 fish per angler-hour. The 91 incomplete trips are left out, because a
 party met while still fishing is more likely to be met the longer it stays.
-Times about 9,994 angler-hours, that is about 2,230 fish.
+Times about 10,022 angler-hours, that is about 2,020 fish.
 
 ## Roving interviews
 

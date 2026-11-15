@@ -5,11 +5,11 @@
 \alias{example_season_interviews}
 \title{Example season interviews for a creel survey}
 \format{
-A data frame with 231 rows and 8 columns:
+A data frame with 292 rows and 8 columns:
 \describe{
 \item{date}{Interview date (Date class), a sampled day in the calendar}
 \item{day_type}{Day type stratum: "weekday" or "weekend"}
-\item{interview_id}{Integer interview identifier, 1 to 231}
+\item{interview_id}{Integer interview identifier, 1 to 292}
 \item{trip_status}{"complete" or "incomplete"}
 \item{hours_fished}{Hours the party had fished when interviewed: the
 whole trip if complete, the time so far if incomplete}
@@ -27,11 +27,16 @@ Simulated with \code{\link[=simulate_creel_data]{simulate_creel_data()}} and a f
 example_season_interviews
 }
 \description{
-Access-point interviews from the 36 sampled days in
-\link{example_season_calendar}, one row per angling party. Most parties had
-finished fishing (complete trips); about a quarter were still fishing when
-interviewed (incomplete trips). Most parties caught nothing, as on most
-real fisheries.
+Interviews from the 36 sampled days in \link{example_season_calendar}, one row
+per angling party. Most were met at the access point as they finished
+(complete trips, every finishing party with the same chance); about a
+third were met while still fishing (incomplete trips, met in proportion to
+how long they fish, with the catch so far). Most parties caught nothing, as
+on most real fisheries.
+}
+\details{
+Catch accrues over the time fished at a true rate of 0.22 fish per
+angler-hour, the same rate as \link{example_roving_interviews}.
 }
 \examples{
 data(example_season_calendar)
