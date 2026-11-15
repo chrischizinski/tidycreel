@@ -1,7 +1,7 @@
 test_params <- list(
   effort = list(gamma_shape = 2.0, gamma_rate = 0.8),
   party = list(mean = 1.5),
-  catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+  catch_rate = list(mean = 0.25, nb_size = 0.5),
   harvest = list(mean_pct = 35),
   counts = list(mean_total_anglers = 10)
 )
@@ -13,7 +13,7 @@ test_that("simulate_creel_data returns correct structure", {
     n_sampled_days = 5L,
     seed = 1L
   )
-  expect_named(sim, c("schedule", "interviews", "counts", "catch"))
+  expect_named(sim, c("schedule", "interviews", "counts", "catch", "truth"))
   expect_s3_class(sim$interviews, "data.frame")
   expect_s3_class(sim$counts, "data.frame")
   expect_s3_class(sim$catch, "data.frame")
@@ -33,6 +33,7 @@ test_that("simulate_creel_data interviews have required columns", {
     "trip_status",
     "hours_fished",
     "trip_duration",
+    "true_trip_length",
     "n_anglers",
     "catch_total",
     "catch_kept",
@@ -93,31 +94,32 @@ test_that("simulate_creel_data date column is Date class", {
   expect_s3_class(sim$counts$date, "Date")
 })
 
-test_that("simulate_creel_data trip_status is complete or incomplete", {
-  sim <- simulate_creel_data(
-    params = test_params,
-    season_days = 30L,
-    n_sampled_days = 10L,
-    seed = 6L
+test_that("simulate_creel_data trip_status follows interview_type", {
+  access <- simulate_creel_data(params = test_params, season_days = 30L, n_sampled_days = 10L, seed = 6L)
+  roving <- simulate_creel_data(
+    params = test_params, season_days = 30L, n_sampled_days = 10L, seed = 6L,
+    interview_type = "roving"
   )
-  if (nrow(sim$interviews) > 0L) {
-    expect_true(all(sim$interviews$trip_status %in% c("complete", "incomplete")))
-  }
+  expect_gt(nrow(access$interviews), 0L)
+  expect_gt(nrow(roving$interviews), 0L)
+  expect_true(all(access$interviews$trip_status == "complete"))
+  expect_true(all(roving$interviews$trip_status == "incomplete"))
 })
 
-test_that("simulate_creel_data incomplete trips: hours_fished <= trip_duration", {
+test_that("simulate_creel_data roving: trip_duration is the time so far (GH #488)", {
+  # Why: add_interviews() reads trip_duration as the elapsed time at the
+  # interview, and truncate_at filters on it. A party met 10 minutes in with
+  # 3 hours to go must not pass a 0.5 h truncation on simulated data when it
+  # would fail on real data. The full length is simulation truth only.
   sim <- simulate_creel_data(
-    params = test_params,
-    season_days = 40L,
-    n_sampled_days = 15L,
-    seed = 7L
+    params = test_params, season_days = 40L, n_sampled_days = 15L, seed = 7L,
+    interview_type = "roving"
   )
-  if (nrow(sim$interviews) > 0L) {
-    inc <- sim$interviews[sim$interviews$trip_status == "incomplete", ]
-    if (nrow(inc) > 0L) {
-      expect_true(all(inc$hours_fished <= inc$trip_duration + 1e-9))
-    }
-  }
+  inc <- sim$interviews
+  expect_gt(nrow(inc), 0L)
+  expect_equal(inc$trip_duration, inc$hours_fished)
+  expect_true(all(inc$hours_fished <= inc$true_trip_length + 1e-9))
+  expect_true(any(inc$hours_fished < inc$true_trip_length - 0.5))
 })
 
 test_that("simulate_creel_data n_anglers >= 1", {
@@ -189,14 +191,14 @@ test_that("simulate_creel_data different params produce different results", {
   hi_effort <- list(
     effort = list(gamma_shape = 5.0, gamma_rate = 0.5),
     party = list(mean = 1.5),
-    catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+    catch_rate = list(mean = 0.25, nb_size = 0.5),
     harvest = list(mean_pct = 35),
     counts = list(mean_total_anglers = 10)
   )
   lo_effort <- list(
     effort = list(gamma_shape = 1.0, gamma_rate = 2.0),
     party = list(mean = 1.5),
-    catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+    catch_rate = list(mean = 0.25, nb_size = 0.5),
     harvest = list(mean_pct = 35),
     counts = list(mean_total_anglers = 10)
   )
@@ -232,7 +234,7 @@ test_that("simulate_creel_data empty result on 0 encounters is valid", {
     n_sampled_days = 2L,
     seed = 99L
   )
-  expect_named(sim, c("schedule", "interviews", "counts", "catch"))
+  expect_named(sim, c("schedule", "interviews", "counts", "catch", "truth"))
 })
 
 # ── schedule component ─────────────────────────────────────────────────────────
@@ -445,4 +447,140 @@ test_that("a session that never drew is left without a seed (SEED-04)", {
   invisible(suppressMessages(simulate_creel_catch(n = 3, seed = 5)))
 
   expect_false(exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+})
+
+# ── catch accrual and interview modes (GH #494, #488) ─────────────────────────
+
+# A large season so sample estimates sit close to the population values. The
+# tolerances were set from 20 seeds: ROM and MOR ranged about +-10 % around
+# the true rate, interviewed trip lengths about +-3 %. The defects they guard
+# against are far larger (MOR 2.5x the rate; 3.75 h against 2.5 h).
+big_sim <- function(interview_type, seed = 494L, params = test_params) {
+  simulate_creel_data(
+    params = params,
+    season_days = 300L,
+    n_sampled_days = 250L,
+    n_anglers_per_day = 30,
+    interview_type = interview_type,
+    seed = seed
+  )
+}
+
+test_that("access ratio of means recovers the true catch rate (GH #494)", {
+  # Why: catch must accrue with time fished and party size, or the simulated
+  # population has no catch rate for an estimator to recover. ROM on complete
+  # trips is the access estimator (Pollock et al. 1997).
+  sim <- big_sim("access")
+  iv <- sim$interviews
+  rom <- sum(iv$catch_total) / sum(iv$n_anglers * iv$hours_fished)
+  expect_equal(sim$truth$catch_rate, test_params$catch_rate$mean)
+  expect_equal(rom, sim$truth$catch_rate, tolerance = 0.15)
+})
+
+test_that("roving mean of ratios recovers the SAME rate (GH #494)", {
+  # Why: before #494 an incomplete trip carried its whole trip's catch over
+  # the hours fished so far, so MOR on roving interviews came out about 2.5x
+  # the access rate. With catch accruing, both readings target one rate.
+  # Short trips are truncated, as Pollock et al. (1997) recommend.
+  sim <- big_sim("roving")
+  iv <- sim$interviews[sim$interviews$hours_fished >= 0.5, ]
+  mor <- mean(iv$catch_total / (iv$n_anglers * iv$hours_fished))
+  expect_equal(mor, sim$truth$catch_rate, tolerance = 0.15)
+})
+
+test_that("harvest truth is the catch rate times the keep proportion", {
+  sim <- big_sim("access")
+  iv <- sim$interviews
+  expect_equal(sim$truth$harvest_rate, 0.25 * 0.35)
+  hrom <- sum(iv$catch_kept) / sum(iv$n_anglers * iv$hours_fished)
+  expect_equal(hrom, sim$truth$harvest_rate, tolerance = 0.15)
+})
+
+test_that("access interviews are equal-probability, roving are length-biased (GH #494)", {
+  # Why: an access clerk meets every finishing party with the same chance;
+  # a roving clerk meets a party in proportion to how long it fishes. With
+  # Gamma(shape 2, rate 0.8) trips the population mean length is 2.5 h and
+  # the length-biased mean is (2 + 1) / 0.8 = 3.75 h. Before #494 complete
+  # trips were sampled length-biased too.
+  access <- big_sim("access")$interviews
+  roving <- big_sim("roving")$interviews
+  expect_equal(mean(access$true_trip_length), 2.5, tolerance = 0.08)
+  expect_equal(mean(roving$true_trip_length), 3.75, tolerance = 0.08)
+  expect_equal(access$hours_fished, access$trip_duration)
+  expect_equal(access$hours_fished, access$true_trip_length)
+})
+
+test_that("the old per-trip catch parameter is refused, not reinterpreted", {
+  # Why: a per-trip mean has no honest conversion to a per-angler-hour rate.
+  old <- test_params
+  old$catch_rate <- NULL
+  old$catch_per_trip <- list(mean = 1.8, nb_size = 0.5)
+  expect_error(
+    simulate_creel_data(params = old, season_days = 10L, n_sampled_days = 3L, seed = 1L),
+    class = "creel_error_simulate_removed_input"
+  )
+})
+
+test_that("p_complete is refused: interview_type decides trip status", {
+  expect_error(
+    simulate_creel_data(
+      params = test_params, season_days = 10L, n_sampled_days = 3L, seed = 1L,
+      p_complete = 0.75
+    ),
+    class = "creel_error_simulate_removed_input"
+  )
+})
+
+test_that("weekday/weekend day types come from the date (GH #488)", {
+  # Why: a reader checking a simulated date against a calendar must find a
+  # weekend on a Saturday or Sunday.
+  sim <- simulate_creel_data(
+    params = test_params,
+    season_days = 60L,
+    n_sampled_days = 20L,
+    day_types = c(weekday = 5 / 7, weekend = 2 / 7),
+    start_date = as.Date("2024-05-01"),
+    seed = 11L
+  )
+  is_weekend <- function(d) format(d, "%u") %in% c("6", "7")
+  expect_identical(
+    sim$schedule$day_type,
+    ifelse(is_weekend(sim$schedule$date), "weekend", "weekday")
+  )
+  expect_identical(
+    sim$interviews$day_type,
+    ifelse(is_weekend(sim$interviews$date), "weekend", "weekday")
+  )
+  expect_identical(
+    sim$counts$day_type,
+    ifelse(is_weekend(sim$counts$date), "weekend", "weekday")
+  )
+})
+
+test_that("other day-type names are assigned at random in the stated proportions", {
+  # Why: weekday/weekend now come from the date, so the random branch needs
+  # its own test; without it a regression for custom strata would pass.
+  sim <- simulate_creel_data(
+    params = test_params,
+    season_days = 2000L,
+    n_sampled_days = 10L,
+    day_types = c(open = 0.7, holiday = 0.3),
+    seed = 12L
+  )
+  expect_setequal(unique(sim$schedule$day_type), c("open", "holiday"))
+  expect_equal(mean(sim$schedule$day_type == "holiday"), 0.3, tolerance = 0.1)
+  sampled <- sim$schedule[sim$schedule$sampled, ]
+  expect_identical(
+    sort(unique(sim$counts$day_type)),
+    sort(unique(sampled$day_type))
+  )
+})
+
+test_that("a supplied non-positive nb_size is refused, not replaced", {
+  bad <- test_params
+  bad$catch_rate$nb_size <- 0
+  expect_error(
+    simulate_creel_data(params = bad, season_days = 10L, n_sampled_days = 3L, seed = 1L),
+    "nb_size"
+  )
 })

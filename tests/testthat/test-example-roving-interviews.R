@@ -1,6 +1,6 @@
-# example_roving_interviews exists because simulate_creel_data() gives an
-# incomplete trip its whole trip's catch over the hours fished so far (GH #494),
-# which inflates a roving mean-of-ratios rate. These tests pin what makes the
+# example_roving_interviews exists because simulate_creel_data() gave an
+# incomplete trip its whole trip's catch over the hours fished so far (GH #494,
+# fixed since), which inflated a roving mean-of-ratios rate. These tests pin what makes the
 # roving example honest: every trip is incomplete, its catch is the catch so
 # far, and the roving estimator recovers the rate the data were simulated with.
 
