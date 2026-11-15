@@ -6,9 +6,11 @@ counts can over- or under-estimate daily effort. This function fits a
 negative-binomial GLMM (or user-specified family) to model how angler counts
 change through the day, then integrates the fitted diurnal curve over the
 fishing day to obtain a bias-corrected effort estimate.
-The default model is the quadratic temporal model from Askey (2018):
-count ~ poly(time_col, 2) + (1 | date), fitted via
-lme4::glmer.nb(). Variance is propagated via the delta method (default) or
+The default model is count ~ poly(time_col, 2) + (1 | date), fitted via
+lme4::glmer.nb(). The quadratic hour effect is tidycreel's own choice, not
+a model from Askey et al. (2018): they fitted hourly camera counts with time
+of day as a categorical hour, which a few fixed flight times cannot support
+and which cannot predict the hours no flight saw. Variance is propagated via the delta method (default) or
 parametric bootstrap (lme4::bootMer())."><meta property="og:description" content="Estimates total angler effort from aerial creel surveys using a generalized
 linear mixed model (GLMM), following the approach of Askey et al. (2018).
 When flights occur at non-random times of day, simple scaling of instantaneous
@@ -16,9 +18,11 @@ counts can over- or under-estimate daily effort. This function fits a
 negative-binomial GLMM (or user-specified family) to model how angler counts
 change through the day, then integrates the fitted diurnal curve over the
 fishing day to obtain a bias-corrected effort estimate.
-The default model is the quadratic temporal model from Askey (2018):
-count ~ poly(time_col, 2) + (1 | date), fitted via
-lme4::glmer.nb(). Variance is propagated via the delta method (default) or
+The default model is count ~ poly(time_col, 2) + (1 | date), fitted via
+lme4::glmer.nb(). The quadratic hour effect is tidycreel's own choice, not
+a model from Askey et al. (2018): they fitted hourly camera counts with time
+of day as a categorical hour, which a few fixed flight times cannot support
+and which cannot predict the hours no flight saw. Variance is propagated via the delta method (default) or
 parametric bootstrap (lme4::bootMer())."><meta property="og:image" content="https://chrischizinski.com/tidycreel/logo.png"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
@@ -100,9 +104,11 @@ counts can over- or under-estimate daily effort. This function fits a
 negative-binomial GLMM (or user-specified family) to model how angler counts
 change through the day, then integrates the fitted diurnal curve over the
 fishing day to obtain a bias-corrected effort estimate.</p>
-<p>The default model is the quadratic temporal model from Askey (2018):
-<code>count ~ poly(time_col, 2) + (1 | date)</code>, fitted via
-<code><a href="https://rdrr.io/pkg/lme4/man/glmer.nb.html" class="external-link">lme4::glmer.nb()</a></code>. Variance is propagated via the delta method (default) or
+<p>The default model is <code>count ~ poly(time_col, 2) + (1 | date)</code>, fitted via
+<code><a href="https://rdrr.io/pkg/lme4/man/glmer.nb.html" class="external-link">lme4::glmer.nb()</a></code>. The quadratic hour effect is tidycreel's own choice, not
+a model from Askey et al. (2018): they fitted hourly camera counts with time
+of day as a categorical hour, which a few fixed flight times cannot support
+and which cannot predict the hours no flight saw. Variance is propagated via the delta method (default) or
 parametric bootstrap (<code><a href="https://rdrr.io/pkg/lme4/man/bootMer.html" class="external-link">lme4::bootMer()</a></code>).</p>
     </div>
 
@@ -138,8 +144,8 @@ recording the hour of each aerial overflight (e.g., <code>time_of_flight</code>)
 
 <dt id="arg-formula">formula<a class="anchor" aria-label="anchor" href="#arg-formula"></a></dt>
 <dd><p>Optional. A formula for the GLMM, passed directly to
-<code><a href="https://rdrr.io/pkg/lme4/man/glmer.nb.html" class="external-link">lme4::glmer.nb()</a></code> or <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code>. If <code>NULL</code> (default), the Askey
-(2018) quadratic formula is used:
+<code><a href="https://rdrr.io/pkg/lme4/man/glmer.nb.html" class="external-link">lme4::glmer.nb()</a></code> or <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code>. If <code>NULL</code> (default), a quadratic
+hour effect with a day random intercept is used:
 <code>count ~ poly(time_col, 2) + (1 | date)</code>.</p></dd>
 
 
@@ -241,9 +247,10 @@ variance method neither the delta nor the bootstrap path offers today.</p><div c
 
 <p>With <code>by</code>, the strata are additive: they shift the level of one shared
 diurnal curve and do not change its shape. That follows Askey et al.
-(2018), where day type is additive in every model structure compared; the
-one interaction they tested (month x hour) was preferred by AIC, rejected by
-BIC, and bought no predictive gain in cross-validation. A single model also
+(2018), where day type is additive in every model structure compared; their
+two interactions were season x hour and month x hour, never day type x hour,
+and month x hour was preferred by AIC, rejected by BIC, and bought no
+predictive gain in cross-validation. A single model also
 shares strength across strata, which matters when a stratum has few flights.</p>
 <p>The assumption can fail. Smucker et al. (2010, Table 1) report weekday and
 weekend diurnal effort that differ in shape, most clearly for shore anglers.
@@ -314,9 +321,8 @@ American Journal of Fisheries Management, 30, 1051-1061.
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   are repeat counts, or `unit_cols` if they are distinct units.</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Default Askey quadratic model with delta-method SE</span></span></span>
+<span class="r-in"><span><span class="co"># Default quadratic model with delta-method SE</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort_aerial_glmm</span><span class="op">(</span><span class="va">design</span>, time_col <span class="op">=</span> <span class="va">time_of_flight</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>iteration limit reached</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
@@ -326,14 +332,15 @@ American Journal of Fisheries Management, 30, 1051-1061.
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: delta</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model: 412 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Unit: angler-hours</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> model: 364.6 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">4</span>729.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>740.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># One row per day type, from one model with day type as an additive term.</span></span></span>
 <span class="r-in"><span><span class="co"># `visibility_correction = "none"` above leaves the SEs unknown (NA), so this</span></span></span>
@@ -355,10 +362,8 @@ American Journal of Fisheries Management, 30, 1051-1061.
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   are repeat counts, or `unit_cols` if they are distinct units.</span>
 <span class="r-in"><span><span class="va">by_day</span> <span class="op">&lt;-</span> <span class="fu">estimate_effort_aerial_glmm</span><span class="op">(</span><span class="va">design_v</span>, time_col <span class="op">=</span> <span class="va">time_of_flight</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>iteration limit reached</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> BIC(interaction) - BIC(additive) = 7.6: favours the shared shape used for</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   this estimate.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   The interaction fit raised 1 warning; treat the comparison with caution.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">by_day</span><span class="op">)</span></span></span>
@@ -369,18 +374,19 @@ American Journal of Fisheries Management, 30, 1051-1061.
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Grouped by: day_type</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> model: 380.6 and 290.4 (included in <span style="color: #00BB00;">se</span>)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> visibility: 212.0 and 115.3 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Unit: angler-hours</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> model: 355.8 and 231.9 (included in <span style="color: #00BB00;">se</span>)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> visibility: 176.8 and 82.0 (included in <span style="color: #00BB00;">se</span>)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> angler_ratio: 0 and 0 (included in <span style="color: #00BB00;">se</span>)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 8</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se se_between se_within ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>603.  436.       436.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>750.    <span style="text-decoration: underline;">4</span>457.    32</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>960.  312.       312.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">1</span>347.    <span style="text-decoration: underline;">2</span>572.    16</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>006.  397.       397.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>228.    <span style="text-decoration: underline;">3</span>785.    32</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>394.  246.       246.        <span style="color: #BB0000;">NA</span>     912.    <span style="text-decoration: underline;">1</span>876.    16</span>
 <span class="r-in"><span><span class="co"># SE of the summed total: use the joint covariance, not quadrature</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 581.6996</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 501.2849</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Bootstrap CIs. `nboot` is held low here so the example stays fast on a</span></span></span>
 <span class="r-in"><span><span class="co"># check machine; use at least 1000 replicates for real inference. The block</span></span></span>
@@ -393,7 +399,6 @@ American Journal of Fisheries Management, 30, 1051-1061.
 <span class="r-in"><span>  boot <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>  nboot <span class="op">=</span> <span class="fl">25L</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>iteration limit reached</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Running 25 bootstrap replicates via lme4::bootMer...</span>
@@ -407,12 +412,13 @@ American Journal of Fisheries Management, 30, 1051-1061.
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Bootstrap</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: sampled_days</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Unit: angler-hours</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> model: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se se_between se_within ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">4</span>729.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>740.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

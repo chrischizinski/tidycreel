@@ -1,12 +1,14 @@
 # Example multi-flight aerial count data for GLMM effort estimation
 
 Simulated instantaneous angler counts from aerial overflights of a
-Nebraska reservoir, designed to demonstrate GLMM-based effort estimation
-following Askey (2018). Contains 48 rows: 12 survey days with 4
+Nebraska reservoir, designed to demonstrate the GLMM-based effort
+estimator in
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md),
+which builds on Askey (2018). Contains 48 rows: 12 survey days with 4
 overflights per day at fixed hours (07:00, 10:00, 13:00, 16:00). Counts
-follow a diurnal curve (low at dawn, peak mid-morning, lower in
-afternoon) with day-level Poisson variability and a day random
-intercept.
+follow a quadratic diurnal curve on the log scale (low at dawn, peaking
+about 13:40, falling into the evening) with a day random intercept and
+negative-binomial (overdispersed) count noise.
 
 ## Usage
 
@@ -40,7 +42,8 @@ A data frame with 48 rows and 4 columns:
 
 ## Source
 
-Simulated data following Askey (2018) NAJFM doi:10.1002/nafm.10010.
+Simulated data (`data-raw/create_example_aerial_glmm_counts.R` in the
+package's source repository).
 
 ## References
 
@@ -89,12 +92,12 @@ Other "Example Datasets":
 data(example_aerial_glmm_counts)
 head(example_aerial_glmm_counts)
 #>         date day_type n_anglers time_of_flight
-#> 1 2024-06-03  weekday         3              7
-#> 2 2024-06-03  weekday        30             10
-#> 3 2024-06-03  weekday        65             13
-#> 4 2024-06-03  weekday        50             16
-#> 5 2024-06-06  weekday         5              7
-#> 6 2024-06-06  weekday        15             10
+#> 1 2024-06-03  weekday         5              7
+#> 2 2024-06-03  weekday        29             10
+#> 3 2024-06-03  weekday        70             13
+#> 4 2024-06-03  weekday        24             16
+#> 5 2024-06-06  weekday         3              7
+#> 6 2024-06-06  weekday        34             10
 
 # The workflow below fits a GLMM, so it needs lme4 (a Suggests).
 if (rlang::is_installed("lme4")) {
@@ -119,7 +122,6 @@ print(result)
 #> ℹ The repeated rows are keyed on date and day_type.
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
-#> Warning: iteration limit reached
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 #> 
@@ -128,12 +130,13 @@ print(result)
 #> Variance: delta
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> model: 412 (known, but se is `NA`)
+#> Unit: angler-hours
+#> model: 364.6 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    4729.    NA         NA        NA       NA       NA    48
+#> 1    3740.    NA         NA        NA       NA       NA    48
 ```

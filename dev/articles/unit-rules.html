@@ -235,8 +235,9 @@ not see the multiplication that made it.</li>
 requires <code>h_open</code> for an aerial survey, and
 <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> multiplies the count by it, so aerial
 effort from <code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> is angler-hours.
-<code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> still reports an unknown
-unit; that is a known defect, open as issue #492.</li>
+<code><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm()</a></code> integrates the fitted count
+over the same <code>h_open</code> hours, so it reports angler-hours
+too.</li>
 </ul>
 </div>
 <div class="section level2">

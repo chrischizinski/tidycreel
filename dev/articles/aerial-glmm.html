@@ -118,12 +118,17 @@ daily effort. Early-morning flights catch fewer anglers than are present
 at peak hours; late-afternoon flights may miss early starters entirely.
 When flight timing is non-random, the simple expansion (count × h_open /
 v) inherits this temporal bias.</p>
-<p>The GLMM approach (Askey et al. 2018) models how angler counts change
-through the day using a quadratic hour effect and a day-level random
-intercept: <code>count ~ poly(hour, 2) + (1 | date)</code>. Once the
-diurnal curve is estimated, the model integrates predicted counts across
-the full open-water window — correcting for wherever in the curve the
-actual flight fell.</p>
+<p>The GLMM approach models how angler counts change through the day,
+then integrates predicted counts across the full open-water window —
+correcting for wherever in the curve the actual flight fell. It builds
+on Askey et al. (2018), who fitted negative-binomial GLMMs to hourly
+time-lapse camera counts, with time of day as a categorical hour and a
+random intercept for the lake-year being scaled. tidycreel adapts that
+to flights: a few fixed flight times cannot support one coefficient per
+hour, and a categorical hour cannot predict the hours no flight saw, so
+the default uses a smooth quadratic hour effect and a day-level random
+intercept: <code>count ~ poly(hour, 2) + (1 | date)</code>. The
+quadratic is tidycreel’s choice, not a model from Askey et al.</p>
 <p><strong>When to use the GLMM estimator:</strong></p>
 <ol style="list-style-type: decimal">
 <li>Flights always occur in the same part of the day (fixed morning or
@@ -145,20 +150,20 @@ window.</li>
 <p>The <code>example_aerial_glmm_counts</code> dataset contains 12
 survey days with 4 overflights per day at fixed hours (7, 10, 13, and 16
 hours), producing 48 observations. Angler counts follow a diurnal curve
-with day-level Poisson variability — representative of a scenario where
-a fixed morning-to-afternoon flight schedule is used throughout the
-season.</p>
+with a day-level random intercept and overdispersed (negative-binomial)
+count noise — representative of a scenario where a fixed
+morning-to-afternoon flight schedule is used throughout the season.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/chrischizinski/tidycreel" class="external-link">tidycreel</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">example_aerial_glmm_counts</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_aerial_glmm_counts</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         date day_type n_anglers time_of_flight</span></span>
-<span><span class="co">#&gt; 1 2024-06-03  weekday         3              7</span></span>
-<span><span class="co">#&gt; 2 2024-06-03  weekday        30             10</span></span>
-<span><span class="co">#&gt; 3 2024-06-03  weekday        65             13</span></span>
-<span><span class="co">#&gt; 4 2024-06-03  weekday        50             16</span></span>
-<span><span class="co">#&gt; 5 2024-06-06  weekday         5              7</span></span>
-<span><span class="co">#&gt; 6 2024-06-06  weekday        15             10</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2024-06-03  weekday         5              7</span></span>
+<span><span class="co">#&gt; 2 2024-06-03  weekday        29             10</span></span>
+<span><span class="co">#&gt; 3 2024-06-03  weekday        70             13</span></span>
+<span><span class="co">#&gt; 4 2024-06-03  weekday        24             16</span></span>
+<span><span class="co">#&gt; 5 2024-06-06  weekday         3              7</span></span>
+<span><span class="co">#&gt; 6 2024-06-06  weekday        34             10</span></span></code></pre></div>
 <p>The four columns are <code>date</code>, <code>day_type</code>,
 <code>n_anglers</code> (instantaneous count), and
 <code>time_of_flight</code> (decimal hour of each overflight).</p>
@@ -234,8 +239,6 @@ negative-binomial GLMM with a quadratic temporal effect and a day-level
 random intercept:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">glmm_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm</a></span><span class="op">(</span><span class="va">design</span>, time_col <span class="op">=</span> <span class="va">time_of_flight</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :</span></span>
-<span><span class="co">#&gt; iteration limit reached</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span></span>
 <span><span class="co">#&gt;   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">glmm_result</span><span class="op">)</span></span>
@@ -245,30 +248,29 @@ random intercept:</p>
 <span><span class="co">#&gt; Variance: delta</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; model: 412 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
+<span><span class="co">#&gt; model: 364.6 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">4</span>729.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>740.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p>The model fits the diurnal count curve over all 48 observations, then
-numerically integrates the predicted mean count over a window
-<code>h_open</code> hours long. The window starts at
-<code>open_start</code> if <code><a href="../reference/creel_design.html">creel_design()</a></code> was given one,
-and otherwise 0.5 hours before the earliest flight. The integral is
-already in people-hours, so it is scaled by the angler ratio and the
-visibility correction
+numerically integrates the predicted mean count (trapezoid rule on a
+100-point grid) over a window <code>h_open</code> hours long. The window
+starts at <code>open_start</code> if <code><a href="../reference/creel_design.html">creel_design()</a></code> was
+given one, and otherwise 0.5 hours before the earliest flight. The
+integral is already in people-hours, so it is scaled by the angler ratio
+and the visibility correction
 (<code>angler_ratio / visibility_correction</code>) and not by
 <code>h_open</code> again.</p>
-<p>The fit also warns <code>iteration limit reached</code>. That comes
-from <code><a href="https://rdrr.io/pkg/lme4/man/glmer.nb.html" class="external-link">lme4::glmer.nb()</a></code>, whose estimate of the
-negative-binomial dispersion did not settle within its iteration limit
-on these 48 counts. It is a convergence warning about this example, left
-visible rather than suppressed, and is open as tidycreel issue #492
-along with other points about this estimator. Treat the estimate below
-with that in mind, and check convergence on your own data.</p>
+<p>Check convergence on your own data. <code><a href="https://rdrr.io/pkg/lme4/man/glmer.nb.html" class="external-link">lme4::glmer.nb()</a></code>
+warns <code>iteration limit reached</code> when the counts show little
+overdispersion, so the negative-binomial dispersion cannot settle; a
+Poisson fit (<code>family = poisson</code>) may then suit the data
+better.</p>
 </div>
 <div class="section level2">
 <h2 id="variance-and-confidence-intervals">Variance and Confidence Intervals<a class="anchor" aria-label="anchor" href="#variance-and-confidence-intervals"></a>
@@ -471,8 +473,8 @@ large.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">comparison</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   method estimate       target</span></span>
-<span><span class="co">#&gt; 1   GLMM 4728.546 sampled_days</span></span>
-<span><span class="co">#&gt; 2 Simple 5092.500 sampled_days</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   GLMM 3740.386 sampled_days</span></span>
+<span><span class="co">#&gt; 2 Simple 4270.000 sampled_days</span></span></code></pre></div>
 <p>The <code>target</code> column is worth checking rather than
 assuming. Both estimators report <code>sampled_days</code>, so the two
 totals cover the same twelve days and the gap between them is the
@@ -525,11 +527,8 @@ be <code>NA</code>, as explained above.</p>
 <span>  time_col <span class="op">=</span> <span class="va">time_of_flight</span>,</span>
 <span>  by <span class="op">=</span> <span class="va">day_type</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :</span></span>
-<span><span class="co">#&gt; iteration limit reached</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> BIC(interaction) - BIC(additive) = 7.6: favours the shared shape used for</span></span>
 <span><span class="co">#&gt;   this estimate.</span></span>
-<span><span class="co">#&gt;   The interaction fit raised 1 warning; treat the comparison with caution.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span></span>
 <span><span class="co">#&gt;   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">)</span></span>
@@ -540,15 +539,16 @@ be <code>NA</code>, as explained above.</p>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Grouped by: day_type</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; model: 380.6 and 290.4 (included in <span style="color: #00BB00;">se</span>)</span></span>
-<span><span class="co">#&gt; visibility: 212.0 and 115.3 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
+<span><span class="co">#&gt; model: 355.8 and 231.9 (included in <span style="color: #00BB00;">se</span>)</span></span>
+<span><span class="co">#&gt; visibility: 176.8 and 82.0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 and 0 (included in <span style="color: #00BB00;">se</span>)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 8</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>603.  436.       436.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>750.    <span style="text-decoration: underline;">4</span>457.    32</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>960.  312.       312.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">1</span>347.    <span style="text-decoration: underline;">2</span>572.    16</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>006.  397.       397.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>228.    <span style="text-decoration: underline;">3</span>785.    32</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>394.  246.       246.        <span style="color: #BB0000;">NA</span>     912.    <span style="text-decoration: underline;">1</span>876.    16</span></span></code></pre></div>
 <p>The shared-shape assumption can fail: Smucker et al. (2010) report
 weekday and weekend diurnal effort that differ in shape. The grouped fit
 therefore also fits the time × stratum interaction and reports the BIC
@@ -567,36 +567,40 @@ understates it.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># SE of the summed total, from the joint covariance</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 581.6996</span></span>
+<span><span class="co">#&gt; [1] 501.2849</span></span>
 <span></span>
 <span><span class="co"># The quadrature sum, shown only to compare -- it understates the SE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 536.0946</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 467.277</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="results-as-data">Results as Data<a class="anchor" aria-label="anchor" href="#results-as-data"></a>
 </h2>
 <p>The per-stratum result converts to a tibble with its method and
-variance method as columns, and plots. This design declares
-<code>visibility_correction = "none"</code>, so its intervals are
+variance method as columns, and plots. <code>design_v</code> declares a
+measured visibility correction with its SE, so each stratum carries an
+interval and the plot draws it; on a design with
+<code>visibility_correction = "none"</code> the intervals are
 <code>NA</code> (see above) and the plot shows the point estimates
-alone; a design with <code>visibility_se</code> draws an interval around
-each.</p>
+alone.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">effort_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">)</span></span>
+<span><span class="va">effort_tbl</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 13</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n method   </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>603.  436.       436.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>750.    <span style="text-decoration: underline;">4</span>457.    32 aerial_g…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>960.  312.       312.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">1</span>347.    <span style="text-decoration: underline;">2</span>572.    16 aerial_g…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">3</span>006.  397.       397.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">2</span>228.    <span style="text-decoration: underline;">3</span>785.    32 aerial_g…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">1</span>394.  246.       246.        <span style="color: #BB0000;">NA</span>     912.    <span style="text-decoration: underline;">1</span>876.    16 aerial_g…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
+<span><span class="va">effort_tbl</span><span class="op">$</span><span class="va">unit</span></span>
+<span><span class="co">#&gt; [1] "angler-hours" "angler-hours"</span></span>
 <span></span>
 <span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">)</span></span></code></pre></div>
-<p><img src="aerial-glmm_files/figure-html/results-1.png" class="r-plt" alt="GLMM effort point estimates for weekdays and weekends; no confidence intervals, because the visibility uncertainty is unknown." width="576"></p>
-<p>The <code>unit</code> column reads <code>NA</code>: the GLMM
-estimator does not yet record that its effort is in angler-hours, so the
-plot axis carries no unit either. That is also part of #492.</p>
+<p><img src="aerial-glmm_files/figure-html/results-1.png" class="r-plt" alt="GLMM effort estimates in angler-hours for weekdays and weekends, each with its confidence interval." width="576"></p>
+<p>The effort is in angler-hours: the integral of a count over hours,
+scaled by the angler ratio and the visibility correction, the same unit
+<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code> reports for an aerial design.</p>
 </div>
 <div class="section level2">
 <h2 id="custom-formula">Custom Formula<a class="anchor" aria-label="anchor" href="#custom-formula"></a>
@@ -622,14 +626,15 @@ data.</p>
 <span><span class="co">#&gt; Variance: delta</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
 <span><span class="co">#&gt; Effort target: sampled_days</span></span>
-<span><span class="co">#&gt; model: 1302 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
+<span><span class="co">#&gt; Unit: angler-hours</span></span>
+<span><span class="co">#&gt; model: 945.1 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; visibility: NA (unknown, so <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; angler_ratio: 0 (known, but <span style="color: #00BB00;">se</span> is `NA`)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>212.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">6</span>166.    <span style="color: #BB0000;">NA</span>         <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>       <span style="color: #BB0000;">NA</span>    48</span></span></code></pre></div>
 <p>A linear temporal term reduces flexibility but can improve stability
 when only a few survey days are available. Use the default quadratic
 formula when you have 8 or more survey days.</p>

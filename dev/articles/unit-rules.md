@@ -141,8 +141,8 @@ Two other routes:
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
   is angler-hours.
   [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
-  still reports an unknown unit; that is a known defect, open as issue
-  \#492.
+  integrates the fitted count over the same `h_open` hours, so it
+  reports angler-hours too.
 
 ## The interview side
 

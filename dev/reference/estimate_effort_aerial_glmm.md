@@ -9,11 +9,13 @@ family) to model how angler counts change through the day, then
 integrates the fitted diurnal curve over the fishing day to obtain a
 bias-corrected effort estimate.
 
-The default model is the quadratic temporal model from Askey (2018):
-`count ~ poly(time_col, 2) + (1 | date)`, fitted via
-[`lme4::glmer.nb()`](https://rdrr.io/pkg/lme4/man/glmer.nb.html).
-Variance is propagated via the delta method (default) or parametric
-bootstrap
+The default model is `count ~ poly(time_col, 2) + (1 | date)`, fitted
+via [`lme4::glmer.nb()`](https://rdrr.io/pkg/lme4/man/glmer.nb.html).
+The quadratic hour effect is tidycreel's own choice, not a model from
+Askey et al. (2018): they fitted hourly camera counts with time of day
+as a categorical hour, which a few fixed flight times cannot support and
+which cannot predict the hours no flight saw. Variance is propagated via
+the delta method (default) or parametric bootstrap
 ([`lme4::bootMer()`](https://rdrr.io/pkg/lme4/man/bootMer.html)).
 
 ## Usage
@@ -53,8 +55,8 @@ estimate_effort_aerial_glmm(
   Optional. A formula for the GLMM, passed directly to
   [`lme4::glmer.nb()`](https://rdrr.io/pkg/lme4/man/glmer.nb.html) or
   [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html). If `NULL`
-  (default), the Askey (2018) quadratic formula is used:
-  `count ~ poly(time_col, 2) + (1 | date)`.
+  (default), a quadratic hour effect with a day random intercept is
+  used: `count ~ poly(time_col, 2) + (1 | date)`.
 
 - family:
 
@@ -176,10 +178,11 @@ offers today.
 With `by`, the strata are additive: they shift the level of one shared
 diurnal curve and do not change its shape. That follows Askey et al.
 (2018), where day type is additive in every model structure compared;
-the one interaction they tested (month x hour) was preferred by AIC,
-rejected by BIC, and bought no predictive gain in cross-validation. A
-single model also shares strength across strata, which matters when a
-stratum has few flights.
+their two interactions were season x hour and month x hour, never day
+type x hour, and month x hour was preferred by AIC, rejected by BIC, and
+bought no predictive gain in cross-validation. A single model also
+shares strength across strata, which matters when a stratum has few
+flights.
 
 The assumption can fail. Smucker et al. (2010, Table 1) report weekday
 and weekend diurnal effort that differ in shape, most clearly for shore
@@ -251,9 +254,8 @@ design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
 
-# Default Askey quadratic model with delta-method SE
+# Default quadratic model with delta-method SE
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
-#> Warning: iteration limit reached
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 print(result)
@@ -263,14 +265,15 @@ print(result)
 #> Variance: delta
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> model: 412 (known, but se is `NA`)
+#> Unit: angler-hours
+#> model: 364.6 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    4729.    NA         NA        NA       NA       NA    48
+#> 1    3740.    NA         NA        NA       NA       NA    48
 
 # One row per day type, from one model with day type as an additive term.
 # `visibility_correction = "none"` above leaves the SEs unknown (NA), so this
@@ -292,10 +295,8 @@ design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_angle
 #> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
 #>   are repeat counts, or `unit_cols` if they are distinct units.
 by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
-#> Warning: iteration limit reached
-#> ℹ BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for
+#> ℹ BIC(interaction) - BIC(additive) = 7.6: favours the shared shape used for
 #>   this estimate.
-#>   The interaction fit raised 1 warning; treat the comparison with caution.
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 print(by_day)
@@ -306,18 +307,19 @@ print(by_day)
 #> Confidence level: 95%
 #> Grouped by: day_type
 #> Effort target: sampled_days
-#> model: 380.6 and 290.4 (included in se)
-#> visibility: 212.0 and 115.3 (included in se)
+#> Unit: angler-hours
+#> model: 355.8 and 231.9 (included in se)
+#> visibility: 176.8 and 82.0 (included in se)
 #> angler_ratio: 0 and 0 (included in se)
 #> 
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     3603.  436.       436.        NA    2750.    4457.    32
-#> 2 weekend     1960.  312.       312.        NA    1347.    2572.    16
+#> 1 weekday     3006.  397.       397.        NA    2228.    3785.    32
+#> 2 weekend     1394.  246.       246.        NA     912.    1876.    16
 # SE of the summed total: use the joint covariance, not quadrature
 sqrt(sum(by_day$strata_vcov))
-#> [1] 581.6996
+#> [1] 501.2849
 
 # Bootstrap CIs. `nboot` is held low here so the example stays fast on a
 # check machine; use at least 1000 replicates for real inference. The block
@@ -330,7 +332,6 @@ result_boot <- estimate_effort_aerial_glmm(
   boot = TRUE,
   nboot = 25L
 )
-#> Warning: iteration limit reached
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 #> Running 25 bootstrap replicates via lme4::bootMer...
@@ -344,11 +345,12 @@ print(result_boot)
 #> Variance: Bootstrap
 #> Confidence level: 95%
 #> Effort target: sampled_days
+#> Unit: angler-hours
 #> model: NA (unknown, so se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    4729.    NA         NA        NA       NA       NA    48
+#> 1    3740.    NA         NA        NA       NA       NA    48
 # }
 ```

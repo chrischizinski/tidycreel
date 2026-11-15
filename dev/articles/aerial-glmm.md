@@ -9,12 +9,17 @@ peak hours; late-afternoon flights may miss early starters entirely.
 When flight timing is non-random, the simple expansion (count × h_open /
 v) inherits this temporal bias.
 
-The GLMM approach (Askey et al. 2018) models how angler counts change
-through the day using a quadratic hour effect and a day-level random
-intercept: `count ~ poly(hour, 2) + (1 | date)`. Once the diurnal curve
-is estimated, the model integrates predicted counts across the full
-open-water window — correcting for wherever in the curve the actual
-flight fell.
+The GLMM approach models how angler counts change through the day, then
+integrates predicted counts across the full open-water window —
+correcting for wherever in the curve the actual flight fell. It builds
+on Askey et al. (2018), who fitted negative-binomial GLMMs to hourly
+time-lapse camera counts, with time of day as a categorical hour and a
+random intercept for the lake-year being scaled. tidycreel adapts that
+to flights: a few fixed flight times cannot support one coefficient per
+hour, and a categorical hour cannot predict the hours no flight saw, so
+the default uses a smooth quadratic hour effect and a day-level random
+intercept: `count ~ poly(hour, 2) + (1 | date)`. The quadratic is
+tidycreel’s choice, not a model from Askey et al.
 
 **When to use the GLMM estimator:**
 
@@ -36,9 +41,10 @@ vignette](https://chrischizinski.com/tidycreel/dev/articles/aerial-surveys.md).
 
 The `example_aerial_glmm_counts` dataset contains 12 survey days with 4
 overflights per day at fixed hours (7, 10, 13, and 16 hours), producing
-48 observations. Angler counts follow a diurnal curve with day-level
-Poisson variability — representative of a scenario where a fixed
-morning-to-afternoon flight schedule is used throughout the season.
+48 observations. Angler counts follow a diurnal curve with a day-level
+random intercept and overdispersed (negative-binomial) count noise —
+representative of a scenario where a fixed morning-to-afternoon flight
+schedule is used throughout the season.
 
 ``` r
 
@@ -46,12 +52,12 @@ library(tidycreel)
 data(example_aerial_glmm_counts)
 head(example_aerial_glmm_counts)
 #>         date day_type n_anglers time_of_flight
-#> 1 2024-06-03  weekday         3              7
-#> 2 2024-06-03  weekday        30             10
-#> 3 2024-06-03  weekday        65             13
-#> 4 2024-06-03  weekday        50             16
-#> 5 2024-06-06  weekday         5              7
-#> 6 2024-06-06  weekday        15             10
+#> 1 2024-06-03  weekday         5              7
+#> 2 2024-06-03  weekday        29             10
+#> 3 2024-06-03  weekday        70             13
+#> 4 2024-06-03  weekday        24             16
+#> 5 2024-06-06  weekday         3              7
+#> 6 2024-06-06  weekday        34             10
 ```
 
 The four columns are `date`, `day_type`, `n_anglers` (instantaneous
@@ -135,8 +141,6 @@ random intercept:
 ``` r
 
 glmm_result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
-#> Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :
-#> iteration limit reached
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 print(glmm_result)
@@ -146,33 +150,32 @@ print(glmm_result)
 #> Variance: delta
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> model: 412 (known, but se is `NA`)
+#> Unit: angler-hours
+#> model: 364.6 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    4729.    NA         NA        NA       NA       NA    48
+#> 1    3740.    NA         NA        NA       NA       NA    48
 ```
 
 The model fits the diurnal count curve over all 48 observations, then
-numerically integrates the predicted mean count over a window `h_open`
-hours long. The window starts at `open_start` if
+numerically integrates the predicted mean count (trapezoid rule on a
+100-point grid) over a window `h_open` hours long. The window starts at
+`open_start` if
 [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
 was given one, and otherwise 0.5 hours before the earliest flight. The
 integral is already in people-hours, so it is scaled by the angler ratio
 and the visibility correction (`angler_ratio / visibility_correction`)
 and not by `h_open` again.
 
-The fit also warns `iteration limit reached`. That comes from
-[`lme4::glmer.nb()`](https://rdrr.io/pkg/lme4/man/glmer.nb.html), whose
-estimate of the negative-binomial dispersion did not settle within its
-iteration limit on these 48 counts. It is a convergence warning about
-this example, left visible rather than suppressed, and is open as
-tidycreel issue \#492 along with other points about this estimator.
-Treat the estimate below with that in mind, and check convergence on
-your own data.
+Check convergence on your own data.
+[`lme4::glmer.nb()`](https://rdrr.io/pkg/lme4/man/glmer.nb.html) warns
+`iteration limit reached` when the counts show little overdispersion, so
+the negative-binomial dispersion cannot settle; a Poisson fit
+(`family = poisson`) may then suit the data better.
 
 ## Variance and Confidence Intervals
 
@@ -389,8 +392,8 @@ comparison <- data.frame(
 
 print(comparison)
 #>   method estimate       target
-#> 1   GLMM 4728.546 sampled_days
-#> 2 Simple 5092.500 sampled_days
+#> 1   GLMM 3740.386 sampled_days
+#> 2 Simple 4270.000 sampled_days
 ```
 
 The `target` column is worth checking rather than assuming. Both
@@ -447,11 +450,8 @@ glmm_by_day <- estimate_effort_aerial_glmm(
   time_col = time_of_flight,
   by = day_type
 )
-#> Warning in theta.ml(Y, mu, weights = object@resp$weights, limit = limit, :
-#> iteration limit reached
-#> ℹ BIC(interaction) - BIC(additive) = 5.9: favours the shared shape used for
+#> ℹ BIC(interaction) - BIC(additive) = 7.6: favours the shared shape used for
 #>   this estimate.
-#>   The interaction fit raised 1 warning; treat the comparison with caution.
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 print(glmm_by_day)
@@ -462,15 +462,16 @@ print(glmm_by_day)
 #> Confidence level: 95%
 #> Grouped by: day_type
 #> Effort target: sampled_days
-#> model: 380.6 and 290.4 (included in se)
-#> visibility: 212.0 and 115.3 (included in se)
+#> Unit: angler-hours
+#> model: 355.8 and 231.9 (included in se)
+#> visibility: 176.8 and 82.0 (included in se)
 #> angler_ratio: 0 and 0 (included in se)
 #> 
 #> # A tibble: 2 × 8
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     3603.  436.       436.        NA    2750.    4457.    32
-#> 2 weekend     1960.  312.       312.        NA    1347.    2572.    16
+#> 1 weekday     3006.  397.       397.        NA    2228.    3785.    32
+#> 2 weekend     1394.  246.       246.        NA     912.    1876.    16
 ```
 
 The shared-shape assumption can fail: Smucker et al. (2010) report
@@ -493,42 +494,47 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 581.6996
+#> [1] 501.2849
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 536.0946
+#> [1] 467.277
 ```
 
 ## Results as Data
 
 The per-stratum result converts to a tibble with its method and variance
-method as columns, and plots. This design declares
-`visibility_correction = "none"`, so its intervals are `NA` (see above)
-and the plot shows the point estimates alone; a design with
-`visibility_se` draws an interval around each.
+method as columns, and plots. `design_v` declares a measured visibility
+correction with its SE, so each stratum carries an interval and the plot
+draws it; on a design with `visibility_correction = "none"` the
+intervals are `NA` (see above) and the plot shows the point estimates
+alone.
 
 ``` r
 
-tibble::as_tibble(glmm_by_day)
+effort_tbl <- tibble::as_tibble(glmm_by_day)
+effort_tbl
 #> # A tibble: 2 × 13
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n method   
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
-#> 1 weekday     3603.  436.       436.        NA    2750.    4457.    32 aerial_g…
-#> 2 weekend     1960.  312.       312.        NA    1347.    2572.    16 aerial_g…
+#> 1 weekday     3006.  397.       397.        NA    2228.    3785.    32 aerial_g…
+#> 2 weekend     1394.  246.       246.        NA     912.    1876.    16 aerial_g…
 #> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
 #> #   effort_target <chr>, unit <chr>
+effort_tbl$unit
+#> [1] "angler-hours" "angler-hours"
 
 ggplot2::autoplot(glmm_by_day)
 ```
 
-![GLMM effort point estimates for weekdays and weekends; no confidence
-intervals, because the visibility uncertainty is
-unknown.](aerial-glmm_files/figure-html/results-1.png)
+![GLMM effort estimates in angler-hours for weekdays and weekends, each
+with its confidence
+interval.](aerial-glmm_files/figure-html/results-1.png)
 
-The `unit` column reads `NA`: the GLMM estimator does not yet record
-that its effort is in angler-hours, so the plot axis carries no unit
-either. That is also part of \#492.
+The effort is in angler-hours: the integral of a count over hours,
+scaled by the angler ratio and the visibility correction, the same unit
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+reports for an aerial design.
 
 ## Custom Formula
 
@@ -554,14 +560,15 @@ print(glmm_linear)
 #> Variance: delta
 #> Confidence level: 95%
 #> Effort target: sampled_days
-#> model: 1302 (known, but se is `NA`)
+#> Unit: angler-hours
+#> model: 945.1 (known, but se is `NA`)
 #> visibility: NA (unknown, so se is `NA`)
 #> angler_ratio: 0 (known, but se is `NA`)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1    9212.    NA         NA        NA       NA       NA    48
+#> 1    6166.    NA         NA        NA       NA       NA    48
 ```
 
 A linear temporal term reduces flexibility but can improve stability
