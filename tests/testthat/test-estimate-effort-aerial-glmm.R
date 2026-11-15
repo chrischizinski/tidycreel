@@ -393,23 +393,25 @@ test_that("GLMM-07: the median-day prediction is corrected before it is expanded
   )
 
   # Rebuild the UNCORRECTED integral independently, the way the function did
-  # before GH #363: fit the same model, predict the fixed-effects curve over the
-  # same grid, integrate. Asserting only that exp(sigma^2 / 2) > 1 would pass
-  # with the correction deleted, which is the whole point of computing this.
+  # before GH #363: fit the same model, take the fixed-effects curve, integrate
+  # it over the window (stats::integrate(), independent of the function's grid
+  # since GH #492). Asserting only that exp(sigma^2 / 2) > 1 would pass with
+  # the correction deleted, which is the whole point of computing this.
   model <- lme4::glmer.nb(
     n_anglers ~ poly(time_of_flight, 2) + (1 | date),
     data = design$counts
   )
   h_open <- design$aerial$h_open
   open_start <- min(design$counts$time_of_flight) - 0.5
-  grid <- seq(open_start, open_start + h_open, length.out = 100)
-  new_data <- stats::setNames(
-    data.frame(grid, NA_character_, stringsAsFactors = FALSE),
-    c("time_of_flight", design$date_col)
-  )
-  x_mat <- stats::model.matrix(stats::delete.response(stats::terms(model)), data = new_data)
-  mu <- as.numeric(exp(x_mat %*% lme4::fixef(model)))
-  uncorrected <- sum(mu) * (h_open / (length(grid) - 1L))
+  curve_fn <- function(t) {
+    new_data <- stats::setNames(
+      data.frame(t, NA_character_, stringsAsFactors = FALSE),
+      c("time_of_flight", design$date_col)
+    )
+    x_mat <- stats::model.matrix(stats::delete.response(stats::terms(model)), data = new_data)
+    as.numeric(exp(x_mat %*% lme4::fixef(model)))
+  }
+  uncorrected <- stats::integrate(curve_fn, open_start, open_start + h_open)$value
 
   vc <- as.data.frame(lme4::VarCorr(model))
   sigma2 <- sum(vc$vcov[is.na(vc$var2) & vc$var1 == "(Intercept)"], na.rm = TRUE)
@@ -791,4 +793,135 @@ test_that("GLMM-08: stratum columns keep their source type", {
   expect_type(num$estimates$weekend, "double")
   expect_identical(num$estimates$weekend, c(0, 1))
   expect_equal(num$estimates$estimate, chr$estimates$estimate)
+})
+
+# GLMM-09: units and the integral over the fishing day (GH #492) ----
+
+# A design whose integration window is fixed by the caller. A window close to
+# the peak keeps the fitted curve high at BOTH edges, which is where a
+# quadrature that counts one grid interval too many shows most (about 1 %); on
+# the default window the curve is near zero at the edges and the same error
+# is about 0.1 %, too small to separate from fitting noise.
+make_windowed_glmm_design <- function(open_start, h_open) {
+  data("example_aerial_glmm_counts", envir = environment())
+  aerial_cal <- unique(example_aerial_glmm_counts[, c("date", "day_type")]) # nolint: object_usage_linter
+  aerial_cal <- aerial_cal[order(aerial_cal$date), ]
+  design <- creel_design(
+    aerial_cal,
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "aerial",
+    visibility_correction = 1,
+    visibility_se = 0,
+    angler_ratio = 1,
+    angler_ratio_se = 0,
+    h_open = h_open,
+    open_start = open_start
+  )
+  add_counts(design, example_aerial_glmm_counts, count_col = n_anglers) # nolint: object_usage_linter
+}
+
+# The fitted fixed-effects curve, and the curve times one design-matrix column,
+# as functions of time that stats::integrate() can call. Built from the model
+# itself, so the reference does not share the function's grid or weights.
+glmm_curve <- function(model, date_col, extra = list()) {
+  beta <- lme4::fixef(model)
+  tt <- stats::delete.response(stats::terms(model))
+  x_at <- function(t) {
+    nd <- stats::setNames(
+      data.frame(t, NA_character_, stringsAsFactors = FALSE),
+      c("time_of_flight", date_col)
+    )
+    for (nm in names(extra)) nd[[nm]] <- extra[[nm]][rep(1L, length(t))]
+    stats::model.matrix(tt, data = nd)[, names(beta), drop = FALSE]
+  }
+  list(
+    mu = function(t) as.numeric(exp(x_at(t) %*% beta)),
+    mu_x = function(t, j) {
+      x <- x_at(t)
+      as.numeric(exp(x %*% beta)) * x[, j]
+    }
+  )
+}
+
+glmm_retransform <- function(model) {
+  vc <- as.data.frame(lme4::VarCorr(model))
+  exp(sum(vc$vcov[is.na(vc$var2) & vc$var1 == "(Intercept)"]) / 2)
+}
+
+test_that("GLMM-09: GLMM effort is reported in angler-hours, like estimate_effort()", {
+  skip_if_not_installed("lme4")
+  # Why: the integral of a count over hours, times a / v, is angler-hours --
+  # the same quantity estimate_effort() reports for the same design. An NA unit
+  # leaves every total built on this effort unable to derive its own unit.
+  design <- make_aerial_glmm_design(visibility_correction = 0.8, visibility_se = 0.05)
+  one <- suppressMessages(estimate_effort_aerial_glmm(design, time_col = time_of_flight))
+  by_day <- suppressWarnings(suppressMessages(
+    estimate_effort_aerial_glmm(design, time_col = time_of_flight, by = day_type)
+  ))
+  expect_identical(one$unit, "angler-hours")
+  expect_identical(by_day$unit, "angler-hours")
+})
+
+test_that("GLMM-09: daily effort is the integral of the fitted curve over the window", {
+  skip_if_not_installed("lme4")
+  # Why: summing all 100 grid values times the width of 99 intervals counts
+  # one interval too many. With the curve high at both window edges that
+  # inflated every GLMM effort, and every total built on it, by about 1 %.
+  design <- make_windowed_glmm_design(open_start = 11, h_open = 4)
+  res <- estimate_effort_aerial_glmm(design, time_col = time_of_flight, target = "mean_day")
+
+  model <- lme4::glmer.nb(n_anglers ~ poly(time_of_flight, 2) + (1 | date), data = design$counts)
+  curve <- glmm_curve(model, design$date_col)
+  exact <- stats::integrate(curve$mu, 11, 15)$value * glmm_retransform(model)
+
+  # The curve is near its peak at both edges, so the old rule's excess is
+  # visible: about 1 % here, far outside the tolerance below.
+  edges <- curve$mu(c(11, 15))
+  expect_gt(mean(edges) * (4 / 99) / stats::integrate(curve$mu, 11, 15)$value, 0.008)
+  expect_equal(res$estimates$estimate, exact, tolerance = 1e-4)
+})
+
+test_that("GLMM-09: the delta-method SE differentiates the same integral", {
+  skip_if_not_installed("lme4")
+  # Why: the SE is the gradient of the estimate. A gradient left on the old
+  # quadrature would describe a different number from the one reported.
+  design <- make_windowed_glmm_design(open_start = 11, h_open = 4)
+  res <- estimate_effort_aerial_glmm(design, time_col = time_of_flight, target = "mean_day")
+
+  model <- lme4::glmer.nb(n_anglers ~ poly(time_of_flight, 2) + (1 | date), data = design$counts)
+  curve <- glmm_curve(model, design$date_col)
+  rt <- glmm_retransform(model)
+  grad <- vapply(seq_along(lme4::fixef(model)), function(j) {
+    stats::integrate(function(t) curve$mu_x(t, j), 11, 15)$value * rt
+  }, numeric(1))
+  se_model <- sqrt(as.numeric(t(grad) %*% as.matrix(stats::vcov(model)) %*% grad))
+
+  expect_equal(res$se_components$model, se_model, tolerance = 1e-4)
+})
+
+test_that("GLMM-09: each stratum's effort is the integral of its own curve", {
+  skip_if_not_installed("lme4")
+  # Why: the grouped path computes its estimates separately from the
+  # ungrouped one; fixing only one would leave the strata summing to a
+  # different total than the pooled estimate's method implies.
+  design <- make_windowed_glmm_design(open_start = 11, h_open = 4)
+  res <- suppressMessages(estimate_effort_aerial_glmm(
+    design,
+    time_col = time_of_flight, by = day_type, target = "mean_day"
+  ))
+
+  counts <- design$counts
+  counts$day_type <- factor(counts$day_type)
+  model <- lme4::glmer.nb(
+    n_anglers ~ poly(time_of_flight, 2) + day_type + (1 | date),
+    data = counts
+  )
+  rt <- glmm_retransform(model)
+  exact <- vapply(levels(counts$day_type), function(lvl) {
+    curve <- glmm_curve(model, design$date_col, list(day_type = factor(lvl, levels(counts$day_type))))
+    stats::integrate(curve$mu, 11, 15)$value * rt
+  }, numeric(1))
+
+  expect_equal(res$estimates$estimate, unname(exact), tolerance = 1e-4)
 })

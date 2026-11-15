@@ -25,11 +25,16 @@ late-afternoon flights may miss early starters entirely. When flight timing is
 non-random, the simple expansion (count × h_open / v) inherits this temporal
 bias.
 
-The GLMM approach (Askey et al. 2018) models how angler counts change through
-the day using a quadratic hour effect and a day-level random intercept:
-`count ~ poly(hour, 2) + (1 | date)`. Once the diurnal curve is estimated, the
-model integrates predicted counts across the full open-water window — correcting
-for wherever in the curve the actual flight fell.
+The GLMM approach models how angler counts change through the day, then
+integrates predicted counts across the full open-water window — correcting for
+wherever in the curve the actual flight fell. It builds on Askey et al. (2018),
+who fitted negative-binomial GLMMs to hourly time-lapse camera counts, with time
+of day as a categorical hour and a random intercept for the lake-year being
+scaled. tidycreel adapts that to flights: a few fixed flight times cannot
+support one coefficient per hour, and a categorical hour cannot predict the
+hours no flight saw, so the default uses a smooth quadratic hour effect and a
+day-level random intercept: `count ~ poly(hour, 2) + (1 | date)`. The quadratic
+is tidycreel's choice, not a model from Askey et al.
 
 **When to use the GLMM estimator:**
 
@@ -50,8 +55,8 @@ For the basic aerial workflow without GLMM correction, see the
 
 The `example_aerial_glmm_counts` dataset contains 12 survey days with 4
 overflights per day at fixed hours (7, 10, 13, and 16 hours), producing
-48 observations. Angler counts follow a diurnal curve with day-level Poisson
-variability — representative of a scenario where a fixed morning-to-afternoon
+48 observations. Angler counts follow a diurnal curve with a day-level random
+intercept and overdispersed (negative-binomial) count noise — representative of a scenario where a fixed morning-to-afternoon
 flight schedule is used throughout the season.
 
 ```{r data}
@@ -111,18 +116,16 @@ print(glmm_result)
 ```
 
 The model fits the diurnal count curve over all 48 observations, then
-numerically integrates the predicted mean count over a window `h_open` hours
-long. The window starts at `open_start` if `creel_design()` was given one, and
+numerically integrates the predicted mean count (trapezoid rule on a 100-point
+grid) over a window `h_open` hours long. The window starts at `open_start` if `creel_design()` was given one, and
 otherwise 0.5 hours before the earliest flight. The integral is already in
 people-hours, so it is scaled by the angler ratio and the visibility correction
 (`angler_ratio / visibility_correction`) and not by `h_open` again.
 
-The fit also warns `iteration limit reached`. That comes from `lme4::glmer.nb()`,
-whose estimate of the negative-binomial dispersion did not settle within its
-iteration limit on these 48 counts. It is a convergence warning about this
-example, left visible rather than suppressed, and is open as tidycreel issue #492
-along with other points about this estimator. Treat the estimate below with that in mind,
-and check convergence on your own data.
+Check convergence on your own data. `lme4::glmer.nb()` warns `iteration limit
+reached` when the counts show little overdispersion, so the negative-binomial
+dispersion cannot settle; a Poisson fit (`family = poisson`) may then suit the
+data better.
 
 ## Variance and Confidence Intervals
 
@@ -359,19 +362,22 @@ sqrt(sum(glmm_by_day$estimates$se^2))
 ## Results as Data
 
 The per-stratum result converts to a tibble with its method and variance method
-as columns, and plots. This design declares `visibility_correction = "none"`, so
-its intervals are `NA` (see above) and the plot shows the point estimates
-alone; a design with `visibility_se` draws an interval around each.
+as columns, and plots. `design_v` declares a measured visibility correction
+with its SE, so each stratum carries an interval and the plot draws it; on a
+design with `visibility_correction = "none"` the intervals are `NA` (see above)
+and the plot shows the point estimates alone.
 
-```{r results, fig.width = 6, fig.height = 3, fig.alt = "GLMM effort point estimates for weekdays and weekends; no confidence intervals, because the visibility uncertainty is unknown."}
-tibble::as_tibble(glmm_by_day)
+```{r results, fig.width = 6, fig.height = 3, fig.alt = "GLMM effort estimates in angler-hours for weekdays and weekends, each with its confidence interval."}
+effort_tbl <- tibble::as_tibble(glmm_by_day)
+effort_tbl
+effort_tbl$unit
 
 ggplot2::autoplot(glmm_by_day)
 ```
 
-The `unit` column reads `NA`: the GLMM estimator does not yet record that its
-effort is in angler-hours, so the plot axis carries no unit either. That is
-also part of #492.
+The effort is in angler-hours: the integral of a count over hours, scaled by
+the angler ratio and the visibility correction, the same unit
+`estimate_effort()` reports for an aerial design.
 
 ## Custom Formula
 

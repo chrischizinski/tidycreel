@@ -961,11 +961,12 @@
 #' Example multi-flight aerial count data for GLMM effort estimation
 #'
 #' Simulated instantaneous angler counts from aerial overflights of a Nebraska
-#' reservoir, designed to demonstrate GLMM-based effort estimation following
-#' Askey (2018). Contains 48 rows: 12 survey days with 4 overflights per day
-#' at fixed hours (07:00, 10:00, 13:00, 16:00). Counts follow a diurnal curve
-#' (low at dawn, peak mid-morning, lower in afternoon) with day-level Poisson
-#' variability and a day random intercept.
+#' reservoir, designed to demonstrate the GLMM-based effort estimator in
+#' [estimate_effort_aerial_glmm()], which builds on Askey (2018). Contains 48
+#' rows: 12 survey days with 4 overflights per day at fixed hours (07:00,
+#' 10:00, 13:00, 16:00). Counts follow a quadratic diurnal curve on the log
+#' scale (low at dawn, peaking about 13:40, falling into the evening) with a day random
+#' intercept and negative-binomial (overdispersed) count noise.
 #'
 #' @format A data frame with 48 rows and 4 columns:
 #' \describe{
@@ -979,7 +980,8 @@
 #'     \code{7.0}, \code{10.0}, \code{13.0}, or \code{16.0}.}
 #' }
 #'
-#' @source Simulated data following Askey (2018) NAJFM doi:10.1002/nafm.10010.
+#' @source Simulated data (`data-raw/create_example_aerial_glmm_counts.R` in the
+#'   package's source repository).
 #'
 #' @references
 #'   Askey, P.J., Ward, H., Godin, T., Boucher, M., and Northrup, S. (2018).

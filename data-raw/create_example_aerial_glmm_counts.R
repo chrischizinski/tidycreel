@@ -25,10 +25,12 @@ rows <- vector("list", length(survey_dates))
 for (i in seq_along(survey_dates)) {
   h <- flight_hours
   # Diurnal curve: mu = exp(3.5 + 0.8*(h-12)/5 - 1.2*((h-12)/5)^2 + day_effect)
-  # Peak near mid-morning; low at dawn and late afternoon
+  # Peak about 13:40 (h - 12 = 0.8 * 5 / 2.4); low at dawn and in the evening
   mu <- exp(3.5 + 0.8 * (h - 12) / 5 - 1.2 * ((h - 12) / 5)^2 + day_effects[i])
-  # Poisson noise on expected counts
-  n_anglers <- rpois(n = length(h), lambda = mu)
+  # Negative-binomial noise (size = 5): overdispersed counts, the case the
+  # default glmer.nb() fit is for. Poisson noise left theta unidentified and
+  # every documented fit warned "iteration limit reached" (GH #492).
+  n_anglers <- stats::rnbinom(n = length(h), size = 5, mu = mu)
   rows[[i]] <- data.frame(
     date = survey_dates[i],
     day_type = day_types_vec[i],
@@ -45,7 +47,7 @@ rownames(example_aerial_glmm_counts) <- NULL
 stopifnot(nrow(example_aerial_glmm_counts) == 48L)
 stopifnot(all(c("date", "day_type", "n_anglers", "time_of_flight") %in%
   names(example_aerial_glmm_counts)))
-stopifnot(all(example_aerial_glmm_counts$n_anglers > 0))
+stopifnot(all(example_aerial_glmm_counts$n_anglers >= 0))
 stopifnot(inherits(example_aerial_glmm_counts$date, "Date"))
 stopifnot(all(example_aerial_glmm_counts$day_type %in% c("weekday", "weekend")))
 stopifnot(all(example_aerial_glmm_counts$time_of_flight %in% c(7.0, 10.0, 13.0, 16.0)))
