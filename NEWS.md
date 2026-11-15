@@ -10,6 +10,17 @@
 
 ## Breaking changes
 
+* `example_season_calendar`, `example_season_counts` and
+  `example_season_interviews` are regenerated with the fixed simulator (#494):
+  complete trips from an access run, incomplete trips (catch so far) from a
+  roving run on the same days, at a true catch rate of 0.22 fish per
+  angler-hour. They were built with the old simulator, whose incomplete trips
+  carried the whole trip's catch. Every number from these data changes: 292
+  interviews (201 complete, 91 incomplete) instead of 231, season effort about
+  10,022 angler-hours instead of 9,994, catch rate 0.199 instead of 0.221,
+  total catch about 2,016 instead of 2,230. The sampled days changed with the
+  seed, so `example_roving_interviews`, drawn on those days, is regenerated
+  too (its rate and sizes are unchanged).
 * `simulate_creel_data()` now simulates catch that accrues over time fished,
   and interviews of one kind at a time (#494, #488). Before, each party drew
   one whole-trip catch regardless of hours fished or party size, so the
@@ -42,8 +53,7 @@
   - The result gains `truth`: the true `catch_rate` and `harvest_rate` per
     angler-hour.
   The counts are still drawn independently of the trips, so there is no true
-  total effort or catch to report yet. `example_season_*` were generated with
-  the old simulator and are unchanged here.
+  total effort or catch to report yet (#646).
 * Reading a field that is not part of a `creel_design` is now an error
   (#594), with class `creel_error_design_unknown_field` and a suggestion
   for a close name. `design$conunt_col` returned `NULL`, which the package
@@ -73,8 +83,8 @@
   `"period_total"`, the season total, instead of `"sampled_days"`, the total
   over the days that were counted (#487). Both printed as "Method: Total", so
   a default call on a partly sampled season reported a fraction of it: on
-  `example_season_*` (36 of 120 days sampled) effort was 3,066 angler-hours
-  against a season of 9,994. Every default effort and total on a design that
+  `example_season_*` (36 of 120 days sampled) effort is 3,010 angler-hours
+  against a season of 10,022. Every default effort and total on a design that
   did not sample every day changes. To keep the old numbers, pass
   `target = "sampled_days"`. A design that cannot expand now refuses a call
   that names no target: bus-route and ice designs without the register of

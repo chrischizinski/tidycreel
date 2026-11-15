@@ -48,8 +48,8 @@ counts or interviews.
 
 ## Same season, three methods
 
-The season from `vignette("tidycreel")`: 120 days, 36 of them sampled, 28
-weekdays and 8 weekend days.
+The season from `vignette("tidycreel")`: 120 days, 36 of them sampled, 25
+weekdays and 11 weekend days.
 
 ```{r design, message = FALSE}
 design <- creel_design(example_season_calendar, date = date, strata = day_type)

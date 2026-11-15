@@ -85,12 +85,12 @@ effort_no_td$unit
 ```
 
 The printout has no `Unit:` line, because the unit is `NA`, and the estimate
-is 219 rather than 3,066. Every day in
+is 716 rather than 10,022. Every day in
 these data is 14 hours long, so the two differ by exactly that factor. The
 warning says what happened: the counts were expanded without a period length.
 The package does not know whether `total_anglers` was a head count (in which
 case the answer is missing its $T_d$) or effort already expanded (in which
-case 219 is right in some unit it cannot see). It reports the number and
+case 716 is right in some unit it cannot see). It reports the number and
 leaves the unit unknown.
 
 Two other routes:
@@ -133,7 +133,7 @@ estimate_catch_rate(without_party)
 ```
 
 The two rates are not interchangeable. The party-hour rate is the angler-hour
-rate times the effort-weighted mean party size of the complete trips, 1.69 in
+rate times the effort-weighted mean party size of the complete trips, 1.73 in
 these data.
 
 Bus-route and ice estimators build effort from the interviews themselves
