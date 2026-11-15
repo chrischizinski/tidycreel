@@ -107,11 +107,11 @@ test_that("day_length() rejects an unknown horizon name", {
 
 # simulate_creel_data() wiring ----
 
-test_that("simulate_creel_data() omits the daylight columns when given no location", {
-  # There is no honest default latitude. Supplying neither argument must leave
-  # the columns off rather than invent a place, which also keeps the counts
-  # table unambiguous for add_counts().
-  sim <- simulate_creel_data(
+test_that("simulate_creel_data() refuses to run without a fishing-day length", {
+  # There is no honest default latitude, and since GH #646 the counts are the
+  # anglers present at moments of the fishing day, so the day needs a length.
+  # Refusing beats inventing a place.
+  expect_error(simulate_creel_data(
     params = list(
       effort = list(gamma_shape = 2, gamma_rate = 0.8),
       party = list(mean = 1.5),
@@ -122,9 +122,7 @@ test_that("simulate_creel_data() omits the daylight columns when given no locati
     season_days = 30,
     n_sampled_days = 8,
     seed = 7
-  )
-  expect_false("daylight_hours" %in% names(sim$counts))
-  expect_false("angler_hours" %in% names(sim$counts))
+  ), "fishing day needs a length", class = "creel_error_invalid_input")
 })
 
 test_that("simulate_creel_data(lat=) derives T per date and angler_hours from it", {

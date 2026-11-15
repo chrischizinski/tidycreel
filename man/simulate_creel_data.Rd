@@ -77,29 +77,27 @@ specified. Default \code{NULL} (use params).}
 \item{n_counts_per_day}{Integer. Number of instantaneous count observations
 per sampled day. Default \code{3}.}
 
-\item{lat}{Numeric latitude in decimal degrees, positive north. When given,
-the daily fishing period \eqn{T} is computed per date with
-\code{\link{day_length}} and the counts table gains \code{daylight_hours}
-and \code{angler_hours} columns. Default \code{NULL}. Mutually exclusive
-with \code{daylight_hours}.}
+\item{lat}{Numeric latitude in decimal degrees, positive north. The daily
+fishing period \eqn{T} is computed per date with \code{\link{day_length}}.
+Supply \code{lat} or \code{daylight_hours}, not both.}
 
 \item{daylight_hours}{Numeric. Length of the daily fishing period \eqn{T}, in
 hours, used to convert instantaneous counts to angler-hours. Accepts a
 single value applied to every day, or a named length-12 vector of monthly
 values (names \code{"1"}…\code{"12"}, or \code{month.abb}) which is matched
 on the month of each count date. Use this when \eqn{T} is set by regulation
-or field protocol rather than by daylight. Default \code{NULL}. Mutually
-exclusive with \code{lat}.
+or field protocol rather than by daylight. Supply \code{daylight_hours}
+or \code{lat}, not both.
 
-Supplying neither leaves \code{daylight_hours} and \code{angler_hours} off
-the counts table, rather than substituting a latitude the caller never
-gave.}
+One of them is required: trips start within the fishing day and counts are
+taken at moments in it, so the day needs a length, and there is no honest
+default (GH #646).}
 
 \item{seed}{Integer or \code{NULL}. Random seed for reproducibility.
 Default \code{NULL}.}
 }
 \value{
-A named list with four data frames and the true rates:
+A named list with four data frames and the true values:
 \describe{
 \item{\code{schedule}}{Full-season calendar, one row per day. Columns:
 \code{date}, \code{day_type}, \code{sampled} (logical). Pass directly
@@ -116,17 +114,20 @@ interview -- do not pass it to \code{\link{add_interviews}}),
 far), \code{species_sought}.}
 \item{\code{counts}}{One row per instantaneous count. Columns:
 \code{date}, \code{day_type}, \code{count_time} (integer index
-1…\code{n_counts_per_day}) and \code{total_anglers}, plus
-\code{daylight_hours} (\eqn{T} for that day) and \code{angler_hours}
-(\code{total_anglers * daylight_hours}) when \code{lat} or
-\code{daylight_hours} was supplied. Pass
+1…\code{n_counts_per_day}, in time order), \code{total_anglers} (anglers
+fishing at the moment of the count), \code{daylight_hours} (\eqn{T} for
+that day) and \code{angler_hours} (\code{total_anglers *
+    daylight_hours}). Pass
 \code{count_time_col = count_time} to \code{\link{add_counts}} when
 \code{n_counts_per_day > 1}.}
 \item{\code{catch}}{Long-format catch table. Columns: \code{interview_id},
 \code{species}, \code{count}, \code{catch_type} (\code{"caught"},
 \code{"harvested"}, \code{"released"}).}
 \item{\code{truth}}{A list of the population values estimators should
-recover: \code{catch_rate} and \code{harvest_rate}, per angler-hour.}
+recover: \code{catch_rate} and \code{harvest_rate} (per angler-hour),
+and the realised \code{effort_*} (angler-hours), \code{catch_*} and
+\code{harvest_*} (fish) of every simulated trip, each over the
+\code{_sampled_days} and over the \code{_season}.}
 }
 
 \strong{Pass \code{angler_hours}, not \code{total_anglers}, to
@@ -135,11 +136,11 @@ anglers present, not effort; effort is that count multiplied by the length of
 the period the count was randomised within (Hoenig et al. 1993).
 \code{estimate_effort()} expands whatever numeric column it is given and
 cannot tell the two apart, so handing it \code{total_anglers} yields
-a sum of head counts silently mislabelled as angler-hours. When \code{lat} or
-\code{daylight_hours} is supplied the counts table carries three numeric
-columns and \code{\link{add_counts}} will not guess between them: name the one
-you mean with
-\code{add_counts(design, sim$counts, count_col = angler_hours)}.
+a sum of head counts silently mislabelled as angler-hours. The counts table
+carries three numeric columns and \code{\link{add_counts}} will not guess
+between them: name the one you mean with
+\code{add_counts(design, sim$counts, count_col = angler_hours)}, or pass
+\code{count_col = total_anglers, period_length_col = daylight_hours}.
 
 When \code{n_counts_per_day > 1} you must also \strong{drop the measures you
 are not using} before attaching. \code{total_anglers} differs between the
@@ -171,11 +172,18 @@ with trip lengths alternating between 3 and 6 hours -- whereas the levels
 below draw from distributions.
 
 \enumerate{
-\item \strong{Day level}: Sample \code{n_sampled_days} days from the
-season. Each sampled day draws the number of angler trips arriving from
-a Negative Binomial distribution.
+\item \strong{Day level}: Every day of the season draws the number of
+angler trips from a Negative Binomial distribution; \code{n_sampled_days}
+of them are sampled. Unsampled days are simulated too, so the season's
+true totals are known.
 \item \strong{Trip level}: Each trip draws its length (hr) from a Gamma
-distribution and its party size from a Poisson (at least 1).
+distribution, capped at the fishing day's length \eqn{T}, a start time
+uniform in \eqn{[0, T - L]}, and its party size from a Poisson (at
+least 1).
+\item \strong{Count level}: On a sampled day, each count is taken at a
+uniformly random moment of the fishing day and is the number of anglers
+fishing then. Count times \eqn{T} is unbiased for the day's angler-hours
+(Hoenig et al. 1993).
 \item \strong{Interview level}, set by \code{interview_type}:
 \code{"access"} -- the clerk meets parties as they leave, every party
 with the same chance (70\\% of the day's parties), and records the whole
@@ -188,10 +196,13 @@ difference Pollock et al. (1997) base the choice of catch-rate
 estimator on.
 \item \strong{Catch level}: Catch accrues over the time fished. A party
 catches nothing with probability \code{p_zero_catch}; otherwise its
-catch so far is Negative Binomial with mean
-\code{catch_rate$mean * n_anglers * hours_fished / (1 - p_zero_catch)},
+whole-trip catch is Negative Binomial with mean
+\code{catch_rate$mean * n_anglers * trip_length / (1 - p_zero_catch)},
 so the population catch rate (total catch over total angler-hours) is
-exactly \code{catch_rate$mean}. Harvest is Binomial given catch.
+exactly \code{catch_rate$mean}. Harvest is Binomial given catch. A
+roving interview's catch so far is the part of that trip's catch caught
+in the time fished so far (each fish with probability
+\code{hours_fished / trip_length}).
 }
 
 Because catch accrues, the ratio of means on access interviews and the
@@ -201,8 +212,10 @@ whole-trip catch regardless of time fished, so an incomplete trip carried
 the whole trip's catch over the hours fished so far and inflated any
 roving catch rate (GH #494).
 
-The instantaneous counts are drawn independently of the simulated trips, so
-the function reports no true total effort or catch, only the true rates.
+Counts and interviews come from the same simulated trips, so the true
+effort, catch and harvest are known (GH #646): \code{truth} reports them
+over the sampled days and over the season. Before tidycreel 9.0.0 the counts
+were drawn independently of the trips and only the rates were known.
 }
 \examples{
 my_params <- list(
@@ -220,13 +233,15 @@ sim <- simulate_creel_data(
   season_days    = 90,
   n_sampled_days = 20,
   species        = c("walleye", "northern_pike"),
-  species_weights = c(0.6, 0.4)
+  species_weights = c(0.6, 0.4),
+  daylight_hours = 12
 )
 head(sim$schedule)
 head(sim$interviews)
 head(sim$counts)
 head(sim$catch)
 sim$truth$catch_rate
+sim$truth$effort_season
 
 # Multi-stratum simulation with day_types (named numeric vector).
 # `lat` derives the daily fishing period from day_length(), which adds the

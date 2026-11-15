@@ -1,4 +1,9 @@
 ## Script to create the example_season_* datasets
+##
+## NOT REPRODUCIBLE AS WRITTEN since GH #646 changed simulate_creel_data():
+## counts are now the anglers present at random moments of the simulated
+## trips, so this script no longer recreates the committed .rda files. They
+## are regenerated in the follow-up to #646.
 ## One simulated 120-day season (May 1 - August 28, 2024) with weekday/weekend
 ## strata, 36 sampled days, one instantaneous count per sampled day, and
 ## interviews. Used by the Getting Started vignette to show a complete season:

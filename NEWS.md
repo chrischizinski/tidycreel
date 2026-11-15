@@ -10,6 +10,21 @@
 
 ## Breaking changes
 
+* `simulate_creel_data()` derives its counts from the trips it simulates, and
+  reports the true effort, catch and harvest (#646). Each trip now has a start
+  time within the fishing day; a count is the number of anglers fishing at a
+  uniformly random moment, so count times the day length is unbiased for the
+  day's angler-hours (Hoenig et al. 1993). Trips are simulated on every
+  season day, and `truth` gains `effort_*`, `catch_*` and `harvest_*` over the
+  sampled days and over the season. Before, counts were drawn independently
+  of the trips, so effort from the counts and catch from the interviews
+  described unrelated populations, and a simulation study had no true total
+  to check an estimator against. `lat` or `daylight_hours` is now required
+  (the day needs a length), and the counts table always carries
+  `daylight_hours` and `angler_hours`. A roving interview's catch so far is
+  now part of its trip's own catch. Every simulated dataset changes for a
+  given seed.
+
 * `example_season_calendar`, `example_season_counts` and
   `example_season_interviews` are regenerated with the fixed simulator (#494):
   complete trips from an access run, incomplete trips (catch so far) from a
