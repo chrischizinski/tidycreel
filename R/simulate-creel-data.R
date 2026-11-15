@@ -40,8 +40,8 @@
 #' Simulate a complete creel survey dataset
 #'
 #' @description
-#' Generates realistic synthetic creel data using a three-level hierarchical
-#' generative model (day → trip → catch). Caller supplies distributional
+#' Generates realistic synthetic creel data using a four-level hierarchical
+#' generative model (day → trip → interview → catch). Caller supplies distributional
 #' parameters via \code{params}; no default data are bundled with the package.
 #'
 #' The generative model follows Su & Clapp (2013) for the day and trip levels;
@@ -61,8 +61,9 @@
 #'     \code{"access"} -- the clerk meets parties as they leave, every party
 #'     with the same chance (70\% of the day's parties), and records the whole
 #'     trip; \code{"roving"} -- the clerk meets parties while they fish, each
-#'     with a chance proportional to its trip length (a quarter of the day's
-#'     parties on average), at a uniformly random point in the trip, and
+#'     with a chance proportional to its trip length (0.25 times its length over
+#'     the day's mean length, capped at 1, so slightly under a quarter of the
+#'     day's parties), at a uniformly random point in the trip, and
 #'     records the time fished so far (at least 0.1 h). This is the sampling
 #'     difference Pollock et al. (1997) base the choice of catch-rate
 #'     estimator on.
@@ -87,9 +88,9 @@
 #' @param params Named list of distributional parameters. Required. Must
 #'   include named sub-lists: `effort` (with `gamma_shape`, `gamma_rate` for
 #'   [rgamma()]); `party` (with `mean` party size for [rpois()]); `catch_rate`
-#'   (with `mean`, the catch per angler-hour, and `nb_size` for [rnbinom()]);
-#'   `harvest` (with `mean_pct`
-#'   as a percentage, e.g. `35` for 35%); `counts` (with `mean_total_anglers`,
+#'   (with `mean`, the catch per angler-hour, and `nb_size` for [rnbinom()],
+#'   default `0.5` when `NULL` or `NA`); `harvest` (with `mean_pct` as a
+#'   percentage, e.g. `35` for 35%, default `35` when `NULL` or `NA`); `counts` (with `mean_total_anglers`,
 #'   used when `n_anglers_per_day = NULL`).
 #' @param season_days Integer. Total days in the season. Default 100.
 #' @param n_sampled_days Integer. Number of days actually surveyed. Must be
@@ -365,10 +366,13 @@ simulate_creel_data <- function(
   catch_p <- params$catch_rate
   checkmate::assert_list(catch_p, names = "named", .var.name = "params$catch_rate")
   checkmate::assert_number(catch_p$mean, lower = 0, .var.name = "params$catch_rate$mean")
-  nb_sz <- if (!is.null(catch_p$nb_size) && !is.na(catch_p$nb_size) && catch_p$nb_size > 0) {
-    catch_p$nb_size
-  } else {
+  # NULL or NA means "not supplied" (documented default); a supplied value must
+  # be a usable dispersion, not silently replaced.
+  nb_sz <- if (is.null(catch_p$nb_size) || is.na(catch_p$nb_size)) {
     0.5
+  } else {
+    checkmate::assert_number(catch_p$nb_size, lower = 1e-9, .var.name = "params$catch_rate$nb_size")
+    catch_p$nb_size
   }
   p_h <- if (!is.null(harv_p$mean_pct) && !is.na(harv_p$mean_pct)) harv_p$mean_pct / 100 else 0.35
   p_h <- pmin(pmax(p_h, 0.0), 1.0)
@@ -413,9 +417,10 @@ simulate_creel_data <- function(
         # Roving: the clerk meets parties while they fish, so each party's
         # chance is proportional to its trip length (length-biased sampling),
         # and it is met at a uniformly random point in its trip. Each party is
-        # included independently with probability 0.25 * L / mean(L): a quarter
-        # of the day's parties on average, capped at 1 only for trips over
-        # four times the day's mean length. Not a weighted draw of a fixed 70%
+        # included independently with probability 0.25 * L / mean(L), capped
+        # at 1 for trips over four times the day's mean length -- rare for
+        # Gamma trip lengths, and it lowers the average just under a quarter.
+        # The cap breaks strict proportionality only for those trips. Not a weighted draw of a fixed 70%
         # without replacement: taking most of a small population that way is
         # barely length-biased at all (mean interviewed length 3.0 h against
         # the 3.75 h a length-biased sample of Gamma(2, 0.8) trips has).

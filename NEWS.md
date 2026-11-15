@@ -18,9 +18,12 @@
   rate on simulated data came out about 2.5 times the access rate. Any
   simulation study of roving estimators run on it was biased upward.
   - `params$catch_per_trip` is replaced by `params$catch_rate` (`mean`, catch
-    per angler-hour; `nb_size`). Catch so far has mean
-    `rate * n_anglers * hours_fished / (1 - p_zero_catch)`, so the population
-    rate is exactly `catch_rate$mean`. Supplying `catch_per_trip` is an error
+    per angler-hour; `nb_size`). A party catches nothing with probability
+    `p_zero_catch`; otherwise its catch so far has mean
+    `rate * n_anglers * hours_fished / (1 - p_zero_catch)`, so its expected
+    catch is `rate * n_anglers * hours_fished` and the population rate is
+    exactly `catch_rate$mean`. A supplied `nb_size` must be positive (it was
+    silently replaced by 0.5). Supplying `catch_per_trip` is an error
     (`creel_error_simulate_removed_input`): a per-trip mean has no conversion
     to a rate.
   - New `interview_type = c("access", "roving")`. Access: complete trips, every
@@ -723,9 +726,9 @@
 * New dataset `example_roving_interviews`: 212 roving interviews on the
   sampled days of `example_season_calendar`, simulated with a known catch rate
   of 0.22 fish per angler-hour. Each party's catch is its catch so far.
-  `simulate_creel_data()` could not supply this: it gives an incomplete trip
-  the whole trip's catch over the hours fished so far, which inflates a roving
-  rate (#494).
+  `simulate_creel_data()` could not supply this when the dataset was made: it
+  gave an incomplete trip the whole trip's catch over the hours fished so far,
+  which inflated a roving rate (#494, fixed since).
 
 * `vignette("tidycreel")` is now a tutorial that analyses one complete season
   (#480): design, counts, effort, interviews, catch rates, totals, results as

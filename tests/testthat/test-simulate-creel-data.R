@@ -556,3 +556,31 @@ test_that("weekday/weekend day types come from the date (GH #488)", {
     ifelse(is_weekend(sim$counts$date), "weekend", "weekday")
   )
 })
+
+test_that("other day-type names are assigned at random in the stated proportions", {
+  # Why: weekday/weekend now come from the date, so the random branch needs
+  # its own test; without it a regression for custom strata would pass.
+  sim <- simulate_creel_data(
+    params = test_params,
+    season_days = 2000L,
+    n_sampled_days = 10L,
+    day_types = c(open = 0.7, holiday = 0.3),
+    seed = 12L
+  )
+  expect_setequal(unique(sim$schedule$day_type), c("open", "holiday"))
+  expect_equal(mean(sim$schedule$day_type == "holiday"), 0.3, tolerance = 0.1)
+  sampled <- sim$schedule[sim$schedule$sampled, ]
+  expect_identical(
+    sort(unique(sim$counts$day_type)),
+    sort(unique(sampled$day_type))
+  )
+})
+
+test_that("a supplied non-positive nb_size is refused, not replaced", {
+  bad <- test_params
+  bad$catch_rate$nb_size <- 0
+  expect_error(
+    simulate_creel_data(params = bad, season_days = 10L, n_sampled_days = 3L, seed = 1L),
+    "nb_size"
+  )
+})

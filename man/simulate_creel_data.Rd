@@ -26,9 +26,9 @@ simulate_creel_data(
 \item{params}{Named list of distributional parameters. Required. Must
 include named sub-lists: \code{effort} (with \code{gamma_shape}, \code{gamma_rate} for
 \code{\link[=rgamma]{rgamma()}}); \code{party} (with \code{mean} party size for \code{\link[=rpois]{rpois()}}); \code{catch_rate}
-(with \code{mean}, the catch per angler-hour, and \code{nb_size} for \code{\link[=rnbinom]{rnbinom()}});
-\code{harvest} (with \code{mean_pct}
-as a percentage, e.g. \code{35} for 35\%); \code{counts} (with \code{mean_total_anglers},
+(with \code{mean}, the catch per angler-hour, and \code{nb_size} for \code{\link[=rnbinom]{rnbinom()}},
+default \code{0.5} when \code{NULL} or \code{NA}); \code{harvest} (with \code{mean_pct} as a
+percentage, e.g. \code{35} for 35\%, default \code{35} when \code{NULL} or \code{NA}); \code{counts} (with \code{mean_total_anglers},
 used when \code{n_anglers_per_day = NULL}).}
 
 \item{season_days}{Integer. Total days in the season. Default 100.}
@@ -159,8 +159,8 @@ outputs are then passed to \code{\link{add_interviews}} and
 \code{\link{add_counts}}.
 }
 \description{
-Generates realistic synthetic creel data using a three-level hierarchical
-generative model (day → trip → catch). Caller supplies distributional
+Generates realistic synthetic creel data using a four-level hierarchical
+generative model (day → trip → interview → catch). Caller supplies distributional
 parameters via \code{params}; no default data are bundled with the package.
 
 The generative model follows Su & Clapp (2013) for the day and trip levels;
@@ -180,8 +180,9 @@ distribution and its party size from a Poisson (at least 1).
 \code{"access"} -- the clerk meets parties as they leave, every party
 with the same chance (70\\% of the day's parties), and records the whole
 trip; \code{"roving"} -- the clerk meets parties while they fish, each
-with a chance proportional to its trip length (a quarter of the day's
-parties on average), at a uniformly random point in the trip, and
+with a chance proportional to its trip length (0.25 times its length over
+the day's mean length, capped at 1, so slightly under a quarter of the
+day's parties), at a uniformly random point in the trip, and
 records the time fished so far (at least 0.1 h). This is the sampling
 difference Pollock et al. (1997) base the choice of catch-rate
 estimator on.
