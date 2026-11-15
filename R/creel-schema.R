@@ -262,6 +262,31 @@ normalize_value_maps <- function(value_maps) {
     }
   }
 
+  # A source code that is also a label (GH #538). Values already labelled pass
+  # through untranslated, but a loader translates every value that is a key of
+  # the map first -- so with "boat" = "shore" a row already labelled "boat"
+  # arrives as "shore", silently. The labels are the map's own targets plus, for
+  # a column with a vocabulary, every canonical value (those pass through even
+  # when no code maps to them). An identity entry ("boat" = "boat") is harmless.
+  for (col in names(value_maps)) {
+    map <- value_maps[[col]]
+    labels <- unname(map)
+    if (!col %in% FREE_LABEL_COLUMNS) { # nolint: object_name_linter
+      labels <- union(labels, CANONICAL_VOCABULARY[[col]]) # nolint: object_name_linter
+    }
+    clash <- names(map)[names(map) %in% labels & names(map) != unname(map)]
+    if (length(clash) > 0L) {
+      cli::cli_abort(
+        c(
+          "{.arg value_maps}${.field {col}} has {length(clash)} value{?s} that {?is/are} both a source code and a label.",
+          "x" = "{.val {clash}} would be translated to {.val {unname(map[clash])}}, including on rows already labelled {.val {clash}}.",
+          "i" = "Values already labelled pass through; a code must not be spelled like a label it does not mean."
+        ),
+        class = "creel_error_schema_validation"
+      )
+    }
+  }
+
   # After every entry has passed: a note about a label is noise when the same
   # call is about to abort over another entry.
   if ("angler_type" %in% names(value_maps)) {
@@ -419,6 +444,10 @@ new_creel_schema <- function(survey_type, mappings) {
 #'   aborts at the fetch, where the source is still in view, rather than being
 #'   recoded by hand afterwards — a hand recode folds an undeclared third code
 #'   (`"refused"`, `"unknown"`) into complete or incomplete silently (GH #128).
+#'   For the same reason a source code may not be spelled like a label it does
+#'   not mean: `c("1" = "boat", "boat" = "shore")`, or a code `"complete"` that
+#'   maps to `"incomplete"`, is refused, because rows already labelled would be
+#'   translated too (GH #538). An identity entry (`"boat" = "boat"`) is allowed.
 #'
 #'   `angler_method` and `species_sought` have no canonical vocabulary, because
 #'   methods and target species are the agency's own. Their maps translate codes

@@ -1049,6 +1049,15 @@
   `creel_n_effort()` keep their own allocation, which rounds up on purpose
   (they report the days a precision target needs).
 
+* `creel_schema()` refuses a `value_maps` entry whose source code is spelled
+  like a label it does not mean (#538), with `creel_error_schema_validation`:
+  `c("1" = "boat", "boat" = "shore")`, or `trip_status = c("complete" =
+  "incomplete")`. Values already labelled are meant to pass through
+  untranslated, but a loader translates every value that is a code first, so
+  a row the source already labelled `"boat"` arrived as `"shore"` with no
+  error or warning. A code clashes with the map's own labels and, for a column
+  with a vocabulary, with every canonical value. Identity entries stay allowed.
+
 * `estimate_effort_aerial_glmm()` integrated the fitted diurnal curve with one
   grid interval too many (#492): it summed all 100 grid values times the width
   of 99 intervals. Every GLMM effort estimate, and its SE, was too high by
