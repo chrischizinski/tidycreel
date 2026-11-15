@@ -8,7 +8,7 @@ days.
 ## Usage
 
 ``` r
-reallocate_strata(n_total, N_h, s2_h)
+reallocate_strata(n_total, N_h, s2_h, min_n = 2L)
 ```
 
 ## Arguments
@@ -16,16 +16,23 @@ reallocate_strata(n_total, N_h, s2_h)
 - n_total:
 
   Positive integer. Total sampling days available across all strata.
+  Must be at least `sum(pmin(min_n, N_h))` and at most `sum(N_h)`.
 
 - N_h:
 
-  Named numeric vector. Total available days per stratum. Values must be
+  Named numeric vector. Total available days per stratum: whole numbers
   \>= 1.
 
 - s2_h:
 
   Numeric vector of the same length as `N_h`. Pilot variance of effort
   per day per stratum. Values must be \>= 0.
+
+- min_n:
+
+  Positive integer. The fewest days any stratum may get, so its variance
+  can be estimated. Default `2`. A stratum with fewer days than `min_n`
+  is sampled completely.
 
 ## Value
 
@@ -34,11 +41,27 @@ Neyman-optimal sampling days per stratum.
 
 ## Details
 
-Neyman allocation:
-`n_h = ceiling(n_total * (N_h * sqrt(s2_h)) / sum(N_h * sqrt(s2_h)))`.
+Neyman allocation (Cochran 1977 eq. 5.24) gives stratum \\h\\ the share
+\\n \\ N_h s_h / \sum N_h s_h\\ of the `n_total` days. The result is a
+plan the season can carry out:
 
-Because each stratum's allocation is ceiling-ed independently, the sum
-of returned values may slightly exceed `n_total`.
+- **No stratum gets more days than it has, and every stratum gets at
+  least `min_n`** (or all its days, if it has fewer), so its variance
+  can be estimated. The share is \\\lambda N_h s_h\\ clamped to that
+  range, with \\\lambda\\ chosen so the shares spend `n_total`: a
+  stratum held at its cap or floor frees or takes days, and the others
+  absorb them in proportion to their Neyman weights. This is the Neyman
+  allocation with bounds. Strata with zero pilot variance stay at the
+  floor unless every other stratum is full.
+
+- **The days sum to `n_total` exactly.** Shares are rounded by largest
+  remainder: each stratum gets the whole part of its share, and the days
+  left over go to the largest fractional parts.
+
+An `n_total` larger than the season (`sum(N_h)`) or too small to give
+every stratum its floor is refused. Before tidycreel 9.0.0 each share
+was rounded up independently and nothing was capped, so the plan could
+exceed both the budget and a stratum's days (GH \#384).
 
 ## References
 
@@ -67,5 +90,5 @@ reallocate_strata(
   s2_h    = c(400, 500)
 )
 #> weekday weekend 
-#>      25      12 
+#>      24      12 
 ```

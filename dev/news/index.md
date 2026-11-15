@@ -1436,6 +1436,25 @@
 
 ### Bug fixes
 
+- [`reallocate_strata()`](https://chrischizinski.com/tidycreel/dev/reference/reallocate_strata.md)
+  now returns a plan the season can carry out
+  ([\#384](https://github.com/chrischizinski/tidycreel/issues/384)). It
+  rounded each stratum’s Neyman share up independently and capped
+  nothing, so the days could exceed the budget (127 for 118 on one real
+  season) and a stratum could get more days than it has (10 of 9). The
+  allocation now sums to `n_total` exactly (largest-remainder rounding),
+  never exceeds `N_h`, and gives every stratum at least the new `min_n`
+  days (default 2) so its variance can be estimated: the Neyman share
+  clamped to those bounds, with the days a capped or floored stratum
+  frees or takes shared among the others by Neyman weight. An `n_total`
+  above `sum(N_h)` or below the floors is refused, and `N_h` must be
+  whole numbers.
+  [`optimal_n()`](https://chrischizinski.com/tidycreel/dev/reference/optimal_n.md)
+  and
+  [`creel_n_effort()`](https://chrischizinski.com/tidycreel/dev/reference/creel_n_effort.md)
+  keep their own allocation, which rounds up on purpose (they report the
+  days a precision target needs).
+
 - [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md)
   refuses a `value_maps` entry whose source code is spelled like a label
   it does not mean
