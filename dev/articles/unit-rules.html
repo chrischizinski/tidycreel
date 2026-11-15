@@ -156,9 +156,9 @@ sampled day and the day’s length:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_season_counts</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         date day_type total_anglers daylight_hours</span></span>
-<span><span class="co">#&gt; 1 2024-05-06  weekday             5             14</span></span>
-<span><span class="co">#&gt; 2 2024-05-07  weekday             5             14</span></span>
-<span><span class="co">#&gt; 3 2024-05-09  weekday             9             14</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2024-05-05  weekend             1             14</span></span>
+<span><span class="co">#&gt; 2 2024-05-06  weekday             9             14</span></span>
+<span><span class="co">#&gt; 3 2024-05-08  weekday             6             14</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_season_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span><span class="va">with_td</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_counts</span>,</span>
@@ -176,7 +176,7 @@ sampled day and the day’s length:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">9</span>994. <span style="text-decoration: underline;">1</span>286.      <span style="text-decoration: underline;">1</span>286.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">7</span>380.   <span style="text-decoration: underline;">12</span>609.    36 between_day_upper…</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   <span style="text-decoration: underline;">10</span>022. <span style="text-decoration: underline;">1</span>106.      <span style="text-decoration: underline;">1</span>106.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">7</span>775.   <span style="text-decoration: underline;">12</span>269.    36 between_day_upper…</span></span></code></pre></div>
 <p>The effort is in angler-hours because the package multiplied each
 count by its <code>daylight_hours</code>.</p>
 <p>Leave the period length out, and the same counts are summed as they
@@ -207,18 +207,18 @@ stand:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis          </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     714.  91.9       91.9        <span style="color: #BB0000;">NA</span>     527.     901.    36 between_day_upper…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     716.  79.0       79.0        <span style="color: #BB0000;">NA</span>     555.     876.    36 between_day_upper…</span></span>
 <span><span class="va">effort_no_td</span><span class="op">$</span><span class="va">unit</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
 <p>The printout has no <code>Unit:</code> line, because the unit is
-<code>NA</code>, and the estimate is 219 rather than 3,066. Every day in
-these data is 14 hours long, so the two differ by exactly that factor.
-The warning says what happened: the counts were expanded without a
-period length. The package does not know whether
+<code>NA</code>, and the estimate is about 716 (10,022 / 14) rather than
+10,022. Every day in these data is 14 hours long, so the two differ by
+exactly that factor. The warning says what happened: the counts were
+expanded without a period length. The package does not know whether
 <code>total_anglers</code> was a head count (in which case the answer is
 missing its
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>T</mi><mi>d</mi></msub><annotation encoding="application/x-tex">T_d</annotation></semantics></math>)
-or effort already expanded (in which case 219 is right in some unit it
+or effort already expanded (in which case 716 is right in some unit it
 cannot see). It reports the number and leaves the unit unknown.</p>
 <p>Two other routes:</p>
 <ul>
@@ -252,12 +252,12 @@ party size, which it does when it is given <code>n_anglers</code>.</p>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>, harvest <span class="op">=</span> <span class="va">catch_kept</span>,</span>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>, n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 153 interviews have zero catch.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 230 interviews have zero catch.</span></span>
 <span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 231 interviews: 172 complete (74%), 59 incomplete (26%)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 292 interviews: 201 complete (69%), 91 incomplete (31%)</span></span>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">with_party</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=172, 74.5% of 231 interviews) [default]</span></span>
+<span><span class="co">#&gt;   (n=201, 68.8% of 292 interviews) [default]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
@@ -268,7 +268,7 @@ party size, which it does when it is given <code>n_anglers</code>.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.221 0.041<span style="text-decoration: underline;">5</span>    0.139    0.302   172</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.199 0.038<span style="text-decoration: underline;">0</span>    0.124    0.274   201</span></span></code></pre></div>
 <p>Without <code>n_anglers</code>, the same interviews give a rate per
 party-hour, and <code><a href="../reference/add_interviews.html">add_interviews()</a></code> warns that it has no party
 size:</p>
@@ -282,12 +282,12 @@ size:</p>
 <span><span class="co">#&gt;   normalization.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span></span>
 <span><span class="co">#&gt;   that and silence this warning.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 153 interviews have zero catch.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 230 interviews have zero catch.</span></span>
 <span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 231 interviews: 172 complete (74%), 59 incomplete (26%)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 292 interviews: 201 complete (69%), 91 incomplete (31%)</span></span>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">without_party</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=172, 74.5% of 231 interviews) [default]</span></span>
+<span><span class="co">#&gt;   (n=201, 68.8% of 292 interviews) [default]</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
@@ -298,10 +298,10 @@ size:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.372 0.065<span style="text-decoration: underline;">2</span>    0.244    0.500   172</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.344 0.069<span style="text-decoration: underline;">8</span>    0.208    0.481   201</span></span></code></pre></div>
 <p>The two rates are not interchangeable. The party-hour rate is the
 angler-hour rate times the effort-weighted mean party size of the
-complete trips, 1.69 in these data.</p>
+complete trips, 1.73 in these data.</p>
 <p>Bus-route and ice estimators build effort from the interviews
 themselves (a sum of each trip’s effort over its inclusion probability),
 so their effort unit also comes from this side: party-hours without
@@ -370,7 +370,7 @@ first:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  506.    <span style="text-decoration: underline;">1</span>231.    <span style="text-decoration: underline;">3</span>230.   172</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>016.  439.    <span style="text-decoration: underline;">1</span>150.    <span style="text-decoration: underline;">2</span>882.   201</span></span></code></pre></div>
 <p>With the rate per party-hour, the product warns and has no unit:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">total_party</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">without_party</span><span class="op">)</span></span>
@@ -390,14 +390,14 @@ first:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>730.  804.    <span style="text-decoration: underline;">2</span>143.    <span style="text-decoration: underline;">5</span>318.   172</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>562.  827.    <span style="text-decoration: underline;">1</span>930.    <span style="text-decoration: underline;">5</span>193.   201</span></span>
 <span><span class="va">total_party</span><span class="op">$</span><span class="va">unit</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
-<p>The total is 1,134 instead of 674. Multiplying a rate per party-hour
-by angler-hours inflates the catch by about the mean party size, which
-is the error the <code>NA</code> and the warning exist to stop. The 1.68
-ratio is close to the rate ratio of 1.69 but not equal to it, because
-the total is built stratum by stratum.</p>
+<p>The total is 3,562 instead of 2,016. Multiplying a rate per
+party-hour by angler-hours inflates the catch by about the mean party
+size, which is the error the <code>NA</code> and the warning exist to
+stop. The 1.77 ratio is close to the rate ratio of 1.73 but not equal to
+it, because the total is built stratum by stratum.</p>
 <p>The same derivation runs wherever a unit is built from another:</p>
 <ul>
 <li>

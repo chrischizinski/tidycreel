@@ -41,7 +41,7 @@ single counts or interviews.
 
 The season from
 [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md):
-120 days, 36 of them sampled, 28 weekdays and 8 weekend days.
+120 days, 36 of them sampled, 25 weekdays and 11 weekend days.
 
 ``` r
 
@@ -76,9 +76,9 @@ data.frame(
   row.names = NULL
 )
 #>    variance effort_se    rate_se total_catch_se
-#> 1    taylor  1286.311 0.04148304       506.2577
-#> 2 bootstrap  1256.803 0.04293339       529.0590
-#> 3 jackknife  1286.311 0.04155117       507.5848
+#> 1    taylor  1105.734 0.03804054       439.1539
+#> 2 bootstrap  1053.453 0.03855039       421.8210
+#> 3 jackknife  1105.734 0.03832850       443.3976
 ```
 
 The point estimates are identical; only the standard errors change, and

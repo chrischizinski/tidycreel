@@ -50,9 +50,9 @@ and the day’s length:
 
 head(example_season_counts, 3)
 #>         date day_type total_anglers daylight_hours
-#> 1 2024-05-06  weekday             5             14
-#> 2 2024-05-07  weekday             5             14
-#> 3 2024-05-09  weekday             9             14
+#> 1 2024-05-05  weekend             1             14
+#> 2 2024-05-06  weekday             9             14
+#> 3 2024-05-08  weekday             6             14
 ```
 
 ``` r
@@ -73,7 +73,7 @@ estimate_effort(with_td)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1    9994. 1286.      1286.        NA    7380.   12609.    36 between_day_upper…
+#> 1   10022. 1106.      1106.        NA    7775.   12269.    36 between_day_upper…
 ```
 
 The effort is in angler-hours because the package multiplied each count
@@ -109,19 +109,19 @@ effort_no_td
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     714.  91.9       91.9        NA     527.     901.    36 between_day_upper…
+#> 1     716.  79.0       79.0        NA     555.     876.    36 between_day_upper…
 effort_no_td$unit
 #> [1] NA
 ```
 
 The printout has no `Unit:` line, because the unit is `NA`, and the
-estimate is 219 rather than 3,066. Every day in these data is 14 hours
-long, so the two differ by exactly that factor. The warning says what
-happened: the counts were expanded without a period length. The package
-does not know whether `total_anglers` was a head count (in which case
-the answer is missing its $`T_d`$) or effort already expanded (in which
-case 219 is right in some unit it cannot see). It reports the number and
-leaves the unit unknown.
+estimate is about 716 (10,022 / 14) rather than 10,022. Every day in
+these data is 14 hours long, so the two differ by exactly that factor.
+The warning says what happened: the counts were expanded without a
+period length. The package does not know whether `total_anglers` was a
+head count (in which case the answer is missing its $`T_d`$) or effort
+already expanded (in which case 716 is right in some unit it cannot
+see). It reports the number and leaves the unit unknown.
 
 Two other routes:
 
@@ -159,12 +159,12 @@ with_party <- add_interviews(with_td, example_season_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> ℹ 153 interviews have zero catch.
+#> ℹ 230 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 231 interviews: 172 complete (74%), 59 incomplete (26%)
+#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
 estimate_catch_rate(with_party)
 #> ℹ Using complete trips for CPUE estimation
-#>   (n=172, 74.5% of 231 interviews) [default]
+#>   (n=201, 68.8% of 292 interviews) [default]
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -175,7 +175,7 @@ estimate_catch_rate(with_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.221 0.0415    0.139    0.302   172
+#> 1    0.199 0.0380    0.124    0.274   201
 ```
 
 Without `n_anglers`, the same interviews give a rate per party-hour, and
@@ -193,12 +193,12 @@ without_party <- add_interviews(with_td, example_season_interviews,
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> ℹ 153 interviews have zero catch.
+#> ℹ 230 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 231 interviews: 172 complete (74%), 59 incomplete (26%)
+#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
 estimate_catch_rate(without_party)
 #> ℹ Using complete trips for CPUE estimation
-#>   (n=172, 74.5% of 231 interviews) [default]
+#>   (n=201, 68.8% of 292 interviews) [default]
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -209,12 +209,12 @@ estimate_catch_rate(without_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.372 0.0652    0.244    0.500   172
+#> 1    0.344 0.0698    0.208    0.481   201
 ```
 
 The two rates are not interchangeable. The party-hour rate is the
 angler-hour rate times the effort-weighted mean party size of the
-complete trips, 1.69 in these data.
+complete trips, 1.73 in these data.
 
 Bus-route and ice estimators build effort from the interviews themselves
 (a sum of each trip’s effort over its inclusion probability), so their
@@ -261,7 +261,7 @@ estimate_total_catch(with_party)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2230.  506.    1231.    3230.   172
+#> 1    2016.  439.    1150.    2882.   201
 ```
 
 With the rate per party-hour, the product warns and has no unit:
@@ -285,15 +285,15 @@ total_party
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    3730.  804.    2143.    5318.   172
+#> 1    3562.  827.    1930.    5193.   201
 total_party$unit
 #> [1] NA
 ```
 
-The total is 1,134 instead of 674. Multiplying a rate per party-hour by
-angler-hours inflates the catch by about the mean party size, which is
-the error the `NA` and the warning exist to stop. The 1.68 ratio is
-close to the rate ratio of 1.69 but not equal to it, because the total
+The total is 3,562 instead of 2,016. Multiplying a rate per party-hour
+by angler-hours inflates the catch by about the mean party size, which
+is the error the `NA` and the warning exist to stop. The 1.77 ratio is
+close to the rate ratio of 1.73 but not equal to it, because the total
 is built stratum by stratum.
 
 The same derivation runs wherever a unit is built from another:

@@ -142,8 +142,8 @@ effort
 #> # A tibble: 2 × 9
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
-#> 1 weekday     7912  1063.      1063.        NA    5753.   10071.    28 between_…
-#> 2 weekend     2082.  725.       725.        NA     609.    3556.     8 between_…
+#> 1 weekday     7080.  847.       847.        NA    5359.    8800.    25 between_…
+#> 2 weekend     2943.  711.       711.        NA    1497.    4388.    11 between_…
 rate
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -156,8 +156,8 @@ rate
 #> # A tibble: 2 × 6
 #>   day_type estimate     se ci_lower ci_upper     n
 #>   <chr>       <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     0.208 0.0453   0.119     0.297   138
-#> 2 weekend     0.280 0.102    0.0794    0.481    34
+#> 1 weekday     0.224 0.0504   0.125     0.323   128
+#> 2 weekend     0.146 0.0503   0.0476    0.245    73
 ```
 
 Weekend parties caught fish faster than weekday parties, and weekdays
@@ -183,12 +183,12 @@ total
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2230.  506.    1231.    3230.   172
+#> 1    2016.  439.    1150.    2882.   201
 
 E <- effort$estimates
 R <- rate$estimates
 sum(E$estimate * R$estimate)
-#> [1] 2230.484
+#> [1] 2015.822
 ```
 
 The by-hand sum matches. Multiplying the season effort by a single
@@ -199,7 +199,7 @@ weights each stratum by its interviews, not by its effort:
 
 estimate_effort(design, target = "period_total")$estimates$estimate *
   estimate_catch_rate(design)$estimates$estimate
-#> [1] 2205.907
+#> [1] 1994.646
 ```
 
 Here the difference is about 1%, but it grows when strata differ more in
@@ -240,7 +240,7 @@ v_goodman <- with(
   sum(e^2 * se_r^2 + r^2 * se_e^2 - se_e^2 * se_r^2)
 )
 sqrt(v_goodman)
-#> [1] 506.2577
+#> [1] 439.1539
 ```
 
 which is the `se` printed for the total. The familiar two-term delta
@@ -253,7 +253,7 @@ conservative:
 estimate_total_catch(design,
   target = "period_total", product_variance = "first_order"
 )$estimates$se
-#> [1] 513.9317
+#> [1] 442.6691
 ```
 
 When both estimates are very imprecise the subtraction can make the
@@ -283,8 +283,8 @@ data.frame(
   from_rate = E$estimate^2 * R$se^2
 )
 #>   day_type from_effort from_rate
-#> 1  weekday    48936.77 128469.82
-#> 2  weekend    41230.16  45489.06
+#> 1  weekday    35952.17 127291.40
+#> 2  weekend    10814.38  21898.01
 ```
 
 In both strata the rate part is the larger: about two and a half times

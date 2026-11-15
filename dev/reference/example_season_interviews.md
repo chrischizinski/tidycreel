@@ -1,10 +1,12 @@
 # Example season interviews for a creel survey
 
-Access-point interviews from the 36 sampled days in
+Interviews from the 36 sampled days in
 [example_season_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_season_calendar.md),
-one row per angling party. Most parties had finished fishing (complete
-trips); about a quarter were still fishing when interviewed (incomplete
-trips). Most parties caught nothing, as on most real fisheries.
+one row per angling party. Most were met at the access point as they
+finished (complete trips, every finishing party with the same chance);
+about a third were met while still fishing (incomplete trips, met in
+proportion to how long they fish, with the catch so far). Most parties
+caught nothing, as on most real fisheries.
 
 ## Usage
 
@@ -14,7 +16,7 @@ example_season_interviews
 
 ## Format
 
-A data frame with 231 rows and 8 columns:
+A data frame with 292 rows and 8 columns:
 
 - date:
 
@@ -26,7 +28,7 @@ A data frame with 231 rows and 8 columns:
 
 - interview_id:
 
-  Integer interview identifier, 1 to 231
+  Integer interview identifier, 1 to 292
 
 - trip_status:
 
@@ -54,6 +56,12 @@ A data frame with 231 rows and 8 columns:
 Simulated with
 [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/simulate_creel_data.md)
 and a fixed seed; see `data-raw/example_season.R` in the package source.
+
+## Details
+
+Catch accrues over the time fished at a true rate of 0.22 fish per
+angler-hour, the same rate as
+[example_roving_interviews](https://chrischizinski.com/tidycreel/dev/reference/example_roving_interviews.md).
 
 ## See also
 
@@ -99,9 +107,9 @@ design <- add_interviews(design, example_season_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> ℹ 153 interviews have zero catch.
+#> ℹ 230 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 231 interviews: 172 complete (74%), 59 incomplete (26%)
+#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
 estimate_total_catch(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -114,5 +122,5 @@ estimate_total_catch(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2230.  506.    1231.    3230.   172
+#> 1    2016.  439.    1150.    2882.   201
 ```

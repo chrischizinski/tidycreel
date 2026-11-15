@@ -258,8 +258,8 @@ strata, instantaneous counts, and access interviews.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>912  <span style="text-decoration: underline;">1</span>063.      <span style="text-decoration: underline;">1</span>063.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">5</span>753.   <span style="text-decoration: underline;">10</span>071.    28 between_…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>082.  725.       725.        <span style="color: #BB0000;">NA</span>     609.    <span style="text-decoration: underline;">3</span>556.     8 between_…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     <span style="text-decoration: underline;">7</span>080.  847.       847.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">5</span>359.    <span style="text-decoration: underline;">8</span>800.    25 between_…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     <span style="text-decoration: underline;">2</span>943.  711.       711.        <span style="color: #BB0000;">NA</span>    <span style="text-decoration: underline;">1</span>497.    <span style="text-decoration: underline;">4</span>388.    11 between_…</span></span>
 <span><span class="va">rate</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -272,8 +272,8 @@ strata, instantaneous counts, and access interviews.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   day_type estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     0.208 0.045<span style="text-decoration: underline;">3</span>   0.119     0.297   138</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     0.280 0.102    0.079<span style="text-decoration: underline;">4</span>    0.481    34</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     0.224 0.050<span style="text-decoration: underline;">4</span>   0.125     0.323   128</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     0.146 0.050<span style="text-decoration: underline;">3</span>   0.047<span style="text-decoration: underline;">6</span>    0.245    73</span></span></code></pre></div>
 <p>Weekend parties caught fish faster than weekday parties, and weekdays
 carry most of the effort. The total is built <strong>within each
 stratum</strong> and then added:</p>
@@ -292,19 +292,19 @@ stratum</strong> and then added:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>230.  506.    <span style="text-decoration: underline;">1</span>231.    <span style="text-decoration: underline;">3</span>230.   172</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">2</span>016.  439.    <span style="text-decoration: underline;">1</span>150.    <span style="text-decoration: underline;">2</span>882.   201</span></span>
 <span></span>
 <span><span class="va">E</span> <span class="op">&lt;-</span> <span class="va">effort</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="va">R</span> <span class="op">&lt;-</span> <span class="va">rate</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">E</span><span class="op">$</span><span class="va">estimate</span> <span class="op">*</span> <span class="va">R</span><span class="op">$</span><span class="va">estimate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 2230.484</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 2015.822</span></span></code></pre></div>
 <p>The by-hand sum matches. Multiplying the season effort by a single
 season rate would give a different number, because the pooled rate
 weights each stratum by its interviews, not by its effort:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span> <span class="op">*</span></span>
 <span>  <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">estimate</span></span>
-<span><span class="co">#&gt; [1] 2205.907</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 1994.646</span></span></code></pre></div>
 <p>Here the difference is about 1%, but it grows when strata differ more
 in rate and in how heavily they were interviewed.</p>
 </div>
@@ -345,7 +345,7 @@ independently, so their variances add:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">e</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_r</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="va">r</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_e</span><span class="op">^</span><span class="fl">2</span> <span class="op">-</span> <span class="va">se_e</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">se_r</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">v_goodman</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 506.2577</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 439.1539</span></span></code></pre></div>
 <p>which is the <code>se</code> printed for the total. The familiar
 two-term delta method leaves the subtraction out; it is available as
 <code>product_variance = "first_order"</code> and is slightly larger, so
@@ -354,7 +354,7 @@ conservative:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  target <span class="op">=</span> <span class="st">"period_total"</span>, product_variance <span class="op">=</span> <span class="st">"first_order"</span></span>
 <span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span></span>
-<span><span class="co">#&gt; [1] 513.9317</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 442.6691</span></span></code></pre></div>
 <p>When both estimates are very imprecise the subtraction can make the
 variance negative; tidycreel then falls back to the first-order
 value.</p>
@@ -383,8 +383,8 @@ and a rate part,
 <span>  from_rate <span class="op">=</span> <span class="va">E</span><span class="op">$</span><span class="va">estimate</span><span class="op">^</span><span class="fl">2</span> <span class="op">*</span> <span class="va">R</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;   day_type from_effort from_rate</span></span>
-<span><span class="co">#&gt; 1  weekday    48936.77 128469.82</span></span>
-<span><span class="co">#&gt; 2  weekend    41230.16  45489.06</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  weekday    35952.17 127291.40</span></span>
+<span><span class="co">#&gt; 2  weekend    10814.38  21898.01</span></span></code></pre></div>
 <p>In both strata the rate part is the larger: about two and a half
 times the effort part on weekdays, and only slightly larger on weekends.
 This says where the uncertainty comes from. It does not by itself say
