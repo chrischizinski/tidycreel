@@ -53,7 +53,7 @@ test_that("simulate_creel_data counts have required columns", {
     n_sampled_days = 5L,
     seed = 3L
   )
-  expect_true(all(c("date", "day_type", "count_time", "total_anglers") %in% names(sim$counts)))
+  expect_true(all(c("date", "day_type", "count_time", "total_anglers", "daylight_hours", "angler_hours") %in% names(sim$counts)))
 })
 
 test_that("simulate_creel_data counts: count_time is 1..n per day", {
@@ -633,21 +633,47 @@ test_that("season truth: catch is the true rate times the true effort", {
   expect_lte(tr$harvest_season, tr$catch_season)
 })
 
-test_that("access interviews carry their trip's whole catch; roving ones a part of it", {
-  # An access interview records the trip as the population holds it, so the
-  # interviewed catch cannot exceed the season's; a roving one records only
-  # the catch so far.
-  acc <- sim12(params = test_params, season_days = 60L, n_sampled_days = 60L, seed = 6463L)
-  expect_lte(sum(acc$interviews$catch_total), acc$truth$catch_sampled_days)
-  rov <- sim12(
-    params = test_params, season_days = 60L, n_sampled_days = 60L, seed = 6463L,
-    interview_type = "roving"
-  )
-  expect_true(all(rov$interviews$catch_kept <= rov$interviews$catch_total))
+test_that("interviews never report more catch than the day's trips caught", {
+  # Why: an interview records part of the day's population -- the whole trip
+  # at access, the catch so far when roving. Drawn independently of the
+  # trips, a day's interviews could report more fish than were caught.
+  for (type in c("access", "roving")) {
+    sim <- sim12(params = test_params, season_days = 60L, n_sampled_days = 60L, seed = 6463L, interview_type = type)
+    by_day <- tapply(sim$interviews$catch_total, sim$interviews$date, sum)
+    caught <- sim$truth$days$catch[match(as.Date(names(by_day)), sim$truth$days$date)]
+    expect_true(all(by_day <= caught), label = type)
+    kept <- tapply(sim$interviews$catch_kept, sim$interviews$date, sum)
+    expect_true(all(kept <= sim$truth$days$harvest[match(as.Date(names(kept)), sim$truth$days$date)]), label = type)
+  }
 })
 
 test_that("no count exceeds the anglers fishing that day", {
+  # Why: a count is the anglers present at one moment, so it can never exceed
+  # everyone who fished that day; the independent counts this replaced could.
   sim <- sim12(params = test_params, season_days = 40L, n_sampled_days = 40L, n_counts_per_day = 3L, seed = 6464L)
-  expect_true(all(sim$counts$total_anglers >= 0))
-  expect_true(all(sim$counts$angler_hours == sim$counts$total_anglers * 12))
+  anglers <- sim$truth$days$anglers[match(sim$counts$date, sim$truth$days$date)]
+  expect_true(all(sim$counts$total_anglers <= anglers))
+  expect_true(any(sim$counts$total_anglers > 0))
+  expect_equal(sim$counts$angler_hours, sim$counts$total_anglers * 12)
+})
+
+test_that("one seed gives one population, whatever the survey", {
+  # Why: comparing designs on simulated data needs the same population under
+  # each. The trips are drawn before the survey, so the truth must not move
+  # with interview_type, n_sampled_days or n_counts_per_day.
+  a <- sim12(params = test_params, season_days = 50L, n_sampled_days = 10L, seed = 6465L)
+  r <- sim12(params = test_params, season_days = 50L, n_sampled_days = 10L, seed = 6465L, interview_type = "roving")
+  m <- sim12(params = test_params, season_days = 50L, n_sampled_days = 30L, n_counts_per_day = 5L, seed = 6465L)
+  expect_identical(a$truth$days[c("date", "parties", "effort", "catch")], r$truth$days[c("date", "parties", "effort", "catch")])
+  expect_identical(a$truth$days[c("date", "parties", "effort", "catch")], m$truth$days[c("date", "parties", "effort", "catch")])
+  expect_identical(a$schedule, r$schedule)
+})
+
+test_that("truth$days adds up to the season and sampled-day totals", {
+  sim <- sim12(params = test_params, season_days = 30L, n_sampled_days = 10L, seed = 6466L)
+  d <- sim$truth$days
+  expect_identical(nrow(d), 30L)
+  expect_equal(sum(d$effort), sim$truth$effort_season)
+  expect_equal(sum(d$catch[d$sampled]), sim$truth$catch_sampled_days)
+  expect_identical(d$sampled, sim$schedule$sampled)
 })

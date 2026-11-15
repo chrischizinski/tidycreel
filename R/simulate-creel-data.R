@@ -40,8 +40,8 @@
 #' Simulate a complete creel survey dataset
 #'
 #' @description
-#' Generates realistic synthetic creel data using a four-level hierarchical
-#' generative model (day → trip → interview → catch). Caller supplies distributional
+#' Generates realistic synthetic creel data using a five-level hierarchical
+#' generative model (day → trip → count → interview → catch). Caller supplies distributional
 #' parameters via \code{params}; no default data are bundled with the package.
 #'
 #' The generative model follows Su & Clapp (2013) for the day and trip levels;
@@ -132,8 +132,8 @@
 #'   catch (zero-inflation). Default \code{0.40}. \strong{Note:} this cannot
 #'   be derived from a survey inventory (API artifact); the default is an
 #'   empirical estimate from the creel literature.
-#' @param n_anglers_per_day Numeric. Mean number of angler parties arriving
-#'   per sampled day. Overrides \code{params$counts$mean_total_anglers} when
+#' @param n_anglers_per_day Numeric. Mean number of angler parties fishing on
+#'   each day of the season (sampled or not). Overrides \code{params$counts$mean_total_anglers} when
 #'   specified. Default \code{NULL} (use params).
 #' @param start_date Date. First day of the simulated season. Default
 #'   \code{Sys.Date()}.
@@ -186,8 +186,15 @@
 #'     recover: \code{catch_rate} and \code{harvest_rate} (per angler-hour),
 #'     and the realised \code{effort_*} (angler-hours), \code{catch_*} and
 #'     \code{harvest_*} (fish) of every simulated trip, each over the
-#'     \code{_sampled_days} and over the \code{_season}.}
+#'     \code{_sampled_days} and over the \code{_season}; and \code{days}, one
+#'     row per season day with its \code{parties}, \code{anglers},
+#'     \code{effort}, \code{catch} and \code{harvest}.}
 #' }
+#'
+#' The population of trips is simulated before anything about the survey, so a
+#' seed fixes the population: runs that differ only in \code{interview_type},
+#' \code{n_sampled_days} or \code{n_counts_per_day} sample the same trips and
+#' report the same season truth.
 #'
 #' \strong{Pass \code{angler_hours}, not \code{total_anglers}, to
 #' \code{\link{add_counts}}.} An instantaneous count estimates the mean number of
@@ -264,8 +271,8 @@
 #' sim$truth$effort_season
 #'
 #' # Multi-stratum simulation with day_types (named numeric vector).
-#' # `lat` derives the daily fishing period from day_length(), which adds the
-#' # daylight_hours and angler_hours columns to sim2$counts.
+#' # `lat` derives the daily fishing period from day_length(), so T, and with
+#' # it sim2$counts$daylight_hours, follows the season.
 #' set.seed(1)
 #' sim2 <- simulate_creel_data(
 #'   params         = my_params,
@@ -367,22 +374,7 @@ simulate_creel_data <- function(
     day_types <- day_types / sum(day_types)
   }
 
-  # ── Season calendar: sample n_sampled_days from season_days ─────────────────
   all_dates <- seq.Date(as.Date(start_date), by = "day", length.out = season_days)
-  samp_idx <- sort(sample.int(season_days, n_sampled_days, replace = FALSE))
-
-  dt_names <- names(day_types)
-  n_dt <- length(day_types)
-  if (setequal(dt_names, c("weekday", "weekend"))) {
-    # Weekday and weekend are facts about the date, not labels to draw: a
-    # simulated Tuesday labelled "weekend" contradicts any calendar (GH #488).
-    # The proportions are then set by the calendar, not by `day_types`.
-    all_day_types <- ifelse(format(all_dates, "%u") %in% c("6", "7"), "weekend", "weekday")
-  } else {
-    # Any other names are arbitrary strata: assign them at random in the
-    # stated proportions.
-    all_day_types <- dt_names[sample.int(n_dt, season_days, replace = TRUE, prob = day_types)]
-  }
 
   # ── Effort + trip params ─────────────────────────────────────────────────────
   eff_p <- params$effort
@@ -413,53 +405,78 @@ simulate_creel_data <- function(
     mu_anglers <- 10.0
   }
 
-  # ── Simulate every day of the season ─────────────────────────────────────────
-  # Trips are simulated on every day, sampled or not, so the season's true
-  # effort and catch are known (GH #646). Interviews and counts are taken on
-  # the sampled days only.
-  interview_rows <- vector("list", season_days)
-  count_rows <- vector("list", season_days)
-  is_sampled <- seq_len(season_days) %in% samp_idx
-  int_id <- 0L
-  truth_eff <- truth_catch <- truth_harv <- numeric(season_days)
-
+  # ── The population: every trip of the season ─────────────────────────────────
+  # Simulated first, before anything about the survey is drawn, so one seed
+  # gives one population whatever the sampling: an access run and a roving
+  # run with the same seed meet the same trips, and changing n_sampled_days
+  # or n_counts_per_day leaves the truth unchanged (GH #646). Trips are
+  # simulated on every day, sampled or not, so the season's true effort and
+  # catch are known.
+  pop <- vector("list", season_days)
   for (d in seq_len(season_days)) {
-    d_date <- all_dates[d]
-    d_dtype <- all_day_types[d]
-    t_day <- daylight_fun(d_date)
-
-    # Number of parties fishing this day — NB around mu_anglers
-    n_trips_d <- max(0L, rnbinom(1, mu = mu_anglers, size = 1.5))
-
+    t_day <- daylight_fun(all_dates[d])
+    # Number of parties fishing this day -- NB around mu_anglers. No one
+    # fishes a day with no fishing period (a polar night under `lat`).
+    n_trips_d <- if (t_day > 0) max(0L, rnbinom(1, mu = mu_anglers, size = 1.5)) else 0L
     if (n_trips_d > 0L) {
-      # Trip-level draws. A trip cannot outlast the fishing day, and starts at
-      # a uniformly random time that lets it fit: [0, T - L].
+      # A trip cannot outlast the fishing day, and starts at a uniformly
+      # random time that lets it fit: [0, T - L].
       eff_total <- rgamma(n_trips_d, shape = eff_p$gamma_shape, rate = eff_p$gamma_rate)
       eff_total <- pmin(pmax(eff_total, 0.1), t_day)
       start <- stats::runif(n_trips_d, 0, t_day - eff_total)
       n_ang <- pmax(1L, rpois(n_trips_d, lambda = party_p$mean))
-
-      # Whole-trip catch, drawn once per trip: this is the population. Catch
-      # accrues over the time fished (GH #494) -- mean rate x anglers x hours
-      # -- with zero inflation for parties that catch nothing all trip; the
-      # non-zero component's mean is scaled by 1 / (1 - p_zero) so total catch
-      # over total angler-hours is exactly catch_rate$mean.
+      # Whole-trip catch, drawn once per trip. Catch accrues over the time
+      # fished (GH #494) -- mean rate x anglers x hours -- with zero inflation
+      # for parties that catch nothing all trip; the non-zero component's mean
+      # is scaled by 1 / (1 - p_zero) so total catch over total angler-hours
+      # is exactly catch_rate$mean.
       is_zero <- stats::rbinom(n_trips_d, 1L, p_zero_catch) == 1L
       c_trip <- integer(n_trips_d)
       mu_c <- catch_p$mean * n_ang * eff_total / (1 - p_zero_catch)
       c_trip[!is_zero] <- stats::rnbinom(sum(!is_zero), mu = mu_c[!is_zero], size = nb_sz)
       k_trip <- stats::rbinom(n_trips_d, c_trip, p_h)
-
-      truth_eff[d] <- sum(n_ang * eff_total)
-      truth_catch[d] <- sum(c_trip)
-      truth_harv[d] <- sum(k_trip)
     } else {
       eff_total <- start <- numeric(0)
       n_ang <- c_trip <- k_trip <- integer(0)
     }
+    pop[[d]] <- list(
+      t_day = t_day, eff_total = eff_total, start = start,
+      n_ang = n_ang, c_trip = c_trip, k_trip = k_trip
+    )
+  }
 
-    if (!is_sampled[d]) next
+  # ── Season calendar: sample n_sampled_days from season_days ─────────────────
+  samp_idx <- sort(sample.int(season_days, n_sampled_days, replace = FALSE))
 
+  dt_names <- names(day_types)
+  n_dt <- length(day_types)
+  if (setequal(dt_names, c("weekday", "weekend"))) {
+    # Weekday and weekend are facts about the date, not labels to draw: a
+    # simulated Tuesday labelled "weekend" contradicts any calendar (GH #488).
+    # The proportions are then set by the calendar, not by `day_types`.
+    all_day_types <- ifelse(format(all_dates, "%u") %in% c("6", "7"), "weekend", "weekday")
+  } else {
+    # Any other names are arbitrary strata: assign them at random in the
+    # stated proportions.
+    all_day_types <- dt_names[sample.int(n_dt, season_days, replace = TRUE, prob = day_types)]
+  }
+
+  # ── The survey: interviews and counts on the sampled days ──────────────────────
+  interview_rows <- vector("list", season_days)
+  count_rows <- vector("list", season_days)
+  is_sampled <- seq_len(season_days) %in% samp_idx
+  int_id <- 0L
+
+  for (d in samp_idx) {
+    d_date <- all_dates[d]
+    d_dtype <- all_day_types[d]
+    t_day <- pop[[d]]$t_day
+    eff_total <- pop[[d]]$eff_total
+    start <- pop[[d]]$start
+    n_ang <- pop[[d]]$n_ang
+    c_trip <- pop[[d]]$c_trip
+    k_trip <- pop[[d]]$k_trip
+    n_trips_d <- length(eff_total)
     if (n_trips_d > 0L) {
       n_enc <- min(n_trips_d, max(1L, round(n_trips_d * 0.70)))
       if (identical(interview_type, "access")) {
@@ -537,6 +554,7 @@ simulate_creel_data <- function(
       angler_hours = as.integer(tot_cnt) * t_day
     )
   }
+
 
   # ── Assemble interviews ──────────────────────────────────────────────────────
   int_flat <- do.call(c, lapply(interview_rows, function(dl) Filter(Negate(is.null), dl)))
@@ -630,15 +648,27 @@ simulate_creel_data <- function(
   # The population values an estimator should recover, for simulation studies:
   # the rates, and the realised angler-hours, catch and harvest of every trip,
   # over the sampled days and over the season (GH #646).
+  truth_days <- data.frame(
+    date = all_dates,
+    day_type = all_day_types,
+    sampled = is_sampled,
+    parties = vapply(pop, function(x) length(x$n_ang), integer(1)),
+    anglers = vapply(pop, function(x) sum(x$n_ang), numeric(1)),
+    effort = vapply(pop, function(x) sum(x$n_ang * x$eff_total), numeric(1)),
+    catch = vapply(pop, function(x) sum(x$c_trip), numeric(1)),
+    harvest = vapply(pop, function(x) sum(x$k_trip), numeric(1)),
+    stringsAsFactors = FALSE
+  )
   truth <- list(
     catch_rate = catch_p$mean,
     harvest_rate = catch_p$mean * p_h,
-    effort_sampled_days = sum(truth_eff[is_sampled]),
-    effort_season = sum(truth_eff),
-    catch_sampled_days = sum(truth_catch[is_sampled]),
-    catch_season = sum(truth_catch),
-    harvest_sampled_days = sum(truth_harv[is_sampled]),
-    harvest_season = sum(truth_harv)
+    effort_sampled_days = sum(truth_days$effort[is_sampled]),
+    effort_season = sum(truth_days$effort),
+    catch_sampled_days = sum(truth_days$catch[is_sampled]),
+    catch_season = sum(truth_days$catch),
+    harvest_sampled_days = sum(truth_days$harvest[is_sampled]),
+    harvest_season = sum(truth_days$harvest),
+    days = truth_days
   )
 
   list(schedule = schedule, interviews = interviews, counts = counts, catch = catch, truth = truth)
@@ -820,10 +850,9 @@ refuse_removed_simulation_inputs <- function(params, p_complete, call = rlang::c
 
 #' Resolve lat / daylight_hours to a function of date
 #'
-#' Returns `NULL` when the caller supplied neither, which is the signal to leave
-#' the daylight and angler-hours columns off the simulated counts table
-#' entirely. Inventing a latitude would put a plausible number where the caller
-#' gave none.
+#' Returns `NULL` when the caller supplied neither; simulate_creel_data() then
+#' refuses (GH #646), because inventing a latitude would put a plausible number
+#' where the caller gave none.
 #'
 #' @param daylight_hours NULL, a single number, or a named length-12 vector.
 #' @param lat NULL or a single latitude in decimal degrees.

@@ -67,8 +67,8 @@ catch (zero-inflation). Default \code{0.40}. \strong{Note:} this cannot
 be derived from a survey inventory (API artifact); the default is an
 empirical estimate from the creel literature.}
 
-\item{n_anglers_per_day}{Numeric. Mean number of angler parties arriving
-per sampled day. Overrides \code{params$counts$mean_total_anglers} when
+\item{n_anglers_per_day}{Numeric. Mean number of angler parties fishing on
+each day of the season (sampled or not). Overrides \code{params$counts$mean_total_anglers} when
 specified. Default \code{NULL} (use params).}
 
 \item{start_date}{Date. First day of the simulated season. Default
@@ -127,8 +127,15 @@ that day) and \code{angler_hours} (\code{total_anglers *
 recover: \code{catch_rate} and \code{harvest_rate} (per angler-hour),
 and the realised \code{effort_*} (angler-hours), \code{catch_*} and
 \code{harvest_*} (fish) of every simulated trip, each over the
-\code{_sampled_days} and over the \code{_season}.}
+\code{_sampled_days} and over the \code{_season}; and \code{days}, one
+row per season day with its \code{parties}, \code{anglers},
+\code{effort}, \code{catch} and \code{harvest}.}
 }
+
+The population of trips is simulated before anything about the survey, so a
+seed fixes the population: runs that differ only in \code{interview_type},
+\code{n_sampled_days} or \code{n_counts_per_day} sample the same trips and
+report the same season truth.
 
 \strong{Pass \code{angler_hours}, not \code{total_anglers}, to
 \code{\link{add_counts}}.} An instantaneous count estimates the mean number of
@@ -160,8 +167,8 @@ outputs are then passed to \code{\link{add_interviews}} and
 \code{\link{add_counts}}.
 }
 \description{
-Generates realistic synthetic creel data using a four-level hierarchical
-generative model (day → trip → interview → catch). Caller supplies distributional
+Generates realistic synthetic creel data using a five-level hierarchical
+generative model (day → trip → count → interview → catch). Caller supplies distributional
 parameters via \code{params}; no default data are bundled with the package.
 
 The generative model follows Su & Clapp (2013) for the day and trip levels;
@@ -244,8 +251,8 @@ sim$truth$catch_rate
 sim$truth$effort_season
 
 # Multi-stratum simulation with day_types (named numeric vector).
-# `lat` derives the daily fishing period from day_length(), which adds the
-# daylight_hours and angler_hours columns to sim2$counts.
+# `lat` derives the daily fishing period from day_length(), so T, and with
+# it sim2$counts$daylight_hours, follows the season.
 set.seed(1)
 sim2 <- simulate_creel_data(
   params         = my_params,
