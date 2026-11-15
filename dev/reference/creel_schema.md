@@ -121,7 +121,12 @@ creel_schema(
   canonical aborts at the fetch, where the source is still in view,
   rather than being recoded by hand afterwards — a hand recode folds an
   undeclared third code (`"refused"`, `"unknown"`) into complete or
-  incomplete silently (GH \#128).
+  incomplete silently (GH \#128). For the same reason a source code may
+  not be spelled like a label it does not mean:
+  `c("1" = "boat", "boat" = "shore")`, or a code `"complete"` that maps
+  to `"incomplete"`, is refused, because rows already labelled would be
+  translated too (GH \#538). An identity entry (`"boat" = "boat"`) is
+  allowed.
 
   `angler_method` and `species_sought` have no canonical vocabulary,
   because methods and target species are the agency's own. Their maps

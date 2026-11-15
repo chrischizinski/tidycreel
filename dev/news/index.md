@@ -1436,6 +1436,19 @@
 
 ### Bug fixes
 
+- [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md)
+  refuses a `value_maps` entry whose source code is spelled like a label
+  it does not mean
+  ([\#538](https://github.com/chrischizinski/tidycreel/issues/538)),
+  with `creel_error_schema_validation`:
+  `c("1" = "boat", "boat" = "shore")`, or
+  `trip_status = c("complete" = "incomplete")`. Values already labelled
+  are meant to pass through untranslated, but a loader translates every
+  value that is a code first, so a row the source already labelled
+  `"boat"` arrived as `"shore"` with no error or warning. A code clashes
+  with the map’s own labels and, for a column with a vocabulary, with
+  every canonical value. Identity entries stay allowed.
+
 - [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
   integrated the fitted diurnal curve with one grid interval too many
   ([\#492](https://github.com/chrischizinski/tidycreel/issues/492)): it

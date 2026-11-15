@@ -200,7 +200,11 @@ codes these columns has to declare what its codes mean. Values already
 canonical pass through untouched; anything neither mapped nor canonical
 aborts at the fetch, where the source is still in view, rather than being
 recoded by hand afterwards — a hand recode folds an undeclared third code
-(<code>"refused"</code>, <code>"unknown"</code>) into complete or incomplete silently (GH #128).</p>
+(<code>"refused"</code>, <code>"unknown"</code>) into complete or incomplete silently (GH #128).
+For the same reason a source code may not be spelled like a label it does
+not mean: <code>c("1" = "boat", "boat" = "shore")</code>, or a code <code>"complete"</code> that
+maps to <code>"incomplete"</code>, is refused, because rows already labelled would be
+translated too (GH #538). An identity entry (<code>"boat" = "boat"</code>) is allowed.</p>
 <p><code>angler_method</code> and <code>species_sought</code> have no canonical vocabulary, because
 methods and target species are the agency's own. Their maps translate codes
 to any non-empty label, <code>c("1" = "boat", "2" = "shore")</code>, and the map's own
