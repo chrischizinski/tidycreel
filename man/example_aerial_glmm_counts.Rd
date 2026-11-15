@@ -52,7 +52,9 @@ design <- creel_design(
   angler_ratio_se = 0,
   h_open = 14
 )
-design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
+design <- add_counts(design, example_aerial_glmm_counts,
+  count_col = n_anglers, count_time_col = time_of_flight
+)
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
 }
