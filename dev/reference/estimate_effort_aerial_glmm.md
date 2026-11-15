@@ -23,7 +23,7 @@ the delta method (default) or parametric bootstrap
 ``` r
 estimate_effort_aerial_glmm(
   design,
-  time_col,
+  time_col = NULL,
   formula = NULL,
   family = NULL,
   boot = FALSE,
@@ -40,15 +40,26 @@ estimate_effort_aerial_glmm(
 
   A
   [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
-  object with `design_type == "aerial"` and counts attached via
-  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md).
-  The counts data must contain the time-of-flight column specified by
-  `time_col`.
+  object with `design_type == "aerial"`, with counts attached via
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  from a table with one row per overflight. Attach them with
+  `count_time_col` naming the flight-time column: the same design then
+  serves
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md),
+  which averages each day's flights, and this function, which fits the
+  flights themselves (GH \#643). A design attached without
+  `count_time_col` still works here, with `time_col` a column of
+  `design$counts`, but
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  warns about the repeated days and
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  refuses it.
 
 - time_col:
 
-  Unquoted name of the numeric column in `design$counts` recording the
-  hour of each aerial overflight (e.g., `time_of_flight`).
+  Unquoted name of the numeric column recording the hour of each
+  overflight (e.g., `time_of_flight`). Defaults to the design's
+  `count_time_col`.
 
 - formula:
 
@@ -248,11 +259,9 @@ design <- creel_design(
   angler_ratio_se = 0,
   h_open = 14
 )
-design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
-#> Warning: `counts` has 36 repeated sampling units, with no count time to tell them apart.
-#> ℹ The repeated rows are keyed on date and day_type.
-#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
-#>   are repeat counts, or `unit_cols` if they are distinct units.
+design <- add_counts(design, example_aerial_glmm_counts,
+  count_col = n_anglers, count_time_col = time_of_flight
+)
 
 # Default quadratic model with delta-method SE
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
@@ -289,11 +298,9 @@ design_v <- creel_design(
   angler_ratio_se = 0,
   h_open = 14
 )
-design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
-#> Warning: `counts` has 36 repeated sampling units, with no count time to tell them apart.
-#> ℹ The repeated rows are keyed on date and day_type.
-#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
-#>   are repeat counts, or `unit_cols` if they are distinct units.
+design_v <- add_counts(design_v, example_aerial_glmm_counts,
+  count_col = n_anglers, count_time_col = time_of_flight
+)
 by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
 #> ℹ BIC(interaction) - BIC(additive) = 7.6: favours the shared shape used for
 #>   this estimate.

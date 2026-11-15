@@ -114,14 +114,12 @@ design <- creel_design(
   angler_ratio_se = 0,
   h_open = 14
 )
-design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
+design <- add_counts(design, example_aerial_glmm_counts,
+  count_col = n_anglers, count_time_col = time_of_flight
+)
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
 }
-#> Warning: `counts` has 36 repeated sampling units, with no count time to tell them apart.
-#> ℹ The repeated rows are keyed on date and day_type.
-#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
-#>   are repeat counts, or `unit_cols` if they are distinct units.
 #> ℹ Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).
 #>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.
 #> 

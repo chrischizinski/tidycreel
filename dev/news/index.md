@@ -1436,6 +1436,27 @@
 
 ### Bug fixes
 
+- One aerial design now serves both
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  and
+  [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
+  ([\#643](https://github.com/chrischizinski/tidycreel/issues/643)).
+  Attach the flights with `add_counts(count_time_col = time_of_flight)`:
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  averages each day’s flights, and the GLMM fits the flights themselves,
+  rebuilt from the per-flight counts
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  keeps. Before, `count_time_col` removed the time column and the GLMM
+  aborted, while leaving it out made
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  warn and
+  [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+  refuse, so one dataset needed two designs. `time_col` now defaults to
+  the design’s `count_time_col`, and a non-numeric flight time is
+  refused for the GLMM. The estimates do not change.
+  [`vignette("aerial-glmm")`](https://chrischizinski.com/tidycreel/dev/articles/aerial-glmm.md)
+  builds one design.
+
 - [`reallocate_strata()`](https://chrischizinski.com/tidycreel/dev/reference/reallocate_strata.md)
   now returns a plan the season can carry out
   ([\#384](https://github.com/chrischizinski/tidycreel/issues/384)). It

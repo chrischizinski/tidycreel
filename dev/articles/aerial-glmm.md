@@ -88,11 +88,10 @@ design <- creel_design(
   h_open      = 14
 )
 
-design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
-#> Warning in add_counts(design, example_aerial_glmm_counts, count_col = n_anglers): `counts` has 36 repeated sampling units, with no count time to tell them apart.
-#> ℹ The repeated rows are keyed on date and day_type.
-#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
-#>   are repeat counts, or `unit_cols` if they are distinct units.
+design <- add_counts(design, example_aerial_glmm_counts,
+  count_col      = n_anglers,
+  count_time_col = time_of_flight
+)
 print(design)
 #> 
 #> ── Creel Survey Design ─────────────────────────────────────────────────────────
@@ -101,10 +100,11 @@ print(design)
 #> Strata: day_type
 #> Calendar: 34 days (2024-06-03 to 2024-07-06)
 #> day_type: 2 levels
-#> Counts: 48 observations
+#> Counts: 12 observations
 #> PSU column: date
 #> Count column: n_anglers
 #> Party-size term: not carried
+#> Count time column: time_of_flight
 #> Count type: "instantaneous"
 #> Survey: <survey.design2> (constructed)
 #> Interviews: "none"
@@ -118,17 +118,16 @@ print(design)
 #> Angler ratio SE: 0
 ```
 
+The 48 rows are four flights on each of 12 days. `count_time_col` tells
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
-warns that the 48 rows repeat 12 sampling days with no count time to
-tell them apart. For most estimators that is a mistake, and
-[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
-refuses such a design. Here it is the point: the GLMM needs each
-overflight as its own row, and it models the repeats through the
-day-level random intercept. So the warning is expected on a design built
-for
-[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md).
-The comparison further down builds a second design with
-`count_time_col`, for the simple estimator.
+which flight each row is, so it can tell repeat looks at a day apart
+from separate sampling days. The simple estimator averages a day’s
+flights into one count; the GLMM fits its curve to the flights
+themselves, which
+[`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+keeps alongside the daily means. One design serves both estimators, and
+[`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
+takes the time column from it.
 
 ## GLMM Effort Estimation
 
@@ -332,8 +331,8 @@ from a detection study to get a finite SE (see
 
 ## Comparison: Simple vs. GLMM Estimator
 
-The two estimators need the counts at different grains, so they take
-different designs built from the same data.
+The two estimators use the counts at different grains, from the same
+design.
 
 The GLMM consumes each overflight individually — the flight times are
 what it fits the diurnal curve against, so the four flights a day must
@@ -350,26 +349,9 @@ estimate would come back four times too large.
 
 ``` r
 
-# Daily means for the simple estimator: the flights are four looks at each day,
-# so they aggregate rather than accumulate.
-design_daily <- add_counts(
-  creel_design(
-    aerial_cal,
-    date        = date,
-    strata      = day_type,
-    survey_type = "aerial",
-    visibility_correction = "none",
-    angler_ratio = 1,
-    angler_ratio_se = 0,
-    h_open      = 14
-  ),
-  example_aerial_glmm_counts,
-  count_col      = n_anglers,
-  count_time_col = time_of_flight
-)
-
-# Simple aerial estimator — no diurnal correction
-simple_result <- estimate_effort(design_daily, target = "sampled_days")
+# Simple aerial estimator on the same design -- no diurnal correction. The
+# flights are four looks at each day, so they average rather than accumulate.
+simple_result <- estimate_effort(design, target = "sampled_days")
 
 # GLMM result from above
 # glmm_result already computed
@@ -439,11 +421,10 @@ design_v <- creel_design(
   angler_ratio_se = 0,
   h_open      = 14
 )
-design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
-#> Warning in add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers): `counts` has 36 repeated sampling units, with no count time to tell them apart.
-#> ℹ The repeated rows are keyed on date and day_type.
-#> ℹ Estimators that sum these rows refuse them; supply `count_time_col` if they
-#>   are repeat counts, or `unit_cols` if they are distinct units.
+design_v <- add_counts(design_v, example_aerial_glmm_counts,
+  count_col      = n_anglers,
+  count_time_col = time_of_flight
+)
 
 glmm_by_day <- estimate_effort_aerial_glmm(
   design_v,

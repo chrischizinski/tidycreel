@@ -189,14 +189,12 @@ North American Journal of Fisheries Management, 38, 194-209.
 <span class="r-in"><span>  angler_ratio_se <span class="op">=</span> <span class="fl">0</span>,</span></span>
 <span class="r-in"><span>  h_open <span class="op">=</span> <span class="fl">14</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_aerial_glmm_counts</span>, count_col <span class="op">=</span> <span class="va">n_anglers</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_aerial_glmm_counts</span>,</span></span>
+<span class="r-in"><span>  count_col <span class="op">=</span> <span class="va">n_anglers</span>, count_time_col <span class="op">=</span> <span class="va">time_of_flight</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort_aerial_glmm.html">estimate_effort_aerial_glmm</a></span><span class="op">(</span><span class="va">design</span>, time_col <span class="op">=</span> <span class="va">time_of_flight</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>`counts` has 36 repeated sampling units, with no count time to tell them apart.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The repeated rows are keyed on <span style="color: #00BB00;">date</span> and <span style="color: #00BB00;">day_type</span>.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Estimators that sum these rows refuse them; supply `count_time_col` if they</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   are repeat counts, or `unit_cols` if they are distinct units.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Integration window start derived from data: 6.5 h (earliest flight - 0.5 h).</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   Specify `open_start` in `creel_design()` for a fixed fishery opening time.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
