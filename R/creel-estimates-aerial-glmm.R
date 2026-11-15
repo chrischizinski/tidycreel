@@ -11,9 +11,11 @@
 #' change through the day, then integrates the fitted diurnal curve over the
 #' fishing day to obtain a bias-corrected effort estimate.
 #'
-#' The default model is the quadratic temporal model from Askey (2018):
-#' \code{count ~ poly(time_col, 2) + (1 | date)}, fitted via
-#' [lme4::glmer.nb()]. Variance is propagated via the delta method (default) or
+#' The default model is \code{count ~ poly(time_col, 2) + (1 | date)}, fitted via
+#' [lme4::glmer.nb()]. The quadratic hour effect is tidycreel's own choice, not
+#' a model from Askey et al. (2018): they fitted hourly camera counts with time
+#' of day as a categorical hour, which a few fixed flight times cannot support
+#' and which cannot predict the hours no flight saw. Variance is propagated via the delta method (default) or
 #' parametric bootstrap ([lme4::bootMer()]).
 #'
 #' @param design A [creel_design()] object with `design_type == "aerial"` and
@@ -22,8 +24,8 @@
 #' @param time_col Unquoted name of the numeric column in `design$counts`
 #'   recording the hour of each aerial overflight (e.g., `time_of_flight`).
 #' @param formula Optional. A formula for the GLMM, passed directly to
-#'   [lme4::glmer.nb()] or [lme4::glmer()]. If `NULL` (default), the Askey
-#'   (2018) quadratic formula is used:
+#'   [lme4::glmer.nb()] or [lme4::glmer()]. If `NULL` (default), a quadratic
+#'   hour effect with a day random intercept is used:
 #'   `count ~ poly(time_col, 2) + (1 | date)`.
 #' @param family Optional. A family object or character string specifying the
 #'   GLM family. If `NULL` or `"negbin"` (default), [lme4::glmer.nb()] is
@@ -106,9 +108,10 @@
 #'
 #' With `by`, the strata are additive: they shift the level of one shared
 #' diurnal curve and do not change its shape. That follows Askey et al.
-#' (2018), where day type is additive in every model structure compared; the
-#' one interaction they tested (month x hour) was preferred by AIC, rejected by
-#' BIC, and bought no predictive gain in cross-validation. A single model also
+#' (2018), where day type is additive in every model structure compared; their
+#' two interactions were season x hour and month x hour, never day type x hour,
+#' and month x hour was preferred by AIC, rejected by BIC, and bought no
+#' predictive gain in cross-validation. A single model also
 #' shares strength across strata, which matters when a stratum has few flights.
 #'
 #' The assumption can fail. Smucker et al. (2010, Table 1) report weekday and
@@ -154,7 +157,7 @@
 #' )
 #' design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 #'
-#' # Default Askey quadratic model with delta-method SE
+#' # Default quadratic model with delta-method SE
 #' result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 #' print(result)
 #'
@@ -289,8 +292,9 @@ estimate_effort_aerial_glmm <- function(
   #
   # The additive form assumes strata share the curve's SHAPE and differ in
   # level. In Askey et al. day type is additive in every structure compared
-  # (their Table 3); the only interaction tested was month x hour, which AIC
-  # preferred and BIC rejected, and cross-validation found no predictive gain
+  # (their Table 3); the interactions tested were season x hour and month x
+  # hour, never day type x hour, and month x hour was the one AIC preferred and
+  # BIC rejected, and cross-validation found no predictive gain
   # from it. Smucker et al. (2010, Table 1) show weekday and weekend diel
   # shapes that do differ, so the assumption can fail; the BIC comparison
   # reported below is there to show when.
@@ -413,12 +417,23 @@ estimate_effort_aerial_glmm <- function(
   # effectively zero, so the prediction is unchanged.
   x_mat <- x_mat[, names(beta), drop = FALSE] # nolint: object_name_linter
   mu <- as.numeric(exp(x_mat %*% beta))
-  scale_factor <- h_open / (length(hour_grid) - 1L) # interval width: 100 pts = 99 gaps
-  # sum(mu) * scale_factor integrates the fitted count-vs-time curve over h_open
-  # hours, yielding people-hours. The visibility correction (1/v) and the
-  # angler-to-people ratio (a) convert that to angler-hours — multiplying by
-  # h_open again would double-count the time dimension.
-  mean_day_effort <- sum(mu) * scale_factor * a / v
+  # Trapezoid-rule weights over the grid: 100 points span 99 intervals of width
+  # h_open / 99, and the two end points carry half a width each. sum(w * mu)
+  # integrates the fitted count-vs-time curve over h_open hours, yielding
+  # people-hours. The visibility correction (1/v) and the angler-to-people
+  # ratio (a) convert that to angler-hours -- multiplying by h_open again would
+  # double-count the time dimension.
+  #
+  # Not sum(mu) * h_open / 99: that gives all 100 points a full width, one
+  # interval too many, and overstated every estimate by up to 1 / 99 (most when
+  # the curve is high at both window edges) (GH #492). Askey et al. (2018) do
+  # not integrate a continuous curve -- their time of day is a categorical hour
+  # -- so the quadrature is this function's own; the trapezoid rule is the
+  # standard one for a smooth curve on a grid.
+  n_grid <- length(hour_grid)
+  w <- rep(h_open / (n_grid - 1L), n_grid)
+  w[c(1L, n_grid)] <- w[c(1L, n_grid)] / 2
+  mean_day_effort <- sum(w * mu) * a / v
 
   # Expansion to the sampled days (GH #363).
   #
@@ -489,8 +504,8 @@ estimate_effort_aerial_glmm <- function(
       expansion_i <- retransform * if (identical(target, "sampled_days")) days_i else 1
 
       list(
-        est = sum(mu_i) * scale_factor * a / v * expansion_i,
-        grad = expansion_i * scale_factor * a / v * colSums(mu_i * x_i),
+        est = sum(w * mu_i) * a / v * expansion_i,
+        grad = expansion_i * a / v * colSums(w * mu_i * x_i),
         n = sum(keep)
       )
     })
@@ -539,7 +554,10 @@ estimate_effort_aerial_glmm <- function(
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
-      effort_target = target
+      effort_target = target,
+      # The integral of a count over hours, times a / v (GH #492): the same
+      # quantity, and unit, estimate_effort() reports for an aerial design.
+      unit = "angler-hours"
     )
     result$strata_vcov <- strata_vcov
     return(result)
@@ -570,7 +588,7 @@ estimate_effort_aerial_glmm <- function(
   if (!boot) {
     v_mat <- as.matrix(stats::vcov(model)) # nolint: object_name_linter
     # Gradient of the EXPANDED total, so `expansion` rides along with it.
-    grad <- expansion * scale_factor * a / v * colSums(mu * x_mat)
+    grad <- expansion * a / v * colSums(w * mu * x_mat)
     var_model <- as.numeric(t(grad) %*% v_mat %*% grad)
     # No na.rm: these are NA under the declared "none" opt-outs, and a sum
     # missing an unknown term is a lower bound, not an SE.
@@ -597,7 +615,7 @@ estimate_effort_aerial_glmm <- function(
 
     boot_fn <- function(m) {
       mu_b <- as.numeric(exp(x_mat %*% lme4::fixef(m)))
-      sum(mu_b) * scale_factor * a / v * expansion
+      sum(w * mu_b) * a / v * expansion
     }
 
     b <- lme4::bootMer(model, FUN = boot_fn, nsim = nboot, type = "parametric", use.u = FALSE)
@@ -720,7 +738,8 @@ estimate_effort_aerial_glmm <- function(
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
-    effort_target = target
+    effort_target = target,
+    unit = "angler-hours"
   )
 }
 

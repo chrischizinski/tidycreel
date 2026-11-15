@@ -102,8 +102,9 @@ Two other routes:
   the package did not see the multiplication that made it.
 - **Aerial designs.** `creel_design()` requires `h_open` for an aerial survey,
   and `estimate_effort()` multiplies the count by it, so aerial effort from
-  `estimate_effort()` is angler-hours. `estimate_effort_aerial_glmm()` still
-  reports an unknown unit; that is a known defect, open as issue #492.
+  `estimate_effort()` is angler-hours. `estimate_effort_aerial_glmm()`
+  integrates the fitted count over the same `h_open` hours, so it reports
+  angler-hours too.
 
 ## The interview side
 

@@ -25,8 +25,8 @@ time-of-flight column specified by \code{time_col}.}
 recording the hour of each aerial overflight (e.g., \code{time_of_flight}).}
 
 \item{formula}{Optional. A formula for the GLMM, passed directly to
-\code{\link[lme4:glmer.nb]{lme4::glmer.nb()}} or \code{\link[lme4:glmer]{lme4::glmer()}}. If \code{NULL} (default), the Askey
-(2018) quadratic formula is used:
+\code{\link[lme4:glmer.nb]{lme4::glmer.nb()}} or \code{\link[lme4:glmer]{lme4::glmer()}}. If \code{NULL} (default), a quadratic
+hour effect with a day random intercept is used:
 \code{count ~ poly(time_col, 2) + (1 | date)}.}
 
 \item{family}{Optional. A family object or character string specifying the
@@ -110,9 +110,11 @@ negative-binomial GLMM (or user-specified family) to model how angler counts
 change through the day, then integrates the fitted diurnal curve over the
 fishing day to obtain a bias-corrected effort estimate.
 
-The default model is the quadratic temporal model from Askey (2018):
-\code{count ~ poly(time_col, 2) + (1 | date)}, fitted via
-\code{\link[lme4:glmer.nb]{lme4::glmer.nb()}}. Variance is propagated via the delta method (default) or
+The default model is \code{count ~ poly(time_col, 2) + (1 | date)}, fitted via
+\code{\link[lme4:glmer.nb]{lme4::glmer.nb()}}. The quadratic hour effect is tidycreel's own choice, not
+a model from Askey et al. (2018): they fitted hourly camera counts with time
+of day as a categorical hour, which a few fixed flight times cannot support
+and which cannot predict the hours no flight saw. Variance is propagated via the delta method (default) or
 parametric bootstrap (\code{\link[lme4:bootMer]{lme4::bootMer()}}).
 }
 \details{
@@ -133,9 +135,10 @@ variance method neither the delta nor the bootstrap path offers today.
 
 With \code{by}, the strata are additive: they shift the level of one shared
 diurnal curve and do not change its shape. That follows Askey et al.
-(2018), where day type is additive in every model structure compared; the
-one interaction they tested (month x hour) was preferred by AIC, rejected by
-BIC, and bought no predictive gain in cross-validation. A single model also
+(2018), where day type is additive in every model structure compared; their
+two interactions were season x hour and month x hour, never day type x hour,
+and month x hour was preferred by AIC, rejected by BIC, and bought no
+predictive gain in cross-validation. A single model also
 shares strength across strata, which matters when a stratum has few flights.
 
 The assumption can fail. Smucker et al. (2010, Table 1) report weekday and
@@ -171,7 +174,7 @@ design <- creel_design(
 )
 design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
 
-# Default Askey quadratic model with delta-method SE
+# Default quadratic model with delta-method SE
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
 print(result)
 

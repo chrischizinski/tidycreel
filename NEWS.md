@@ -992,6 +992,28 @@
 
 ## Bug fixes
 
+* `estimate_effort_aerial_glmm()` integrated the fitted diurnal curve with one
+  grid interval too many (#492): it summed all 100 grid values times the width
+  of 99 intervals. Every GLMM effort estimate, and its SE, was too high by
+  `h_open / 99` times the mean of the curve at the two window edges: about
+  0.14% on `example_aerial_glmm_counts`, and up to 1% (`1/99`) when fishing is
+  near its peak at both ends of the window. The integral now uses the
+  trapezoid rule on the same grid, on the delta, bootstrap and grouped paths.
+  Totals built on a GLMM effort move by the same factor.
+* `estimate_effort_aerial_glmm()` results now carry `unit = "angler-hours"`, as
+  `estimate_effort()` reports for the same aerial design (#492). They carried
+  `NA`, so a total built on GLMM effort could not derive its unit.
+* `example_aerial_glmm_counts` is regenerated with negative-binomial count noise
+  (#492). It was simulated with Poisson noise, so the default
+  `lme4::glmer.nb()` fit could not estimate the dispersion and every documented
+  fit warned `iteration limit reached`. The rows, counts and examples that use
+  them have changed; one count is now 0.
+* The documentation no longer calls the default
+  `count ~ poly(time, 2) + (1 | date)` model "the Askey (2018) quadratic
+  model" (#492). Askey et al. treat time of day as a categorical hour; the
+  quadratic is tidycreel's adaptation for a few fixed flight times. The
+  interactions Askey et al. tested are also stated correctly (season x hour
+  and month x hour).
 * `add_sections()` now refuses bus-route and ice designs (#638), with class
   `creel_error_dispatch_unsupported`, as it already refused aerial designs
   (#470). Every estimator handles these designs before its section branch,
