@@ -6,7 +6,7 @@
 \usage{
 estimate_effort_aerial_glmm(
   design,
-  time_col,
+  time_col = NULL,
   formula = NULL,
   family = NULL,
   boot = FALSE,
@@ -17,12 +17,19 @@ estimate_effort_aerial_glmm(
 )
 }
 \arguments{
-\item{design}{A \code{\link[=creel_design]{creel_design()}} object with \code{design_type == "aerial"} and
-counts attached via \code{\link[=add_counts]{add_counts()}}. The counts data must contain the
-time-of-flight column specified by \code{time_col}.}
+\item{design}{A \code{\link[=creel_design]{creel_design()}} object with \code{design_type == "aerial"}, with
+counts attached via \code{\link[=add_counts]{add_counts()}} from a table with one row per
+overflight. Attach them
+with \code{count_time_col} naming the flight-time column: the same design then
+serves \code{\link[=estimate_effort]{estimate_effort()}}, which averages each day's flights, and this
+function, which fits the flights themselves (GH #643). A design attached
+without \code{count_time_col} still works here, with \code{time_col} a column of
+\code{design$counts}, but \code{\link[=add_counts]{add_counts()}} warns about the repeated days and
+\code{\link[=estimate_effort]{estimate_effort()}} refuses it.}
 
-\item{time_col}{Unquoted name of the numeric column in \code{design$counts}
-recording the hour of each aerial overflight (e.g., \code{time_of_flight}).}
+\item{time_col}{Unquoted name of the numeric column recording the hour of
+each overflight (e.g., \code{time_of_flight}). Defaults to the design's
+\code{count_time_col}.}
 
 \item{formula}{Optional. A formula for the GLMM, passed directly to
 \code{\link[lme4:glmer.nb]{lme4::glmer.nb()}} or \code{\link[lme4:glmer]{lme4::glmer()}}. If \code{NULL} (default), a quadratic
@@ -172,7 +179,9 @@ design <- creel_design(
   angler_ratio_se = 0,
   h_open = 14
 )
-design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
+design <- add_counts(design, example_aerial_glmm_counts,
+  count_col = n_anglers, count_time_col = time_of_flight
+)
 
 # Default quadratic model with delta-method SE
 result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
@@ -192,7 +201,9 @@ design_v <- creel_design(
   angler_ratio_se = 0,
   h_open = 14
 )
-design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
+design_v <- add_counts(design_v, example_aerial_glmm_counts,
+  count_col = n_anglers, count_time_col = time_of_flight
+)
 by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
 print(by_day)
 # SE of the summed total: use the joint covariance, not quadrature

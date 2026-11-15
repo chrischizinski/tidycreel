@@ -925,3 +925,104 @@ test_that("GLMM-09: each stratum's effort is the integral of its own curve", {
 
   expect_equal(res$estimates$estimate, unname(exact), tolerance = 1e-4)
 })
+
+# GLMM-10: one design serves both aerial estimators (GH #643) ----
+
+# The fixture's calendar is the flight dates alone, so add_counts() notes that
+# every day was sampled; that note is not what these tests are about.
+census_ok <- function(expr) {
+  withCallingHandlers(expr, creel_warning_calendar_is_census = function(w) invokeRestart("muffleWarning"))
+}
+
+test_that("a design with count_time_col serves estimate_effort() and the GLMM", {
+  skip_if_not_installed("lme4")
+  # Why: with count_time_col, add_counts() collapses each day to one row, and
+  # the GLMM aborted ("time_of_flight not found"); without it, add_counts()
+  # warned and estimate_effort() refused. One dataset needed two designs.
+  one <- census_ok(make_aerial_glmm_design(visibility_correction = 0.85, visibility_se = 0.05, with_count_time = TRUE))
+  # The old route, kept for comparison: add_counts() warns about repeated days.
+  two <- suppressWarnings(make_aerial_glmm_design(visibility_correction = 0.85, visibility_se = 0.05))
+
+  expect_no_error(suppressMessages(estimate_effort(one)))
+  from_one <- suppressMessages(estimate_effort_aerial_glmm(one, time_col = time_of_flight))
+  from_two <- suppressMessages(estimate_effort_aerial_glmm(two, time_col = time_of_flight))
+  expect_equal(from_one$estimates$estimate, from_two$estimates$estimate)
+  expect_equal(from_one$estimates$se, from_two$estimates$se)
+  expect_identical(from_one$estimates$n, 48L)
+})
+
+test_that("time_col defaults to the design's count_time_col", {
+  skip_if_not_installed("lme4")
+  one <- census_ok(make_aerial_glmm_design(visibility_correction = 0.85, visibility_se = 0.05, with_count_time = TRUE))
+  expect_equal(
+    suppressMessages(estimate_effort_aerial_glmm(one))$estimates$estimate,
+    suppressMessages(estimate_effort_aerial_glmm(one, time_col = time_of_flight))$estimates$estimate
+  )
+})
+
+test_that("grouped GLMM works from the per-flight counts too", {
+  skip_if_not_installed("lme4")
+  one <- census_ok(make_aerial_glmm_design(visibility_correction = 0.85, visibility_se = 0.05, with_count_time = TRUE))
+  two <- suppressWarnings(make_aerial_glmm_design(visibility_correction = 0.85, visibility_se = 0.05))
+  g1 <- suppressMessages(estimate_effort_aerial_glmm(one, time_col = time_of_flight, by = day_type))
+  g2 <- suppressMessages(estimate_effort_aerial_glmm(two, time_col = time_of_flight, by = day_type))
+  expect_equal(g1$estimates$estimate, g2$estimates$estimate)
+  expect_equal(g1$strata_vcov, g2$strata_vcov)
+})
+
+test_that("a non-numeric count time is refused for the GLMM", {
+  skip_if_not_installed("lme4")
+  data("example_aerial_glmm_counts", envir = environment())
+  cnts <- example_aerial_glmm_counts # nolint: object_usage_linter
+  cnts$slot <- paste0("t", cnts$time_of_flight)
+  cnts$time_of_flight <- NULL
+  cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
+  d <- creel_design(cal,
+    date = date, strata = day_type, survey_type = "aerial",
+    visibility_correction = "none", angler_ratio = 1, angler_ratio_se = 0, h_open = 14
+  )
+  d <- add_counts(d, cnts, count_col = n_anglers, count_time_col = slot)
+  expect_error(
+    estimate_effort_aerial_glmm(d, time_col = slot),
+    class = "creel_error_invalid_input"
+  )
+})
+
+test_that("a per-day by column that is not a stratum is joined back to each flight", {
+  skip_if_not_installed("lme4")
+  # Why: the per-flight table carries only the unit key (date, strata). A
+  # by column such as weather lives on design$counts and must be joined to
+  # each flight, or the grouped fit has no column to group on.
+  data("example_aerial_glmm_counts", envir = environment())
+  cnts <- example_aerial_glmm_counts # nolint: object_usage_linter
+  wet <- unique(cnts$date)[c(2, 5, 9)]
+  cnts$weather <- ifelse(cnts$date %in% wet, "wet", "dry")
+  cal <- creel_calendar("2024-06-03", "2024-07-06", strata = "day_type")
+  mk <- function(...) {
+    d <- creel_design(cal,
+      date = date, strata = day_type, survey_type = "aerial",
+      visibility_correction = 0.85, visibility_se = 0.05,
+      angler_ratio = 1, angler_ratio_se = 0, h_open = 14
+    )
+    add_counts(d, cnts, count_col = n_anglers, ...)
+  }
+  one <- mk(count_time_col = time_of_flight)
+  two <- suppressWarnings(mk())
+  g1 <- suppressMessages(estimate_effort_aerial_glmm(one, time_col = time_of_flight, by = weather))
+  g2 <- suppressMessages(estimate_effort_aerial_glmm(two, time_col = time_of_flight, by = weather))
+  expect_identical(g1$estimates$weather, c("dry", "wet"))
+  expect_equal(g1$estimates$estimate, g2$estimates$estimate)
+})
+
+test_that("a non-numeric time column kept in design$counts is refused the same way", {
+  skip_if_not_installed("lme4")
+  # The design attached without count_time_col keeps the time column; it must
+  # be checked too, not only on the per-flight route.
+  design <- suppressWarnings(make_aerial_glmm_design())
+  design$counts$slot <- paste0("t", design$counts$time_of_flight)
+  expect_error(
+    estimate_effort_aerial_glmm(design, time_col = slot),
+    "numeric hours",
+    class = "creel_error_invalid_input"
+  )
+})

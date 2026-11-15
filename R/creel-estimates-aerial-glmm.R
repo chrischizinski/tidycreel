@@ -18,11 +18,18 @@
 #' and which cannot predict the hours no flight saw. Variance is propagated via the delta method (default) or
 #' parametric bootstrap ([lme4::bootMer()]).
 #'
-#' @param design A [creel_design()] object with `design_type == "aerial"` and
-#'   counts attached via [add_counts()]. The counts data must contain the
-#'   time-of-flight column specified by `time_col`.
-#' @param time_col Unquoted name of the numeric column in `design$counts`
-#'   recording the hour of each aerial overflight (e.g., `time_of_flight`).
+#' @param design A [creel_design()] object with `design_type == "aerial"`, with
+#'   counts attached via [add_counts()] from a table with one row per
+#'   overflight. Attach them
+#'   with `count_time_col` naming the flight-time column: the same design then
+#'   serves [estimate_effort()], which averages each day's flights, and this
+#'   function, which fits the flights themselves (GH #643). A design attached
+#'   without `count_time_col` still works here, with `time_col` a column of
+#'   `design$counts`, but [add_counts()] warns about the repeated days and
+#'   [estimate_effort()] refuses it.
+#' @param time_col Unquoted name of the numeric column recording the hour of
+#'   each overflight (e.g., `time_of_flight`). Defaults to the design's
+#'   `count_time_col`.
 #' @param formula Optional. A formula for the GLMM, passed directly to
 #'   [lme4::glmer.nb()] or [lme4::glmer()]. If `NULL` (default), a quadratic
 #'   hour effect with a day random intercept is used:
@@ -155,7 +162,9 @@
 #'   angler_ratio_se = 0,
 #'   h_open = 14
 #' )
-#' design <- add_counts(design, example_aerial_glmm_counts, count_col = n_anglers)
+#' design <- add_counts(design, example_aerial_glmm_counts,
+#'   count_col = n_anglers, count_time_col = time_of_flight
+#' )
 #'
 #' # Default quadratic model with delta-method SE
 #' result <- estimate_effort_aerial_glmm(design, time_col = time_of_flight)
@@ -175,7 +184,9 @@
 #'   angler_ratio_se = 0,
 #'   h_open = 14
 #' )
-#' design_v <- add_counts(design_v, example_aerial_glmm_counts, count_col = n_anglers)
+#' design_v <- add_counts(design_v, example_aerial_glmm_counts,
+#'   count_col = n_anglers, count_time_col = time_of_flight
+#' )
 #' by_day <- estimate_effort_aerial_glmm(design_v, time_col = time_of_flight, by = day_type)
 #' print(by_day)
 #' # SE of the summed total: use the joint covariance, not quadrature
@@ -199,7 +210,7 @@
 #' @export
 estimate_effort_aerial_glmm <- function(
   design,
-  time_col,
+  time_col = NULL,
   formula = NULL,
   family = NULL,
   boot = FALSE,
@@ -222,18 +233,53 @@ estimate_effort_aerial_glmm <- function(
     ))
   }
 
-  # 3. Resolve time_col (tidyselect-style unquoted name)
+  # 3. Resolve time_col (tidyselect-style unquoted name). It defaults to the
+  # design's count_time_col, the column add_counts() was told tells a day's
+  # flights apart (GH #643).
   time_col_quo <- rlang::enquo(time_col)
-  time_col_name <- rlang::as_name(time_col_quo)
-  if (!time_col_name %in% names(design$counts)) {
+  time_col_name <- if (rlang::quo_is_missing(time_col_quo) || rlang::quo_is_null(time_col_quo)) {
+    design$count_time_col
+  } else {
+    rlang::as_name(time_col_quo)
+  }
+  if (is.null(time_col_name)) {
     cli::cli_abort(c(
-      "Column {.field {time_col_name}} not found in {.code design$counts}.",
-      "i" = "Available columns: {.field {names(design$counts)}}"
+      "{.arg time_col} is required: the design has no {.arg count_time_col}.",
+      "i" = "Name the column holding each flight's hour."
     ))
   }
 
-  # 4. Identify count variable (exclude design metadata and time column)
-  counts_data <- design$counts
+  # 4. The per-flight counts. With count_time_col, add_counts() collapses each
+  # day to one row and the flight time is gone from design$counts, but the
+  # flights themselves are kept in design$within_day_counts (GH #373); the GLMM
+  # is fitted to those, with each day's other columns (strata, `by`) joined
+  # back. So one design serves estimate_effort() and this function (GH #643).
+  counts_data <- if (time_col_name %in% names(design$counts)) {
+    design$counts
+  } else if (identical(time_col_name, design$count_time_col) && !is.null(design$within_day_counts)) {
+    glmm_flight_counts(design, time_col_name)
+  } else {
+    cli::cli_abort(c(
+      "Column {.field {time_col_name}} not found in {.code design$counts}.",
+      "i" = "Available columns: {.field {names(design$counts)}}",
+      "i" = if (!is.null(design$count_time_col)) {
+        "The design's flight-time column is {.field {design$count_time_col}} ({.arg count_time_col})."
+      }
+    ))
+  }
+  # A diurnal curve needs hours. Checked here so both routes -- the per-flight
+  # table and a time column kept in design$counts -- refuse the same way.
+  if (!is.numeric(counts_data[[time_col_name]])) {
+    cli::cli_abort(
+      c(
+        "{.field {time_col_name}} must be numeric hours to fit the diurnal curve.",
+        "x" = "It holds {.cls {class(counts_data[[time_col_name]])[1]}} values, e.g. {.val {utils::head(unique(counts_data[[time_col_name]]), 3)}}."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+
+  # 4a. Identify count variable (exclude design metadata and time column)
   count_var <- resolve_count_col( # nolint: object_usage_linter
     counts = counts_data,
     excluded = c(design$date_col, design$strata_cols, design$psu_col, time_col_name),
@@ -792,4 +838,24 @@ report_glmm_shape_bic <- function(model, count_var, time_col_name, by_vars, date
     if (n_warn > 0L) c(" " = "The interaction fit raised {n_warn} warning{?s}; treat the comparison with caution.")
   ))
   invisible(NULL)
+}
+
+# One row per flight, rebuilt from design$within_day_counts for a design whose
+# add_counts() call named count_time_col (GH #643). The per-flight table holds
+# the unit key, `.count_time` and `.value`; the count is restored under the
+# design's count column, the time under `time_col_name`, and every other
+# column of design$counts (constant within a day: strata, `by` columns) is
+# joined by the unit key. `.value` is a raw count here: an aerial design takes
+# its hours from h_open, so no period length scaled it.
+#' @noRd
+glmm_flight_counts <- function(design, time_col_name) {
+  wdc <- design$within_day_counts
+  key_cols <- setdiff(names(wdc), c(".count_time", ".value"))
+  out <- wdc[key_cols]
+  out[[time_col_name]] <- wdc$.count_time
+  out[[design$count_col]] <- wdc$.value
+  day_cols <- setdiff(names(design$counts), c(key_cols, design$count_col, time_col_name))
+  idx <- match(group_key(wdc, key_cols), group_key(design$counts, key_cols)) # nolint: object_usage_linter
+  for (nm in day_cols) out[[nm]] <- design$counts[[nm]][idx]
+  out
 }

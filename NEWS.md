@@ -1051,6 +1051,17 @@
 
 ## Bug fixes
 
+* One aerial design now serves both `estimate_effort()` and
+  `estimate_effort_aerial_glmm()` (#643). Attach the flights with
+  `add_counts(count_time_col = time_of_flight)`: `estimate_effort()` averages
+  each day's flights, and the GLMM fits the flights themselves, rebuilt from
+  the per-flight counts `add_counts()` keeps. Before, `count_time_col` removed
+  the time column and the GLMM aborted, while leaving it out made
+  `add_counts()` warn and `estimate_effort()` refuse, so one dataset needed
+  two designs. `time_col` now defaults to the design's `count_time_col`, and
+  a non-numeric flight time is refused for the GLMM. The estimates do not
+  change. `vignette("aerial-glmm")` builds one design.
+
 * `reallocate_strata()` now returns a plan the season can carry out (#384). It
   rounded each stratum's Neyman share up independently and capped nothing, so
   the days could exceed the budget (127 for 118 on one real season) and a
