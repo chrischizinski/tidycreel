@@ -18,8 +18,9 @@
 #' and which cannot predict the hours no flight saw. Variance is propagated via the delta method (default) or
 #' parametric bootstrap ([lme4::bootMer()]).
 #'
-#' @param design A [creel_design()] object with `design_type == "aerial"` and
-#'   counts attached via [add_counts()], one row per overflight. Attach them
+#' @param design A [creel_design()] object with `design_type == "aerial"`, with
+#'   counts attached via [add_counts()] from a table with one row per
+#'   overflight. Attach them
 #'   with `count_time_col` naming the flight-time column: the same design then
 #'   serves [estimate_effort()], which averages each day's flights, and this
 #'   function, which fits the flights themselves (GH #643). A design attached
@@ -260,8 +261,22 @@ estimate_effort_aerial_glmm <- function(
   } else {
     cli::cli_abort(c(
       "Column {.field {time_col_name}} not found in {.code design$counts}.",
-      "i" = "Available columns: {.field {names(design$counts)}}"
+      "i" = "Available columns: {.field {names(design$counts)}}",
+      "i" = if (!is.null(design$count_time_col)) {
+        "The design's flight-time column is {.field {design$count_time_col}} ({.arg count_time_col})."
+      }
     ))
+  }
+  # A diurnal curve needs hours. Checked here so both routes -- the per-flight
+  # table and a time column kept in design$counts -- refuse the same way.
+  if (!is.numeric(counts_data[[time_col_name]])) {
+    cli::cli_abort(
+      c(
+        "{.field {time_col_name}} must be numeric hours to fit the diurnal curve.",
+        "x" = "It holds {.cls {class(counts_data[[time_col_name]])[1]}} values, e.g. {.val {utils::head(unique(counts_data[[time_col_name]]), 3)}}."
+      ),
+      class = "creel_error_invalid_input"
+    )
   }
 
   # 4a. Identify count variable (exclude design metadata and time column)
@@ -833,18 +848,8 @@ report_glmm_shape_bic <- function(model, count_var, time_col_name, by_vars, date
 # joined by the unit key. `.value` is a raw count here: an aerial design takes
 # its hours from h_open, so no period length scaled it.
 #' @noRd
-glmm_flight_counts <- function(design, time_col_name, call = rlang::caller_env()) {
+glmm_flight_counts <- function(design, time_col_name) {
   wdc <- design$within_day_counts
-  if (!is.numeric(wdc$.count_time)) {
-    cli::cli_abort(
-      c(
-        "{.field {time_col_name}} must be numeric hours to fit the diurnal curve.",
-        "x" = "It holds {.cls {class(wdc$.count_time)[1]}} values, e.g. {.val {utils::head(unique(wdc$.count_time), 3)}}."
-      ),
-      class = "creel_error_invalid_input",
-      call = call
-    )
-  }
   key_cols <- setdiff(names(wdc), c(".count_time", ".value"))
   out <- wdc[key_cols]
   out[[time_col_name]] <- wdc$.count_time

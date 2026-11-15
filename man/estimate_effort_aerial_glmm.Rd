@@ -17,8 +17,9 @@ estimate_effort_aerial_glmm(
 )
 }
 \arguments{
-\item{design}{A \code{\link[=creel_design]{creel_design()}} object with \code{design_type == "aerial"} and
-counts attached via \code{\link[=add_counts]{add_counts()}}, one row per overflight. Attach them
+\item{design}{A \code{\link[=creel_design]{creel_design()}} object with \code{design_type == "aerial"}, with
+counts attached via \code{\link[=add_counts]{add_counts()}} from a table with one row per
+overflight. Attach them
 with \code{count_time_col} naming the flight-time column: the same design then
 serves \code{\link[=estimate_effort]{estimate_effort()}}, which averages each day's flights, and this
 function, which fits the flights themselves (GH #643). A design attached

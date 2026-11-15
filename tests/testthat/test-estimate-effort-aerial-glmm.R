@@ -1013,3 +1013,16 @@ test_that("a per-day by column that is not a stratum is joined back to each flig
   expect_identical(g1$estimates$weather, c("dry", "wet"))
   expect_equal(g1$estimates$estimate, g2$estimates$estimate)
 })
+
+test_that("a non-numeric time column kept in design$counts is refused the same way", {
+  skip_if_not_installed("lme4")
+  # The design attached without count_time_col keeps the time column; it must
+  # be checked too, not only on the per-flight route.
+  design <- suppressWarnings(make_aerial_glmm_design())
+  design$counts$slot <- paste0("t", design$counts$time_of_flight)
+  expect_error(
+    estimate_effort_aerial_glmm(design, time_col = slot),
+    "numeric hours",
+    class = "creel_error_invalid_input"
+  )
+})
