@@ -85,7 +85,7 @@ effort_no_td$unit
 ```
 
 The printout has no `Unit:` line, because the unit is `NA`, and the estimate
-is 716 rather than 10,022. Every day in
+is about 716 (10,022 / 14) rather than 10,022. Every day in
 these data is 14 hours long, so the two differ by exactly that factor. The
 warning says what happened: the counts were expanded without a period length.
 The package does not know whether `total_anglers` was a head count (in which
@@ -176,10 +176,10 @@ total_party
 total_party$unit
 ```
 
-The total is 1,134 instead of 674. Multiplying a rate per party-hour by
+The total is 3,562 instead of 2,016. Multiplying a rate per party-hour by
 angler-hours inflates the catch by about the mean party size, which is the
-error the `NA` and the warning exist to stop. The 1.68 ratio is close to the
-rate ratio of 1.69 but not equal to it, because the total is built stratum by
+error the `NA` and the warning exist to stop. The 1.77 ratio is close to the
+rate ratio of 1.73 but not equal to it, because the total is built stratum by
 stratum.
 
 The same derivation runs wherever a unit is built from another:

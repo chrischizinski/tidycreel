@@ -18,7 +18,7 @@
   carried the whole trip's catch. Every number from these data changes: 292
   interviews (201 complete, 91 incomplete) instead of 231, season effort about
   10,022 angler-hours instead of 9,994, catch rate 0.199 instead of 0.221,
-  total catch about 2,016 instead of 2,230. The sampled days changed with the
+  total catch about 2,020 instead of 2,230. The sampled days changed with the
   seed, so `example_roving_interviews`, drawn on those days, is regenerated
   too (its rate and sizes are unchanged).
 * `simulate_creel_data()` now simulates catch that accrues over time fished,

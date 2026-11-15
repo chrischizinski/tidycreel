@@ -137,7 +137,7 @@ rate$unit
 This is the ratio of means (total catch over total effort), the estimator for
 access interviews; `vignette("estimator-choice")` covers when tidycreel uses the
 mean of ratios instead. Without `n_anglers`, the denominator would be party
-hours and the rate would be per party-hour, about 0.29 here instead of 0.20.
+hours and the rate would be per party-hour, about 0.34 here instead of 0.20.
 The two are different quantities, and tidycreel reports which one it computed
 in `unit`.
 
