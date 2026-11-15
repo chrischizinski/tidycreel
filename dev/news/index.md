@@ -12,6 +12,51 @@
 
 ### Breaking changes
 
+- [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/simulate_creel_data.md)
+  now simulates catch that accrues over time fished, and interviews of
+  one kind at a time
+  ([\#494](https://github.com/chrischizinski/tidycreel/issues/494),
+  [\#488](https://github.com/chrischizinski/tidycreel/issues/488)).
+  Before, each party drew one whole-trip catch regardless of hours
+  fished or party size, so the simulated population had no catch rate,
+  and an incomplete trip carried the whole trip’s catch over the hours
+  fished so far: a roving (mean-of-ratios) rate on simulated data came
+  out about 2.5 times the access rate. Any simulation study of roving
+  estimators run on it was biased upward.
+
+  - `params$catch_per_trip` is replaced by `params$catch_rate` (`mean`,
+    catch per angler-hour; `nb_size`). A party catches nothing with
+    probability `p_zero_catch`; otherwise its catch so far has mean
+    `rate * n_anglers * hours_fished / (1 - p_zero_catch)`, so its
+    expected catch is `rate * n_anglers * hours_fished` and the
+    population rate is exactly `catch_rate$mean`. A supplied `nb_size`
+    must be positive (it was silently replaced by 0.5). Supplying
+    `catch_per_trip` is an error (`creel_error_simulate_removed_input`):
+    a per-trip mean has no conversion to a rate.
+  - New `interview_type = c("access", "roving")`. Access: complete
+    trips, every finishing party with the same chance. Roving:
+    incomplete trips, each party met with a chance proportional to its
+    trip length, at a random point in it. `p_complete` is removed and
+    supplying it is an error: it mixed complete and incomplete trips in
+    one length-biased draw, so access interviews were sampled the way a
+    roving clerk meets parties.
+  - `trip_duration` is now the time fished at the interview, as
+    [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+    reads it
+    ([\#488](https://github.com/chrischizinski/tidycreel/issues/488)).
+    It held the whole simulated trip length, which no clerk observes, so
+    a truncated roving estimator saw information real data never has.
+    The whole length is in the new `true_trip_length` column.
+  - `day_types` named `weekday` and `weekend` now label each day from
+    its date
+    ([\#488](https://github.com/chrischizinski/tidycreel/issues/488));
+    other names are still assigned at random.
+  - The result gains `truth`: the true `catch_rate` and `harvest_rate`
+    per angler-hour. The counts are still drawn independently of the
+    trips, so there is no true total effort or catch to report yet.
+    `example_season_*` were generated with the old simulator and are
+    unchanged here.
+
 - Reading a field that is not part of a `creel_design` is now an error
   ([\#594](https://github.com/chrischizinski/tidycreel/issues/594)),
   with class `creel_error_design_unknown_field` and a suggestion for a
@@ -963,9 +1008,11 @@
   catch rate of 0.22 fish per angler-hour. Each party’s catch is its
   catch so far.
   [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/simulate_creel_data.md)
-  could not supply this: it gives an incomplete trip the whole trip’s
-  catch over the hours fished so far, which inflates a roving rate
-  ([\#494](https://github.com/chrischizinski/tidycreel/issues/494)).
+  could not supply this when the dataset was made: it gave an incomplete
+  trip the whole trip’s catch over the hours fished so far, which
+  inflated a roving rate
+  ([\#494](https://github.com/chrischizinski/tidycreel/issues/494),
+  fixed since).
 
 - [`vignette("tidycreel")`](https://chrischizinski.com/tidycreel/dev/articles/tidycreel.md)
   is now a tutorial that analyses one complete season

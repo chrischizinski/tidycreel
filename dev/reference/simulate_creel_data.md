@@ -1,7 +1,7 @@
 # Simulate a complete creel survey dataset
 
-Generates realistic synthetic creel data using a three-level
-hierarchical generative model (day → trip → catch). Caller supplies
+Generates realistic synthetic creel data using a four-level hierarchical
+generative model (day → trip → interview → catch). Caller supplies
 distributional parameters via `params`; no default data are bundled with
 the package.
 
@@ -16,16 +16,36 @@ hour into an eight-hour day, with trip lengths alternating between 3 and
     sampled day draws the number of angler trips arriving from a
     Negative Binomial distribution.
 
-2.  **Trip level**: Each trip draws effort (hr) from a Gamma
-    distribution, party size from a zero-truncated Poisson, and trip
-    completion from a Bernoulli draw.
+2.  **Trip level**: Each trip draws its length (hr) from a Gamma
+    distribution and its party size from a Poisson (at least 1).
 
-3.  **Catch level**: Each complete or incomplete trip draws total catch
-    from a Negative Binomial; harvest is Binomial given total catch.
+3.  **Interview level**, set by `interview_type`: `"access"` – the clerk
+    meets parties as they leave, every party with the same chance (70\\
+    trip; `"roving"` – the clerk meets parties while they fish, each
+    with a chance proportional to its trip length (0.25 times its length
+    over the day's mean length, capped at 1, so slightly under a quarter
+    of the day's parties), at a uniformly random point in the trip, and
+    records the time fished so far (at least 0.1 h). This is the
+    sampling difference Pollock et al. (1997) base the choice of
+    catch-rate estimator on.
 
-4.  **Roving clerk**: Interview probability is proportional to trip
-    length (length-biased sampling). Incomplete trips contribute elapsed
-    effort, not total effort.
+4.  **Catch level**: Catch accrues over the time fished. A party catches
+    nothing with probability `p_zero_catch`; otherwise its catch so far
+    is Negative Binomial with mean
+    `catch_rate$mean * n_anglers * hours_fished / (1 - p_zero_catch)`,
+    so the population catch rate (total catch over total angler-hours)
+    is exactly `catch_rate$mean`. Harvest is Binomial given catch.
+
+Because catch accrues, the ratio of means on access interviews and the
+(truncated) mean of ratios on roving interviews both target
+`truth$catch_rate`. Before tidycreel 9.0.0 each party drew one
+whole-trip catch regardless of time fished, so an incomplete trip
+carried the whole trip's catch over the hours fished so far and inflated
+any roving catch rate (GH \#494).
+
+The instantaneous counts are drawn independently of the simulated trips,
+so the function reports no true total effort or catch, only the true
+rates.
 
 ## Usage
 
@@ -37,7 +57,8 @@ simulate_creel_data(
   day_types = NULL,
   species = "walleye",
   species_weights = NULL,
-  p_complete = 0.75,
+  interview_type = c("access", "roving"),
+  p_complete = NULL,
   p_zero_catch = 0.4,
   n_anglers_per_day = NULL,
   start_date = Sys.Date(),
@@ -56,10 +77,11 @@ simulate_creel_data(
   sub-lists: `effort` (with `gamma_shape`, `gamma_rate` for
   [`rgamma()`](https://rdrr.io/r/stats/GammaDist.html)); `party` (with
   `mean` party size for
-  [`rpois()`](https://rdrr.io/r/stats/Poisson.html)); `catch_per_trip`
-  (with `mean` and `nb_size` for
-  [`rnbinom()`](https://rdrr.io/r/stats/NegBinomial.html)); `harvest`
-  (with `mean_pct` as a percentage, e.g. `35` for 35%); `counts` (with
+  [`rpois()`](https://rdrr.io/r/stats/Poisson.html)); `catch_rate` (with
+  `mean`, the catch per angler-hour, and `nb_size` for
+  [`rnbinom()`](https://rdrr.io/r/stats/NegBinomial.html), default `0.5`
+  when `NULL` or `NA`); `harvest` (with `mean_pct` as a percentage, e.g.
+  `35` for 35%, default `35` when `NULL` or `NA`); `counts` (with
   `mean_total_anglers`, used when `n_anglers_per_day = NULL`).
 
 - season_days:
@@ -75,9 +97,13 @@ simulate_creel_data(
 
   Named **numeric** vector of stratum proportions, e.g.
   `c(weekday = 5/7, weekend = 2/7)`. Names become the `day_type` values
-  in the output. When `NULL` (default), uses a single stratum `"all"`.
-  **Note:** passing a character vector (e.g. `c("weekday", "weekend")`)
-  will error — the vector must be numeric with named elements.
+  in the output. When the names are exactly `weekday` and `weekend`,
+  each day's label comes from its date (Saturday and Sunday are
+  weekends) and the proportions are ignored; any other names are
+  assigned to days at random in the stated proportions. When `NULL`
+  (default), uses a single stratum `"all"`. **Note:** passing a
+  character vector (e.g. `c("weekday", "weekend")`) will error — the
+  vector must be numeric with named elements.
 
 - species:
 
@@ -90,10 +116,17 @@ simulate_creel_data(
   Numeric vector. Relative catch weight per species. Must be same length
   as `species`. Default equal weights.
 
+- interview_type:
+
+  `"access"` (default) or `"roving"`: how the clerk meets parties, and
+  so whether trips are complete or incomplete. See Details. Simulate
+  twice for a survey that collects both.
+
 - p_complete:
 
-  Numeric in (0, 1\]. Probability a trip is complete (intercepted at
-  trip end). Default `0.75`.
+  Removed in tidycreel 9.0.0; supplying it is an error. `interview_type`
+  now decides trip status. The old argument mixed complete and
+  incomplete trips in one length-biased draw (GH \#494).
 
 - p_zero_catch:
 
@@ -146,23 +179,27 @@ simulate_creel_data(
 
 ## Value
 
-A named list with four data frames:
+A named list with four data frames and the true rates:
 
 - `schedule`:
 
   Full-season calendar, one row per day. Columns: `date`, `day_type`,
   `sampled` (logical). Pass directly to
   [`creel_design`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md)
-  as the `calendar` argument. Unsampled days have day_type assigned
-  proportionally from `day_types`.
+  as the `calendar` argument. Day types follow `day_types` as described
+  there.
 
 - `interviews`:
 
   One row per intercepted angler party. Columns: `date`, `day_type`,
-  `interview_id`, `trip_status` (`"complete"` or `"incomplete"`),
-  `hours_fished`, `trip_duration` (total trip length; equals
-  `hours_fished` for complete trips), `n_anglers`, `catch_total`,
-  `catch_kept`, `species_sought`.
+  `interview_id`, `trip_status` (`"complete"` for access, `"incomplete"`
+  for roving), `hours_fished` and `trip_duration` (both the time fished
+  at the interview, as a clerk records it), `true_trip_length` (the
+  whole simulated trip; simulation truth no clerk observes on a roving
+  interview – do not pass it to
+  [`add_interviews`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)),
+  `n_anglers`, `catch_total` and `catch_kept` (both so far),
+  `species_sought`.
 
 - `counts`:
 
@@ -178,6 +215,11 @@ A named list with four data frames:
 
   Long-format catch table. Columns: `interview_id`, `species`, `count`,
   `catch_type` (`"caught"`, `"harvested"`, `"released"`).
+
+- `truth`:
+
+  A list of the population values estimators should recover:
+  `catch_rate` and `harvest_rate`, per angler-hour.
 
 **Pass `angler_hours`, not `total_anglers`, to
 [`add_counts`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md).**
@@ -228,6 +270,11 @@ Programs to simulate catch rate estimation in a roving creel survey of
 anglers. DFO Atlantic Fisheries Research Document 95/99. Department of
 Fisheries and Oceans, St. John's, NL.
 
+Pollock, K.H., Hoenig, J.M., Jones, C.M., Robson, D.S. & Greene, C.J.
+(1997). Catch rate estimation for roving and access point surveys. N.
+Am. J. Fish. Manage. 17: 11–19.
+[doi:10.1577/1548-8675(1997)017\<0011:CREFRA\>2.3.CO;2](https://doi.org/10.1577/1548-8675%281997%29017%3C0011%3ACREFRA%3E2.3.CO%3B2)
+
 Petrere, M. Jr., Giacomini, H.C. & De Marco, P. Jr. (2010).
 Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70:
 483–491.
@@ -247,7 +294,7 @@ Other "Simulation":
 my_params <- list(
   effort         = list(gamma_shape = 2.0, gamma_rate = 0.8),
   party          = list(mean = 1.5),
-  catch_per_trip = list(mean = 1.8, nb_size = 0.5),
+  catch_rate     = list(mean = 0.25, nb_size = 0.5), # fish per angler-hour
   harvest        = list(mean_pct = 35),
   counts         = list(mean_total_anglers = 10)
 )
@@ -271,35 +318,37 @@ head(sim$schedule)
 #> 6 2026-11-20      all   FALSE
 head(sim$interviews)
 #>         date day_type interview_id trip_status hours_fished trip_duration
-#> 1 2026-11-19      all            1    complete        2.249         2.249
-#> 2 2026-11-19      all            6    complete        3.170         3.170
-#> 3 2026-11-19      all            4    complete        3.920         3.920
-#> 4 2026-11-19      all            2    complete        4.609         4.609
-#> 5 2026-11-19      all            5    complete        3.272         3.272
-#> 6 2026-11-19      all            3  incomplete        2.124         4.904
-#>   n_anglers catch_total catch_kept species_sought
-#> 1         1           3          2        walleye
-#> 2         1           1          1        walleye
-#> 3         1           0          0        walleye
-#> 4         2           0          0        walleye
-#> 5         1           0          0        walleye
-#> 6         1           1          0        walleye
+#> 1 2026-11-17      all            8    complete        2.298         2.298
+#> 2 2026-11-17      all            3    complete        4.957         4.957
+#> 3 2026-11-17      all            1    complete        0.482         0.482
+#> 4 2026-11-17      all            5    complete        3.516         3.516
+#> 5 2026-11-17      all           10    complete        5.114         5.114
+#> 6 2026-11-17      all            7    complete        0.620         0.620
+#>   true_trip_length n_anglers catch_total catch_kept species_sought
+#> 1            2.298         1           0          0        walleye
+#> 2            4.957         2           0          0        walleye
+#> 3            0.482         1           0          0        walleye
+#> 4            3.516         1           0          0  northern_pike
+#> 5            5.114         3           0          0        walleye
+#> 6            0.620         2           0          0        walleye
 head(sim$counts)
 #>         date day_type count_time total_anglers
-#> 1 2026-11-17      all          1             9
+#> 1 2026-11-17      all          1             6
 #> 2 2026-11-17      all          2             1
-#> 3 2026-11-17      all          3             9
-#> 4 2026-11-19      all          1             8
+#> 3 2026-11-17      all          3             2
+#> 4 2026-11-19      all          1             3
 #> 5 2026-11-19      all          2             0
-#> 6 2026-11-19      all          3             3
+#> 6 2026-11-19      all          3            11
 head(sim$catch)
-#>   interview_id species count catch_type
-#> 1            1 walleye     3     caught
-#> 2            1 walleye     3  harvested
-#> 3            1 walleye     0   released
-#> 4            6 walleye     1     caught
-#> 5            6 walleye     1  harvested
-#> 6            6 walleye     0   released
+#>   interview_id       species count catch_type
+#> 1           22 northern_pike     1     caught
+#> 2           22 northern_pike     1  harvested
+#> 3           22 northern_pike     0   released
+#> 4           12       walleye     1     caught
+#> 5           12       walleye     0  harvested
+#> 6           12       walleye     1   released
+sim$truth$catch_rate
+#> [1] 0.25
 
 # Multi-stratum simulation with day_types (named numeric vector).
 # `lat` derives the daily fishing period from day_length(), which adds the
@@ -310,6 +359,7 @@ sim2 <- simulate_creel_data(
   season_days    = 90,
   n_sampled_days = 20,
   day_types      = c(weekday = 5/7, weekend = 2/7),
+  interview_type = "roving",
   lat            = 40.699
 )
 
@@ -334,7 +384,7 @@ design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
     n_anglers      = "n_anglers",
     interview_type = "roving"
   )
-#> ℹ 72 interviews have zero catch.
+#> ℹ 54 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 121 interviews: 97 complete (80%), 24 incomplete (20%)
+#> ℹ Added 70 interviews: 0 complete (0%), 70 incomplete (100%)
 ```
