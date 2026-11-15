@@ -666,3 +666,52 @@ test_that("two spellings of one label get one suggestion", {
   expect_match(msg, '"Boat" and "BOAT"')
   expect_no_match(msg, '"boat" and "boat"')
 })
+
+# GH #538: a source code that is also a label --------------------------------
+
+test_that("value_maps refuses a code that is another code's label (free-label column)", {
+  # Why: values already labelled pass through untranslated (a source mid-
+  # migration writes "1" on some rows and "boat" on others). If "boat" is also
+  # a code, a row already labelled "boat" is translated to "shore" -- silently.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(angler_method = c("1" = "boat", "boat" = "shore"))
+    ),
+    "both a source code and a label",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("value_maps refuses a code that is a canonical value mapped elsewhere", {
+  # Why: a canonical value passes through even when no code maps to it, so a
+  # code "complete" -> "incomplete" flips every row already labelled complete.
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = c("1" = "complete", "complete" = "incomplete"))
+    ),
+    "both a source code and a label",
+    class = "creel_error_schema_validation"
+  )
+  expect_error(
+    creel_schema(
+      survey_type = "instantaneous",
+      value_maps  = list(trip_status = c("complete" = "incomplete"))
+    ),
+    "both a source code and a label",
+    class = "creel_error_schema_validation"
+  )
+})
+
+test_that("an identity entry is not a clash", {
+  # "boat" = "boat" translates a value to itself: harmless, and a natural way
+  # to list a migrated source's labels alongside its old codes.
+  expect_no_error(creel_schema(
+    survey_type = "instantaneous",
+    value_maps  = list(
+      angler_method = c("1" = "boat", "boat" = "boat"),
+      trip_status = c("1" = "complete", "complete" = "complete")
+    )
+  ))
+})
