@@ -180,9 +180,11 @@ test_that("Test Q: result length equals number of strata", {
   expect_equal(length(result), length(N_h_ref)) # nolint: object_name_linter
 })
 
-test_that("Test R: sum of reallocated n_h is at least n_total (ceiling may overshoot)", {
+test_that("Test R: the allocation spends exactly n_total days (GH #384)", {
+  # Why: the function answers "how do I split THESE days". Rounding every
+  # stratum up returned a plan for more days than the budget.
   result <- reallocate_strata(36L, N_h = N_h_ref, s2_h = s2_h_ref) # nolint: object_name_linter
-  expect_true(sum(result) >= 36L)
+  expect_identical(sum(result), 36L)
 })
 
 test_that("Test S: Neyman allocation gives more samples to stratum with larger N_h * sqrt(s2_h)", {
@@ -237,5 +239,77 @@ test_that("Test X: reallocate_strata @examples runs without error", {
       N_h = c(weekday = 65, weekend = 28),
       s2_h = c(400, 500)
     )
+  )
+})
+
+# --- GH #384: a feasible allocation ---
+
+test_that("the day-type example from #384 is a plan the season can carry out", {
+  # Why: highuse has 9 days; the old code gave it 10, and the total was 120
+  # for a budget of 118. Both made a plan the season could not carry out.
+  res <- reallocate_strata(118,
+    N_h = c(highuse = 9, weekday = 151, weekend = 54),
+    s2_h = c(297452, 57243, 184405)
+  )
+  expect_identical(sum(res), 118L)
+  expect_identical(res[["highuse"]], 9L)
+  expect_true(all(res <= c(9, 151, 54)))
+})
+
+test_that("awkward weights still sum to n_total", {
+  N_h <- c(a = 31, b = 7, c = 12, d = 19, e = 3) # nolint: object_name_linter
+  s2 <- c(10, 900, 55, 1, 4000)
+  for (n in c(10L, 17L, 33L, 50L, 70L)) {
+    res <- reallocate_strata(n, N_h = N_h, s2_h = s2)
+    expect_identical(sum(res), n, label = paste("n_total =", n))
+    expect_true(all(res <= N_h), label = paste("cap, n_total =", n))
+    expect_true(all(res >= pmin(2, N_h)), label = paste("floor, n_total =", n))
+  }
+})
+
+test_that("a capped stratum's excess goes to the others in Neyman proportion", {
+  # Why: capping is not enough on its own; the freed days must go where
+  # Neyman allocation would send them, not be dropped or spread evenly.
+  N_h <- c(small = 5, x = 100, y = 100) # nolint: object_name_linter
+  s2 <- c(1e6, 100, 400) # small would get far more than 5 uncapped
+  res <- reallocate_strata(40, N_h = N_h, s2_h = s2)
+  expect_identical(res[["small"]], 5L)
+  # x : y weights are 100 * 10 : 100 * 20 = 1 : 2, over the remaining 35 days
+  expect_equal(res[["x"]], 35 / 3, tolerance = 1 / 35 + 0.03)
+  expect_equal(res[["y"]], 70 / 3, tolerance = 1 / 70 + 0.03)
+})
+
+test_that("every stratum keeps at least min_n days so its variance is estimable", {
+  # Why: a stratum with one sampled day has no estimable variance.
+  N_h <- c(quiet = 40, busy = 40) # nolint: object_name_linter
+  res <- reallocate_strata(20, N_h = N_h, s2_h = c(0.01, 1e5))
+  expect_identical(res[["quiet"]], 2L)
+  expect_identical(sum(res), 20L)
+  res3 <- reallocate_strata(20, N_h = N_h, s2_h = c(0.01, 1e5), min_n = 3)
+  expect_identical(res3[["quiet"]], 3L)
+})
+
+test_that("a stratum with fewer days than min_n is censused, not over-allocated", {
+  res <- reallocate_strata(10, N_h = c(one = 1, many = 50), s2_h = c(100, 100))
+  expect_identical(res[["one"]], 1L)
+  expect_identical(sum(res), 10L)
+})
+
+test_that("a census stratum stays a census", {
+  # n_total equal to every day there is: each stratum is sampled completely.
+  N_h <- c(a = 4, b = 9, c = 2) # nolint: object_name_linter
+  res <- reallocate_strata(15, N_h = N_h, s2_h = c(1, 50, 3))
+  expect_identical(unname(res), c(4L, 9L, 2L))
+})
+
+test_that("an infeasible n_total is refused", {
+  # More days than the season has, or fewer than min_n in every stratum.
+  expect_error(
+    reallocate_strata(100, N_h = c(a = 30, b = 40), s2_h = c(1, 1)),
+    class = "creel_error_invalid_input"
+  )
+  expect_error(
+    reallocate_strata(3, N_h = c(a = 30, b = 40), s2_h = c(1, 1)),
+    class = "creel_error_invalid_input"
   )
 })
