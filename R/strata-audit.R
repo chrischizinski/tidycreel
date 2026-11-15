@@ -458,11 +458,25 @@ simulate_strata_collapse <- function(audit, merge_strata) {
 #' )
 reallocate_strata <- function(n_total, N_h, s2_h, min_n = 2L) {
   # nolint start: object_name_linter
-  checkmate::assert_integerish(n_total, lower = 1, len = 1)
-  checkmate::assert_numeric(N_h, lower = 1, min.len = 1, names = "named")
-  checkmate::assert_integerish(N_h)
+  checkmate::assert_integerish(n_total, lower = 1, len = 1, any.missing = FALSE)
+  checkmate::assert_integerish(N_h, lower = 1, min.len = 1, any.missing = FALSE, names = "named")
   checkmate::assert_numeric(s2_h, lower = 0, len = length(N_h))
   checkmate::assert_int(min_n, lower = 1)
+  if (anyNA(s2_h) || any(!is.finite(s2_h))) {
+    # audit_strata() reports NA for a stratum with one sampled day: its
+    # variance is unknown, and choosing a value for it is the caller's call.
+    cli::cli_abort(
+      c(
+        "{.arg s2_h} has a missing or infinite variance for {.val {names(N_h)[!is.finite(s2_h)]}}.",
+        "i" = "A stratum with one sampled day has no variance estimate; supply a pilot value or merge the stratum."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+  # Integer-ish doubles (29 - 3.6e-15) pass the checks above; work in exact
+  # whole numbers so the rounding below cannot drop a day.
+  n_total <- as.integer(round(n_total))
+  N_h <- round(N_h)
 
   floor_h <- pmin(min_n, N_h)
   if (n_total > sum(N_h) || n_total < sum(floor_h)) {
@@ -472,7 +486,7 @@ reallocate_strata <- function(n_total, N_h, s2_h, min_n = 2L) {
         "x" = if (n_total > sum(N_h)) {
           "The strata have {sum(N_h)} day{?s} in all."
         } else {
-          "Giving every stratum at least {.arg min_n} = {min_n} day{?s} needs {sum(floor_h)}."
+          "Giving every stratum at least {.arg min_n} = {min_n} day{?s} (or all its days, if fewer) needs {sum(floor_h)}."
         },
         "i" = "Choose {.arg n_total} between {sum(floor_h)} and {sum(N_h)}."
       ),
@@ -511,27 +525,42 @@ reallocate_strata <- function(n_total, N_h, s2_h, min_n = 2L) {
 
   n_h <- as.integer(round(n_h))
   names(n_h) <- names(N_h)
+  # The plan must be feasible; anything else is a bug here, never a result.
+  if (sum(n_h) != n_total || any(n_h > N_h) || any(n_h < floor_h)) {
+    cli::cli_abort(
+      "Internal error: the allocation broke its bounds or its total.",
+      class = "creel_error_internal"
+    )
+  }
   n_h
   # nolint end: object_name_linter
 }
 
-# clamp(lambda * w, lo, hi) summed to `total`, by bisection on lambda. Returns
-# lo where w is 0. Assumes sum(lo) <= total; returns hi everywhere w > 0 when
-# even that cannot reach total. Internal to reallocate_strata() (GH #384).
+# clamp(lambda * w, lo, hi) summed to `total`, by bisection on log(lambda).
+# Returns lo where w is 0. Assumes 0 < lo and sum(lo) <= total; returns hi
+# everywhere w > 0 when even that cannot reach total. Internal to
+# reallocate_strata() (GH #384).
+#
+# The bracket runs from the lambda that holds every weighted stratum at its
+# floor to the one that puts every one at its cap, and the search is on the
+# log scale: weights can span many orders of magnitude (a pilot variance of
+# 1e-120 beside 400), where halving a linear bracket 200 times never reaches
+# the answer and the shares overspend the budget.
 #' @noRd
 bounded_shares <- function(total, w, lo, hi) {
   at <- function(lambda) pmin(hi, pmax(lo, lambda * w))
-  if (!any(w > 0)) {
+  pos <- w > 0
+  if (!any(pos)) {
     return(lo)
   }
-  upper <- max(hi[w > 0] / w[w > 0])
-  if (sum(at(upper)) <= total) {
-    return(at(upper))
+  upper <- log(max(hi[pos] / w[pos]))
+  if (sum(at(exp(upper))) <= total) {
+    return(at(exp(upper)))
   }
-  lower <- 0
+  lower <- log(min(lo[pos] / w[pos]))
   for (i in seq_len(200L)) {
     mid <- (lower + upper) / 2
-    if (sum(at(mid)) < total) lower <- mid else upper <- mid
+    if (sum(at(exp(mid))) < total) lower <- mid else upper <- mid
   }
-  at(upper)
+  at(exp(upper))
 }

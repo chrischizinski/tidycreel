@@ -274,9 +274,10 @@ test_that("a capped stratum's excess goes to the others in Neyman proportion", {
   s2 <- c(1e6, 100, 400) # small would get far more than 5 uncapped
   res <- reallocate_strata(40, N_h = N_h, s2_h = s2)
   expect_identical(res[["small"]], 5L)
-  # x : y weights are 100 * 10 : 100 * 20 = 1 : 2, over the remaining 35 days
-  expect_equal(res[["x"]], 35 / 3, tolerance = 1 / 35 + 0.03)
-  expect_equal(res[["y"]], 70 / 3, tolerance = 1 / 70 + 0.03)
+  # x : y weights are 100 * 10 : 100 * 20 = 1 : 2, over the remaining 35 days:
+  # continuous shares 11.67 and 23.33; rounding moves each by less than 1.
+  expect_lt(abs(res[["x"]] - 35 / 3), 1)
+  expect_lt(abs(res[["y"]] - 70 / 3), 1)
 })
 
 test_that("every stratum keeps at least min_n days so its variance is estimable", {
@@ -310,6 +311,28 @@ test_that("an infeasible n_total is refused", {
   )
   expect_error(
     reallocate_strata(3, N_h = c(a = 30, b = 40), s2_h = c(1, 1)),
+    class = "creel_error_invalid_input"
+  )
+})
+
+test_that("weights spanning many orders of magnitude still spend n_total", {
+  # Why: a linear bisection bracket of 1e60 never reached the answer, and the
+  # plan came back as 102 days for a budget of 30.
+  res <- reallocate_strata(30, N_h = c(a = 50, b = 50, c = 50), s2_h = c(100, 400, 1e-120))
+  expect_identical(sum(res), 30L)
+  expect_identical(res[["c"]], 2L)
+})
+
+test_that("integer-ish doubles do not lose a day to rounding", {
+  res <- reallocate_strata(0.29 * 100, N_h = c(weekday = 70, weekend = 30), s2_h = c(400, 500))
+  expect_identical(sum(res), 29L)
+})
+
+test_that("a missing pilot variance is refused, not crashed on", {
+  # audit_strata() reports NA for a stratum with one sampled day.
+  expect_error(
+    reallocate_strata(16, N_h = c(a = 10, b = 10), s2_h = c(1, NA)),
+    "missing or infinite variance",
     class = "creel_error_invalid_input"
   )
 })
