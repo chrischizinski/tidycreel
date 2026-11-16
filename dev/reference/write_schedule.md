@@ -35,7 +35,7 @@ write_schedule(
   never holds CSV text. `"csv"` is written with
   [`utils::write.csv()`](https://rdrr.io/r/utils/write.table.html) (no
   row names); `"xlsx"` with
-  [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+  [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl/reference/write_xlsx.html)
   behind an
   [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html)
   guard.

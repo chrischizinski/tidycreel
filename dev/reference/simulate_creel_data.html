@@ -388,7 +388,9 @@ that day) and <code>angler_hours</code> (<code>total_anglers *
 <dt><code>catch</code></dt>
 <dd><p>Long-format catch table. Columns: <code>interview_id</code>,
 <code>species</code>, <code>count</code>, <code>catch_type</code> (<code>"caught"</code>,
-<code>"harvested"</code>, <code>"released"</code>).</p></dd>
+<code>"harvested"</code>, <code>"released"</code>). For each interview the
+rows of each type sum to its <code>catch_total</code>, <code>catch_kept</code>
+and <code>catch_total - catch_kept</code>.</p></dd>
 
 <dt><code>truth</code></dt>
 <dd><p>A list of the population values estimators should
@@ -512,8 +514,8 @@ Catch-per-unit-effort: which estimator is best? Braz. J. Biol. 70: 483–491.
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2            3 walleye     0  harvested</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3            3 walleye     2   released</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4            6 walleye     6     caught</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5            6 walleye     0  harvested</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6            6 walleye     6   released</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5            6 walleye     1  harvested</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6            6 walleye     5   released</span>
 <span class="r-in"><span><span class="va">sim</span><span class="op">$</span><span class="va">truth</span><span class="op">$</span><span class="va">catch_rate</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.25</span>
 <span class="r-in"><span><span class="va">sim</span><span class="op">$</span><span class="va">truth</span><span class="op">$</span><span class="va">effort_season</span></span></span>

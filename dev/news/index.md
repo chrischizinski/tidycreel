@@ -1460,6 +1460,20 @@
 
 ### Bug fixes
 
+- [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/simulate_creel_data.md):
+  the harvested fish in the species catch table now sum to each
+  interview’s `catch_kept`, and the released fish to
+  `catch_total - catch_kept`
+  ([\#651](https://github.com/chrischizinski/tidycreel/issues/651)). The
+  interview’s kept fish are split across species with a multivariate
+  hypergeometric draw. Before, each species’ harvest was a fresh
+  binomial draw, so joining `$interviews` to `$catch` gave two different
+  harvests for the same interview. Interviews, counts and truth are
+  unchanged for a given seed. The `$catch` table is not: the new draw
+  uses a different number of random numbers, so the species split of
+  every row type (caught included) moves, though each interview’s caught
+  total does not.
+
 - One aerial design now serves both
   [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
   and

@@ -36,7 +36,7 @@ write_estimates(
   An explicit format is used for a path with any other extension, but
   refused when the extension names the other format. When `"csv"`, a
   comment header is prepended. When `"xlsx"`,
-  [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl//reference/write_xlsx.html)
+  [`writexl::write_xlsx()`](https://docs.ropensci.org/writexl/reference/write_xlsx.html)
   is used behind an
   [`rlang::check_installed()`](https://rlang.r-lib.org/reference/is_installed.html)
   guard.

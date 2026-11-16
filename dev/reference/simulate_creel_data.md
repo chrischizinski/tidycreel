@@ -227,7 +227,9 @@ A named list with four data frames and the true values:
 - `catch`:
 
   Long-format catch table. Columns: `interview_id`, `species`, `count`,
-  `catch_type` (`"caught"`, `"harvested"`, `"released"`).
+  `catch_type` (`"caught"`, `"harvested"`, `"released"`). For each
+  interview the rows of each type sum to its `catch_total`, `catch_kept`
+  and `catch_total - catch_kept`.
 
 - `truth`:
 
@@ -369,8 +371,8 @@ head(sim$catch)
 #> 2            3 walleye     0  harvested
 #> 3            3 walleye     2   released
 #> 4            6 walleye     6     caught
-#> 5            6 walleye     0  harvested
-#> 6            6 walleye     6   released
+#> 5            6 walleye     1  harvested
+#> 6            6 walleye     5   released
 sim$truth$catch_rate
 #> [1] 0.25
 sim$truth$effort_season
