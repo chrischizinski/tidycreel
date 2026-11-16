@@ -28,16 +28,20 @@
   Every simulated dataset changes for a given seed.
 
 * `example_season_calendar`, `example_season_counts` and
-  `example_season_interviews` are regenerated with the fixed simulator (#494):
-  complete trips from an access run, incomplete trips (catch so far) from a
-  roving run on the same days, at a true catch rate of 0.22 fish per
-  angler-hour. They were built with the old simulator, whose incomplete trips
-  carried the whole trip's catch. Every number from these data changes: 292
-  interviews (201 complete, 91 incomplete) instead of 231, season effort about
-  10,022 angler-hours instead of 9,994, catch rate 0.199 instead of 0.221,
-  total catch about 2,020 instead of 2,230. The sampled days changed with the
-  seed, so `example_roving_interviews`, drawn on those days, is regenerated
-  too (its rate and sizes are unchanged).
+  `example_season_interviews` are regenerated with the fixed simulator (#494,
+  #646): complete trips from an access run, incomplete trips (catch so far)
+  from a roving run of the same seed, which shares the population and the
+  calendar, at a true catch rate of 0.22 fish per angler-hour. The counts are
+  now the anglers fishing at the moment of the count, so 13 of the 36 are
+  zero, and the true season totals are known (4,932 angler-hours, 1,082
+  fish). They were built with the old simulator, whose incomplete trips
+  carried the whole trip's catch and whose counts were unrelated to its
+  trips. Every number from these data changes: 298 interviews (222 complete,
+  76 incomplete) instead of 231, season effort about 4,079 angler-hours
+  instead of 9,994, catch rate 0.180 instead of 0.221, total catch about 740
+  instead of 2,230. The sampled days changed, so `example_roving_interviews`,
+  drawn on those days, is regenerated too (its rate and sizes are
+  unchanged).
 * `simulate_creel_data()` now simulates catch that accrues over time fished,
   and interviews of one kind at a time (#494, #488). Before, each party drew
   one whole-trip catch regardless of hours fished or party size, so the
@@ -98,8 +102,8 @@
   `"period_total"`, the season total, instead of `"sampled_days"`, the total
   over the days that were counted (#487). Both printed as "Method: Total", so
   a default call on a partly sampled season reported a fraction of it: on
-  `example_season_*` (36 of 120 days sampled) effort is 3,010 angler-hours
-  against a season of 10,022. Every default effort and total on a design that
+  `example_season_*` (36 of 120 days sampled) effort is 1,218 angler-hours
+  against a season of 4,079. Every default effort and total on a design that
   did not sample every day changes. To keep the old numbers, pass
   `target = "sampled_days"`. A design that cannot expand now refuses a call
   that names no target: bus-route and ice designs without the register of

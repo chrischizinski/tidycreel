@@ -75,8 +75,11 @@ test_that("an estimate holds only its own call's warnings", {
   first <- raised(estimate_catch_rate(design))
   expect_gt(nrow(get_warnings(first$value)), 0)
   second <- raised(estimate_effort(design, target = "period_total"))
-  expect_identical(second$classes, character())
-  expect_identical(nrow(get_warnings(second$value)), 0L)
+  # The effort call raises its own conditions (the season counts include
+  # zeros since #646); it must hold those and not the rate's truncation.
+  expect_false("creel_warning_mor_truncation" %in% second$classes)
+  expect_false("creel_warning_mor_truncation" %in% get_warnings(second$value)$class)
+  expect_setequal(get_warnings(second$value)$class, second$classes)
 })
 
 test_that("a design keeps the warnings of each step that built it", {

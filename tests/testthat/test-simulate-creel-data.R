@@ -677,3 +677,12 @@ test_that("truth$days adds up to the season and sampled-day totals", {
   expect_equal(sum(d$catch[d$sampled]), sim$truth$catch_sampled_days)
   expect_identical(d$sampled, sim$schedule$sampled)
 })
+
+test_that("random stratum labels do not move with the survey", {
+  # Custom day_types are drawn at random; they belong to the season, so a
+  # different n_sampled_days must not relabel the days.
+  a <- sim12(params = test_params, season_days = 40L, n_sampled_days = 5L, day_types = c(open = 0.6, holiday = 0.4), seed = 6467L)
+  b <- sim12(params = test_params, season_days = 40L, n_sampled_days = 25L, day_types = c(open = 0.6, holiday = 0.4), seed = 6467L)
+  expect_identical(a$schedule$day_type, b$schedule$day_type)
+  expect_identical(a$truth$days[c("date", "day_type", "effort")], b$truth$days[c("date", "day_type", "effort")])
+})

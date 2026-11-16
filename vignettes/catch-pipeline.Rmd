@@ -156,7 +156,7 @@ estimate_effort(design, target = "period_total")$estimates$estimate *
   estimate_catch_rate(design)$estimates$estimate
 ```
 
-Here the difference is about 1%, but it grows when strata differ more in rate
+Here the difference is about 0.5%, but it grows when strata differ more in rate
 and in how heavily they were interviewed.
 
 ## The standard error of a product
@@ -226,9 +226,10 @@ data.frame(
 )
 ```
 
-In both strata the rate part is the larger: about two and a half times the
-effort part on weekdays, and only slightly larger on weekends. This says where
-the uncertainty comes from. It
+On weekdays the two parts are about equal, the rate part slightly the larger.
+On weekends the effort part is nearly four times the rate part: only 9 weekend
+days were counted, and their counts vary widely. This says where the
+uncertainty comes from. It
 does not by itself say whether to collect more counts or more interviews:
 that also depends on what each costs, and on the fact that more sampled days
 improve both.

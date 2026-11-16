@@ -53,8 +53,8 @@ table(example_season_calendar$day_type, example_season_calendar$sampled)
 ```
 
 The calendar lists every day of the season, not only the sampled ones, and
-splits them into weekdays and weekends. The clerk sampled 25 of the 86
-weekdays and 11 of the 34 weekend days. That list of every day is what lets
+splits them into weekdays and weekends. The clerk sampled 27 of the 86
+weekdays and 9 of the 34 weekend days. That list of every day is what lets
 tidycreel expand from the days that were sampled to the whole season.
 
 ## Survey design
@@ -85,6 +85,12 @@ stands for. Here the single count on each day represents the whole 14-hour
 fishing day, so `daylight_hours` is the period length. Effort for a day is the
 count times that length, in angler-hours.
 
+On 13 of the 36 days the clerk counted no one. tidycreel notes the zeros
+when it estimates effort, in case a missing count was entered as 0. Here they
+are real: an empty lake at the moment of the count is an observation, and it
+belongs in the estimate, just as a party that caught nothing belongs in the
+catch rate.
+
 Leaving out `period_length_col` still gives an estimate, but its unit is
 unknown, and `estimate_effort()` warns that no period length was supplied.
 tidycreel derives units from what you give it and never assumes one.
@@ -99,10 +105,12 @@ estimate_effort(design, target = "sampled_days")
 ```
 
 The first estimate, the default (`target = "period_total"`), is the effort
-**over the whole 120-day season**, about 10,022 angler-hours. That season total
+**over the whole 120-day season**, about 4,079 angler-hours. (These data are
+simulated, so the true season effort is known: 4,932 angler-hours, inside the
+95% confidence interval.) That season total
 is the number usually reported. Each stratum's mean daily effort is multiplied
 by the number of days in that stratum, then the strata are added. The second is
-the effort **on the 36 days that were sampled**: 3,010 angler-hours. Ask for it
+the effort **on the 36 days that were sampled**: 1,218 angler-hours. Ask for it
 with `target = "sampled_days"`.
 
 The standard error comes from the day-to-day variation among the sampled days
@@ -120,10 +128,12 @@ Estimates can be broken down by any column in the design with `by`:
 estimate_effort(design, by = day_type, target = "period_total")
 ```
 
-The 86 weekdays account for most of the season's effort, about 7,080
-angler-hours to the weekends' 2,940, but only because there are more of them.
-Per day, an average weekend day saw slightly more: about 87 angler-hours,
-against 82 on an average weekday.
+The 86 weekdays account for most of the season's effort, about 2,809
+angler-hours to the weekends' 1,269, but only because there are more of them.
+Per day, an average weekend day saw slightly more: about 37 angler-hours,
+against 33 on an average weekday. With only 9 weekend days sampled, the
+weekend estimate is imprecise, and its symmetric confidence interval reaches
+below zero.
 
 ## Interviews
 
@@ -140,7 +150,7 @@ design <- add_interviews(design, example_season_interviews,
 ```
 
 Each row is one party. `add_interviews()` checks the interviews as it attaches
-them and reports what it found: 201 complete trips, 91 incomplete, and 230
+them and reports what it found: 222 complete trips, 76 incomplete, and 238
 parties that caught nothing. Most anglers on most fisheries go home without a
 fish, and those zeros belong in the catch rate. The count is shown because, on
 a real data sheet, a column of zeros can also mean a catch that was never
@@ -159,11 +169,11 @@ estimate_catch_rate(design)
 estimate_harvest_rate(design)
 ```
 
-The catch rate is about 0.20 fish per angler-hour, and the harvest rate about
-0.07. Both are ratio-of-means estimates, total catch divided by total effort
+The catch rate is about 0.18 fish per angler-hour, and the harvest rate about
+0.06. Both are ratio-of-means estimates, total catch divided by total effort
 across the interviews. These data were simulated with a true catch rate of
 0.22, inside the estimate's confidence interval. By default the rates use only
-the 201 complete trips.
+the 222 complete trips.
 A party interviewed while still fishing is more likely to be met the longer it
 stays, so incomplete trips over-represent long trips (length-of-stay bias) and
 give a biased catch rate unless the rate is steady through a trip. `vignette("incomplete-trips")` covers when and how
@@ -178,7 +188,7 @@ estimate_total_harvest(design, target = "period_total")
 
 A total is effort times rate, with the uncertainty of both carried into its
 standard error. The unit follows: angler-hours times fish per angler-hour is
-fish. About 2,020 fish were caught over the season, and about 670 were kept.
+fish. About 740 fish were caught over the season, and about 240 were kept.
 These totals take `target` too, and need `target = "period_total"` for the
 season, just as effort does.
 

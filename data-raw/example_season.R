@@ -1,9 +1,4 @@
 ## Script to create the example_season_* datasets
-##
-## NOT REPRODUCIBLE AS WRITTEN since GH #646 changed simulate_creel_data():
-## counts are now the anglers present at random moments of the simulated
-## trips, so this script no longer recreates the committed .rda files. They
-## are regenerated in the follow-up to #646.
 ## One simulated 120-day season (May 1 - August 28, 2024) with weekday/weekend
 ## strata, 36 sampled days, one instantaneous count per sampled day, and
 ## interviews. Used by the Getting Started vignette to show a complete season:
@@ -14,13 +9,19 @@
 ## - An access run gives the calendar, the counts and the complete-trip
 ##   interviews: every finishing party has the same chance of being met.
 ## - A roving run with the SAME seed gives the incomplete-trip interviews.
-##   The seed draws the sampled days before anything else, so both runs share
-##   one calendar (checked below). Its catch is the catch so far. The tutorial
-##   shows add_interviews() finding these trips and setting them aside.
+##   The simulator draws the season's trips before anything about the survey
+##   (GH #646), so both runs share one population and one calendar (checked
+##   below). Its catch is the catch so far, part of each trip's own catch.
+##   The tutorial shows add_interviews() finding these trips and setting
+##   them aside.
+## - Counts are the anglers fishing at a random moment of each sampled day, so
+##   count x 14 h is unbiased for the day's angler-hours, and the season's true
+##   effort and catch are known (truth$effort_season, truth$catch_season).
 ## - catch_rate 0.22 fish per angler-hour, the rate example_roving_interviews
 ##   was simulated with, so the two example sets share one true rate.
-## Seed 2056 (the first from 2031 up): no sampled day has a zero count, so the
-## tutorial runs without the zero-count advisory (checked below).
+## Seed 2056. With about 10 parties a day, some sampled days count no one at
+## the moment of the count (13 of 36 here); those zeros are observations of an
+## empty lake and stay in the data, as the tutorial explains.
 ## true_trip_length is simulation truth no clerk observes; it is dropped, as
 ## is trip_duration (equal to hours_fished here).
 
@@ -49,7 +50,10 @@ simulate_season <- function(interview_type) {
 }
 access <- simulate_season("access")
 roving <- simulate_season("roving")
-stopifnot(identical(access$schedule, roving$schedule))
+stopifnot(
+  identical(access$schedule, roving$schedule),
+  identical(access$truth$days, roving$truth$days)
+)
 
 example_season_calendar <- access$schedule[, c("date", "day_type", "sampled")]
 
@@ -75,7 +79,7 @@ rownames(example_season_counts) <- NULL
 stopifnot(
   nrow(example_season_calendar) == 120,
   sum(example_season_calendar$sampled) == 36,
-  all(example_season_counts$total_anglers > 0),
+  all(example_season_counts$total_anglers >= 0),
   all(example_season_interviews$catch_kept <= example_season_interviews$catch_total),
   all(example_season_interviews$hours_fished > 0),
   all(example_season_interviews$date %in% example_season_counts$date)
