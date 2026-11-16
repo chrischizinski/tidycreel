@@ -445,9 +445,9 @@ simulate_creel_data <- function(
     )
   }
 
-  # ── Season calendar: sample n_sampled_days from season_days ─────────────────
-  samp_idx <- sort(sample.int(season_days, n_sampled_days, replace = FALSE))
-
+  # ── Season calendar ───────────────────────────────────────────────────────────
+  # Day types first, then the sample of days: random stratum labels belong to
+  # the season, so they must not move when n_sampled_days does.
   dt_names <- names(day_types)
   n_dt <- length(day_types)
   if (setequal(dt_names, c("weekday", "weekend"))) {
@@ -460,6 +460,8 @@ simulate_creel_data <- function(
     # stated proportions.
     all_day_types <- dt_names[sample.int(n_dt, season_days, replace = TRUE, prob = day_types)]
   }
+
+  samp_idx <- sort(sample.int(season_days, n_sampled_days, replace = FALSE))
 
   # ── The survey: interviews and counts on the sampled days ──────────────────────
   interview_rows <- vector("list", season_days)
