@@ -28,7 +28,10 @@ test_that("counts and interviews fall on exactly the sampled days", {
   sampled <- example_season_calendar$date[example_season_calendar$sampled]
   expect_setequal(example_season_counts$date, sampled)
   expect_true(all(example_season_interviews$date %in% sampled))
-  expect_true(all(example_season_counts$total_anglers > 0))
+  # Zero counts are real here (an empty lake at the moment of the count, #646):
+  # non-negative, and the tutorial's explanation of them needs some.
+  expect_true(all(example_season_counts$total_anglers >= 0))
+  expect_true(any(example_season_counts$total_anglers == 0))
   expect_true(all(
     example_season_interviews$catch_kept <= example_season_interviews$catch_total
   ))

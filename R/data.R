@@ -65,18 +65,20 @@
 #' Interviews from the 36 sampled days in [example_season_calendar], one row
 #' per angling party. Most were met at the access point as they finished
 #' (complete trips, every finishing party with the same chance); about a
-#' third were met while still fishing (incomplete trips, met in proportion to
+#' quarter were met while still fishing (incomplete trips, met in proportion to
 #' how long they fish, with the catch so far). Most parties caught nothing, as
 #' on most real fisheries.
 #'
 #' Catch accrues over the time fished at a true rate of 0.22 fish per
-#' angler-hour, the same rate as [example_roving_interviews].
+#' angler-hour, the same rate as [example_roving_interviews]. The counts come
+#' from the same simulated trips, so the season's true totals are known: 4,932
+#' angler-hours of effort and 1,082 fish caught.
 #'
-#' @format A data frame with 292 rows and 8 columns:
+#' @format A data frame with 298 rows and 8 columns:
 #' \describe{
 #'   \item{date}{Interview date (Date class), a sampled day in the calendar}
 #'   \item{day_type}{Day type stratum: "weekday" or "weekend"}
-#'   \item{interview_id}{Integer interview identifier, 1 to 292}
+#'   \item{interview_id}{Integer interview identifier, 1 to 298}
 #'   \item{trip_status}{"complete" or "incomplete"}
 #'   \item{hours_fished}{Hours the party had fished when interviewed: the
 #'     whole trip if complete, the time so far if incomplete}

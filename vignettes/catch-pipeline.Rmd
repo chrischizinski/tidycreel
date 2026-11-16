@@ -156,7 +156,7 @@ estimate_effort(design, target = "period_total")$estimates$estimate *
   estimate_catch_rate(design)$estimates$estimate
 ```
 
-Here the difference is about 1%, but it grows when strata differ more in rate
+Here the difference is about 0.5%, but it grows when strata differ more in rate
 and in how heavily they were interviewed.
 
 ## The standard error of a product
