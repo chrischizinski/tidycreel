@@ -6,8 +6,12 @@ test_params <- list(
   counts = list(mean_total_anglers = 10)
 )
 
+# The fishing day needs a length since GH #646; these tests are not about it,
+# so they share one. sim12() is simulate_creel_data() with a 12-hour day.
+sim12 <- function(...) simulate_creel_data(..., daylight_hours = 12)
+
 test_that("simulate_creel_data returns correct structure", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 30L,
     n_sampled_days = 5L,
@@ -20,7 +24,7 @@ test_that("simulate_creel_data returns correct structure", {
 })
 
 test_that("simulate_creel_data interviews have required columns", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
@@ -43,17 +47,17 @@ test_that("simulate_creel_data interviews have required columns", {
 })
 
 test_that("simulate_creel_data counts have required columns", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
     seed = 3L
   )
-  expect_true(all(c("date", "day_type", "count_time", "total_anglers") %in% names(sim$counts)))
+  expect_true(all(c("date", "day_type", "count_time", "total_anglers", "daylight_hours", "angler_hours") %in% names(sim$counts)))
 })
 
 test_that("simulate_creel_data counts: count_time is 1..n per day", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
@@ -65,7 +69,7 @@ test_that("simulate_creel_data counts: count_time is 1..n per day", {
 })
 
 test_that("simulate_creel_data catch has required columns", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
@@ -82,7 +86,7 @@ test_that("simulate_creel_data catch has required columns", {
 })
 
 test_that("simulate_creel_data date column is Date class", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
@@ -95,8 +99,8 @@ test_that("simulate_creel_data date column is Date class", {
 })
 
 test_that("simulate_creel_data trip_status follows interview_type", {
-  access <- simulate_creel_data(params = test_params, season_days = 30L, n_sampled_days = 10L, seed = 6L)
-  roving <- simulate_creel_data(
+  access <- sim12(params = test_params, season_days = 30L, n_sampled_days = 10L, seed = 6L)
+  roving <- sim12(
     params = test_params, season_days = 30L, n_sampled_days = 10L, seed = 6L,
     interview_type = "roving"
   )
@@ -111,7 +115,7 @@ test_that("simulate_creel_data roving: trip_duration is the time so far (GH #488
   # interview, and truncate_at filters on it. A party met 10 minutes in with
   # 3 hours to go must not pass a 0.5 h truncation on simulated data when it
   # would fail on real data. The full length is simulation truth only.
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params, season_days = 40L, n_sampled_days = 15L, seed = 7L,
     interview_type = "roving"
   )
@@ -123,7 +127,7 @@ test_that("simulate_creel_data roving: trip_duration is the time so far (GH #488
 })
 
 test_that("simulate_creel_data n_anglers >= 1", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 30L,
     n_sampled_days = 8L,
@@ -135,7 +139,7 @@ test_that("simulate_creel_data n_anglers >= 1", {
 })
 
 test_that("simulate_creel_data catch_kept <= catch_total", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 30L,
     n_sampled_days = 10L,
@@ -147,13 +151,13 @@ test_that("simulate_creel_data catch_kept <= catch_total", {
 })
 
 test_that("simulate_creel_data is reproducible with seed", {
-  s1 <- simulate_creel_data(
+  s1 <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
     seed = 42L
   )
-  s2 <- simulate_creel_data(
+  s2 <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
@@ -164,7 +168,7 @@ test_that("simulate_creel_data is reproducible with seed", {
 })
 
 test_that("simulate_creel_data counts: n_counts_per_day respected", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 10L,
     n_sampled_days = 4L,
@@ -176,7 +180,7 @@ test_that("simulate_creel_data counts: n_counts_per_day respected", {
 })
 
 test_that("simulate_creel_data respects day_types stratification", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 50L,
     n_sampled_days = 20L,
@@ -202,8 +206,8 @@ test_that("simulate_creel_data different params produce different results", {
     harvest = list(mean_pct = 35),
     counts = list(mean_total_anglers = 10)
   )
-  hi <- simulate_creel_data(params = hi_effort, season_days = 60L, n_sampled_days = 20L, seed = 12L)
-  lo <- simulate_creel_data(params = lo_effort, season_days = 60L, n_sampled_days = 20L, seed = 12L)
+  hi <- sim12(params = hi_effort, season_days = 60L, n_sampled_days = 20L, seed = 12L)
+  lo <- sim12(params = lo_effort, season_days = 60L, n_sampled_days = 20L, seed = 12L)
   hi_mean <- mean(hi$interviews$hours_fished)
   lo_mean <- mean(lo$interviews$hours_fished)
   expect_false(is.nan(hi_mean), label = "hi_mean must not be NaN")
@@ -212,7 +216,7 @@ test_that("simulate_creel_data different params produce different results", {
 })
 
 test_that("simulate_creel_data multi-species splits catch across species", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 30L,
     n_sampled_days = 10L,
@@ -228,7 +232,7 @@ test_that("simulate_creel_data multi-species splits catch across species", {
 test_that("simulate_creel_data empty result on 0 encounters is valid", {
   sparse_params <- test_params
   sparse_params$counts$mean_total_anglers <- 0.01
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = sparse_params,
     season_days = 5L,
     n_sampled_days = 2L,
@@ -240,7 +244,7 @@ test_that("simulate_creel_data empty result on 0 encounters is valid", {
 # ── schedule component ─────────────────────────────────────────────────────────
 
 test_that("SIM-SCH-01: schedule has required columns and correct types", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
@@ -253,7 +257,7 @@ test_that("SIM-SCH-01: schedule has required columns and correct types", {
 })
 
 test_that("SIM-SCH-02: schedule has exactly season_days rows", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 45L,
     n_sampled_days = 10L,
@@ -263,7 +267,7 @@ test_that("SIM-SCH-02: schedule has exactly season_days rows", {
 })
 
 test_that("SIM-SCH-03: schedule$sampled TRUE count equals n_sampled_days", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 30L,
     n_sampled_days = 8L,
@@ -273,7 +277,7 @@ test_that("SIM-SCH-03: schedule$sampled TRUE count equals n_sampled_days", {
 })
 
 test_that("SIM-SCH-04: sampled days match interview and count dates", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 30L,
     n_sampled_days = 8L,
@@ -285,7 +289,7 @@ test_that("SIM-SCH-04: sampled days match interview and count dates", {
 })
 
 test_that("SIM-SCH-05: schedule passes validate_calendar_schema (pipeable into creel_design)", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 20L,
     n_sampled_days = 5L,
@@ -295,7 +299,7 @@ test_that("SIM-SCH-05: schedule passes validate_calendar_schema (pipeable into c
 })
 
 test_that("SIM-SCH-06: multi-stratum schedule contains only declared day_type levels", {
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 30L,
     n_sampled_days = 8L,
@@ -307,7 +311,7 @@ test_that("SIM-SCH-06: multi-stratum schedule contains only declared day_type le
 
 test_that("SIM-SCH-07: day_types character vector errors with informative message", {
   expect_error(
-    simulate_creel_data(params = test_params, day_types = c("weekday", "weekend"), seed = 16L),
+    sim12(params = test_params, day_types = c("weekday", "weekend"), seed = 16L),
     regexp = "numeric"
   )
 })
@@ -393,7 +397,7 @@ test_that("a supplied seed does not reset the caller's RNG stream (SEED-01)", {
   expect_identical(runif(1), want)
 
   set.seed(999)
-  invisible(suppressMessages(simulate_creel_data(
+  invisible(suppressMessages(sim12(
     params         = test_params,
     season_days    = 20,
     n_sampled_days = 5,
@@ -411,10 +415,10 @@ test_that("seed still reproduces, which is the point of it (SEED-02)", {
   expect_identical(a, b)
   expect_false(identical(a, suppressMessages(simulate_creel_catch(n = 6, seed = 43))))
 
-  d1 <- suppressMessages(simulate_creel_data(
+  d1 <- suppressMessages(sim12(
     params = test_params, season_days = 20, n_sampled_days = 5, seed = 7
   ))
-  d2 <- suppressMessages(simulate_creel_data(
+  d2 <- suppressMessages(sim12(
     params = test_params, season_days = 20, n_sampled_days = 5, seed = 7
   ))
   expect_identical(d1, d2)
@@ -456,7 +460,7 @@ test_that("a session that never drew is left without a seed (SEED-04)", {
 # the true rate, interviewed trip lengths about +-3 %. The defects they guard
 # against are far larger (MOR 2.5x the rate; 3.75 h against 2.5 h).
 big_sim <- function(interview_type, seed = 494L, params = test_params) {
-  simulate_creel_data(
+  sim12(
     params = params,
     season_days = 300L,
     n_sampled_days = 250L,
@@ -516,14 +520,14 @@ test_that("the old per-trip catch parameter is refused, not reinterpreted", {
   old$catch_rate <- NULL
   old$catch_per_trip <- list(mean = 1.8, nb_size = 0.5)
   expect_error(
-    simulate_creel_data(params = old, season_days = 10L, n_sampled_days = 3L, seed = 1L),
+    sim12(params = old, season_days = 10L, n_sampled_days = 3L, seed = 1L),
     class = "creel_error_simulate_removed_input"
   )
 })
 
 test_that("p_complete is refused: interview_type decides trip status", {
   expect_error(
-    simulate_creel_data(
+    sim12(
       params = test_params, season_days = 10L, n_sampled_days = 3L, seed = 1L,
       p_complete = 0.75
     ),
@@ -534,7 +538,7 @@ test_that("p_complete is refused: interview_type decides trip status", {
 test_that("weekday/weekend day types come from the date (GH #488)", {
   # Why: a reader checking a simulated date against a calendar must find a
   # weekend on a Saturday or Sunday.
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 60L,
     n_sampled_days = 20L,
@@ -560,7 +564,7 @@ test_that("weekday/weekend day types come from the date (GH #488)", {
 test_that("other day-type names are assigned at random in the stated proportions", {
   # Why: weekday/weekend now come from the date, so the random branch needs
   # its own test; without it a regression for custom strata would pass.
-  sim <- simulate_creel_data(
+  sim <- sim12(
     params = test_params,
     season_days = 2000L,
     n_sampled_days = 10L,
@@ -580,7 +584,96 @@ test_that("a supplied non-positive nb_size is refused, not replaced", {
   bad <- test_params
   bad$catch_rate$nb_size <- 0
   expect_error(
-    simulate_creel_data(params = bad, season_days = 10L, n_sampled_days = 3L, seed = 1L),
+    sim12(params = bad, season_days = 10L, n_sampled_days = 3L, seed = 1L),
     "nb_size"
   )
+})
+
+# ── counts coherent with the trips; season truth (GH #646) ─────────────────────
+
+test_that("the counts estimate the same effort the trips put in", {
+  # Why: counts were drawn independently of the trips, so effort from counts
+  # and the trips' angler-hours described two unrelated populations. A count
+  # at a random moment times the day length is unbiased for the day's
+  # angler-hours (Hoenig et al. 1993), so on average they must agree.
+  sim <- sim12(
+    params = test_params, season_days = 300L, n_sampled_days = 250L,
+    n_anglers_per_day = 30, n_counts_per_day = 4L, seed = 646L
+  )
+  per_day <- tapply(sim$counts$angler_hours, sim$counts$date, mean)
+  # Over 10 seeds the ratio ran 0.965-1.020.
+  expect_equal(sum(per_day), sim$truth$effort_sampled_days, tolerance = 0.08)
+})
+
+test_that("estimate_effort() on simulated data recovers the true season effort", {
+  # The whole chain: simulate -> design -> season total, checked against truth.
+  sim <- sim12(
+    params = test_params, season_days = 200L, n_sampled_days = 120L,
+    day_types = c(weekday = 5 / 7, weekend = 2 / 7),
+    n_anglers_per_day = 30, n_counts_per_day = 4L, seed = 6461L
+  )
+  design <- creel_design(sim$schedule, date = date, strata = day_type)
+  design <- add_counts(design, sim$counts[, c("date", "day_type", "count_time", "total_anglers", "daylight_hours")],
+    count_col = total_anglers, count_time_col = count_time, period_length_col = daylight_hours
+  )
+  est <- suppressMessages(estimate_effort(design, target = "period_total"))
+  # A sampling estimate: with one count a day it ran 0.87-1.11 of the truth
+  # over 10 seeds. The independent counts this replaced came out near 1.7.
+  expect_equal(est$estimates$estimate, sim$truth$effort_season, tolerance = 0.2)
+})
+
+test_that("season truth: catch is the true rate times the true effort", {
+  sim <- sim12(
+    params = test_params, season_days = 300L, n_sampled_days = 30L,
+    n_anglers_per_day = 30, seed = 6462L
+  )
+  tr <- sim$truth
+  expect_gt(tr$effort_season, tr$effort_sampled_days)
+  expect_equal(tr$catch_season / tr$effort_season, tr$catch_rate, tolerance = 0.15)
+  expect_lte(tr$harvest_season, tr$catch_season)
+})
+
+test_that("interviews never report more catch than the day's trips caught", {
+  # Why: an interview records part of the day's population -- the whole trip
+  # at access, the catch so far when roving. Drawn independently of the
+  # trips, a day's interviews could report more fish than were caught.
+  for (type in c("access", "roving")) {
+    sim <- sim12(params = test_params, season_days = 60L, n_sampled_days = 60L, seed = 6463L, interview_type = type)
+    by_day <- tapply(sim$interviews$catch_total, sim$interviews$date, sum)
+    caught <- sim$truth$days$catch[match(as.Date(names(by_day)), sim$truth$days$date)]
+    expect_true(all(by_day <= caught), label = type)
+    kept <- tapply(sim$interviews$catch_kept, sim$interviews$date, sum)
+    expect_true(all(kept <= sim$truth$days$harvest[match(as.Date(names(kept)), sim$truth$days$date)]), label = type)
+  }
+})
+
+test_that("no count exceeds the anglers fishing that day", {
+  # Why: a count is the anglers present at one moment, so it can never exceed
+  # everyone who fished that day; the independent counts this replaced could.
+  sim <- sim12(params = test_params, season_days = 40L, n_sampled_days = 40L, n_counts_per_day = 3L, seed = 6464L)
+  anglers <- sim$truth$days$anglers[match(sim$counts$date, sim$truth$days$date)]
+  expect_true(all(sim$counts$total_anglers <= anglers))
+  expect_true(any(sim$counts$total_anglers > 0))
+  expect_equal(sim$counts$angler_hours, sim$counts$total_anglers * 12)
+})
+
+test_that("one seed gives one population, whatever the survey", {
+  # Why: comparing designs on simulated data needs the same population under
+  # each. The trips are drawn before the survey, so the truth must not move
+  # with interview_type, n_sampled_days or n_counts_per_day.
+  a <- sim12(params = test_params, season_days = 50L, n_sampled_days = 10L, seed = 6465L)
+  r <- sim12(params = test_params, season_days = 50L, n_sampled_days = 10L, seed = 6465L, interview_type = "roving")
+  m <- sim12(params = test_params, season_days = 50L, n_sampled_days = 30L, n_counts_per_day = 5L, seed = 6465L)
+  expect_identical(a$truth$days[c("date", "parties", "effort", "catch")], r$truth$days[c("date", "parties", "effort", "catch")])
+  expect_identical(a$truth$days[c("date", "parties", "effort", "catch")], m$truth$days[c("date", "parties", "effort", "catch")])
+  expect_identical(a$schedule, r$schedule)
+})
+
+test_that("truth$days adds up to the season and sampled-day totals", {
+  sim <- sim12(params = test_params, season_days = 30L, n_sampled_days = 10L, seed = 6466L)
+  d <- sim$truth$days
+  expect_identical(nrow(d), 30L)
+  expect_equal(sum(d$effort), sim$truth$effort_season)
+  expect_equal(sum(d$catch[d$sampled]), sim$truth$catch_sampled_days)
+  expect_identical(d$sampled, sim$schedule$sampled)
 })

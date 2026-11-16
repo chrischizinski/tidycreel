@@ -10,6 +10,23 @@
 
 ## Breaking changes
 
+* `simulate_creel_data()` derives its counts from the trips it simulates, and
+  reports the true effort, catch and harvest (#646). Each trip now has a start
+  time within the fishing day; a count is the number of anglers fishing at a
+  uniformly random moment, so count times the day length is unbiased for the
+  day's angler-hours (Hoenig et al. 1993). Trips are simulated on every
+  season day, and `truth` gains `effort_*`, `catch_*` and `harvest_*` over the
+  sampled days and over the season. Before, counts were drawn independently
+  of the trips, so effort from the counts and catch from the interviews
+  described unrelated populations, and a simulation study had no true total
+  to check an estimator against. `lat` or `daylight_hours` is now required
+  (the day needs a length), and the counts table always carries
+  `daylight_hours` and `angler_hours`. A roving interview's catch so far is
+  now part of its trip's own catch. The population is simulated before the
+  survey, so one seed gives one population whatever `interview_type`,
+  `n_sampled_days` or `n_counts_per_day`; `truth$days` reports each day.
+  Every simulated dataset changes for a given seed.
+
 * `example_season_calendar`, `example_season_counts` and
   `example_season_interviews` are regenerated with the fixed simulator (#494):
   complete trips from an access run, incomplete trips (catch so far) from a
@@ -51,9 +68,7 @@
   - `day_types` named `weekday` and `weekend` now label each day from its date
     (#488); other names are still assigned at random.
   - The result gains `truth`: the true `catch_rate` and `harvest_rate` per
-    angler-hour.
-  The counts are still drawn independently of the trips, so there is no true
-  total effort or catch to report yet (#646).
+    angler-hour (and, since #646, the true totals).
 * Reading a field that is not part of a `creel_design` is now an error
   (#594), with class `creel_error_design_unknown_field` and a suggestion
   for a close name. `design$conunt_col` returned `NULL`, which the package
