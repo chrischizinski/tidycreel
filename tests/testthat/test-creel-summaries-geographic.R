@@ -316,12 +316,16 @@ test_that("summarize_by_county() restores the leading zero of an integer zip (#3
 
 test_that("summarize_by_county() maps a factor zip column by its labels (#376)", {
   skip_if_not_installed("zipcodeR")
-  # A factor indexes by its integer codes (1, 2), the same position bug
-  chr <- summarize_by_county(make_zip_design())
+  # A factor indexes by its integer codes, the same position bug. The levels
+  # run opposite to the lookup's row order (02134 sorts first) and the two zips
+  # are in different counties, so a positional lookup gives the wrong county.
+  zips <- c("68502", "68502", "02134", NA)
+  chr <- summarize_by_county(make_zip_design(zips))
   fct <- summarize_by_county(
-    make_zip_design(factor(c("68502", "68502", NA, "68508", NA)))
+    make_zip_design(factor(zips, levels = c("68502", "02134")))
   )
   expect_identical(fct, chr)
+  expect_true(all(c("Lancaster County", "Suffolk County") %in% fct$county))
 })
 
 test_that("summarize_by_county() refuses a numeric zip that is not a whole number (#376)", {
