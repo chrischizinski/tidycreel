@@ -1062,7 +1062,10 @@ test_that("GLMM-10: default formula fits with spaced time and count columns (#40
   res_spaced <- estimate_effort_aerial_glmm(spaced, time_col = `time of flight`)
   res_plain <- estimate_effort_aerial_glmm(plain, time_col = time_of_flight)
   expect_equal(res_spaced$estimates$estimate, res_plain$estimates$estimate)
-  expect_equal(res_spaced$estimates$se, res_plain$estimates$se)
+  # $estimates$se is NA under an unknown visibility correction; the model
+  # term is the uncertainty the formula itself determines
+  expect_true(is.finite(res_spaced$se_components$model))
+  expect_equal(res_spaced$se_components$model, res_plain$se_components$model)
 })
 
 test_that("GLMM-10: grouped fit and its BIC shape check parse spaced names (#400)", {
