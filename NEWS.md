@@ -1061,8 +1061,9 @@
   species with a multivariate hypergeometric draw. Before, each species' harvest
   was a fresh binomial draw, so joining `$interviews` to `$catch` gave two
   different harvests for the same interview. Interviews, counts and truth are
-  unchanged for a given seed; only the `$catch` table's harvested/released
-  split moves.
+  unchanged for a given seed. The `$catch` table is not: the new draw uses a
+  different number of random numbers, so the species split of every row type
+  (caught included) moves, though each interview's caught total does not.
 
 * One aerial design now serves both `estimate_effort()` and
   `estimate_effort_aerial_glmm()` (#643). Attach the flights with
