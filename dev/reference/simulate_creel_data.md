@@ -1,9 +1,9 @@
 # Simulate a complete creel survey dataset
 
-Generates realistic synthetic creel data using a four-level hierarchical
-generative model (day → trip → interview → catch). Caller supplies
-distributional parameters via `params`; no default data are bundled with
-the package.
+Generates realistic synthetic creel data using a five-level hierarchical
+generative model (day → trip → count → interview → catch). Caller
+supplies distributional parameters via `params`; no default data are
+bundled with the package.
 
 The generative model follows Su & Clapp (2013) for the day and trip
 levels; the roving-clerk step follows Greene et al. (1995). Only the
@@ -12,14 +12,22 @@ deterministic – evenly spaced around the shoreline, all starting one
 hour into an eight-hour day, with trip lengths alternating between 3 and
 6 hours – whereas the levels below draw from distributions.
 
-1.  **Day level**: Sample `n_sampled_days` days from the season. Each
-    sampled day draws the number of angler trips arriving from a
-    Negative Binomial distribution.
+1.  **Day level**: Every day of the season draws the number of angler
+    trips from a Negative Binomial distribution; `n_sampled_days` of
+    them are sampled. Unsampled days are simulated too, so the season's
+    true totals are known.
 
 2.  **Trip level**: Each trip draws its length (hr) from a Gamma
-    distribution and its party size from a Poisson (at least 1).
+    distribution, capped at the fishing day's length \\T\\, a start time
+    uniform in \\\[0, T - L\]\\, and its party size from a Poisson (at
+    least 1).
 
-3.  **Interview level**, set by `interview_type`: `"access"` – the clerk
+3.  **Count level**: On a sampled day, each count is taken at a
+    uniformly random moment of the fishing day and is the number of
+    anglers fishing then. Count times \\T\\ is unbiased for the day's
+    angler-hours (Hoenig et al. 1993).
+
+4.  **Interview level**, set by `interview_type`: `"access"` – the clerk
     meets parties as they leave, every party with the same chance (70\\
     trip; `"roving"` – the clerk meets parties while they fish, each
     with a chance proportional to its trip length (0.25 times its length
@@ -29,12 +37,15 @@ hour into an eight-hour day, with trip lengths alternating between 3 and
     sampling difference Pollock et al. (1997) base the choice of
     catch-rate estimator on.
 
-4.  **Catch level**: Catch accrues over the time fished. A party catches
-    nothing with probability `p_zero_catch`; otherwise its catch so far
-    is Negative Binomial with mean
-    `catch_rate$mean * n_anglers * hours_fished / (1 - p_zero_catch)`,
-    so the population catch rate (total catch over total angler-hours)
-    is exactly `catch_rate$mean`. Harvest is Binomial given catch.
+5.  **Catch level**: Catch accrues over the time fished. A party catches
+    nothing with probability `p_zero_catch`; otherwise its whole-trip
+    catch is Negative Binomial with mean
+    `catch_rate$mean * n_anglers * trip_length / (1 - p_zero_catch)`, so
+    the population catch rate (total catch over total angler-hours) is
+    exactly `catch_rate$mean`. Harvest is Binomial given catch. A roving
+    interview's catch so far is the part of that trip's catch caught in
+    the time fished so far (each fish with probability
+    `hours_fished / trip_length`).
 
 Because catch accrues, the ratio of means on access interviews and the
 (truncated) mean of ratios on roving interviews both target
@@ -43,9 +54,11 @@ whole-trip catch regardless of time fished, so an incomplete trip
 carried the whole trip's catch over the hours fished so far and inflated
 any roving catch rate (GH \#494).
 
-The instantaneous counts are drawn independently of the simulated trips,
-so the function reports no true total effort or catch, only the true
-rates.
+Counts and interviews come from the same simulated trips, so the true
+effort, catch and harvest are known (GH \#646): `truth` reports them
+over the sampled days and over the season. Before tidycreel 9.0.0 the
+counts were drawn independently of the trips and only the rates were
+known.
 
 ## Usage
 
@@ -137,9 +150,9 @@ simulate_creel_data(
 
 - n_anglers_per_day:
 
-  Numeric. Mean number of angler parties arriving per sampled day.
-  Overrides `params$counts$mean_total_anglers` when specified. Default
-  `NULL` (use params).
+  Numeric. Mean number of angler parties fishing on each day of the
+  season (sampled or not). Overrides `params$counts$mean_total_anglers`
+  when specified. Default `NULL` (use params).
 
 - start_date:
 
@@ -153,11 +166,10 @@ simulate_creel_data(
 
 - lat:
 
-  Numeric latitude in decimal degrees, positive north. When given, the
-  daily fishing period \\T\\ is computed per date with
-  [`day_length`](https://chrischizinski.com/tidycreel/dev/reference/day_length.md)
-  and the counts table gains `daylight_hours` and `angler_hours`
-  columns. Default `NULL`. Mutually exclusive with `daylight_hours`.
+  Numeric latitude in decimal degrees, positive north. The daily fishing
+  period \\T\\ is computed per date with
+  [`day_length`](https://chrischizinski.com/tidycreel/dev/reference/day_length.md).
+  Supply `lat` or `daylight_hours`, not both.
 
 - daylight_hours:
 
@@ -166,12 +178,12 @@ simulate_creel_data(
   applied to every day, or a named length-12 vector of monthly values
   (names `"1"`…`"12"`, or `month.abb`) which is matched on the month of
   each count date. Use this when \\T\\ is set by regulation or field
-  protocol rather than by daylight. Default `NULL`. Mutually exclusive
-  with `lat`.
+  protocol rather than by daylight. Supply `daylight_hours` or `lat`,
+  not both.
 
-  Supplying neither leaves `daylight_hours` and `angler_hours` off the
-  counts table, rather than substituting a latitude the caller never
-  gave.
+  One of them is required: trips start within the fishing day and counts
+  are taken at moments in it, so the day needs a length, and there is no
+  honest default (GH \#646).
 
 - seed:
 
@@ -179,7 +191,7 @@ simulate_creel_data(
 
 ## Value
 
-A named list with four data frames and the true rates:
+A named list with four data frames and the true values:
 
 - `schedule`:
 
@@ -204,10 +216,11 @@ A named list with four data frames and the true rates:
 - `counts`:
 
   One row per instantaneous count. Columns: `date`, `day_type`,
-  `count_time` (integer index 1…`n_counts_per_day`) and `total_anglers`,
-  plus `daylight_hours` (\\T\\ for that day) and `angler_hours`
-  (`total_anglers * daylight_hours`) when `lat` or `daylight_hours` was
-  supplied. Pass `count_time_col = count_time` to
+  `count_time` (integer index 1…`n_counts_per_day`, in time order),
+  `total_anglers` (anglers fishing at the moment of the count),
+  `daylight_hours` (\\T\\ for that day) and `angler_hours`
+  (`total_anglers * daylight_hours`). Pass `count_time_col = count_time`
+  to
   [`add_counts`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   when `n_counts_per_day > 1`.
 
@@ -219,7 +232,16 @@ A named list with four data frames and the true rates:
 - `truth`:
 
   A list of the population values estimators should recover:
-  `catch_rate` and `harvest_rate`, per angler-hour.
+  `catch_rate` and `harvest_rate` (per angler-hour), and the realised
+  `effort_*` (angler-hours), `catch_*` and `harvest_*` (fish) of every
+  simulated trip, each over the `_sampled_days` and over the `_season`;
+  and `days`, one row per season day with its `parties`, `anglers`,
+  `effort`, `catch` and `harvest`.
+
+The population of trips is simulated before anything about the survey,
+so a seed fixes the population: runs that differ only in
+`interview_type`, `n_sampled_days` or `n_counts_per_day` sample the same
+trips and report the same season truth.
 
 **Pass `angler_hours`, not `total_anglers`, to
 [`add_counts`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md).**
@@ -229,11 +251,12 @@ count was randomised within (Hoenig et al. 1993).
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
 expands whatever numeric column it is given and cannot tell the two
 apart, so handing it `total_anglers` yields a sum of head counts
-silently mislabelled as angler-hours. When `lat` or `daylight_hours` is
-supplied the counts table carries three numeric columns and
+silently mislabelled as angler-hours. The counts table carries three
+numeric columns and
 [`add_counts`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
 will not guess between them: name the one you mean with
-`add_counts(design, sim$counts, count_col = angler_hours)`.
+`add_counts(design, sim$counts, count_col = angler_hours)`, or pass
+`count_col = total_anglers, period_length_col = daylight_hours`.
 
 When `n_counts_per_day > 1` you must also **drop the measures you are
 not using** before attaching. `total_anglers` differs between the counts
@@ -306,53 +329,56 @@ sim <- simulate_creel_data(
   season_days    = 90,
   n_sampled_days = 20,
   species        = c("walleye", "northern_pike"),
-  species_weights = c(0.6, 0.4)
+  species_weights = c(0.6, 0.4),
+  daylight_hours = 12
 )
 head(sim$schedule)
 #>         date day_type sampled
-#> 1 2026-11-15      all   FALSE
-#> 2 2026-11-16      all   FALSE
-#> 3 2026-11-17      all    TRUE
-#> 4 2026-11-18      all   FALSE
-#> 5 2026-11-19      all    TRUE
-#> 6 2026-11-20      all   FALSE
+#> 1 2026-11-16      all   FALSE
+#> 2 2026-11-17      all    TRUE
+#> 3 2026-11-18      all   FALSE
+#> 4 2026-11-19      all   FALSE
+#> 5 2026-11-20      all   FALSE
+#> 6 2026-11-21      all   FALSE
 head(sim$interviews)
 #>         date day_type interview_id trip_status hours_fished trip_duration
-#> 1 2026-11-17      all            8    complete        2.298         2.298
-#> 2 2026-11-17      all            3    complete        4.957         4.957
-#> 3 2026-11-17      all            1    complete        0.482         0.482
-#> 4 2026-11-17      all            5    complete        3.516         3.516
-#> 5 2026-11-17      all           10    complete        5.114         5.114
-#> 6 2026-11-17      all            7    complete        0.620         0.620
+#> 1 2026-11-17      all            1    complete        4.612         4.612
+#> 2 2026-11-17      all            2    complete        1.217         1.217
+#> 3 2026-11-17      all            3    complete        3.034         3.034
+#> 4 2026-11-17      all            4    complete        3.335         3.335
+#> 5 2026-11-26      all            6    complete        0.237         0.237
+#> 6 2026-11-26      all            7    complete        4.387         4.387
 #>   true_trip_length n_anglers catch_total catch_kept species_sought
-#> 1            2.298         1           0          0        walleye
-#> 2            4.957         2           0          0        walleye
-#> 3            0.482         1           0          0        walleye
-#> 4            3.516         1           0          0  northern_pike
-#> 5            5.114         3           0          0        walleye
-#> 6            0.620         2           0          0        walleye
+#> 1            4.612         2           0          0        walleye
+#> 2            1.217         3           0          0  northern_pike
+#> 3            3.034         1           0          0        walleye
+#> 4            3.335         3           5          2  northern_pike
+#> 5            0.237         1           0          0  northern_pike
+#> 6            4.387         1           2          0        walleye
 head(sim$counts)
-#>         date day_type count_time total_anglers
-#> 1 2026-11-17      all          1             6
-#> 2 2026-11-17      all          2             1
-#> 3 2026-11-17      all          3             2
-#> 4 2026-11-19      all          1             3
-#> 5 2026-11-19      all          2             0
-#> 6 2026-11-19      all          3            11
+#>         date day_type count_time total_anglers daylight_hours angler_hours
+#> 1 2026-11-17      all          1             0             12            0
+#> 2 2026-11-17      all          2             5             12           60
+#> 3 2026-11-17      all          3             0             12            0
+#> 4 2026-11-26      all          1             5             12           60
+#> 5 2026-11-26      all          2             4             12           48
+#> 6 2026-11-26      all          3             0             12            0
 head(sim$catch)
 #>   interview_id       species count catch_type
-#> 1           22 northern_pike     1     caught
-#> 2           22 northern_pike     1  harvested
-#> 3           22 northern_pike     0   released
-#> 4           12       walleye     1     caught
-#> 5           12       walleye     0  harvested
-#> 6           12       walleye     1   released
+#> 1            4       walleye     3     caught
+#> 2            4       walleye     1  harvested
+#> 3            4       walleye     2   released
+#> 4            4 northern_pike     2     caught
+#> 5            4 northern_pike     0  harvested
+#> 6            4 northern_pike     2   released
 sim$truth$catch_rate
 #> [1] 0.25
+sim$truth$effort_season
+#> [1] 3886.976
 
 # Multi-stratum simulation with day_types (named numeric vector).
-# `lat` derives the daily fishing period from day_length(), which adds the
-# daylight_hours and angler_hours columns to sim2$counts.
+# `lat` derives the daily fishing period from day_length(), so T, and with
+# it sim2$counts$daylight_hours, follows the season.
 set.seed(1)
 sim2 <- simulate_creel_data(
   params         = my_params,
@@ -384,7 +410,7 @@ design <- creel_design(sim2$schedule, date = date, strata = day_type) |>
     n_anglers      = "n_anglers",
     interview_type = "roving"
   )
-#> ℹ 54 interviews have zero catch.
+#> ℹ 47 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 70 interviews: 0 complete (0%), 70 incomplete (100%)
+#> ℹ Added 67 interviews: 0 complete (0%), 67 incomplete (100%)
 ```
