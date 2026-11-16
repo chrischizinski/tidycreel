@@ -122,7 +122,9 @@ that day) and \code{angler_hours} (\code{total_anglers *
 \code{n_counts_per_day > 1}.}
 \item{\code{catch}}{Long-format catch table. Columns: \code{interview_id},
 \code{species}, \code{count}, \code{catch_type} (\code{"caught"},
-\code{"harvested"}, \code{"released"}).}
+\code{"harvested"}, \code{"released"}). For each interview the
+rows of each type sum to its \code{catch_total}, \code{catch_kept}
+and \code{catch_total - catch_kept}.}
 \item{\code{truth}}{A list of the population values estimators should
 recover: \code{catch_rate} and \code{harvest_rate} (per angler-hour),
 and the realised \code{effort_*} (angler-hours), \code{catch_*} and

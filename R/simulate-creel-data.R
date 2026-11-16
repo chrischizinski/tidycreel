@@ -181,7 +181,9 @@
 #'     \code{n_counts_per_day > 1}.}
 #'   \item{\code{catch}}{Long-format catch table. Columns: \code{interview_id},
 #'     \code{species}, \code{count}, \code{catch_type} (\code{"caught"},
-#'     \code{"harvested"}, \code{"released"}).}
+#'     \code{"harvested"}, \code{"released"}). For each interview the
+#'     rows of each type sum to its \code{catch_total}, \code{catch_kept}
+#'     and \code{catch_total - catch_kept}.}
 #'   \item{\code{truth}}{A list of the population values estimators should
 #'     recover: \code{catch_rate} and \code{harvest_rate} (per angler-hour),
 #'     and the realised \code{effort_*} (angler-hours), \code{catch_*} and
@@ -603,11 +605,21 @@ simulate_creel_data <- function(
         next
       }
 
-      # Distribute total catch across species, then draw kept within each
-      # species using rbinom so sp_kept[s] <= sp_counts[s] always
+      # Distribute total catch across species, then split the interview's own
+      # kept fish across them: a multivariate hypergeometric draw of ckept
+      # fish from sp_counts, made one species at a time. The harvested rows
+      # then sum to catch_kept exactly (GH #651); an independent binomial per
+      # species summed to a fresh total, describing different fish.
       sp_counts <- as.integer(stats::rmultinom(1L, ctotal, sp_wt))
-      p_keep <- if (ctotal > 0L) ckept / ctotal else 0
-      sp_kept <- as.integer(stats::rbinom(length(species), sp_counts, p_keep))
+      sp_kept <- integer(length(species))
+      fish_left <- ctotal
+      kept_left <- ckept
+      for (s in seq_along(species)) {
+        if (kept_left == 0L) break
+        sp_kept[s] <- stats::rhyper(1L, sp_counts[s], fish_left - sp_counts[s], kept_left)
+        fish_left <- fish_left - sp_counts[s]
+        kept_left <- kept_left - sp_kept[s]
+      }
 
       sp_rows <- vector("list", length(species))
       for (s in seq_along(species)) {

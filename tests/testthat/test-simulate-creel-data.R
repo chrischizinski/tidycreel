@@ -229,6 +229,34 @@ test_that("simulate_creel_data multi-species splits catch across species", {
   }
 })
 
+test_that("the species catch table describes the interview's own fish (GH #651)", {
+  # Joining interviews to the catch table must give one harvest per
+  # interview: the harvested rows are the interview's kept fish split across
+  # species, not a fresh draw. Otherwise species harvest rates from the table
+  # and the interview harvest rate describe different simulated fish.
+  sim <- sim12(
+    params = test_params,
+    season_days = 60L,
+    n_sampled_days = 20L,
+    species = c("walleye", "pike", "bass"),
+    species_weights = c(0.5, 0.3, 0.2),
+    seed = 13L
+  )
+  iv <- sim$interviews[sim$interviews$catch_total > 0L, ]
+  # The check needs interviews that kept some but not all of their fish:
+  # only those can split differently from catch_kept.
+  expect_gt(sum(iv$catch_kept > 0L & iv$catch_kept < iv$catch_total), 5L)
+  by_type <- function(type) {
+    rows <- sim$catch[sim$catch$catch_type == type, ]
+    s <- tapply(rows$count, factor(rows$interview_id, levels = iv$interview_id), sum)
+    as.integer(ifelse(is.na(s), 0L, s))
+  }
+  expect_identical(by_type("caught"), as.integer(iv$catch_total))
+  expect_identical(by_type("harvested"), as.integer(iv$catch_kept))
+  expect_identical(by_type("released"), as.integer(iv$catch_total - iv$catch_kept))
+  expect_true(all(sim$catch$count >= 0L))
+})
+
 test_that("simulate_creel_data empty result on 0 encounters is valid", {
   sparse_params <- test_params
   sparse_params$counts$mean_total_anglers <- 0.01
