@@ -4,7 +4,7 @@ Interviews from the 36 sampled days in
 [example_season_calendar](https://chrischizinski.com/tidycreel/dev/reference/example_season_calendar.md),
 one row per angling party. Most were met at the access point as they
 finished (complete trips, every finishing party with the same chance);
-about a third were met while still fishing (incomplete trips, met in
+about a quarter were met while still fishing (incomplete trips, met in
 proportion to how long they fish, with the catch so far). Most parties
 caught nothing, as on most real fisheries.
 
@@ -16,7 +16,7 @@ example_season_interviews
 
 ## Format
 
-A data frame with 292 rows and 8 columns:
+A data frame with 298 rows and 8 columns:
 
 - date:
 
@@ -28,7 +28,7 @@ A data frame with 292 rows and 8 columns:
 
 - interview_id:
 
-  Integer interview identifier, 1 to 292
+  Integer interview identifier, 1 to 298
 
 - trip_status:
 
@@ -62,6 +62,8 @@ and a fixed seed; see `data-raw/example_season.R` in the package source.
 Catch accrues over the time fished at a true rate of 0.22 fish per
 angler-hour, the same rate as
 [example_roving_interviews](https://chrischizinski.com/tidycreel/dev/reference/example_roving_interviews.md).
+The counts come from the same simulated trips, so the season's true
+totals are known: 4,932 angler-hours of effort and 1,082 fish caught.
 
 ## See also
 
@@ -107,9 +109,9 @@ design <- add_interviews(design, example_season_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> ℹ 230 interviews have zero catch.
+#> ℹ 238 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
+#> ℹ Added 298 interviews: 222 complete (74%), 76 incomplete (26%)
 estimate_total_catch(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -122,5 +124,5 @@ estimate_total_catch(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2016.  439.    1150.    2882.   201
+#> 1     736.  217.     309.    1164.   222
 ```

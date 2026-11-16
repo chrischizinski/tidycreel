@@ -71,8 +71,8 @@ data(example_season_calendar)
 table(example_season_calendar$day_type, example_season_calendar$sampled)
 #>          
 #>           FALSE TRUE
-#>   weekday    61   25
-#>   weekend    23   11
+#>   weekday    59   27
+#>   weekend    25    9
 
 design <- creel_design(example_season_calendar, date = date, strata = day_type)
 design

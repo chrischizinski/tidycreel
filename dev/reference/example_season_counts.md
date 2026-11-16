@@ -80,6 +80,10 @@ design <- add_counts(design, example_season_counts,
   count_col = total_anglers, period_length_col = daylight_hours
 )
 estimate_effort(design, target = "period_total")
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -91,5 +95,5 @@ estimate_effort(design, target = "period_total")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10022. 1106.      1106.        NA    7775.   12269.    36 between_day_upper…
+#> 1    4079. 1014.      1014.        NA    2018.    6139.    36 between_day_upper…
 ```

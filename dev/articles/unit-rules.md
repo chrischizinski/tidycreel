@@ -50,9 +50,9 @@ and the day’s length:
 
 head(example_season_counts, 3)
 #>         date day_type total_anglers daylight_hours
-#> 1 2024-05-05  weekend             1             14
-#> 2 2024-05-06  weekday             9             14
-#> 3 2024-05-08  weekday             6             14
+#> 1 2024-05-03  weekday             3             14
+#> 2 2024-05-06  weekday             2             14
+#> 3 2024-05-09  weekday             0             14
 ```
 
 ``` r
@@ -62,6 +62,10 @@ with_td <- add_counts(design, example_season_counts,
   period_length_col = daylight_hours
 )
 estimate_effort(with_td)
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -73,7 +77,7 @@ estimate_effort(with_td)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10022. 1106.      1106.        NA    7775.   12269.    36 between_day_upper…
+#> 1    4079. 1014.      1014.        NA    2018.    6139.    36 between_day_upper…
 ```
 
 The effort is in angler-hours because the package multiplied each count
@@ -98,6 +102,10 @@ effort_no_td <- estimate_effort(without_td)
 #> ℹ Supply the period each count was randomised within: `add_counts(design,
 #>   counts, period_length_col = <col>)`.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 effort_no_td
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -109,18 +117,18 @@ effort_no_td
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     716.  79.0       79.0        NA     555.     876.    36 between_day_upper…
+#> 1     291.  72.4       72.4        NA     144.     439.    36 between_day_upper…
 effort_no_td$unit
 #> [1] NA
 ```
 
 The printout has no `Unit:` line, because the unit is `NA`, and the
-estimate is about 716 (10,022 / 14) rather than 10,022. Every day in
-these data is 14 hours long, so the two differ by exactly that factor.
-The warning says what happened: the counts were expanded without a
-period length. The package does not know whether `total_anglers` was a
-head count (in which case the answer is missing its $`T_d`$) or effort
-already expanded (in which case 716 is right in some unit it cannot
+estimate is about 291 (4,079 / 14) rather than 4,079. Every day in these
+data is 14 hours long, so the two differ by exactly that factor. The
+warning says what happened: the counts were expanded without a period
+length. The package does not know whether `total_anglers` was a head
+count (in which case the answer is missing its $`T_d`$) or effort
+already expanded (in which case 291 is right in some unit it cannot
 see). It reports the number and leaves the unit unknown.
 
 Two other routes:
@@ -159,12 +167,12 @@ with_party <- add_interviews(with_td, example_season_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> ℹ 230 interviews have zero catch.
+#> ℹ 238 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
+#> ℹ Added 298 interviews: 222 complete (74%), 76 incomplete (26%)
 estimate_catch_rate(with_party)
 #> ℹ Using complete trips for CPUE estimation
-#>   (n=201, 68.8% of 292 interviews) [default]
+#>   (n=222, 74.5% of 298 interviews) [default]
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -175,7 +183,7 @@ estimate_catch_rate(with_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.199 0.0380    0.124    0.274   201
+#> 1    0.180 0.0346    0.112    0.248   222
 ```
 
 Without `n_anglers`, the same interviews give a rate per party-hour, and
@@ -193,12 +201,12 @@ without_party <- add_interviews(with_td, example_season_interviews,
 #>   normalization.
 #> ℹ If the interviews really are one angler each, pass `n_anglers = 1` to state
 #>   that and silence this warning.
-#> ℹ 230 interviews have zero catch.
+#> ℹ 238 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
+#> ℹ Added 298 interviews: 222 complete (74%), 76 incomplete (26%)
 estimate_catch_rate(without_party)
 #> ℹ Using complete trips for CPUE estimation
-#>   (n=201, 68.8% of 292 interviews) [default]
+#>   (n=222, 74.5% of 298 interviews) [default]
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -209,12 +217,12 @@ estimate_catch_rate(without_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.344 0.0698    0.208    0.481   201
+#> 1    0.306 0.0587    0.191    0.422   222
 ```
 
 The two rates are not interchangeable. The party-hour rate is the
 angler-hour rate times the effort-weighted mean party size of the
-complete trips, 1.73 in these data.
+complete trips, 1.71 in these data.
 
 Bus-route and ice estimators build effort from the interviews themselves
 (a sum of each trip’s effort over its inclusion probability), so their
@@ -261,7 +269,7 @@ estimate_total_catch(with_party)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2016.  439.    1150.    2882.   201
+#> 1     736.  217.     309.    1164.   222
 ```
 
 With the rate per party-hour, the product warns and has no unit:
@@ -285,15 +293,15 @@ total_party
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    3562.  827.    1930.    5193.   201
+#> 1    1272.  371.     541.    2003.   222
 total_party$unit
 #> [1] NA
 ```
 
-The total is 3,562 instead of 2,016. Multiplying a rate per party-hour
-by angler-hours inflates the catch by about the mean party size, which
-is the error the `NA` and the warning exist to stop. The 1.77 ratio is
-close to the rate ratio of 1.73 but not equal to it, because the total
+The total is 1,272 instead of 736. Multiplying a rate per party-hour by
+angler-hours inflates the catch by about the mean party size, which is
+the error the `NA` and the warning exist to stop. The 1.73 ratio is
+close to the rate ratio of 1.71 but not equal to it, because the total
 is built stratum by stratum.
 
 The same derivation runs wherever a unit is built from another:

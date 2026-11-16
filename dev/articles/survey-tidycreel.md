@@ -36,19 +36,19 @@ table(example_season_calendar$day_type) # days in the season, N_h
 table(example_season_counts$day_type) # days sampled, n_h
 #> 
 #> weekday weekend 
-#>      25      11
+#>      27       9
 head(example_season_counts, 3)
 #>         date day_type total_anglers daylight_hours
-#> 1 2024-05-05  weekend             1             14
-#> 2 2024-05-06  weekday             9             14
-#> 3 2024-05-08  weekday             6             14
+#> 1 2024-05-03  weekday             3             14
+#> 2 2024-05-06  weekday             2             14
+#> 3 2024-05-09  weekday             0             14
 head(example_season_interviews, 3)
 #>         date day_type interview_id trip_status hours_fished n_anglers
-#> 1 2024-05-05  weekend            1    complete         2.50         1
-#> 2 2024-05-05  weekend            2    complete         1.50         2
-#> 3 2024-05-05  weekend            3    complete         3.63         1
+#> 1 2024-05-03  weekday            1    complete         1.96         2
+#> 2 2024-05-03  weekday            2    complete         0.84         1
+#> 3 2024-05-03  weekday            3    complete         2.87         1
 #>   catch_total catch_kept
-#> 1           2          1
+#> 1           0          0
 #> 2           0          0
 #> 3           0          0
 ```
@@ -94,14 +94,14 @@ count_design <- svydesign(
   ids = ~1, strata = ~day_type, weights = ~w, data = counts
 )
 svytotal(~angler_hours, count_design)
-#>              total     SE
-#> angler_hours 10022 1105.7
+#>               total   SE
+#> angler_hours 4078.7 1014
 
 effort$estimates
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10022. 1106.      1106.        NA    7775.   12269.    36 between_day_upper…
+#> 1    4079. 1014.      1014.        NA    2018.    6139.    36 between_day_upper…
 effort$unit
 #> [1] "angler-hours"
 ```
@@ -115,7 +115,7 @@ uses the normal quantile unless it is given them:
 
 confint(svytotal(~angler_hours, count_design), df = degf(count_design))
 #>                 2.5 %   97.5 %
-#> angler_hours 7774.944 12269.19
+#> angler_hours 2017.951 6139.382
 ```
 
 ### No finite-population correction
@@ -129,11 +129,11 @@ counts$fpc <- as.numeric(N_h[counts$day_type])
 svytotal(~angler_hours, svydesign(
   ids = ~1, strata = ~day_type, fpc = ~fpc, data = counts
 ))
-#>              total     SE
-#> angler_hours 10022 922.29
+#>               total     SE
+#> angler_hours 4078.7 858.68
 ```
 
-The standard error falls from about 1,106 to 922. tidycreel leaves the
+The standard error falls from about 1,014 to 859. tidycreel leaves the
 correction out when a day has one count. The between-day variance then
 also carries the variation from when in the day the count fell, and
 sampling more days does not remove that part. With two or more counts on
@@ -161,16 +161,16 @@ svyratio(~catch_total, ~angler_hours, trip_design)
 #> Ratio estimator: svyratio.survey.design2(~catch_total, ~angler_hours, trip_design)
 #> Ratios=
 #>             angler_hours
-#> catch_total    0.1990255
+#> catch_total    0.1796945
 #> SEs=
 #>             angler_hours
-#> catch_total   0.03804054
+#> catch_total   0.03462098
 
 rate$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.199 0.0380    0.124    0.274   201
+#> 1    0.180 0.0346    0.112    0.248   222
 rate$unit
 #> [1] "fish/angler-hour"
 ```
@@ -180,7 +180,7 @@ estimator for access interviews;
 [`vignette("estimator-choice")`](https://chrischizinski.com/tidycreel/dev/articles/estimator-choice.md)
 covers when tidycreel uses the mean of ratios instead. Without
 `n_anglers`, the denominator would be party hours and the rate would be
-per party-hour, about 0.34 here instead of 0.20. The two are different
+per party-hour, about 0.31 here instead of 0.18. The two are different
 quantities, and tidycreel reports which one it computed in `unit`.
 
 ## Total catch: `svyby()` and a product variance
@@ -199,12 +199,12 @@ R <- svyby(~catch_total, ~day_type, trip_design, svyratio,
 )
 E
 #>         day_type angler_hours       se
-#> weekday  weekday     7079.520 846.5755
-#> weekend  weekend     2942.545 711.3068
+#> weekday  weekday     2809.333 616.4060
+#> weekend  weekend     1269.333 805.1454
 R
 #>         day_type catch_total/angler_hours se.catch_total/angler_hours
-#> weekday  weekday                0.2239736                  0.05039596
-#> weekend  weekend                0.1461988                  0.05028971
+#> weekday  weekday                0.1930565                  0.04513236
+#> weekend  weekend                0.1529002                  0.05005250
 
 e <- coef(E)
 r <- coef(R)
@@ -212,15 +212,15 @@ se_e <- SE(E)
 se_r <- SE(R)
 
 sum(e * r)
-#> [1] 2015.822
+#> [1] 736.4413
 sqrt(sum(e^2 * se_r^2 + r^2 * se_e^2 - se_e^2 * se_r^2))
-#> [1] 439.1539
+#> [1] 216.8669
 
 total$estimates
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2016.  439.    1150.    2882.   201
+#> 1     736.  217.     309.    1164.   222
 total$unit
 #> [1] "fish"
 ```
@@ -264,12 +264,12 @@ day’s count × period in angler-hours, under the column’s original name:
 internal <- as_creel_svydesign(design)
 head(internal$variables[, c("date", "day_type", "total_anglers")], 3)
 #>         date day_type total_anglers
-#> 1 2024-05-05  weekend            14
-#> 2 2024-05-06  weekday           126
-#> 3 2024-05-08  weekday            84
+#> 1 2024-05-03  weekday            42
+#> 2 2024-05-06  weekday            28
+#> 3 2024-05-09  weekday             0
 svytotal(~total_anglers, internal)
 #>               total     SE
-#> total_anglers  3010 336.93
+#> total_anglers  1218 287.88
 ```
 
 That total is effort over the 36 sampled days.

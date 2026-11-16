@@ -182,8 +182,8 @@ estimate each section separately and add a lake total.</p>
 season is a separate choice, <code>target</code>, not a different
 estimator. The default, <code>"period_total"</code>, expands each
 stratum to all its days; <code>"sampled_days"</code> is the effort on
-the days counted. On the season data used below, that is about 10,022
-angler-hours against 3,010. Totals follow the effort they are given, so
+the days counted. On the season data used below, that is about 4,079
+angler-hours against 1,218. Totals follow the effort they are given, so
 a catch total on <code>target = "sampled_days"</code> is the catch on
 the sampled days. <code><a href="../articles/effort-pipeline.html">vignette("effort-pipeline")</a></code> explains the
 expansion. Bus-route and ice designs expand only with the calendar’s
@@ -293,9 +293,9 @@ season data, with access and then roving interviews:</p>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>, harvest <span class="op">=</span> <span class="va">catch_kept</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>, n_anglers <span class="op">=</span> <span class="va">n_anglers</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 230 interviews have zero catch.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> 238 interviews have zero catch.</span></span>
 <span><span class="co">#&gt;   Zero catch is usual; check it is not missing data recorded as 0.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 292 interviews: 201 complete (69%), 91 incomplete (31%)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Added 298 interviews: 222 complete (74%), 76 incomplete (26%)</span></span>
 <span><span class="va">roving</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_roving_interviews</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>, harvest <span class="op">=</span> <span class="va">catch_kept</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>,</span>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>, trip_duration <span class="op">=</span> <span class="va">hours_fished</span>,</span>
@@ -307,7 +307,7 @@ season data, with access and then roving interviews:</p>
 <span></span>
 <span><span class="va">access_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">access</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
-<span><span class="co">#&gt;   (n=201, 68.8% of 292 interviews) [default]</span></span>
+<span><span class="co">#&gt;   (n=222, 74.5% of 298 interviews) [default]</span></span>
 <span><span class="va">roving_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">roving</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Roving design: using all 212 interviews for CPUE via MOR [auto]</span></span>
 <span><span class="co">#&gt;   (0 complete, 212 incomplete)</span></span>

@@ -53,6 +53,10 @@ warns.
 ``` r
 
 estimate_effort(design, target = "period_total")
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -64,10 +68,10 @@ estimate_effort(design, target = "period_total")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10022. 1106.      1106.        NA    7775.   12269.    36 between_day_upper…
+#> 1    4079. 1014.      1014.        NA    2018.    6139.    36 between_day_upper…
 ```
 
-About 10,022 angler-hours over the 120-day season.
+About 4,079 angler-hours over the 120-day season.
 `target = "period_total"`, the default, asks for the season;
 `"sampled_days"` is the effort on the 36 days counted. Both kinds of
 interview below use this effort.
@@ -83,13 +87,13 @@ access <- add_interviews(design, example_season_interviews,
   trip_status = trip_status,
   n_anglers = n_anglers
 )
-#> ℹ 230 interviews have zero catch.
+#> ℹ 238 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
+#> ℹ Added 298 interviews: 222 complete (74%), 76 incomplete (26%)
 
 estimate_catch_rate(access)
 #> ℹ Using complete trips for CPUE estimation
-#>   (n=201, 68.8% of 292 interviews) [default]
+#>   (n=222, 74.5% of 298 interviews) [default]
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -100,7 +104,7 @@ estimate_catch_rate(access)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.199 0.0380    0.124    0.274   201
+#> 1    0.180 0.0346    0.112    0.248   222
 access_catch <- estimate_total_catch(access, target = "period_total")
 access_catch
 #> 
@@ -114,15 +118,15 @@ access_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2016.  439.    1150.    2882.   201
+#> 1     736.  217.     309.    1164.   222
 ```
 
 `interview_type` is left at `"access"`. The catch rate is a ratio of
-means over the 201 complete trips: total catch divided by total
-angler-hours, about 0.20 fish per angler-hour. The 91 incomplete trips
+means over the 222 complete trips: total catch divided by total
+angler-hours, about 0.18 fish per angler-hour. The 76 incomplete trips
 are left out, because a party met while still fishing is more likely to
-be met the longer it stays. Times about 10,022 angler-hours, that is
-about 2,020 fish.
+be met the longer it stays. Times about 4,079 angler-hours, that is
+about 740 fish.
 
 ## Roving interviews
 
@@ -130,11 +134,11 @@ about 2,020 fish.
 
 head(example_roving_interviews)
 #>         date day_type interview_id trip_status hours_fished n_anglers
-#> 1 2024-05-05  weekend            1  incomplete         1.85         1
-#> 2 2024-05-05  weekend            2  incomplete         1.74         2
-#> 3 2024-05-05  weekend            3  incomplete         1.74         1
-#> 4 2024-05-05  weekend            4  incomplete         0.56         2
-#> 5 2024-05-05  weekend            5  incomplete         2.90         3
+#> 1 2024-05-03  weekday            1  incomplete         1.85         1
+#> 2 2024-05-03  weekday            2  incomplete         1.74         2
+#> 3 2024-05-03  weekday            3  incomplete         1.74         1
+#> 4 2024-05-03  weekday            4  incomplete         0.56         2
+#> 5 2024-05-03  weekday            5  incomplete         2.90         3
 #> 6 2024-05-06  weekday            6  incomplete         2.51         1
 #>   catch_total catch_kept
 #> 1           2          0
@@ -189,7 +193,7 @@ estimate_catch_rate(roving)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.191 0.0193    0.153    0.229   183
+#> 1    0.191 0.0193    0.154    0.229   183
 ```
 
 With `interview_type = "roving"`, tidycreel uses the mean-of-ratios
@@ -230,7 +234,7 @@ roving_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1917.  285.    1354.    2480.   183
+#> 1     773.  198.     383.    1164.   183
 estimate_total_harvest(roving, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -243,14 +247,13 @@ estimate_total_harvest(roving, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     579.  121.     341.     817.   183
+#> 1     242.  78.0     88.1     396.   183
 ```
 
 The totals multiply the same season effort by the roving rates: about
-1,900 fish caught and 580 kept. Each estimate built on a roving rate
-drops the short trips again. The warning printed once for this design;
-each estimate still records it, and `get_warnings(roving_catch)` lists
-it.
+770 fish caught and 240 kept. Each estimate built on a roving rate drops
+the short trips again. The warning printed once for this design; each
+estimate still records it, and `get_warnings(roving_catch)` lists it.
 
 ## Results as data
 
@@ -272,8 +275,8 @@ totals <- rbind(
 )
 totals[, c("interviews", "estimate", "se", "estimator", "unit")]
 #>   interviews estimate       se      estimator unit
-#> 1     access 2015.822 439.1539 ratio-of-means fish
-#> 2     roving 1917.002 285.3730            mor fish
+#> 1     access 736.4413 216.8669 ratio-of-means fish
+#> 2     roving 773.2053 198.0009            mor fish
 ```
 
 The two are different sets of interviews from the same days, so their

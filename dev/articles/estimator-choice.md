@@ -40,7 +40,7 @@ Whether the effort covers only the days counted or every day in the
 season is a separate choice, `target`, not a different estimator. The
 default, `"period_total"`, expands each stratum to all its days;
 `"sampled_days"` is the effort on the days counted. On the season data
-used below, that is about 10,022 angler-hours against 3,010. Totals
+used below, that is about 4,079 angler-hours against 1,218. Totals
 follow the effort they are given, so a catch total on
 `target = "sampled_days"` is the catch on the sampled days.
 [`vignette("effort-pipeline")`](https://chrischizinski.com/tidycreel/dev/articles/effort-pipeline.md)
@@ -153,9 +153,9 @@ access <- add_interviews(design, example_season_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> ℹ 230 interviews have zero catch.
+#> ℹ 238 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
+#> ℹ Added 298 interviews: 222 complete (74%), 76 incomplete (26%)
 roving <- add_interviews(design, example_roving_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
   trip_status = trip_status, trip_duration = hours_fished,
@@ -167,7 +167,7 @@ roving <- add_interviews(design, example_roving_interviews,
 
 access_rate <- estimate_catch_rate(access)
 #> ℹ Using complete trips for CPUE estimation
-#>   (n=201, 68.8% of 292 interviews) [default]
+#>   (n=222, 74.5% of 298 interviews) [default]
 roving_rate <- estimate_catch_rate(roving)
 #> ℹ Roving design: using all 212 interviews for CPUE via MOR [auto]
 #>   (0 complete, 212 incomplete)

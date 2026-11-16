@@ -36,9 +36,9 @@ design <- add_interviews(design, example_season_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> ℹ 230 interviews have zero catch.
+#> ℹ 238 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
+#> ℹ Added 298 interviews: 222 complete (74%), 76 incomplete (26%)
 ```
 
 The message is a prompt to check the data, not a sign that anything was
@@ -72,6 +72,10 @@ weekday_only <- add_counts(weekday_only, weekday_counts,
 )
 
 estimate_effort(weekday_only)
+#> Count variable total_anglers contains 7 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> Error in `refuse_unsampled_cells()`:
 #> ! Expanded effort cannot be estimated: 1 calendar cell has no sampled
 #>   day.
@@ -92,6 +96,10 @@ days that were counted, and that one has an answer:
 ``` r
 
 estimate_effort(weekday_only, target = "sampled_days")
+#> Count variable total_anglers contains 7 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -103,7 +111,7 @@ estimate_effort(weekday_only, target = "sampled_days")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     2058  246.       246.        NA    1550.    2566.    25 between_day_upper…
+#> 1      882  194.       194.        NA     484.    1280.    27 between_day_upper…
 ```
 
 ### A stratum with no catch rate
@@ -126,16 +134,16 @@ no_weekend_rate <- add_interviews(no_weekend_rate, weekday_interviews,
   catch = catch_total, harvest = catch_kept, effort = hours_fished,
   trip_status = trip_status, n_anglers = n_anglers
 )
-#> ℹ 147 interviews have zero catch.
+#> ℹ 165 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 192 interviews: 128 complete (67%), 64 incomplete (33%)
+#> ℹ Added 208 interviews: 152 complete (73%), 56 incomplete (27%)
 
 estimate_total_catch(no_weekend_rate)
 #> Error in `check_missing_rate_strata()`:
 #> ! 1 effort cell has no rate in "estimate_total_catch".
 #> ✖ No usable interviews for: day_type = weekend.
-#> ✖ Their contribution to the total is unknown, not zero: 2942.545 effort units,
-#>   29.4% of the effort being totalled.
+#> ✖ Their contribution to the total is unknown, not zero: 1269.333 effort units,
+#>   31.1% of the effort being totalled.
 #> ℹ Collect or attach interviews for that cell, or group more coarsely so it
 #>   shares a rate.
 #> ℹ `missing_rate = "exclude"` reports the total over the covered cells only, and
@@ -152,7 +160,7 @@ weekday_total <- estimate_total_catch(no_weekend_rate,
   missing_rate = "exclude"
 )
 #> Warning: 1 effort cell with no rate excluded from "estimate_total_catch".
-#> ! Excluded: day_type = weekend (2942.545 effort units, 29.4%).
+#> ! Excluded: day_type = weekend (1269.333 effort units, 31.1%).
 #> ℹ The total covers the remaining cells only; see excluded_strata on the result.
 weekday_total
 #> 
@@ -166,15 +174,15 @@ weekday_total
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1586.  402.     791.    2381.   128
+#> 1     542.  172.     203.     882.   152
 #> 
 #> Covers the cells with a rate only. Excluded (no rate), see $excluded_strata:
-#>   day_type = weekend: 2943 effort units
+#>   day_type = weekend: 1269 effort units
 weekday_total$excluded_strata
 #> # A tibble: 1 × 3
 #>   day_type effort_excluded excluded_from       
 #>   <chr>              <dbl> <chr>               
-#> 1 weekend            2943. estimate_total_catch
+#> 1 weekend            1269. estimate_total_catch
 ```
 
 The warning is the point: this total is the weekday catch, not the

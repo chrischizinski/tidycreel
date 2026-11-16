@@ -334,7 +334,7 @@ sim <- simulate_creel_data(
 )
 head(sim$schedule)
 #>         date day_type sampled
-#> 1 2026-11-16      all   FALSE
+#> 1 2026-11-16      all    TRUE
 #> 2 2026-11-17      all    TRUE
 #> 3 2026-11-18      all   FALSE
 #> 4 2026-11-19      all   FALSE
@@ -342,35 +342,35 @@ head(sim$schedule)
 #> 6 2026-11-21      all   FALSE
 head(sim$interviews)
 #>         date day_type interview_id trip_status hours_fished trip_duration
-#> 1 2026-11-17      all            1    complete        4.612         4.612
-#> 2 2026-11-17      all            2    complete        1.217         1.217
-#> 3 2026-11-17      all            3    complete        3.034         3.034
-#> 4 2026-11-17      all            4    complete        3.335         3.335
-#> 5 2026-11-26      all            6    complete        0.237         0.237
-#> 6 2026-11-26      all            7    complete        4.387         4.387
+#> 1 2026-11-16      all            3    complete        0.565         0.565
+#> 2 2026-11-16      all            6    complete        1.716         1.716
+#> 3 2026-11-16      all            7    complete        1.004         1.004
+#> 4 2026-11-16      all           10    complete        6.238         6.238
+#> 5 2026-11-16      all            1    complete        0.581         0.581
+#> 6 2026-11-16      all            5    complete        0.352         0.352
 #>   true_trip_length n_anglers catch_total catch_kept species_sought
-#> 1            4.612         2           0          0        walleye
-#> 2            1.217         3           0          0  northern_pike
-#> 3            3.034         1           0          0        walleye
-#> 4            3.335         3           5          2  northern_pike
-#> 5            0.237         1           0          0  northern_pike
-#> 6            4.387         1           2          0        walleye
+#> 1            0.565         2           2          0  northern_pike
+#> 2            1.716         2           8          1        walleye
+#> 3            1.004         3           1          0  northern_pike
+#> 4            6.238         1           1          1        walleye
+#> 5            0.581         3           0          0        walleye
+#> 6            0.352         2           0          0        walleye
 head(sim$counts)
 #>         date day_type count_time total_anglers daylight_hours angler_hours
-#> 1 2026-11-17      all          1             0             12            0
-#> 2 2026-11-17      all          2             5             12           60
-#> 3 2026-11-17      all          3             0             12            0
-#> 4 2026-11-26      all          1             5             12           60
-#> 5 2026-11-26      all          2             4             12           48
-#> 6 2026-11-26      all          3             0             12            0
+#> 1 2026-11-16      all          1             1             12           12
+#> 2 2026-11-16      all          2            10             12          120
+#> 3 2026-11-16      all          3             0             12            0
+#> 4 2026-11-17      all          1             4             12           48
+#> 5 2026-11-17      all          2             4             12           48
+#> 6 2026-11-17      all          3             0             12            0
 head(sim$catch)
-#>   interview_id       species count catch_type
-#> 1            4       walleye     3     caught
-#> 2            4       walleye     1  harvested
-#> 3            4       walleye     2   released
-#> 4            4 northern_pike     2     caught
-#> 5            4 northern_pike     0  harvested
-#> 6            4 northern_pike     2   released
+#>   interview_id species count catch_type
+#> 1            3 walleye     2     caught
+#> 2            3 walleye     0  harvested
+#> 3            3 walleye     2   released
+#> 4            6 walleye     6     caught
+#> 5            6 walleye     0  harvested
+#> 6            6 walleye     6   released
 sim$truth$catch_rate
 #> [1] 0.25
 sim$truth$effort_season

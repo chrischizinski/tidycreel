@@ -150,7 +150,7 @@ sampling unit, never single counts or interviews.</p>
 <h2 id="same-season-three-methods">Same season, three methods<a class="anchor" aria-label="anchor" href="#same-season-three-methods"></a>
 </h2>
 <p>The season from <code><a href="../articles/tidycreel.html">vignette("tidycreel")</a></code>: 120 days, 36 of
-them sampled, 25 weekdays and 11 weekend days.</p>
+them sampled, 27 weekdays and 9 weekend days.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_season_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">example_season_counts</span>,</span>
@@ -180,9 +180,9 @@ them sampled, 25 weekdays and 11 weekend days.</p>
 <span>  row.names <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;    variance effort_se    rate_se total_catch_se</span></span>
-<span><span class="co">#&gt; 1    taylor  1105.734 0.03804054       439.1539</span></span>
-<span><span class="co">#&gt; 2 bootstrap  1053.453 0.03855039       421.8210</span></span>
-<span><span class="co">#&gt; 3 jackknife  1105.734 0.03832850       443.3976</span></span></code></pre></div>
+<span><span class="co">#&gt; 1    taylor 1014.0096 0.03462098       216.8669</span></span>
+<span><span class="co">#&gt; 2 bootstrap  984.1778 0.03534605       215.7481</span></span>
+<span><span class="co">#&gt; 3 jackknife 1014.0096 0.03484719       217.7719</span></span></code></pre></div>
 <p>The point estimates are identical; only the standard errors change,
 and here by no more than a few percent. For effort, a total, the
 jackknife reproduces the Taylor value exactly. The bootstrap differs a

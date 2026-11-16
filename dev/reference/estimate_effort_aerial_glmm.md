@@ -326,7 +326,7 @@ print(by_day)
 #> 2 weekend     1394.  246.       246.        NA     912.    1876.    16
 # SE of the summed total: use the joint covariance, not quadrature
 sqrt(sum(by_day$strata_vcov))
-#> [1] 501.2849
+#> [1] 501.285
 
 # Bootstrap CIs. `nboot` is held low here so the example stays fast on a
 # check machine; use at least 1000 replicates for real inference. The block

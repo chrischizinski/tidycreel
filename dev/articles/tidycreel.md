@@ -35,21 +35,21 @@ head(example_season_calendar)
 #>         date day_type sampled
 #> 1 2024-05-01  weekday   FALSE
 #> 2 2024-05-02  weekday   FALSE
-#> 3 2024-05-03  weekday   FALSE
+#> 3 2024-05-03  weekday    TRUE
 #> 4 2024-05-04  weekend   FALSE
-#> 5 2024-05-05  weekend    TRUE
+#> 5 2024-05-05  weekend   FALSE
 #> 6 2024-05-06  weekday    TRUE
 table(example_season_calendar$day_type, example_season_calendar$sampled)
 #>          
 #>           FALSE TRUE
-#>   weekday    61   25
-#>   weekend    23   11
+#>   weekday    59   27
+#>   weekend    25    9
 ```
 
 The calendar lists every day of the season, not only the sampled ones,
-and splits them into weekdays and weekends. The clerk sampled 25 of the
-86 weekdays and 11 of the 34 weekend days. That list of every day is
-what lets tidycreel expand from the days that were sampled to the whole
+and splits them into weekdays and weekends. The clerk sampled 27 of the
+86 weekdays and 9 of the 34 weekend days. That list of every day is what
+lets tidycreel expand from the days that were sampled to the whole
 season.
 
 ## Survey design
@@ -80,12 +80,12 @@ records the 120-day calendar and its two strata.
 
 head(example_season_counts)
 #>         date day_type total_anglers daylight_hours
-#> 1 2024-05-05  weekend             1             14
-#> 2 2024-05-06  weekday             9             14
-#> 3 2024-05-08  weekday             6             14
-#> 4 2024-05-10  weekday             4             14
-#> 5 2024-05-11  weekend             7             14
-#> 6 2024-05-14  weekday            10             14
+#> 1 2024-05-03  weekday             3             14
+#> 2 2024-05-06  weekday             2             14
+#> 3 2024-05-09  weekday             0             14
+#> 4 2024-05-13  weekday            11             14
+#> 5 2024-05-14  weekday             1             14
+#> 6 2024-05-15  weekday             0             14
 
 design <- add_counts(design, example_season_counts,
   count_col = total_anglers,
@@ -101,6 +101,12 @@ represents the whole 14-hour fishing day, so `daylight_hours` is the
 period length. Effort for a day is the count times that length, in
 angler-hours.
 
+On 13 of the 36 days the clerk counted no one. tidycreel notes the zeros
+when it estimates effort, in case a missing count was entered as 0. Here
+they are real: an empty lake at the moment of the count is an
+observation, and it belongs in the estimate, just as a party that caught
+nothing belongs in the catch rate.
+
 Leaving out `period_length_col` still gives an estimate, but its unit is
 unknown, and
 [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
@@ -114,6 +120,10 @@ There are two different questions you can ask of these counts.
 ``` r
 
 estimate_effort(design)
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -125,8 +135,12 @@ estimate_effort(design)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10022. 1106.      1106.        NA    7775.   12269.    36 between_day_upper…
+#> 1    4079. 1014.      1014.        NA    2018.    6139.    36 between_day_upper…
 estimate_effort(design, target = "sampled_days")
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -138,16 +152,17 @@ estimate_effort(design, target = "sampled_days")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     3010  337.       337.        NA    2325.    3695.    36 between_day_upper…
+#> 1     1218  288.       288.        NA     633.    1803.    36 between_day_upper…
 ```
 
 The first estimate, the default (`target = "period_total"`), is the
-effort **over the whole 120-day season**, about 10,022 angler-hours.
-That season total is the number usually reported. Each stratum’s mean
-daily effort is multiplied by the number of days in that stratum, then
-the strata are added. The second is the effort **on the 36 days that
-were sampled**: 3,010 angler-hours. Ask for it with
-`target = "sampled_days"`.
+effort **over the whole 120-day season**, about 4,079 angler-hours.
+(These data are simulated, so the true season effort is known: 4,932
+angler-hours, inside the 95% confidence interval.) That season total is
+the number usually reported. Each stratum’s mean daily effort is
+multiplied by the number of days in that stratum, then the strata are
+added. The second is the effort **on the 36 days that were sampled**:
+1,218 angler-hours. Ask for it with `target = "sampled_days"`.
 
 The standard error comes from the day-to-day variation among the sampled
 days within each stratum. With one count per day the within-day
@@ -165,6 +180,10 @@ Estimates can be broken down by any column in the design with `by`:
 ``` r
 
 estimate_effort(design, by = day_type, target = "period_total")
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -177,14 +196,16 @@ estimate_effort(design, by = day_type, target = "period_total")
 #> # A tibble: 2 × 9
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
-#> 1 weekday     7080.  847.       847.        NA    5359.    8800.    25 between_…
-#> 2 weekend     2943.  711.       711.        NA    1497.    4388.    11 between_…
+#> 1 weekday     2809.  616.       616.        NA    1557.    4062.    27 between_…
+#> 2 weekend     1269.  805.       805.        NA    -367.    2906.     9 between_…
 ```
 
-The 86 weekdays account for most of the season’s effort, about 7,080
-angler-hours to the weekends’ 2,940, but only because there are more of
-them. Per day, an average weekend day saw slightly more: about 87
-angler-hours, against 82 on an average weekday.
+The 86 weekdays account for most of the season’s effort, about 2,809
+angler-hours to the weekends’ 1,269, but only because there are more of
+them. Per day, an average weekend day saw slightly more: about 37
+angler-hours, against 33 on an average weekday. With only 9 weekend days
+sampled, the weekend estimate is imprecise, and its symmetric confidence
+interval reaches below zero.
 
 ## Interviews
 
@@ -192,19 +213,19 @@ angler-hours, against 82 on an average weekday.
 
 head(example_season_interviews)
 #>         date day_type interview_id trip_status hours_fished n_anglers
-#> 1 2024-05-05  weekend            1    complete         2.50         1
-#> 2 2024-05-05  weekend            2    complete         1.50         2
-#> 3 2024-05-05  weekend            3    complete         3.63         1
-#> 4 2024-05-05  weekend            4    complete         1.06         1
-#> 5 2024-05-05  weekend            5    complete         0.95         1
-#> 6 2024-05-05  weekend            6    complete         1.64         1
+#> 1 2024-05-03  weekday            1    complete         1.96         2
+#> 2 2024-05-03  weekday            2    complete         0.84         1
+#> 3 2024-05-03  weekday            3    complete         2.87         1
+#> 4 2024-05-03  weekday            4    complete         2.10         1
+#> 5 2024-05-03  weekday            5    complete         0.41         2
+#> 6 2024-05-03  weekday            6    complete         3.12         2
 #>   catch_total catch_kept
-#> 1           2          1
+#> 1           0          0
 #> 2           0          0
 #> 3           0          0
-#> 4           0          0
+#> 4           1          1
 #> 5           0          0
-#> 6           0          0
+#> 6           4          1
 
 design <- add_interviews(design, example_season_interviews,
   catch = catch_total,
@@ -213,15 +234,15 @@ design <- add_interviews(design, example_season_interviews,
   trip_status = trip_status,
   n_anglers = n_anglers
 )
-#> ℹ 230 interviews have zero catch.
+#> ℹ 238 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
-#> ℹ Added 292 interviews: 201 complete (69%), 91 incomplete (31%)
+#> ℹ Added 298 interviews: 222 complete (74%), 76 incomplete (26%)
 ```
 
 Each row is one party.
 [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
-checks the interviews as it attaches them and reports what it found: 201
-complete trips, 91 incomplete, and 230 parties that caught nothing. Most
+checks the interviews as it attaches them and reports what it found: 222
+complete trips, 76 incomplete, and 238 parties that caught nothing. Most
 anglers on most fisheries go home without a fish, and those zeros belong
 in the catch rate. The count is shown because, on a real data sheet, a
 column of zeros can also mean a catch that was never recorded. If your
@@ -240,7 +261,7 @@ multiplied by effort in angler-hours.
 
 estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
-#>   (n=201, 68.8% of 292 interviews) [default]
+#>   (n=222, 74.5% of 298 interviews) [default]
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -251,10 +272,10 @@ estimate_catch_rate(design)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.199 0.0380    0.124    0.274   201
+#> 1    0.180 0.0346    0.112    0.248   222
 estimate_harvest_rate(design)
 #> ℹ Filtering to complete trips for HPUE estimation
-#>   (n=201, 68.8% of 292 interviews) [default]
+#>   (n=222, 74.5% of 298 interviews) [default]
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means HPUE
@@ -265,14 +286,14 @@ estimate_harvest_rate(design)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1   0.0663 0.0153   0.0363   0.0964   201
+#> 1   0.0595 0.0138   0.0325   0.0866   222
 ```
 
-The catch rate is about 0.20 fish per angler-hour, and the harvest rate
-about 0.07. Both are ratio-of-means estimates, total catch divided by
+The catch rate is about 0.18 fish per angler-hour, and the harvest rate
+about 0.06. Both are ratio-of-means estimates, total catch divided by
 total effort across the interviews. These data were simulated with a
 true catch rate of 0.22, inside the estimate’s confidence interval. By
-default the rates use only the 201 complete trips. A party interviewed
+default the rates use only the 222 complete trips. A party interviewed
 while still fishing is more likely to be met the longer it stays, so
 incomplete trips over-represent long trips (length-of-stay bias) and
 give a biased catch rate unless the rate is steady through a trip.
@@ -295,7 +316,7 @@ estimate_total_catch(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    2016.  439.    1150.    2882.   201
+#> 1     736.  217.     309.    1164.   222
 estimate_total_harvest(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -308,13 +329,13 @@ estimate_total_harvest(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     670.  171.     332.    1008.   201
+#> 1     243.  79.6     86.0     400.   222
 ```
 
 A total is effort times rate, with the uncertainty of both carried into
 its standard error. The unit follows: angler-hours times fish per
-angler-hour is fish. About 2,020 fish were caught over the season, and
-about 670 were kept. These totals take `target` too, and need
+angler-hour is fish. About 740 fish were caught over the season, and
+about 240 were kept. These totals take `target` too, and need
 `target = "period_total"` for the season, just as effort does.
 
 Totals break down the same way as effort:
@@ -334,8 +355,8 @@ estimate_total_catch(design, by = day_type, target = "period_total")
 #> # A tibble: 2 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     1586.  402.    791.     2381.   128
-#> 2 weekend      430.  177.     76.8     784.    73
+#> 1 weekday      542.  172.     203.     882.   152
+#> 2 weekend      194.  133.       0      458.    70
 ```
 
 Released fish come from species-level catch records, attached with
@@ -358,8 +379,8 @@ catch_tbl
 #> # A tibble: 2 × 12
 #>   day_type estimate    se ci_lower ci_upper     n method              estimator 
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int> <chr>               <chr>     
-#> 1 weekday     1586.  402.    791.     2381.   128 product-total-catch ratio-of-…
-#> 2 weekend      430.  177.     76.8     784.    73 product-total-catch ratio-of-…
+#> 1 weekday      542.  172.     203.     882.   152 product-total-catch ratio-of-…
+#> 2 weekend      194.  133.       0      458.    70 product-total-catch ratio-of-…
 #> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
 #> #   effort_target <chr>, unit <chr>
 
@@ -367,7 +388,7 @@ catch_tbl[catch_tbl$day_type == "weekend", c("day_type", "estimate", "se", "unit
 #> # A tibble: 1 × 4
 #>   day_type estimate    se unit 
 #>   <chr>       <dbl> <dbl> <chr>
-#> 1 weekend      430.  177. fish
+#> 1 weekend      194.  133. fish
 ```
 
 [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) does the
@@ -399,6 +420,10 @@ estimate built on it:
 
 set.seed(123)
 estimate_effort(design, target = "period_total", variance = "bootstrap")
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -410,8 +435,12 @@ estimate_effort(design, target = "period_total", variance = "bootstrap")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10022. 1089.      1089.        NA    7810.   12234.    36 between_day_upper…
+#> 1    4079.  978.       978.        NA    2090.    6067.    36 between_day_upper…
 estimate_effort(design, target = "period_total", variance = "jackknife")
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Total
@@ -423,7 +452,7 @@ estimate_effort(design, target = "period_total", variance = "jackknife")
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1   10022. 1106.      1106.        NA    7775.   12269.    36 between_day_upper…
+#> 1    4079. 1014.      1014.        NA    2018.    6139.    36 between_day_upper…
 ```
 
 - **Taylor linearization** (default) is fast and appropriate for most
