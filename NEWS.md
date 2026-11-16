@@ -1055,6 +1055,12 @@
 
 ## Bug fixes
 
+* `estimate_effort_aerial_glmm()` fits its default model when the time or
+  count column has a non-syntactic name, such as `time of flight` (#400). The
+  default formula, and the interaction formula behind the BIC shape check with
+  `by =`, pasted the names in unquoted and failed to parse. A non-syntactic
+  date or strata column still cannot enter a design (#656).
+
 * `simulate_creel_data()`: the harvested fish in the species catch table now sum
   to each interview's `catch_kept`, and the released fish to
   `catch_total - catch_kept` (#651). The interview's kept fish are split across
