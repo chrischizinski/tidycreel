@@ -1460,6 +1460,15 @@
 
 ### Bug fixes
 
+- [`summarize_by_county()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_county.md)
+  maps zip codes stored as numbers
+  ([\#376](https://github.com/chrischizinski/tidycreel/issues/376)). A
+  numeric zip column looked up counties by position instead of by zip,
+  so every interview was reported as `"Unknown"`, with no warning.
+  Numeric zips are now read as 5-digit codes, restoring a lost leading
+  zero (`2134` is `02134`), and a zip that is not a whole number is
+  refused.
+
 - [`simulate_creel_data()`](https://chrischizinski.com/tidycreel/dev/reference/simulate_creel_data.md):
   the harvested fish in the species catch table now sum to each
   interview’s `catch_kept`, and the released fish to

@@ -20,7 +20,8 @@ summarize_by_county(design, zip_col = "zip_code")
 - zip_col:
 
   Name of the interview column holding the angler zip code. Defaults to
-  `"zip_code"`.
+  `"zip_code"`. Text or whole numbers; a number is read as a 5-digit
+  code, so `2134` is `"02134"`.
 
 ## Value
 
