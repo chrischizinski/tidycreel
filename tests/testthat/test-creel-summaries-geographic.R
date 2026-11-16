@@ -133,13 +133,14 @@ test_that("summarize_boat_composition() result has one row per month x day_type 
 
 # --- summarize_by_zip() -------------------------------------------------------
 
-make_zip_design <- function() {
+make_zip_design <- function(
+  zip_pattern = c("68502", "68502", NA_character_, "68508", NA_character_)
+) {
   # Use example_interviews, inject a zip_code column (5 rows, 2 NA) for zip tests
   data(example_interviews, package = "tidycreel")
   data(example_calendar, package = "tidycreel")
   ints <- example_interviews
-  # Inject zip_code: cycle through c("68502","68502",NA,"68508",NA) for all rows
-  zip_pattern <- c("68502", "68502", NA_character_, "68508", NA_character_)
+  # Inject zip_code: cycle through zip_pattern for all rows
   ints$zip_code <- rep_len(zip_pattern, nrow(ints))
   d <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -284,6 +285,52 @@ test_that("summarize_by_county() includes Unknown row for NA zips", {
   d <- make_zip_design()
   result <- summarize_by_county(d)
   expect_true("Unknown" %in% result$county)
+})
+
+# GH #376: an integer zip column indexed the zip -> county lookup by POSITION,
+# so every party came back "Unknown" with no warning (776 of 776 on a real
+# survey whose API returns zips as integers). The table must not depend on
+# the storage type of the zip column.
+test_that("summarize_by_county() maps integer zip codes like character ones (#376)", {
+  skip_if_not_installed("zipcodeR")
+  chr <- summarize_by_county(make_zip_design())
+  int <- summarize_by_county(
+    make_zip_design(c(68502L, 68502L, NA_integer_, 68508L, NA_integer_))
+  )
+  dbl <- summarize_by_county(
+    make_zip_design(c(68502, 68502, NA_real_, 68508, NA_real_))
+  )
+  expect_identical(int, chr)
+  expect_identical(dbl, chr)
+  # The point of the fix: the known zips are mapped, not "Unknown"
+  expect_true("Lancaster County" %in% int$county)
+  expect_identical(int$n[int$county == "Unknown"], chr$n[chr$county == "Unknown"])
+})
+
+test_that("summarize_by_county() restores the leading zero of an integer zip (#376)", {
+  skip_if_not_installed("zipcodeR")
+  # 02134 (Boston) stored as an integer is 2134; it must still map
+  result <- summarize_by_county(make_zip_design(c(2134L, NA_integer_)))
+  expect_true("Suffolk County" %in% result$county)
+})
+
+test_that("summarize_by_county() maps a factor zip column by its labels (#376)", {
+  skip_if_not_installed("zipcodeR")
+  # A factor indexes by its integer codes (1, 2), the same position bug
+  chr <- summarize_by_county(make_zip_design())
+  fct <- summarize_by_county(
+    make_zip_design(factor(c("68502", "68502", NA, "68508", NA)))
+  )
+  expect_identical(fct, chr)
+})
+
+test_that("summarize_by_county() refuses a numeric zip that is not a whole number (#376)", {
+  skip_if_not_installed("zipcodeR")
+  # Truncating 68502.7 to 68502 would invent a county for a corrupt value
+  expect_error(
+    summarize_by_county(make_zip_design(c(68502.7, 68508))),
+    class = "creel_error_invalid_input"
+  )
 })
 
 test_that("summarize_by_county() aborts when interviews not attached", {

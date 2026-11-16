@@ -2514,7 +2514,8 @@ summarize_by_zip <- function(design, zip_col = "zip_code") {
 #' @param design A \code{creel_design} object with interviews attached via
 #'   \code{\link{add_interviews}}.
 #' @param zip_col Name of the interview column holding the angler zip code.
-#'   Defaults to \code{"zip_code"}.
+#'   Defaults to \code{"zip_code"}. Text or whole numbers; a number is read as
+#'   a 5-digit code, so \code{2134} is \code{"02134"}.
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_county", "data.frame")} and columns:
@@ -2591,6 +2592,25 @@ summarize_by_county <- function(design, zip_col = "zip_code") {
   }
 
   zip_vals <- design$interviews[[zip_col]]
+  # Key the lookup by 5-digit text (GH #376). A numeric zip indexes a named
+  # vector by POSITION, so every party fell through to "Unknown"; a stored
+  # integer has also lost its leading zero (02134 -> 2134).
+  if (is.numeric(zip_vals)) {
+    known <- zip_vals[!is.na(zip_vals)]
+    if (any(known != round(known))) {
+      cli::cli_abort(
+        c(
+          "{.field {zip_col}} holds numbers that are not whole zip codes.",
+          "x" = "Non-integer value{?s}: {.val {utils::head(unique(known[known != round(known)]), 5)}}.",
+          "i" = "Store zip codes as 5-digit text, or as whole numbers."
+        ),
+        class = "creel_error_invalid_input"
+      )
+    }
+    zip_vals <- ifelse(is.na(zip_vals), NA_character_, sprintf("%05.0f", zip_vals))
+  } else {
+    zip_vals <- as.character(zip_vals)
+  }
   total_n <- length(zip_vals)
   valid_zips <- zip_vals[!is.na(zip_vals)]
   unique_zips <- unique(valid_zips)
