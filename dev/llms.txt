@@ -607,6 +607,8 @@ check data completeness, and inspect estimate output.
   : Tabulate interviews by zip code of origin
 - [`summarize_by_county()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_county.md)
   : Tabulate interviews by county of origin
+- [`zip_county`](https://chrischizinski.com/tidycreel/dev/reference/zip_county.md)
+  : Zip code to county and state lookup
 - [`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md)
   : Assemble pre-computed creel estimates into a report-ready wide
   tibble
