@@ -11,7 +11,8 @@ summarize_by_county(design, zip_col = "zip_code")
 \code{\link{add_interviews}}.}
 
 \item{zip_col}{Name of the interview column holding the angler zip code.
-Defaults to \code{"zip_code"}.}
+Defaults to \code{"zip_code"}. Text or whole numbers; a number is read as
+a 5-digit code, so \code{2134} is \code{"02134"}.}
 }
 \value{
 A \code{data.frame} with class
