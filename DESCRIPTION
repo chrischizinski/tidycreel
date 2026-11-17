@@ -59,7 +59,6 @@ Suggests:
     withr,
     writexl (>= 1.5.4),
     zip,
-    zipcodeR
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://github.com/chrischizinski/tidycreel, https://chrischizinski.com/tidycreel/

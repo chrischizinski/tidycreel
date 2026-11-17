@@ -1079,3 +1079,45 @@
 #' @seealso [creel_counts_toy]
 #' @family "Example Datasets"
 "creel_interviews_toy"
+
+#' Zip code to county and state lookup
+#'
+#' One row per 2020 ZIP Code Tabulation Area (ZCTA) with the county and state
+#' it is assigned to. [summarize_by_county()] uses it unless you pass your own
+#' `lookup`.
+#'
+#' A ZCTA that crosses a county line (10,186 of 33,791) is assigned to the
+#' county holding the largest share of its land area. Land area is not where
+#' people live, so anglers from a split ZCTA may mostly live in another
+#' county; `n_counties` and `land_share` show how split each ZCTA is.
+#'
+#' ZCTAs are the Census Bureau's areal approximation of USPS ZIP code service
+#' areas, not the ZIP codes themselves. ZIPs used only for PO boxes or a
+#' single organisation have no ZCTA and are not in this table.
+#'
+#' @format A data frame with 33,791 rows and 6 columns:
+#' \describe{
+#'   \item{zip}{ZCTA code, 5-digit text with any leading zero (`"02134"`).}
+#'   \item{county}{County or county-equivalent name as the Census Bureau
+#'     writes it (`"Lancaster County"`, `"Añasco Municipio"`), UTF-8.}
+#'   \item{state}{Two-letter USPS state or territory abbreviation.}
+#'   \item{county_fips}{5-digit county FIPS code.}
+#'   \item{n_counties}{Number of counties the ZCTA's area overlaps.}
+#'   \item{land_share}{Share of the ZCTA's land area in the assigned county,
+#'     rounded to 3 decimals; 1 when it lies in one county.}
+#' }
+#'
+#' @source U.S. Census Bureau, 2020 ZCTA to County Relationship File
+#'   (`tab20_zcta520_county20_natl.txt`),
+#'   <https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/>.
+#'   Public domain. Built by `data-raw/zip_county.R` in the package source.
+#'
+#' @examples
+#' data(zip_county)
+#' zip_county[zip_county$zip %in% c("55082", "68008"), ]
+#'
+#' # How often the county is a land-area majority call
+#' summary(zip_county$land_share[zip_county$n_counties > 1])
+#'
+#' @seealso [summarize_by_county()]
+"zip_county"

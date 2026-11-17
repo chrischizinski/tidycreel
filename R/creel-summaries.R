@@ -2507,29 +2507,43 @@ summarize_by_zip <- function(design, zip_col = "zip_code") {
 #' @title Tabulate interviews by county of origin
 #'
 #' @description
-#' Maps angler zip codes to county using the \pkg{zipcodeR} package, then
-#' counts and computes the percent of interviews by county. NA or unmappable
-#' zip codes appear as an explicit "Unknown" row.
+#' Maps angler zip codes to a county and state, then counts and computes the
+#' percent of interviews by county. NA or unmappable zip codes appear as an
+#' explicit "Unknown" row.
 #'
 #' @param design A \code{creel_design} object with interviews attached via
 #'   \code{\link{add_interviews}}.
 #' @param zip_col Name of the interview column holding the angler zip code.
 #'   Defaults to \code{"zip_code"}. Text or whole numbers; a number is read as
 #'   a 5-digit code, so \code{2134} is \code{"02134"}.
+#' @param lookup The zip-to-county table. \code{NULL} (the default) uses
+#'   \code{\link{zip_county}}, built from the Census Bureau's 2020 ZCTA-county
+#'   relationship file. Otherwise a data frame with columns \code{zip},
+#'   \code{county} and \code{state}, one row per zip, such as a USPS-based
+#'   crosswalk or one that assigns PO-box zips your anglers use.
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_county", "data.frame")} and columns:
-#'   \code{county} (character), \code{n} (integer), \code{pct} (numeric,
-#'   1 decimal). NA or unmappable zip codes appear as \code{"Unknown"}.
+#'   \code{county} (character), \code{state} (character), \code{n} (integer),
+#'   \code{pct} (numeric, 1 decimal). Counties are kept apart by state, so
+#'   Washington County, MN and Washington County, NE are two rows. NA or
+#'   unmappable zip codes appear as county \code{"Unknown"} with state
+#'   \code{NA}.
 #'
 #' @details
-#' Interview-based summary, not pressure-weighted. Requires the
-#' \pkg{zipcodeR} package (listed in \code{Suggests}). No state filter is
-#' applied; out-of-state anglers receive their actual county name. NA or
-#' unmappable zip codes appear as "Unknown" for data quality visibility.
-#' Sort order: "Unknown" last; remaining rows sorted by \code{n} descending.
+#' Interview-based summary, not pressure-weighted. No state filter is applied;
+#' out-of-state anglers receive their actual county and state. Sort order:
+#' "Unknown" last; remaining rows sorted by \code{n} descending.
 #'
-#' @examplesIf rlang::is_installed("zipcodeR")
+#' The default lookup has one county per ZIP Code Tabulation Area (ZCTA). A
+#' ZCTA that crosses a county line goes to the county holding most of its land
+#' area, which need not be where most of its people live; see
+#' \code{\link{zip_county}}. ZCTAs are not USPS ZIP codes: PO-box-only and
+#' single-organisation ZIPs have no ZCTA and are reported as "Unknown", with a
+#' message giving how many interviews that affected. Pass \code{lookup} to map
+#' them.
+#'
+#' @examples
 #' data(example_calendar)
 #' data(example_interviews)
 #'
@@ -2549,18 +2563,17 @@ summarize_by_zip <- function(design, zip_col = "zip_code") {
 #'
 #' summarize_by_county(design)
 #'
+#' # Your own crosswalk, for example one that places a PO-box zip
+#' my_lookup <- data.frame(
+#'   zip = c("68502", "68508"),
+#'   county = c("Lancaster County", "Lancaster County"),
+#'   state = "NE"
+#' )
+#' summarize_by_county(design, lookup = my_lookup)
+#'
 #' @family "Reporting & Diagnostics"
 #' @export
-summarize_by_county <- function(design, zip_col = "zip_code") {
-  # Guard 0: zipcodeR must be installed
-  rlang::check_installed(
-    "zipcodeR",
-    reason = paste0(
-      "summarize_by_county() requires the zipcodeR package for ",
-      "zip-to-county mapping. Install it with: install.packages(\"zipcodeR\")"
-    )
-  )
-
+summarize_by_county <- function(design, zip_col = "zip_code", lookup = NULL) {
   # Guard 1: design type check
   if (!inherits(design, "creel_design")) {
     cli::cli_abort(c(
@@ -2591,83 +2604,119 @@ summarize_by_county <- function(design, zip_col = "zip_code") {
     ))
   }
 
-  zip_vals <- design$interviews[[zip_col]]
-  # Key the lookup by 5-digit text (GH #376). A numeric zip indexes a named
-  # vector by POSITION, so every party fell through to "Unknown"; a stored
-  # integer has also lost its leading zero (02134 -> 2134).
-  if (is.numeric(zip_vals)) {
-    known <- zip_vals[!is.na(zip_vals)]
+  census_lookup <- is.null(lookup)
+  lookup <- county_lookup(lookup)
+  zip_vals <- zip_key(design$interviews[[zip_col]], zip_col)
+  total_n <- length(zip_vals)
+
+  idx <- match(zip_vals, lookup$zip)
+  unmapped <- sum(!is.na(zip_vals) & is.na(idx))
+  if (unmapped > 0L) {
+    cli::cli_inform(c(
+      "i" = paste(
+        "{unmapped} interview{?s} ha{?s/ve} a zip code not in the lookup;",
+        "reported as {.val {unknown_group_label()}}."
+      ),
+      if (census_lookup) {
+        c(" " = "PO-box and single-organisation ZIPs have no Census ZCTA. Pass {.arg lookup} to map them.")
+      }
+    ))
+  }
+
+  # Group on county AND state: county names repeat across states (GH #376).
+  county_vals <- ifelse(is.na(idx), unknown_group_label(), lookup$county[idx])
+  state_vals <- ifelse(is.na(idx), NA_character_, lookup$state[idx])
+  key <- paste(county_vals, state_vals, sep = "\r")
+  first <- !duplicated(key)
+  counts_tbl <- data.frame(
+    county = county_vals[first],
+    state = state_vals[first],
+    n = as.integer(tabulate(match(key, key[first]), nbins = sum(first))),
+    stringsAsFactors = FALSE
+  )
+  counts_tbl$pct <- round(100 * counts_tbl$n / total_n, 1)
+
+  # Sort: Unknown last, remaining rows by n descending
+  is_unknown <- counts_tbl$county == unknown_group_label() & is.na(counts_tbl$state)
+  known <- counts_tbl[!is_unknown, ]
+  known <- known[order(-known$n, known$county, known$state), ]
+  counts_tbl <- rbind(known, counts_tbl[is_unknown, ])
+  row.names(counts_tbl) <- NULL
+
+  class(counts_tbl) <- c("creel_summary_county", "data.frame")
+  counts_tbl
+}
+
+# Zip codes as 5-digit lookup keys (GH #376). A numeric zip would index a named
+# vector by POSITION, and a stored integer has lost its leading zero
+# (02134 -> 2134); a factor's codes are not its labels.
+#' @noRd
+zip_key <- function(x, what) {
+  if (is.numeric(x)) {
+    known <- x[!is.na(x)]
     if (any(known != round(known))) {
       cli::cli_abort(
         c(
-          "{.field {zip_col}} holds numbers that are not whole zip codes.",
+          "{.field {what}} holds numbers that are not whole zip codes.",
           "x" = "Non-integer value{?s}: {.val {utils::head(unique(known[known != round(known)]), 5)}}.",
           "i" = "Store zip codes as 5-digit text, or as whole numbers."
         ),
         class = "creel_error_invalid_input"
       )
     }
-    zip_vals <- ifelse(is.na(zip_vals), NA_character_, sprintf("%05.0f", zip_vals))
-  } else {
-    zip_vals <- as.character(zip_vals)
+    return(ifelse(is.na(x), NA_character_, sprintf("%05.0f", x)))
   }
-  total_n <- length(zip_vals)
-  valid_zips <- zip_vals[!is.na(zip_vals)]
-  unique_zips <- unique(valid_zips)
+  as.character(x)
+}
 
-  # Build county lookup from zipcodeR's zip_code_db dataset
-  zip_db <- zipcodeR::zip_code_db
-  county_map <- zip_db[
-    zip_db$zipcode %in% as.character(unique_zips),
-    c("zipcode", "county"),
-    drop = FALSE
-  ]
-
-  # Determine actual county column name returned by the lookup
-  county_col <- if ("county" %in% names(county_map)) {
-    "county"
-  } else if ("county_name" %in% names(county_map)) {
-    "county_name"
-  } else {
-    # Use first character column other than zipcode as fallback
-    char_cols <- names(county_map)[vapply(county_map, is.character, logical(1))]
-    char_cols <- char_cols[char_cols != "zipcode"]
-    if (length(char_cols) > 0L) char_cols[1L] else NA_character_
+# The zip -> county + state table summarize_by_county() matches against:
+# zip_county by default, or a caller's table, checked so a zip maps to exactly
+# one county.
+#' @noRd
+county_lookup <- function(lookup) {
+  if (is.null(lookup)) {
+    return(tidycreel::zip_county)
   }
-
-  # Build zip -> county lookup vector
-  zip_col_name <- if ("zipcode" %in% names(county_map)) "zipcode" else names(county_map)[1]
-  lookup <- stats::setNames(
-    if (!is.na(county_col)) county_map[[county_col]] else rep(NA_character_, nrow(county_map)),
-    county_map[[zip_col_name]]
+  if (!is.data.frame(lookup)) {
+    cli::cli_abort(
+      "{.arg lookup} must be a data frame, not {.cls {class(lookup)[1]}}.",
+      class = "creel_error_invalid_input"
+    )
+  }
+  missing_cols <- setdiff(c("zip", "county", "state"), names(lookup))
+  if (length(missing_cols) > 0L) {
+    cli::cli_abort(
+      c(
+        "{.arg lookup} must have columns {.field zip}, {.field county} and {.field state}.",
+        "x" = "Missing: {.field {missing_cols}}."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+  zip <- zip_key(lookup$zip, "lookup$zip")
+  county <- as.character(lookup$county)
+  bad <- is.na(zip) | is.na(county) | !nzchar(county)
+  if (any(bad)) {
+    cli::cli_abort(
+      c(
+        "Every {.arg lookup} row needs a zip and a county.",
+        "x" = "{sum(bad)} row{?s} {?has/have} a missing zip or county."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+  dup <- unique(zip[duplicated(zip)])
+  if (length(dup) > 0L) {
+    cli::cli_abort(
+      c(
+        "Each zip must appear once in {.arg lookup}, so it maps to one county.",
+        "x" = "{length(dup)} zip{?s} appear{?s/} more than once, e.g. {.val {utils::head(dup, 3)}}."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
+  data.frame(
+    zip = zip, county = county, state = as.character(lookup$state),
+    stringsAsFactors = FALSE
   )
-
-  # Build county_vals for all interviews
-  county_vals <- rep("Unknown", total_n)
-  for (i in seq_along(zip_vals)) {
-    z <- zip_vals[i]
-    if (!is.na(z)) {
-      mapped <- lookup[z]
-      if (!is.na(mapped) && nzchar(mapped)) {
-        county_vals[i] <- mapped
-      }
-      # else stays "Unknown" (unmappable zip)
-    }
-    # NA zip stays "Unknown"
-  }
-
-  counts_tbl <- as.data.frame(table(county = county_vals), stringsAsFactors = FALSE)
-  names(counts_tbl)[names(counts_tbl) == "Freq"] <- "n"
-  counts_tbl$n <- as.integer(counts_tbl$n)
-  counts_tbl$pct <- round(100 * counts_tbl$n / total_n, 1)
-
-  # Sort: Unknown last, remaining rows by n descending
-  known <- counts_tbl[counts_tbl$county != "Unknown", ]
-  unknown <- counts_tbl[counts_tbl$county == "Unknown", ]
-  known <- known[order(-known$n), ]
-  counts_tbl <- rbind(known, unknown)
-  row.names(counts_tbl) <- NULL
-
-  class(counts_tbl) <- c("creel_summary_county", "data.frame")
-  counts_tbl
 }

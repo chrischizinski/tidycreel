@@ -4,7 +4,7 @@
 \alias{summarize_by_county}
 \title{Tabulate interviews by county of origin}
 \usage{
-summarize_by_county(design, zip_col = "zip_code")
+summarize_by_county(design, zip_col = "zip_code", lookup = NULL)
 }
 \arguments{
 \item{design}{A \code{creel_design} object with interviews attached via
@@ -13,27 +13,41 @@ summarize_by_county(design, zip_col = "zip_code")
 \item{zip_col}{Name of the interview column holding the angler zip code.
 Defaults to \code{"zip_code"}. Text or whole numbers; a number is read as
 a 5-digit code, so \code{2134} is \code{"02134"}.}
+
+\item{lookup}{The zip-to-county table. \code{NULL} (the default) uses
+\code{\link{zip_county}}, built from the Census Bureau's 2020 ZCTA-county
+relationship file. Otherwise a data frame with columns \code{zip},
+\code{county} and \code{state}, one row per zip, such as a USPS-based
+crosswalk or one that assigns PO-box zips your anglers use.}
 }
 \value{
 A \code{data.frame} with class
 \code{c("creel_summary_county", "data.frame")} and columns:
-\code{county} (character), \code{n} (integer), \code{pct} (numeric,
-1 decimal). NA or unmappable zip codes appear as \code{"Unknown"}.
+\code{county} (character), \code{state} (character), \code{n} (integer),
+\code{pct} (numeric, 1 decimal). Counties are kept apart by state, so
+Washington County, MN and Washington County, NE are two rows. NA or
+unmappable zip codes appear as county \code{"Unknown"} with state
+\code{NA}.
 }
 \description{
-Maps angler zip codes to county using the \pkg{zipcodeR} package, then
-counts and computes the percent of interviews by county. NA or unmappable
-zip codes appear as an explicit "Unknown" row.
+Maps angler zip codes to a county and state, then counts and computes the
+percent of interviews by county. NA or unmappable zip codes appear as an
+explicit "Unknown" row.
 }
 \details{
-Interview-based summary, not pressure-weighted. Requires the
-\pkg{zipcodeR} package (listed in \code{Suggests}). No state filter is
-applied; out-of-state anglers receive their actual county name. NA or
-unmappable zip codes appear as "Unknown" for data quality visibility.
-Sort order: "Unknown" last; remaining rows sorted by \code{n} descending.
+Interview-based summary, not pressure-weighted. No state filter is applied;
+out-of-state anglers receive their actual county and state. Sort order:
+"Unknown" last; remaining rows sorted by \code{n} descending.
+
+The default lookup has one county per ZIP Code Tabulation Area (ZCTA). A
+ZCTA that crosses a county line goes to the county holding most of its land
+area, which need not be where most of its people live; see
+\code{\link{zip_county}}. ZCTAs are not USPS ZIP codes: PO-box-only and
+single-organisation ZIPs have no ZCTA and are reported as "Unknown", with a
+message giving how many interviews that affected. Pass \code{lookup} to map
+them.
 }
 \examples{
-\dontshow{if (rlang::is_installed("zipcodeR")) withAutoprint(\{ # examplesIf}
 data(example_calendar)
 data(example_interviews)
 
@@ -52,7 +66,15 @@ design <- add_interviews(design, interviews_zip,
 )
 
 summarize_by_county(design)
-\dontshow{\}) # examplesIf}
+
+# Your own crosswalk, for example one that places a PO-box zip
+my_lookup <- data.frame(
+  zip = c("68502", "68508"),
+  county = c("Lancaster County", "Lancaster County"),
+  state = "NE"
+)
+summarize_by_county(design, lookup = my_lookup)
+
 }
 \seealso{
 Other "Reporting & Diagnostics":

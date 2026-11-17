@@ -136,6 +136,7 @@ reference:
       - summarize_boat_composition
       - summarize_by_zip
       - summarize_by_county
+      - zip_county
       - season_summary
       - summary.creel_estimates
       - tidy.creel_estimates
