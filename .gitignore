@@ -213,6 +213,7 @@ cran_review/
 !data/example_season_interviews.rda
 !data/example_sections_calendar.rda
 !data/example_sections_counts.rda
+!data/zip_county.rda
 !data/example_sections_interviews.rda
 !inst/calamus-2016/catch.csv
 !inst/calamus-2016/counts.csv

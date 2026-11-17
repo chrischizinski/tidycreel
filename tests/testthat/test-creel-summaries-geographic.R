@@ -253,35 +253,20 @@ test_that("summarize_by_zip() aborts when the named zip column is not in intervi
 
 # --- summarize_by_county() ----------------------------------------------------
 
-test_that("summarize_by_county() aborts when zipcodeR not installed", {
-  skip_if(
-    requireNamespace("zipcodeR", quietly = TRUE),
-    "zipcodeR is installed — guard fires only when absent"
-  )
-  # Guard 0 fires before class check, so a plain list is sufficient
-  expect_error(
-    summarize_by_county(list()),
-    regexp = "zipcodeR"
-  )
-})
-
 test_that("summarize_by_county() returns creel_summary_county", {
-  skip_if_not_installed("zipcodeR")
   d <- make_zip_design()
   result <- summarize_by_county(d)
   expect_s3_class(result, "creel_summary_county")
   expect_s3_class(result, "data.frame")
 })
 
-test_that("summarize_by_county() has columns county, n, pct", {
-  skip_if_not_installed("zipcodeR")
+test_that("summarize_by_county() has columns county, state, n, pct", {
   d <- make_zip_design()
   result <- summarize_by_county(d)
-  expect_true(all(c("county", "n", "pct") %in% names(result)))
+  expect_identical(names(result), c("county", "state", "n", "pct"))
 })
 
 test_that("summarize_by_county() includes Unknown row for NA zips", {
-  skip_if_not_installed("zipcodeR")
   d <- make_zip_design()
   result <- summarize_by_county(d)
   expect_true("Unknown" %in% result$county)
@@ -292,7 +277,6 @@ test_that("summarize_by_county() includes Unknown row for NA zips", {
 # survey whose API returns zips as integers). The table must not depend on
 # the storage type of the zip column.
 test_that("summarize_by_county() maps integer zip codes like character ones (#376)", {
-  skip_if_not_installed("zipcodeR")
   chr <- summarize_by_county(make_zip_design())
   int <- summarize_by_county(
     make_zip_design(c(68502L, 68502L, NA_integer_, 68508L, NA_integer_))
@@ -308,14 +292,12 @@ test_that("summarize_by_county() maps integer zip codes like character ones (#37
 })
 
 test_that("summarize_by_county() restores the leading zero of an integer zip (#376)", {
-  skip_if_not_installed("zipcodeR")
   # 02134 (Boston) stored as an integer is 2134; it must still map
   result <- summarize_by_county(make_zip_design(c(2134L, NA_integer_)))
   expect_true("Suffolk County" %in% result$county)
 })
 
 test_that("summarize_by_county() maps a factor zip column by its labels (#376)", {
-  skip_if_not_installed("zipcodeR")
   # A factor indexes by its integer codes, the same position bug. The levels
   # run opposite to the lookup's row order (02134 sorts first) and the two zips
   # are in different counties, so a positional lookup gives the wrong county.
@@ -329,7 +311,6 @@ test_that("summarize_by_county() maps a factor zip column by its labels (#376)",
 })
 
 test_that("summarize_by_county() refuses a numeric zip that is not a whole number (#376)", {
-  skip_if_not_installed("zipcodeR")
   # Truncating 68502.7 to 68502 would invent a county for a corrupt value
   expect_error(
     summarize_by_county(make_zip_design(c(68502.7, 68508))),
@@ -337,8 +318,125 @@ test_that("summarize_by_county() refuses a numeric zip that is not a whole numbe
   )
 })
 
+test_that("summarize_by_county() refuses negative or 6-digit numeric zips", {
+  # -9999 is a common missing-data code; it is no zip, so it must not be
+  # counted as an unmapped "Unknown" and blamed on the lookup
+  expect_error(
+    summarize_by_county(make_zip_design(c(-9999L, 68508L))),
+    class = "creel_error_invalid_input"
+  )
+  expect_error(
+    summarize_by_county(make_zip_design(c(123456, 68508))),
+    class = "creel_error_invalid_input"
+  )
+})
+
+# GH #376 part 2: the table carried only the county name, so Washington
+# County, MN and Washington County, NE were one row -- anglers from two states
+# reported as one place. County must be grouped with its state.
+test_that("summarize_by_county() keeps same-named counties in different states apart (#376)", {
+  # 55082 Stillwater, MN and 68008 Blair, NE: both Washington County
+  result <- summarize_by_county(make_zip_design(c("55082", "68008", "68008")))
+  wash <- result[result$county == "Washington County", ]
+  expect_identical(nrow(wash), 2L)
+  expect_identical(wash$state[order(wash$state)], c("MN", "NE"))
+  expect_identical(sum(wash$n), nrow(make_zip_design()$interviews))
+})
+
+test_that("summarize_by_county() reports Unknown last with state NA, not a state", {
+  result <- summarize_by_county(make_zip_design())
+  last <- result[nrow(result), ]
+  expect_identical(last$county, "Unknown")
+  expect_true(is.na(last$state))
+  expect_false(anyNA(result$state[-nrow(result)]))
+})
+
+# The default lookup is Census ZCTAs, which omit PO-box ZIPs. A zip the lookup
+# lacks must be counted, as Unknown, AND announced: dropping to Unknown quietly
+# is the believable-wrong-answer pattern #376 was filed about.
+test_that("summarize_by_county() announces zips missing from the lookup", {
+  d <- make_zip_design(c("68502", "00000", NA))
+  expect_message(result <- summarize_by_county(d), "not in the lookup")
+  n_total <- nrow(d$interviews)
+  n_unknown <- result$n[result$county == "Unknown"]
+  # 00000 and NA both land in Unknown; nothing is dropped
+  expect_identical(sum(result$n), n_total)
+  expect_identical(n_unknown, sum(rep_len(c(FALSE, TRUE, TRUE), n_total)))
+})
+
+test_that("summarize_by_county() stays silent when every zip maps", {
+  d <- suppressMessages(make_zip_design())
+  expect_no_message(summarize_by_county(d))
+})
+
+test_that("summarize_by_county() uses a caller's lookup instead of the Census table (#376)", {
+  # 00000 is no ZCTA; a caller's crosswalk can still place it. Numeric lookup
+  # zips are keyed like interview zips, so 2134 matches "02134".
+  own <- data.frame(
+    zip = c(0, 2134),
+    county = c("PO Box County", "Own Suffolk"),
+    state = c("ZZ", "MA")
+  )
+  expect_message(
+    result <- summarize_by_county(
+      make_zip_design(c("00000", "02134", "68502")),
+      lookup = own
+    ),
+    "not in the lookup"
+  )
+  expect_true(all(c("PO Box County", "Own Suffolk") %in% result$county))
+  # 68502 is not in the caller's table, so the Census table is NOT consulted
+  expect_false("Lancaster County" %in% result$county)
+  expect_identical(result$state[result$county == "PO Box County"], "ZZ")
+})
+
+test_that("summarize_by_county() refuses a lookup that maps one zip to two counties", {
+  own <- data.frame(
+    zip = c("68008", "68008"),
+    county = c("Washington County", "Dodge County"),
+    state = "NE"
+  )
+  expect_error(
+    summarize_by_county(make_zip_design(), lookup = own),
+    class = "creel_error_invalid_input"
+  )
+})
+
+test_that("summarize_by_county() refuses a lookup without zip, county and state", {
+  expect_error(
+    summarize_by_county(make_zip_design(), lookup = data.frame(zip = "68502", county = "X")),
+    class = "creel_error_invalid_input"
+  )
+  expect_error(
+    summarize_by_county(
+      make_zip_design(),
+      lookup = data.frame(zip = "68502", county = NA_character_, state = "NE")
+    ),
+    class = "creel_error_invalid_input"
+  )
+  # A missing state would merge same-named counties again
+  expect_error(
+    summarize_by_county(
+      make_zip_design(),
+      lookup = data.frame(zip = "68502", county = "Lancaster County", state = NA_character_)
+    ),
+    class = "creel_error_invalid_input"
+  )
+})
+
+# zip_county is the default the counts above depend on: one county per zip,
+# keys that keep their leading zero, and a state on every row.
+test_that("zip_county has one row per 5-digit zip, each with a state", {
+  data(zip_county, package = "tidycreel")
+  expect_false(anyDuplicated(zip_county$zip) > 0L)
+  expect_true(all(grepl("^[0-9]{5}$", zip_county$zip)))
+  expect_false(anyNA(zip_county$state))
+  expect_true(all(zip_county$land_share > 0 & zip_county$land_share <= 1))
+  expect_identical(zip_county$land_share[zip_county$n_counties == 1L] == 1, rep(TRUE, sum(zip_county$n_counties == 1L)))
+  expect_identical(zip_county$county[zip_county$zip == "02134"], "Suffolk County")
+})
+
 test_that("summarize_by_county() aborts when interviews not attached", {
-  skip_if_not_installed("zipcodeR")
   data(example_calendar, package = "tidycreel")
   d_no_int <- suppressWarnings(
     creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
@@ -350,7 +448,6 @@ test_that("summarize_by_county() aborts when interviews not attached", {
 })
 
 test_that("summarize_by_county() aborts when the named zip column is not in interviews", {
-  skip_if_not_installed("zipcodeR")
   data(example_interviews, package = "tidycreel")
   data(example_calendar, package = "tidycreel")
   d <- suppressWarnings(

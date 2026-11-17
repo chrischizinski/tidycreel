@@ -10,6 +10,22 @@
 
 ## Breaking changes
 
+* `summarize_by_county()` returns a `state` column and counts a county within
+  its state (#376). It used to return the county name alone, so same-named
+  counties in different states were merged: on one real survey, Washington
+  County, MN with Washington County, NE. The result is now
+  `county, state, n, pct`; the "Unknown" row has `state = NA`. Code that read
+  columns by position needs updating.
+* `summarize_by_county()` no longer uses zipcodeR (#376). Zips are looked up
+  in the new `zip_county` dataset, built from the Census Bureau's 2020
+  ZCTA-to-county relationship file. A ZCTA that crosses a county line goes to
+  the county with most of its land area. ZCTAs omit PO-box-only and
+  single-organisation ZIPs, which zipcodeR placed; these are now "Unknown",
+  with a message saying how many interviews that affected. On 3,430 interviews
+  from one agency's surveys, 13 (0.4%) moved to "Unknown" and 23 (0.7%) got a
+  different county. A new `lookup =` argument takes your own
+  `zip, county, state` table. zipcodeR is no longer a suggested package.
+
 * `simulate_creel_data()` derives its counts from the trips it simulates, and
   reports the true effort, catch and harvest (#646). Each trip now has a start
   time within the fishing day; a count is the number of anglers fishing at a
