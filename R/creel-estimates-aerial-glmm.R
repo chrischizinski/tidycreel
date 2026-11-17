@@ -351,12 +351,12 @@ estimate_effort_aerial_glmm <- function(
   # a non-syntactic column (`day type`) parses.
   by_terms <- by_vars[vapply(by_vars, function(nm) nlevels(counts_data[[nm]]) > 1L, logical(1))]
   if (is.null(formula)) {
-    rhs <- paste0("poly(", time_col_name, ", 2)")
+    rhs <- paste0("poly(", glmm_name(time_col_name), ", 2)")
     if (length(by_terms) > 0L) {
       rhs <- paste(c(rhs, paste0("`", by_terms, "`")), collapse = " + ")
     }
     glmm_formula <- stats::as.formula(
-      paste0(count_var, " ~ ", rhs, " + (1|", design$date_col, ")")
+      paste0(glmm_name(count_var), " ~ ", rhs, " + (1|", glmm_name(design$date_col), ")")
     )
   } else {
     glmm_formula <- formula
@@ -803,8 +803,8 @@ estimate_effort_aerial_glmm <- function(
 #' @noRd
 report_glmm_shape_bic <- function(model, count_var, time_col_name, by_vars, date_col, data, family) {
   inter_formula <- stats::as.formula(paste0(
-    count_var, " ~ poly(", time_col_name, ", 2) * (",
-    paste0("`", by_vars, "`", collapse = " + "), ") + (1|", date_col, ")"
+    glmm_name(count_var), " ~ poly(", glmm_name(time_col_name), ", 2) * (",
+    paste0("`", by_vars, "`", collapse = " + "), ") + (1|", glmm_name(date_col), ")"
   ))
   n_warn <- 0L
   inter <- tryCatch(
@@ -859,3 +859,7 @@ glmm_flight_counts <- function(design, time_col_name) {
   for (nm in day_cols) out[[nm]] <- design$counts[[nm]][idx]
   out
 }
+
+# A column name as it must appear in formula text: backquoted when it is not a
+# syntactic R name (`time of flight`), unchanged otherwise (GH #400).
+glmm_name <- function(x) deparse(as.name(x), backtick = TRUE)

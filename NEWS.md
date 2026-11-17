@@ -1055,6 +1055,11 @@
 
 ## Bug fixes
 
+* `estimate_effort_aerial_glmm()` fits its default model when the time or
+  count column has a non-syntactic name, such as `time of flight` (#400). The
+  default formula, and the interaction formula behind the BIC shape check with
+  `by =`, pasted the names in unquoted and failed to parse. A non-syntactic
+  date or strata column still cannot enter a design (#656).
 * `summarize_by_county()` maps zip codes stored as numbers (#376). A numeric
   zip column looked up counties by position instead of by zip, so every
   interview was reported as `"Unknown"`, with no warning. Numeric zips are now
