@@ -2519,8 +2519,9 @@ summarize_by_zip <- function(design, zip_col = "zip_code") {
 #' @param lookup The zip-to-county table. \code{NULL} (the default) uses
 #'   \code{\link{zip_county}}, built from the Census Bureau's 2020 ZCTA-county
 #'   relationship file. Otherwise a data frame with columns \code{zip},
-#'   \code{county} and \code{state}, one row per zip, such as a USPS-based
-#'   crosswalk or one that assigns PO-box zips your anglers use.
+#'   \code{county} and \code{state}, one row per zip and no missing values,
+#'   such as a USPS-based crosswalk or one that assigns PO-box zips your
+#'   anglers use.
 #'
 #' @return A \code{data.frame} with class
 #'   \code{c("creel_summary_county", "data.frame")} and columns:
@@ -2654,12 +2655,15 @@ summarize_by_county <- function(design, zip_col = "zip_code", lookup = NULL) {
 zip_key <- function(x, what) {
   if (is.numeric(x)) {
     known <- x[!is.na(x)]
-    if (any(known != round(known))) {
+    # Not whole, negative (a -9999 missing-data code) or over 5 digits: no
+    # zip, so refuse rather than report it as an unmapped "Unknown".
+    bad <- known[known != round(known) | known < 0 | known > 99999]
+    if (length(bad) > 0L) {
       cli::cli_abort(
         c(
-          "{.field {what}} holds numbers that are not whole zip codes.",
-          "x" = "Non-integer value{?s}: {.val {utils::head(unique(known[known != round(known)]), 5)}}.",
-          "i" = "Store zip codes as 5-digit text, or as whole numbers."
+          "{.field {what}} holds numbers that are not 5-digit zip codes.",
+          "x" = "Invalid value{?s}: {.val {utils::head(unique(bad), 5)}}.",
+          "i" = "Store zip codes as 5-digit text, or as whole numbers from 0 to 99999."
         ),
         class = "creel_error_invalid_input"
       )
@@ -2695,12 +2699,14 @@ county_lookup <- function(lookup) {
   }
   zip <- zip_key(lookup$zip, "lookup$zip")
   county <- as.character(lookup$county)
-  bad <- is.na(zip) | is.na(county) | !nzchar(county)
+  state <- as.character(lookup$state)
+  # A missing state would merge same-named counties again (GH #376).
+  bad <- is.na(zip) | is.na(county) | !nzchar(county) | is.na(state) | !nzchar(state)
   if (any(bad)) {
     cli::cli_abort(
       c(
-        "Every {.arg lookup} row needs a zip and a county.",
-        "x" = "{sum(bad)} row{?s} {?has/have} a missing zip or county."
+        "Every {.arg lookup} row needs a zip, a county and a state.",
+        "x" = "{sum(bad)} row{?s} {?has/have} a missing zip, county or state."
       ),
       class = "creel_error_invalid_input"
     )
@@ -2716,7 +2722,7 @@ county_lookup <- function(lookup) {
     )
   }
   data.frame(
-    zip = zip, county = county, state = as.character(lookup$state),
+    zip = zip, county = county, state = state,
     stringsAsFactors = FALSE
   )
 }

@@ -17,8 +17,9 @@ a 5-digit code, so \code{2134} is \code{"02134"}.}
 \item{lookup}{The zip-to-county table. \code{NULL} (the default) uses
 \code{\link{zip_county}}, built from the Census Bureau's 2020 ZCTA-county
 relationship file. Otherwise a data frame with columns \code{zip},
-\code{county} and \code{state}, one row per zip, such as a USPS-based
-crosswalk or one that assigns PO-box zips your anglers use.}
+\code{county} and \code{state}, one row per zip and no missing values,
+such as a USPS-based crosswalk or one that assigns PO-box zips your
+anglers use.}
 }
 \value{
 A \code{data.frame} with class

@@ -318,6 +318,19 @@ test_that("summarize_by_county() refuses a numeric zip that is not a whole numbe
   )
 })
 
+test_that("summarize_by_county() refuses negative or 6-digit numeric zips", {
+  # -9999 is a common missing-data code; it is no zip, so it must not be
+  # counted as an unmapped "Unknown" and blamed on the lookup
+  expect_error(
+    summarize_by_county(make_zip_design(c(-9999L, 68508L))),
+    class = "creel_error_invalid_input"
+  )
+  expect_error(
+    summarize_by_county(make_zip_design(c(123456, 68508))),
+    class = "creel_error_invalid_input"
+  )
+})
+
 # GH #376 part 2: the table carried only the county name, so Washington
 # County, MN and Washington County, NE were one row -- anglers from two states
 # reported as one place. County must be grouped with its state.
@@ -398,6 +411,14 @@ test_that("summarize_by_county() refuses a lookup without zip, county and state"
     summarize_by_county(
       make_zip_design(),
       lookup = data.frame(zip = "68502", county = NA_character_, state = "NE")
+    ),
+    class = "creel_error_invalid_input"
+  )
+  # A missing state would merge same-named counties again
+  expect_error(
+    summarize_by_county(
+      make_zip_design(),
+      lookup = data.frame(zip = "68502", county = "Lancaster County", state = NA_character_)
     ),
     class = "creel_error_invalid_input"
   )
