@@ -173,6 +173,14 @@
 #'     check and estimation continued.}
 #'   \item{\code{creel_warning_interview_validation}}{Tier 2. Interview data
 #'     failed a check and estimation continued.}
+#'   \item{\code{creel_warning_count_outside_shift}}{Tier 1. Counts attached
+#'     with `allow_invalid = TRUE` are timed outside every worked shift of their
+#'     day, so they are expanded by a shift probability that does not apply
+#'     (GH #426).}
+#'   \item{\code{creel_warning_interview_outside_shift}}{Tier 2. Interviews
+#'     were taken outside the drawn shift of their day. Fine when interviews
+#'     are sampled separately from counts; check they cover the hours effort
+#'     was counted (GH #426).}
 #'   \item{\code{creel_warning_repeated_sampling_units}}{Tier 1. Counts have
 #'     repeated sampling units with no count time to tell them apart.}
 #'   \item{\code{creel_warning_na_counts}}{Tier 2. Some counts are `NA`; the
@@ -310,6 +318,7 @@ creel_warning_tiers <- c(
   creel_warning_no_period_length = 1L,
   creel_warning_no_recaptures = 1L,
   creel_warning_p_period_coverage = 1L,
+  creel_warning_count_outside_shift = 1L,
   creel_warning_p_period_inferred = 1L,
   creel_warning_pooled_domain_mix = 1L,
   creel_warning_repeated_sampling_units = 1L,
@@ -333,6 +342,7 @@ creel_warning_tiers <- c(
   creel_warning_harvest_excluded = 2L,
   creel_warning_high_missingness = 2L,
   creel_warning_interview_validation = 2L,
+  creel_warning_interview_outside_shift = 2L,
   creel_warning_long_trip_duration = 2L,
   creel_warning_low_complete_pct = 2L,
   creel_warning_low_response_rate = 2L,

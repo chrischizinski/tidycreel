@@ -2722,7 +2722,12 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 #'   times, `period_length_col` must equal the total hours of the day's worked
 #'   shifts (to 0.01 h); a length equal to that window / `p_period` is refused
 #'   as applying the probability twice. Shifts that cross midnight are refused
-#'   until #407.
+#'   until #407. When `count_time_col` holds clock times (`"HH:MM"` or
+#'   POSIXct), a count timed more than 15 minutes outside every worked shift
+#'   of its day is refused (GH #426): it would be expanded by the probability
+#'   of a shift it was not taken in. `allow_invalid = TRUE` attaches it with a
+#'   warning (`creel_warning_count_outside_shift`). A `count_time_col` of
+#'   labels rather than clock times is not checked.
 #'
 #' @param missing_count What to do with count rows whose count is `NA`.
 #'   `"keep"` (default) keeps them: an unknown count is not a zero, so the
@@ -3134,6 +3139,36 @@ add_counts <- function(
   check_records_against_calendar(counts, design, design$date_col, "count") # GH #449
   if (!is.null(design$night)) {
     check_night_records_worked(counts, design, design$date_col, "count") # nolint: object_usage_linter
+  }
+  # GH #426: a count is expanded by the probability of the shift it was taken
+  # in, so a count timed outside every worked shift of its day would be
+  # expanded as if it had been drawn.
+  off_shift <- shift_window_outside( # nolint: object_usage_linter
+    counts, if (is.null(count_time_col_name)) NULL else counts[[count_time_col_name]],
+    design, design$date_col
+  )
+  if (!is.null(off_shift) && length(off_shift$rows) > 0L) {
+    n_off <- length(off_shift$rows) # nolint: object_usage_linter
+    first <- off_shift$rows[1]
+    first_day <- sub(" [^ ]+$", "", off_shift$label[first])
+    msg <- c(
+      "{n_off} count{?s} {?is/are} timed outside every worked shift of {?its/their} day \\
+       (by more than 15 minutes).",
+      "x" = "First: {.val {off_shift$label[first]}}; worked that day: \\
+             {.val {off_shift$windows[[first_day]]}}.",
+      "i" = "A count is expanded by the probability of the shift it was taken in; one taken \\
+             outside the drawn shift would be expanded as if it had been drawn.",
+      "i" = "Check the count times and dates, or the schedule's {.field shift_start} / \\
+             {.field shift_end}."
+    )
+    if (isTRUE(allow_invalid)) {
+      creel_warn(msg, class = c("creel_warning_count_outside_shift", "creel_warning")) # nolint: object_usage_linter
+    } else {
+      cli::cli_abort(
+        c(msg, "i" = "{.code allow_invalid = TRUE} attaches them with a warning."),
+        class = c("creel_error_count_outside_shift", "creel_error_invalid_input")
+      )
+    }
   }
 
   # Unknown counts (GH #561): reported by default, or set aside on request.
@@ -3835,6 +3870,14 @@ add_sections <- function(
 #'   without `trip_start` or together with `trip_duration`: a recorded
 #'   duration (for instance one the angler corrected for a break) is then
 #'   used as given, not recomputed from the clock.
+#'   When the design calendar carries shift times (`shift_start`,
+#'   `shift_end`), an interview timed more than 15 minutes outside every
+#'   worked shift of its day gives a warning,
+#'   `creel_warning_interview_outside_shift` (GH #426). It is kept: interviews
+#'   only have to come from the same stratum as the counts, so this is fine
+#'   when interviews are sampled separately. Check that they cover the hours
+#'   effort was counted, since a catch rate from other hours does not describe
+#'   them if fishing changes through the day.
 #' @param n_counted Tidy selector for the count of all anglers observed at the
 #'   site during the sampling period (required for bus-route designs, ignored
 #'   for other designs). Values must be non-negative integers. Must satisfy
@@ -4361,6 +4404,30 @@ add_interviews <- function(
   ) # nolint: object_usage_linter
   check_records_against_calendar(interviews, design, date_col, "interview") # GH #449
   check_interviews_worked(interviews, design, date_col) # GH #454
+  # GH #426: interviews only have to share the stratum with the counts, so an
+  # interview outside the drawn shift is not an error. It is worth a look:
+  # if catch rates change through the day, a rate from other hours does not
+  # describe the hours effort was counted.
+  off_shift <- shift_window_outside( # nolint: object_usage_linter
+    interviews, if (is.null(interview_time_col)) NULL else interviews[[interview_time_col]],
+    design, date_col
+  )
+  if (!is.null(off_shift) && length(off_shift$rows) > 0L) {
+    n_off <- length(off_shift$rows) # nolint: object_usage_linter
+    first <- off_shift$rows[1]
+    first_day <- sub(" [^ ]+$", "", off_shift$label[first])
+    creel_warn(
+      c(
+        "{n_off} of {nrow(interviews)} {cli::qty(n_off)}interview{?s} {?was/were} taken outside the drawn \\
+         shift of {?its/their} day (by more than 15 minutes).",
+        "i" = "First: {.val {off_shift$label[first]}}; worked that day: \\
+               {.val {off_shift$windows[[first_day]]}}.",
+        "i" = "Fine if interviews are sampled separately from counts; check that they cover \\
+               the hours effort was counted."
+      ),
+      class = c("creel_warning_interview_outside_shift", "creel_warning")
+    )
+  }
 
   # Validate trip metadata
   validate_trip_metadata(
