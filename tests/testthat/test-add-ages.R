@@ -125,6 +125,22 @@ test_that("add_ages() errors when age_uid references interview not in design", {
   )
 })
 
+test_that("add_ages() says age_uid wants the interview id when given a per-row id (#374)", {
+  d <- make_design()
+  ages <- make_ages(c(1, 1, 2, 2, 3))
+  ages$age_row <- 9001:9005
+  err <- expect_error(
+    add_ages(
+      d, ages,
+      age_uid = age_row, interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, age = est_age, age_type = fate # nolint: object_usage_linter
+    ),
+    class = "creel_error_invalid_input"
+  )
+  expect_match(conditionMessage(err), "INTERVIEW id")
+  expect_match(conditionMessage(err), "age_row")
+})
+
 test_that("add_ages() errors when age values are non-numeric", {
   d <- make_design()
   bad <- make_ages()

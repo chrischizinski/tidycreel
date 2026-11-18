@@ -1518,6 +1518,38 @@ as_uid_character <- function(x) {
   as.character(x)
 }
 
+# Refuse catch/length/age rows whose interview id is not in the design.
+#
+# The `*_uid` argument names the column of the CHILD table that holds the
+# INTERVIEW id, but reads like a per-row id -- and tidycreel.connect creates
+# per-row `catch_uid` / `length_uid` columns, so passing one fails here (GH
+# #374). When the passed column has a distinct value on every row, say so: a
+# real interview-id column repeats whenever an interview has several rows.
+# The values listed are capped: a per-row id leaves thousands unmatched.
+#' @noRd
+abort_unmatched_uid <- function(unmatched, ids, arg, col, what, call = rlang::caller_env()) {
+  n <- length(unmatched)
+  shown <- utils::head(unmatched, 5L)
+  per_row <- length(ids) > 1L && !anyDuplicated(ids)
+  cli::cli_abort(
+    c(
+      "{n} interview ID{?s} in {what} data not found in design interviews:",
+      stats::setNames(paste0("{.val ", shown, "}"), rep("x", length(shown))),
+      if (n > length(shown)) c(" " = "... and {n - length(shown)} more."),
+      "i" = "Every {what} row must reference an interview in the design.",
+      if (per_row) {
+        c("i" = paste0(
+          "{.arg {arg}} names the column holding each row's INTERVIEW id. ",
+          "{.field {col}} has a different value on every row, as a per-row id would; ",
+          "pass the column that holds the interview id instead."
+        ))
+      }
+    ),
+    class = "creel_error_invalid_input",
+    call = call
+  )
+}
+
 resolve_single_col <- function(expr, data, arg_name, error_call = rlang::caller_env()) {
   loc <- tidyselect::eval_select(
     expr,
@@ -5524,8 +5556,10 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #'
 #' @param design A \code{creel_design} object created by \code{\link{creel_design}}.
 #' @param data A data frame in long format: one row per species per catch type per interview.
-#' @param catch_uid <\link[tidyselect]{tidyselect}> Column in \code{data} containing
-#'   interview IDs (the catch-side join key).
+#' @param catch_uid <\link[tidyselect]{tidyselect}> Column in \code{data}
+#'   holding the INTERVIEW id each catch row belongs to (the catch-side join
+#'   key), not a per-row catch id. It repeats when an interview has several
+#'   catch rows.
 #' @param interview_uid <\link[tidyselect]{tidyselect}> Column in
 #'   \code{design$interviews} containing the matching interview IDs.
 #' @param species <\link[tidyselect]{tidyselect}> Column in \code{data} containing
@@ -5750,14 +5784,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   interview_ids <- design$interviews[[interview_uid_col]]
   unmatched <- setdiff(catch_ids, interview_ids)
   if (length(unmatched) > 0) {
-    cli::cli_abort(c(
-      "{length(unmatched)} interview ID{?s} in catch data not found in design interviews:",
-      stats::setNames(
-        paste0("{.val ", unmatched, "}"),
-        rep("x", length(unmatched))
-      ),
-      "i" = "Every catch row must reference an interview in the design."
-    ))
+    abort_unmatched_uid(unmatched, data[[catch_uid_col]], "catch_uid", catch_uid_col, "catch")
   }
 
   # Validate caught >= harvested + released per species-interview (CATCH-04)
@@ -5911,7 +5938,9 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
 #' @param data A data frame in long format: one row per fish measurement or
 #'   length bin per species per interview.
 #' @param length_uid <\link[tidyselect]{tidyselect}> Column in \code{data}
-#'   containing interview IDs (the length-side join key).
+#'   holding the INTERVIEW id each length row belongs to (the length-side join
+#'   key), not a per-fish id. It repeats when an interview has several fish
+#'   measured.
 #' @param interview_uid <\link[tidyselect]{tidyselect}> Column in
 #'   \code{design$interviews} containing the matching interview IDs.
 #' @param species <\link[tidyselect]{tidyselect}> Column in \code{data}
@@ -6138,11 +6167,7 @@ add_lengths <- function(
   unmatched <- setdiff(length_ids, interview_ids)
   n_unmatched <- base::length(unmatched)
   if (n_unmatched > 0) {
-    cli::cli_abort(c(
-      "{n_unmatched} interview ID{?s} in length data not found in design interviews:",
-      stats::setNames(paste0("{.val ", unmatched, "}"), rep("x", n_unmatched)),
-      "i" = "Every length row must reference an interview in the design."
-    ))
+    abort_unmatched_uid(unmatched, data[[length_uid_col]], "length_uid", length_uid_col, "length")
   }
 
   # Validate harvest length values (LEN-04) — subset first to avoid mixed-type coercion
@@ -6255,7 +6280,8 @@ add_lengths <- function(
 #' @param data A data frame of age records. One row per aged fish.
 #' @param age_uid Unquoted column in `data` — the column that holds the
 #'   interview identifier, linking each age record to its interview (the
-#'   foreign key; analogous to `length_uid` in [add_lengths()]).
+#'   foreign key; analogous to `length_uid` in [add_lengths()]), not a
+#'   per-fish id. It repeats when an interview has several fish aged.
 #' @param interview_uid Unquoted column in `design$interviews` — the interview
 #'   identifier column in the design, used as the join target.
 #' @param species Unquoted column in `data` — species name or code.
@@ -6361,11 +6387,7 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
   interview_ids <- design$interviews[[interview_uid_col]]
   unmatched <- setdiff(age_ids, interview_ids)
   if (length(unmatched) > 0) {
-    cli::cli_abort(c(
-      "{length(unmatched)} age record ID{?s} not found in design interviews:",
-      stats::setNames(paste0("{.val ", unmatched, "}"), rep("x", length(unmatched))),
-      "i" = "Every age row must reference an interview in the design."
-    ))
+    abort_unmatched_uid(unmatched, data[[age_uid_col]], "age_uid", age_uid_col, "age")
   }
 
   age_vals <- suppressWarnings(as.numeric(data[[age_col]]))

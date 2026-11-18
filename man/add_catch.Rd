@@ -11,8 +11,10 @@ add_catch(design, data, catch_uid, interview_uid, species, count, catch_type)
 
 \item{data}{A data frame in long format: one row per species per catch type per interview.}
 
-\item{catch_uid}{<\link[tidyselect]{tidyselect}> Column in \code{data} containing
-interview IDs (the catch-side join key).}
+\item{catch_uid}{<\link[tidyselect]{tidyselect}> Column in \code{data}
+holding the INTERVIEW id each catch row belongs to (the catch-side join
+key), not a per-row catch id. It repeats when an interview has several
+catch rows.}
 
 \item{interview_uid}{<\link[tidyselect]{tidyselect}> Column in
 \code{design$interviews} containing the matching interview IDs.}
