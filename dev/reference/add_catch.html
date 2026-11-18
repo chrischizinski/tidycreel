@@ -106,8 +106,10 @@ summary and estimation functions.</p>
 
 
 <dt id="arg-catch-uid">catch_uid<a class="anchor" aria-label="anchor" href="#arg-catch-uid"></a></dt>
-<dd><p>&lt;<a href="https://tidyselect.r-lib.org/reference/tidyselect-package.html" class="external-link">tidyselect</a>&gt; Column in <code>data</code> containing
-interview IDs (the catch-side join key).</p></dd>
+<dd><p>&lt;<a href="https://tidyselect.r-lib.org/reference/tidyselect-package.html" class="external-link">tidyselect</a>&gt; Column in <code>data</code>
+holding the INTERVIEW id each catch row belongs to (the catch-side join
+key), not a per-row catch id. It repeats when an interview has several
+catch rows.</p></dd>
 
 
 <dt id="arg-interview-uid">interview_uid<a class="anchor" aria-label="anchor" href="#arg-interview-uid"></a></dt>

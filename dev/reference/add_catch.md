@@ -27,7 +27,9 @@ add_catch(design, data, catch_uid, interview_uid, species, count, catch_type)
 - catch_uid:
 
   \<[tidyselect](https://tidyselect.r-lib.org/reference/tidyselect-package.html)\>
-  Column in `data` containing interview IDs (the catch-side join key).
+  Column in `data` holding the INTERVIEW id each catch row belongs to
+  (the catch-side join key), not a per-row catch id. It repeats when an
+  interview has several catch rows.
 
 - interview_uid:
 

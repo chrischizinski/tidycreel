@@ -1482,6 +1482,19 @@
 
 ### Bug fixes
 
+- [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  and
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)
+  say which column they wanted when the interview ids do not match
+  ([\#374](https://github.com/chrischizinski/tidycreel/issues/374)).
+  `catch_uid`, `length_uid` and `age_uid` name the column holding each
+  row’s interview id, not a per-row id, but tidycreel.connect creates
+  per-row columns with those names. When the column passed has a
+  different value on every row, the error now says to pass the
+  interview-id column instead. The list of unmatched ids stops at five,
+  and the error has class `creel_error_invalid_input`.
+
 - [`estimate_effort_aerial_glmm()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_aerial_glmm.md)
   fits its default model when the time or count column has a
   non-syntactic name, such as `time of flight`

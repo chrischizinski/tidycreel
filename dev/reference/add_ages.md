@@ -26,7 +26,8 @@ add_ages(design, data, age_uid, interview_uid, species, age, age_type)
   Unquoted column in `data` — the column that holds the interview
   identifier, linking each age record to its interview (the foreign key;
   analogous to `length_uid` in
-  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)).
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)),
+  not a per-fish id. It repeats when an interview has several fish aged.
 
 - interview_uid:
 

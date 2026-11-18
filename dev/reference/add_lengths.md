@@ -38,7 +38,9 @@ add_lengths(
 - length_uid:
 
   \<[tidyselect](https://tidyselect.r-lib.org/reference/tidyselect-package.html)\>
-  Column in `data` containing interview IDs (the length-side join key).
+  Column in `data` holding the INTERVIEW id each length row belongs to
+  (the length-side join key), not a per-row id. It repeats when an
+  interview has several length rows.
 
 - interview_uid:
 
