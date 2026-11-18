@@ -151,3 +151,30 @@ test_that("#426: on a night design the window is read across midnight", {
   # from the 00:30-06:00 shift labelled as the drawn one.
   expect_error(add(counts("01:30")), class = "creel_error_count_outside_shift")
 })
+
+test_that("#426 review: one unreadable time among clock times is refused, not a silent skip", {
+  # Skipping the column would let every off-shift count through.
+  cn <- sw_counts(c("03:00", "17:00")) # 03:00 is outside the 13:00-20:00 shift
+  cn$count_time[2] <- "17h00"
+  expect_error(sw_add(cn), class = "creel_error_invalid_input")
+  expect_error(sw_add(cn), "cannot be read as a clock time")
+  # A one-digit hour is a clock time, and is checked.
+  expect_error(sw_add(sw_counts(c("9:00", "17:00"))), class = "creel_error_count_outside_shift")
+})
+
+test_that("#426 review: a placeholder row with no count is left to missing_count", {
+  cn <- sw_counts()
+  cn$count_time[1] <- "08:00" # a morning slot never counted
+  cn$anglers[1] <- NA
+  expect_no_error(suppressWarnings(sw_add(cn, missing_count = "exclude")))
+})
+
+test_that("#426 review: worked rows with no shift times are not checked (and do not crash)", {
+  cal <- sw_calendar()
+  cal$shift_start <- NA_character_
+  cal$shift_end <- NA_character_
+  d <- sw_design(cal)
+  expect_null(tidycreel:::shift_window_outside(
+    sw_counts(), sw_counts()$count_time, d, "date", "count", "count_time_col"
+  ))
+})

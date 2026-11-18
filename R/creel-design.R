@@ -3143,14 +3143,17 @@ add_counts <- function(
   # GH #426: a count is expanded by the probability of the shift it was taken
   # in, so a count timed outside every worked shift of its day would be
   # expanded as if it had been drawn.
+  # A row with no count is a placeholder, not a count taken at that time; it is
+  # left to missing_count.
+  counted <- counts[!is.na(counts[[count_col_name]]), , drop = FALSE]
   off_shift <- shift_window_outside( # nolint: object_usage_linter
-    counts, if (is.null(count_time_col_name)) NULL else counts[[count_time_col_name]],
-    design, design$date_col
+    counted, if (is.null(count_time_col_name)) NULL else counted[[count_time_col_name]],
+    design, design$date_col, "count", "count_time_col"
   )
   if (!is.null(off_shift) && length(off_shift$rows) > 0L) {
     n_off <- length(off_shift$rows) # nolint: object_usage_linter
     first <- off_shift$rows[1]
-    first_day <- sub(" [^ ]+$", "", off_shift$label[first])
+    first_day <- off_shift$key[first]
     msg <- c(
       "{n_off} count{?s} {?is/are} timed outside every worked shift of {?its/their} day \\
        (by more than 15 minutes).",
@@ -4404,18 +4407,28 @@ add_interviews <- function(
   ) # nolint: object_usage_linter
   check_records_against_calendar(interviews, design, date_col, "interview") # GH #449
   check_interviews_worked(interviews, design, date_col) # GH #454
+
+  # Validate trip metadata
+  validate_trip_metadata(
+    interviews,
+    trip_status_col,
+    trip_duration_col,
+    trip_start_col,
+    interview_time_col,
+    night = !is.null(design$night)
+  ) # nolint: object_usage_linter
   # GH #426: interviews only have to share the stratum with the counts, so an
   # interview outside the drawn shift is not an error. It is worth a look:
   # if catch rates change through the day, a rate from other hours does not
   # describe the hours effort was counted.
   off_shift <- shift_window_outside( # nolint: object_usage_linter
     interviews, if (is.null(interview_time_col)) NULL else interviews[[interview_time_col]],
-    design, date_col
+    design, date_col, "interview", "interview_time"
   )
   if (!is.null(off_shift) && length(off_shift$rows) > 0L) {
     n_off <- length(off_shift$rows) # nolint: object_usage_linter
     first <- off_shift$rows[1]
-    first_day <- sub(" [^ ]+$", "", off_shift$label[first])
+    first_day <- off_shift$key[first]
     creel_warn(
       c(
         "{n_off} of {nrow(interviews)} {cli::qty(n_off)}interview{?s} {?was/were} taken outside the drawn \\
@@ -4428,16 +4441,6 @@ add_interviews <- function(
       class = c("creel_warning_interview_outside_shift", "creel_warning")
     )
   }
-
-  # Validate trip metadata
-  validate_trip_metadata(
-    interviews,
-    trip_status_col,
-    trip_duration_col,
-    trip_start_col,
-    interview_time_col,
-    night = !is.null(design$night)
-  ) # nolint: object_usage_linter
 
   # Tier 3: Bus-route specific validation (skip site/circuit checks for ice)
   if (!is.null(design$bus_route) && !identical(design$design_type, "ice")) {
