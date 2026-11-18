@@ -113,7 +113,15 @@ add_interviews(
   it is required, because it places each interview on its night, and it
   may be given without `trip_start` or together with `trip_duration`: a
   recorded duration (for instance one the angler corrected for a break)
-  is then used as given, not recomputed from the clock.
+  is then used as given, not recomputed from the clock. When the design
+  calendar carries shift times (`shift_start`, `shift_end`), an
+  interview timed more than 15 minutes outside every worked shift of its
+  day gives a warning, `creel_warning_interview_outside_shift` (GH
+  \#426). It is kept: interviews only have to come from the same stratum
+  as the counts, so this is fine when interviews are sampled separately.
+  Check that they cover the hours effort was counted, since a catch rate
+  from other hours does not describe them if fishing changes through the
+  day.
 
 - n_counted:
 

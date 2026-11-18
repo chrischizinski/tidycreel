@@ -382,6 +382,18 @@ check and estimation continued.</p></dd>
 <dd><p>Tier 2. Interview data
 failed a check and estimation continued.</p></dd>
 
+<dt><code>creel_warning_count_outside_shift</code></dt>
+<dd><p>Tier 1. Counts attached
+with <code>allow_invalid = TRUE</code> are timed outside every worked shift of their
+day, so they are expanded by a shift probability that does not apply
+(GH #426).</p></dd>
+
+<dt><code>creel_warning_interview_outside_shift</code></dt>
+<dd><p>Tier 2. Interviews
+were taken outside the drawn shift of their day. Fine when interviews
+are sampled separately from counts; check they cover the hours effort
+was counted (GH #426).</p></dd>
+
 <dt><code>creel_warning_repeated_sampling_units</code></dt>
 <dd><p>Tier 1. Counts have
 repeated sampling units with no count time to tell them apart.</p></dd>

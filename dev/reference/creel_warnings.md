@@ -284,6 +284,18 @@ print on every call.
 
   Tier 2. Interview data failed a check and estimation continued.
 
+- `creel_warning_count_outside_shift`:
+
+  Tier 1. Counts attached with `allow_invalid = TRUE` are timed outside
+  every worked shift of their day, so they are expanded by a shift
+  probability that does not apply (GH \#426).
+
+- `creel_warning_interview_outside_shift`:
+
+  Tier 2. Interviews were taken outside the drawn shift of their day.
+  Fine when interviews are sampled separately from counts; check they
+  cover the hours effort was counted (GH \#426).
+
 - `creel_warning_repeated_sampling_units`:
 
   Tier 1. Counts have repeated sampling units with no count time to tell

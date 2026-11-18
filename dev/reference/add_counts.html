@@ -279,7 +279,12 @@ schedule gives no worked shift are refused. When the schedule has shift
 times, <code>period_length_col</code> must equal the total hours of the day's worked
 shifts (to 0.01 h); a length equal to that window / <code>p_period</code> is refused
 as applying the probability twice. Shifts that cross midnight are refused
-until #407.</p></dd>
+until #407. When <code>count_time_col</code> holds clock times (<code>"HH:MM"</code> or
+POSIXct), a count timed more than 15 minutes outside every worked shift
+of its day is refused (GH #426): it would be expanded by the probability
+of a shift it was not taken in. <code>allow_invalid = TRUE</code> attaches it with a
+warning (<code>creel_warning_count_outside_shift</code>). A <code>count_time_col</code> of
+labels rather than clock times is not checked.</p></dd>
 
 
 <dt id="arg-missing-count">missing_count<a class="anchor" aria-label="anchor" href="#arg-missing-count"></a></dt>

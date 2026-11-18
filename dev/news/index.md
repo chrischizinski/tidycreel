@@ -12,6 +12,23 @@
 
 ### Breaking changes
 
+- [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  refuses a count timed outside the drawn shift
+  ([\#426](https://github.com/chrischizinski/tidycreel/issues/426)).
+  When the design calendar comes from a schedule with shift times
+  (`shift_start`, `shift_end`) and `count_time_col` holds clock times, a
+  count more than 15 minutes outside every worked shift of its day is an
+  error. Such a count was expanded by the probability of a shift it was
+  not taken in, giving a plausible effort with no warning.
+  `allow_invalid = TRUE` attaches it with a warning,
+  `creel_warning_count_outside_shift`.
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  gives a warning, `creel_warning_interview_outside_shift`, for an
+  interview outside the drawn shift and keeps it: interviews only have
+  to come from the same stratum as the counts, so this is fine when they
+  are sampled separately, but they should cover the hours effort was
+  counted.
+
 - [`summarize_by_county()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_county.md)
   returns a `state` column and counts a county within its state
   ([\#376](https://github.com/chrischizinski/tidycreel/issues/376)). It

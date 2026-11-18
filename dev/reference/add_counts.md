@@ -204,6 +204,12 @@ add_counts(
   equal the total hours of the day's worked shifts (to 0.01 h); a length
   equal to that window / `p_period` is refused as applying the
   probability twice. Shifts that cross midnight are refused until \#407.
+  When `count_time_col` holds clock times (`"HH:MM"` or POSIXct), a
+  count timed more than 15 minutes outside every worked shift of its day
+  is refused (GH \#426): it would be expanded by the probability of a
+  shift it was not taken in. `allow_invalid = TRUE` attaches it with a
+  warning (`creel_warning_count_outside_shift`). A `count_time_col` of
+  labels rather than clock times is not checked.
 
 - missing_count:
 
