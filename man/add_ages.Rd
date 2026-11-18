@@ -13,7 +13,8 @@ add_ages(design, data, age_uid, interview_uid, species, age, age_type)
 
 \item{age_uid}{Unquoted column in \code{data} — the column that holds the
 interview identifier, linking each age record to its interview (the
-foreign key; analogous to \code{length_uid} in \code{\link[=add_lengths]{add_lengths()}}).}
+foreign key; analogous to \code{length_uid} in \code{\link[=add_lengths]{add_lengths()}}), not a
+per-fish id. It repeats when an interview has several fish aged.}
 
 \item{interview_uid}{Unquoted column in \code{design$interviews} — the interview
 identifier column in the design, used as the join target.}

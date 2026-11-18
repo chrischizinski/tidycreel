@@ -200,6 +200,79 @@ test_that("add_catch() errors on unmatched interview IDs (CATCH-02)", {
   )
 })
 
+# GH #374: catch_uid names the column holding the INTERVIEW id, but reads like
+# a per-row id, and tidycreel.connect creates a per-row `catch_uid` column.
+# Passing a per-row id must fail AND say which column was wanted; listing
+# every unmatched value of a per-row id would bury that under thousands.
+catch_with_row_ids <- function() {
+  data.frame(
+    interview_id = rep(c(1L, 2L), each = 4),
+    row_id = 1001:1008,
+    species = rep(c("walleye", "bass", "perch", "pike"), 2),
+    count = 1L,
+    catch_type = "caught",
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("add_catch() says catch_uid wants the interview id when given a per-row id (#374)", {
+  d <- make_design_with_interviews()
+  err <- expect_error(
+    add_catch(
+      d, catch_with_row_ids(),
+      catch_uid = row_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+    ),
+    class = "creel_error_invalid_input"
+  )
+  msg <- conditionMessage(err)
+  expect_match(msg, "INTERVIEW id")
+  expect_match(msg, "if it is a per-row id")
+  expect_match(msg, "row_id")
+  # 8 unmatched values, 5 listed
+  expect_match(msg, "and 3 more")
+  expect_false(grepl("1008", msg, fixed = TRUE))
+})
+
+test_that("add_catch() gives no per-row hint when the interview-id column just has a stray id (#374)", {
+  # A real interview-id column repeats; a typo'd id is a data error, not a
+  # wrong-column error, and the hint would mislead
+  d <- make_design_with_interviews()
+  bad <- catch_with_row_ids()
+  bad$interview_id[8] <- 999L
+  err <- expect_error(
+    add_catch(
+      d, bad,
+      catch_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+    ),
+    class = "creel_error_invalid_input"
+  )
+  expect_match(conditionMessage(err), "999")
+  expect_no_match(conditionMessage(err), "INTERVIEW id")
+})
+
+test_that("add_catch() lists an unmatched id containing braces as a value (#374)", {
+  # Pasted into the cli template, "trip{west}" would be read as markup and
+  # the formatting would fail before the classed error is raised
+  d <- make_design_with_interviews()
+  bad <- catch_with_row_ids()
+  bad$interview_id <- as.character(bad$interview_id)
+  bad$interview_id[8] <- "trip{west}"
+  err <- expect_error(
+    add_catch(
+      d, bad,
+      catch_uid = interview_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+    ),
+    class = "creel_error_invalid_input"
+  )
+  expect_match(conditionMessage(err), "trip{west}", fixed = TRUE)
+})
+
 # --- CATCH-03: catch_type normalization and validation -------------------------
 
 test_that("add_catch() normalizes catch_type to lowercase silently (CATCH-03)", {

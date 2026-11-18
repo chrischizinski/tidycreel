@@ -248,6 +248,29 @@ test_that("add_lengths() errors on unmatched interview IDs (LEN-03)", {
   )
 })
 
+test_that("add_lengths() says length_uid wants the interview id when given a per-row id (#374)", {
+  d <- make_design_with_interviews()
+  fish <- data.frame(
+    interview_id = rep(c(1L, 2L), each = 3),
+    fish_id = 501:506,
+    species = "walleye",
+    length = "420",
+    length_type = "harvest",
+    stringsAsFactors = FALSE
+  )
+  err <- expect_error(
+    add_lengths(
+      d, fish,
+      length_uid = fish_id, # nolint: object_usage_linter
+      interview_uid = interview_id, # nolint: object_usage_linter
+      species = species, length = length, length_type = length_type # nolint: object_usage_linter
+    ),
+    class = "creel_error_invalid_input"
+  )
+  expect_match(conditionMessage(err), "INTERVIEW id")
+  expect_match(conditionMessage(err), "fish_id")
+})
+
 # --- LEN-04: length_type normalization and validation -------------------------
 
 test_that("add_lengths() normalizes length_type to lowercase silently (LEN-04)", {
