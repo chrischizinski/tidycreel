@@ -26,8 +26,8 @@ length bin per species per interview.}
 
 \item{length_uid}{<\link[tidyselect]{tidyselect}> Column in \code{data}
 holding the INTERVIEW id each length row belongs to (the length-side join
-key), not a per-fish id. It repeats when an interview has several fish
-measured.}
+key), not a per-row id. It repeats when an interview has several length
+rows.}
 
 \item{interview_uid}{<\link[tidyselect]{tidyselect}> Column in
 \code{design$interviews} containing the matching interview IDs.}

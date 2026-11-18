@@ -1523,8 +1523,9 @@ as_uid_character <- function(x) {
 # The `*_uid` argument names the column of the CHILD table that holds the
 # INTERVIEW id, but reads like a per-row id -- and tidycreel.connect creates
 # per-row `catch_uid` / `length_uid` columns, so passing one fails here (GH
-# #374). When the passed column has a distinct value on every row, say so: a
-# real interview-id column repeats whenever an interview has several rows.
+# #374). When the passed column has a distinct value on every row, say so as a
+# conditional hint: a real interview-id column usually repeats, but not when
+# every interview has one row, so distinct values are a clue, not proof.
 # The values listed are capped: a per-row id leaves thousands unmatched.
 #' @noRd
 abort_unmatched_uid <- function(unmatched, ids, arg, col, what, call = rlang::caller_env()) {
@@ -1534,14 +1535,19 @@ abort_unmatched_uid <- function(unmatched, ids, arg, col, what, call = rlang::ca
   cli::cli_abort(
     c(
       "{n} interview ID{?s} in {what} data not found in design interviews:",
-      stats::setNames(paste0("{.val ", shown, "}"), rep("x", length(shown))),
+      # Each id referenced by index, never pasted into the template: an id
+      # holding braces would otherwise be read as cli markup.
+      stats::setNames(
+        paste0("{.val {shown[", seq_along(shown), "]}}"),
+        rep("x", length(shown))
+      ),
       if (n > length(shown)) c(" " = "... and {n - length(shown)} more."),
       "i" = "Every {what} row must reference an interview in the design.",
       if (per_row) {
         c("i" = paste0(
           "{.arg {arg}} names the column holding each row's INTERVIEW id. ",
-          "{.field {col}} has a different value on every row, as a per-row id would; ",
-          "pass the column that holds the interview id instead."
+          "{.field {col}} has a different value on every row: if it is a ",
+          "per-row id, pass the column that holds the interview id instead."
         ))
       }
     ),
@@ -5939,8 +5945,8 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
 #'   length bin per species per interview.
 #' @param length_uid <\link[tidyselect]{tidyselect}> Column in \code{data}
 #'   holding the INTERVIEW id each length row belongs to (the length-side join
-#'   key), not a per-fish id. It repeats when an interview has several fish
-#'   measured.
+#'   key), not a per-row id. It repeats when an interview has several length
+#'   rows.
 #' @param interview_uid <\link[tidyselect]{tidyselect}> Column in
 #'   \code{design$interviews} containing the matching interview IDs.
 #' @param species <\link[tidyselect]{tidyselect}> Column in \code{data}
