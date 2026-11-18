@@ -368,6 +368,138 @@ check_interviews_worked <- function(records, design, date_col, what = "interview
   }
 }
 
+#' Records timed outside every worked shift of their survey day
+#'
+#' Internal (GH #426). A calendar drawn with shift times (`shift_start`,
+#' `shift_end`) says when each sampled day was worked. A record whose clock
+#' time falls outside every worked shift of its day, by more than `slack`
+#' minutes, was not taken in a drawn shift. The caller decides what that means:
+#' a count is expanded by the probability of the shift it was taken in, so one
+#' outside it is refused; an interview only has to share the stratum, so one
+#' outside it is a coverage question, not an error.
+#'
+#' Records already carry their survey date (night designs map them first).
+#' Times are read as `"HH:MM"` / `"HH:MM:SS"` or POSIXct (on its own clock).
+#' A `count_time_col` may hold labels rather than clock times (`"AM"`,
+#' `1`, `2`): if no time is a clock time, nothing is checked. A column that
+#' mixes clock times with values that are not is refused, since skipping it
+#' would hide every count it should catch.
+#' A record with no time, or on a day with no worked shift window, is not
+#' checked here; unworked days are refused elsewhere.
+#'
+#' @param times The records' time column, or `NULL`.
+#' @param date_col The records' (survey) date column.
+#' @param slack Minutes allowed either side of a shift.
+#' @param what,time_arg For the message when the times are mixed.
+#' @return `NULL` when the check does not apply, otherwise a list: `rows`, the
+#'   indices of records outside every window (possibly empty), `key`, each
+#'   record's day key, `label`, a `"key HH:MM"` label per record, and
+#'   `windows`, the worked shifts of each day as `"HH:MM-HH:MM"` text, named
+#'   by day key.
+#' @keywords internal
+#' @noRd
+shift_window_outside <- function(records, times, design, date_col, what, time_arg,
+                                 slack = 15L, call = rlang::caller_env()) {
+  cal <- design$calendar
+  if (is.null(times) || nrow(records) == 0L ||
+        design$design_type %in% c("bus_route", "ice", "aerial") ||
+        !all(c("shift_start", "shift_end") %in% names(cal)) ||
+        !date_col %in% names(records)) {
+    return(NULL)
+  }
+  clock <- clock_minutes(times)
+  if (is.null(clock)) {
+    return(NULL)
+  }
+  unread <- !is.na(times) & is.na(clock)
+  if (any(unread)) {
+    cli::cli_abort(
+      c(
+        "{sum(unread)} {what} time{?s} in {.arg {time_arg}} cannot be read as a clock time.",
+        "x" = "First: {.val {as.character(times[which(unread)[1]])}}.",
+        "i" = "The other times are clock times, which are checked against the schedule's \\
+               worked shifts. Give each as {.val HH:MM}, or {.val NA} when it is unknown."
+      ),
+      class = "creel_error_invalid_input",
+      call = call
+    )
+  }
+  worked <- calendar_worked_rows(cal, design$sampled_col)
+  if (!is.null(worked)) cal <- cal[worked, , drop = FALSE]
+
+  ds <- if (is.null(design$night)) 0L else design$night$day_start_min
+  st <- clock_minutes(as.character(cal$shift_start), strict = FALSE)
+  en <- clock_minutes(as.character(cal$shift_end), strict = FALSE)
+  s_off <- survey_min(st, ds) # nolint: object_usage_linter
+  e_off <- survey_min(en, ds, end = TRUE) # nolint: object_usage_linter
+  # A window that leaves its survey day is refused where shift lengths are
+  # read (add_counts); here it simply has no inside.
+  ok <- !is.na(s_off) & !is.na(e_off) & e_off > s_off
+  if (!any(ok)) {
+    return(NULL)
+  }
+
+  sec <- design$section_col
+  by_sec <- !is.null(sec) && sec %in% names(cal) && sec %in% names(records)
+  day_key <- function(df, dcol) {
+    k <- format(df[[dcol]])
+    if (by_sec) paste(k, as.character(df[[sec]]), sep = " / ") else k
+  }
+  cal_key <- day_key(cal, design$date_col)[ok]
+  rec_key <- day_key(records, date_col)
+  windows <- tapply(
+    paste0(format_min_to_hhmm(st[ok]), "-", format_min_to_hhmm(en[ok])), # nolint: object_usage_linter
+    cal_key, function(w) paste(unique(w), collapse = ", ")
+  )
+
+  r_off <- survey_min(clock, ds) # nolint: object_usage_linter
+  label <- paste(rec_key, format_min_to_hhmm(clock)) # nolint: object_usage_linter
+  idx <- which(!is.na(r_off) & rec_key %in% cal_key)
+  if (length(idx) == 0L) {
+    return(list(rows = integer(0), key = rec_key, label = label, windows = windows))
+  }
+  pairs <- merge(
+    data.frame(i = idx, key = rec_key[idx], t = r_off[idx]),
+    data.frame(key = cal_key, s = s_off[ok] - slack, e = e_off[ok] + slack),
+    by = "key"
+  )
+  inside <- tapply(pairs$t >= pairs$s & pairs$t <= pairs$e, pairs$i, any)
+  list(
+    rows = sort(as.integer(names(inside)[!inside])),
+    key = rec_key,
+    label = label,
+    windows = windows
+  )
+}
+
+#' Clock times as minutes since midnight
+#'
+#' Internal (GH #426). `"HH:MM"`, `"H:MM"`, `"HH:MM:SS"` or POSIXct (read on
+#' its own clock). A value that is not a clock time becomes `NA`. With
+#' `strict`, `NULL` when no non-missing value is a clock time (the column holds
+#' labels) or the column is neither text nor date-time.
+#'
+#' @keywords internal
+#' @noRd
+clock_minutes <- function(x, strict = TRUE) {
+  if (inherits(x, "POSIXt")) {
+    lt <- as.POSIXlt(x)
+    return(as.integer(lt$hour * 60L + lt$min))
+  }
+  if (!is.character(x) && !is.factor(x)) {
+    return(if (strict) NULL else rep(NA_integer_, length(x)))
+  }
+  x <- as.character(x)
+  good <- !is.na(x) & grepl("^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$", x)
+  if (strict && !any(good)) {
+    return(NULL)
+  }
+  out <- rep(NA_integer_, length(x))
+  hm <- strsplit(x[good], ":", fixed = TRUE)
+  out[good] <- vapply(hm, function(p) as.integer(p[1]) * 60L + as.integer(p[2]), integer(1))
+  out
+}
+
 #' Real elapsed hours of each calendar shift on a night design
 #'
 #' Internal (GH #407). `shift_hours`, where the schedule carries it, is the

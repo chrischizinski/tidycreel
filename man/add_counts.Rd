@@ -146,7 +146,12 @@ schedule gives no worked shift are refused. When the schedule has shift
 times, \code{period_length_col} must equal the total hours of the day's worked
 shifts (to 0.01 h); a length equal to that window / \code{p_period} is refused
 as applying the probability twice. Shifts that cross midnight are refused
-until #407.}
+until #407. When \code{count_time_col} holds clock times (\code{"HH:MM"} or
+POSIXct), a count timed more than 15 minutes outside every worked shift
+of its day is refused (GH #426): it would be expanded by the probability
+of a shift it was not taken in. \code{allow_invalid = TRUE} attaches it with a
+warning (\code{creel_warning_count_outside_shift}). A \code{count_time_col} of
+labels rather than clock times is not checked.}
 
 \item{missing_count}{What to do with count rows whose count is \code{NA}.
 \code{"keep"} (default) keeps them: an unknown count is not a zero, so the

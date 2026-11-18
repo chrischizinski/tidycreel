@@ -80,7 +80,9 @@ test_that("#385: on a day with two worked shifts the length is their total", {
   second$shift_end <- "21:00"
   cal <- rbind(base, second)
   cal <- cal[order(cal$date), ]
+  # Counts inside the worked shifts (GH #426 refuses one outside them).
   cn <- sch_p_counts(10)
+  cn$count_time <- rep(c("08:00", "17:00"), length.out = nrow(cn))
   d <- sch_p_add(cal, cn)
   expect_equal(
     sch_p_effort(d)$estimate,
@@ -88,7 +90,8 @@ test_that("#385: on a day with two worked shifts the length is their total", {
     tolerance = 1e-12
   )
   # One shift's length is not the day's window.
-  expect_error(sch_p_add(cal, sch_p_counts(5)), class = "creel_error_period_length_window")
+  cn$hours <- 5
+  expect_error(sch_p_add(cal, cn), class = "creel_error_period_length_window")
 })
 
 test_that("#385: an explicit p_period must agree with the schedule", {
@@ -160,7 +163,8 @@ test_that("#385: generate_schedule() output drives add_counts() end to end", {
     anglers = seq_len(2 * length(days)),
     hours = 7
   )
-  cn$count_time <- rep(c("10:00", "12:00"), length(days))
+  # One count at each end of the drawn shift: inside it (GH #426).
+  cn$count_time <- as.vector(rbind(sched$shift_start[sched$sampled], sched$shift_end[sched$sampled]))
   d <- sch_p_add(sched, cn)
   expect_equal(
     sch_p_effort(d)$estimate,
