@@ -412,6 +412,23 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   interviews cannot supply it, because a worked day with no anglers leaves
 #'   no interview. Without it, those targets stop. An interview dated on a
 #'   day marked `FALSE` stops `add_interviews()` (GH #591).
+#' @param interview_sampled Tidy selector for a logical column of `calendar`
+#'   that is `TRUE` on every day interviews were scheduled and `FALSE` on the
+#'   rest, for a survey that draws its interview days separately from its
+#'   count days (GH #628) -- for example aerial counts on two random weekdays
+#'   a week and access interviews on three. [add_interviews()] then checks
+#'   interviews against these days instead of the count days: an interview on
+#'   a day marked `FALSE` is refused, and one on a day with no count is
+#'   accepted. Counts are checked against the count days as before.
+#'
+#'   The catch rate is estimated per stratum from the interviews and
+#'   multiplied by the stratum's effort, so the two need only come from the
+#'   same strata, not the same days (Pollock et al. 1994, complemented
+#'   surveys). Both must still be probability samples of the stratum's days:
+#'   a rate from days chosen for good fishing describes those days. The
+#'   variance of the product treats effort and rate as independent, which
+#'   separate draws satisfy. Not for bus-route or ice designs, where the
+#'   interviews are the effort data; use `sampled` there.
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
 #'   \item{date_col}{Character name of the date column}
@@ -563,7 +580,8 @@ creel_design <- function(
   # Appended so that existing positional calls bind as before (GH #539).
   wait_time = NULL,
   circuit_time = NULL,
-  sampled = NULL
+  sampled = NULL,
+  interview_sampled = NULL
 ) {
   # A grouped input would carry its grouping into every dplyr step that reads
   # the stored table (GH #441).
@@ -1065,6 +1083,9 @@ creel_design <- function(
   design$sampled_col <- resolve_sampled_register( # nolint: object_usage_linter
     rlang::enquo(sampled), calendar, survey_type, rlang::caller_env()
   )
+  design$interview_sampled_col <- resolve_interview_register( # nolint: object_usage_linter
+    rlang::enquo(interview_sampled), calendar, survey_type, rlang::caller_env()
+  )
   # A night design's zone is recorded even when it came from the tidycreel.tz
   # option, so the bundle does not depend on the session that reads it.
   if (!is.null(night)) step_supplied <- union(step_supplied, "tz")
@@ -1082,11 +1103,60 @@ creel_design <- function(
          camera_mode = camera_mode, h_open = h_open,
          visibility_correction = visibility_correction, visibility_se = visibility_se,
          angler_ratio = angler_ratio, angler_ratio_se = angler_ratio_se,
-         open_start = open_start, sampled = design$sampled_col),
+         open_start = open_start, sampled = design$sampled_col,
+         interview_sampled = design$interview_sampled_col),
     step_supplied, "calendar", step_calendar,
     extra = list(sampling_frame = sampling_frame)
   )
   validate_creel_design(design)
+}
+
+#' Resolve the register of interview days (GH #628)
+#'
+#' A survey that draws interview days separately from count days says which
+#' days were interview days. The catch-rate stage uses no day counts -- its
+#' interviews are equal-probability draws within the stratum -- so the
+#' register only says which days an interview may come from.
+#'
+#' @keywords internal
+#' @noRd
+resolve_interview_register <- function(quo, calendar, survey_type, call) {
+  if (rlang::quo_is_null(quo)) {
+    return(NULL)
+  }
+  if (survey_type %in% c("bus_route", "ice")) {
+    cli::cli_abort(
+      c(
+        "{.arg interview_sampled} does not apply to {.val {survey_type}} designs.",
+        "i" = "Their interviews are the effort data, so interview days are the sampled \\
+               days; name them with {.arg sampled}."
+      ),
+      class = "creel_error_interview_register",
+      call = call
+    )
+  }
+  col <- resolve_single_col(quo, calendar, "interview_sampled", call)
+  x <- calendar[[col]]
+  if (!is.logical(x) || anyNA(x)) {
+    cli::cli_abort(
+      c(
+        "{.arg interview_sampled} must name a logical calendar column with no missing values.",
+        "x" = "{.field {col}} is {.cls {class(x)[1]}}{if (anyNA(x)) ' with missing values' else ''}.",
+        "i" = "Mark each calendar day {.val {TRUE}} if interviews were scheduled and \\
+               {.val {FALSE}} if not."
+      ),
+      class = "creel_error_interview_register",
+      call = call
+    )
+  }
+  if (!any(x)) {
+    cli::cli_abort(
+      "{.arg interview_sampled} marks no calendar day as an interview day.",
+      class = "creel_error_interview_register",
+      call = call
+    )
+  }
+  col
 }
 
 #' Resolve the register of sampled days (GH #591)
@@ -4421,7 +4491,9 @@ add_interviews <- function(
   # interview outside the drawn shift is not an error. It is worth a look:
   # if catch rates change through the day, a rate from other hours does not
   # describe the hours effort was counted.
-  off_shift <- shift_window_outside( # nolint: object_usage_linter
+  # Interview days declared as a separate draw (GH #628): the counts' shift
+  # says nothing about when interviews should have been taken.
+  off_shift <- if (!is.null(design$interview_sampled_col)) NULL else shift_window_outside( # nolint: object_usage_linter
     interviews, if (is.null(interview_time_col)) NULL else interviews[[interview_time_col]],
     design, date_col, "interview", "interview_time"
   )

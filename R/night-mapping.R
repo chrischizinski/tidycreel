@@ -361,6 +361,12 @@ check_day_records_worked <- function(records, design, date_col, what, call = rla
 #' @noRd
 check_interviews_worked <- function(records, design, date_col, what = "interview",
                                     call = rlang::caller_env()) {
+  # Interview days drawn separately from count days (GH #628): the interview
+  # register decides alone. It is a day register, so a night design's shift
+  # labels are not compared with the count shifts either.
+  if (!is.null(design$interview_sampled_col)) {
+    return(check_interview_register(records, design, date_col, what, call = call))
+  }
   if (!is.null(design$night)) {
     check_night_records_worked(records, design, date_col, what, call = call)
   } else {
@@ -498,6 +504,41 @@ clock_minutes <- function(x, strict = TRUE) {
   hm <- strsplit(x[good], ":", fixed = TRUE)
   out[good] <- vapply(hm, function(p) as.integer(p[1]) * 60L + as.integer(p[2]), integer(1))
   out
+}
+
+#' Refuse interviews on a day the interview register did not schedule
+#'
+#' Internal (GH #628). Records already carry their survey date (night designs
+#' map them first).
+#'
+#' @keywords internal
+#' @noRd
+check_interview_register <- function(records, design, date_col, what, call = rlang::caller_env()) {
+  cal <- design$calendar
+  col <- design$interview_sampled_col
+  days <- format(cal[[design$date_col]][cal[[col]] %in% TRUE])
+  rec_day <- format(records[[date_col]])
+  off <- !is.na(records[[date_col]]) & !rec_day %in% days
+  if (any(off)) {
+    bad <- sort(unique(rec_day[off]))
+    shown <- utils::head(bad, 10L) # nolint: object_usage_linter
+    more <- if (length(bad) > 10L) ", ..." else "" # nolint: object_usage_linter
+    n_rec <- sum(off) # nolint: object_usage_linter
+    n_day <- length(bad) # nolint: object_usage_linter
+    cli::cli_abort(
+      c(
+        "{n_rec} {what}{cli::qty(n_rec)}{?s} {?is/are} dated on {n_day} {cli::qty(n_day)}day{?s} \\
+         the calendar's {.field {col}} column does not mark as an interview day: \\
+         {.val {shown}}{more}.",
+        "x" = "An interview the design did not select cannot be weighted with the ones it did.",
+        "i" = "Mark {cli::qty(n_day)}{?it/them} {.val {TRUE}} in {.field {col}}, or correct the \\
+               {what} dates."
+      ),
+      class = c("creel_error_interview_register", "creel_error_record_unworked_day", "creel_error"),
+      call = call
+    )
+  }
+  invisible(NULL)
 }
 
 #' Real elapsed hours of each calendar shift on a night design

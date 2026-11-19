@@ -416,6 +416,17 @@
 
 ## New features
 
+* `creel_design(interview_sampled = )` declares interview days drawn
+  separately from count days (#628), as in aerial-access surveys that fly on
+  some days and interview on others. Name a logical calendar column marking the
+  interview days: `add_interviews()` checks interviews against those days
+  instead of the count days, so an interview on a day with no count is
+  accepted and one on an unmarked day is still refused. Counts and the
+  estimators are unchanged: total catch is each stratum's effort times its
+  catch rate, and the rate uses no day counts, so the two need only share
+  strata. Not for bus-route or ice designs, whose interviews are the effort
+  data.
+
 * Bus-route and ice designs can now report effort and catch, harvest and
   release totals for a stratum or the season (`target = "stratum_total"` or
   `"period_total"`), not only for the days worked (#591). Give the calendar a
