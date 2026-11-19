@@ -192,7 +192,8 @@ test_that("the new arguments come last, so positional calls bind as before", {
   # Inserted before effort_type, they shifted every later argument: an ice
   # design given effort_type as its 11th argument bound it to wait_time.
   f <- names(formals(creel_design))
-  # `sampled` (GH #591) was appended after them for the same reason.
-  expect_identical(utils::tail(f, 3), c("wait_time", "circuit_time", "sampled"))
+  # `sampled` (GH #591) and `interview_sampled` (GH #628) were appended after
+  # them for the same reason.
+  expect_identical(utils::tail(f, 4), c("wait_time", "circuit_time", "sampled", "interview_sampled"))
   expect_identical(match("effort_type", f), 11L)
 })

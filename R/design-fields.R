@@ -20,6 +20,7 @@ creel_design_fields <- c(
   # creel_design() / new_creel_design()
   "calendar", "date_col", "strata_cols", "site_col", "design_type",
   "bus_route", "ice", "camera", "aerial", "night", "sampled_col",
+  "interview_sampled_col",
   "derived_frame_cols", "steps", "warnings", "warning_id",
   # add_counts()
   "counts", "survey", "circuit_time", "count_calendar_dates", "count_col",
