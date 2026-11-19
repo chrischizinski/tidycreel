@@ -12,13 +12,13 @@
 
 ir_calendar <- function() {
   d <- as.Date("2024-06-03") + 0:13 # two weeks, Monday start
-  wk <- weekdays(d) %in% c("Saturday", "Sunday")
+  wday <- as.POSIXlt(d)$wday # 0 = Sunday; locale-free, unlike weekdays()
   data.frame(
     date = d,
-    day_type = ifelse(wk, "weekend", "weekday"),
+    day_type = ifelse(wday %in% c(0, 6), "weekend", "weekday"),
     # Counts: Mon, Wed + weekends. Interviews: Tue, Wed, Thu + weekends.
-    sampled = weekdays(d) %in% c("Monday", "Wednesday", "Saturday", "Sunday"),
-    interviewed = weekdays(d) %in% c("Tuesday", "Wednesday", "Thursday", "Saturday", "Sunday")
+    sampled = wday %in% c(1, 3, 6, 0),
+    interviewed = wday %in% c(2, 3, 4, 6, 0)
   )
 }
 
@@ -33,9 +33,12 @@ ir_counts <- function(cal = ir_calendar()) {
 ir_interviews <- function(cal = ir_calendar()) {
   days <- cal[cal$interviewed, ]
   n <- nrow(days)
+  # Interview-only days (no count) fish better, so a rate that dropped them
+  # would differ from one that kept them.
+  only <- rep(!days$sampled, each = 3)
   data.frame(
     date = rep(days$date, each = 3), day_type = rep(days$day_type, each = 3),
-    catch = rep(c(0, 2, 5), n), hours = rep(c(1.5, 3, 4), n), status = "complete"
+    catch = rep(c(0, 2, 5), n) + ifelse(only, 4, 0), hours = rep(c(1.5, 3, 4), n), status = "complete"
   )
 }
 
@@ -62,7 +65,7 @@ test_that("#628: with interview_sampled, interviews on interview-only days are a
   d <- ir_add_interviews(ir_add_counts(ir_design(interview_sampled = interviewed)))
   expect_identical(nrow(d$interviews), nrow(ir_interviews()))
   # Tuesdays and Thursdays have interviews but no count.
-  expect_true(any(weekdays(d$interviews$date) == "Tuesday"))
+  expect_true(any(as.POSIXlt(d$interviews$date)$wday == 2))
 })
 
 test_that("#628: total catch is each stratum's effort x its rate from ALL its interviews", {
@@ -74,6 +77,11 @@ test_that("#628: total catch is each stratum's effort x its rate from ALL its in
   oracle <- sum(eff$estimate * rate[eff$day_type])
   total <- suppressWarnings(estimate_total_catch(d))$estimates$estimate
   expect_equal(total, oracle, tolerance = 1e-10)
+  # The interview-only days move the answer: dropping them gives another total.
+  kept <- iv[iv$date %in% ir_counts()$date, ]
+  dropped <- sum(eff$estimate * (tapply(kept$catch, kept$day_type, sum) /
+                                   tapply(kept$hours, kept$day_type, sum))[eff$day_type])
+  expect_gt(abs(total - dropped), 1)
 })
 
 test_that("#628: the interview register decides alone -- a count day not marked for interviews refuses them", {
@@ -152,5 +160,40 @@ test_that("#628: a saved design keeps its interview register", {
   expect_equal(
     suppressWarnings(estimate_total_catch(r))$estimates$estimate,
     suppressWarnings(estimate_total_catch(d))$estimates$estimate
+  )
+})
+
+test_that("#628 review: a column that marks count days cannot be the interview register", {
+  # calendar_worked_rows() reads `sampled` as the count days; reusing it would
+  # make one flag mean both.
+  expect_error(ir_design(interview_sampled = sampled), class = "creel_error_interview_register")
+})
+
+test_that("#628 review: a refused interview on an unmarked day is not said to be weighted", {
+  d <- ir_add_counts(ir_design(interview_sampled = interviewed))
+  err <- expect_error(
+    tidycreel:::check_interview_register(
+      data.frame(date = as.Date("2024-06-03")), d, "date", "refused interview"
+    ),
+    class = "creel_error_interview_register"
+  )
+  expect_no_match(conditionMessage(err), "cannot be weighted")
+})
+
+test_that("#628 review: on a calendar with a row per section, the register is read per section", {
+  # North interviewed on the day, South not: a South interview that day was
+  # not scheduled, even though the date has a TRUE row.
+  d <- ir_design()
+  d$calendar <- data.frame(
+    date = rep(as.Date("2024-06-04"), 2), day_type = "weekday",
+    section = c("North", "South"), interviewed = c(TRUE, FALSE)
+  )
+  d$section_col <- "section"
+  d$interview_sampled_col <- "interviewed"
+  rec <- data.frame(date = as.Date("2024-06-04"), section = c("North", "South"))
+  expect_no_error(tidycreel:::check_interview_register(rec[1, ], d, "date", "interview"))
+  expect_error(
+    tidycreel:::check_interview_register(rec[2, ], d, "date", "interview"),
+    class = "creel_error_interview_register"
   )
 })

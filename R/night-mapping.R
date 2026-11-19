@@ -516,8 +516,17 @@ clock_minutes <- function(x, strict = TRUE) {
 check_interview_register <- function(records, design, date_col, what, call = rlang::caller_env()) {
   cal <- design$calendar
   col <- design$interview_sampled_col
-  days <- format(cal[[design$date_col]][cal[[col]] %in% TRUE])
-  rec_day <- format(records[[date_col]])
+  # A calendar with a row per section and day may schedule interviews in one
+  # section and not another, so the section is part of the day when both
+  # tables carry it.
+  sec <- design$section_col
+  by_sec <- !is.null(sec) && sec %in% names(cal) && sec %in% names(records)
+  key <- function(df, dcol) {
+    k <- format(df[[dcol]])
+    if (by_sec) paste(k, as.character(df[[sec]]), sep = " / ") else k
+  }
+  days <- key(cal, design$date_col)[cal[[col]] %in% TRUE]
+  rec_day <- key(records, date_col)
   off <- !is.na(records[[date_col]]) & !rec_day %in% days
   if (any(off)) {
     bad <- sort(unique(rec_day[off]))
@@ -525,12 +534,18 @@ check_interview_register <- function(records, design, date_col, what, call = rla
     more <- if (length(bad) > 10L) ", ..." else "" # nolint: object_usage_linter
     n_rec <- sum(off) # nolint: object_usage_linter
     n_day <- length(bad) # nolint: object_usage_linter
+    # A refused or excluded row is never weighted; it is counted in its table.
+    why <- if (identical(what, "interview")) { # nolint: object_usage_linter
+      "An interview the design did not select cannot be weighted with the ones it did."
+    } else {
+      "Each is counted in the {what} table by its date, and the design did not select that date."
+    }
     cli::cli_abort(
       c(
         "{n_rec} {what}{cli::qty(n_rec)}{?s} {?is/are} dated on {n_day} {cli::qty(n_day)}day{?s} \\
          the calendar's {.field {col}} column does not mark as an interview day: \\
          {.val {shown}}{more}.",
-        "x" = "An interview the design did not select cannot be weighted with the ones it did.",
+        "x" = why,
         "i" = "Mark {cli::qty(n_day)}{?it/them} {.val {TRUE}} in {.field {col}}, or correct the \\
                {what} dates."
       ),

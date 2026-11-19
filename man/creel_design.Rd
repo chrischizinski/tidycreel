@@ -251,7 +251,10 @@ same strata, not the same days (Pollock et al. 1994, complemented
 surveys). Both must still be probability samples of the stratum's days:
 a rate from days chosen for good fishing describes those days. The
 variance of the product treats effort and rate as independent, which
-separate draws satisfy. Not for bus-route or ice designs, where the
+separate draws satisfy. Within a stratum every interview has the same
+weight, so the rate assumes each angler trip had the same chance of being
+interviewed; the register says which days were drawn, not with what
+probability. Not for bus-route or ice designs, where the
 interviews are the effort data; use \code{sampled} there.}
 }
 \value{

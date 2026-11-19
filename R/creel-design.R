@@ -427,7 +427,10 @@ VALID_SURVEY_TYPES <- c("instantaneous", "bus_route", "ice", "camera", "aerial")
 #'   surveys). Both must still be probability samples of the stratum's days:
 #'   a rate from days chosen for good fishing describes those days. The
 #'   variance of the product treats effort and rate as independent, which
-#'   separate draws satisfy. Not for bus-route or ice designs, where the
+#'   separate draws satisfy. Within a stratum every interview has the same
+#'   weight, so the rate assumes each angler trip had the same chance of being
+#'   interviewed; the register says which days were drawn, not with what
+#'   probability. Not for bus-route or ice designs, where the
 #'   interviews are the effort data; use `sampled` there.
 #' @return A `creel_design` S3 object (list) with components:
 #'   \item{calendar}{The original calendar data frame}
@@ -1136,6 +1139,19 @@ resolve_interview_register <- function(quo, calendar, survey_type, call) {
     )
   }
   col <- resolve_single_col(quo, calendar, "interview_sampled", call)
+  # These names already mark the COUNT days (calendar_worked_rows()), so the
+  # interview register would be read as the count register too.
+  if (col %in% c("sampled", "p_period", "period_id")) {
+    cli::cli_abort(
+      c(
+        "{.arg interview_sampled} cannot be the {.field {col}} column.",
+        "x" = "{.field {col}} already marks the days counts were taken.",
+        "i" = "Put the interview days in a column of their own, e.g. {.field interviewed}."
+      ),
+      class = "creel_error_interview_register",
+      call = call
+    )
+  }
   x <- calendar[[col]]
   if (!is.logical(x) || anyNA(x)) {
     cli::cli_abort(
