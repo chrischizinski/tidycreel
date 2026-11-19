@@ -37,7 +37,8 @@ creel_design(
   tz = NULL,
   wait_time = NULL,
   circuit_time = NULL,
-  sampled = NULL
+  sampled = NULL,
+  interview_sampled = NULL
 )
 ```
 
@@ -315,6 +316,31 @@ creel_design(
   targets stop. An interview dated on a day marked `FALSE` stops
   [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
   (GH \#591).
+
+- interview_sampled:
+
+  Tidy selector for a logical column of `calendar` that is `TRUE` on
+  every day interviews were scheduled and `FALSE` on the rest, for a
+  survey that draws its interview days separately from its count days
+  (GH \#628) – for example aerial counts on two random weekdays a week
+  and access interviews on three.
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  then checks interviews against these days instead of the count days:
+  an interview on a day marked `FALSE` is refused, and one on a day with
+  no count is accepted. Counts are checked against the count days as
+  before.
+
+  The catch rate is estimated per stratum from the interviews and
+  multiplied by the stratum's effort, so the two need only come from the
+  same strata, not the same days (Pollock et al. 1994, complemented
+  surveys). Both must still be probability samples of the stratum's
+  days: a rate from days chosen for good fishing describes those days.
+  The variance of the product treats effort and rate as independent,
+  which separate draws satisfy. Within a stratum every interview has the
+  same weight, so the rate assumes each angler trip had the same chance
+  of being interviewed; the register says which days were drawn, not
+  with what probability. Not for bus-route or ice designs, where the
+  interviews are the effort data; use `sampled` there.
 
 ## Value
 

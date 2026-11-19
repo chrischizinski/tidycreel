@@ -123,7 +123,8 @@ specifying sites, circuits, and their sampling probabilities.</p>
 <span>  tz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  wait_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  circuit_time <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  sampled <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  sampled <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  interview_sampled <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -375,6 +376,28 @@ on the rest. It is the register of sampled days that
 interviews cannot supply it, because a worked day with no anglers leaves
 no interview. Without it, those targets stop. An interview dated on a
 day marked <code>FALSE</code> stops <code><a href="add_interviews.html">add_interviews()</a></code> (GH #591).</p></dd>
+
+
+<dt id="arg-interview-sampled">interview_sampled<a class="anchor" aria-label="anchor" href="#arg-interview-sampled"></a></dt>
+<dd><p>Tidy selector for a logical column of <code>calendar</code>
+that is <code>TRUE</code> on every day interviews were scheduled and <code>FALSE</code> on the
+rest, for a survey that draws its interview days separately from its
+count days (GH #628) – for example aerial counts on two random weekdays
+a week and access interviews on three. <code><a href="add_interviews.html">add_interviews()</a></code> then checks
+interviews against these days instead of the count days: an interview on
+a day marked <code>FALSE</code> is refused, and one on a day with no count is
+accepted. Counts are checked against the count days as before.</p>
+<p>The catch rate is estimated per stratum from the interviews and
+multiplied by the stratum's effort, so the two need only come from the
+same strata, not the same days (Pollock et al. 1994, complemented
+surveys). Both must still be probability samples of the stratum's days:
+a rate from days chosen for good fishing describes those days. The
+variance of the product treats effort and rate as independent, which
+separate draws satisfy. Within a stratum every interview has the same
+weight, so the rate assumes each angler trip had the same chance of being
+interviewed; the register says which days were drawn, not with what
+probability. Not for bus-route or ice designs, where the
+interviews are the effort data; use <code>sampled</code> there.</p></dd>
 
 </dl></div>
     <div class="section level2">
