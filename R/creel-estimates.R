@@ -1862,7 +1862,8 @@ estimate_catch_rate <- function(
     design_incomplete$interview_survey <- build_interview_survey(
       # nolint: object_usage_linter
       incomplete_interviews,
-      strata = strata_formula
+      strata = strata_formula,
+      psu = interview_psu_col(design, incomplete_interviews) # nolint: object_usage_linter
     )
 
     # Use the incomplete-trip design for estimation
@@ -3092,7 +3093,8 @@ estimate_release_rate <- function(
   design_rel$interview_survey <- build_interview_survey(
     # nolint: object_usage_linter
     release_data,
-    strata = strata_formula
+    strata = strata_formula,
+    psu = interview_psu_col(design, release_data) # nolint: object_usage_linter
   )
 
   if (rlang::quo_is_null(by_quo)) {
@@ -3159,7 +3161,8 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
   design_new$interview_survey <- build_interview_survey(
     # nolint: object_usage_linter
     filtered_interviews,
-    strata = strata_formula
+    strata = strata_formula,
+    psu = interview_psu_col(design, filtered_interviews) # nolint: object_usage_linter
   )
 
   design_new
@@ -7608,7 +7611,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
     # Get variance design from temporary survey
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
@@ -7632,7 +7635,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
 
     svy_result <- mor_svy_estimate(svy_design, "cpue_ratio", mor_w$weighted)
@@ -7772,12 +7775,12 @@ estimate_cpue_grouped <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
     # Get variance design from temporary survey
-    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+    svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   } else {
     # No filtering needed - use original design
-    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+    svy_design <- get_variance_design(design$interview_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   }
 
   # Build formulas for svyby
@@ -8634,7 +8637,8 @@ estimate_cpue_species <- function(
     design_sp$interview_survey <- build_interview_survey(
       # nolint: object_usage_linter
       sp_data,
-      strata = strata_formula
+      strata = strata_formula,
+      psu = interview_psu_col(design, sp_data) # nolint: object_usage_linter
     )
 
     # The n >= 10 floor is a ratio-estimation rule, so it does not apply to the
@@ -8734,7 +8738,8 @@ estimate_release_rate_species <- function(
     design_sp$interview_survey <- build_interview_survey(
       # nolint: object_usage_linter
       sp_data,
-      strata = strata_formula
+      strata = strata_formula,
+      psu = interview_psu_col(design, sp_data) # nolint: object_usage_linter
     )
 
     if (validate) {
@@ -8810,7 +8815,8 @@ estimate_hpue_species <- function(
     design_sp$interview_survey <- build_interview_survey(
       # nolint: object_usage_linter
       sp_data,
-      strata = strata_formula
+      strata = strata_formula,
+      psu = interview_psu_col(design, sp_data) # nolint: object_usage_linter
     )
 
     if (validate) {
@@ -8910,7 +8916,7 @@ estimate_harvest_total <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
@@ -8936,7 +8942,7 @@ estimate_harvest_total <- function(
     } else {
       NULL
     }
-    temp_survey_mor <- build_interview_survey(interviews_data, strata = strata_formula_mor) # nolint: object_usage_linter
+    temp_survey_mor <- build_interview_survey(interviews_data, strata = strata_formula_mor, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey_mor, variance_method) # nolint: object_usage_linter
 
     svy_result <- mor_svy_estimate(svy_design, "hpue_ratio", mor_w$weighted)
@@ -9105,10 +9111,10 @@ estimate_harvest_grouped <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula) # nolint: object_usage_linter
-    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
+    svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   } else {
-    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+    svy_design <- get_variance_design(design$interview_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   }
 
   # Build formulas for svyby
@@ -9705,7 +9711,8 @@ estimate_release_rate_sections <- function(
       design_rel$interview_survey <- build_interview_survey(
         # nolint: object_usage_linter
         release_data,
-        strata = strata_formula
+        strata = strata_formula,
+        psu = interview_psu_col(design, release_data) # nolint: object_usage_linter
       )
 
       if (!is.null(by_info$interview_vars)) {

@@ -488,7 +488,7 @@ test_that("interview_survey has correct class (survey.design2)", {
   expect_s3_class(result$interview_survey, "survey.design2")
 })
 
-test_that("interview_survey uses ~1 for ids (terminal units, no clustering)", {
+test_that("interview_survey is clustered on the survey day (#661)", {
   design <- make_interview_test_design()
   interviews <- make_test_interviews()
 
@@ -501,8 +501,17 @@ test_that("interview_survey uses ~1 for ids (terminal units, no clustering)", {
     trip_duration = trip_duration
   )
 
-  # Check that ids formula is ~1 (terminal sampling units)
-  expect_equal(as.character(result$interview_survey$call$ids), c("~", "1"))
+  # Days are drawn and parties met on one day share its conditions, so the day
+  # -- not the interview -- is the unit a rate's variance is taken between.
+  svy <- result$interview_survey
+  expect_equal(
+    length(unique(svy$cluster[, 1])),
+    length(unique(interviews$date))
+  )
+  # Each day is one PSU: rows of a day never land in different clusters.
+  expect_true(all(tapply(svy$cluster[, 1], svy$variables$date, function(x) {
+    length(unique(x))
+  }) == 1L))
 })
 
 test_that("interview_survey has correct strata (from calendar join)", {

@@ -124,7 +124,8 @@ test_that("each section's rate uses that section's own interviews alone (GH #263
         reference_design$interviews <- one_section
         reference_design$interview_survey <- build_interview_survey(
           one_section,
-          strata = stats::reformulate(design$strata_cols)
+          strata = stats::reformulate(design$strata_cols),
+          psu = design$date_col # clustered on the day, as add_interviews() is (#661)
         )
         reference <- quiet_rate(f, reference_design, use_trips = trips)
 

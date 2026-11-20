@@ -171,7 +171,7 @@ test_that("mean-of-ratios results convert through the parent method", {
   # Thirty incomplete trips: enough for the mean-of-ratios estimator to run.
   cal <- data.frame(date = as.Date("2024-06-01") + 0:3, day_type = "weekday")
   interviews <- data.frame(
-    date = as.Date("2024-06-01"),
+    date = rep(cal$date, length.out = 30), # 2+ interview days (#661)
     catch_total = rep(c(2, 3, 4, 5), length.out = 30),
     hours_fished = rep(c(2, 3, 4, 2.5), length.out = 30),
     trip_status = "incomplete",

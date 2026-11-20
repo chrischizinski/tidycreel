@@ -90,7 +90,9 @@ test_that("BINCOV-01 (#311): est_compliance() matches an independent svyratio() 
   min_length <- 356
 
   iv <- reference_interviews(min_length = min_length)
-  svy <- suppressWarnings(survey::svydesign(ids = ~1, strata = ~day_type, data = iv))
+  # Clustered on the interview day, as every interview survey is since #661:
+  # fish measured on one day share its conditions.
+  svy <- suppressWarnings(survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = iv))
   ref <- survey::svyratio(~legal, ~alltot, svy)
 
   pkg <- suppressWarnings(suppressMessages(
@@ -103,9 +105,10 @@ test_that("BINCOV-01 (#311): est_compliance() matches an independent svyratio() 
   # its standard error.
   expect_equal(pkg$compliance_prop, as.numeric(coef(ref)), tolerance = 1e-8)
 
-  # This is the assertion the defect fails. The package reported 0.1422436
-  # against the reference's 0.2093703 -- 32% too small, on a proportion that is
-  # compared against a legal size limit.
+  # This is the assertion the defect fails. Under the interview-level design
+  # the package reported 0.1422436 against the reference's 0.2093703 -- 32%
+  # too small, on a proportion that is compared against a legal size limit.
+  # Clustered on the day (#661) the reference is 0.1290053.
   expect_equal(pkg$compliance_se, as.numeric(survey::SE(ref)), tolerance = 1e-8)
 })
 
@@ -113,7 +116,9 @@ test_that("BINCOV-02 (#311): est_mean_length() matches an independent svyratio()
   skip_if_not_installed("survey")
 
   iv <- reference_interviews()
-  svy <- suppressWarnings(survey::svydesign(ids = ~1, strata = ~day_type, data = iv))
+  # Clustered on the interview day, as every interview survey is since #661:
+  # fish measured on one day share its conditions.
+  svy <- suppressWarnings(survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = iv))
   ref <- survey::svyratio(~lensum, ~alltot, svy)
 
   pkg <- suppressWarnings(suppressMessages(
@@ -143,9 +148,23 @@ test_that("BINCOV-03 (#311): the off-diagonal terms actually move the answer", {
 
   # The diagonal-only form is what the package used to report.
   expect_equal(diag_only, sqrt(sum(w^2 * rows$se^2)) / sum(rows$estimate), tolerance = 1e-10)
-  # And it is materially different -- not a rounding detail.
+  # And it is materially different -- not a rounding detail. Clustered on the
+  # day (#661) the compliance contrast moves by 0.57% (it was 30%+ under the
+  # interview-level design), still five orders of magnitude beyond the 1e-8
+  # tolerance BINCOV-01 holds the package to, so dropping the off-diagonals
+  # would fail it.
   expect_false(isTRUE(all.equal(with_cov, diag_only, tolerance = 1e-6)))
-  expect_gt(with_cov / diag_only, 1.3)
+  expect_gt(with_cov / diag_only, 1.005)
+
+  # The mean-length contrast weights every bin, and there the off-diagonals
+  # move the SE by 15%.
+  mid <- rows$bin_lower + 25 / 2
+  m <- mid - sum(mid * rows$estimate) / sum(rows$estimate)
+  expect_gt(
+    sqrt(as.numeric(t(m) %*% sigma %*% m)) /
+      sqrt(as.numeric(t(m) %*% diag(diag(sigma)) %*% m)),
+    1.1
+  )
 })
 
 test_that("BINCOV-04 (#311): sqrt(diag(vcov)) is exactly the reported per-bin se", {

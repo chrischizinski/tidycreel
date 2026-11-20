@@ -75,9 +75,9 @@
       Unit: fish/party-hour
       
       # A tibble: 1 x 5
-        estimate    se ci_lower ci_upper     n
-           <dbl> <dbl>    <dbl>    <dbl> <int>
-      1     1.34 0.143     1.06     1.62    10
+        estimate     se ci_lower ci_upper     n
+           <dbl>  <dbl>    <dbl>    <dbl> <int>
+      1     1.34 0.0726     1.20     1.49    10
 
 # print.creel_schedule snapshot
 

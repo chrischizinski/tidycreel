@@ -802,8 +802,9 @@ test_that("estimate_catch_rate species method attribute is 'ratio-of-means-cpue-
 })
 
 make_mor_design_with_catch <- function(n_incomplete = 15) {
+  # Two days: a rate's variance is taken between interview days (#661).
   cal <- data.frame(
-    date = as.Date("2024-06-01"),
+    date = as.Date(c("2024-06-01", "2024-06-02")),
     day_type = "weekday",
     stringsAsFactors = FALSE
   )
@@ -811,16 +812,16 @@ make_mor_design_with_catch <- function(n_incomplete = 15) {
   design <- suppressMessages(add_counts(
     design,
     data.frame(
-      date = as.Date("2024-06-01"),
+      date = cal$date,
       day_type = "weekday",
-      effort_hours = 8,
+      effort_hours = c(8, 6),
       stringsAsFactors = FALSE
     )
   ))
   n <- n_incomplete + 5L
   interviews <- data.frame(
     interview_id = seq_len(n),
-    date = as.Date("2024-06-01"),
+    date = rep(cal$date, length.out = n),
     day_type = "weekday",
     catch_total = rep(c(2L, 3L, 4L, 1L, 5L), length.out = n),
     hours_fished = rep(c(2.0, 3.0, 4.0, 1.5, 2.5), length.out = n),

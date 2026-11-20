@@ -790,7 +790,8 @@ make_small_cpue_design <- function(n, n_incomplete = 0) {
   }
 
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n),
     catch_total = rep(c(2, 3, 4, 5), length.out = n),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = n),
     catch_kept = rep(c(2, 2, 3, 4), length.out = n),
@@ -1055,7 +1056,7 @@ test_that("ungrouped CPUE matches manual svyratio calculation", {
 
   # Manual survey::svyratio calculation (filter to complete trips to match)
   complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
-  svy_complete <- survey::svydesign(ids = ~1, strata = ~day_type, data = complete_interviews)
+  svy_complete <- survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = complete_interviews)
   manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy_complete)
   manual_estimate <- as.numeric(coef(manual_result))
   manual_se <- as.numeric(survey::SE(manual_result))
@@ -1075,7 +1076,7 @@ test_that("grouped CPUE matches manual svyby+svyratio calculation", {
 
   # Manual survey::svyby + svyratio calculation (filter to complete trips to match)
   complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
-  svy_complete <- survey::svydesign(ids = ~1, strata = ~day_type, data = complete_interviews)
+  svy_complete <- survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = complete_interviews)
   manual_result <- survey::svyby(
     ~catch_total,
     ~day_type,
@@ -1116,7 +1117,7 @@ test_that("ungrouped CPUE SE^2 matches variance from manual vcov", {
 
   # Manual survey::svyratio calculation (filter to complete trips to match)
   complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
-  svy_complete <- survey::svydesign(ids = ~1, strata = ~day_type, data = complete_interviews)
+  svy_complete <- survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = complete_interviews)
   manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy_complete)
   manual_variance <- as.numeric(vcov(manual_result))
 
@@ -1586,7 +1587,8 @@ make_mor_design <- function(n_complete = 15, n_incomplete = 25) {
 
   # Generate interview data
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n_total)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n_total),
     catch_total = rep(c(2, 3, 4, 5, 6), length.out = n_total),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5, 3.5), length.out = n_total),
     catch_kept = rep(c(2, 2, 3, 4, 5), length.out = n_total),
@@ -1930,7 +1932,8 @@ make_truncation_test_design <- function(n_above, n_below, threshold) {
   trip_duration <- c(durations_above, durations_below)
 
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n_total)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n_total),
     catch_total = rep(c(2, 3, 4, 5, 6), length.out = n_total),
     hours_fished = trip_duration, # Match effort to duration for simplicity
     catch_kept = rep(c(2, 2, 3, 4, 5), length.out = n_total),
@@ -2101,7 +2104,7 @@ test_that("MOR with truncation matches manual survey::svymean", {
 
   # Create survey design for truncated trips
   truncated_svy <- survey::svydesign(
-    ids = ~1,
+    ids = ~date, # interview day is the PSU (#661)
     data = truncated_interviews
   )
 
@@ -2111,7 +2114,7 @@ test_that("MOR with truncation matches manual survey::svymean", {
 
   # Rebuild survey design with ratio column
   truncated_svy <- survey::svydesign(
-    ids = ~1,
+    ids = ~date, # interview day is the PSU (#661)
     data = truncated_interviews
   )
 
@@ -2245,7 +2248,8 @@ make_use_trips_design <- function(n_complete = 20, n_incomplete = 20) {
   )
 
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n_total)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n_total),
     catch_total = rep(c(2, 3, 4, 5, 6), length.out = n_total),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5, 3.5), length.out = n_total),
     catch_kept = rep(c(2, 2, 3, 4, 5), length.out = n_total),
@@ -2354,7 +2358,7 @@ test_that("use_trips parameter ignored when trip_status not provided", {
 
   # Create interviews with trip_status
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", 30)),
+    date = rep(cal$date, length.out = 30), # 2+ interview days (#661)
     catch_total = rep(c(2, 3, 4, 5), length.out = 30),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
     trip_status = rep("complete", 30),
@@ -2391,7 +2395,7 @@ test_that("no errors when trip_status absent and use_trips specified", {
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
 
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", 30)),
+    date = rep(cal$date, length.out = 30), # 2+ interview days (#661)
     catch_total = rep(c(2, 3, 4, 5), length.out = 30),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = 30),
     trip_status = rep("complete", 30),
@@ -2914,7 +2918,7 @@ test_that("grouped estimation warns per-group when below threshold", {
   # Group A: 10 complete out of 150 (6.7%) - should warn (but has n>=10 for validation)
   # Group B: 20 complete out of 150 (13.3%) - should not warn
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", 300)),
+    date = rep(cal$date, length.out = 300), # 2+ interview days (#661)
     catch_total = rep(c(2, 3, 4, 5), 75),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 75),
     trip_status = c(
@@ -2958,7 +2962,7 @@ test_that("grouped estimation warning fires for specific low group only", {
   # Group A: 10 complete out of 100 (10%) - should not warn (at threshold)
   # Group B: 50 complete out of 100 (50%) - should not warn
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", 200)),
+    date = rep(cal$date, length.out = 200), # 2+ interview days (#661)
     catch_total = rep(c(2, 3, 4, 5), 50),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 50),
     trip_status = c(
@@ -3010,7 +3014,7 @@ test_that("grouped estimation no warnings when all groups >= threshold", {
 
   # Both groups: 20 complete out of 100 (20%) - should not warn
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", 200)),
+    date = rep(cal$date, length.out = 200), # 2+ interview days (#661)
     catch_total = rep(c(2, 3, 4, 5), 50),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 50),
     trip_status = c(
@@ -3061,7 +3065,7 @@ test_that("grouped estimation respects package option threshold", {
 
   # Both groups: 10 complete out of 150 (6.7%)
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", 300)),
+    date = rep(cal$date, length.out = 300), # 2+ interview days (#661)
     catch_total = rep(c(2, 3, 4, 5), 75),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), 75),
     trip_status = c(
@@ -3578,15 +3582,7 @@ make_mortr_design <- function(n_complete = 20, n_incomplete = 30, zero_catch_fra
   )
 
   interviews <- data.frame(
-    date = as.Date(rep(
-      c(
-        "2024-06-01",
-        "2024-06-02",
-        "2024-06-03",
-        "2024-06-04"
-      ),
-      length.out = n_total
-    )),
+    date = rep(cal$date, length.out = n_total), # both strata, 2+ days each (#661)
     catch_total = catches,
     hours_fished = durations,
     trip_status = c(
@@ -3735,7 +3731,8 @@ make_roving_design <- function(n_complete = 15, n_incomplete = 35) {
   )
   design <- creel_design(cal, date = date, strata = day_type)
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n),
     catch_total = rep(c(1, 2, 3, 4), length.out = n),
     hours_fished = rep(c(1.0, 2.0, 3.0, 1.5), length.out = n),
     trip_status = c(rep("complete", n_complete), rep("incomplete", n_incomplete)),
@@ -3807,7 +3804,8 @@ test_that("ROVING-06: access design is unaffected by roving logic", {
   )
   design <- creel_design(cal, date = date, strata = day_type)
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n),
     catch_total = rep(c(1, 2, 3), length.out = n),
     hours_fished = rep(c(1.0, 2.0, 3.0), length.out = n),
     trip_status = rep("complete", n),
@@ -3839,7 +3837,8 @@ test_that("ROVING-06b: roving auto-route succeeds when trip_duration_col is NULL
   )
   design <- creel_design(cal, date = date, strata = day_type)
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n),
     catch_total = rep(c(1, 2, 3, 0), length.out = n),
     hours_fished = rep(c(1.0, 2.0, 3.0, 1.5), length.out = n),
     trip_status = c(rep("complete", 30), rep("incomplete", 20)),
@@ -3870,7 +3869,8 @@ test_that("ROVING-07: use_trips='all' valid for access design too", {
   )
   design <- creel_design(cal, date = date, strata = day_type)
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", n)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n),
     catch_total = rep(c(2, 3), length.out = n),
     hours_fished = rep(c(2.0, 3.0), length.out = n),
     trip_status = c(rep("complete", 10), rep("incomplete", 10)),

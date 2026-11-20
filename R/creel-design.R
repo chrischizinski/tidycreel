@@ -4668,6 +4668,9 @@ add_interviews <- function(
   new_design$trip_duration_derived <- trip_duration_derived
   new_design$trip_start_col <- trip_start_col
   new_design$interview_time_col <- interview_time_col
+  # The interviews' own date column, which a rate's variance clusters on
+  # (GH #661); it need not share the calendar's name.
+  new_design$interview_date_col <- date_col
 
   # Warn -- not inform -- when n_anglers was not explicitly provided. The
   # assumption is a statistical claim about the data, not a note about defaults:
