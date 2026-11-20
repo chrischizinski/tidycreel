@@ -143,11 +143,11 @@ est_effort_camera_mi(design, imps, interviews = ints, n_anglers = "party_size")
 #> Variance: rubin
 #> Confidence level: 95%
 #> Unit: angler-hours
-#> within_imputation: 23.6 (included in se)
-#> between_imputation: 2.632 (included in se)
+#> within_imputation: 22.96 (included in se)
+#> between_imputation: 1.73 (included in se)
 #> 
 #> # A tibble: 1 × 7
 #>   estimate    se se_between se_within ci_lower ci_upper     n
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int>
-#> 1     247.  23.7       23.7        NA     201.     294.    10
+#> 1     247.  23.0       23.0        NA     202.     293.    10
 ```

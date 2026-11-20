@@ -276,7 +276,7 @@ party size, which it does when it is given <code>n_anglers</code>.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.180 0.034<span style="text-decoration: underline;">6</span>    0.112    0.248   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.180 0.035<span style="text-decoration: underline;">0</span>    0.111    0.248   222</span></span></code></pre></div>
 <p>Without <code>n_anglers</code>, the same interviews give a rate per
 party-hour, and <code><a href="../reference/add_interviews.html">add_interviews()</a></code> warns that it has no party
 size:</p>
@@ -306,7 +306,7 @@ size:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.306 0.058<span style="text-decoration: underline;">7</span>    0.191    0.422   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.306 0.061<span style="text-decoration: underline;">1</span>    0.187    0.426   222</span></span></code></pre></div>
 <p>The two rates are not interchangeable. The party-hour rate is the
 angler-hour rate times the effort-weighted mean party size of the
 complete trips, 1.71 in these data.</p>
@@ -378,7 +378,7 @@ first:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     736.  217.     309.    <span style="text-decoration: underline;">1</span>164.   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     736.  219.     306.    <span style="text-decoration: underline;">1</span>167.   222</span></span></code></pre></div>
 <p>With the rate per party-hour, the product warns and has no unit:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">total_party</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">without_party</span><span class="op">)</span></span>
@@ -398,7 +398,7 @@ first:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>272.  371.     541.    <span style="text-decoration: underline;">2</span>003.   222</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>272.  377.     529.    <span style="text-decoration: underline;">2</span>015.   222</span></span>
 <span><span class="va">total_party</span><span class="op">$</span><span class="va">unit</span></span>
 <span><span class="co">#&gt; [1] NA</span></span></code></pre></div>
 <p>The total is 1,272 instead of 736. Multiplying a rate per party-hour

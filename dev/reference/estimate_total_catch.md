@@ -439,7 +439,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     830.  115.     585.    1075.    17
+#> 1     830.  106.     604.    1056.    17
 
 # Compare components
 effort_est <- estimate_effort(design)

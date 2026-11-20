@@ -359,7 +359,7 @@ party-hour, which cannot be multiplied by effort in angler-hours.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.180 0.034<span style="text-decoration: underline;">6</span>    0.112    0.248   222</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.180 0.035<span style="text-decoration: underline;">0</span>    0.111    0.248   222</span></span>
 <span><span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Filtering to complete trips for HPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=222, 74.5% of 298 interviews) [default]</span></span>
@@ -373,7 +373,7 @@ party-hour, which cannot be multiplied by effort in angler-hours.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.059<span style="text-decoration: underline;">5</span> 0.013<span style="text-decoration: underline;">8</span>   0.032<span style="text-decoration: underline;">5</span>   0.086<span style="text-decoration: underline;">6</span>   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.059<span style="text-decoration: underline;">5</span> 0.014<span style="text-decoration: underline;">9</span>   0.030<span style="text-decoration: underline;">3</span>   0.088<span style="text-decoration: underline;">8</span>   222</span></span></code></pre></div>
 <p>The catch rate is about 0.18 fish per angler-hour, and the harvest
 rate about 0.06. Both are ratio-of-means estimates, total catch divided
 by total effort across the interviews. These data were simulated with a
@@ -401,7 +401,7 @@ trips can be used.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     736.  217.     309.    <span style="text-decoration: underline;">1</span>164.   222</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     736.  219.     306.    <span style="text-decoration: underline;">1</span>167.   222</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -414,7 +414,7 @@ trips can be used.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     243.  79.6     86.0     400.   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     243.  83.7     78.0     408.   222</span></span></code></pre></div>
 <p>A total is effort times rate, with the uncertainty of both carried
 into its standard error. The unit follows: angler-hours times fish per
 angler-hour is fish. About 740 fish were caught over the season, and
@@ -436,8 +436,8 @@ does.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      542.  172.     203.     882.   152</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      194.  133.       0      458.    70</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      542.  176.     194.     891.   152</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      194.  129.       0      452.    70</span></span></code></pre></div>
 <p>Released fish come from species-level catch records, attached with
 <code><a href="../reference/add_catch.html">add_catch()</a></code>, rather than from the interview totals; see
 <code><a href="../reference/estimate_total_release.html">?estimate_total_release</a></code>.</p>
@@ -457,8 +457,8 @@ row:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 12</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n method              estimator </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      542.  172.     203.     882.   152 product-total-catch ratio-of-…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      194.  133.       0      458.    70 product-total-catch ratio-of-…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday      542.  176.     194.     891.   152 product-total-catch ratio-of-…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend      194.  129.       0      452.    70 product-total-catch ratio-of-…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
 <span></span>
@@ -466,7 +466,7 @@ row:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se unit </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend      194.  133. fish</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekend      194.  129. fish</span></span></code></pre></div>
 <p><code><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame()</a></code> does the same for base R. Use
 <code>metadata = FALSE</code> for the estimates table alone.</p>
 </div>

@@ -136,7 +136,7 @@ compare_cpue_estimators(design)
 #> # A tibble: 3 × 6
 #>   cpue_method estimate     se ci_lower ci_upper     n
 #> * <chr>          <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 rom            0.967 0.110     0.752    1.18     17
-#> 2 mor            0.991 0.115     0.765    1.22     17
+#> 1 rom            0.967 0.0966    0.778    1.16     17
+#> 2 mor            0.991 0.104     0.787    1.20     17
 #> 3 regression     0.804 0.0597    0.677    0.930    17
 ```

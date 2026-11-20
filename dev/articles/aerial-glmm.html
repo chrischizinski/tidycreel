@@ -367,7 +367,7 @@ standard aerial path rather than from the GLMM.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.413 0.060<span style="text-decoration: underline;">1</span>    0.295    0.531    48</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.413 0.052<span style="text-decoration: underline;">0</span>    0.311    0.515    48</span></span>
 <span></span>
 <span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design_int</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in estimate_total_catch(design_int): Rate and effort may be in different units.</span></span>
@@ -548,11 +548,11 @@ understates it.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># SE of the summed total, from the joint covariance</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">strata_vcov</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 501.285</span></span>
+<span><span class="co">#&gt; [1] 501.2849</span></span>
 <span></span>
 <span><span class="co"># The quadrature sum, shown only to compare -- it understates the SE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">glmm_by_day</span><span class="op">$</span><span class="va">estimates</span><span class="op">$</span><span class="va">se</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 467.2771</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 467.277</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="results-as-data">Results as Data<a class="anchor" aria-label="anchor" href="#results-as-data"></a>

@@ -130,7 +130,7 @@ suppressWarnings(estimate_catch_rate(design))
 #> Unit: fish/party-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.453 0.0755    0.305    0.601    40
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1    0.453 0.104    0.250    0.656    40
 ```

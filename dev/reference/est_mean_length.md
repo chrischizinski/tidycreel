@@ -112,7 +112,7 @@ ld <- est_length_distribution(design, by = species, bin_width = 25)
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_mean_length(ld)
 #>   species mean_length mean_length_se mean_length_ci_lower mean_length_ci_upper
-#> 1    bass    300.9615       11.97037             277.5000             324.4230
-#> 2 panfish    196.5909        9.12372             178.7087             214.4731
-#> 3 walleye    431.7308       14.13632             404.0241             459.4374
+#> 1    bass    300.9615      11.551730             278.3206             323.6025
+#> 2 panfish    196.5909       9.297521             178.3681             214.8137
+#> 3 walleye    431.7308      14.297167             403.7088             459.7527
 ```

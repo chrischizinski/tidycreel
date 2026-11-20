@@ -145,9 +145,9 @@ estimate_total_catch(design, aggregate_sections = TRUE)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           439.  38.4     348.     530.     9              0.226
-#> 2 Central        1100.  51.2     979.    1221.     9              0.566
+#> 1 North           439.  33.0     361.     517.     9              0.226
+#> 2 Central        1100.  51.1     979.    1221.     9              0.566
 #> 3 South           406.  39.3     313.     499.     9              0.209
-#> 4 .lake_total    1945. 114.     1708.    2181.     3              1    
+#> 4 .lake_total    1945. 112.     1712.    2178.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```

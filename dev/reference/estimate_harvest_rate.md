@@ -304,7 +304,7 @@ print(result)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.917 0.202    0.521     1.31    20
+#> 1    0.917 0.204    0.517     1.32    20
 
 # Grouped by day_type
 result_grouped <- estimate_harvest_rate(design_with_interviews, by = day_type)
@@ -322,7 +322,7 @@ print(result_grouped)
 #> # A tibble: 1 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     0.917 0.202    0.521     1.31    20
+#> 1 weekday     0.917 0.204    0.517     1.32    20
 
 # Custom confidence level
 result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)

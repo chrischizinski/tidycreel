@@ -272,7 +272,7 @@ estimate_catch_rate(design)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.180 0.0346    0.112    0.248   222
+#> 1    0.180 0.0350    0.111    0.248   222
 estimate_harvest_rate(design)
 #> ℹ Filtering to complete trips for HPUE estimation
 #>   (n=222, 74.5% of 298 interviews) [default]
@@ -286,7 +286,7 @@ estimate_harvest_rate(design)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1   0.0595 0.0138   0.0325   0.0866   222
+#> 1   0.0595 0.0149   0.0303   0.0888   222
 ```
 
 The catch rate is about 0.18 fish per angler-hour, and the harvest rate
@@ -316,7 +316,7 @@ estimate_total_catch(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     736.  217.     309.    1164.   222
+#> 1     736.  219.     306.    1167.   222
 estimate_total_harvest(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -329,7 +329,7 @@ estimate_total_harvest(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     243.  79.6     86.0     400.   222
+#> 1     243.  83.7     78.0     408.   222
 ```
 
 A total is effort times rate, with the uncertainty of both carried into
@@ -355,8 +355,8 @@ estimate_total_catch(design, by = day_type, target = "period_total")
 #> # A tibble: 2 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday      542.  172.     203.     882.   152
-#> 2 weekend      194.  133.       0      458.    70
+#> 1 weekday      542.  176.     194.     891.   152
+#> 2 weekend      194.  129.       0      452.    70
 ```
 
 Released fish come from species-level catch records, attached with
@@ -379,8 +379,8 @@ catch_tbl
 #> # A tibble: 2 × 12
 #>   day_type estimate    se ci_lower ci_upper     n method              estimator 
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int> <chr>               <chr>     
-#> 1 weekday      542.  172.     203.     882.   152 product-total-catch ratio-of-…
-#> 2 weekend      194.  133.       0      458.    70 product-total-catch ratio-of-…
+#> 1 weekday      542.  176.     194.     891.   152 product-total-catch ratio-of-…
+#> 2 weekend      194.  129.       0      452.    70 product-total-catch ratio-of-…
 #> # ℹ 4 more variables: variance_method <chr>, conf_level <dbl>,
 #> #   effort_target <chr>, unit <chr>
 
@@ -388,7 +388,7 @@ catch_tbl[catch_tbl$day_type == "weekend", c("day_type", "estimate", "se", "unit
 #> # A tibble: 1 × 4
 #>   day_type estimate    se unit 
 #>   <chr>       <dbl> <dbl> <chr>
-#> 1 weekend      194.  133. fish
+#> 1 weekend      194.  129. fish
 ```
 
 [`as.data.frame()`](https://rdrr.io/r/base/as.data.frame.html) does the

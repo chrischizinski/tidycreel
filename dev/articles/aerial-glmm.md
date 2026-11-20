@@ -281,7 +281,7 @@ print(catch_rate)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.413 0.0601    0.295    0.531    48
+#> 1    0.413 0.0520    0.311    0.515    48
 
 total_catch <- estimate_total_catch(design_int)
 #> Warning in estimate_total_catch(design_int): Rate and effort may be in different units.
@@ -475,11 +475,11 @@ SEs in quadrature treats them as independent and understates it.
 
 # SE of the summed total, from the joint covariance
 sqrt(sum(glmm_by_day$strata_vcov))
-#> [1] 501.285
+#> [1] 501.2849
 
 # The quadrature sum, shown only to compare -- it understates the SE
 sqrt(sum(glmm_by_day$estimates$se^2))
-#> [1] 467.2771
+#> [1] 467.277
 ```
 
 ## Results as Data

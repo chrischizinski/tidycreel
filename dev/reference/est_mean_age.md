@@ -105,7 +105,7 @@ ad <- est_age_distribution(design, by = species)
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_mean_age(ad)
 #>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper
-#> 1    bass 2.600000   0.1143716         2.3758357          2.824164
-#> 2 panfish 1.000000   0.2940441         0.4236841          1.576316
-#> 3 walleye 4.444444   0.2527982         3.9489690          4.939920
+#> 1    bass 2.600000   0.1301985          2.344816          2.855184
+#> 2 panfish 1.000000   0.2984698          0.415010          1.584990
+#> 3 walleye 4.444444   0.2576903          3.939381          4.949508
 ```

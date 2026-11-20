@@ -76,9 +76,9 @@ data.frame(
   row.names = NULL
 )
 #>    variance effort_se    rate_se total_catch_se
-#> 1    taylor 1014.0096 0.03462098       216.8669
-#> 2 bootstrap  984.1778 0.03534605       215.7481
-#> 3 jackknife 1014.0096 0.03484719       217.7719
+#> 1    taylor 1014.0096 0.03500803       218.5762
+#> 2 bootstrap  984.1778 0.03570714       219.4383
+#> 3 jackknife 1014.0096 0.03576103       221.8783
 ```
 
 The point estimates are identical; only the standard errors change, and

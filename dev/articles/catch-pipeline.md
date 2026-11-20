@@ -156,8 +156,8 @@ rate
 #> # A tibble: 2 × 6
 #>   day_type estimate     se ci_lower ci_upper     n
 #>   <chr>       <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     0.193 0.0451   0.105     0.282   152
-#> 2 weekend     0.153 0.0501   0.0548    0.251    70
+#> 1 weekday     0.193 0.0475   0.100     0.286   152
+#> 2 weekend     0.153 0.0398   0.0749    0.231    70
 ```
 
 Weekend parties caught fish faster than weekday parties, and weekdays
@@ -183,7 +183,7 @@ total
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     736.  217.     309.    1164.   222
+#> 1     736.  219.     306.    1167.   222
 
 E <- effort$estimates
 R <- rate$estimates
@@ -240,7 +240,7 @@ v_goodman <- with(
   sum(e^2 * se_r^2 + r^2 * se_e^2 - se_e^2 * se_r^2)
 )
 sqrt(v_goodman)
-#> [1] 216.8669
+#> [1] 218.5762
 ```
 
 which is the `se` printed for the total. The familiar two-term delta
@@ -253,7 +253,7 @@ conservative:
 estimate_total_catch(design,
   target = "period_total", product_variance = "first_order"
 )$estimates$se
-#> [1] 222.3269
+#> [1] 222.8418
 ```
 
 When both estimates are very imprecise the subtraction can make the
@@ -283,8 +283,8 @@ data.frame(
   from_rate = E$estimate^2 * R$se^2
 )
 #>   day_type from_effort from_rate
-#> 1  weekday    14161.27 16076.169
-#> 2  weekend    15155.31  4036.481
+#> 1  weekday    14161.27 17790.797
+#> 2  weekend    15155.31  2551.095
 ```
 
 On weekdays the two parts are about equal, the rate part slightly the

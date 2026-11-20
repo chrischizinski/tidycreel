@@ -183,7 +183,7 @@ estimate_catch_rate(with_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.180 0.0346    0.112    0.248   222
+#> 1    0.180 0.0350    0.111    0.248   222
 ```
 
 Without `n_anglers`, the same interviews give a rate per party-hour, and
@@ -217,7 +217,7 @@ estimate_catch_rate(without_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.306 0.0587    0.191    0.422   222
+#> 1    0.306 0.0611    0.187    0.426   222
 ```
 
 The two rates are not interchangeable. The party-hour rate is the
@@ -269,7 +269,7 @@ estimate_total_catch(with_party)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     736.  217.     309.    1164.   222
+#> 1     736.  219.     306.    1167.   222
 ```
 
 With the rate per party-hour, the product warns and has no unit:
@@ -293,7 +293,7 @@ total_party
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1272.  371.     541.    2003.   222
+#> 1    1272.  377.     529.    2015.   222
 total_party$unit
 #> [1] NA
 ```

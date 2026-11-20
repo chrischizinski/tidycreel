@@ -469,14 +469,14 @@ Attach them exactly as in any other survey type:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.606 0.038<span style="text-decoration: underline;">9</span>    0.530    0.682   120</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.606 0.027<span style="text-decoration: underline;">6</span>    0.552    0.660   120</span></span>
 <span></span>
 <span><span class="va">total_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">total_catch</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">5</span>209.  398.    <span style="text-decoration: underline;">4</span>422.    <span style="text-decoration: underline;">5</span>997.   120</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">5</span>209.  334.    <span style="text-decoration: underline;">4</span>547.    <span style="text-decoration: underline;">5</span>872.   120</span></span></code></pre></div>
 <p><code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> multiplies each day type’s effort
 by that day type’s catch rate and adds the products. Its standard error
 combines the two estimates’ variances, treating effort and rate as
@@ -492,14 +492,14 @@ formula and that assumption.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.161 0.018<span style="text-decoration: underline;">6</span>    0.125    0.198   120</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.161 0.019<span style="text-decoration: underline;">4</span>    0.123    0.199   120</span></span>
 <span></span>
 <span><span class="va">total_harvest</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="va">total_harvest</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>370.  169.    <span style="text-decoration: underline;">1</span>036.    <span style="text-decoration: underline;">1</span>704.   120</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">1</span>370.  187.     999.    <span style="text-decoration: underline;">1</span>741.   120</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

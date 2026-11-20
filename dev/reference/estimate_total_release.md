@@ -401,7 +401,7 @@ print(total_rel)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     317.  54.4     201.     433.    17
+#> 1     317.  54.1     202.     433.    17
 
 # Total releases by species
 total_rel_sp <- estimate_total_release(design, by = species)
@@ -417,7 +417,7 @@ print(total_rel_sp)
 #> # A tibble: 3 × 6
 #>   species estimate    se ci_lower ci_upper     n
 #>   <chr>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 bass        99.0  35.3     23.8     174.    17
-#> 2 panfish     61.1  22.5     13.3     109.    17
-#> 3 walleye    157.   46.2     58.7     256.    17
+#> 1 bass        99.0  28.3     38.8     159.    17
+#> 2 panfish     61.1  23.8     10.3     112.    17
+#> 3 walleye    157.   63.9     21.1     293.    17
 ```

@@ -308,14 +308,14 @@ cpue$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.606 0.0389    0.530    0.682   120
+#> 1    0.606 0.0276    0.552    0.660   120
 
 total_catch <- estimate_total_catch(design)
 total_catch$estimates
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    5209.  398.    4422.    5997.   120
+#> 1    5209.  334.    4547.    5872.   120
 ```
 
 [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
@@ -334,14 +334,14 @@ harvest_rate$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.161 0.0186    0.125    0.198   120
+#> 1    0.161 0.0194    0.123    0.199   120
 
 total_harvest <- estimate_total_harvest(design)
 total_harvest$estimates
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    1370.  169.    1036.    1704.   120
+#> 1    1370.  187.     999.    1741.   120
 ```
 
 ## Pope et al. Worked Example

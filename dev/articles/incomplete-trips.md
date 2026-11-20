@@ -155,7 +155,7 @@ estimate_catch_rate(design, use_trips = "complete")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.34 0.101     2.14     2.54    50
+#> 1     2.34 0.102     2.14     2.54    50
 estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor")
 #> ℹ Using incomplete trips for CPUE estimation
 #>   (n=120, 70.6% of 170 interviews)
@@ -180,7 +180,7 @@ estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.31 0.114     2.09     2.53   115
+#> 1     2.31 0.111     2.09     2.53   115
 ```
 
 Asking for incomplete trips with the ratio of means is refused: the
@@ -213,7 +213,7 @@ estimate_catch_rate(design,
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1     2.29 0.0943     2.11     2.48    96
+#> 1     2.29 0.0957     2.10     2.48    96
 estimate_catch_rate(design,
   use_trips = "incomplete", estimator = "mor",
   truncate_at = NULL
@@ -227,7 +227,7 @@ estimate_catch_rate(design,
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.27 0.115     2.04     2.50   120
+#> 1     2.27 0.115     2.05     2.49   120
 ```
 
 At the default cutoff 5 of the 120 incomplete trips are dropped. Raising
@@ -265,8 +265,8 @@ estimate_catch_rate(design, use_trips = "diagnostic")
 #> Complete trips vs Incomplete trips
 #> 
 #>    trip_type estimate        se ci_lower ci_upper   n
-#> 1   complete 2.343039 0.1011997 2.144692 2.541387  50
-#> 2 incomplete 2.311713 0.1136149 2.089032 2.534394 115
+#> 1   complete 2.343039 0.1018237 2.143469 2.542610  50
+#> 2 incomplete 2.311713 0.1113125 2.093545 2.529882 115
 #> 
 #> 
 #> ── Difference Metrics ──
@@ -315,7 +315,7 @@ validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
 #> Incomplete trips: n = 115, CPUE = 2.312
 #> Difference: 0.031
 #> Equivalence bounds: [-0.469, 0.469]
-#> TOST p-values: p_lower = 9e-04, p_upper = 0.003
+#> TOST p-values: p_lower = 9e-04, p_upper = 0.0028
 #> ✔ Overall equivalence: PASSED
 ```
 

@@ -260,9 +260,9 @@ per section with <strong>no <code>.lake_total</code> row</strong>.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 7</span></span></span>
 <span><span class="co">#&gt;   section estimate     se ci_lower ci_upper     n data_available</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>         </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North       1.06 0.071<span style="text-decoration: underline;">0</span>    0.922     1.20     9 TRUE          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central     1.51 0.017<span style="text-decoration: underline;">9</span>    1.47      1.54     9 TRUE          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South       2.45 0.028<span style="text-decoration: underline;">7</span>    2.39      2.51     9 TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North       1.06 0.054<span style="text-decoration: underline;">9</span>    0.954     1.17     9 TRUE          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central     1.51 0.018<span style="text-decoration: underline;">1</span>    1.47      1.54     9 TRUE          </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South       2.45 0.027<span style="text-decoration: underline;">3</span>    2.40      2.50     9 TRUE</span></span></code></pre></div>
 <div class="alert alert-warning">
 <p><strong>Notice there is no <code>.lake_total</code> row.</strong>
 Catch rate is a ratio estimator and ratios are not additive — South’s
@@ -289,9 +289,9 @@ registration.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1.77 0.118     1.54     2.00    27</span></span></code></pre></div>
+<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1.77 0.052<span style="text-decoration: underline;">1</span>     1.67     1.87    27</span></span></code></pre></div>
 <p>This call warns that 27 interviews is a small sample for a ratio
 estimator. It is: the example dataset is small so the page runs quickly.
 The warning is about precision, and the standard error already reflects
@@ -322,10 +322,10 @@ it.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se ci_lower ci_upper     n prop_of_lake_total</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           439.  38.4     348.     530.     9              0.226</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central        <span style="text-decoration: underline;">1</span>100.  51.2     979.    <span style="text-decoration: underline;">1</span>221.     9              0.566</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           439.  33.0     361.     517.     9              0.226</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central        <span style="text-decoration: underline;">1</span>100.  51.1     979.    <span style="text-decoration: underline;">1</span>221.     9              0.566</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           406.  39.3     313.     499.     9              0.209</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>945. 114.     <span style="text-decoration: underline;">1</span>708.    <span style="text-decoration: underline;">2</span>181.     3              1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>945. 112.     <span style="text-decoration: underline;">1</span>712.    <span style="text-decoration: underline;">2</span>178.     3              1    </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: se_prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <p>The call warns that two rate cells rest on fewer than 10 trips. A
 sectioned total builds a rate for each section within each day type, and
@@ -348,10 +348,10 @@ its share of itself is 1 by construction rather than estimated.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
 <span><span class="co">#&gt;   section     estimate    se ci_lower ci_upper     n prop_of_lake_total</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           253.  26.0     191.     314.     9              0.202</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central         719.  40.0     625.     814.     9              0.574</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           281.  27.4     216.     346.     9              0.224</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>253.  77.7    <span style="text-decoration: underline;">1</span>092.    <span style="text-decoration: underline;">1</span>415.     3              1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> North           253.  24.8     194.     312.     9              0.202</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Central         719.  39.4     626.     813.     9              0.574</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> South           281.  27.4     217.     346.     9              0.224</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> .lake_total    <span style="text-decoration: underline;">1</span>253.  77.0    <span style="text-decoration: underline;">1</span>093.    <span style="text-decoration: underline;">1</span>414.     3              1    </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: se_prop_of_lake_total &lt;dbl&gt;, data_available &lt;lgl&gt;</span></span></span></code></pre></div>
 <hr>
 </div>

@@ -219,7 +219,7 @@ ld <- est_length_distribution(design, by = species, bin_width = 25)
 #>   from the measured subsample. Shares (percent) are unaffected.
 est_biomass(ld, a = 0.0088, b = 3.1)
 #>   species biomass_estimate biomass_se biomass_ci_lower biomass_ci_upper
-#> 1    bass         16277929  4873444.0        6726154.5         25829704
-#> 2 panfish          2889213   964609.1         998614.2          4779812
-#> 3 walleye         88727045 22187752.5       45239849.6        132214241
+#> 1    bass         16277929  5556988.1          5386433         27169426
+#> 2 panfish          2889213   958800.1          1010000          4768427
+#> 3 walleye         88727045 24041542.3         41606488        135847603
 ```

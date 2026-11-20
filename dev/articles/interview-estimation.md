@@ -160,9 +160,9 @@ print(cpue_est)
 #> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.967 0.110    0.752     1.18    17
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1    0.967 0.0966    0.778     1.16    17
 ```
 
 The CPUE estimate is the ratio of means: total catch divided by total
@@ -218,7 +218,7 @@ print(total_catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     830.  115.     585.    1075.    17
+#> 1     830.  106.     604.    1056.    17
 ```
 
 The total is built stratum by stratum: each day type’s effort times that
@@ -270,7 +270,7 @@ print(hpue_est)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.595 0.0616    0.475    0.716    17
+#> 1    0.595 0.0548    0.488    0.703    17
 
 # Estimate total harvest
 total_harvest_est <- estimate_total_harvest(design)
@@ -285,7 +285,7 @@ print(total_harvest_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     513.  68.0     368.     657.    17
+#> 1     513.  60.3     384.     641.    17
 ```
 
 Harvest estimation uses the same ratio-of-means approach as CPUE, but
@@ -334,10 +334,10 @@ cbind(
     tibble::as_tibble(cpue_jk)[, c("estimate", "se")]
   )
 )
-#>      method  estimate        se
-#> 1    taylor 0.9674419 0.1100611
-#> 2 bootstrap 0.9674419 0.1144879
-#> 3 jackknife 0.9674419 0.1132936
+#>      method  estimate         se
+#> 1    taylor 0.9674419 0.09659325
+#> 2 bootstrap 0.9674419 0.09517424
+#> 3 jackknife 0.9674419 0.09787956
 ```
 
 The estimate is the same under all three; only the standard error
@@ -412,15 +412,15 @@ ad <- est_age_distribution(design, by = species)
 #>   from the measured subsample. Shares (percent) are unaffected.
 print(ad)
 #>   species age estimate       se  ci_lower ci_upper percent cumulative_percent n
-#> 1    bass   2 14.80000 4.983867  5.031800 24.56820    40.0               40.0 3
-#> 2    bass   3 22.20000 7.485693  7.528311 36.87169    60.0              100.0 3
-#> 3 panfish   0  6.00000 3.677777 -1.208310 13.20831    25.0               25.0 2
-#> 4 panfish   1 12.00000 4.648028  2.890032 21.10997    50.0               75.0 2
-#> 5 panfish   2  6.00000 6.022960 -5.804784 17.80478    25.0              100.0 2
-#> 6 walleye   3 14.66667 4.096348  6.637973 22.69536    22.2               22.2 3
-#> 7 walleye   4 22.00000 6.653846  8.958702 35.04130    33.3               55.6 3
-#> 8 walleye   5 14.66667 4.096348  6.637973 22.69536    22.2               77.8 3
-#> 9 walleye   6 14.66667 9.737619 -4.418715 33.75205    22.2              100.0 3
+#> 1    bass   2 14.80000 5.155605  4.695199 24.90480    40.0               40.0 3
+#> 2    bass   3 22.20000 9.232385  4.104858 40.29514    60.0              100.0 3
+#> 3 panfish   0  6.00000 3.720719 -1.292475 13.29248    25.0               25.0 2
+#> 4 panfish   1 12.00000 4.650269  2.885641 21.11436    50.0               75.0 2
+#> 5 panfish   2  6.00000 6.121172 -5.997277 17.99728    25.0              100.0 2
+#> 6 walleye   3 14.66667 4.959092  4.947025 24.38631    22.2               22.2 3
+#> 7 walleye   4 22.00000 7.286466  7.718788 36.28121    33.3               55.6 3
+#> 8 walleye   5 14.66667 4.959092  4.947025 24.38631    22.2               77.8 3
+#> 9 walleye   6 14.66667 9.532271 -4.016242 33.34958    22.2              100.0 3
 ```
 
 Ages come from a subsample of the catch, so
@@ -443,9 +443,9 @@ are accepted here.
 # Compute weighted mean age from the distribution object
 est_mean_age(ad)
 #>   species mean_age mean_age_se mean_age_ci_lower mean_age_ci_upper
-#> 1    bass 2.600000   0.1143716         2.3758357          2.824164
-#> 2 panfish 1.000000   0.2940441         0.4236841          1.576316
-#> 3 walleye 4.444444   0.2527982         3.9489690          4.939920
+#> 1    bass 2.600000   0.1301985          2.344816          2.855184
+#> 2 panfish 1.000000   0.2984698          0.415010          1.584990
+#> 3 walleye 4.444444   0.2576903          3.939381          4.949508
 ```
 
 [`est_mean_age()`](https://chrischizinski.com/tidycreel/dev/reference/est_mean_age.md)
@@ -541,7 +541,7 @@ print(total_catch)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     830.  115.     585.    1075.    17
+#> 1     830.  106.     604.    1056.    17
 print(total_harvest)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -553,7 +553,7 @@ print(total_harvest)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     513.  68.0     368.     657.    17
+#> 1     513.  60.3     384.     641.    17
 ```
 
 The same warnings appear here as in the sections above, for the same

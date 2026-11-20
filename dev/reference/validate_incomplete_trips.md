@@ -225,7 +225,7 @@ print(result)
 #> Incomplete trips: n = 50, CPUE = 1.969
 #> Difference: 0.077
 #> Equivalence bounds: [-0.409, 0.409]
-#> TOST p-values: p_lower = 0.0049, p_upper = 0.0359
+#> TOST p-values: p_lower = 0.0086, p_upper = 0.0491
 #> ✔ Overall equivalence: PASSED
 #> 
 
@@ -256,7 +256,7 @@ print(result_grouped)
 #> Incomplete trips: n = 50, CPUE = 1.969
 #> Difference: 0.077
 #> Equivalence bounds: [-0.409, 0.409]
-#> TOST p-values: p_lower = 0.0049, p_upper = 0.0359
+#> TOST p-values: p_lower = 0.0086, p_upper = 0.0491
 #> ✔ Overall equivalence: PASSED
 #> 
 #> 

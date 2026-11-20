@@ -174,7 +174,7 @@ weekday_total
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     542.  172.     203.     882.   152
+#> 1     542.  176.     194.     891.   152
 #> 
 #> Covers the cells with a rate only. Excluded (no rate), see $excluded_strata:
 #>   day_type = weekend: 1269 effort units

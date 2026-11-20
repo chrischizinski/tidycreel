@@ -260,7 +260,7 @@ print(rpue)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.879 0.0478    0.785    0.973    17
+#> 1    0.879 0.0535    0.774    0.984    17
 
 # Per-species release rates
 rpue_by_species <- estimate_release_rate(design, by = species)
@@ -278,7 +278,7 @@ print(rpue_by_species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass       0.330 0.0897   0.154     0.505    17
-#> 2 panfish    0.176 0.0708   0.0370    0.315    17
-#> 3 walleye    0.374 0.0820   0.213     0.534    17
+#> 1 bass       0.330 0.0965   0.141     0.519    17
+#> 2 panfish    0.176 0.0771   0.0247    0.327    17
+#> 3 walleye    0.374 0.101    0.175     0.572    17
 ```

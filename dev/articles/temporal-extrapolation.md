@@ -231,11 +231,11 @@ monthly_catch
 #> # A tibble: 5 × 6
 #>   month     estimate    se ci_lower ci_upper     n
 #>   <fct>        <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 August      11982. 1980.    8004.   15960.    52
-#> 2 July         7763. 1026.    5698.    9829.    48
-#> 3 June         8407. 1554.    5292.   11522.    56
-#> 4 May          8340. 1480.    5343.   11336.    40
-#> 5 September    5875.  872.    4119.    7631.    48
+#> 1 August      11982. 1622.    8724.   15239.    52
+#> 2 July         7763.  857.    6039.    9488.    48
+#> 3 June         8407. 1380.    5641.   11173.    56
+#> 4 May          8340. 1351.    5605.   11075.    40
+#> 5 September    5875.  747.    4371.    7379.    48
 estimate_total_catch(design, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ estimate_total_catch(design, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1   42367. 3216.   36032.   48702.   244
+#> 1   42367. 2766.   36918.   47817.   244
 ```
 
 Each month’s catch is that month’s effort times its catch rate, stratum

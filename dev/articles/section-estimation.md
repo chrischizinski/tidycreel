@@ -166,9 +166,9 @@ print(cpue_est$estimates)
 #> # A tibble: 3 × 7
 #>   section estimate     se ci_lower ci_upper     n data_available
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int> <lgl>         
-#> 1 North       1.06 0.0710    0.922     1.20     9 TRUE          
-#> 2 Central     1.51 0.0179    1.47      1.54     9 TRUE          
-#> 3 South       2.45 0.0287    2.39      2.51     9 TRUE
+#> 1 North       1.06 0.0549    0.954     1.17     9 TRUE          
+#> 2 Central     1.51 0.0181    1.47      1.54     9 TRUE          
+#> 3 South       2.45 0.0273    2.40      2.50     9 TRUE
 ```
 
 **Notice there is no `.lake_total` row.** Catch rate is a ratio
@@ -197,9 +197,9 @@ estimate_catch_rate(design_nosections)$estimates
 #> ℹ Variance estimates may be unstable with n < 30.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     1.77 0.118     1.54     2.00    27
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1     1.77 0.0521     1.67     1.87    27
 ```
 
 This call warns that 27 interviews is a small sample for a ratio
@@ -232,10 +232,10 @@ print(catch_est$estimates)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           439.  38.4     348.     530.     9              0.226
-#> 2 Central        1100.  51.2     979.    1221.     9              0.566
+#> 1 North           439.  33.0     361.     517.     9              0.226
+#> 2 Central        1100.  51.1     979.    1221.     9              0.566
 #> 3 South           406.  39.3     313.     499.     9              0.209
-#> 4 .lake_total    1945. 114.     1708.    2181.     3              1    
+#> 4 .lake_total    1945. 112.     1712.    2178.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 
@@ -263,10 +263,10 @@ print(harvest_est$estimates)
 #> # A tibble: 4 × 9
 #>   section     estimate    se ci_lower ci_upper     n prop_of_lake_total
 #>   <chr>          <dbl> <dbl>    <dbl>    <dbl> <int>              <dbl>
-#> 1 North           253.  26.0     191.     314.     9              0.202
-#> 2 Central         719.  40.0     625.     814.     9              0.574
-#> 3 South           281.  27.4     216.     346.     9              0.224
-#> 4 .lake_total    1253.  77.7    1092.    1415.     3              1    
+#> 1 North           253.  24.8     194.     312.     9              0.202
+#> 2 Central         719.  39.4     626.     813.     9              0.574
+#> 3 South           281.  27.4     217.     346.     9              0.224
+#> 4 .lake_total    1253.  77.0    1093.    1414.     3              1    
 #> # ℹ 2 more variables: se_prop_of_lake_total <dbl>, data_available <lgl>
 ```
 

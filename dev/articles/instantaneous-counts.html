@@ -236,7 +236,7 @@ kinds of interview below use this effort.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.180 0.034<span style="text-decoration: underline;">6</span>    0.112    0.248   222</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.180 0.035<span style="text-decoration: underline;">0</span>    0.111    0.248   222</span></span>
 <span><span class="va">access_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">access</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
 <span><span class="va">access_catch</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -250,7 +250,7 @@ kinds of interview below use this effort.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     736.  217.     309.    <span style="text-decoration: underline;">1</span>164.   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     736.  219.     306.    <span style="text-decoration: underline;">1</span>167.   222</span></span></code></pre></div>
 <p><code>interview_type</code> is left at <code>"access"</code>. The
 catch rate is a ratio of means over the 222 complete trips: total catch
 divided by total angler-hours, about 0.18 fish per angler-hour. The 76
@@ -320,7 +320,7 @@ below.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.191 0.019<span style="text-decoration: underline;">3</span>    0.154    0.229   183</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.191 0.018<span style="text-decoration: underline;">6</span>    0.155    0.228   183</span></span></code></pre></div>
 <p>With <code>interview_type = "roving"</code>, tidycreel uses the
 mean-of-ratios estimator of Hoenig et al. (1997) over all trips: each
 party’s catch per angler-hour so far, averaged with each party counted
@@ -356,7 +356,7 @@ interval of 0.15 to 0.23.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     773.  198.     383.    <span style="text-decoration: underline;">1</span>164.   183</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     773.  198.     383.    <span style="text-decoration: underline;">1</span>163.   183</span></span>
 <span><span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">roving</span>, target <span class="op">=</span> <span class="st">"period_total"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
@@ -369,7 +369,7 @@ interval of 0.15 to 0.23.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     242.  78.0     88.1     396.   183</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     242.  79.5     85.1     399.   183</span></span></code></pre></div>
 <p>The totals multiply the same season effort by the roving rates: about
 770 fish caught and 240 kept. Each estimate built on a roving rate drops
 the short trips again. The warning printed once for this design; each
@@ -395,8 +395,8 @@ shows them side by side:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">totals</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"interviews"</span>, <span class="st">"estimate"</span>, <span class="st">"se"</span>, <span class="st">"estimator"</span>, <span class="st">"unit"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   interviews estimate       se      estimator unit</span></span>
-<span><span class="co">#&gt; 1     access 736.4413 216.8669 ratio-of-means fish</span></span>
-<span><span class="co">#&gt; 2     roving 773.2053 198.0009            mor fish</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     access 736.4413 218.5762 ratio-of-means fish</span></span>
+<span><span class="co">#&gt; 2     roving 773.2053 197.5643            mor fish</span></span></code></pre></div>
 <p>The two are different sets of interviews from the same days, so their
 totals need not agree; they should be close when both kinds of interview
 describe the same fishery.</p>

@@ -425,7 +425,7 @@ print(total_harvest)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     513.  68.0     368.     657.    17
+#> 1     513.  60.3     384.     641.    17
 
 # Compare components
 effort_est <- estimate_effort(design)

@@ -104,7 +104,7 @@ estimate_catch_rate(access)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.180 0.0346    0.112    0.248   222
+#> 1    0.180 0.0350    0.111    0.248   222
 access_catch <- estimate_total_catch(access, target = "period_total")
 access_catch
 #> 
@@ -118,7 +118,7 @@ access_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     736.  217.     309.    1164.   222
+#> 1     736.  219.     306.    1167.   222
 ```
 
 `interview_type` is left at `"access"`. The catch rate is a ratio of
@@ -193,7 +193,7 @@ estimate_catch_rate(roving)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.191 0.0193    0.154    0.229   183
+#> 1    0.191 0.0186    0.155    0.228   183
 ```
 
 With `interview_type = "roving"`, tidycreel uses the mean-of-ratios
@@ -234,7 +234,7 @@ roving_catch
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     773.  198.     383.    1164.   183
+#> 1     773.  198.     383.    1163.   183
 estimate_total_harvest(roving, target = "period_total")
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -247,7 +247,7 @@ estimate_total_harvest(roving, target = "period_total")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     242.  78.0     88.1     396.   183
+#> 1     242.  79.5     85.1     399.   183
 ```
 
 The totals multiply the same season effort by the roving rates: about
@@ -275,8 +275,8 @@ totals <- rbind(
 )
 totals[, c("interviews", "estimate", "se", "estimator", "unit")]
 #>   interviews estimate       se      estimator unit
-#> 1     access 736.4413 216.8669 ratio-of-means fish
-#> 2     roving 773.2053 198.0009            mor fish
+#> 1     access 736.4413 218.5762 ratio-of-means fish
+#> 2     roving 773.2053 197.5643            mor fish
 ```
 
 The two are different sets of interviews from the same days, so their

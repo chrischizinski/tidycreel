@@ -12,6 +12,29 @@
 
 ### Breaking changes
 
+- Interview-based variances are now taken between survey days
+  ([\#661](https://github.com/chrischizinski/tidycreel/issues/661)).
+  Days are drawn and every party met on a day shares its weather, water
+  and fish, so the day is the primary sampling unit and the interview
+  the secondary one. The interview survey used to treat every interview
+  as its own unit, which gave 50 interviews on one day the same standard
+  error as 50 interviews on 50 days. Catch, harvest and release rates,
+  the totals built from them, and the length, age and compliance
+  summaries are now clustered on the date column, nested in stratum, as
+  bus-route and ice estimates already were. Point estimates do not
+  change; standard errors do. On three 2025 agency surveys, rate SEs
+  moved by factors of 0.83 to 1.17, and on the bundled example data the
+  compliance SE fell from 0.209 to 0.129. A stratum whose interviews all
+  come from one day has no between-day variation to estimate, so those
+  estimates now stop with a `creel_error_single_psu` naming the stratum.
+  So does a `by =` group whose interviews all come from one day, which
+  would otherwise be reported with a standard error of 0.
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  still accepts such data. Interview on a second day, or combine sparse
+  strata or groups. The regression estimator
+  (`estimator = "regression"`) still uses its interview-level jackknife
+  and is not yet clustered on the day.
+
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   refuses a count timed outside the drawn shift
   ([\#426](https://github.com/chrischizinski/tidycreel/issues/426)).
