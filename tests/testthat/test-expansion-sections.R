@@ -301,7 +301,9 @@ test_that("the partial lake SE equals the hand-combined decomposition (GH #150)"
   expected <- sqrt(sum(secs$se^2) - sum(components^2) + exact_var)
 
   expect_equal(lake_row(result)$se, expected, tolerance = 1e-9)
-  expect_equal(lake_row(result)$se, 39.62349930, tolerance = 1e-7)
+  # 39.62349930 before #661 clustered the rate's variance on the interview
+  # day; the identity above holds under either design.
+  expect_equal(lake_row(result)$se, 39.40594617, tolerance = 1e-7)
 })
 
 test_that("the nested and shared section SEs are untouched by #150", {
@@ -314,8 +316,10 @@ test_that("the nested and shared section SEs are untouched by #150", {
   nested <- suppressWarnings(estimate_total_catch(sections_design(separate_section_counts()), target = "sampled_days"))
   shared <- suppressWarnings(estimate_total_catch(sections_design(shared_section_counts()), target = "sampled_days"))
 
-  expect_equal(lake_row(nested)$se, 39.621910, tolerance = 1e-5)
-  expect_equal(lake_row(shared)$se, 39.989145, tolerance = 1e-5)
+  # 39.621910 / 39.989145 before #661 clustered the rate's variance on the
+  # interview day.
+  expect_equal(lake_row(nested)$se, 39.404348, tolerance = 1e-5)
+  expect_equal(lake_row(shared)$se, 39.773592, tolerance = 1e-5)
 })
 
 test_that("harvest and release recover the partial geometry too (GH #150)", {

@@ -136,7 +136,9 @@ test_that("separate per-stratum estimates are unchanged by the correction (GH #1
   # rather than as a re-decomposition precisely so that this number does not
   # move; a regression here means the fix perturbed the Goodman cross term.
   separate <- suppressWarnings(estimate_total_catch(totals_design(separate_counts())))
-  expect_equal(separate$estimates$se, 29.65782009, tolerance = 1e-6)
+  # 29.65782009 before #661 clustered the rate's variance on the interview
+  # day: the rate term of the Goodman product moved, not the cross term.
+  expect_equal(separate$estimates$se, 29.93012696, tolerance = 1e-6)
 })
 
 test_that("totals report the party-size component they carry (GH #134)", {

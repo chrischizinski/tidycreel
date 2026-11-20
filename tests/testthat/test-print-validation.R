@@ -9,7 +9,7 @@ test_that("format.creel_tost_validation returns character vector", {
   design <- creel_design(cal, date = date, strata = day_type)
 
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 25)),
+    date = rep(cal$date, length.out = 50), # each trip set on 2+ days (#661)
     catch_total = rpois(50, lambda = 6),
     hours_fished = runif(50, min = 2, max = 4),
     trip_status = rep(c("complete", "incomplete"), each = 25),
@@ -45,7 +45,7 @@ test_that("print method displays plot for ungrouped validation", {
   design <- creel_design(cal, date = date, strata = day_type)
 
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 25)),
+    date = rep(cal$date, length.out = 50), # each trip set on 2+ days (#661)
     catch_total = rpois(50, lambda = 6),
     hours_fished = runif(50, min = 2, max = 4),
     trip_status = rep(c("complete", "incomplete"), each = 25),
@@ -82,7 +82,7 @@ test_that("print method displays plot for grouped validation", {
   design <- creel_design(cal, date = date, strata = day_type)
 
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 30)),
+    date = rep(cal$date, length.out = 60), # each trip set on 2+ days (#661)
     location = rep(c("site_a", "site_b"), times = 30),
     catch_total = rpois(60, lambda = 6),
     hours_fished = runif(60, min = 2, max = 4),
@@ -119,7 +119,7 @@ test_that("formatted output includes overall test results", {
   design <- creel_design(cal, date = date, strata = day_type)
 
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 25)),
+    date = rep(cal$date, length.out = 50), # each trip set on 2+ days (#661)
     catch_total = rpois(50, lambda = 6),
     hours_fished = runif(50, min = 2, max = 4),
     trip_status = rep(c("complete", "incomplete"), each = 25),
@@ -160,7 +160,7 @@ test_that("formatted output includes per-group results if grouped", {
   design <- creel_design(cal, date = date, strata = day_type)
 
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 30)),
+    date = rep(cal$date, length.out = 60), # each trip set on 2+ days (#661)
     location = rep(c("site_a", "site_b"), times = 30),
     catch_total = rpois(60, lambda = 6),
     hours_fished = runif(60, min = 2, max = 4),
@@ -200,7 +200,7 @@ test_that("formatted output includes recommendation text", {
   design <- creel_design(cal, date = date, strata = day_type)
 
   interviews <- data.frame(
-    date = as.Date(rep(c("2024-06-01", "2024-06-02"), each = 25)),
+    date = rep(cal$date, length.out = 50), # each trip set on 2+ days (#661)
     catch_total = rpois(50, lambda = 6),
     hours_fished = runif(50, min = 2, max = 4),
     trip_status = rep(c("complete", "incomplete"), each = 25),

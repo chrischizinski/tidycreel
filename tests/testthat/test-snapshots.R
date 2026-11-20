@@ -71,7 +71,7 @@ test_that("print.creel_estimates_mor snapshot", {
   design <- creel_design(cal, date = date, strata = day_type)
   # 20 interviews: 10 complete + 10 incomplete (MOR requires >= 10 per filtered set)
   interviews <- data.frame(
-    date = as.Date(rep("2024-06-01", 20L)),
+    date = rep(cal$date, each = 5L), # 4 interview days that differ (#661)
     catch_total = rep(c(2L, 3L, 4L, 5L, 6L), 4L),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5, 3.5), 4L),
     trip_status = rep(c("complete", "incomplete"), 10L),

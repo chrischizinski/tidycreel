@@ -154,6 +154,9 @@ as_survey_design <- function(design) {
 #' @keywords internal
 #' @noRd
 get_variance_design <- function(design, variance_method, call = rlang::caller_env()) {
+  if (isTRUE(attr(design, "interview_day_psu"))) {
+    refuse_one_day_interviews(design, call = call)
+  }
   # Every stratum a census (sample size = population size, GH #507): the
   # between-day variance is exactly 0 under any method, so there is nothing to
   # resample. A replicate design built here has identical replicates and
@@ -429,18 +432,28 @@ strata_design_key <- function(data, strata) {
 #'   \code{NULL} (default) for \code{~1}, one PSU per row. Supply it where the
 #'   design declares a sampling unit above the interview -- the bus-route and
 #'   ice estimators cluster on the fishing day, their primary sampling unit
-#'   (GH #198). Access-point and roving designs keep the default: there the
-#'   interview genuinely is the unit, and the equal-probability assumption
-#'   described above holds.
+#'   (GH #198).
+#' @param psu Name of the column holding each interview's primary sampling
+#'   unit, or \code{NULL}. Used when \code{ids} is \code{NULL}: the design's
+#'   estimators pass the survey date (see \code{interview_psu_col()}), so the
+#'   rate's variance is taken between sampled days, the unit actually drawn,
+#'   rather than between interviews that share a day's conditions (GH #661).
+#'   \code{ids} and \code{psu} both \code{NULL} keep one PSU per row.
 #'
 #' @return A \code{survey.design2} object.
 #'
 #' @keywords internal
 #' @noRd
-build_interview_survey <- function(data, strata = NULL, ids = NULL) {
+build_interview_survey <- function(data, strata = NULL, ids = NULL, psu = NULL) {
   key <- strata_design_key(data, strata)
   data <- key$data
   strata <- key$strata
+  if (is.null(ids) && !is.null(psu)) {
+    # Copied, not reformulated: a date column named `survey date` does not
+    # parse inside a formula (#400).
+    data$.psu <- as.character(data[[psu]])
+    ids <- ~.psu
+  }
   if (is.null(ids)) {
     return(survey::svydesign(
       ids = ~1,
@@ -452,15 +465,84 @@ build_interview_survey <- function(data, strata = NULL, ids = NULL) {
   # Clustered on a declared sampling unit. `nest = TRUE` because the unit is
   # nested inside the stratum -- a fishing day has one day type -- rather than
   # the same id recurring across strata.
-  survey::svydesign(
+  svy <- survey::svydesign(
     ids = ids,
     strata = strata,
     weights = rep(1, nrow(data)),
     data = data,
     nest = TRUE
   )
+  # Marked so get_variance_design() can refuse a stratum interviewed on one
+  # day by name, before survey stops on it unclassed (GH #661).
+  if (!is.null(psu)) {
+    attr(svy, "interview_day_psu") <- TRUE
+  }
+  svy
 }
 
+#' Refuse an interview estimate whose interviews fall on one day in a stratum
+#'
+#' Internal (GH #661). An interview survey is clustered on the survey day, so a
+#' stratum whose interviews were all taken on one day gives no day-to-day
+#' variation to estimate a variance from, under any method. This covers every
+#' estimator built on the interview survey -- rates, and the length, age and
+#' compliance summaries. Effort
+#' refuses a one-day stratum the same way (`refuse_single_day_strata()`).
+#'
+#' @param design A `survey.design2` built by `build_interview_survey()`.
+#' @param call The frame the error is reported from.
+#' @return `invisible(NULL)`; aborts with class `creel_error_single_psu`.
+#' @keywords internal
+#' @noRd
+refuse_one_day_interviews <- function(design, call = rlang::caller_env()) {
+  strata <- as.character(design$strata[, 1])
+  psu <- as.character(design$cluster[, 1])
+  first <- !duplicated(paste(strata, psu, sep = "\r"))
+  n_days <- table(strata[first])
+  one <- names(n_days)[n_days == 1L]
+  if (length(one) == 0L) {
+    return(invisible(NULL))
+  }
+  labels <- gsub("\u001f", " / ", one, fixed = TRUE) # nolint: object_usage_linter
+  cli::cli_abort(
+    c(
+      paste0(
+        "Strat{?um/a} {.val {labels}} {?has/have} interviews from only one ",
+        "day \u2014 a between-day variance cannot be estimated."
+      ),
+      "x" = paste0(
+        "Interview-based variances are taken between interview days, so each ",
+        "stratum needs interviews from at least 2 days."
+      ),
+      "i" = "Interview on another sampled day in that stratum, or combine sparse strata."
+    ),
+    class = "creel_error_single_psu",
+    call = call
+  )
+}
+
+
+#' The column that names an interview's primary sampling unit
+#'
+#' Days are drawn, and every party met on a drawn day shares its weather,
+#' water and fish, so the day -- not the interview -- is the unit a rate's
+#' variance is taken between (GH #661; Breidt et al., the site-day as PSU;
+#' Bernard et al. 1998, the sampled period as first stage). Bus-route and ice
+#' estimators already cluster on the day (GH #198) and pass their own `ids`.
+#'
+#' @param design A `creel_design`.
+#' @param data The interview rows the survey will be built on.
+#' @return The date column's name, or `NULL` when the rows do not carry it,
+#'   in which case each row stays its own unit rather than inventing one.
+#' @keywords internal
+#' @noRd
+interview_psu_col <- function(design, data) {
+  col <- design$date_col
+  if (is.null(col) || !col %in% names(data)) {
+    return(NULL)
+  }
+  col
+}
 
 #' Label each interview with the primary sampling unit it was collected in
 #'
@@ -2520,8 +2602,8 @@ validate_trip_metadata <- function(
 #'
 #' Internal function that wraps survey::svydesign() for interview data with
 #' domain-specific error handling. Constructs a stratified survey design from
-#' interview data using terminal sampling units (ids = ~1) since interviews
-#' are individual observations, not clustered by day.
+#' interview data, clustered on the survey day (GH #661): see
+#' `interview_psu_col()`.
 #'
 #' For multiple strata columns, creates an interaction variable to combine them
 #' into a single stratification factor before passing to svydesign.
@@ -2540,13 +2622,16 @@ construct_interview_survey <- function(design) {
   key <- strata_design_key(interviews_data, strata_cols)
   interviews_data <- key$data
 
-  # Build formulas - use ~1 for ids (terminal sampling units)
   strata_formula <- key$strata
 
   # Attempt to construct survey design with error wrapping
   tryCatch(
     {
-      build_interview_survey(interviews_data, strata = strata_formula)
+      build_interview_survey(
+        interviews_data,
+        strata = strata_formula,
+        psu = interview_psu_col(design, interviews_data)
+      )
     },
     error = function(e) {
       # Detect specific error types and provide domain guidance

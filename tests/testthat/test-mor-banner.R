@@ -50,7 +50,8 @@ mor_banner_design <- function(n_incomplete = 24, n_complete = 24) {
 
   interviews <- data.frame(
     interview_id = sprintf("I%03d", seq_len(n)),
-    date = as.Date(rep("2024-06-01", n)),
+    # Spread over the calendar: a rate needs interviews from 2+ days (#661).
+    date = rep(cal$date, length.out = n),
     catch_total = rep(c(4, 6, 5, 7), length.out = n),
     hours_fished = rep(c(2.0, 3.0, 4.0, 2.5), length.out = n),
     catch_kept = rep(c(2, 2, 3, 4), length.out = n),

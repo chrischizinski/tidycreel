@@ -624,7 +624,8 @@ rpue_for_stratum_product <- function(design, by_vars, variance_method, conf_leve
   design_rel$angler_effort_col <- ".release_effort"
   design_rel$interview_survey <- build_interview_survey(
     release_data,
-    strata = strata_formula
+    strata = strata_formula,
+    psu = interview_psu_col(design, release_data) # nolint: object_usage_linter
   )
 
   if (length(by_vars) == 0L) {
