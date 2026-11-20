@@ -133,3 +133,56 @@ test_that("DPSU-03 (#661): a stratum interviewed on one day is refused by name",
   iv2 <- rbind(iv, dpsu_interviews(cal$date[7], rate_by_day = 0.9))
   expect_no_error(suppressWarnings(estimate_catch_rate(dpsu_design(iv2, cal)))) # nolint: object_usage_linter
 })
+
+test_that("DPSU-04 (#661): a group met on one day is refused, not given se = 0", {
+  # Found in review: the whole-design check passed (the stratum had four
+  # days), and svyby() then returned se = 8e-17 for the one-day group -- a
+  # plausible-looking zero for a variance nothing was observed for.
+  cal <- dpsu_calendar()
+  iv <- dpsu_interviews(cal$date[1:4], rate_by_day = c(1.0, 1.6, 0.8, 2.0))
+  iv <- rbind(iv, iv) # 12 a day, so each group clears the n >= 10 floor
+  iv$species <- ifelse(iv$date == cal$date[1], "pike", "bass")
+  err <- expect_error(
+    suppressWarnings(estimate_catch_rate(dpsu_design(iv), by = species)), # nolint: object_usage_linter
+    class = "creel_error_single_psu"
+  )
+  expect_match(conditionMessage(err), "pike", fixed = TRUE)
+  expect_no_match(conditionMessage(err), "bass", fixed = TRUE)
+
+  # A group missing from some days but met on two is a domain estimate: the
+  # days without it are observations of zero catch and effort, not gaps.
+  iv$species <- ifelse(iv$date %in% cal$date[1:2], "pike", "bass")
+  res <- suppressWarnings(estimate_catch_rate(dpsu_design(iv), by = species)) # nolint: object_usage_linter
+  expect_true(all(res$estimates$se > 1e-6))
+})
+
+test_that("DPSU-05 (#661): interviews dated under their own column name are still clustered", {
+  # Found in review: add_interviews(date_col =) leaves the calendar's date
+  # column off the interviews, and the survey silently fell back to ids = ~1.
+  cal <- dpsu_calendar()
+  iv <- dpsu_interviews(cal$date[1:6], rate_by_day = c(1.0, 1.6, 0.8, 2.0, 1.2, 1.4))
+  ref <- suppressWarnings(estimate_catch_rate(dpsu_design(iv)))$estimates$se # nolint: object_usage_linter
+  names(iv)[names(iv) == "date"] <- "visit_date"
+  design <- suppressMessages(suppressWarnings(add_interviews(
+    creel_design(cal, date = date, strata = day_type), # nolint: object_usage_linter
+    iv,
+    catch = catch_total, effort = hours_fished, trip_status = trip_status, # nolint: object_usage_linter
+    date_col = "visit_date"
+  )))
+  expect_equal(suppressWarnings(estimate_catch_rate(design))$estimates$se, ref, tolerance = 1e-12) # nolint: object_usage_linter
+})
+
+test_that("DPSU-06 (#661): an interview column named .psu is not overwritten by the day key", {
+  cal <- dpsu_calendar()
+  iv <- dpsu_interviews(cal$date[1:6], rate_by_day = c(1.0, 1.6, 0.8, 2.0, 1.2, 1.4))
+  ref <- suppressWarnings(estimate_catch_rate(dpsu_design(iv)))$estimates # nolint: object_usage_linter
+  iv$.psu <- iv$catch_total
+  design <- suppressMessages(suppressWarnings(add_interviews(
+    creel_design(cal, date = date, strata = day_type), # nolint: object_usage_linter
+    iv,
+    catch = .psu, effort = hours_fished, trip_status = trip_status # nolint: object_usage_linter
+  )))
+  got <- suppressWarnings(estimate_catch_rate(design))$estimates # nolint: object_usage_linter
+  expect_equal(got$estimate, ref$estimate, tolerance = 1e-12)
+  expect_equal(got$se, ref$se, tolerance = 1e-12)
+})

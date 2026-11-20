@@ -23,9 +23,12 @@
   bundled example data the compliance SE fell from 0.209 to 0.129.
   A stratum whose interviews all come from one day has no between-day
   variation to estimate, so those estimates now stop with a
-  `creel_error_single_psu` naming the stratum. `add_interviews()` still
-  accepts such data. Interview on a second day in that stratum, or combine
-  sparse strata.
+  `creel_error_single_psu` naming the stratum. So does a `by =` group whose
+  interviews all come from one day, which would otherwise be reported with
+  a standard error of 0. `add_interviews()` still accepts such data.
+  Interview on a second day, or combine sparse strata or groups. The
+  regression estimator (`estimator = "regression"`) still uses its
+  interview-level jackknife and is not yet clustered on the day.
 
 * `add_counts()` refuses a count timed outside the drawn shift (#426). When the
   design calendar comes from a schedule with shift times (`shift_start`,

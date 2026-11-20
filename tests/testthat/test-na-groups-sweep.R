@@ -113,7 +113,10 @@ make_na_zone_design <- function() {
     interview_id = seq_len(n),
     stringsAsFactors = FALSE
   )
-  iv$zone <- cnt$zone[match(iv$date, cnt$date)]
+  # Per interview, not per day: a zone met on one day of a stratum has no
+  # between-day variance to report (#661), and zones cycled by date left
+  # weekend x north on a single day.
+  iv$zone <- rep(c("north", "south", NA_character_), length.out = n)
   d <- suppressMessages(creel_design(example_calendar, date = date, strata = day_type)) # nolint: object_usage_linter
   d <- suppressWarnings(suppressMessages(add_counts(d, cnt)))
   suppressWarnings(suppressMessages(add_interviews(
@@ -141,11 +144,13 @@ test_that("NAGRP-08 (#321): a grouped total catch reports the unknown group", {
   # ungrouped total is a pooled product, so the two are close rather than
   # identical. What the fix has to restore is that the grouped rows cover the
   # whole fishery: before it they summed to 565.2 against an ungrouped 784.6,
-  # 28% of the catch missing with no warning and no row.
+  # 28% of the catch missing with no warning and no row. With zones assigned
+  # per interview (#661) the two are 1.7% apart (1750 vs 1781), so 3% still
+  # catches that defect by a wide margin.
   expect_equal(
     sum(grouped$estimates$estimate),
     ungrouped$estimates$estimate,
-    tolerance = 0.01
+    tolerance = 0.03
   )
   expect_equal(sum(grouped$estimates$n), ungrouped$estimates$n)
 })

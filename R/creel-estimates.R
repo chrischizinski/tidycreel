@@ -7777,10 +7777,10 @@ estimate_cpue_grouped <- function(
     }
     temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
     # Get variance design from temporary survey
-    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+    svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   } else {
     # No filtering needed - use original design
-    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+    svy_design <- get_variance_design(design$interview_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   }
 
   # Build formulas for svyby
@@ -9112,9 +9112,9 @@ estimate_harvest_grouped <- function(
       NULL
     }
     temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
-    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+    svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   } else {
-    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+    svy_design <- get_variance_design(design$interview_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   }
 
   # Build formulas for svyby

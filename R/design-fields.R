@@ -31,7 +31,7 @@ creel_design_fields <- c(
   # add_interviews()
   "interviews", "interview_survey", "angler_effort_col", "angler_method_col",
   "angler_type_col", "catch_col", "effort_col", "harvest_col",
-  "interview_time_col", "interview_type", "n_anglers_col",
+  "interview_date_col", "interview_time_col", "interview_type", "n_anglers_col",
   "n_anglers_supplied", "n_counted_col", "n_interviewed_col", "refused_col",
   "refused_interviews", "excluded_interviews", "species_sought_col",
   "trip_duration_col", "trip_duration_derived", "trip_start_col",

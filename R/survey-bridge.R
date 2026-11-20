@@ -153,9 +153,9 @@ as_survey_design <- function(design) {
 #'
 #' @keywords internal
 #' @noRd
-get_variance_design <- function(design, variance_method, call = rlang::caller_env()) {
+get_variance_design <- function(design, variance_method, call = rlang::caller_env(), by = NULL) {
   if (isTRUE(attr(design, "interview_day_psu"))) {
-    refuse_one_day_interviews(design, call = call)
+    refuse_one_day_interviews(design, by = by, call = call)
   }
   # Every stratum a census (sample size = population size, GH #507): the
   # between-day variance is exactly 0 under any method, so there is nothing to
@@ -451,8 +451,9 @@ build_interview_survey <- function(data, strata = NULL, ids = NULL, psu = NULL) 
   if (is.null(ids) && !is.null(psu)) {
     # Copied, not reformulated: a date column named `survey date` does not
     # parse inside a formula (#400).
-    data$.psu <- as.character(data[[psu]])
-    ids <- ~.psu
+    # Not `.psu`: an interview column of that name could be the catch.
+    data$.interview_day_psu <- as.character(data[[psu]])
+    ids <- ~.interview_day_psu
   }
   if (is.null(ids)) {
     return(survey::svydesign(
@@ -489,12 +490,21 @@ build_interview_survey <- function(data, strata = NULL, ids = NULL, psu = NULL) 
 #' compliance summaries. Effort
 #' refuses a one-day stratum the same way (`refuse_single_day_strata()`).
 #'
+#' A group estimated as a domain (`by =`) is different. Days on which the
+#' group was not met are observations of it -- zero catch, zero effort -- so a
+#' group seen on one day of a stratum still has a domain variance when it is
+#' seen elsewhere. But a group whose interviews all come from one day has a
+#' ratio score of exactly 0 on that day and on every other, so its SE comes
+#' out as 0: not an estimate, a quantity never observed. That group is refused.
+#'
 #' @param design A `survey.design2` built by `build_interview_survey()`.
+#' @param by Grouping columns of a domain estimate, or `NULL`.
 #' @param call The frame the error is reported from.
 #' @return `invisible(NULL)`; aborts with class `creel_error_single_psu`.
 #' @keywords internal
 #' @noRd
-refuse_one_day_interviews <- function(design, call = rlang::caller_env()) {
+refuse_one_day_interviews <- function(design, by = NULL, call = rlang::caller_env()) {
+  refuse_one_day_groups(design, by, call)
   strata <- as.character(design$strata[, 1])
   psu <- as.character(design$cluster[, 1])
   first <- !duplicated(paste(strata, psu, sep = "\r"))
@@ -521,6 +531,42 @@ refuse_one_day_interviews <- function(design, call = rlang::caller_env()) {
   )
 }
 
+# The domain half of refuse_one_day_interviews() (GH #661).
+refuse_one_day_groups <- function(design, by, call) {
+  by <- intersect(by, names(design$variables))
+  if (length(by) == 0L) {
+    return(invisible(NULL))
+  }
+  # Rows a subset() zeroed out are not the group's interviews.
+  live <- is.finite(design$prob) & design$prob > 0
+  vars <- design$variables[live, by, drop = FALSE]
+  group <- do.call(paste, c(lapply(vars, as.character), sep = " / "))
+  psu <- as.character(design$cluster[live, 1])
+  n_days <- tapply(psu, group, function(x) length(unique(x)))
+  one <- names(n_days)[n_days == 1L]
+  if (length(one) == 0L) {
+    return(invisible(NULL))
+  }
+  cli::cli_abort(
+    c(
+      paste0(
+        "{cli::qty(length(one))}Group{?s} {.val {one}} {?has/have} interviews from only one day ",
+        "\u2014 a between-day variance cannot be estimated."
+      ),
+      "x" = paste0(
+        "A group met on one day has the same rate on every day it was ",
+        "sampled, so its standard error would come out as 0."
+      ),
+      "i" = paste0(
+        "{cli::qty(length(one))}Leave {.arg by} out for {?that group/those groups}, or combine ",
+        "{?it/them} with another level."
+      )
+    ),
+    class = "creel_error_single_psu",
+    call = call
+  )
+}
+
 
 #' The column that names an interview's primary sampling unit
 #'
@@ -537,11 +583,14 @@ refuse_one_day_interviews <- function(design, call = rlang::caller_env()) {
 #' @keywords internal
 #' @noRd
 interview_psu_col <- function(design, data) {
-  col <- design$date_col
-  if (is.null(col) || !col %in% names(data)) {
-    return(NULL)
+  # add_interviews(date_col =) may name the interviews' date column apart from
+  # the calendar's; that column is the one the rows carry.
+  for (col in c(design$interview_date_col, design$date_col)) {
+    if (col %in% names(data)) {
+      return(col)
+    }
   }
-  col
+  NULL
 }
 
 #' Label each interview with the primary sampling unit it was collected in
