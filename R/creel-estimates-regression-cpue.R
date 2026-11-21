@@ -1,11 +1,26 @@
 # Regression CPUE (CPUE3) and Estimator Comparison ----
 
-#' Internal: OLS regression CPUE with leave-one-out jackknife SE (ungrouped)
+# The regression estimator is the slope of catch on effort across interviews.
+# Through the origin it is sum(c e) / sum(e^2), a ratio of two totals, so it is
+# estimated with svyratio(); with an intercept it is a regression coefficient,
+# estimated with svyglm(). Both run on the same day-clustered interview survey
+# as every other rate (GH #661, #665): the day is the primary sampling unit,
+# a trip filter is a domain of every interviewed day (GH #663), `variance`
+# selects Taylor, bootstrap or jackknife, and a stratum or group interviewed on
+# one day is refused. Interview weights are equal, so the slopes are the
+# ordinary least-squares ones; only their standard errors depend on the design.
+# They used to come from a leave-one-INTERVIEW-out jackknife, which treated 12
+# trips on one day as 12 independent units.
+
+#' Interview frame and survey for the regression slope
 #'
+#' @return List: `data` (zero-effort trips removed, with the fit columns),
+#'   `svy` (the variance design), `vars` (the fit columns' names: catch,
+#'   effort, catch x effort, effort^2).
 #' @keywords internal
 #' @noRd
-#' @importFrom stats lm coef qt
-estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
+regression_cpue_survey <- function(design, variance_method, by_vars = NULL, min_n = 3L,
+                                   call = rlang::caller_env()) {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
@@ -29,37 +44,98 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
     )
     interviews_data <- interviews_data[!zero_eff, , drop = FALSE]
   }
-
+  # The interview-count floor first, so a sample too small to fit is told so
+  # rather than refused for its days (or, with none left, crashing in svydesign).
+  n <- nrow(interviews_data)
+  if (n < min_n) {
+    cli::cli_abort(c(
+      "Regression CPUE requires at least {min_n} interview{?s}.",
+      "x" = "Only {n} valid interview{?s} available after filtering."
+    ), call = call)
+  }
   catch <- as.numeric(interviews_data[[catch_col]])
   effort <- as.numeric(interviews_data[[effort_col]])
-  n <- length(catch)
+  # Scratch names no user column already holds, so a `by` or strata column is
+  # never overwritten by a fit variable.
+  nm <- utils::tail(make.unique(c(names(interviews_data), ".reg_c", ".reg_e", ".reg_ce", ".reg_e2")), 4L)
+  interviews_data[[nm[1]]] <- catch
+  interviews_data[[nm[2]]] <- effort
+  interviews_data[[nm[3]]] <- catch * effort
+  interviews_data[[nm[4]]] <- effort^2
 
-  if (n < 3L) {
-    cli::cli_abort(c(
-      "Regression CPUE requires at least 3 interviews.",
-      "x" = "Only {n} valid interview{?s} available after filtering."
-    ))
+  strata_cols <- design$strata_cols
+  # Backquoted, so a column such as `day type` survives the formula.
+  strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(paste0("`", strata_cols, "`")) else NULL
+  svy <- build_interview_survey( # nolint: object_usage_linter
+    interviews_data,
+    strata = strata_formula,
+    psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design) # nolint: object_usage_linter
+  )
+  svy <- get_variance_design(svy, variance_method, call = call, by = by_vars) # nolint: object_usage_linter
+  list(data = interviews_data, svy = svy, vars = nm)
+}
+
+#' Slope, SE and interval on one (domain of the) survey
+#'
+#' @keywords internal
+#' @noRd
+regression_cpue_fit <- function(svy, force_origin, conf_level, vars) {
+  unavailable <- list(estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_)
+  # Unknown catch or effort in the domain leaves the slope unknown, as it did
+  # before: svyglm() would drop those trips silently and fit the rest.
+  w <- if (inherits(svy, "svyrep.design")) stats::weights(svy, "sampling") else stats::weights(svy)
+  in_domain <- w > 0
+  if (anyNA(svy$variables[in_domain, vars, drop = FALSE])) {
+    return(unavailable)
   }
+  if (force_origin) {
+    fit <- suppressWarnings(survey::svyratio(
+      stats::reformulate(vars[3]), stats::reformulate(vars[4]), svy
+    ))
+    est <- as.numeric(stats::coef(fit))
+    se <- as.numeric(survey::SE(fit))
+    ci <- stats::confint(fit, level = conf_level)
+  } else {
+    fit <- tryCatch(
+      suppressWarnings(survey::svyglm(stats::reformulate(vars[2], vars[1]), design = svy)),
+      error = function(e) NULL
+    )
+    # A slope the data cannot identify (one effort value throughout) has no
+    # coefficient: unavailable for this domain, not an abort of every group.
+    if (is.null(fit) || is.na(stats::coef(fit)[vars[2]]) || !vars[2] %in% rownames(stats::vcov(fit))) {
+      return(unavailable)
+    }
+    est <- unname(stats::coef(fit)[vars[2]])
+    se <- unname(sqrt(stats::vcov(fit)[vars[2], vars[2]]))
+    # On the normal scale like the ratio's interval; confint.svyglm() would use
+    # a t on the residual df, which is 0 on two days and gives an infinite or
+    # NaN interval beside a finite SE.
+    ci <- stats::confint(fit, parm = vars[2], level = conf_level, ddf = Inf)
+  }
+  list(estimate = est, se = se, ci_lower = unname(ci[1, 1]), ci_upper = unname(ci[1, 2]))
+}
 
-  beta_hat <- .ols_slope(catch, effort, force_origin)
-  jk_se <- .jackknife_slope_se(catch, effort, force_origin)
-
-  df <- n - 1L
-  t_c <- qt((1 + conf_level) / 2, df = df)
-
+#' Internal: regression CPUE (ungrouped), day-clustered design-based SE
+#'
+#' @keywords internal
+#' @noRd
+estimate_cpue_regression_total <- function(design, conf_level, force_origin, variance_method = "taylor",
+                                           call = rlang::caller_env()) {
+  prep <- regression_cpue_survey(design, variance_method, call = call)
+  n <- nrow(prep$data)
+  fit <- regression_cpue_fit(prep$svy, force_origin, conf_level, prep$vars)
   estimates_df <- tibble::tibble(
-    estimate = beta_hat,
-    se = jk_se,
-    ci_lower = beta_hat - t_c * jk_se,
-    ci_upper = beta_hat + t_c * jk_se,
+    estimate = fit$estimate,
+    se = fit$se,
+    ci_lower = fit$ci_lower,
+    ci_upper = fit$ci_upper,
     n = n
   )
 
   new_creel_estimates( # nolint: object_usage_linter
-    # nolint: object_usage_linter
     estimates = estimates_df,
     method = "regression-cpue",
-    variance_method = "jackknife",
+    variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = NULL,
@@ -69,7 +145,7 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin) {
 }
 
 
-#' Internal: grouped regression CPUE with jackknife SE
+#' Internal: grouped regression CPUE, each group a domain of the survey
 #'
 #' @keywords internal
 #' @noRd
@@ -77,66 +153,50 @@ estimate_cpue_reg_grouped <- function(
   design,
   by_vars,
   conf_level, # nolint: object_length_linter
-  force_origin
+  force_origin,
+  variance_method = "taylor",
+  call = rlang::caller_env()
 ) {
-  interviews_data <- design$interviews
-  catch_col <- design$catch_col
-  effort_col <- design$angler_effort_col
+  # Groups take the small-group warning below, not the 3-interview floor; an
+  # empty frame is still refused.
+  prep <- regression_cpue_survey(design, variance_method, by_vars = by_vars, min_n = 1L, call = call)
+  interviews_data <- prep$data
+  svy <- prep$svy
 
-  if (is.null(catch_col) || is.null(effort_col)) {
-    cli::cli_abort(c(
-      "Regression CPUE requires catch and effort columns.",
-      "x" = "Design missing {.field catch_col} or {.field angler_effort_col}.",
-      "i" = "Call {.fn add_interviews} with {.arg catch_col} and {.arg effort_col}."
-    ))
-  }
+  # Keyed with group_key(), not paste(sep = ""): pasting with no separator
+  # merged groups such as ("a", "bc") and ("ab", "c").
+  row_key <- group_key(interviews_data, by_vars) # nolint: object_usage_linter
+  svy_key <- group_key(svy$variables, by_vars) # nolint: object_usage_linter
+  first <- !duplicated(row_key)
+  groups <- interviews_data[first, by_vars, drop = FALSE]
+  keys <- row_key[first]
+  ord <- do.call(order, unname(as.list(groups)))
+  groups <- groups[ord, , drop = FALSE]
+  keys <- keys[ord]
 
-  zero_eff <- !is.na(interviews_data[[effort_col]]) & interviews_data[[effort_col]] == 0
-  if (any(zero_eff)) {
-    n_zero <- sum(zero_eff) # nolint: object_usage_linter
-    creel_warn(c(
-      "{n_zero} interview{?s} with zero effort excluded from regression CPUE.",
-      "i" = "CPUE regression requires effort > 0."
-    ),
-    class = c("creel_warning_effort_excluded", "creel_warning")
-    )
-    interviews_data <- interviews_data[!zero_eff, , drop = FALSE]
-  }
-
-  group_key <- do.call(paste, c(interviews_data[by_vars], sep = ""))
-  groups <- sort(unique(group_key))
-
-  rows <- lapply(groups, function(gk) {
-    idx <- group_key == gk
-    sub <- interviews_data[idx, , drop = FALSE]
-    catch <- as.numeric(sub[[catch_col]])
-    effort <- as.numeric(sub[[effort_col]])
-    n_g <- length(catch)
-
+  rows <- lapply(seq_along(keys), function(i) {
+    k <- keys[[i]]
+    n_g <- sum(row_key == k)
     if (n_g < 3L) {
+      label <- tost_group_label(groups, i, by_vars) # nolint: object_usage_linter
       creel_warn(c(
-        "Group {.val {gk}}: fewer than 3 interviews; regression CPUE unreliable.",
+        "Group {label}: fewer than 3 interviews; regression CPUE unreliable.",
         "i" = "Only {n_g} interview{?s} in this group."
       ),
       class = c("creel_warning_regression_small_group", "creel_warning")
       )
     }
-
-    beta_hat <- .ols_slope(catch, effort, force_origin)
-    jk_se <- .jackknife_slope_se(catch, effort, force_origin)
-    df <- n_g - 1L
-    t_c <- qt((1 + conf_level) / 2, df = max(df, 1L))
-
-    grp_vals <- sub[1L, by_vars, drop = FALSE]
+    # A domain: the group's trips on the whole survey, every day kept.
+    fit <- regression_cpue_fit(svy[svy_key == k, ], force_origin, conf_level, prep$vars)
+    grp_vals <- groups[i, , drop = FALSE]
     rownames(grp_vals) <- NULL
-
     cbind(
       grp_vals,
       tibble::tibble(
-        estimate = beta_hat,
-        se = jk_se,
-        ci_lower = beta_hat - t_c * jk_se,
-        ci_upper = beta_hat + t_c * jk_se,
+        estimate = fit$estimate,
+        se = fit$se,
+        ci_lower = fit$ci_lower,
+        ci_upper = fit$ci_upper,
         n = n_g
       )
     )
@@ -145,10 +205,9 @@ estimate_cpue_reg_grouped <- function(
   estimates_df <- tibble::as_tibble(do.call(rbind, rows))
 
   new_creel_estimates( # nolint: object_usage_linter
-    # nolint: object_usage_linter
     estimates = estimates_df,
     method = "regression-cpue",
-    variance_method = "jackknife",
+    variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
@@ -158,47 +217,14 @@ estimate_cpue_reg_grouped <- function(
 }
 
 
-#' OLS slope (with or without forced origin)
-#'
-#' @keywords internal
-#' @noRd
-.ols_slope <- function(catch, effort, force_origin) {
-  if (force_origin) {
-    sum(catch * effort) / sum(effort^2)
-  } else {
-    xbar <- mean(effort)
-    ybar <- mean(catch)
-    (sum((effort - xbar) * (catch - ybar))) / sum((effort - xbar)^2)
-  }
-}
-
-
-#' Leave-one-out jackknife SE for OLS slope
-#'
-#' @keywords internal
-#' @noRd
-.jackknife_slope_se <- function(catch, effort, force_origin) {
-  n <- length(catch)
-  beta_hat <- .ols_slope(catch, effort, force_origin)
-  theta_i <- vapply(
-    seq_len(n),
-    function(i) {
-      .ols_slope(catch[-i], effort[-i], force_origin)
-    },
-    numeric(1L)
-  )
-  # Jackknife variance: (n-1)/n * sum((theta_i - mean(theta_i))^2)
-  jk_var <- (n - 1L) / n * sum((theta_i - mean(theta_i))^2)
-  sqrt(jk_var)
-}
-
-
 #' Compare CPUE estimators (ROM, MOR, Regression)
 #'
 #' @description
 #' Runs all three CPUE estimators — Ratio-of-Means (ROM / CPUE\eqn{_2}),
-#' Mean-of-Ratios (MOR / CPUE\eqn{_1}), and OLS regression slope with
-#' jackknife SE (CPUE\eqn{_3}) — on the same creel design and returns a
+#' Mean-of-Ratios (MOR / CPUE\eqn{_1}), and the regression slope of catch on
+#' effort (CPUE\eqn{_3}) — on the same creel design, all with Taylor
+#' (linearization) standard errors on the day-clustered interview survey, and
+#' returns a
 #' combined tibble with a \code{cpue_method} column for side-by-side
 #' comparison.
 #'
@@ -232,7 +258,8 @@ estimate_cpue_reg_grouped <- function(
 #'     mean(catch\eqn{_i} / effort\eqn{_i}) (survey::svymean). Preferred
 #'     for incomplete trips.}
 #'   \item{Regression (CPUE\eqn{_3})}{OLS slope \eqn{\hat{\beta}} from
-#'     \eqn{C_i = \beta f_i + \varepsilon_i} with leave-one-out jackknife SE.
+#'     \eqn{C_i = \beta f_i + \varepsilon_i}, its SE linearized on the
+#'     day-clustered survey like the other two.
 #'     Most robust when proportionality is violated (non-zero intercept).}
 #' }
 #'
@@ -277,7 +304,7 @@ compare_cpue_estimators <- function(
           r <- estimate_catch_rate(
             # nolint: object_usage_linter
             design,
-            variance = if (est_str == "regression") "jackknife" else "taylor",
+            variance = "taylor",
             conf_level = conf_level,
             estimator = est_str,
             use_trips = use_trips_val,
@@ -288,7 +315,7 @@ compare_cpue_estimators <- function(
             # nolint: object_usage_linter
             design,
             by = !!by_quo,
-            variance = if (est_str == "regression") "jackknife" else "taylor",
+            variance = "taylor",
             conf_level = conf_level,
             estimator = est_str,
             use_trips = use_trips_val,

@@ -596,10 +596,19 @@ refuse_one_day_groups <- function(design, by, call) {
     return(invisible(NULL))
   }
   vars <- design$variables[live, by, drop = FALSE]
-  group <- do.call(paste, c(lapply(vars, as.character), sep = " / "))
+  # Days are counted per group_key(), which keeps an unknown value apart from a
+  # group genuinely labelled "NA"; paste() merged the two, so an unknown group
+  # met on one day passed on the strength of the "NA" group's other days.
+  group <- group_key(vars, by) # nolint: object_usage_linter
+  label_vals <- lapply(vars, function(x) {
+    x <- as.character(x)
+    x[is.na(x)] <- "<unknown>"
+    x
+  })
+  label <- do.call(paste, c(label_vals, sep = " / "))
   psu <- as.character(design$cluster[live, 1])
   n_days <- tapply(psu, group, function(x) length(unique(x)))
-  one <- names(n_days)[n_days == 1L]
+  one <- label[match(names(n_days)[n_days == 1L], group)]
   if (length(one) == 0L) {
     return(invisible(NULL))
   }

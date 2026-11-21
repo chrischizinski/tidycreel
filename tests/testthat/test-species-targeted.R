@@ -352,10 +352,10 @@ test_that("SPECIES-TARGETED-12: regression without by = species ignores targeted
   expect_equal(flat_false$estimates$estimate, flat_true$estimates$estimate)
 
   grouped_true <- suppressWarnings(suppressMessages(
-    estimate_catch_rate(design, by = date, estimator = "regression", use_trips = "all", targeted = TRUE)
+    estimate_catch_rate(design, by = day_type, estimator = "regression", use_trips = "all", targeted = TRUE)
   ))
   grouped_false <- suppressWarnings(suppressMessages(
-    estimate_catch_rate(design, by = date, estimator = "regression", use_trips = "all", targeted = FALSE)
+    estimate_catch_rate(design, by = day_type, estimator = "regression", use_trips = "all", targeted = FALSE)
   ))
   expect_equal(grouped_false$estimates$estimate, grouped_true$estimates$estimate)
 })
