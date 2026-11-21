@@ -74,9 +74,14 @@
 #' It then performs TOST to test equivalence within the specified threshold.
 #'
 #' Equivalence bounds are calculated as ±threshold * complete_trip_estimate.
-#' The difference variance is estimated using the delta method:
-#' Var(complete - incomplete) = Var(complete) + Var(incomplete), assuming
-#' independence between the two samples.
+#' The difference variance is
+#' Var(complete) + Var(incomplete) - 2 Cov(complete, incomplete). The two
+#' rates come from different trips, but interview variance is clustered on the
+#' survey day, so trips interviewed on the same days covary: when complete and
+#' incomplete rates rise and fall together from day to day, their difference
+#' is far more precise than either rate. Both rates are estimated jointly, as
+#' domains of one survey of every interviewed day, under the requested
+#' \code{variance} method, and the covariance comes from that fit (GH #664).
 #'
 #' Sample size requirements: At least 10 complete trips AND 10 incomplete trips
 #' are required for stable variance estimation and TOST. The function errors
@@ -95,7 +100,7 @@
 #'   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 25)),
 #'   catch_total = rpois(100, lambda = 6),
 #'   hours_fished = runif(100, min = 2, max = 4),
-#'   trip_status = rep(c("complete", "incomplete"), each = 50),
+#'   trip_status = rep(c("complete", "incomplete"), times = 50),
 #'   trip_duration = runif(100, min = 2, max = 4)
 #' )
 #'
@@ -151,6 +156,17 @@ validate_incomplete_trips <- function(
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
     ))
+  }
+
+  # A sectioned design reports one rate per section (and a lake row), which the
+  # single overall test cannot pair; it failed with an R condition-length error
+  # before. Refused until a per-section test is designed (GH #669).
+  if (!is.null(design[["sections"]])) {
+    cli::cli_abort(c(
+      "{.fn validate_incomplete_trips} does not support sectioned designs yet.",
+      "i" = "It compares one complete-trip rate with one incomplete-trip rate; a \\
+             sectioned design has one of each per section."
+    ), class = "creel_error_tost_sections")
   }
 
   # Validate trip_status field exists
@@ -267,7 +283,8 @@ validate_incomplete_trips <- function(
       complete_result = complete_result,
       incomplete_result = incomplete_result,
       by_vars = by_vars,
-      threshold = threshold
+      threshold = threshold,
+      se_diff = tost_joint_se_diff(design, complete_result, incomplete_result, variance, by_vars)
     )
 
     # Overall passed = overall test passes AND all group tests pass
@@ -275,16 +292,14 @@ validate_incomplete_trips <- function(
     passed <- isTRUE(overall_result$equivalence_passed) &&
       all(vapply(group_results$equivalence_passed, isTRUE, logical(1)))
 
-    # Build plot_data for grouped estimation
-    complete_df <- complete_result$estimates
-    incomplete_df <- incomplete_result$estimates
+    # Build plot_data for grouped estimation, paired by group key as the
+    # tests are.
+    al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
+    complete_df <- al$complete
+    incomplete_df <- al$incomplete
 
     # Create group labels
-    group_labels <- character(nrow(complete_df))
-    for (i in seq_len(nrow(complete_df))) {
-      group_vals <- complete_df[i, by_vars, drop = FALSE]
-      group_labels[i] <- paste(by_vars, "=", group_vals[1, ], collapse = ", ")
-    }
+    group_labels <- vapply(seq_len(nrow(al$groups)), function(i) tost_group_label(al$groups, i, by_vars), "")
 
     plot_data <- list(
       complete_est = complete_df$estimate,
@@ -321,15 +336,18 @@ validate_incomplete_trips <- function(
         "(overall and all groups passed equivalence)"
       )
     } else {
-      failing_groups <- group_results[!group_results$equivalence_passed, by_vars, drop = FALSE]
-      if (nrow(failing_groups) > 0) {
+      # A group that failed and a group that could not be tested (NA, one trip
+      # type only) are named separately: no test was run on the second.
+      label_rows <- function(rows) {
+        paste(vapply(which(rows), function(i) tost_group_label(group_results, i, by_vars), ""), collapse = "; ")
+      }
+      failed <- group_results$equivalence_passed %in% FALSE
+      untested <- is.na(group_results$equivalence_passed)
+      if (any(failed) || any(untested)) {
         recommendation <- paste0(
-          "Validation failed: Use complete trips only. ",
-          "Groups failed equivalence: ",
-          paste(
-            apply(failing_groups, 1, function(x) paste(by_vars, "=", x, collapse = ", ")),
-            collapse = "; "
-          )
+          "Validation failed: Use complete trips only.",
+          if (any(failed)) paste0(" Groups failed equivalence: ", label_rows(failed), "."),
+          if (any(untested)) paste0(" Groups not tested (one trip type only): ", label_rows(untested), ".")
         )
       } else {
         recommendation <- "Validation failed: Use complete trips only (overall test failed)"
@@ -364,7 +382,8 @@ validate_incomplete_trips <- function(
       incomplete_se = incomplete_se,
       threshold = threshold,
       n_complete = complete_result$estimates$n,
-      n_incomplete = incomplete_result$estimates$n
+      n_incomplete = incomplete_result$estimates$n,
+      se_diff = unname(tost_joint_se_diff(design, complete_result, incomplete_result, variance))
     )
 
     # Metadata
@@ -468,38 +487,110 @@ perform_overall_tost <- function(
     incomplete_se = incomplete_overall$estimates$se,
     threshold = threshold,
     n_complete = complete_overall$estimates$n,
-    n_incomplete = incomplete_overall$estimates$n
+    n_incomplete = incomplete_overall$estimates$n,
+    se_diff = unname(tost_joint_se_diff(design, complete_overall, incomplete_overall, variance))
+  )
+}
+
+#' Label one group's `by` values, e.g. `"day_type = weekend, gear = boat"`
+#'
+#' Column by column, so a factor prints its level and a Date its date (pasting
+#' a data-frame row, or `unlist()`-ing one, prints factor codes and day
+#' numbers), and an unknown value prints as `<unknown>`, apart from a group
+#' genuinely labelled `"NA"`.
+#' @keywords internal
+#' @noRd
+tost_group_label <- function(groups, i, by_vars) {
+  vals <- vapply(by_vars, function(v) as.character(groups[[v]][i]), "")
+  vals[is.na(vals)] <- "<unknown>"
+  paste(by_vars, "=", vals, collapse = ", ")
+}
+
+#' Pair the complete-trip and incomplete-trip rows of each group by key
+#'
+#' Internal. The two grouped estimates are separate `estimate_catch_rate()`
+#' calls, each reporting only the groups its own trips fall in, so row i of one
+#' is not row i of the other. They were paired by position, which compared one
+#' group's complete trips with another group's incomplete trips whenever a
+#' group held only one trip type -- and reported the result as that group's
+#' test.
+#'
+#' @return A list: `keys` (one per group, in first-seen order), `groups` (the
+#'   `by_vars` columns), `complete` and `incomplete` (each side's estimate rows
+#'   aligned to `keys`, all-`NA` where that side has no such group), and
+#'   `has_complete`, `has_incomplete`.
+#' @keywords internal
+#' @noRd
+align_tost_groups <- function(complete_df, incomplete_df, by_vars) {
+  keys_c <- group_key(complete_df, by_vars) # nolint: object_usage_linter
+  keys_i <- group_key(incomplete_df, by_vars) # nolint: object_usage_linter
+  keys <- union(keys_c, keys_i)
+  both <- rbind(
+    as.data.frame(complete_df)[by_vars],
+    as.data.frame(incomplete_df)[by_vars]
+  )
+  groups <- both[match(keys, c(keys_c, keys_i)), , drop = FALSE]
+  rownames(groups) <- NULL
+  ic <- match(keys, keys_c)
+  ii <- match(keys, keys_i)
+  list(
+    keys = keys,
+    groups = groups,
+    complete = as.data.frame(complete_df)[ic, , drop = FALSE],
+    incomplete = as.data.frame(incomplete_df)[ii, , drop = FALSE],
+    has_complete = !is.na(ic),
+    has_incomplete = !is.na(ii)
   )
 }
 
 #' Perform TOST for each group
 #'
+#' A group holding only one trip type cannot be tested: its row is `NA`, with
+#' a warning, and counts as not passing.
+#'
+#' @param se_diff Named vector of joint SEs of the difference, keyed as
+#'   `align_tost_groups()` keys the groups.
 #' @keywords internal
 #' @noRd
-perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, threshold) {
-  # Extract estimates by group
-  complete_df <- complete_result$estimates
-  incomplete_df <- incomplete_result$estimates
+perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, threshold,
+                                 se_diff = NULL) {
+  al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
+  cdf <- al$complete
+  idf <- al$incomplete
 
-  # Initialize result data frame
-  group_results <- complete_df[, by_vars, drop = FALSE]
-  group_results$p_lower <- numeric(nrow(group_results))
-  group_results$p_upper <- numeric(nrow(group_results))
-  group_results$equivalence_passed <- logical(nrow(group_results))
-  group_results$diff_estimate <- numeric(nrow(group_results))
-  group_results$equivalence_lower <- numeric(nrow(group_results))
-  group_results$equivalence_upper <- numeric(nrow(group_results))
+  # Initialize result data frame. NA, not 0: a group that cannot be tested has
+  # no p-value and no difference, and a zero would read as a result.
+  group_results <- al$groups
+  n <- nrow(group_results)
+  group_results$p_lower <- rep(NA_real_, n)
+  group_results$p_upper <- rep(NA_real_, n)
+  group_results$equivalence_passed <- rep(NA, n)
+  group_results$diff_estimate <- rep(NA_real_, n)
+  group_results$equivalence_lower <- rep(NA_real_, n)
+  group_results$equivalence_upper <- rep(NA_real_, n)
 
-  # Perform TOST for each group
-  for (i in seq_len(nrow(complete_df))) {
+  for (i in seq_len(n)) {
+    if (!al$has_complete[i] || !al$has_incomplete[i]) {
+      label <- tost_group_label(group_results, i, by_vars) # nolint: object_usage_linter
+      missing_type <- if (!al$has_complete[i]) "complete" else "incomplete" # nolint: object_usage_linter
+      creel_warn( # nolint: object_usage_linter
+        c(
+          "TOST: group {label} has no {missing_type} trips; equivalence cannot be tested for it.",
+          "i" = "Its row is NA and the validation does not pass."
+        ),
+        class = c("creel_warning_tost_degenerate", "creel_warn_tost_degenerate", "creel_warning")
+      )
+      next
+    }
     tost_result <- perform_tost(
-      complete_estimate = complete_df$estimate[i],
-      complete_se = complete_df$se[i],
-      incomplete_estimate = incomplete_df$estimate[i],
-      incomplete_se = incomplete_df$se[i],
+      complete_estimate = cdf$estimate[i],
+      complete_se = cdf$se[i],
+      incomplete_estimate = idf$estimate[i],
+      incomplete_se = idf$se[i],
       threshold = threshold,
-      n_complete = complete_df$n[i],
-      n_incomplete = incomplete_df$n[i]
+      n_complete = cdf$n[i],
+      n_incomplete = idf$n[i],
+      se_diff = if (is.null(se_diff)) NULL else unname(se_diff[al$keys[i]])
     )
 
     group_results$p_lower[i] <- tost_result$p_lower
@@ -511,6 +602,131 @@ perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, th
   }
 
   group_results
+}
+
+#' Standard error of the complete-minus-incomplete difference, jointly
+#'
+#' Internal (GH #664). The complete-trip and incomplete-trip rates come from
+#' disjoint interviews, but the interview variance is clustered on the survey
+#' day (GH #661): trips interviewed on the same days move with those days'
+#' conditions, so the two rates covary. Adding their variances, as if they were
+#' independent, overstates the SE of the difference -- to the point of failing
+#' equivalence for two rates that track each other day by day.
+#'
+#' Both rates are re-expressed as domain ratios on one survey of every
+#' interviewed day: the complete rate as sum(y) / sum(x) over complete trips,
+#' the incomplete rate as sum(n r) / sum(n) over incomplete trips (the
+#' mean of ratios, party-size weighted exactly when the estimator weights it).
+#' One `svyratio(covmat = TRUE)` returns both with their covariance, under the
+#' requested variance method. The joint point estimates must equal the ones
+#' `estimate_catch_rate()` reported; a disagreement means the two saw different
+#' interviews and is an internal error.
+#'
+#' @param design The design `validate_incomplete_trips()` was given.
+#' @param complete_result,incomplete_result The two `estimate_catch_rate()`
+#'   results being compared.
+#' @param variance Variance method.
+#' @param by_vars Grouping columns, or `NULL` for the overall test.
+#' @return Named numeric vector of SEs of the difference, one per group as
+#'   `align_tost_groups()` keys them (`"all"` when ungrouped); `NA` for a group
+#'   holding one trip type.
+#' @keywords internal
+#' @noRd
+tost_joint_se_diff <- function(design, complete_result, incomplete_result, variance, by_vars = NULL) {
+  # Bus-route and ice rates are Horvitz-Thompson ratios whose interviews are not
+  # clustered on the day (GH #661 left them as they were), so the two rates'
+  # interviews are independent units there and adding the variances is the
+  # consistent SE. NULL tells perform_tost() to do that.
+  if ((design$design_type %||% "instantaneous") %in% c("bus_route", "ice")) {
+    return(NULL)
+  }
+  catch_col <- design$catch_col
+  effort_col <- design$angler_effort_col
+  usable <- function(df) {
+    e <- df[[effort_col]]
+    df[!is.na(e) & e != 0, , drop = FALSE]
+  }
+  comp <- usable(complete_result$design$interviews)
+  inc <- usable(incomplete_result$design$interviews)
+  inc$cpue_ratio <- inc[[catch_col]] / inc[[effort_col]]
+  w <- mor_party_weights(incomplete_result$design, inc, "cpue_ratio") # nolint: object_usage_linter
+  inc_num <- if (w$weighted) w$data$.mor_num else inc$cpue_ratio
+  inc_den <- if (w$weighted) w$data$.mor_n else rep(1, nrow(inc))
+
+  cols <- intersect(names(comp), names(inc))
+  joint <- rbind(comp[cols], inc[cols])
+  n_c <- nrow(comp)
+  n_i <- nrow(inc)
+  # Domain variables. A trip outside a rate's domain contributes nothing to
+  # that rate's numerator or denominator: the zero is the domain indicator, not
+  # an unknown value (an incomplete trip's catch is known, and is not this
+  # complete-trip rate's to count).
+  c_num <- c(comp[[catch_col]], rep(0, n_i))
+  c_den <- c(comp[[effort_col]], rep(0, n_i))
+  i_num <- c(rep(0, n_c), inc_num)
+  i_den <- c(rep(0, n_c), inc_den)
+
+  # Names no user column can already hold, so a stratum or by= column is
+  # never overwritten by a domain variable.
+  nm <- utils::tail(make.unique(c(names(joint), ".tost_cn", ".tost_cd", ".tost_in", ".tost_id")), 4L)
+  joint[[nm[1]]] <- c_num
+  joint[[nm[2]]] <- c_den
+  joint[[nm[3]]] <- i_num
+  joint[[nm[4]]] <- i_den
+  num_f <- stats::reformulate(c(nm[1], nm[3]))
+  den_f <- stats::reformulate(c(nm[2], nm[4]))
+  ratio_nm <- c(paste0(nm[1], "/", nm[2]), paste0(nm[3], "/", nm[4]))
+
+  strata_cols <- design$strata_cols
+  strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
+  svy <- build_interview_survey( # nolint: object_usage_linter
+    joint,
+    strata = strata_formula,
+    psu = interview_psu_col(design, joint), frame = interview_day_frame(design) # nolint: object_usage_linter
+  )
+  svy <- get_variance_design(svy, variance) # nolint: object_usage_linter
+
+  al <- if (is.null(by_vars)) {
+    list(
+      keys = "all", complete = as.data.frame(complete_result$estimates),
+      incomplete = as.data.frame(incomplete_result$estimates),
+      has_complete = TRUE, has_incomplete = TRUE
+    )
+  } else {
+    align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
+  }
+  in_group <- if (is.null(by_vars)) {
+    function(k) rep(TRUE, nrow(svy$variables))
+  } else {
+    function(k) group_key(svy$variables, by_vars) == k # nolint: object_usage_linter
+  }
+  out <- vapply(seq_along(al$keys), function(i) {
+    # A group with one trip type has no difference to test.
+    if (!al$has_complete[i] || !al$has_incomplete[i]) {
+      return(NA_real_)
+    }
+    k <- al$keys[[i]]
+    g <- in_group(k)
+    vars <- svy$variables
+    vars[[nm[1]]] <- vars[[nm[1]]] * g
+    vars[[nm[2]]] <- vars[[nm[2]]] * g
+    vars[[nm[3]]] <- vars[[nm[3]]] * g
+    vars[[nm[4]]] <- vars[[nm[4]]] * g
+    svy_k <- svy
+    svy_k$variables <- vars
+    fit <- suppressWarnings(survey::svyratio(num_f, den_f, svy_k, covmat = TRUE))
+    est <- stats::coef(fit)[ratio_nm]
+    v <- stats::vcov(fit)[ratio_nm, ratio_nm]
+    reported <- c(al$complete$estimate[i], al$incomplete$estimate[i])
+    if (!isTRUE(all.equal(unname(est), reported, tolerance = 1e-8))) {
+      cli::cli_abort(
+        "Internal error: the joint complete/incomplete rates disagree with the reported ones.",
+        .internal = TRUE
+      )
+    }
+    sqrt(max(0, v[1, 1] + v[2, 2] - 2 * v[1, 2]))
+  }, numeric(1))
+  stats::setNames(out, al$keys)
 }
 
 #' Perform TOST (Two One-Sided Tests) equivalence testing
@@ -528,16 +744,21 @@ perform_tost <- function(
   incomplete_se,
   threshold,
   n_complete,
-  n_incomplete
+  n_incomplete,
+  se_diff = NULL
 ) {
   # Calculate difference and bounds
   diff_estimate <- complete_estimate - incomplete_estimate
   equivalence_lower <- -threshold * abs(complete_estimate)
   equivalence_upper <- threshold * abs(complete_estimate)
 
-  # Delta method for difference variance: Var(C - I) = Var(C) + Var(I)
-  # (assuming independence)
-  se_diff <- sqrt(complete_se^2 + incomplete_se^2)
+  # The SE of the difference comes from the joint fit (tost_joint_se_diff()),
+  # which carries the two rates' covariance through their shared days
+  # (GH #664). Adding the variances is the fallback for callers without one,
+  # and is right only for rates from independent samples.
+  if (is.null(se_diff)) {
+    se_diff <- sqrt(complete_se^2 + incomplete_se^2)
+  }
 
   # Degrees of freedom (conservative: min of two samples)
   df <- min(n_complete - 1, n_incomplete - 1)
@@ -659,7 +880,7 @@ format.creel_tost_validation <- function(x, ...) {
       cli::cli_text("Equivalence bounds: [{equiv_lower}, {equiv_upper}]")
       cli::cli_text("TOST p-values: p_lower = {p_lower}, p_upper = {p_upper}")
 
-      if (x$overall_test$equivalence_passed) {
+      if (isTRUE(x$overall_test$equivalence_passed)) {
         cli::cli_alert_success("Overall equivalence: PASSED")
       } else {
         cli::cli_alert_danger("Overall equivalence: FAILED")
@@ -670,8 +891,12 @@ format.creel_tost_validation <- function(x, ...) {
         cli::cli_text("")
         cli::cli_h2("Per-Group Tests")
         n_groups <- nrow(x$group_tests) # nolint: object_usage_linter
-        n_passed <- sum(x$group_tests$equivalence_passed) # nolint: object_usage_linter
+        n_passed <- sum(vapply(x$group_tests$equivalence_passed, isTRUE, logical(1))) # nolint: object_usage_linter
         cli::cli_text("{n_passed}/{n_groups} group{?s} passed equivalence")
+        n_untested <- sum(is.na(x$group_tests$equivalence_passed))
+        if (n_untested > 0L) {
+          cli::cli_alert_warning("{n_untested} group{?s} could not be tested (one trip type only)")
+        }
       }
     })
   )
@@ -728,7 +953,10 @@ print.creel_tost_validation <- function(x, ...) {
   y_range <- all_range
 
   # Create color scheme: blue for passed, red for failed
-  point_colors <- ifelse(plot_data$passed, "#0066CC", "#CC0000")
+  # An untested group (NA) counts as not passing. It has one coordinate
+  # missing, so it has no point to draw; the recommendation names it.
+  passed_ok <- vapply(plot_data$passed, isTRUE, logical(1))
+  point_colors <- ifelse(passed_ok, "#0066CC", "#CC0000")
 
   # Create base plot
   graphics::plot(
@@ -773,8 +1001,8 @@ print.creel_tost_validation <- function(x, ...) {
   }
 
   # Add text labels for failed points
-  if (any(!plot_data$passed)) {
-    failed_indices <- which(!plot_data$passed)
+  if (any(!passed_ok)) {
+    failed_indices <- which(!passed_ok)
     for (i in failed_indices) {
       label_text <- if (!is.null(plot_data$group_labels)) {
         plot_data$group_labels[i]

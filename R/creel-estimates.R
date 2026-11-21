@@ -3709,13 +3709,15 @@ mor_svy_estimate <- function(svy_design, ratio_col, weighted) {
 #' @inheritParams mor_svy_estimate
 #' @param by_formula One-sided formula of grouping variables.
 #' @param conf_level Confidence level.
+#' @param covmat Passed to `svyby()`: keep the groups' covariance matrix.
 #'
 #' @return List with the `svyby()` result and its `estimate`, `se`,
 #'   `ci_lower` and `ci_upper` columns.
 #'
 #' @keywords internal
 #' @noRd
-mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf_level) {
+mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf_level,
+                               covmat = FALSE) {
   if (weighted) {
     svy_result <- wrap_survey_call(survey::svyby( # nolint: object_usage_linter
       formula = ~.mor_num,
@@ -3725,7 +3727,8 @@ mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf
       denominator = ~.mor_n,
       vartype = c("se", "ci"),
       ci.level = conf_level,
-      keep.names = FALSE
+      keep.names = FALSE,
+      covmat = covmat
     ))
     est_col <- ".mor_num/.mor_n"
     se_col <- "se..mor_num/.mor_n"
@@ -3737,7 +3740,8 @@ mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf
       FUN = survey::svymean,
       vartype = c("se", "ci"),
       ci.level = conf_level,
-      keep.names = FALSE
+      keep.names = FALSE,
+      covmat = covmat
     ))
     est_col <- ratio_col
     se_col <- "se"
@@ -7736,7 +7740,8 @@ estimate_cpue_grouped <- function(
   by_vars,
   variance_method,
   conf_level,
-  estimator = "ratio-of-means"
+  estimator = "ratio-of-means",
+  covmat = FALSE
 ) {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
@@ -7811,7 +7816,7 @@ estimate_cpue_grouped <- function(
   svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
 
   if (estimator %in% c("mor", "mortr")) {
-    mor_fit <- mor_svyby_estimate(svy_design, "cpue_ratio", mor_w$weighted, by_formula, conf_level)
+    mor_fit <- mor_svyby_estimate(svy_design, "cpue_ratio", mor_w$weighted, by_formula, conf_level, covmat)
     svy_result <- mor_fit$svy_result
     estimate <- mor_fit$estimate
     se <- mor_fit$se
@@ -7830,7 +7835,8 @@ estimate_cpue_grouped <- function(
       denominator = effort_formula,
       vartype = c("se", "ci"),
       ci.level = conf_level,
-      keep.names = FALSE
+      keep.names = FALSE,
+      covmat = covmat
     ))
 
     # Extract estimate columns from svyby result
@@ -7874,7 +7880,7 @@ estimate_cpue_grouped <- function(
   estimates_df <- estimates_df[col_order]
 
   # Return appropriate creel_estimates object (MOR or standard)
-  if (estimator %in% c("mor", "mortr")) {
+  out <- if (estimator %in% c("mor", "mortr")) {
     # Counts from the filtered frame, not the design: see mor_trip_counts().
     mor_counts <- mor_trip_counts(design, interviews_data) # nolint: object_usage_linter
     new_creel_estimates_mor(
@@ -7906,6 +7912,28 @@ estimate_cpue_grouped <- function(
       unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
+  if (covmat) {
+    # The groups' covariance, in the row order of the estimates: groups
+    # estimated from interviews on the same days are correlated (GH #664).
+    out$rate_vcov <- svyby_rate_vcov(svy_result, se)
+  }
+  out
+}
+
+#' The groups' covariance matrix from a `svyby(covmat = TRUE)` result
+#'
+#' `vcov.svyby()` fails on a single group (it cannot set dimnames on the
+#' scalar), whose covariance is its variance.
+#' @param svy_result A `svyby()` result computed with `covmat = TRUE`.
+#' @param se The groups' standard errors, in row order.
+#' @return An unnamed square matrix, one row per group.
+#' @keywords internal
+#' @noRd
+svyby_rate_vcov <- function(svy_result, se) {
+  if (length(se) == 1L) {
+    return(matrix(se^2, 1L, 1L))
+  }
+  unname(as.matrix(stats::vcov(svy_result)))
 }
 
 #' Cells whose effort is a known zero
@@ -8619,9 +8647,11 @@ estimate_cpue_species <- function(
   estimator = "ratio-of-means",
   validate = TRUE,
   force_origin = TRUE,
-  targeted = TRUE
+  targeted = TRUE,
+  covmat = FALSE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
+  vcov_list <- vector("list", length(all_species))
 
   results_list <- vector("list", length(all_species))
 
@@ -8693,7 +8723,8 @@ estimate_cpue_species <- function(
         interview_by_vars,
         variance_method,
         conf_level,
-        estimator
+        estimator,
+        covmat = covmat
       ) # nolint: object_usage_linter
     }
 
@@ -8702,9 +8733,15 @@ estimate_cpue_species <- function(
     sp_df <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
 
     results_list[[i]] <- sp_df
+    vcov_list[i] <- list(result$rate_vcov)
   }
 
-  do.call(rbind, results_list)
+  out <- do.call(rbind, results_list)
+  if (covmat) {
+    # One matrix per species, over that species' rows (GH #664).
+    attr(out, "rate_vcov") <- stats::setNames(vcov_list, all_species)
+  }
+  out
 }
 
 #' Species-level release rate estimation (loops over species)
@@ -8719,9 +8756,11 @@ estimate_release_rate_species <- function(
   conf_level,
   estimator = "ratio-of-means",
   validate = TRUE,
-  targeted = TRUE
+  targeted = TRUE,
+  covmat = FALSE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
+  vcov_list <- vector("list", length(all_species))
 
   results_list <- vector("list", length(all_species))
 
@@ -8775,7 +8814,8 @@ estimate_release_rate_species <- function(
         interview_by_vars,
         variance_method,
         conf_level,
-        estimator
+        estimator,
+        covmat = covmat
       )
     }
 
@@ -8784,9 +8824,15 @@ estimate_release_rate_species <- function(
     sp_df <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
 
     results_list[[i]] <- sp_df
+    vcov_list[i] <- list(result$rate_vcov)
   }
 
-  do.call(rbind, results_list)
+  out <- do.call(rbind, results_list)
+  if (covmat) {
+    # One matrix per species, over that species' rows (GH #664).
+    attr(out, "rate_vcov") <- stats::setNames(vcov_list, all_species)
+  }
+  out
 }
 
 #' Species-level harvest rate estimation (loops over species, uses "harvested" catch_type)
@@ -8801,9 +8847,11 @@ estimate_hpue_species <- function(
   conf_level,
   estimator = "ratio-of-means",
   validate = TRUE,
-  targeted = TRUE
+  targeted = TRUE,
+  covmat = FALSE
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
+  vcov_list <- vector("list", length(all_species))
   results_list <- vector("list", length(all_species))
 
   for (i in seq_along(all_species)) {
@@ -8854,7 +8902,8 @@ estimate_hpue_species <- function(
         interview_by_vars,
         variance_method,
         conf_level,
-        estimator
+        estimator,
+        covmat = covmat
       )
     }
 
@@ -8863,9 +8912,15 @@ estimate_hpue_species <- function(
     sp_df <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
 
     results_list[[i]] <- sp_df
+    vcov_list[i] <- list(result$rate_vcov)
   }
 
-  do.call(rbind, results_list)
+  out <- do.call(rbind, results_list)
+  if (covmat) {
+    # One matrix per species, over that species' rows (GH #664).
+    attr(out, "rate_vcov") <- stats::setNames(vcov_list, all_species)
+  }
+  out
 }
 
 #' Ungrouped harvest (HPUE) estimation using ratio-of-means
@@ -9054,7 +9109,8 @@ estimate_harvest_grouped <- function(
   by_vars,
   variance_method,
   conf_level,
-  estimator = "ratio-of-means"
+  estimator = "ratio-of-means",
+  covmat = FALSE
 ) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
@@ -9151,7 +9207,7 @@ estimate_harvest_grouped <- function(
   svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
 
   if (estimator %in% c("mor", "mortr")) {
-    mor_fit <- mor_svyby_estimate(svy_design, "hpue_ratio", mor_w$weighted, by_formula, conf_level)
+    mor_fit <- mor_svyby_estimate(svy_design, "hpue_ratio", mor_w$weighted, by_formula, conf_level, covmat)
     svy_result <- mor_fit$svy_result
     estimate <- mor_fit$estimate
     se <- mor_fit$se
@@ -9170,7 +9226,8 @@ estimate_harvest_grouped <- function(
       denominator = effort_formula,
       vartype = c("se", "ci"),
       ci.level = conf_level,
-      keep.names = FALSE
+      keep.names = FALSE,
+      covmat = covmat
     ))
 
     # Extract estimate columns from svyby result
@@ -9220,7 +9277,7 @@ estimate_harvest_grouped <- function(
   # metadata was computed on the design and then discarded here, so the same
   # `estimator = "mor"` request printed a caveat for CPUE and RPUE and said
   # nothing for HPUE (GH #276).
-  if (estimator %in% c("mor", "mortr")) {
+  out <- if (estimator %in% c("mor", "mortr")) {
     # Counts from the filtered frame, not the design: see mor_trip_counts().
     mor_counts <- mor_trip_counts(design, interviews_data) # nolint: object_usage_linter
     new_creel_estimates_mor(
@@ -9252,6 +9309,12 @@ estimate_harvest_grouped <- function(
       unit = rate_unit(design) # nolint: object_usage_linter
     )
   }
+  if (covmat) {
+    # The groups' covariance, in the row order of the estimates: groups
+    # estimated from interviews on the same days are correlated (GH #664).
+    out$rate_vcov <- svyby_rate_vcov(svy_result, se)
+  }
+  out
 }
 
 # Section dispatch helpers for rate estimators ----

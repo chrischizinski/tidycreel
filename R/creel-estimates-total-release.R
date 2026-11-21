@@ -122,7 +122,9 @@
 #'   group, every row must match a cell, and each group must meet the usual
 #'   10-trip floor; anything else stops. The variance treats a group's rate as
 #'   one shared estimate across its cells and carries the covariance of cells
-#'   counted on the same days (bank and boat on one drive). The result's
+#'   counted on the same days (bank and boat on one drive), and of group
+#'   rates interviewed on the same days, which share those days' conditions
+#'   (GH #664). The result's
 #'   `rate_groups` element holds the map and each group's rate, SE and `n`.
 #'   Standard count designs only: bus-route, ice, aerial, camera and sectioned
 #'   designs stop, as does `missing_rate = "exclude"`. With
@@ -607,7 +609,7 @@ estimate_total_release <- function(
 
 #' @keywords internal
 #' @noRd
-rpue_for_stratum_product <- function(design, by_vars, variance_method, conf_level) {
+rpue_for_stratum_product <- function(design, by_vars, variance_method, conf_level, covmat = FALSE) {
   strata_cols <- design$strata_cols
   strata_formula <- if (!is.null(strata_cols) && length(strata_cols) > 0L) {
     stats::reformulate(strata_cols)
@@ -643,7 +645,8 @@ rpue_for_stratum_product <- function(design, by_vars, variance_method, conf_leve
       by_vars,
       variance_method,
       conf_level,
-      design$total_estimator %||% "ratio-of-means"
+      design$total_estimator %||% "ratio-of-means",
+      covmat = covmat
     )
   }
   result$method <- if (identical(design$total_estimator, "mor")) {
