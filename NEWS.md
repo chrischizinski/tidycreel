@@ -110,6 +110,24 @@
     when a group literally labelled `"NA"` was met on other days; the two
     used to be merged.
 
+* Column names that are not syntactic R names are refused where the data enter
+  (#674). `creel_design()`, `add_counts()`, `add_sections()`,
+  `add_interviews()`, `add_catch()`, `add_lengths()` and `add_ages()` now stop
+  with `creel_error_nonsyntactic_names` when any column is named, for example,
+  `day type`, `angler count`, `2nd shift`, `_id` or `if`. The error names the
+  columns and a syntactic replacement.
+  - **Why:** the estimators build model formulas from column names, and such a
+    name does not parse in one. Every rate, total and grouped effort stopped
+    with an R parse error ("unexpected symbol").
+  - **Any column counts:** every column is checked, used or not, since any
+    column can later be named in `by`.
+  - **Removed workarounds:** a single non-syntactic strata column for
+    `estimate_effort()` (#422) and spaced names in the aerial GLMM (#400)
+    worked by special handling. They are refused too, so the rule is the same
+    everywhere.
+  - **What to do:** rename with `names(x) <- make.names(names(x))` or
+    `janitor::clean_names()`, or map file columns with `creel_schema()`.
+
 * `validate_incomplete_trips()` corrections (#669):
   - **Degrees of freedom:** the t tests now use the design's degrees of
     freedom, interviewed days minus strata, since the variance is between

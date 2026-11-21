@@ -107,16 +107,17 @@ test_that("#422: a single-PSU stratum on two columns is named readably", {
   expect_false(grepl("\u001f", msg, fixed = TRUE))
 })
 
-test_that("#422: a single strata column with a non-syntactic name still builds", {
-  # Codex, #422 review: reformulate("day type") does not parse, and the
-  # constructors used to copy the column into `.strata`, so tidyselect's
-  # all_of("day type") worked before the shared key and must keep working.
+test_that("#422/#674: a strata column with a non-syntactic name is refused at the door", {
+  # #422 kept `day type` working for estimate_effort(), but every rate, total
+  # and grouped effort still failed to parse it. #674 replaced the patchwork
+  # with one rule: non-syntactic column names are refused when the data enter.
   dates <- as.Date("2024-06-03") + 0:13
   cal <- data.frame(date = dates, check.names = FALSE)
   cal[["day type"]] <- ifelse(as.POSIXlt(dates)$wday %in% c(0, 6), "weekend", "weekday") # locale-free
-  cnt <- cal[c(1, 2, 3, 6, 7, 13, 14), ]
-  cnt$effort_hours <- c(10, 12, 14, 30, 32, 28, 31)
-  d <- suppressMessages(creel_design(cal, date = date, strata = dplyr::all_of("day type"))) # nolint: object_usage_linter
-  d <- suppressWarnings(suppressMessages(add_counts(d, cnt)))
-  expect_equal(suppressWarnings(estimate_effort(d, target = "sampled_days"))$estimates$se, 4.8648, tolerance = 1e-4)
+  err <- expect_error(
+    creel_design(cal, date = date, strata = dplyr::all_of("day type")), # nolint: object_usage_linter
+    class = "creel_error_nonsyntactic_names"
+  )
+  expect_match(conditionMessage(err), "day type", fixed = TRUE)
+  expect_match(conditionMessage(err), "day.type", fixed = TRUE)
 })
