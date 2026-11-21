@@ -329,17 +329,21 @@ validate_incomplete_trips <- function(
         "(overall and all groups passed equivalence)"
       )
     } else {
-      # An untested group (NA) is listed with the failures, not dropped.
-      failing <- !vapply(group_results$equivalence_passed, isTRUE, logical(1))
-      failing_groups <- group_results[failing, by_vars, drop = FALSE]
-      if (nrow(failing_groups) > 0) {
+      # A group that failed and a group that could not be tested (NA, one trip
+      # type only) are named separately: no test was run on the second.
+      label_rows <- function(rows) {
+        paste(
+          apply(group_results[rows, by_vars, drop = FALSE], 1, function(x) paste(by_vars, "=", x, collapse = ", ")),
+          collapse = "; "
+        )
+      }
+      failed <- group_results$equivalence_passed %in% FALSE
+      untested <- is.na(group_results$equivalence_passed)
+      if (any(failed) || any(untested)) {
         recommendation <- paste0(
-          "Validation failed: Use complete trips only. ",
-          "Groups failed equivalence: ",
-          paste(
-            apply(failing_groups, 1, function(x) paste(by_vars, "=", x, collapse = ", ")),
-            collapse = "; "
-          )
+          "Validation failed: Use complete trips only.",
+          if (any(failed)) paste0(" Groups failed equivalence: ", label_rows(failed), "."),
+          if (any(untested)) paste0(" Groups not tested (one trip type only): ", label_rows(untested), ".")
         )
       } else {
         recommendation <- "Validation failed: Use complete trips only (overall test failed)"

@@ -62,6 +62,13 @@
     it, bank and boat rates from the same days under-stated the total's SE.
     Groups in different strata share no day and are unchanged, so a mapping
     with one group per stratum gives exactly the standard total, as before.
+  - A grouped `validate_incomplete_trips()` paired the complete and
+    incomplete results by row position. When a group held only one trip
+    type, one group's complete trips were tested against another group's
+    incomplete trips and reported as that group's result. Groups are now
+    paired by their values. A group with one trip type gets an `NA` row and
+    a `creel_warning_tost_degenerate` warning, and the validation does not
+    pass.
   - A sectioned lake total still treats section rates as independent; that
     turns on how section days were drawn (#668).
 

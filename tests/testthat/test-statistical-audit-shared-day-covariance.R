@@ -292,6 +292,9 @@ test_that("SDC-06 (#664): grouped TOST pairs each group's own complete and incom
   s <- sdc_tost_scores(d2$interviews, d2$interviews$day_type == "weekend")
   expect_equal(we$diff_estimate, s$r_c - s$r_i, tolerance = 1e-10)
   expect_false(v$passed)
+  # The untested group is named as untested, not as a failed test.
+  expect_match(v$recommendation, "not tested (one trip type only): day_type = weekday", fixed = TRUE)
+  expect_no_match(v$recommendation, "failed equivalence: day_type = weekday", fixed = TRUE)
   expect_equal(v$plot_data$group_labels, c("day_type = weekday", "day_type = weekend"))
   expect_true(is.na(v$plot_data$incomplete_est[1]))
   expect_no_error(utils::capture.output(print(v)))
