@@ -14,11 +14,13 @@
 
 #' Interview frame and survey for the regression slope
 #'
-#' @return List: `data` (zero-effort trips removed, with the slope's
-#'   `.reg_ce` = c e and `.reg_e2` = e^2 columns), `svy` (the variance design).
+#' @return List: `data` (zero-effort trips removed, with the fit columns),
+#'   `svy` (the variance design), `vars` (the fit columns' names: catch,
+#'   effort, catch x effort, effort^2).
 #' @keywords internal
 #' @noRd
-regression_cpue_survey <- function(design, variance_method, by_vars = NULL, call = rlang::caller_env()) {
+regression_cpue_survey <- function(design, variance_method, by_vars = NULL, min_n = 3L,
+                                   call = rlang::caller_env()) {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
@@ -42,39 +44,73 @@ regression_cpue_survey <- function(design, variance_method, by_vars = NULL, call
     )
     interviews_data <- interviews_data[!zero_eff, , drop = FALSE]
   }
+  # The interview-count floor first, so a sample too small to fit is told so
+  # rather than refused for its days (or, with none left, crashing in svydesign).
+  n <- nrow(interviews_data)
+  if (n < min_n) {
+    cli::cli_abort(c(
+      "Regression CPUE requires at least {min_n} interview{?s}.",
+      "x" = "Only {n} valid interview{?s} available after filtering."
+    ), call = call)
+  }
   catch <- as.numeric(interviews_data[[catch_col]])
   effort <- as.numeric(interviews_data[[effort_col]])
-  interviews_data$.reg_c <- catch
-  interviews_data$.reg_e <- effort
-  interviews_data$.reg_ce <- catch * effort
-  interviews_data$.reg_e2 <- effort^2
+  # Scratch names no user column already holds, so a `by` or strata column is
+  # never overwritten by a fit variable.
+  nm <- utils::tail(make.unique(c(names(interviews_data), ".reg_c", ".reg_e", ".reg_ce", ".reg_e2")), 4L)
+  interviews_data[[nm[1]]] <- catch
+  interviews_data[[nm[2]]] <- effort
+  interviews_data[[nm[3]]] <- catch * effort
+  interviews_data[[nm[4]]] <- effort^2
 
   strata_cols <- design$strata_cols
-  strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
+  # Backquoted, so a column such as `day type` survives the formula.
+  strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(paste0("`", strata_cols, "`")) else NULL
   svy <- build_interview_survey( # nolint: object_usage_linter
     interviews_data,
     strata = strata_formula,
     psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design) # nolint: object_usage_linter
   )
   svy <- get_variance_design(svy, variance_method, call = call, by = by_vars) # nolint: object_usage_linter
-  list(data = interviews_data, svy = svy)
+  list(data = interviews_data, svy = svy, vars = nm)
 }
 
 #' Slope, SE and interval on one (domain of the) survey
 #'
 #' @keywords internal
 #' @noRd
-regression_cpue_fit <- function(svy, force_origin, conf_level) {
+regression_cpue_fit <- function(svy, force_origin, conf_level, vars) {
+  unavailable <- list(estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_)
+  # Unknown catch or effort in the domain leaves the slope unknown, as it did
+  # before: svyglm() would drop those trips silently and fit the rest.
+  w <- if (inherits(svy, "svyrep.design")) stats::weights(svy, "sampling") else stats::weights(svy)
+  in_domain <- w > 0
+  if (anyNA(svy$variables[in_domain, vars, drop = FALSE])) {
+    return(unavailable)
+  }
   if (force_origin) {
-    fit <- suppressWarnings(survey::svyratio(~.reg_ce, ~.reg_e2, svy))
+    fit <- suppressWarnings(survey::svyratio(
+      stats::reformulate(vars[3]), stats::reformulate(vars[4]), svy
+    ))
     est <- as.numeric(stats::coef(fit))
     se <- as.numeric(survey::SE(fit))
     ci <- stats::confint(fit, level = conf_level)
   } else {
-    fit <- suppressWarnings(survey::svyglm(.reg_c ~ .reg_e, design = svy))
-    est <- unname(stats::coef(fit)[".reg_e"])
-    se <- unname(sqrt(stats::vcov(fit)[".reg_e", ".reg_e"]))
-    ci <- stats::confint(fit, parm = ".reg_e", level = conf_level)
+    fit <- tryCatch(
+      suppressWarnings(survey::svyglm(stats::reformulate(vars[2], vars[1]), design = svy)),
+      error = function(e) NULL
+    )
+    # A slope the data cannot identify (one effort value throughout) has no
+    # coefficient: unavailable for this domain, not an abort of every group.
+    if (is.null(fit) || is.na(stats::coef(fit)[vars[2]]) || !vars[2] %in% rownames(stats::vcov(fit))) {
+      return(unavailable)
+    }
+    est <- unname(stats::coef(fit)[vars[2]])
+    se <- unname(sqrt(stats::vcov(fit)[vars[2], vars[2]]))
+    # On the normal scale like the ratio's interval; confint.svyglm() would use
+    # a t on the residual df, which is 0 on two days and gives an infinite or
+    # NaN interval beside a finite SE.
+    ci <- stats::confint(fit, parm = vars[2], level = conf_level, ddf = Inf)
   }
   list(estimate = est, se = se, ci_lower = unname(ci[1, 1]), ci_upper = unname(ci[1, 2]))
 }
@@ -83,16 +119,11 @@ regression_cpue_fit <- function(svy, force_origin, conf_level) {
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_regression_total <- function(design, conf_level, force_origin, variance_method = "taylor") {
-  prep <- regression_cpue_survey(design, variance_method)
+estimate_cpue_regression_total <- function(design, conf_level, force_origin, variance_method = "taylor",
+                                           call = rlang::caller_env()) {
+  prep <- regression_cpue_survey(design, variance_method, call = call)
   n <- nrow(prep$data)
-  if (n < 3L) {
-    cli::cli_abort(c(
-      "Regression CPUE requires at least 3 interviews.",
-      "x" = "Only {n} valid interview{?s} available after filtering."
-    ))
-  }
-  fit <- regression_cpue_fit(prep$svy, force_origin, conf_level)
+  fit <- regression_cpue_fit(prep$svy, force_origin, conf_level, prep$vars)
   estimates_df <- tibble::tibble(
     estimate = fit$estimate,
     se = fit$se,
@@ -123,9 +154,12 @@ estimate_cpue_reg_grouped <- function(
   by_vars,
   conf_level, # nolint: object_length_linter
   force_origin,
-  variance_method = "taylor"
+  variance_method = "taylor",
+  call = rlang::caller_env()
 ) {
-  prep <- regression_cpue_survey(design, variance_method, by_vars = by_vars)
+  # Groups take the small-group warning below, not the 3-interview floor; an
+  # empty frame is still refused.
+  prep <- regression_cpue_survey(design, variance_method, by_vars = by_vars, min_n = 1L, call = call)
   interviews_data <- prep$data
   svy <- prep$svy
 
@@ -144,15 +178,16 @@ estimate_cpue_reg_grouped <- function(
     k <- keys[[i]]
     n_g <- sum(row_key == k)
     if (n_g < 3L) {
+      label <- tost_group_label(groups, i, by_vars) # nolint: object_usage_linter
       creel_warn(c(
-        "Group {.val {k}}: fewer than 3 interviews; regression CPUE unreliable.",
+        "Group {label}: fewer than 3 interviews; regression CPUE unreliable.",
         "i" = "Only {n_g} interview{?s} in this group."
       ),
       class = c("creel_warning_regression_small_group", "creel_warning")
       )
     }
     # A domain: the group's trips on the whole survey, every day kept.
-    fit <- regression_cpue_fit(svy[svy_key == k, ], force_origin, conf_level)
+    fit <- regression_cpue_fit(svy[svy_key == k, ], force_origin, conf_level, prep$vars)
     grp_vals <- groups[i, , drop = FALSE]
     rownames(grp_vals) <- NULL
     cbind(

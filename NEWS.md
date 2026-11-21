@@ -100,6 +100,15 @@
     (`"ab"`, `"c"`) were merged.
   - **`compare_cpue_estimators()`:** it now gives all three estimators
     Taylor SEs.
+  - **Unknowns:** an unknown catch or effort among a slope's trips leaves
+    the slope `NA`, as before, instead of being dropped by the fit.
+  - **Unidentifiable slopes:** a group whose slope cannot be identified (one
+    effort value throughout, with an intercept) is reported `NA`, and the
+    other groups are still estimated.
+  - **One-day refusal (all rates):** the one-day group refusal now counts
+    days per group key. An unknown `by` value met on one day is refused even
+    when a group literally labelled `"NA"` was met on other days; the two
+    used to be merged.
 
 * `validate_incomplete_trips()` corrections (#669):
   - **Degrees of freedom:** the t tests now use the design's degrees of

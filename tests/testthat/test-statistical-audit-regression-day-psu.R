@@ -227,3 +227,53 @@ test_that("REG-08 (#665): the complete-trip slope keeps interviewed days without
   expect_equal(r$estimates$estimate, beta, tolerance = 1e-12)
   expect_equal(r$estimates$se, se_hand, tolerance = 1e-8)
 })
+
+test_that("REG-09 (#665 review): edge cases fail loud or stay unknown, not wrong", {
+  cal <- reg_calendar()
+  iv <- reg_interviews()
+  # Too few interviews is reported as too few, before any day check.
+  d2 <- reg_design(iv[1:2, ], cal)
+  expect_error(reg_q(estimate_catch_rate(d2, estimator = "regression", use_trips = "all")), "at least 3 interviews")
+  # An unknown catch leaves the slope unknown instead of being dropped.
+  iv_na <- iv
+  iv_na$catch_total[iv_na$date == cal$date[3]] <- NA
+  d_na <- reg_design(iv_na)
+  r_na <- reg_q(estimate_catch_rate(d_na, estimator = "regression", force_origin = FALSE, use_trips = "all"))
+  expect_true(is.na(r_na$estimates$estimate))
+  # The intercept fit's interval is on the normal scale: finite on two days.
+  d_two <- reg_design(iv[iv$date %in% cal$date[c(1, 2, 6, 7)], ])
+  r_two <- reg_q(estimate_catch_rate(d_two, estimator = "regression", force_origin = FALSE))$estimates
+  z <- stats::qnorm(0.975)
+  expect_equal(r_two$ci_upper - r_two$estimate, z * r_two$se, tolerance = 1e-8)
+  # A group whose slope is unidentifiable (one effort value) is unavailable,
+  # and the other groups are still estimated.
+  iv_c <- iv
+  iv_c$boat <- ifelse(iv_c$hours_fished >= 3, "big", "small")
+  iv_c$hours_fished[iv_c$boat == "small"] <- 2
+  iv_c$trip_duration <- iv_c$hours_fished
+  r_c <- reg_q(estimate_catch_rate(reg_design(iv_c), estimator = "regression", force_origin = FALSE, by = boat))$estimates
+  expect_true(is.na(r_c$estimate[r_c$boat == "small"]))
+  expect_false(is.na(r_c$estimate[r_c$boat == "big"]))
+})
+
+test_that("REG-10 (#665 review): a user column is not overwritten by the fit", {
+  cal <- reg_calendar()
+  iv <- reg_interviews()
+  # A user column with a scratch variable's name is not overwritten.
+  iv$.reg_e <- ifelse(iv$hours_fished >= 3, "big", "small")
+  r <- reg_q(estimate_catch_rate(reg_design(iv), estimator = "regression", by = .reg_e))$estimates
+  expect_setequal(r$.reg_e, c("big", "small"))
+})
+
+test_that("REG-11 (#665 review): an unknown group met on one day is refused, not merged with \"NA\"", {
+  cal <- reg_calendar()
+  iv <- reg_interviews()
+  iv$gear <- "rod"
+  iv$gear[iv$date == cal$date[1]] <- NA
+  iv$gear[iv$date %in% cal$date[c(2, 3)]] <- "NA"
+  d <- reg_design(iv)
+  expect_error(
+    reg_q(estimate_catch_rate(d, estimator = "regression", by = gear)),
+    class = "creel_error_single_psu"
+  )
+})
