@@ -12,8 +12,10 @@
 #'   [add_interviews()]. The test always compares catch rates; any other
 #'   column is an error (it was previously checked and then ignored).
 #' @param effort Bare column name: the design's effort column, as given to
-#'   [add_interviews()]. Rates use its angler-hours (effort times party
-#'   size); any other column is an error.
+#'   [add_interviews()]. Rates use it as angler-hours (effort times
+#'   \code{n_anglers}) when [add_interviews()] was given a party size, and as
+#'   recorded -- party-hours, if that is what it holds -- when it was not; any
+#'   other column is an error.
 #' @param by Optional tidy selector for grouping variables. When provided,
 #'   performs TOST for each group independently. Overall validation passes
 #'   only if overall test AND all group tests pass equivalence.
@@ -87,9 +89,11 @@
 #' domains of one survey of every interviewed day, under the requested
 #' \code{variance} method, and the covariance comes from that fit (GH #664).
 #' The t tests use the design's degrees of freedom, interviewed days minus
-#' strata, because that variance is between days (GH #669); bus-route and ice
-#' designs, whose interviews are the sampling units, keep
-#' \code{min(n_complete, n_incomplete) - 1}.
+#' strata over the strata a comparison draws on, because that variance is
+#' between days (GH #669). On bus-route and ice designs the two rates'
+#' variances are still added: their rates are clustered on the day as well,
+#' so this overstates the SE of the difference, which makes the test
+#' conservative (GH #671).
 #'
 #' Sample size requirements: At least 10 complete trips AND 10 incomplete trips
 #' are required for stable variance estimation and TOST. The function errors
@@ -305,6 +309,7 @@ validate_incomplete_trips <- function(
 
     # Per-group tests
     group_results <- perform_grouped_tost(
+      design = design,
       complete_result = complete_result,
       incomplete_result = incomplete_result,
       by_vars = by_vars,
@@ -413,7 +418,7 @@ validate_incomplete_trips <- function(
       n_complete = complete_result$estimates$n,
       n_incomplete = incomplete_result$estimates$n,
       se_diff = if (is.null(joint)) NULL else as.numeric(joint),
-      df = attr(joint, "df")
+      df = unname(tost_design_df(design, "all"))
     )
 
     # Metadata
@@ -520,7 +525,7 @@ perform_overall_tost <- function(
     n_complete = complete_overall$estimates$n,
     n_incomplete = incomplete_overall$estimates$n,
     se_diff = if (is.null(joint)) NULL else as.numeric(joint),
-    df = attr(joint, "df")
+    df = unname(tost_design_df(design, "all"))
   )
   # The overall rates themselves, for the grouped result's metadata: the test
   # above is of these, not of an average of the group rates (GH #669).
@@ -584,14 +589,16 @@ align_tost_groups <- function(complete_df, incomplete_df, by_vars) {
 #' A group holding only one trip type cannot be tested: its row is `NA`, with
 #' a warning, and counts as not passing.
 #'
+#' @param design The design, for the degrees of freedom.
 #' @param joint From `tost_joint_se_diff()`: SEs of the difference keyed as
-#'   `align_tost_groups()` keys the groups, with the design `df` attribute;
-#'   `NULL` where the variances are added.
+#'   `align_tost_groups()` keys the groups; `NULL` where the variances are
+#'   added.
 #' @keywords internal
 #' @noRd
-perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, threshold,
+perform_grouped_tost <- function(design, complete_result, incomplete_result, by_vars, threshold,
                                  joint = NULL) {
   al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
+  design_df <- tost_design_df(design, al$keys, by_vars)
   cdf <- al$complete
   idf <- al$incomplete
 
@@ -628,7 +635,7 @@ perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, th
       n_complete = cdf$n[i],
       n_incomplete = idf$n[i],
       se_diff = if (is.null(joint)) NULL else unname(joint[al$keys[i]]),
-      df = attr(joint, "df")
+      df = unname(design_df[al$keys[i]])
     )
 
     group_results$p_lower[i] <- tost_result$p_lower
@@ -671,10 +678,11 @@ perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, th
 #' @keywords internal
 #' @noRd
 tost_joint_se_diff <- function(design, complete_result, incomplete_result, variance, by_vars = NULL) {
-  # Bus-route and ice rates are Horvitz-Thompson ratios whose interviews are not
-  # clustered on the day (GH #661 left them as they were), so the two rates'
-  # interviews are independent units there and adding the variances is the
-  # consistent SE. NULL tells perform_tost() to do that.
+  # Bus-route and ice rates are Horvitz-Thompson ratios over their own
+  # day-clustered survey (br_add_psu_key()), which this fit does not model, so
+  # NULL tells perform_tost() to add the two variances. Their rates share days
+  # too, so the sum overstates the SE of the difference -- conservative for an
+  # equivalence test, but not the joint SE (GH #671).
   if ((design$design_type %||% "instantaneous") %in% c("bus_route", "ice")) {
     return(NULL)
   }
@@ -764,17 +772,44 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     }
     sqrt(max(0, v[1, 1] + v[2, 2] - 2 * v[1, 2]))
   }, numeric(1))
-  out <- stats::setNames(out, al$keys)
-  # Design degrees of freedom: interviewed days minus strata. A domain is
-  # estimated over every day of the frame, including days without its trips,
-  # so these are the days of the frame -- not survey::degf() of the subset,
-  # which counts only the days that hold domain rows.
-  frame <- interview_day_frame(design) # nolint: object_usage_linter
-  if (!is.null(frame)) {
-    n_strata <- if (length(strata_cols) > 0L) nrow(unique(frame[strata_cols])) else 1L
-    attr(out, "df") <- nrow(frame) - n_strata
+  stats::setNames(out, al$keys)
+}
+
+#' Design degrees of freedom of each TOST comparison
+#'
+#' Internal (GH #669). The variance of the difference is between days, so its
+#' degrees of freedom are days minus strata -- counted over the strata the
+#' comparison draws on. A stratum holding none of a group's trips contributes
+#' nothing to that group's variance and no degrees of freedom; within a
+#' stratum it does draw on, every interviewed day counts, including days
+#' without the group's trips (a domain is estimated over all of them). Not
+#' `survey::degf()` of the domain subset, which counts only the days holding
+#' domain rows. The same on every design: bus-route and ice rates are
+#' clustered on the day too.
+#'
+#' @param design The design `validate_incomplete_trips()` was given.
+#' @param keys Group keys as `align_tost_groups()` makes them, or `"all"`.
+#' @param by_vars Grouping columns, or `NULL`.
+#' @return Named integer vector of degrees of freedom, one per key.
+#' @keywords internal
+#' @noRd
+tost_design_df <- function(design, keys, by_vars = NULL) {
+  iv <- design$interviews
+  ts <- design$trip_status_col
+  iv <- iv[!is.na(iv[[ts]]) & iv[[ts]] %in% c("complete", "incomplete"), , drop = FALSE]
+  strata_cols <- design$strata_cols %||% character(0)
+  stratum_of <- function(df) {
+    if (length(strata_cols) == 0L) rep("all", nrow(df)) else group_key(df, strata_cols) # nolint: object_usage_linter
   }
-  out
+  days <- unique(design$interviews[c(strata_cols, design$date_col)])
+  day_stratum <- stratum_of(days)
+  row_key <- if (is.null(by_vars)) rep("all", nrow(iv)) else group_key(iv, by_vars) # nolint: object_usage_linter
+  row_stratum <- stratum_of(iv)
+  out <- vapply(keys, function(k) {
+    used <- unique(row_stratum[row_key == k])
+    as.integer(sum(day_stratum %in% used) - length(used))
+  }, integer(1))
+  stats::setNames(out, keys)
 }
 
 #' Perform TOST (Two One-Sided Tests) equivalence testing
@@ -809,10 +844,9 @@ perform_tost <- function(
     se_diff <- sqrt(complete_se^2 + incomplete_se^2)
   }
 
-  # Degrees of freedom: the design's, from the joint fit -- interviewed days
-  # minus strata, since the variance is between days (GH #669). The interview
-  # count is the fallback where interviews are the sampling units (bus-route,
-  # ice).
+  # Degrees of freedom: the design's -- interviewed days minus strata, since
+  # the variance is between days (tost_design_df(), GH #669). The interview
+  # count is only the fallback for a caller without them.
   if (is.null(df)) {
     df <- min(n_complete - 1, n_incomplete - 1)
   }

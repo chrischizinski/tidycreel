@@ -24,8 +24,10 @@ distinguish complete from incomplete trips.}
 column is an error (it was previously checked and then ignored).}
 
 \item{effort}{Bare column name: the design's effort column, as given to
-\code{\link[=add_interviews]{add_interviews()}}. Rates use its angler-hours (effort times party
-size); any other column is an error.}
+\code{\link[=add_interviews]{add_interviews()}}. Rates use it as angler-hours (effort times
+\code{n_anglers}) when \code{\link[=add_interviews]{add_interviews()}} was given a party size, and as
+recorded -- party-hours, if that is what it holds -- when it was not; any
+other column is an error.}
 
 \item{by}{Optional tidy selector for grouping variables. When provided,
 performs TOST for each group independently. Overall validation passes
@@ -79,9 +81,11 @@ is far more precise than either rate. Both rates are estimated jointly, as
 domains of one survey of every interviewed day, under the requested
 \code{variance} method, and the covariance comes from that fit (GH #664).
 The t tests use the design's degrees of freedom, interviewed days minus
-strata, because that variance is between days (GH #669); bus-route and ice
-designs, whose interviews are the sampling units, keep
-\code{min(n_complete, n_incomplete) - 1}.
+strata over the strata a comparison draws on, because that variance is
+between days (GH #669). On bus-route and ice designs the two rates'
+variances are still added: their rates are clustered on the day as well,
+so this overstates the SE of the difference, which makes the test
+conservative (GH #671).
 
 Sample size requirements: At least 10 complete trips AND 10 incomplete trips
 are required for stable variance estimation and TOST. The function errors

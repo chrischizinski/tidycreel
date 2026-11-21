@@ -113,8 +113,10 @@ test_that("SDC-02 (#664): each group's TOST counts the covariance within that gr
     s <- sdc_tost_scores(iv, iv$day_type == g)
     se_hand <- sqrt(sdc_cov(s$z_c - s$z_i, s$z_c - s$z_i, day, ds))
     row <- gt[gt$day_type == g, ]
-    # Design degrees of freedom: 10 interviewed days minus 2 strata (GH #669).
-    df <- length(ds) - length(unique(ds))
+    # Design degrees of freedom of a group inside one stratum: that stratum's
+    # 5 interviewed days minus 1 (GH #669). The other stratum contributes no
+    # variance to this group, and so no degrees of freedom.
+    df <- sum(ds == g) - 1
     p_lower_hand <- stats::pt((row$diff_estimate - row$equivalence_lower) / se_hand, df, lower.tail = FALSE)
     expect_equal(row$diff_estimate, s$r_c - s$r_i, tolerance = 1e-10)
     expect_equal(row$p_lower, p_lower_hand, tolerance = 1e-8)
@@ -341,12 +343,12 @@ test_that("SDC-09 (#664): a sectioned design is refused, not crashed", {
   expect_error(validate_incomplete_trips(d, catch_total, hours_fished), class = "creel_error_tost_sections")
 })
 
-test_that("SDC-10 (#664): bus-route rates keep independent interviews in the TOST", {
-  # Bus-route rates are Horvitz-Thompson ratios over interviews that are not
-  # clustered on the day (GH #661 left them), so the difference's variance is
-  # the sum of the two rates' variances -- and the joint fit, which models the
-  # standard interview survey, must not run (it would compare unweighted
-  # ratios with the weighted estimates and abort).
+test_that("SDC-10 (#664, #669): bus-route TOST adds the variances and counts days", {
+  # Bus-route rates are Horvitz-Thompson ratios over their own day-clustered
+  # survey, which the joint fit does not model: run on them it would compare
+  # unweighted ratios with the weighted estimates and abort. The two variances
+  # are added instead -- conservative, since the rates share days (GH #671) --
+  # and the degrees of freedom are days minus strata, as everywhere (6 - 1).
   cal <- data.frame(date = as.Date("2024-06-03") + 0:5, day_type = "weekday")
   sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 60), ct = 180)
   des <- creel_design(
@@ -371,6 +373,7 @@ test_that("SDC-10 (#664): bus-route rates keep independent interviews in the TOS
   v <- sdc_q(validate_incomplete_trips(d, catch, hrs))
   m <- v$metadata
   expect_equal(v$overall_test$se_diff, sqrt(m$complete$se^2 + m$incomplete$se^2), tolerance = 1e-12)
+  expect_equal(v$overall_test$df, 5)
 })
 
 test_that("SDC-11 (#664): Goodman's floor holds for the row once rates covary", {
