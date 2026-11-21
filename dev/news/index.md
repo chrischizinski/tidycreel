@@ -52,6 +52,46 @@
   refused with `creel_error_single_psu`, since its standard error would
   be 0. A section is still estimated over its own interviewed days.
 
+- Rates interviewed on the same days are now treated as correlated where
+  two of them are combined
+  ([\#664](https://github.com/chrischizinski/tidycreel/issues/664)).
+  With interview variance clustered on the day
+  ([\#661](https://github.com/chrischizinski/tidycreel/issues/661)),
+  rates from different trips – complete and incomplete, bank and boat –
+  still share each day’s conditions.
+
+  - [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md)
+    now takes the SE of the complete-minus- incomplete difference from
+    one joint fit of both rates, covariance included, under the
+    requested variance method. Adding their variances overstated it, so
+    two rates that track each other day by day could fail equivalence.
+    On a constructed survey where they differ by 5% it was 29 times too
+    large. Point estimates, bounds and degrees of freedom are unchanged.
+  - [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+    [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
+    and
+    [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
+    with `rate_groups` now add 2 E_g E_h Cov(R_g, R_h) for groups
+    interviewed on the same days. Without it, bank and boat rates from
+    the same days under-stated the total’s SE. Groups in different
+    strata share no day and are unchanged, so a mapping with one group
+    per stratum gives exactly the standard total, as before.
+  - A grouped
+    [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md)
+    paired the complete and incomplete results by row position. When a
+    group held only one trip type, one group’s complete trips were
+    tested against another group’s incomplete trips and reported as that
+    group’s result. Groups are now paired by their values. A group with
+    one trip type gets an `NA` row and a `creel_warning_tost_degenerate`
+    warning, and the validation does not pass.
+  - On bus-route and ice designs, whose interviews are not clustered on
+    the day, the two rates’ variances are still added. A sectioned
+    design is now refused with `creel_error_tost_sections`; before, it
+    stopped with an R condition-length error.
+  - A sectioned lake total still treats section rates as independent;
+    that turns on how section days were drawn
+    ([\#668](https://github.com/chrischizinski/tidycreel/issues/668)).
+
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   refuses a count timed outside the drawn shift
   ([\#426](https://github.com/chrischizinski/tidycreel/issues/426)).

@@ -92,9 +92,15 @@ It then performs TOST to test equivalence within the specified
 threshold.
 
 Equivalence bounds are calculated as ±threshold \*
-complete_trip_estimate. The difference variance is estimated using the
-delta method: Var(complete - incomplete) = Var(complete) +
-Var(incomplete), assuming independence between the two samples.
+complete_trip_estimate. The difference variance is Var(complete) +
+Var(incomplete) - 2 Cov(complete, incomplete). The two rates come from
+different trips, but interview variance is clustered on the survey day,
+so trips interviewed on the same days covary: when complete and
+incomplete rates rise and fall together from day to day, their
+difference is far more precise than either rate. Both rates are
+estimated jointly, as domains of one survey of every interviewed day,
+under the requested `variance` method, and the covariance comes from
+that fit (GH \#664).
 
 Sample size requirements: At least 10 complete trips AND 10 incomplete
 trips are required for stable variance estimation and TOST. The function
@@ -240,14 +246,18 @@ result_grouped <- validate_incomplete_trips(design_with_interviews,
 #> ℹ Pollock et al. recommends >=10% complete trips for valid estimation
 #> ℹ Consider use_trips='diagnostic' to validate incomplete trip estimates
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Warning: TOST: group day_type = weekday has no incomplete trips; equivalence cannot be
+#> tested for it.
+#> ℹ Its row is NA and the validation does not pass.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result_grouped)
 #> 
 #> ── TOST Equivalence Validation Results ─────────────────────────────────────────
 #> Threshold: ±20% of complete trip estimate
-#> ✔ Validation PASSED
+#> ✖ Validation FAILED
 #> 
-#> Recommendation: Validation passed: Safe to use incomplete trips for CPUE
-#> estimation in this dataset (overall and all groups passed equivalence)
+#> Recommendation: Validation failed: Use complete trips only. Groups not tested
+#> (one trip type only): day_type = weekday; day_type = weekend.
 #> 
 #> 
 #> ── Overall Test ──
@@ -262,8 +272,10 @@ print(result_grouped)
 #> 
 #> ── Per-Group Tests ──
 #> 
-#> 1/1 group passed equivalence
+#> 0/2 groups passed equivalence
+#> ! 2 groups could not be tested (one trip type only)
 #> 
+
 
 # Custom equivalence threshold, restoring the previous option afterwards
 old_opts <- options(tidycreel.equivalence_threshold = 0.15) # 15% threshold

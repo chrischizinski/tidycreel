@@ -174,13 +174,14 @@ estimate_total_release(
   the usual 10-trip floor; anything else stops. The variance treats a
   group's rate as one shared estimate across its cells and carries the
   covariance of cells counted on the same days (bank and boat on one
-  drive). The result's `rate_groups` element holds the map and each
-  group's rate, SE and `n`. Standard count designs only: bus-route, ice,
-  aerial, camera and sectioned designs stop, as does
-  `missing_rate = "exclude"`. With `by = species`, each species gets its
-  own rate per group, zero-filled over every trip in the group (a
-  species no one in the group caught has a rate of 0), and the
-  `rate_groups` rates carry a species column.
+  drive), and of group rates interviewed on the same days, which share
+  those days' conditions (GH \#664). The result's `rate_groups` element
+  holds the map and each group's rate, SE and `n`. Standard count
+  designs only: bus-route, ice, aerial, camera and sectioned designs
+  stop, as does `missing_rate = "exclude"`. With `by = species`, each
+  species gets its own rate per group, zero-filled over every trip in
+  the group (a species no one in the group caught has a rate of 0), and
+  the `rate_groups` rates carry a species column.
 
 ## Value
 

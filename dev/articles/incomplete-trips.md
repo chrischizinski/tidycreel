@@ -315,7 +315,7 @@ validate_incomplete_trips(design, catch = catch_total, effort = hours_fished)
 #> Incomplete trips: n = 115, CPUE = 2.312
 #> Difference: 0.031
 #> Equivalence bounds: [-0.469, 0.469]
-#> TOST p-values: p_lower = 9e-04, p_upper = 0.0028
+#> TOST p-values: p_lower = 0.0012, p_upper = 0.0036
 #> ✔ Overall equivalence: PASSED
 ```
 
