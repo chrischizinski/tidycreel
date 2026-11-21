@@ -138,7 +138,9 @@
 #'   group, every row must match a cell, and each group must meet the usual
 #'   10-trip floor; anything else stops. The variance treats a group's rate as
 #'   one shared estimate across its cells and carries the covariance of cells
-#'   counted on the same days (bank and boat on one drive). The result's
+#'   counted on the same days (bank and boat on one drive), and of group
+#'   rates interviewed on the same days, which share those days' conditions
+#'   (GH #664). The result's
 #'   `rate_groups` element holds the map and each group's rate, SE and `n`.
 #'   Standard count designs only: bus-route, ice, aerial, camera and sectioned
 #'   designs stop, as does `missing_rate = "exclude"`. With
@@ -669,7 +671,8 @@ cpue_for_stratum_product <- function(
   design,
   by_vars,
   variance_method,
-  conf_level
+  conf_level,
+  covmat = FALSE
 ) {
   # The one reader of the estimator estimate_total_catch() resolved before
   # dispatch. Defaults to ratio-of-means so the internals stay callable on a
@@ -678,7 +681,7 @@ cpue_for_stratum_product <- function(
   if (length(by_vars) == 0L) {
     estimate_cpue_total(design, variance_method, conf_level, estimator) # nolint: object_usage_linter
   } else {
-    estimate_cpue_grouped(design, by_vars, variance_method, conf_level, estimator) # nolint: object_usage_linter
+    estimate_cpue_grouped(design, by_vars, variance_method, conf_level, estimator, covmat = covmat) # nolint: object_usage_linter
   }
 }
 

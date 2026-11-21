@@ -14,11 +14,15 @@
 #
 #   T_r      = sum_g E_rg R_g
 #   Var(T_r) = Var_E(sum_g R_g E_rg)                    effort, at the estimated rates
-#            + sum_g E_rg^2 Var(R_g)                    rate, one shared error per group
+#            + sum_g sum_h E_rg E_rh Cov(R_g, R_h)      rate, one shared error per group
 #            - sum_g Var(E_rg) Var(R_g)                 Goodman (1960) unbiased form, floored at first order
 #
-# Rates of different groups come from disjoint interviews and are independent
-# of each other and of the counts. The effort term is the variance of an effort
+# Rates of different groups come from disjoint interviews, but the interview
+# variance is clustered on the survey day (GH #661), so groups interviewed on
+# the same days -- bank and boat in one stratum -- covary through the day; their
+# covariance comes from one svyby(covmat = TRUE) over the groups (GH #664).
+# Groups in different strata share no day and have none. Rates are independent
+# of the counts. The effort term is the variance of an effort
 # total whose counts were each multiplied by their group's rate, so it is
 # computed by the existing effort estimator on a reweighted copy of the design:
 # between-day and within-day variance, the bank-boat covariance of units counted
@@ -239,10 +243,11 @@ rate_group_rates <- function(design, metric, variance_method, conf_level, specie
   estimator <- design$total_estimator %||% "ratio-of-means"
   out <- if (is.null(species_col)) {
     res <- switch(metric,
-      catch = cpue_for_stratum_product(design, by, variance_method, conf_level), # nolint: object_usage_linter
-      harvest = estimate_harvest_grouped(design, by, variance_method, conf_level, estimator), # nolint: object_usage_linter
-      release = rpue_for_stratum_product(design, by, variance_method, conf_level) # nolint: object_usage_linter
+      catch = cpue_for_stratum_product(design, by, variance_method, conf_level, covmat = TRUE), # nolint: object_usage_linter
+      harvest = estimate_harvest_grouped(design, by, variance_method, conf_level, estimator, covmat = TRUE), # nolint: object_usage_linter
+      release = rpue_for_stratum_product(design, by, variance_method, conf_level, covmat = TRUE) # nolint: object_usage_linter
     )
+    vcov <- res$rate_vcov
     as.data.frame(res$estimates)
   } else {
     species_fn <- switch(metric,
@@ -252,12 +257,14 @@ rate_group_rates <- function(design, metric, variance_method, conf_level, specie
     )
     # validate = FALSE: the group floor was applied by the caller, once, to the
     # groups -- the same trips for every species.
-    as.data.frame(species_fn(
+    sp_out <- species_fn(
       design,
       species_col = species_col, interview_by_vars = by,
       variance_method = variance_method, conf_level = conf_level,
-      estimator = estimator, validate = FALSE
-    ))
+      estimator = estimator, validate = FALSE, covmat = TRUE
+    )
+    vcov <- attr(sp_out, "rate_vcov")
+    as.data.frame(sp_out)
   }
   rates <- data.frame(
     .rate_group = as.character(out[[by]]),
@@ -269,6 +276,9 @@ rate_group_rates <- function(design, metric, variance_method, conf_level, specie
   if (!is.null(species_col)) {
     rates <- cbind(stats::setNames(out[species_col], species_col), rates)
   }
+  # The groups' covariance (one matrix, or one per species), in row order: the
+  # groups share interview days, so their rates are correlated (GH #664).
+  attr(rates, "rate_vcov") <- vcov
   rates
 }
 
@@ -458,6 +468,7 @@ estimate_total_rate_groups <- function(
     target = target
   )$estimates)
 
+  rate_vcov <- attr(rates, "rate_vcov")
   if (is.null(species_col)) {
     res <- rate_group_product(
       design, rates, cell_effort, by_vars, variance_method, conf_level,
@@ -469,6 +480,7 @@ estimate_total_rate_groups <- function(
     all_species <- sort(unique(rates[[species_col]]))
     pieces <- lapply(all_species, function(sp) {
       sp_rates <- rates[rates[[species_col]] == sp, setdiff(names(rates), species_col), drop = FALSE]
+      attr(sp_rates, "rate_vcov") <- rate_vcov[[as.character(sp)]]
       res <- rate_group_product(
         design, sp_rates, cell_effort, by_vars, variance_method, conf_level,
         target, product_variance, ci_type
@@ -496,6 +508,7 @@ estimate_total_rate_groups <- function(
     se_expansion = se_expansion
   )
   # The pooling, visible: which cells used which group's rate.
+  attr(rates, "rate_vcov") <- NULL
   names(rates)[names(rates) == ".rate_group"] <- spec$group_col
   result$rate_groups <- list(map = spec$map, rates = tibble::as_tibble(rates))
   result
@@ -523,15 +536,24 @@ rate_group_product <- function(
   idx <- match(as.character(cell_effort$.rate_group), rates$.rate_group)
   r_est <- rates$estimate[idx]
   r_var <- rates$se[idx]^2
-  rate_term <- cell_effort$estimate^2 * r_var
-  if (identical(product_variance, "goodman")) {
-    # Goodman's (1960) unbiased estimator subtracts the cross-term, with the
-    # first-order value as a floor, cell by cell -- exactly as
-    # product_total_variance() does for a stratum, so one group per stratum
-    # reproduces the standard total.
-    first_order <- r_est^2 * cell_effort$se^2 + rate_term
+  rate_vcov <- attr(rates, "rate_vcov")
+  if (!is.matrix(rate_vcov) || nrow(rate_vcov) != nrow(rates)) {
+    cli::cli_abort("Internal error: rate-group rates arrived without their covariance.", .internal = TRUE)
+  }
+  # Goodman's (1960) unbiased estimator subtracts the cross-term, with the
+  # first-order value as a floor, cell by cell -- exactly as
+  # product_total_variance() does for a stratum, so one group per stratum
+  # reproduces the standard total. Only the diagonal cross-term is subtracted:
+  # the effort covariance between cells it would need for the off-diagonal
+  # part is never formed here (it is inside the reweighted effort SE).
+  goodman_cross <- if (identical(product_variance, "goodman")) {
+    first_order <- r_est^2 * cell_effort$se^2 + cell_effort$estimate^2 * r_var
     cross <- cell_effort$se^2 * r_var
-    rate_term <- rate_term - ifelse(first_order - cross > 0, cross, 0)
+    ifelse(first_order - cross > 0, cross, 0)
+  } else {
+    # First-order variance subtracts no cross-term: a known zero, not a
+    # missing one.
+    rep(0, nrow(cell_effort))
   }
 
   # Var_E(sum_g R_g E_rg), from the effort estimator on reweighted counts.
@@ -563,7 +585,17 @@ rate_group_product <- function(
       .internal = TRUE
     )
   }
-  variance <- w_df$se^2 + sum_by_row(rate_term)
+  # The rate part, E' V E over the row's cells: rate groups estimated from
+  # interviews on the same days covary, so the off-diagonal terms count
+  # (GH #664). With one group per stratum the groups share no day and V is
+  # diagonal.
+  rate_quad <- unname(vapply(row_key_w, function(k) {
+    in_row <- row_key_c == k
+    e <- cell_effort$estimate[in_row]
+    g <- idx[in_row]
+    as.numeric(crossprod(e, rate_vcov[g, g, drop = FALSE] %*% e))
+  }, numeric(1)))
+  variance <- w_df$se^2 + rate_quad - sum_by_row(goodman_cross)
 
   # Interviews counted once per group present in the row.
   groups_in_row <- lapply(row_key_w, function(k) unique(as.character(cell_effort$.rate_group[row_key_c == k])))

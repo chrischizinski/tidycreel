@@ -66,9 +66,14 @@ and incomplete trips (using mean-of-ratios) via \code{\link{estimate_catch_rate}
 It then performs TOST to test equivalence within the specified threshold.
 
 Equivalence bounds are calculated as ±threshold * complete_trip_estimate.
-The difference variance is estimated using the delta method:
-Var(complete - incomplete) = Var(complete) + Var(incomplete), assuming
-independence between the two samples.
+The difference variance is
+Var(complete) + Var(incomplete) - 2 Cov(complete, incomplete). The two
+rates come from different trips, but interview variance is clustered on the
+survey day, so trips interviewed on the same days covary: when complete and
+incomplete rates rise and fall together from day to day, their difference
+is far more precise than either rate. Both rates are estimated jointly, as
+domains of one survey of every interviewed day, under the requested
+\code{variance} method, and the covariance comes from that fit (GH #664).
 
 Sample size requirements: At least 10 complete trips AND 10 incomplete trips
 are required for stable variance estimation and TOST. The function errors

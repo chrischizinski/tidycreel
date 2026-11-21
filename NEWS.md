@@ -45,6 +45,26 @@
   `creel_error_single_psu`, since its standard error would be 0. A section
   is still estimated over its own interviewed days.
 
+* Rates interviewed on the same days are now treated as correlated where two
+  of them are combined (#664). With interview variance clustered on the day
+  (#661), rates from different trips -- complete and incomplete, bank and
+  boat -- still share each day's conditions.
+  - `validate_incomplete_trips()` now takes the SE of the complete-minus-
+    incomplete difference from one joint fit of both rates, covariance
+    included, under the requested variance method. Adding their variances
+    overstated it, so two rates that track each other day by day could fail
+    equivalence. On a constructed survey where they differ by 5% it was 29
+    times too large. Point estimates, bounds and degrees of freedom are
+    unchanged.
+  - `estimate_total_catch()`, `estimate_total_harvest()` and
+    `estimate_total_release()` with `rate_groups` now add
+    2 E_g E_h Cov(R_g, R_h) for groups interviewed on the same days. Without
+    it, bank and boat rates from the same days under-stated the total's SE.
+    Groups in different strata share no day and are unchanged, so a mapping
+    with one group per stratum gives exactly the standard total, as before.
+  - A sectioned lake total still treats section rates as independent; that
+    turns on how section days were drawn (#668).
+
 * `add_counts()` refuses a count timed outside the drawn shift (#426). When the
   design calendar comes from a schedule with shift times (`shift_start`,
   `shift_end`) and `count_time_col` holds clock times, a count more than 15
