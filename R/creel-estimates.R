@@ -1863,8 +1863,10 @@ estimate_catch_rate <- function(
       # nolint: object_usage_linter
       incomplete_interviews,
       strata = strata_formula,
-      psu = interview_psu_col(design, incomplete_interviews) # nolint: object_usage_linter
+      psu = interview_psu_col(design, incomplete_interviews), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_incomplete's filtered rows keeps these days (GH #663).
+    design_incomplete$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     # Use the incomplete-trip design for estimation
     design <- design_incomplete
@@ -3094,8 +3096,10 @@ estimate_release_rate <- function(
     # nolint: object_usage_linter
     release_data,
     strata = strata_formula,
-    psu = interview_psu_col(design, release_data) # nolint: object_usage_linter
+    psu = interview_psu_col(design, release_data), frame = interview_day_frame(design) # nolint: object_usage_linter
   )
+  # Carried, so a later build from design_rel's filtered rows keeps these days (GH #663).
+  design_rel$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design_rel, NULL, type = "cpue") # nolint: object_usage_linter
@@ -3140,16 +3144,28 @@ estimate_release_rate <- function(
 #' Internal helper to rebuild survey design after filtering interviews
 #' by trip type. Handles both stratified and unstratified designs.
 #'
+#' The filtered interviews are estimated as a domain of every day the design
+#' interviewed on, not as a smaller survey (GH #663): a day with no trips of the
+#' kept kind stays in the design with zero weight. See
+#' `interview_day_frame()`. A section is the exception -- its own days are its
+#' universe, as before -- so `section` restricts the frame to that section.
+#'
 #' @param design Original creel_design object
 #' @param filtered_interviews Data frame with filtered interview data
+#' @param section The section the rows were filtered to, or `NULL`.
 #'
 #' @return Modified creel_design with updated interview_survey
 #'
 #' @keywords internal
 #' @noRd
-rebuild_interview_survey <- function(design, filtered_interviews) {
+rebuild_interview_survey <- function(design, filtered_interviews, section = NULL) {
+  frame <- interview_day_frame(design) # nolint: object_usage_linter
+  if (!is.null(section) && !is.null(frame) && isTRUE(design$section_col %in% names(frame))) {
+    frame <- frame[as.character(frame[[design$section_col]]) == as.character(section), , drop = FALSE]
+  }
   design_new <- design
   design_new$interviews <- filtered_interviews
+  design_new$interview_day_frame <- frame
 
   # Rebuild survey design with filtered data
   strata_cols <- design$strata_cols
@@ -3162,7 +3178,8 @@ rebuild_interview_survey <- function(design, filtered_interviews) {
     # nolint: object_usage_linter
     filtered_interviews,
     strata = strata_formula,
-    psu = interview_psu_col(design, filtered_interviews) # nolint: object_usage_linter
+    psu = interview_psu_col(design, filtered_interviews), # nolint: object_usage_linter
+    frame = frame
   )
 
   design_new
@@ -7611,7 +7628,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
     # Get variance design from temporary survey
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
@@ -7635,7 +7652,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
 
     svy_result <- mor_svy_estimate(svy_design, "cpue_ratio", mor_w$weighted)
@@ -7775,7 +7792,7 @@ estimate_cpue_grouped <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
     # Get variance design from temporary survey
     svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   } else {
@@ -8638,8 +8655,10 @@ estimate_cpue_species <- function(
       # nolint: object_usage_linter
       sp_data,
       strata = strata_formula,
-      psu = interview_psu_col(design, sp_data) # nolint: object_usage_linter
+      psu = interview_psu_col(design, sp_data), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_sp's filtered rows keeps these days (GH #663).
+    design_sp$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     # The n >= 10 floor is a ratio-estimation rule, so it does not apply to the
     # regression slope, which carries its own "fewer than 3 interviews" rule
@@ -8739,8 +8758,10 @@ estimate_release_rate_species <- function(
       # nolint: object_usage_linter
       sp_data,
       strata = strata_formula,
-      psu = interview_psu_col(design, sp_data) # nolint: object_usage_linter
+      psu = interview_psu_col(design, sp_data), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_sp's filtered rows keeps these days (GH #663).
+    design_sp$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     if (validate) {
       validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
@@ -8816,8 +8837,10 @@ estimate_hpue_species <- function(
       # nolint: object_usage_linter
       sp_data,
       strata = strata_formula,
-      psu = interview_psu_col(design, sp_data) # nolint: object_usage_linter
+      psu = interview_psu_col(design, sp_data), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_sp's filtered rows keeps these days (GH #663).
+    design_sp$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     if (validate) {
       validate_ratio_sample_size(design_sp, interview_by_vars, type = "harvest") # nolint: object_usage_linter
@@ -8916,7 +8939,7 @@ estimate_harvest_total <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
   } else {
     svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
@@ -8942,7 +8965,7 @@ estimate_harvest_total <- function(
     } else {
       NULL
     }
-    temp_survey_mor <- build_interview_survey(interviews_data, strata = strata_formula_mor, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
+    temp_survey_mor <- build_interview_survey(interviews_data, strata = strata_formula_mor, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey_mor, variance_method) # nolint: object_usage_linter
 
     svy_result <- mor_svy_estimate(svy_design, "hpue_ratio", mor_w$weighted)
@@ -9111,7 +9134,7 @@ estimate_harvest_grouped <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data)) # nolint: object_usage_linter
+    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
     svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
   } else {
     svy_design <- get_variance_design(design$interview_survey, variance_method, by = by_vars) # nolint: object_usage_linter
@@ -9322,7 +9345,7 @@ estimate_catch_rate_sections <- function(
     } else {
       # Filter interviews to this section and rebuild survey
       filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
-      sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
+      sec_design <- rebuild_interview_survey(design, filtered, section = sec) # nolint: object_usage_linter
 
       if (!is.null(by_info$species_var)) {
         # Species by= path
@@ -9509,7 +9532,7 @@ estimate_harvest_rate_sections <- function(
       section_rows[[sec]] <- na_row
     } else {
       filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
-      sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
+      sec_design <- rebuild_interview_survey(design, filtered, section = sec) # nolint: object_usage_linter
 
       if (!is.null(by_info$species_var)) {
         # Species path: HPUE per species inside this section, from this
@@ -9671,7 +9694,7 @@ estimate_release_rate_sections <- function(
       section_rows[[sec]] <- na_row
     } else {
       filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
-      sec_design <- rebuild_interview_survey(design, filtered) # nolint: object_usage_linter
+      sec_design <- rebuild_interview_survey(design, filtered, section = sec) # nolint: object_usage_linter
 
       # Species path first, and off `sec_design`: estimate_release_rate_species()
       # builds its own per-species release data, so handing it the pooled
@@ -9712,8 +9735,10 @@ estimate_release_rate_sections <- function(
         # nolint: object_usage_linter
         release_data,
         strata = strata_formula,
-        psu = interview_psu_col(design, release_data) # nolint: object_usage_linter
+        psu = interview_psu_col(design, release_data), frame = interview_day_frame(sec_design) # nolint: object_usage_linter
       )
+      # Carried, so a later build from design_rel's filtered rows keeps these days (GH #663).
+      design_rel$interview_day_frame <- interview_day_frame(sec_design) # nolint: object_usage_linter
 
       if (!is.null(by_info$interview_vars)) {
         result <- estimate_cpue_grouped(

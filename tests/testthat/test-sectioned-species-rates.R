@@ -50,10 +50,11 @@ test_that("each section's species rate equals the same rate on that section alon
   section_only <- function(sec) {
     sub <- design
     sub$sections <- NULL
-    rebuild_interview_survey(
-      sub,
-      design$interviews[design$interviews[[section_col]] == sec, ]
-    )
+    # The section's own interviews are the whole design here, so its days are
+    # the frame: a trip filter inside the estimator then keeps every day the
+    # section was interviewed on, exactly as the sectioned path does (GH #663).
+    sub$interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
+    rebuild_interview_survey(sub, sub$interviews)
   }
 
   for (f in rate_estimators) {

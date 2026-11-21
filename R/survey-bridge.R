@@ -439,12 +439,41 @@ strata_design_key <- function(data, strata) {
 #'   rate's variance is taken between sampled days, the unit actually drawn,
 #'   rather than between interviews that share a day's conditions (GH #661).
 #'   \code{ids} and \code{psu} both \code{NULL} keep one PSU per row.
+#' @param frame The days the interviews were drawn on, as returned by
+#'   \code{interview_day_frame()}, or \code{NULL}. When \code{data} is a
+#'   filtered subset (one trip type, truncated trips, trips that caught the
+#'   species), a frame day with no rows left is put back as a zero-weight day:
+#'   the filtered set is then a domain of the full day-clustered survey, and a
+#'   day without such trips is an observation of zero catch and zero effort,
+#'   not a day that was never sampled (GH #663). Used only with \code{psu}.
 #'
 #' @return A \code{survey.design2} object.
 #'
 #' @keywords internal
 #' @noRd
-build_interview_survey <- function(data, strata = NULL, ids = NULL, psu = NULL) {
+build_interview_survey <- function(data, strata = NULL, ids = NULL, psu = NULL, frame = NULL) {
+  pad <- rep(FALSE, nrow(data))
+  if (is.null(ids) && !is.null(psu) && !is.null(frame) && nrow(data) > 0L) {
+    keys <- c(all.vars(strata), psu)
+    # Every stratum column must be in the frame, or a restored day could not be
+    # put back in its own stratum; a caller's prebuilt key is left as it was.
+    if (all(keys %in% names(frame)) && all(keys %in% names(data))) {
+      day_key <- function(df) do.call(paste, c(lapply(df[keys], as.character), sep = "\u001f"))
+      missing_days <- unique(frame[keys])
+      missing_days <- missing_days[!day_key(missing_days) %in% day_key(data), , drop = FALSE]
+      if (nrow(missing_days) > 0L) {
+        # Any real row will do for the other columns: the day enters with zero
+        # weight, so its values never reach an estimate or a variance -- only
+        # its stratum and day do.
+        filler <- data[rep(1L, nrow(missing_days)), , drop = FALSE]
+        for (k in keys) {
+          filler[[k]] <- missing_days[[k]]
+        }
+        data <- rbind(data, filler)
+        pad <- c(pad, rep(TRUE, nrow(missing_days)))
+      }
+    }
+  }
   key <- strata_design_key(data, strata)
   data <- key$data
   strata <- key$strata
@@ -475,6 +504,13 @@ build_interview_survey <- function(data, strata = NULL, ids = NULL, psu = NULL) 
   )
   # Marked so get_variance_design() can refuse a stratum interviewed on one
   # day by name, before survey stops on it unclassed (GH #661).
+  if (any(pad)) {
+    # drop = FALSE keeps the restored days' rows with infinite probability: a
+    # domain, not a smaller survey. The default drop = TRUE removes them, and
+    # though Taylor still counts them (through fpc$sampsize), the bootstrap
+    # and jackknife replicates are then drawn from the surviving days only.
+    svy <- svy[!pad, , drop = FALSE]
+  }
   if (!is.null(psu)) {
     attr(svy, "interview_day_psu") <- TRUE
   }
@@ -534,11 +570,31 @@ refuse_one_day_interviews <- function(design, by = NULL, call = rlang::caller_en
 # The domain half of refuse_one_day_interviews() (GH #661).
 refuse_one_day_groups <- function(design, by, call) {
   by <- intersect(by, names(design$variables))
-  if (length(by) == 0L) {
-    return(invisible(NULL))
-  }
   # Rows a subset() zeroed out are not the group's interviews.
   live <- is.finite(design$prob) & design$prob > 0
+  if (length(by) == 0L) {
+    # A filtered trip set is itself a domain (GH #663): days without such trips
+    # stay in the design, so the stratum check counts them. Met on one day in
+    # all, its ratio score is 0 on every day and its SE would be 0.
+    if (!all(live) && length(unique(as.character(design$cluster[live, 1]))) == 1L) {
+      cli::cli_abort(
+        c(
+          paste0(
+            "The interviews this estimate uses all come from one day ",
+            "\u2014 a between-day variance cannot be estimated."
+          ),
+          "x" = paste0(
+            "Other days were interviewed, but none of them had trips of the kind ",
+            "this estimate is restricted to, so its standard error would come out as 0."
+          ),
+          "i" = "Widen the trip set (e.g. {.code use_trips = \"all\"}) or interview on more days."
+        ),
+        class = "creel_error_single_psu",
+        call = call
+      )
+    }
+    return(invisible(NULL))
+  }
   vars <- design$variables[live, by, drop = FALSE]
   group <- do.call(paste, c(lapply(vars, as.character), sep = " / "))
   psu <- as.character(design$cluster[live, 1])
@@ -591,6 +647,37 @@ interview_psu_col <- function(design, data) {
     }
   }
   NULL
+}
+
+#' The interview days a filtered interview set is a domain of
+#'
+#' Internal (GH #663). The day, stratum and section of every interview the
+#' design held before its first trip filter. Stamped on the design by the first
+#' filter, so later filters -- truncation after `use_trips`, a species'
+#' `targeted` filter -- keep the original days rather than the survivors of
+#' the one before.
+#'
+#' @param design A `creel_design`.
+#' @return A data frame of distinct keys, or `NULL` when the interviews carry no
+#'   date column (each row is then its own unit and there is no day to keep).
+#' @keywords internal
+#' @noRd
+interview_day_frame <- function(design) {
+  if (!is.null(design$interview_day_frame)) {
+    return(design$interview_day_frame)
+  }
+  interviews <- design$interviews
+  if (is.null(interviews)) {
+    return(NULL)
+  }
+  psu <- interview_psu_col(design, interviews)
+  if (is.null(psu)) {
+    return(NULL)
+  }
+  cols <- intersect(c(design$strata_cols, psu, design$section_col), names(interviews))
+  frame <- unique(interviews[cols])
+  rownames(frame) <- NULL
+  frame
 }
 
 #' Label each interview with the primary sampling unit it was collected in
