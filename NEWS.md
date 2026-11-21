@@ -69,12 +69,29 @@
     paired by their values. A group with one trip type gets an `NA` row and
     a `creel_warning_tost_degenerate` warning, and the validation does not
     pass.
-  - On bus-route and ice designs, whose interviews are not clustered on the
-    day, the two rates' variances are still added. A sectioned design is now
+  - On bus-route and ice designs the two rates' variances are still added.
+    Their rates are clustered on the day too, so this overstates the SE of
+    the difference and makes the test conservative (#671). A sectioned design is now
     refused with `creel_error_tost_sections`; before, it stopped with an
     R condition-length error.
   - A sectioned lake total still treats section rates as independent; that
     turns on how section days were drawn (#668).
+
+* `validate_incomplete_trips()` corrections (#669):
+  - **Degrees of freedom:** the t tests now use the design's degrees of
+    freedom, interviewed days minus strata, since the variance is between
+    days. `min(n_complete, n_incomplete) - 1` counted interviews, which made
+    the p-values too optimistic: 29 df instead of 8 on a 10-day, 2-stratum
+    survey. A group within one stratum counts that stratum's days only. The
+    same holds on bus-route and ice designs.
+  - **Column checks:** `catch` and `effort` must name the design's own catch
+    and effort columns (`creel_error_tost_columns`). They were checked for
+    existence and then ignored, so `catch = <harvest column>` silently tested
+    the catch rate.
+  - **Grouped summary:** for a grouped validation, `metadata$overall` now
+    reports the overall test's own rates. It held an unweighted mean of the
+    group rates with their SEs combined as if independent, and `print()`
+    showed that mean beside a difference taken from the pooled rates.
 
 * `add_counts()` refuses a count timed outside the drawn shift (#426). When the
   design calendar comes from a schedule with shift times (`shift_start`,

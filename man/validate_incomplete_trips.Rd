@@ -19,9 +19,15 @@ validate_incomplete_trips(
 \code{\link{add_interviews}}. Must include trip_status field to
 distinguish complete from incomplete trips.}
 
-\item{catch}{Bare column name for catch data (supports tidy evaluation)}
+\item{catch}{Bare column name: the design's catch column, as given to
+\code{\link[=add_interviews]{add_interviews()}}. The test always compares catch rates; any other
+column is an error (it was previously checked and then ignored).}
 
-\item{effort}{Bare column name for effort data (supports tidy evaluation)}
+\item{effort}{Bare column name: the design's effort column, as given to
+\code{\link[=add_interviews]{add_interviews()}}. Rates use it as angler-hours (effort times
+\code{n_anglers}) when \code{\link[=add_interviews]{add_interviews()}} was given a party size, and as
+recorded -- party-hours, if that is what it holds -- when it was not; any
+other column is an error.}
 
 \item{by}{Optional tidy selector for grouping variables. When provided,
 performs TOST for each group independently. Overall validation passes
@@ -74,6 +80,12 @@ incomplete rates rise and fall together from day to day, their difference
 is far more precise than either rate. Both rates are estimated jointly, as
 domains of one survey of every interviewed day, under the requested
 \code{variance} method, and the covariance comes from that fit (GH #664).
+The t tests use the design's degrees of freedom, interviewed days minus
+strata over the strata a comparison draws on, because that variance is
+between days (GH #669). On bus-route and ice designs the two rates'
+variances are still added: their rates are clustered on the day as well,
+so this overstates the SE of the difference, which makes the test
+conservative (GH #671).
 
 Sample size requirements: At least 10 complete trips AND 10 incomplete trips
 are required for stable variance estimation and TOST. The function errors
@@ -129,7 +141,7 @@ interviews <- data.frame(
   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 25)),
   catch_total = rpois(100, lambda = 6),
   hours_fished = runif(100, min = 2, max = 4),
-  trip_status = rep(c("complete", "incomplete"), each = 50),
+  trip_status = rep(c("complete", "incomplete"), times = 50),
   trip_duration = runif(100, min = 2, max = 4)
 )
 

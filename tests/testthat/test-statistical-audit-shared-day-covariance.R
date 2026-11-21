@@ -113,9 +113,10 @@ test_that("SDC-02 (#664): each group's TOST counts the covariance within that gr
     s <- sdc_tost_scores(iv, iv$day_type == g)
     se_hand <- sqrt(sdc_cov(s$z_c - s$z_i, s$z_c - s$z_i, day, ds))
     row <- gt[gt$day_type == g, ]
-    n_c <- sum(iv$trip_status == "complete" & iv$day_type == g)
-    n_i <- sum(iv$trip_status == "incomplete" & iv$day_type == g)
-    df <- min(n_c - 1, n_i - 1)
+    # Design degrees of freedom of a group inside one stratum: that stratum's
+    # 5 interviewed days minus 1 (GH #669). The other stratum contributes no
+    # variance to this group, and so no degrees of freedom.
+    df <- sum(ds == g) - 1
     p_lower_hand <- stats::pt((row$diff_estimate - row$equivalence_lower) / se_hand, df, lower.tail = FALSE)
     expect_equal(row$diff_estimate, s$r_c - s$r_i, tolerance = 1e-10)
     expect_equal(row$p_lower, p_lower_hand, tolerance = 1e-8)
@@ -342,12 +343,12 @@ test_that("SDC-09 (#664): a sectioned design is refused, not crashed", {
   expect_error(validate_incomplete_trips(d, catch_total, hours_fished), class = "creel_error_tost_sections")
 })
 
-test_that("SDC-10 (#664): bus-route rates keep independent interviews in the TOST", {
-  # Bus-route rates are Horvitz-Thompson ratios over interviews that are not
-  # clustered on the day (GH #661 left them), so the difference's variance is
-  # the sum of the two rates' variances -- and the joint fit, which models the
-  # standard interview survey, must not run (it would compare unweighted
-  # ratios with the weighted estimates and abort).
+test_that("SDC-10 (#664, #669): bus-route TOST adds the variances and counts days", {
+  # Bus-route rates are Horvitz-Thompson ratios over their own day-clustered
+  # survey, which the joint fit does not model: run on them it would compare
+  # unweighted ratios with the weighted estimates and abort. The two variances
+  # are added instead -- conservative, since the rates share days (GH #671) --
+  # and the degrees of freedom are days minus strata, as everywhere (6 - 1).
   cal <- data.frame(date = as.Date("2024-06-03") + 0:5, day_type = "weekday")
   sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 60), ct = 180)
   des <- creel_design(
@@ -372,6 +373,7 @@ test_that("SDC-10 (#664): bus-route rates keep independent interviews in the TOS
   v <- sdc_q(validate_incomplete_trips(d, catch, hrs))
   m <- v$metadata
   expect_equal(v$overall_test$se_diff, sqrt(m$complete$se^2 + m$incomplete$se^2), tolerance = 1e-12)
+  expect_equal(v$overall_test$df, 5)
 })
 
 test_that("SDC-11 (#664): Goodman's floor holds for the row once rates covary", {
@@ -423,4 +425,63 @@ test_that("SDC-12 (#664): groups in disjoint strata get no covariance from boots
   expect_gt(abs(raw[1, 2]), 0)
   expect_equal(v[1, 2], 0)
   expect_equal(diag(v), rates$se^2)
+})
+
+test_that("SDC-13 (#669): TOST degrees of freedom are interviewed days minus strata", {
+  # The variance is between days, so 10 days in 2 strata give 8 df -- not the
+  # 29 that min(n_complete, n_incomplete) - 1 gave, which made the t quantile
+  # too small and the p-values too optimistic.
+  d <- sdc_tost_design()
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hours_fished))
+  expect_equal(v$overall_test$df, 8)
+  ot <- v$overall_test
+  expect_equal(
+    ot$p_lower,
+    stats::pt((ot$diff_estimate - ot$equivalence_lower) / ot$se_diff, 8, lower.tail = FALSE),
+    tolerance = 1e-12
+  )
+})
+
+test_that("SDC-14 (#669): catch and effort must be the design's own columns", {
+  # They were checked for existence and then ignored, so naming the harvest
+  # column silently tested the catch rate.
+  d <- sdc_tost_design()
+  d$interviews$catch_kept <- d$interviews$catch_total / 2
+  expect_error(
+    validate_incomplete_trips(d, catch_kept, hours_fished),
+    class = "creel_error_tost_columns"
+  )
+  expect_error(
+    validate_incomplete_trips(d, catch_total, trip_duration),
+    class = "creel_error_tost_columns"
+  )
+})
+
+test_that("SDC-15 (#669): grouped metadata reports the overall test's own rates", {
+  # Unequal groups: the pooled rate is not the mean of the group rates, and
+  # the metadata used to print the mean beside the pooled difference. Weekends
+  # keep two complete trips a day (10), weekdays all three (15).
+  d0 <- sdc_tost_design()
+  iv <- d0$interviews
+  nth <- stats::ave(seq_len(nrow(iv)), iv$date, iv$trip_status, FUN = seq_along)
+  keep <- iv$trip_status == "incomplete" | iv$day_type == "weekday" | nth <= 2
+  d <- sdc_q(add_interviews(
+    creel_design(sdc_calendar(), date = date, strata = day_type), # nolint: object_usage_linter
+    iv[keep, c("date", "catch_total", "hours_fished", "trip_status", "trip_duration")],
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hours_fished, by = day_type))
+  c_all <- sdc_q(estimate_catch_rate(d, estimator = "ratio-of-means", use_trips = "complete"))$estimates
+  i_all <- sdc_q(estimate_catch_rate(d, estimator = "mor", use_trips = "incomplete"))$estimates
+  m <- v$metadata$overall
+  expect_equal(m$complete$estimate, c_all$estimate, tolerance = 1e-12)
+  expect_equal(m$complete$se, c_all$se, tolerance = 1e-12)
+  expect_equal(m$incomplete$estimate, i_all$estimate, tolerance = 1e-12)
+  expect_equal(m$complete$n, c_all$n)
+  expect_equal(m$complete$estimate - m$incomplete$estimate, v$overall_test$diff_estimate, tolerance = 1e-12)
+  expect_null(attr(v$overall_test, "rates"))
+  # The fixture discriminates: the mean of the group rates is a different number.
+  expect_gt(abs(mean(v$group_tests$diff_estimate) - v$overall_test$diff_estimate) +
+    abs(mean(sdc_q(estimate_catch_rate(d, by = day_type, estimator = "ratio-of-means", use_trips = "complete"))$estimates$estimate) - c_all$estimate), 1e-3)
 })
