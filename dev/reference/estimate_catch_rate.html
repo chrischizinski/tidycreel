@@ -222,10 +222,8 @@ gaining a <code>"-sections"</code> suffix on a sectioned design. The
 normalized, mark a species-level and an angler-normalized result
 respectively; <code>"regression-cpue-species"</code> is returned for a species
 request under <code>estimator = "regression"</code>),
-variance_method (character: the variance that actually ran, which is the
-<code>variance</code> argument for every estimator except <code>"regression"</code> –
-the regression slope carries a leave-one-out jackknife SE and reports
-<code>"jackknife"</code> whatever <code>variance</code> was set to),
+variance_method (character: the variance that ran, the <code>variance</code>
+argument, for every estimator including <code>"regression"</code>),
 design (reference to source creel_design), conf_level (numeric), and
 by_vars (character vector of grouping variable names or NULL).
 The <code>estimator</code> component records the estimator as you asked for it,
@@ -294,12 +292,17 @@ produced. Catch rates (fish per angler-hour) are not additive across
 sections. Lake-wide catch rate requires a separate unsectioned call on
 the full design. See <code><a href="estimate_total_catch.html">estimate_total_catch()</a></code> for lake-wide total
 catch estimation.</p>
-<p><code>estimator = "regression"</code> on a sectioned design fits one
-regression per section, on that section's interviews alone. The
-leave-one-out jackknife standard error therefore rests on the interviews in
-that section rather than on the whole sample, so section-level regression
-standard errors are based on fewer points than the unsectioned form and are
-correspondingly less stable. This is a property of sectioning rather than of
+<p><code>estimator = "regression"</code> is the slope of catch on angler
+effort across interviews: <code>sum(c e) / sum(e^2)</code> through the origin,
+a ratio estimated with <code><a href="https://rdrr.io/pkg/survey/man/svyratio.html" class="external-link">survey::svyratio()</a></code>, or the
+<code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> coefficient with an intercept. Its standard error
+comes from the same day-clustered interview survey as the other rates,
+under the <code>variance</code> method you ask for, and a stratum or group
+interviewed on a single day is refused (GH #665); it was a
+leave-one-interview-out jackknife. On a sectioned design it fits one
+regression per section, on that section's interviews alone, so
+section-level regression standard errors rest on that section's days and
+are correspondingly less stable. This is a property of sectioning rather than of
 the estimator; a section with fewer than three interviews cannot be fitted
 at all. <code>species</code> in <code>by</code> fits one regression per species, on
 that species' catch against the same angler effort, with zero-catch

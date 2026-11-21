@@ -31,9 +31,9 @@
   would otherwise be reported with a standard error of 0.
   [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
   still accepts such data. Interview on a second day, or combine sparse
-  strata or groups. The regression estimator
-  (`estimator = "regression"`) still uses its interview-level jackknife
-  and is not yet clustered on the day.
+  strata or groups. The regression estimator joined them in
+  [\#665](https://github.com/chrischizinski/tidycreel/issues/665)
+  (below).
 
 - A rate restricted to one kind of trip is now estimated as a domain of
   every interviewed day
@@ -93,6 +93,47 @@
   - A sectioned lake total still treats section rates as independent;
     that turns on how section days were drawn
     ([\#668](https://github.com/chrischizinski/tidycreel/issues/668)).
+
+- The regression catch rate (`estimator = "regression"`) is now
+  clustered on the survey day like every other rate
+  ([\#665](https://github.com/chrischizinski/tidycreel/issues/665)).
+
+  - **Estimation:** the slope of catch on angler effort is estimated on
+    the day-clustered interview survey. Through the origin, it is the
+    ratio `sum(c e) / sum(e^2)` with
+    [`svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html); with
+    an intercept, it is the
+    [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
+    coefficient. Its standard error used to come from a
+    leave-one-interview-out jackknife, which counted 12 trips on one day
+    as 12 independent units.
+  - **`variance`:** it is now honoured. Taylor is the default, and
+    `variance_method` reports the method that ran; it used to say
+    `"jackknife"` whatever was asked.
+  - **One-day refusal:** a stratum or group interviewed on one day is
+    refused with `creel_error_single_psu`, as for every other rate.
+  - **Domains:** groups and the complete-trip filter are domains of
+    every interviewed day
+    ([\#663](https://github.com/chrischizinski/tidycreel/issues/663)).
+  - **Unchanged:** point estimates (interview weights are equal, so the
+    slopes are the least-squares ones).
+  - **CIs:** intervals now come from the fit, on the normal scale like
+    the other rates, not from a t with interviews − 1 df.
+  - **Grouping fix:** grouped regression keys its groups properly. They
+    were pasted with no separator, so groups such as (`"a"`, `"bc"`) and
+    (`"ab"`, `"c"`) were merged.
+  - **[`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/dev/reference/compare_cpue_estimators.md):**
+    it now gives all three estimators Taylor SEs.
+  - **Unknowns:** an unknown catch or effort among a slope’s trips
+    leaves the slope `NA`, as before, instead of being dropped by the
+    fit.
+  - **Unidentifiable slopes:** a group whose slope cannot be identified
+    (one effort value throughout, with an intercept) is reported `NA`,
+    and the other groups are still estimated.
+  - **One-day refusal (all rates):** the one-day group refusal now
+    counts days per group key. An unknown `by` value met on one day is
+    refused even when a group literally labelled `"NA"` was met on other
+    days; the two used to be merged.
 
 - [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md)
   corrections

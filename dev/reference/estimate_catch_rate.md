@@ -148,14 +148,12 @@ design. The `"-species"` suffix, and the `"-per-angler"` suffix when
 normalized, mark a species-level and an angler-normalized result
 respectively; `"regression-cpue-species"` is returned for a species
 request under `estimator = "regression"`), variance_method (character:
-the variance that actually ran, which is the `variance` argument for
-every estimator except `"regression"` – the regression slope carries a
-leave-one-out jackknife SE and reports `"jackknife"` whatever `variance`
-was set to), design (reference to source creel_design), conf_level
-(numeric), and by_vars (character vector of grouping variable names or
-NULL). The `estimator` component records the estimator as you asked for
-it, `"mortr"` included, which `method` cannot: it reports mandatory
-truncation and the default threshold with the same string.
+the variance that ran, the `variance` argument, for every estimator
+including `"regression"`), design (reference to source creel_design),
+conf_level (numeric), and by_vars (character vector of grouping variable
+names or NULL). The `estimator` component records the estimator as you
+asked for it, `"mortr"` included, which `method` cannot: it reports
+mandatory truncation and the default threshold with the same string.
 
 ## Details
 
@@ -232,16 +230,22 @@ design. See
 [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md)
 for lake-wide total catch estimation.
 
-`estimator = "regression"` on a sectioned design fits one regression per
-section, on that section's interviews alone. The leave-one-out jackknife
-standard error therefore rests on the interviews in that section rather
-than on the whole sample, so section-level regression standard errors
-are based on fewer points than the unsectioned form and are
-correspondingly less stable. This is a property of sectioning rather
-than of the estimator; a section with fewer than three interviews cannot
-be fitted at all. `species` in `by` fits one regression per species, on
-that species' catch against the same angler effort, with zero-catch
-interviews retained by default.
+`estimator = "regression"` is the slope of catch on angler effort across
+interviews: `sum(c e) / sum(e^2)` through the origin, a ratio estimated
+with
+[`survey::svyratio()`](https://rdrr.io/pkg/survey/man/svyratio.html), or
+the [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
+coefficient with an intercept. Its standard error comes from the same
+day-clustered interview survey as the other rates, under the `variance`
+method you ask for, and a stratum or group interviewed on a single day
+is refused (GH \#665); it was a leave-one-interview-out jackknife. On a
+sectioned design it fits one regression per section, on that section's
+interviews alone, so section-level regression standard errors rest on
+that section's days and are correspondingly less stable. This is a
+property of sectioning rather than of the estimator; a section with
+fewer than three interviews cannot be fitted at all. `species` in `by`
+fits one regression per species, on that species' catch against the same
+angler effort, with zero-catch interviews retained by default.
 
 ## Package Options
 

@@ -1,9 +1,11 @@
 # Compare CPUE estimators (ROM, MOR, Regression)
 
 Runs all three CPUE estimators — Ratio-of-Means (ROM / CPUE\\\_2\\),
-Mean-of-Ratios (MOR / CPUE\\\_1\\), and OLS regression slope with
-jackknife SE (CPUE\\\_3\\) — on the same creel design and returns a
-combined tibble with a `cpue_method` column for side-by-side comparison.
+Mean-of-Ratios (MOR / CPUE\\\_1\\), and the regression slope of catch on
+effort (CPUE\\\_3\\) — on the same creel design, all with Taylor
+(linearization) standard errors on the day-clustered interview survey,
+and returns a combined tibble with a `cpue_method` column for
+side-by-side comparison.
 
 This implements the Petrere et al. (2010) Table 1 estimator comparison
 workflow. When the three estimators yield materially different
@@ -73,9 +75,9 @@ Estimator definitions following Petrere et al. (2010):
 
 - Regression (CPUE\\\_3\\):
 
-  OLS slope \\\hat{\beta}\\ from \\C_i = \beta f_i + \varepsilon_i\\
-  with leave-one-out jackknife SE. Most robust when proportionality is
-  violated (non-zero intercept).
+  OLS slope \\\hat{\beta}\\ from \\C_i = \beta f_i + \varepsilon_i\\,
+  its SE linearized on the day-clustered survey like the other two. Most
+  robust when proportionality is violated (non-zero intercept).
 
 ## References
 
@@ -138,5 +140,5 @@ compare_cpue_estimators(design)
 #> * <chr>          <dbl>  <dbl>    <dbl>    <dbl> <int>
 #> 1 rom            0.967 0.0966    0.778    1.16     17
 #> 2 mor            0.991 0.104     0.787    1.20     17
-#> 3 regression     0.804 0.0597    0.677    0.930    17
+#> 3 regression     0.804 0.0537    0.698    0.909    17
 ```
