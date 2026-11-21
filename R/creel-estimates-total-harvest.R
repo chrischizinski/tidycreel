@@ -1066,7 +1066,7 @@ estimate_total_harvest_sections <- function(
       sec_counts_design <- suppressWarnings(rebuild_counts_survey(design, sec)) # nolint: object_usage_linter
       sec_counts_design[["sections"]] <- NULL
       filtered_interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
-      sec_design <- rebuild_interview_survey(sec_counts_design, filtered_interviews) # nolint: object_usage_linter
+      sec_design <- rebuild_interview_survey(sec_counts_design, filtered_interviews, section = sec) # nolint: object_usage_linter
 
       if (!is.null(species_var)) {
         # Species path: whole-effort apportionment inside this section. The
