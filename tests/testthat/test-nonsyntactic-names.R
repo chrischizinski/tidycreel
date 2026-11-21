@@ -107,3 +107,43 @@ test_that("NSN-04: ordinary names with dots, underscores and digits pass", {
   cal$.hidden <- "x"
   expect_no_error(nsn_q(creel_design(cal, date = date, strata = day_type))) # nolint: object_usage_linter
 })
+
+test_that("NSN-05: the bus-route sampling frame is checked too", {
+  cal <- data.frame(date = as.Date("2024-06-01") + 0:1, day_type = "weekday")
+  sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 60), ct = 180)
+  sf[["site name"]] <- c("North", "South")
+  expect_error(
+    creel_design(
+      cal,
+      date = date, strata = day_type, survey_type = "bus_route", # nolint: object_usage_linter
+      sampling_frame = sf, site = site, circuit = circuit, # nolint: object_usage_linter
+      wait_time = wait, circuit_time = ct, p_period = 1 # nolint: object_usage_linter
+    ),
+    class = "creel_error_nonsyntactic_names"
+  )
+})
+
+test_that("NSN-06: the suggested rename cannot collide with an existing column", {
+  cal <- example_calendar
+  cal$clerk.notes <- "x"
+  cal[["clerk notes"]] <- "y"
+  err <- expect_error(
+    creel_design(cal, date = date, strata = day_type), # nolint: object_usage_linter
+    class = "creel_error_nonsyntactic_names"
+  )
+  expect_match(conditionMessage(err), "clerk.notes.1", fixed = TRUE)
+  repaired <- cal
+  names(repaired) <- make.names(names(repaired), unique = TRUE)
+  expect_no_error(suppressMessages(creel_design(repaired, date = date, strata = day_type))) # nolint: object_usage_linter
+})
+
+test_that("NSN-07: a header that is not valid text gets a classed error", {
+  skip_if_not(l10n_info()[["UTF-8"]], "needs a UTF-8 locale to make the bytes invalid")
+  cal <- example_calendar
+  cal$placeholder <- "x"
+  names(cal)[ncol(cal)] <- rawToChar(as.raw(c(0x63, 0x61, 0x66, 0xe9)))
+  expect_error(
+    creel_design(cal, date = date, strata = day_type), # nolint: object_usage_linter
+    class = "creel_error_nonsyntactic_names"
+  )
+})

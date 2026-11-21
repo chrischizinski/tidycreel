@@ -1576,18 +1576,37 @@ refuse_nonsyntactic_names <- function(x, arg, call = rlang::caller_env()) {
     return(invisible(NULL))
   }
   nms <- names(x)
-  bad <- nms[is.na(nms) | nms != make.names(nms)]
-  if (length(bad) == 0L) {
+  nms[is.na(nms)] <- ""
+  # A header that is not valid text in this locale (a Windows-1252 file read as
+  # UTF-8, say) makes make.names() itself fail; say what happened instead.
+  undecodable <- !validEnc(nms)
+  if (any(undecodable)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} has {cli::qty(sum(undecodable))}{?a column name/column names} that {?is/are} not valid text in this locale's encoding.",
+        "i" = "Re-read the file with its encoding declared, for example \\
+               {.code read.csv(file, fileEncoding = \"latin1\")}, then rename any non-syntactic columns."
+      ),
+      class = "creel_error_nonsyntactic_names",
+      call = call
+    )
+  }
+  # The repair suggested is the one the message recommends, over the whole
+  # header with unique = TRUE, so it cannot collide with a column already there.
+  repaired <- make.names(nms, unique = TRUE)
+  is_bad <- nms != make.names(nms)
+  if (!any(is_bad)) {
     return(invisible(NULL))
   }
-  shown <- ifelse(is.na(bad) | bad == "", "<empty>", bad) # nolint: object_usage_linter
-  suggested <- make.names(ifelse(is.na(bad), "", bad)) # nolint: object_usage_linter
+  bad <- nms[is_bad]
+  shown <- ifelse(bad == "", "<empty>", bad) # nolint: object_usage_linter
+  suggested <- repaired[is_bad] # nolint: object_usage_linter
   cli::cli_abort(
     c(
       "{.arg {arg}} has {cli::qty(length(bad))}{?a column name/column names} that {?is/are} not {?a/} syntactic R name{?s}: {.val {shown}}.",
       "x" = "tidycreel builds model formulas from column names, and such a name does not parse in one.",
       "i" = "Rename {cli::qty(length(bad))}{?it/them} first, for example to {.val {suggested}}: \\
-             {.code names(x) <- make.names(names(x))} or {.code janitor::clean_names()}.",
+             {.code names(x) <- make.names(names(x), unique = TRUE)} or {.code janitor::clean_names()}.",
       "i" = "For files read with fixed column names, map them with {.fn creel_schema}."
     ),
     class = "creel_error_nonsyntactic_names",
