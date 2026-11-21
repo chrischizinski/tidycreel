@@ -31,11 +31,19 @@ validate_incomplete_trips(
 
 - catch:
 
-  Bare column name for catch data (supports tidy evaluation)
+  Bare column name: the design's catch column, as given to
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
+  The test always compares catch rates; any other column is an error (it
+  was previously checked and then ignored).
 
 - effort:
 
-  Bare column name for effort data (supports tidy evaluation)
+  Bare column name: the design's effort column, as given to
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md).
+  Rates use it as angler-hours (effort times `n_anglers`) when
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md)
+  was given a party size, and as recorded – party-hours, if that is what
+  it holds – when it was not; any other column is an error.
 
 - by:
 
@@ -100,7 +108,12 @@ incomplete rates rise and fall together from day to day, their
 difference is far more precise than either rate. Both rates are
 estimated jointly, as domains of one survey of every interviewed day,
 under the requested `variance` method, and the covariance comes from
-that fit (GH \#664).
+that fit (GH \#664). The t tests use the design's degrees of freedom,
+interviewed days minus strata over the strata a comparison draws on,
+because that variance is between days (GH \#669). On bus-route and ice
+designs the two rates' variances are still added: their rates are
+clustered on the day as well, so this overstates the SE of the
+difference, which makes the test conservative (GH \#671).
 
 Sample size requirements: At least 10 complete trips AND 10 incomplete
 trips are required for stable variance estimation and TOST. The function
@@ -191,7 +204,7 @@ interviews <- data.frame(
   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 25)),
   catch_total = rpois(100, lambda = 6),
   hours_fished = runif(100, min = 2, max = 4),
-  trip_status = rep(c("complete", "incomplete"), each = 50),
+  trip_status = rep(c("complete", "incomplete"), times = 50),
   trip_duration = runif(100, min = 2, max = 4)
 )
 
@@ -219,20 +232,20 @@ print(result)
 #> 
 #> ── TOST Equivalence Validation Results ─────────────────────────────────────────
 #> Threshold: ±20% of complete trip estimate
-#> ✔ Validation PASSED
+#> ✖ Validation FAILED
 #> 
-#> Recommendation: Validation passed: Safe to use incomplete trips for CPUE
-#> estimation in this dataset
+#> Recommendation: Validation failed: Use complete trips only (estimates not
+#> statistically equivalent)
 #> 
 #> 
 #> ── Overall Test ──
 #> 
-#> Complete trips: n = 50, CPUE = 2.046
-#> Incomplete trips: n = 50, CPUE = 1.969
-#> Difference: 0.077
-#> Equivalence bounds: [-0.409, 0.409]
-#> TOST p-values: p_lower = 0.0086, p_upper = 0.0491
-#> ✔ Overall equivalence: PASSED
+#> Complete trips: n = 50, CPUE = 1.964
+#> Incomplete trips: n = 50, CPUE = 2.065
+#> Difference: -0.101
+#> Equivalence bounds: [-0.393, 0.393]
+#> TOST p-values: p_lower = 0.0775, p_upper = 0.0316
+#> ✖ Overall equivalence: FAILED
 #> 
 
 
@@ -242,13 +255,11 @@ result_grouped <- validate_incomplete_trips(design_with_interviews,
   effort = hours_fished,
   by = day_type
 )
-#> Warning: ! Only 0.0% of interviews are complete trips (threshold: 10%)
-#> ℹ Pollock et al. recommends >=10% complete trips for valid estimation
-#> ℹ Consider use_trips='diagnostic' to validate incomplete trip estimates
-#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> Warning: TOST: group day_type = weekday has no incomplete trips; equivalence cannot be
-#> tested for it.
-#> ℹ Its row is NA and the validation does not pass.
+#> Warning: Small sample size in 2 groups:
+#> • Group day_type=weekday: n=25
+#> • Group day_type=weekend: n=25
+#> ! Ratio estimates are more stable with n >= 30 per group.
+#> ℹ Variance estimates may be unstable with n < 30.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result_grouped)
 #> 
@@ -256,24 +267,23 @@ print(result_grouped)
 #> Threshold: ±20% of complete trip estimate
 #> ✖ Validation FAILED
 #> 
-#> Recommendation: Validation failed: Use complete trips only. Groups not tested
-#> (one trip type only): day_type = weekday; day_type = weekend.
+#> Recommendation: Validation failed: Use complete trips only. Groups failed
+#> equivalence: day_type = weekday; day_type = weekend.
 #> 
 #> 
 #> ── Overall Test ──
 #> 
-#> Complete trips: n = 50, CPUE = 2.046
-#> Incomplete trips: n = 50, CPUE = 1.969
-#> Difference: 0.077
-#> Equivalence bounds: [-0.409, 0.409]
-#> TOST p-values: p_lower = 0.0086, p_upper = 0.0491
-#> ✔ Overall equivalence: PASSED
+#> Complete trips: n = 50, CPUE = 1.964
+#> Incomplete trips: n = 50, CPUE = 2.065
+#> Difference: -0.101
+#> Equivalence bounds: [-0.393, 0.393]
+#> TOST p-values: p_lower = 0.0775, p_upper = 0.0316
+#> ✖ Overall equivalence: FAILED
 #> 
 #> 
 #> ── Per-Group Tests ──
 #> 
 #> 0/2 groups passed equivalence
-#> ! 2 groups could not be tested (one trip type only)
 #> 
 
 
