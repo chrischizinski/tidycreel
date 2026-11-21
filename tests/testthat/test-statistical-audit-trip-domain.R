@@ -227,3 +227,90 @@ test_that("DOM-06 (#663): a species' targeted rate counts the days no trip caugh
   expect_equal(got$estimate, mean(r), tolerance = 1e-12)
   expect_equal(got$se, domain, tolerance = 1e-10)
 })
+
+test_that("DOM-07 (#663): a section's rate is estimated over that section's own days", {
+  # Found in review: the ungrouped sectioned release path read the whole
+  # design's days, so a day interviewed only in the other section was put back
+  # into this section as a zero day. The fixture's sections are interviewed on
+  # different days (North has none on 2024-06-07), so the two universes differ.
+  design <- make_sectioned_species_design()
+  section_col <- design$section_col
+  for (f in c("estimate_catch_rate", "estimate_harvest_rate", "estimate_release_rate")) {
+    sectioned <- suppressMessages(suppressWarnings(get(f)(design)))$estimates
+    for (sec in c("North", "South")) {
+      sub <- design
+      sub$sections <- NULL
+      sub$interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
+      sub <- rebuild_interview_survey(sub, sub$interviews) # nolint: object_usage_linter
+      reference <- suppressMessages(suppressWarnings(get(f)(sub)))$estimates
+      got <- sectioned[sectioned[[section_col]] == sec, ]
+      expect_equal(got$estimate, reference$estimate, tolerance = 1e-12, info = paste(f, sec))
+      expect_equal(got$se, reference$se, tolerance = 1e-12, info = paste(f, sec))
+    }
+  }
+})
+
+dom_species_design <- function() {
+  # Bass caught only on 2024-06-01 and 2024-06-08, one day in each stratum.
+  dates <- as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09"))
+  cal <- data.frame(date = dates, day_type = rep(c("weekday", "weekend"), each = 2), stringsAsFactors = FALSE)
+  n <- 48L
+  date <- rep(dates, length.out = n)
+  hours <- 1 + (seq_len(n) - 1L) * 0.05
+  bass <- ifelse(date %in% dates[c(1, 3)], seq_len(n) %% 4L + 1L, 0L)
+  panfish <- rep(c(1L, 2L, 3L), length.out = n)
+  interviews <- data.frame(
+    interview_id = seq_len(n), date = date, catch_total = bass + panfish,
+    hours_fished = hours, trip_status = "incomplete", trip_duration = hours,
+    stringsAsFactors = FALSE
+  )
+  caught <- bass > 0
+  catch <- rbind(
+    data.frame(interview_id = seq_len(n), species = "panfish", count = panfish, catch_type = "caught"),
+    data.frame(interview_id = which(caught), species = "bass", count = bass[caught], catch_type = "caught")
+  )
+  design <- suppressMessages(suppressWarnings(add_catch( # nolint: object_usage_linter
+    dom_design(interviews, cal), catch,
+    catch_uid = interview_id, interview_uid = interview_id, # nolint: object_usage_linter
+    species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
+  )))
+  list(design = design, cal = cal, date = date, hours = hours, bass = bass)
+}
+
+test_that("DOM-08 (#663): a species filter that comes first still keeps every interviewed day", {
+  # Found in review: with use_trips = "all" no trip filter runs before the
+  # species' targeted filter, so nothing had recorded the design's days, and
+  # the MOR build downstream re-read them from the filtered rows.
+  fx <- dom_species_design()
+  result <- suppressMessages(suppressWarnings(estimate_catch_rate( # nolint: object_usage_linter
+    fx$design,
+    by = species, estimator = "mor", use_trips = "all", targeted = FALSE
+  )))$estimates
+  got <- result[result$species == "bass", ]
+  caught <- fx$bass > 0
+  r <- fx$bass[caught] / fx$hours[caught]
+  domain <- dom_taylor_se(dom_day_scores(
+    (r - mean(r)) / length(r), as.character(fx$date[caught]), NULL, as.character(fx$cal$date), fx$cal$day_type
+  ))
+  expect_equal(got$estimate, mean(r), tolerance = 1e-12)
+  expect_equal(got$se, domain, tolerance = 1e-10)
+})
+
+test_that("DOM-09 (#663): MOR truncation that empties a day keeps that day", {
+  # Found in review: on use_trips = "all" the truncation is the first filter.
+  # Every trip on 2024-06-07 is shorter than truncate_at.
+  cal <- dom_calendar()[1:5, ]
+  iv <- dom_interviews(cal$date, "incomplete", c(1.0, 1.6, 0.8, 1.2, 1.4))
+  iv$trip_duration[iv$date == cal$date[5]] <- 0.25
+  result <- suppressMessages(suppressWarnings(estimate_catch_rate( # nolint: object_usage_linter
+    dom_design(iv, cal),
+    estimator = "mor", use_trips = "all", truncate_at = 0.5
+  )))$estimates
+  kept <- iv[iv$trip_duration >= 0.5, ]
+  r <- kept$catch_total / kept$hours_fished
+  domain <- dom_taylor_se(dom_day_scores(
+    (r - mean(r)) / length(r), as.character(kept$date), NULL, as.character(cal$date), rep("weekday", 5)
+  ))
+  expect_equal(result$estimate, mean(r), tolerance = 1e-12)
+  expect_equal(result$se, domain, tolerance = 1e-10)
+})

@@ -2766,7 +2766,7 @@ construct_interview_survey <- function(design) {
       build_interview_survey(
         interviews_data,
         strata = strata_formula,
-        psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)
+        psu = interview_psu_col(design, interviews_data)
       )
     },
     error = function(e) {

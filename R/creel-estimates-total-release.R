@@ -627,6 +627,8 @@ rpue_for_stratum_product <- function(design, by_vars, variance_method, conf_leve
     strata = strata_formula,
     psu = interview_psu_col(design, release_data), frame = interview_day_frame(design) # nolint: object_usage_linter
   )
+  # Carried, so a later build from design_rel's filtered rows keeps these days (GH #663).
+  design_rel$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
   if (length(by_vars) == 0L) {
     result <- estimate_cpue_total(

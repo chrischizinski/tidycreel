@@ -1865,6 +1865,8 @@ estimate_catch_rate <- function(
       strata = strata_formula,
       psu = interview_psu_col(design, incomplete_interviews), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_incomplete's filtered rows keeps these days (GH #663).
+    design_incomplete$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     # Use the incomplete-trip design for estimation
     design <- design_incomplete
@@ -3096,6 +3098,8 @@ estimate_release_rate <- function(
     strata = strata_formula,
     psu = interview_psu_col(design, release_data), frame = interview_day_frame(design) # nolint: object_usage_linter
   )
+  # Carried, so a later build from design_rel's filtered rows keeps these days (GH #663).
+  design_rel$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design_rel, NULL, type = "cpue") # nolint: object_usage_linter
@@ -8653,6 +8657,8 @@ estimate_cpue_species <- function(
       strata = strata_formula,
       psu = interview_psu_col(design, sp_data), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_sp's filtered rows keeps these days (GH #663).
+    design_sp$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     # The n >= 10 floor is a ratio-estimation rule, so it does not apply to the
     # regression slope, which carries its own "fewer than 3 interviews" rule
@@ -8754,6 +8760,8 @@ estimate_release_rate_species <- function(
       strata = strata_formula,
       psu = interview_psu_col(design, sp_data), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_sp's filtered rows keeps these days (GH #663).
+    design_sp$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     if (validate) {
       validate_ratio_sample_size(design_sp, interview_by_vars, type = "cpue") # nolint: object_usage_linter
@@ -8831,6 +8839,8 @@ estimate_hpue_species <- function(
       strata = strata_formula,
       psu = interview_psu_col(design, sp_data), frame = interview_day_frame(design) # nolint: object_usage_linter
     )
+    # Carried, so a later build from design_sp's filtered rows keeps these days (GH #663).
+    design_sp$interview_day_frame <- interview_day_frame(design) # nolint: object_usage_linter
 
     if (validate) {
       validate_ratio_sample_size(design_sp, interview_by_vars, type = "harvest") # nolint: object_usage_linter
@@ -9725,8 +9735,10 @@ estimate_release_rate_sections <- function(
         # nolint: object_usage_linter
         release_data,
         strata = strata_formula,
-        psu = interview_psu_col(design, release_data), frame = interview_day_frame(design) # nolint: object_usage_linter
+        psu = interview_psu_col(design, release_data), frame = interview_day_frame(sec_design) # nolint: object_usage_linter
       )
+      # Carried, so a later build from design_rel's filtered rows keeps these days (GH #663).
+      design_rel$interview_day_frame <- interview_day_frame(sec_design) # nolint: object_usage_linter
 
       if (!is.null(by_info$interview_vars)) {
         result <- estimate_cpue_grouped(
