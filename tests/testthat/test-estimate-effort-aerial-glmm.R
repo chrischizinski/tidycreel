@@ -1027,20 +1027,15 @@ test_that("a non-numeric time column kept in design$counts is refused the same w
   )
 })
 
-# GLMM-10: non-syntactic column names (GH #400) ----
-# The default formula was pasted together from the column names unquoted, so a
-# time, count or date column whose name is not a syntactic R name failed to
-# parse ("unexpected symbol"). A column's name must not change the estimate.
+# GLMM-10: non-syntactic column names (GH #400, #674) ----
 
-make_aerial_glmm_design_spaced <- function() {
-  # Date and strata columns stay syntactic: a non-syntactic date or strata
-  # column cannot yet enter a design at all (add_counts() builds its survey
-  # formulas with stats::reformulate(), which does not backquote) -- a
-  # package-wide limitation tracked separately from #400.
+test_that("GLMM-10: spaced time and count columns are refused at add_counts() (#674)", {
+  # #400 made the GLMM formula backquote names such as `time of flight`, but
+  # rates, totals and `by` grouping still failed to parse them, so #674 refuses
+  # non-syntactic names at the door, for every design and estimator alike.
   data("example_aerial_glmm_counts", envir = environment())
   counts <- example_aerial_glmm_counts # nolint: object_usage_linter
   names(counts)[names(counts) == "time_of_flight"] <- "time of flight"
-  names(counts)[names(counts) == "n_anglers"] <- "n anglers"
   cal <- unique(counts[, c("date", "day_type")])
   cal <- cal[order(cal$date), ]
   design <- creel_design(
@@ -1053,37 +1048,8 @@ make_aerial_glmm_design_spaced <- function() {
     angler_ratio_se = 0,
     h_open = 14
   )
-  add_counts(design, counts, count_col = `n anglers`)
-}
-
-test_that("GLMM-10: default formula fits with spaced time and count columns (#400)", {
-  spaced <- make_aerial_glmm_design_spaced()
-  plain <- make_aerial_glmm_design()
-  res_spaced <- estimate_effort_aerial_glmm(spaced, time_col = `time of flight`)
-  res_plain <- estimate_effort_aerial_glmm(plain, time_col = time_of_flight)
-  expect_equal(res_spaced$estimates$estimate, res_plain$estimates$estimate)
-  # $estimates$se is NA under an unknown visibility correction; the model
-  # term is the uncertainty the formula itself determines
-  expect_true(is.finite(res_spaced$se_components$model))
-  expect_equal(res_spaced$se_components$model, res_plain$se_components$model)
-})
-
-test_that("GLMM-10: grouped fit and its BIC shape check parse spaced names (#400)", {
-  spaced <- make_aerial_glmm_design_spaced()
-  plain <- make_aerial_glmm_design()
-  # The BIC helper builds the interaction formula from the same names
-  msgs_spaced <- character()
-  res_spaced <- withCallingHandlers(
-    estimate_effort_aerial_glmm(spaced, time_col = `time of flight`, by = day_type),
-    message = function(m) {
-      msgs_spaced <<- c(msgs_spaced, conditionMessage(m))
-      invokeRestart("muffleMessage")
-    }
+  expect_error(
+    add_counts(design, counts, count_col = n_anglers), # nolint: object_usage_linter
+    class = "creel_error_nonsyntactic_names"
   )
-  res_plain <- suppressMessages(
-    estimate_effort_aerial_glmm(plain, time_col = time_of_flight, by = day_type)
-  )
-  expect_equal(res_spaced$estimates$estimate, res_plain$estimates$estimate)
-  # The shape check ran and reported, rather than failing to parse
-  expect_true(any(grepl("BIC", msgs_spaced)))
 })

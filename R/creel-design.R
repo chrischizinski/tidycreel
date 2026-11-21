@@ -589,7 +589,9 @@ creel_design <- function(
   # A grouped input would carry its grouping into every dplyr step that reads
   # the stored table (GH #441).
   calendar <- ungroup_input(calendar)
+  refuse_nonsyntactic_names(calendar, "calendar")
   sampling_frame <- ungroup_input(sampling_frame)
+  refuse_nonsyntactic_names(sampling_frame, "sampling_frame")
   # Recorded as a step for write_design() (GH #438): the calendar as given and
   # the arguments the caller supplied.
   step_supplied <- supplied_arg_names(match.call(), "calendar") # nolint: object_usage_linter
@@ -1548,6 +1550,68 @@ validate_creel_design <- function(x) {
 #' @noRd
 ungroup_input <- function(x) {
   if (inherits(x, c("grouped_df", "rowwise_df"))) dplyr::ungroup(x) else x
+}
+
+#' Refuse column names that are not syntactic R names
+#'
+#' Internal (GH #674). The estimators build model formulas from column names
+#' -- strata, counts, catch, effort, `by` groups -- and a name such as
+#' `day type` or `angler count` does not parse in one: every rate, total and
+#' grouped effort stopped with an R parse error ("unexpected symbol"), while a
+#' few paths (a single strata column for effort, GH #422; the aerial GLMM, GH
+#' #400) happened to work. One rule replaces that patchwork: a data frame
+#' handed to `creel_design()` or an `add_*()` function may not carry a
+#' non-syntactic column name, whether or not the design uses the column, since
+#' any column can later be named in `by`. Checked against `make.names()`, so
+#' spaces, leading digits or underscores, punctuation, reserved words and empty
+#' names are all refused. Anything that is not a data frame is left for the
+#' caller's own validation.
+#'
+#' @param x The data frame as supplied.
+#' @param arg Its argument name, for the message.
+#' @keywords internal
+#' @noRd
+refuse_nonsyntactic_names <- function(x, arg, call = rlang::caller_env()) {
+  if (!is.data.frame(x)) {
+    return(invisible(NULL))
+  }
+  nms <- names(x)
+  nms[is.na(nms)] <- ""
+  # A header that is not valid text in this locale (a Windows-1252 file read as
+  # UTF-8, say) makes make.names() itself fail; say what happened instead.
+  undecodable <- !validEnc(nms)
+  if (any(undecodable)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} has {cli::qty(sum(undecodable))}{?a column name/column names} that {?is/are} not valid text in this locale's encoding.",
+        "i" = "Re-read the file with its encoding declared, for example \\
+               {.code read.csv(file, fileEncoding = \"latin1\")}, then rename any non-syntactic columns."
+      ),
+      class = "creel_error_nonsyntactic_names",
+      call = call
+    )
+  }
+  # The repair suggested is the one the message recommends, over the whole
+  # header with unique = TRUE, so it cannot collide with a column already there.
+  repaired <- make.names(nms, unique = TRUE)
+  is_bad <- nms != make.names(nms)
+  if (!any(is_bad)) {
+    return(invisible(NULL))
+  }
+  bad <- nms[is_bad]
+  shown <- ifelse(bad == "", "<empty>", bad) # nolint: object_usage_linter
+  suggested <- repaired[is_bad] # nolint: object_usage_linter
+  cli::cli_abort(
+    c(
+      "{.arg {arg}} has {cli::qty(length(bad))}{?a column name/column names} that {?is/are} not {?a/} syntactic R name{?s}: {.val {shown}}.",
+      "x" = "tidycreel builds model formulas from column names, and such a name does not parse in one.",
+      "i" = "Rename {cli::qty(length(bad))}{?it/them} first, for example to {.val {suggested}}: \\
+             {.code names(x) <- make.names(names(x), unique = TRUE)} or {.code janitor::clean_names()}.",
+      "i" = "For files read with fixed column names, map them with {.fn creel_schema}."
+    ),
+    class = "creel_error_nonsyntactic_names",
+    call = call
+  )
 }
 
 #' Resolve single column from tidy selector
@@ -2965,6 +3029,7 @@ add_counts <- function(
   missing_count = c("keep", "exclude")
 ) {
   counts <- ungroup_input(counts) # GH #441
+  refuse_nonsyntactic_names(counts, "counts")
   step_supplied <- supplied_arg_names(match.call(), c("design", "counts")) # nolint: object_usage_linter
   step_counts <- counts
   # Validate design is creel_design
@@ -3723,6 +3788,7 @@ add_sections <- function(
   shared_count_times = FALSE
 ) {
   sections <- ungroup_input(sections) # GH #441
+  refuse_nonsyntactic_names(sections, "sections")
   step_supplied <- supplied_arg_names(match.call(), c("design", "sections")) # nolint: object_usage_linter
   step_sections <- sections
   # Guard: design must be creel_design
@@ -4175,6 +4241,7 @@ add_interviews <- function(
   missing_trip_status = c("refuse", "exclude")
 ) {
   interviews <- ungroup_input(interviews) # GH #441
+  refuse_nonsyntactic_names(interviews, "interviews")
   step_supplied <- supplied_arg_names(match.call(), c("design", "interviews")) # nolint: object_usage_linter
   step_interviews <- interviews
   # Capture missing status before any default resolution
@@ -5797,6 +5864,7 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 #' @export
 add_catch <- function(design, data, catch_uid, interview_uid, species, count, catch_type) {
   data <- ungroup_input(data) # GH #441
+  refuse_nonsyntactic_names(data, "data")
   step_supplied <- supplied_arg_names(match.call(), c("design", "data")) # nolint: object_usage_linter
   step_data <- data
   # Guard: must be a creel_design
@@ -6197,6 +6265,7 @@ add_lengths <- function(
   release_bin_width = NULL
 ) {
   data <- ungroup_input(data) # GH #441
+  refuse_nonsyntactic_names(data, "data")
   step_supplied <- supplied_arg_names(match.call(), c("design", "data")) # nolint: object_usage_linter
   step_data <- data
   # Guard: must be a creel_design
@@ -6482,6 +6551,7 @@ add_lengths <- function(
 #' @export
 add_ages <- function(design, data, age_uid, interview_uid, species, age, age_type) {
   data <- ungroup_input(data) # GH #441
+  refuse_nonsyntactic_names(data, "data")
   step_supplied <- supplied_arg_names(match.call(), c("design", "data")) # nolint: object_usage_linter
   step_data <- data
   if (!inherits(design, "creel_design")) {
