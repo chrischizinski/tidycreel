@@ -335,7 +335,7 @@ print(result_boot)
 #> # A tibble: 1 × 8
 #>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
 #>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1      135  10.5       10.5        NA     89.8     180.     4 between_day_upper…
+#> 1      135  10.7       10.7        NA     88.9     181.     4 between_day_upper…
 
 # Jackknife variance estimation
 result_jk <- estimate_effort(design_with_counts, variance = "jackknife")

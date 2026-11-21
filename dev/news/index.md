@@ -35,6 +35,23 @@
   (`estimator = "regression"`) still uses its interview-level jackknife
   and is not yet clustered on the day.
 
+- A rate restricted to one kind of trip is now estimated as a domain of
+  every interviewed day
+  ([\#663](https://github.com/chrischizinski/tidycreel/issues/663)).
+  `use_trips = "complete"` or `"incomplete"`, MOR truncation, and
+  `targeted = FALSE` used to rebuild the interview survey on the trips
+  that survived, so a day that was interviewed but had none of them left
+  the design. That day was sampled: it is a day of zero catch and zero
+  effort for the domain, and the between-day variance now counts it
+  under Taylor, bootstrap and jackknife alike. Point estimates and `n`
+  do not change. On three 2025 agency surveys, where nearly every
+  interviewed day had complete trips, SEs moved by less than 0.2%; the
+  change is larger where complete trips cluster on a few days. A stratum
+  interviewed on several days but with complete trips on only one is now
+  estimated, not refused; a trip set met on a single day in all is
+  refused with `creel_error_single_psu`, since its standard error would
+  be 0. A section is still estimated over its own interviewed days.
+
 - [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
   refuses a count timed outside the drawn shift
   ([\#426](https://github.com/chrischizinski/tidycreel/issues/426)).
