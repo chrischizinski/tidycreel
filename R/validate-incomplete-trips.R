@@ -8,8 +8,12 @@
 #' @param design A creel_design object with interviews attached via
 #'   \code{\link{add_interviews}}. Must include trip_status field to
 #'   distinguish complete from incomplete trips.
-#' @param catch Bare column name for catch data (supports tidy evaluation)
-#' @param effort Bare column name for effort data (supports tidy evaluation)
+#' @param catch Bare column name: the design's catch column, as given to
+#'   [add_interviews()]. The test always compares catch rates; any other
+#'   column is an error (it was previously checked and then ignored).
+#' @param effort Bare column name: the design's effort column, as given to
+#'   [add_interviews()]. Rates use its angler-hours (effort times party
+#'   size); any other column is an error.
 #' @param by Optional tidy selector for grouping variables. When provided,
 #'   performs TOST for each group independently. Overall validation passes
 #'   only if overall test AND all group tests pass equivalence.
@@ -82,6 +86,10 @@
 #' is far more precise than either rate. Both rates are estimated jointly, as
 #' domains of one survey of every interviewed day, under the requested
 #' \code{variance} method, and the covariance comes from that fit (GH #664).
+#' The t tests use the design's degrees of freedom, interviewed days minus
+#' strata, because that variance is between days (GH #669); bus-route and ice
+#' designs, whose interviews are the sampling units, keep
+#' \code{min(n_complete, n_incomplete) - 1}.
 #'
 #' Sample size requirements: At least 10 complete trips AND 10 incomplete trips
 #' are required for stable variance estimation and TOST. The function errors
@@ -198,6 +206,21 @@ validate_incomplete_trips <- function(
     ))
   }
 
+  # The test is of the design's catch rate: both rates are estimated by
+  # estimate_catch_rate(), which reads the design's catch column and its
+  # angler-hours (effort x party size). A different column named here was
+  # checked for existence and then ignored, so `catch = <harvest column>`
+  # silently tested the catch rate (GH #669).
+  if (!identical(catch_col, design$catch_col) || !identical(effort_col, design$effort_col)) {
+    cli::cli_abort(c(
+      "{.arg catch} and {.arg effort} must name the design's catch and effort columns.",
+      "i" = "The design's are {.field {design$catch_col}} and {.field {design$effort_col}}; \\
+             got {.field {catch_col}} and {.field {effort_col}}.",
+      "i" = "The test compares catch rates. To test another count, give it as \\
+             {.arg catch} in {.fn add_interviews}."
+    ), class = "creel_error_tost_columns")
+  }
+
   # Check sample sizes
   trip_status_col <- design$trip_status_col
   n_complete <- sum(design$interviews[[trip_status_col]] == "complete", na.rm = TRUE)
@@ -277,6 +300,8 @@ validate_incomplete_trips <- function(
       truncate_at = truncate_at,
       threshold = threshold
     )
+    overall_rates <- attr(overall_result, "rates")
+    attr(overall_result, "rates") <- NULL
 
     # Per-group tests
     group_results <- perform_grouped_tost(
@@ -284,7 +309,7 @@ validate_incomplete_trips <- function(
       incomplete_result = incomplete_result,
       by_vars = by_vars,
       threshold = threshold,
-      se_diff = tost_joint_se_diff(design, complete_result, incomplete_result, variance, by_vars)
+      joint = tost_joint_se_diff(design, complete_result, incomplete_result, variance, by_vars)
     )
 
     # Overall passed = overall test passes AND all group tests pass
@@ -314,16 +339,19 @@ validate_incomplete_trips <- function(
 
     # Build metadata
     metadata <- list(
+      # The overall test's own rates. An unweighted mean of the group rates,
+      # with their SEs combined as if independent, was reported here beside a
+      # difference taken from the pooled rates (GH #669).
       overall = list(
         complete = list(
-          n = sum(complete_result$estimates$n),
-          estimate = mean(complete_result$estimates$estimate),
-          se = sqrt(sum(complete_result$estimates$se^2)) / nrow(complete_result$estimates)
+          n = overall_rates$complete$n,
+          estimate = overall_rates$complete$estimate,
+          se = overall_rates$complete$se
         ),
         incomplete = list(
-          n = sum(incomplete_result$estimates$n),
-          estimate = mean(incomplete_result$estimates$estimate),
-          se = sqrt(sum(incomplete_result$estimates$se^2)) / nrow(incomplete_result$estimates)
+          n = overall_rates$incomplete$n,
+          estimate = overall_rates$incomplete$estimate,
+          se = overall_rates$incomplete$se
         )
       ),
       groups = group_results
@@ -375,6 +403,7 @@ validate_incomplete_trips <- function(
     incomplete_ci_upper <- incomplete_result$estimates$ci_upper
 
     # Perform TOST
+    joint <- tost_joint_se_diff(design, complete_result, incomplete_result, variance)
     tost_result <- perform_tost(
       complete_estimate = complete_estimate,
       complete_se = complete_se,
@@ -383,7 +412,8 @@ validate_incomplete_trips <- function(
       threshold = threshold,
       n_complete = complete_result$estimates$n,
       n_incomplete = incomplete_result$estimates$n,
-      se_diff = unname(tost_joint_se_diff(design, complete_result, incomplete_result, variance))
+      se_diff = if (is.null(joint)) NULL else as.numeric(joint),
+      df = attr(joint, "df")
     )
 
     # Metadata
@@ -480,7 +510,8 @@ perform_overall_tost <- function(
   ))
 
   # Perform TOST
-  perform_tost(
+  joint <- tost_joint_se_diff(design, complete_overall, incomplete_overall, variance)
+  tost <- perform_tost(
     complete_estimate = complete_overall$estimates$estimate,
     complete_se = complete_overall$estimates$se,
     incomplete_estimate = incomplete_overall$estimates$estimate,
@@ -488,8 +519,13 @@ perform_overall_tost <- function(
     threshold = threshold,
     n_complete = complete_overall$estimates$n,
     n_incomplete = incomplete_overall$estimates$n,
-    se_diff = unname(tost_joint_se_diff(design, complete_overall, incomplete_overall, variance))
+    se_diff = if (is.null(joint)) NULL else as.numeric(joint),
+    df = attr(joint, "df")
   )
+  # The overall rates themselves, for the grouped result's metadata: the test
+  # above is of these, not of an average of the group rates (GH #669).
+  attr(tost, "rates") <- list(complete = complete_overall$estimates, incomplete = incomplete_overall$estimates)
+  tost
 }
 
 #' Label one group's `by` values, e.g. `"day_type = weekend, gear = boat"`
@@ -548,12 +584,13 @@ align_tost_groups <- function(complete_df, incomplete_df, by_vars) {
 #' A group holding only one trip type cannot be tested: its row is `NA`, with
 #' a warning, and counts as not passing.
 #'
-#' @param se_diff Named vector of joint SEs of the difference, keyed as
-#'   `align_tost_groups()` keys the groups.
+#' @param joint From `tost_joint_se_diff()`: SEs of the difference keyed as
+#'   `align_tost_groups()` keys the groups, with the design `df` attribute;
+#'   `NULL` where the variances are added.
 #' @keywords internal
 #' @noRd
 perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, threshold,
-                                 se_diff = NULL) {
+                                 joint = NULL) {
   al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
   cdf <- al$complete
   idf <- al$incomplete
@@ -590,7 +627,8 @@ perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, th
       threshold = threshold,
       n_complete = cdf$n[i],
       n_incomplete = idf$n[i],
-      se_diff = if (is.null(se_diff)) NULL else unname(se_diff[al$keys[i]])
+      se_diff = if (is.null(joint)) NULL else unname(joint[al$keys[i]]),
+      df = attr(joint, "df")
     )
 
     group_results$p_lower[i] <- tost_result$p_lower
@@ -726,7 +764,17 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     }
     sqrt(max(0, v[1, 1] + v[2, 2] - 2 * v[1, 2]))
   }, numeric(1))
-  stats::setNames(out, al$keys)
+  out <- stats::setNames(out, al$keys)
+  # Design degrees of freedom: interviewed days minus strata. A domain is
+  # estimated over every day of the frame, including days without its trips,
+  # so these are the days of the frame -- not survey::degf() of the subset,
+  # which counts only the days that hold domain rows.
+  frame <- interview_day_frame(design) # nolint: object_usage_linter
+  if (!is.null(frame)) {
+    n_strata <- if (length(strata_cols) > 0L) nrow(unique(frame[strata_cols])) else 1L
+    attr(out, "df") <- nrow(frame) - n_strata
+  }
+  out
 }
 
 #' Perform TOST (Two One-Sided Tests) equivalence testing
@@ -745,7 +793,8 @@ perform_tost <- function(
   threshold,
   n_complete,
   n_incomplete,
-  se_diff = NULL
+  se_diff = NULL,
+  df = NULL
 ) {
   # Calculate difference and bounds
   diff_estimate <- complete_estimate - incomplete_estimate
@@ -760,8 +809,13 @@ perform_tost <- function(
     se_diff <- sqrt(complete_se^2 + incomplete_se^2)
   }
 
-  # Degrees of freedom (conservative: min of two samples)
-  df <- min(n_complete - 1, n_incomplete - 1)
+  # Degrees of freedom: the design's, from the joint fit -- interviewed days
+  # minus strata, since the variance is between days (GH #669). The interview
+  # count is the fallback where interviews are the sampling units (bus-route,
+  # ice).
+  if (is.null(df)) {
+    df <- min(n_complete - 1, n_incomplete - 1)
+  }
 
   # Guard: se_diff == 0 (both groups have identical estimates with zero SE)
   # → t-statistics are ±Inf; treat as trivially equivalent if diff is within bounds.
