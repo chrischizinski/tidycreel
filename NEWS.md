@@ -27,8 +27,7 @@
   interviews all come from one day, which would otherwise be reported with
   a standard error of 0. `add_interviews()` still accepts such data.
   Interview on a second day, or combine sparse strata or groups. The
-  regression estimator (`estimator = "regression"`) still uses its
-  interview-level jackknife and is not yet clustered on the day.
+  regression estimator joined them in #665 (below).
 
 * A rate restricted to one kind of trip is now estimated as a domain of every
   interviewed day (#663). `use_trips = "complete"` or `"incomplete"`, MOR
@@ -76,6 +75,31 @@
     R condition-length error.
   - A sectioned lake total still treats section rates as independent; that
     turns on how section days were drawn (#668).
+
+* The regression catch rate (`estimator = "regression"`) is now clustered on
+  the survey day like every other rate (#665).
+  - **Estimation:** the slope of catch on angler effort is estimated on the
+    day-clustered interview survey. Through the origin, it is the ratio
+    `sum(c e) / sum(e^2)` with `svyratio()`; with an intercept, it is the
+    `svyglm()` coefficient. Its standard error used to come from a
+    leave-one-interview-out jackknife, which counted 12 trips on one day as
+    12 independent units.
+  - **`variance`:** it is now honoured. Taylor is the default, and
+    `variance_method` reports the method that ran; it used to say
+    `"jackknife"` whatever was asked.
+  - **One-day refusal:** a stratum or group interviewed on one day is
+    refused with `creel_error_single_psu`, as for every other rate.
+  - **Domains:** groups and the complete-trip filter are domains of every
+    interviewed day (#663).
+  - **Unchanged:** point estimates (interview weights are equal, so the
+    slopes are the least-squares ones).
+  - **CIs:** intervals now come from the fit, on the normal scale like the
+    other rates, not from a t with interviews − 1 df.
+  - **Grouping fix:** grouped regression keys its groups properly. They were
+    pasted with no separator, so groups such as (`"a"`, `"bc"`) and
+    (`"ab"`, `"c"`) were merged.
+  - **`compare_cpue_estimators()`:** it now gives all three estimators
+    Taylor SEs.
 
 * `validate_incomplete_trips()` corrections (#669):
   - **Degrees of freedom:** the t tests now use the design's degrees of

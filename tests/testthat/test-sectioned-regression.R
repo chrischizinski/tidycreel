@@ -152,11 +152,10 @@ test_that("a sectioned regression result reports the variance method that ran", 
   design <- sec_reg_design()
   reg <- quiet_reg(estimate_catch_rate, design, estimator = "regression")
 
-  # The slope's SE is a leave-one-out jackknife computed inside the regression
-  # internals; `variance` is never consulted on that path. Recording the caller's
-  # Taylor default would name a method that did not run -- the same class of
-  # mislabel as #284, one field over.
-  expect_identical(reg$variance_method, "jackknife")
+  # The slope's SE runs the requested variance on the day-clustered survey
+  # (GH #665), so the label is the caller's -- Taylor by default. Before, it was
+  # a leave-one-out jackknife whatever was asked, and said so.
+  expect_identical(reg$variance_method, "taylor")
 
   # And the default is genuinely Taylor for the estimators that do use it, so
   # this is not asserting a constant.
@@ -350,18 +349,15 @@ test_that("the species regression is not held to the ratio-estimation floor (#29
 })
 
 test_that("the species regression reports the variance that actually ran (#290)", {
-  # The slope's SE is a leave-one-out jackknife computed inside the regression
-  # internals; `variance` is never consulted there. Reporting the caller's
-  # Taylor default would name a variance that did not run -- the #284 class of
-  # mislabel, and the ungrouped and sectioned paths already say "jackknife".
+  # The slope's SE runs the requested variance (GH #665), on every path.
   design <- sec_reg_design()
   flat <- design
   flat[["sections"]] <- NULL
 
   flat_reg <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression")
   sec_reg <- quiet_reg(estimate_catch_rate, design, by = species, estimator = "regression")
-  expect_identical(flat_reg$variance_method, "jackknife")
-  expect_identical(sec_reg$variance_method, "jackknife")
+  expect_identical(flat_reg$variance_method, "taylor")
+  expect_identical(sec_reg$variance_method, "taylor")
 
   # Not asserting a constant: the estimators that do consult `variance` still
   # report it.

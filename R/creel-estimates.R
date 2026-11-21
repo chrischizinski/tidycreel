@@ -1046,12 +1046,17 @@ estimate_effort <- function(
 #'   the full design. See \code{estimate_total_catch()} for lake-wide total
 #'   catch estimation.
 #'
-#' @note \code{estimator = "regression"} on a sectioned design fits one
-#'   regression per section, on that section's interviews alone. The
-#'   leave-one-out jackknife standard error therefore rests on the interviews in
-#'   that section rather than on the whole sample, so section-level regression
-#'   standard errors are based on fewer points than the unsectioned form and are
-#'   correspondingly less stable. This is a property of sectioning rather than of
+#' @note \code{estimator = "regression"} is the slope of catch on angler
+#'   effort across interviews: \code{sum(c e) / sum(e^2)} through the origin,
+#'   a ratio estimated with \code{survey::svyratio()}, or the
+#'   \code{survey::svyglm()} coefficient with an intercept. Its standard error
+#'   comes from the same day-clustered interview survey as the other rates,
+#'   under the \code{variance} method you ask for, and a stratum or group
+#'   interviewed on a single day is refused (GH #665); it was a
+#'   leave-one-interview-out jackknife. On a sectioned design it fits one
+#'   regression per section, on that section's interviews alone, so
+#'   section-level regression standard errors rest on that section's days and
+#'   are correspondingly less stable. This is a property of sectioning rather than of
 #'   the estimator; a section with fewer than three interviews cannot be fitted
 #'   at all. \code{species} in \code{by} fits one regression per species, on
 #'   that species' catch against the same angler effort, with zero-catch
@@ -1068,10 +1073,8 @@ estimate_effort <- function(
 #'   normalized, mark a species-level and an angler-normalized result
 #'   respectively; \code{"regression-cpue-species"} is returned for a species
 #'   request under \code{estimator = "regression"}),
-#'   variance_method (character: the variance that actually ran, which is the
-#'   \code{variance} argument for every estimator except \code{"regression"} --
-#'   the regression slope carries a leave-one-out jackknife SE and reports
-#'   \code{"jackknife"} whatever \code{variance} was set to),
+#'   variance_method (character: the variance that ran, the \code{variance}
+#'   argument, for every estimator including \code{"regression"}),
 #'   design (reference to source creel_design), conf_level (numeric), and
 #'   by_vars (character vector of grouping variable names or NULL).
 #'   The \code{estimator} component records the estimator as you asked for it,
@@ -1266,7 +1269,7 @@ estimate_catch_rate <- function(
         "{.val ratio-of-means} for complete trips,",
         "{.val mor} for incomplete trips,",
         "{.val mortr} for truncated mean-of-ratios,",
-        "{.val regression} for OLS slope (CPUE3) with jackknife SE"
+        "{.val regression} for the slope of catch on effort (CPUE3)"
       )
     ))
   }
@@ -1953,16 +1956,9 @@ estimate_catch_rate <- function(
       ))
     }
 
-    # The regression slope's SE is a leave-one-out jackknife computed inside the
-    # regression internals; `variance` is never consulted there. Recording the
-    # caller's Taylor default would name a variance that did not run -- the #284
-    # class of mislabel, and the ungrouped and sectioned regression paths
-    # already report "jackknife".
-    species_variance_method <- if (identical(estimator, "regression")) {
-      "jackknife"
-    } else {
-      variance
-    }
+    # Every estimator, regression included, now runs the requested variance on
+    # the day-clustered survey (GH #665).
+    species_variance_method <- variance
 
     return(new_creel_estimates(
       # nolint: object_usage_linter
@@ -1984,7 +1980,8 @@ estimate_catch_rate <- function(
         # nolint: object_usage_linter
         design,
         conf_level,
-        force_origin
+        force_origin,
+        variance
       ))
     } else {
       by_cols <- tidyselect::eval_select(
@@ -2003,7 +2000,8 @@ estimate_catch_rate <- function(
         design,
         by_vars,
         conf_level,
-        force_origin
+        force_origin,
+        variance
       ))
     }
   }
@@ -3349,7 +3347,7 @@ resolve_total_rate_spec <- function(
       "Invalid {.arg estimator} value: {.val {estimator}}",
       "x" = "Must be one of: {.val {valid_estimators}}",
       "i" = paste(
-        "{.val regression} returns a slope with a jackknife SE and has no",
+        "{.val regression} returns a slope and has no",
         "product-variance form here; use {.fn estimate_catch_rate} for it."
       )
     ))
@@ -8706,13 +8704,14 @@ estimate_cpue_species <- function(
     # returned a believable number under the wrong estimator.
     if (identical(estimator, "regression")) {
       result <- if (is.null(interview_by_vars)) {
-        estimate_cpue_regression_total(design_sp, conf_level, force_origin) # nolint: object_usage_linter
+        estimate_cpue_regression_total(design_sp, conf_level, force_origin, variance_method) # nolint: object_usage_linter
       } else {
         estimate_cpue_reg_grouped( # nolint: object_usage_linter
           design_sp,
           interview_by_vars,
           conf_level,
-          force_origin
+          force_origin,
+          variance_method
         )
       }
     } else if (is.null(interview_by_vars)) {
@@ -9433,7 +9432,8 @@ estimate_catch_rate_sections <- function(
             sec_design,
             by_vars = by_info$interview_vars,
             conf_level = conf_level,
-            force_origin = force_origin
+            force_origin = force_origin,
+            variance_method = variance_method
           )
         } else {
           estimate_cpue_grouped(
@@ -9451,7 +9451,7 @@ estimate_catch_rate_sections <- function(
       } else {
         # Ungrouped (total) path
         result <- if (identical(estimator, "regression")) {
-          estimate_cpue_regression_total(sec_design, conf_level, force_origin) # nolint: object_usage_linter
+          estimate_cpue_regression_total(sec_design, conf_level, force_origin, variance_method) # nolint: object_usage_linter
         } else {
           estimate_cpue_total(
             # nolint: object_usage_linter
@@ -9495,11 +9495,8 @@ estimate_catch_rate_sections <- function(
     } else {
       "ratio-of-means-cpue-sections"
     },
-    # The regression estimator carries its own variance: the slope's SE is a
-    # leave-one-out jackknife, computed inside the internals, and `variance` was
-    # never consulted on that path. Recording the caller's Taylor default here
-    # would name a method that did not run.
-    variance_method = if (identical(estimator, "regression")) "jackknife" else variance_method,
+    # Regression runs the requested variance too since GH #665.
+    variance_method = variance_method,
     design = design,
     conf_level = conf_level,
     by_vars = if (!is.null(by_info$all_vars)) c(section_col, by_info$all_vars) else section_col,

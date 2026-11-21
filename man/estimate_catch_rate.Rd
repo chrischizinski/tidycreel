@@ -118,10 +118,8 @@ gaining a \code{"-sections"} suffix on a sectioned design. The
 normalized, mark a species-level and an angler-normalized result
 respectively; \code{"regression-cpue-species"} is returned for a species
 request under \code{estimator = "regression"}),
-variance_method (character: the variance that actually ran, which is the
-\code{variance} argument for every estimator except \code{"regression"} --
-the regression slope carries a leave-one-out jackknife SE and reports
-\code{"jackknife"} whatever \code{variance} was set to),
+variance_method (character: the variance that ran, the \code{variance}
+argument, for every estimator including \code{"regression"}),
 design (reference to source creel_design), conf_level (numeric), and
 by_vars (character vector of grouping variable names or NULL).
 The \code{estimator} component records the estimator as you asked for it,
@@ -205,12 +203,17 @@ sections. Lake-wide catch rate requires a separate unsectioned call on
 the full design. See \code{estimate_total_catch()} for lake-wide total
 catch estimation.
 
-\code{estimator = "regression"} on a sectioned design fits one
-regression per section, on that section's interviews alone. The
-leave-one-out jackknife standard error therefore rests on the interviews in
-that section rather than on the whole sample, so section-level regression
-standard errors are based on fewer points than the unsectioned form and are
-correspondingly less stable. This is a property of sectioning rather than of
+\code{estimator = "regression"} is the slope of catch on angler
+effort across interviews: \code{sum(c e) / sum(e^2)} through the origin,
+a ratio estimated with \code{survey::svyratio()}, or the
+\code{survey::svyglm()} coefficient with an intercept. Its standard error
+comes from the same day-clustered interview survey as the other rates,
+under the \code{variance} method you ask for, and a stratum or group
+interviewed on a single day is refused (GH #665); it was a
+leave-one-interview-out jackknife. On a sectioned design it fits one
+regression per section, on that section's interviews alone, so
+section-level regression standard errors rest on that section's days and
+are correspondingly less stable. This is a property of sectioning rather than of
 the estimator; a section with fewer than three interviews cannot be fitted
 at all. \code{species} in \code{by} fits one regression per species, on
 that species' catch against the same angler effort, with zero-catch

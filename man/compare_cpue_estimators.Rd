@@ -36,8 +36,10 @@ when \code{by} is specified. The tibble has class
 }
 \description{
 Runs all three CPUE estimators — Ratio-of-Means (ROM / CPUE\eqn{_2}),
-Mean-of-Ratios (MOR / CPUE\eqn{_1}), and OLS regression slope with
-jackknife SE (CPUE\eqn{_3}) — on the same creel design and returns a
+Mean-of-Ratios (MOR / CPUE\eqn{_1}), and the regression slope of catch on
+effort (CPUE\eqn{_3}) — on the same creel design, all with Taylor
+(linearization) standard errors on the day-clustered interview survey, and
+returns a
 combined tibble with a \code{cpue_method} column for side-by-side
 comparison.
 
@@ -55,7 +57,8 @@ Estimator definitions following Petrere et al. (2010):
 mean(catch\eqn{_i} / effort\eqn{_i}) (survey::svymean). Preferred
 for incomplete trips.}
 \item{Regression (CPUE\eqn{_3})}{OLS slope \eqn{\hat{\beta}} from
-\eqn{C_i = \beta f_i + \varepsilon_i} with leave-one-out jackknife SE.
+\eqn{C_i = \beta f_i + \varepsilon_i}, its SE linearized on the
+day-clustered survey like the other two.
 Most robust when proportionality is violated (non-zero intercept).}
 }
 }
