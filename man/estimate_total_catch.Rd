@@ -147,7 +147,9 @@ stay monthly, say. Every effort cell and every interview must fall in a
 group, every row must match a cell, and each group must meet the usual
 10-trip floor; anything else stops. The variance treats a group's rate as
 one shared estimate across its cells and carries the covariance of cells
-counted on the same days (bank and boat on one drive). The result's
+counted on the same days (bank and boat on one drive), and of group
+rates interviewed on the same days, which share those days' conditions
+(GH #664). The result's
 \code{rate_groups} element holds the map and each group's rate, SE and \code{n}.
 Standard count designs only: bus-route, ice, aerial, camera and sectioned
 designs stop, as does \code{missing_rate = "exclude"}. With
