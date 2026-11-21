@@ -69,6 +69,10 @@
     paired by their values. A group with one trip type gets an `NA` row and
     a `creel_warning_tost_degenerate` warning, and the validation does not
     pass.
+  - On bus-route and ice designs, whose interviews are not clustered on the
+    day, the two rates' variances are still added. A sectioned design is now
+    refused with `creel_error_tost_sections`; before, it stopped with an
+    R condition-length error.
   - A sectioned lake total still treats section rates as independent; that
     turns on how section days were drawn (#668).
 

@@ -515,6 +515,42 @@ estimate_total_rate_groups <- function(
 }
 
 
+#' The covariance of the group rates the product uses
+#'
+#' Internal (GH #664). Off the diagonal, the `svyby(covmat = TRUE)` covariance,
+#' but only between groups that share a stratum: strata are sampled
+#' independently, so groups in disjoint strata share no day, and a replicate
+#' method's finite draws must not invent a covariance between them. On the
+#' diagonal, each rate's own reported variance, so a group's marginal term is
+#' exactly the one the rate reports -- a bootstrap draw that leaves out one
+#' sparse group drops that draw from the whole `svyby()` matrix, diagonal
+#' included, and would otherwise change the variance of every other group.
+#'
+#' @param rates One rate per group, with the `rate_vcov` attribute.
+#' @return A square matrix in the row order of `rates`.
+#' @keywords internal
+#' @noRd
+shared_day_rate_vcov <- function(design, rates) {
+  v <- attr(rates, "rate_vcov")
+  if (!is.matrix(v) || nrow(v) != nrow(rates)) {
+    cli::cli_abort("Internal error: rate-group rates arrived without their covariance.", .internal = TRUE)
+  }
+  strata_cols <- design$strata_cols %||% character(0)
+  if (length(strata_cols) > 0L && nrow(rates) > 1L) {
+    iv <- design$interviews
+    grp <- as.character(iv$.rate_group)
+    stratum <- group_key(iv, strata_cols) # nolint: object_usage_linter
+    strata_of <- lapply(rates$.rate_group, function(g) unique(stratum[grp == g]))
+    for (a in seq_len(nrow(rates))) {
+      for (b in seq_len(nrow(rates))) {
+        if (a != b && length(intersect(strata_of[[a]], strata_of[[b]])) == 0L) v[a, b] <- 0
+      }
+    }
+  }
+  diag(v) <- rates$se^2
+  v
+}
+
 #' The rate-group product for one set of group rates
 #'
 #' @param rates One rate per group: `.rate_group`, `estimate`, `se`, `n`.
@@ -536,10 +572,7 @@ rate_group_product <- function(
   idx <- match(as.character(cell_effort$.rate_group), rates$.rate_group)
   r_est <- rates$estimate[idx]
   r_var <- rates$se[idx]^2
-  rate_vcov <- attr(rates, "rate_vcov")
-  if (!is.matrix(rate_vcov) || nrow(rate_vcov) != nrow(rates)) {
-    cli::cli_abort("Internal error: rate-group rates arrived without their covariance.", .internal = TRUE)
-  }
+  rate_vcov <- shared_day_rate_vcov(design, rates)
   # Goodman's (1960) unbiased estimator subtracts the cross-term, with the
   # first-order value as a floor, cell by cell -- exactly as
   # product_total_variance() does for a stratum, so one group per stratum
@@ -593,9 +626,19 @@ rate_group_product <- function(
     in_row <- row_key_c == k
     e <- cell_effort$estimate[in_row]
     g <- idx[in_row]
-    as.numeric(crossprod(e, rate_vcov[g, g, drop = FALSE] %*% e))
+    # A quadratic form in a covariance matrix is >= 0; rates moving exactly
+    # against each other can leave it a rounding error below, which sqrt()
+    # would turn into NaN.
+    max(0, as.numeric(crossprod(e, rate_vcov[g, g, drop = FALSE] %*% e)))
   }, numeric(1)))
-  variance <- w_df$se^2 + rate_quad - sum_by_row(goodman_cross)
+  # Goodman's floor, applied to the row: the cell-level floor above cannot see
+  # the covariance, which can leave the row's first-order variance below the
+  # sum of the cell corrections (bank and boat rates moving in opposite
+  # directions). Then the first-order value stands, as product_total_variance()
+  # does for a stratum.
+  first_order_row <- w_df$se^2 + rate_quad
+  goodman_row <- first_order_row - sum_by_row(goodman_cross)
+  variance <- ifelse(goodman_row > 0, goodman_row, first_order_row)
 
   # Interviews counted once per group present in the row.
   groups_in_row <- lapply(row_key_w, function(k) unique(as.character(cell_effort$.rate_group[row_key_c == k])))

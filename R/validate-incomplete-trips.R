@@ -158,6 +158,17 @@ validate_incomplete_trips <- function(
     ))
   }
 
+  # A sectioned design reports one rate per section (and a lake row), which the
+  # single overall test cannot pair; it failed with an R condition-length error
+  # before. Refused until a per-section test is designed (GH #669).
+  if (!is.null(design[["sections"]])) {
+    cli::cli_abort(c(
+      "{.fn validate_incomplete_trips} does not support sectioned designs yet.",
+      "i" = "It compares one complete-trip rate with one incomplete-trip rate; a \\
+             sectioned design has one of each per section."
+    ), class = "creel_error_tost_sections")
+  }
+
   # Validate trip_status field exists
   if (is.null(design$trip_status_col)) {
     cli::cli_abort(c(
@@ -288,11 +299,7 @@ validate_incomplete_trips <- function(
     incomplete_df <- al$incomplete
 
     # Create group labels
-    group_labels <- character(nrow(al$groups))
-    for (i in seq_len(nrow(al$groups))) {
-      group_vals <- al$groups[i, by_vars, drop = FALSE]
-      group_labels[i] <- paste(by_vars, "=", group_vals[1, ], collapse = ", ")
-    }
+    group_labels <- vapply(seq_len(nrow(al$groups)), function(i) tost_group_label(al$groups, i, by_vars), "")
 
     plot_data <- list(
       complete_est = complete_df$estimate,
@@ -332,10 +339,7 @@ validate_incomplete_trips <- function(
       # A group that failed and a group that could not be tested (NA, one trip
       # type only) are named separately: no test was run on the second.
       label_rows <- function(rows) {
-        paste(
-          apply(group_results[rows, by_vars, drop = FALSE], 1, function(x) paste(by_vars, "=", x, collapse = ", ")),
-          collapse = "; "
-        )
+        paste(vapply(which(rows), function(i) tost_group_label(group_results, i, by_vars), ""), collapse = "; ")
       }
       failed <- group_results$equivalence_passed %in% FALSE
       untested <- is.na(group_results$equivalence_passed)
@@ -488,6 +492,20 @@ perform_overall_tost <- function(
   )
 }
 
+#' Label one group's `by` values, e.g. `"day_type = weekend, gear = boat"`
+#'
+#' Column by column, so a factor prints its level and a Date its date (pasting
+#' a data-frame row, or `unlist()`-ing one, prints factor codes and day
+#' numbers), and an unknown value prints as `<unknown>`, apart from a group
+#' genuinely labelled `"NA"`.
+#' @keywords internal
+#' @noRd
+tost_group_label <- function(groups, i, by_vars) {
+  vals <- vapply(by_vars, function(v) as.character(groups[[v]][i]), "")
+  vals[is.na(vals)] <- "<unknown>"
+  paste(by_vars, "=", vals, collapse = ", ")
+}
+
 #' Pair the complete-trip and incomplete-trip rows of each group by key
 #'
 #' Internal. The two grouped estimates are separate `estimate_catch_rate()`
@@ -553,7 +571,7 @@ perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, th
 
   for (i in seq_len(n)) {
     if (!al$has_complete[i] || !al$has_incomplete[i]) {
-      label <- paste(by_vars, "=", unlist(group_results[i, by_vars, drop = FALSE]), collapse = ", ") # nolint: object_usage_linter
+      label <- tost_group_label(group_results, i, by_vars) # nolint: object_usage_linter
       missing_type <- if (!al$has_complete[i]) "complete" else "incomplete" # nolint: object_usage_linter
       creel_warn( # nolint: object_usage_linter
         c(
@@ -615,6 +633,13 @@ perform_grouped_tost <- function(complete_result, incomplete_result, by_vars, th
 #' @keywords internal
 #' @noRd
 tost_joint_se_diff <- function(design, complete_result, incomplete_result, variance, by_vars = NULL) {
+  # Bus-route and ice rates are Horvitz-Thompson ratios whose interviews are not
+  # clustered on the day (GH #661 left them as they were), so the two rates'
+  # interviews are independent units there and adding the variances is the
+  # consistent SE. NULL tells perform_tost() to do that.
+  if ((design$design_type %||% "instantaneous") %in% c("bus_route", "ice")) {
+    return(NULL)
+  }
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
   usable <- function(df) {
@@ -636,10 +661,21 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
   # that rate's numerator or denominator: the zero is the domain indicator, not
   # an unknown value (an incomplete trip's catch is known, and is not this
   # complete-trip rate's to count).
-  joint$.c_num <- c(comp[[catch_col]], rep(0, n_i))
-  joint$.c_den <- c(comp[[effort_col]], rep(0, n_i))
-  joint$.i_num <- c(rep(0, n_c), inc_num)
-  joint$.i_den <- c(rep(0, n_c), inc_den)
+  c_num <- c(comp[[catch_col]], rep(0, n_i))
+  c_den <- c(comp[[effort_col]], rep(0, n_i))
+  i_num <- c(rep(0, n_c), inc_num)
+  i_den <- c(rep(0, n_c), inc_den)
+
+  # Names no user column can already hold, so a stratum or by= column is
+  # never overwritten by a domain variable.
+  nm <- utils::tail(make.unique(c(names(joint), ".tost_cn", ".tost_cd", ".tost_in", ".tost_id")), 4L)
+  joint[[nm[1]]] <- c_num
+  joint[[nm[2]]] <- c_den
+  joint[[nm[3]]] <- i_num
+  joint[[nm[4]]] <- i_den
+  num_f <- stats::reformulate(c(nm[1], nm[3]))
+  den_f <- stats::reformulate(c(nm[2], nm[4]))
+  ratio_nm <- c(paste0(nm[1], "/", nm[2]), paste0(nm[3], "/", nm[4]))
 
   strata_cols <- design$strata_cols
   strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
@@ -672,15 +708,15 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     k <- al$keys[[i]]
     g <- in_group(k)
     vars <- svy$variables
-    vars$.cn <- vars$.c_num * g
-    vars$.cd <- vars$.c_den * g
-    vars$.in <- vars$.i_num * g
-    vars$.id <- vars$.i_den * g
+    vars[[nm[1]]] <- vars[[nm[1]]] * g
+    vars[[nm[2]]] <- vars[[nm[2]]] * g
+    vars[[nm[3]]] <- vars[[nm[3]]] * g
+    vars[[nm[4]]] <- vars[[nm[4]]] * g
     svy_k <- svy
     svy_k$variables <- vars
-    fit <- suppressWarnings(survey::svyratio(~ .cn + .in, ~ .cd + .id, svy_k, covmat = TRUE))
-    est <- stats::coef(fit)[c(".cn/.cd", ".in/.id")]
-    v <- stats::vcov(fit)[c(".cn/.cd", ".in/.id"), c(".cn/.cd", ".in/.id")]
+    fit <- suppressWarnings(survey::svyratio(num_f, den_f, svy_k, covmat = TRUE))
+    est <- stats::coef(fit)[ratio_nm]
+    v <- stats::vcov(fit)[ratio_nm, ratio_nm]
     reported <- c(al$complete$estimate[i], al$incomplete$estimate[i])
     if (!isTRUE(all.equal(unname(est), reported, tolerance = 1e-8))) {
       cli::cli_abort(
@@ -917,7 +953,8 @@ print.creel_tost_validation <- function(x, ...) {
   y_range <- all_range
 
   # Create color scheme: blue for passed, red for failed
-  # An untested group (NA) is drawn and labelled as not passing.
+  # An untested group (NA) counts as not passing. It has one coordinate
+  # missing, so it has no point to draw; the recommendation names it.
   passed_ok <- vapply(plot_data$passed, isTRUE, logical(1))
   point_colors <- ifelse(passed_ok, "#0066CC", "#CC0000")
 

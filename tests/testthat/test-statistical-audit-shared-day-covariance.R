@@ -299,3 +299,128 @@ test_that("SDC-06 (#664): grouped TOST pairs each group's own complete and incom
   expect_true(is.na(v$plot_data$incomplete_est[1]))
   expect_no_error(utils::capture.output(print(v)))
 })
+
+test_that("SDC-07 (#664): one rate group per stratum is the standard total under the jackknife too", {
+  # Strata are sampled independently, so groups in different strata have no
+  # covariance -- not the small one a replicate method's centring would invent.
+  d <- sdc_bank_boat_design()
+  rg <- data.frame(day_type = c("weekday", "weekend"), grp = c("wd", "we"))
+  old <- sdc_q(estimate_total_catch(d, target = "period_total", variance = "jackknife"))$estimates
+  new <- sdc_q(estimate_total_catch(d, target = "period_total", variance = "jackknife", rate_groups = rg))$estimates
+  expect_equal(new$estimate, old$estimate, tolerance = 1e-10)
+  expect_equal(new$se, old$se, tolerance = 1e-10)
+})
+
+test_that("SDC-08 (#664): the joint TOST never overwrites a user column", {
+  # A stratum column with the name a temporary domain variable would take.
+  d0 <- sdc_tost_design()
+  cal <- sdc_calendar()
+  names(cal)[names(cal) == "day_type"] <- ".tost_cn"
+  iv <- d0$interviews[c("date", "catch_total", "hours_fished", "trip_status", "trip_duration")]
+  d <- sdc_q(add_interviews(
+    creel_design(cal, date = date, strata = .tost_cn), iv, # nolint: object_usage_linter
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hours_fished))
+  v0 <- sdc_q(validate_incomplete_trips(d0, catch_total, hours_fished))
+  expect_equal(v$overall_test$se_diff, v0$overall_test$se_diff, tolerance = 1e-10)
+})
+
+test_that("SDC-09 (#664): a sectioned design is refused, not crashed", {
+  d0 <- sdc_tost_design()
+  iv <- d0$interviews[c("date", "catch_total", "hours_fished", "trip_status", "trip_duration")]
+  iv$section <- rep(c("North", "South"), length.out = nrow(iv))
+  des <- sdc_q(add_sections( # nolint: object_usage_linter
+    creel_design(sdc_calendar(), date = date, strata = day_type), # nolint: object_usage_linter
+    data.frame(section = c("North", "South")), section_col = section # nolint: object_usage_linter
+  ))
+  d <- sdc_q(add_interviews(des, iv, # nolint: object_usage_linter
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+  expect_error(validate_incomplete_trips(d, catch_total, hours_fished), class = "creel_error_tost_sections")
+})
+
+test_that("SDC-10 (#664): bus-route rates keep independent interviews in the TOST", {
+  # Bus-route rates are Horvitz-Thompson ratios over interviews that are not
+  # clustered on the day (GH #661 left them), so the difference's variance is
+  # the sum of the two rates' variances -- and the joint fit, which models the
+  # standard interview survey, must not run (it would compare unweighted
+  # ratios with the weighted estimates and abort).
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:5, day_type = "weekday")
+  sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 60), ct = 180)
+  des <- creel_design(
+    cal,
+    date = date, strata = day_type, survey_type = "bus_route", # nolint: object_usage_linter
+    sampling_frame = sf, site = site, circuit = circuit, # nolint: object_usage_linter
+    wait_time = wait, circuit_time = ct, p_period = 1 # nolint: object_usage_linter
+  )
+  n <- 24L
+  iv <- data.frame(
+    date = rep(cal$date, each = 4), day_type = "weekday",
+    site = rep(c("A", "B"), length.out = n), circuit = "c",
+    hrs = rep(c(2, 3, 1.5, 2.5), length.out = n),
+    trip_status = rep(c("complete", "incomplete"), length.out = n),
+    n_counted = 1L, n_interviewed = 1L
+  )
+  iv$catch <- round(iv$hrs * rep(c(0.8, 1.2, 1, 0.9, 1.1, 1.3), each = 4))
+  d <- sdc_q(add_interviews(des, iv, # nolint: object_usage_linter
+    effort = hrs, catch = catch, trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = hrs, n_counted = n_counted, n_interviewed = n_interviewed, n_anglers = 1 # nolint: object_usage_linter
+  ))
+  v <- sdc_q(validate_incomplete_trips(d, catch, hrs))
+  m <- v$metadata
+  expect_equal(v$overall_test$se_diff, sqrt(m$complete$se^2 + m$incomplete$se^2), tolerance = 1e-12)
+})
+
+test_that("SDC-11 (#664): Goodman's floor holds for the row once rates covary", {
+  # Bank and boat counts trade places day by day (their sum is constant) and
+  # their rates trade places too, so sum_g R_g E_g is the same every day: the
+  # row's first-order variance is 0. The cell-level Goodman corrections are
+  # not, and subtracting them left a negative variance -- an SE of NaN.
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:7, day_type = "weekday")
+  cn <- data.frame(
+    date = rep(cal$date[1:4], each = 2), day_type = "weekday", count_time = c(9, 15),
+    bank_anglers = rep(c(10, 2, 10, 2), each = 2), boat_anglers = rep(c(2, 10, 2, 10), each = 2), hours = 12
+  )
+  long <- derive_angler_count(cn, bank = bank_anglers, boat_anglers = boat_anglers, by_type = TRUE) # nolint: object_usage_linter
+  rb <- c(1, 0.2, 1, 0.2)
+  ro <- c(0.2, 1, 0.2, 1)
+  iv <- do.call(rbind, lapply(1:4, function(i) {
+    type <- rep(c("bank", "boat"), each = 5)
+    hrs <- c(1, 2, 3, 2, 1.5, 1, 2, 3, 2, 1.5)
+    data.frame(
+      date = cal$date[i], day_type = "weekday", angler_type = type, hours_fished = hrs,
+      catch_total = ifelse(type == "bank", rb[i], ro[i]) * hrs, trip_status = "complete", n_anglers = 1L
+    )
+  }))
+  d <- sdc_q(creel_design(cal, date = date, strata = day_type)) # nolint: object_usage_linter
+  d <- sdc_q(add_counts(d, long, # nolint: object_usage_linter
+    count_col = "angler_count", count_time_col = count_time,
+    period_length_col = "hours", unit_cols = c("date", "day_type", "angler_type")
+  ))
+  d <- sdc_q(add_interviews(d, iv, # nolint: object_usage_linter
+    catch = catch_total, effort = hours_fished, trip_status = trip_status, # nolint: object_usage_linter
+    angler_type = angler_type, n_anglers = n_anglers # nolint: object_usage_linter
+  ))
+  rg <- data.frame(day_type = "weekday", angler_type = c("bank", "boat"), grp = c("bank", "boat"))
+  goodman <- sdc_q(estimate_total_catch(d, target = "period_total", rate_groups = rg))$estimates
+  first <- sdc_q(estimate_total_catch(d, target = "period_total", rate_groups = rg, product_variance = "first_order"))$estimates
+  expect_false(is.nan(goodman$se))
+  expect_equal(goodman$se, first$se, tolerance = 1e-8)
+})
+
+test_that("SDC-12 (#664): groups in disjoint strata get no covariance from bootstrap noise", {
+  # The raw svyby() matrix carries a small cross-stratum covariance from the
+  # finite bootstrap draws; strata are sampled independently, so it is zero.
+  d <- sdc_bank_boat_design()
+  rg <- data.frame(day_type = c("weekday", "weekend"), grp = c("wd", "we"))
+  d_rg <- attach_rate_groups(d, resolve_rate_groups(d, rg)) # nolint: object_usage_linter
+  withr::with_seed(1, rates <- sdc_q(rate_group_rates(d_rg, "catch", "bootstrap", 0.95))) # nolint: object_usage_linter
+  raw <- attr(rates, "rate_vcov")
+  v <- shared_day_rate_vcov(d_rg, rates) # nolint: object_usage_linter
+  expect_gt(abs(raw[1, 2]), 0)
+  expect_equal(v[1, 2], 0)
+  expect_equal(diag(v), rates$se^2)
+})
