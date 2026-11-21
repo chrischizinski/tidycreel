@@ -135,6 +135,42 @@
     refused even when a group literally labelled `"NA"` was met on other
     days; the two used to be merged.
 
+- Column names that are not syntactic R names are refused where the data
+  enter
+  ([\#674](https://github.com/chrischizinski/tidycreel/issues/674)).
+  [`creel_design()`](https://chrischizinski.com/tidycreel/dev/reference/creel_design.md),
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md),
+  [`add_sections()`](https://chrischizinski.com/tidycreel/dev/reference/add_sections.md),
+  [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md),
+  [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
+  [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
+  and
+  [`add_ages()`](https://chrischizinski.com/tidycreel/dev/reference/add_ages.md)
+  now stop with `creel_error_nonsyntactic_names` when any column is
+  named, for example, `day type`, `angler count`, `2nd shift`, `_id` or
+  `if`. The error names the columns and a syntactic replacement.
+
+  - **Why:** the estimators build model formulas from column names, and
+    such a name does not parse in one. Every rate, total and grouped
+    effort stopped with an R parse error (“unexpected symbol”).
+  - **Any column counts:** every column is checked, used or not, since
+    any column can later be named in `by`.
+  - **Removed workarounds:** a single non-syntactic strata column for
+    [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+    ([\#422](https://github.com/chrischizinski/tidycreel/issues/422))
+    and spaced names in the aerial GLMM
+    ([\#400](https://github.com/chrischizinski/tidycreel/issues/400))
+    worked by special handling. They are refused too, so the rule is the
+    same everywhere.
+  - **What to do:** rename with
+    `names(x) <- make.names(names(x), unique = TRUE)` or
+    `janitor::clean_names()`, or map file columns with
+    [`creel_schema()`](https://chrischizinski.com/tidycreel/dev/reference/creel_schema.md).
+  - **Old bundles:** a design bundle written earlier from data with such
+    names no longer replays in
+    [`read_design()`](https://chrischizinski.com/tidycreel/dev/reference/read_design.md).
+    Rebuild it from the renamed data.
+
 - [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md)
   corrections
   ([\#669](https://github.com/chrischizinski/tidycreel/issues/669)):
@@ -1674,9 +1710,11 @@
   non-syntactic name, such as `time of flight`
   ([\#400](https://github.com/chrischizinski/tidycreel/issues/400)). The
   default formula, and the interaction formula behind the BIC shape
-  check with `by =`, pasted the names in unquoted and failed to parse. A
-  non-syntactic date or strata column still cannot enter a design
-  ([\#656](https://github.com/chrischizinski/tidycreel/issues/656)).
+  check with `by =`, pasted the names in unquoted and failed to parse.
+  Superseded by
+  [\#674](https://github.com/chrischizinski/tidycreel/issues/674):
+  non-syntactic column names are now refused when the counts are added,
+  so this path is no longer reachable.
 
 - [`summarize_by_county()`](https://chrischizinski.com/tidycreel/dev/reference/summarize_by_county.md)
   maps zip codes stored as numbers
