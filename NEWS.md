@@ -147,6 +147,34 @@
     group rates with their SEs combined as if independent, and `print()`
     showed that mean beside a difference taken from the pooled rates.
 
+* A bootstrap standard error is now `NA` when some bootstrap draws resample
+  none of the estimate's interview days (#673). A group or trip type seen on
+  only a few days in a stratum is missed entirely by some draws, and its rate
+  is 0/0 on those draws. The survey package dropped those draws, behind a
+  warning the package suppressed, and reported the SE of the remaining draws:
+  a variance that assumes the group was sampled, not the one asked for. The
+  estimate is kept, its SE and interval are `NA`, and
+  `creel_warning_bootstrap_undefined_draws` names the group. This applies to
+  catch, harvest and release rates under every estimator (ratio of means,
+  mean of ratios, regression), on bus-route and ice designs, and to the
+  totals built from them. The covariance between rate groups is now taken
+  over every draw; before, it used only the draws in which every group
+  appeared. `validate_incomplete_trips()` reports such a test as not tested
+  instead of failed, in its recommendation, its printed summary and its
+  plot (grey, "NOT TESTED"); a grouped result with nothing failed but a test
+  untested is itself untested (`passed = NA`), where it used to read
+  "Validation failed". On the ungrouped path an untested result, which a
+  test with too few degrees of freedom also gives, used to stop with
+  "missing value where TRUE/FALSE needed". Grouped regression with an
+  intercept under the bootstrap used to stop with "$ operator is invalid for
+  atomic vectors" when a group was missed by a draw; it now reports the slope
+  with an `NA` SE. Taylor is unchanged. The jackknife changes only where
+  deleting a day leaves the estimate undefined, such as a regression slope
+  with no effort contrast left: that SE is now `NA` too, with the same
+  warning, instead of the SE of the other replicates. Deleting one day never
+  empties a group seen on two or more, so jackknife rates are otherwise
+  unchanged.
+
 * `add_counts()` refuses a count timed outside the drawn shift (#426). When the
   design calendar comes from a schedule with shift times (`shift_start`,
   `shift_end`) and `count_time_col` holds clock times, a count more than 15

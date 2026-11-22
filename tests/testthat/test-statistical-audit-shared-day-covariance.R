@@ -294,7 +294,7 @@ test_that("SDC-06 (#664): grouped TOST pairs each group's own complete and incom
   expect_equal(we$diff_estimate, s$r_c - s$r_i, tolerance = 1e-10)
   expect_false(v$passed)
   # The untested group is named as untested, not as a failed test.
-  expect_match(v$recommendation, "not tested (one trip type only): day_type = weekday", fixed = TRUE)
+  expect_match(v$recommendation, "not tested (one trip type only, or no SE): day_type = weekday", fixed = TRUE)
   expect_no_match(v$recommendation, "failed equivalence: day_type = weekday", fixed = TRUE)
   expect_equal(v$plot_data$group_labels, c("day_type = weekday", "day_type = weekend"))
   expect_true(is.na(v$plot_data$incomplete_est[1]))
@@ -484,4 +484,38 @@ test_that("SDC-15 (#669): grouped metadata reports the overall test's own rates"
   # The fixture discriminates: the mean of the group rates is a different number.
   expect_gt(abs(mean(v$group_tests$diff_estimate) - v$overall_test$diff_estimate) +
     abs(mean(sdc_q(estimate_catch_rate(d, by = day_type, estimator = "ratio-of-means", use_trips = "complete"))$estimates$estimate) - c_all$estimate), 1e-3)
+})
+
+test_that("SDC-16 (#673): a rate group missed by some bootstrap draws leaves the total's SE NA", {
+  d <- sdc_bank_boat_design()
+  iv <- d$interviews
+  # Bank anglers interviewed on three weekdays only.
+  keep <- iv$angler_type == "boat" | iv$date %in% sdc_calendar()$date[1:3]
+  base <- d
+  base$interviews <- NULL
+  base$interview_survey <- NULL
+  d <- sdc_q(add_interviews(base, iv[keep, setdiff(names(iv), ".rate_group")], # nolint: object_usage_linter
+    catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
+    trip_status = trip_status, angler_type = angler_type, n_anglers = n_anglers # nolint: object_usage_linter
+  ))
+  rg <- sdc_bank_boat_groups()
+  withr::local_seed(1)
+  hit <- 0L
+  res <- withCallingHandlers(
+    suppressMessages(estimate_total_catch(d, target = "period_total", rate_groups = rg, variance = "bootstrap")),
+    creel_warning_bootstrap_undefined_draws = function(w) {
+      hit <<- hit + 1L
+      invokeRestart("muffleWarning")
+    },
+    warning = function(w) invokeRestart("muffleWarning")
+  )
+  rates <- res$rate_groups$rates
+  expect_true(is.na(rates$se[rates$grp == "bank"]))
+  expect_true(is.finite(rates$se[rates$grp == "boat"]))
+  expect_true(is.finite(res$estimates$estimate))
+  expect_true(is.na(res$estimates$se))
+  expect_identical(hit, 1L)
+  # Taylor has no such draws.
+  tay <- sdc_q(estimate_total_catch(d, target = "period_total", rate_groups = rg))
+  expect_true(is.finite(tay$estimates$se))
 })

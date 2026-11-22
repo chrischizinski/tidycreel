@@ -575,9 +575,9 @@ br_harvest_rate_estimates <- function(
   }
 
   if (is.null(by_vars)) {
-    svy_result <- suppressWarnings(
-      survey::svyratio(~.contribution, denom_formula, svy_br)
-    )
+    svy_result <- with_defined_draws(suppressWarnings( # nolint: object_usage_linter
+      draws_defined(survey::svyratio)(~.contribution, svy_br, denominator = denom_formula) # nolint: object_usage_linter
+    ))
     ci <- confint(svy_result, level = conf_level)
     estimates_df <- tibble::tibble(
       estimate = as.numeric(coef(svy_result)),
@@ -606,16 +606,16 @@ br_harvest_rate_estimates <- function(
   # (GH #317/#321). Without this the grouped rate covered 24 of 36 interviews
   # and reported nothing at all about the other 12.
   svy_br <- promote_na_groups(svy_br, by_vars) # nolint: object_usage_linter
-  svy_result <- suppressWarnings(survey::svyby(
+  svy_result <- with_defined_draws(suppressWarnings(survey::svyby( # nolint: object_usage_linter
     formula = ~.contribution,
     by = by_formula,
     design = svy_br,
-    FUN = survey::svyratio,
+    FUN = draws_defined(survey::svyratio, by_vars), # nolint: object_usage_linter
     denominator = denom_formula,
     vartype = c("se", "ci"),
     ci.level = conf_level,
     keep.names = FALSE
-  ))
+  )))
 
   ratio_col <- paste0(".contribution/", denom_col)
   # Counted and matched on the group key. `aggregate(by = )` drops NA groups,
