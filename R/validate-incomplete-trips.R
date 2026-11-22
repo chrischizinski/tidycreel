@@ -638,8 +638,10 @@ perform_grouped_tost <- function(design, complete_result, incomplete_result, by_
       threshold = threshold,
       n_complete = cdf$n[i],
       n_incomplete = idf$n[i],
-      se_diff = if (is.null(joint)) NULL else unname(joint[al$keys[i]]),
-      df = unname(design_df[al$keys[i]])
+      # By position: name indexing never matches a blank key, the key of a
+      # group labelled "" (GH #686).
+      se_diff = if (is.null(joint)) NULL else unname(joint[match(al$keys[i], names(joint))]),
+      df = unname(design_df[match(al$keys[i], names(design_df))])
     )
 
     group_results$p_lower[i] <- tost_result$p_lower
@@ -703,7 +705,10 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     for (s in unique(as.character(design$catch[[sp_col]]))) {
       one <- function(res) {
         if (bus_route) {
-          attr(res, "br_rate_rows") <- attr(res, "br_rate_rows_species")[[s]]
+          # By position: `[[` never matches a blank name, and "" is a label
+          # add_catch() accepts.
+          rows_sp <- attr(res, "br_rate_rows_species")
+          attr(res, "br_rate_rows") <- rows_sp[[match(s, names(rows_sp))]]
         } else {
           res$design$interviews <- make_species_catch_for_interviews(res$design, s, "caught") # nolint: object_usage_linter
           res$design$catch_col <- ".species_count"
@@ -723,7 +728,7 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
       )
       # Within one species the inner keys and the full keys align the same
       # rows in the same order.
-      out[align_tost_groups(c_s$estimates, i_s$estimates, by_vars)$keys] <- unname(se)
+      out[match(align_tost_groups(c_s$estimates, i_s$estimates, by_vars)$keys, names(out))] <- unname(se)
     }
     return(out)
   }
