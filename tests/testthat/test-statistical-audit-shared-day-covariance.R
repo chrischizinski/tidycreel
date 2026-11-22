@@ -343,20 +343,27 @@ test_that("SDC-09 (#664): a sectioned design is refused, not crashed", {
   expect_error(validate_incomplete_trips(d, catch_total, hours_fished), class = "creel_error_tost_sections")
 })
 
-test_that("SDC-10 (#664, #669): bus-route TOST adds the variances and counts days", {
-  # Bus-route rates are Horvitz-Thompson ratios over their own day-clustered
-  # survey, which the joint fit does not model: run on them it would compare
-  # unweighted ratios with the weighted estimates and abort. The two variances
-  # are added instead -- conservative, since the rates share days (GH #671) --
-  # and the degrees of freedom are days minus strata, as everywhere (6 - 1).
+# A bus-route (or ice) design of six weekdays, two sites a day, one party per
+# visit; each day has its own catch rate, which complete and incomplete trips
+# share. Every inclusion probability is equal, so the HT ratio of means and
+# the Hajek mean of ratios are the plain ones sdc_tost_scores() linearises.
+sdc_br_design <- function(survey_type = "bus_route") {
   cal <- data.frame(date = as.Date("2024-06-03") + 0:5, day_type = "weekday")
-  sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 60), ct = 180)
-  des <- creel_design(
-    cal,
-    date = date, strata = day_type, survey_type = "bus_route", # nolint: object_usage_linter
-    sampling_frame = sf, site = site, circuit = circuit, # nolint: object_usage_linter
-    wait_time = wait, circuit_time = ct, p_period = 1 # nolint: object_usage_linter
-  )
+  des <- if (survey_type == "ice") {
+    creel_design(
+      cal,
+      date = date, strata = day_type, survey_type = "ice", # nolint: object_usage_linter
+      effort_type = "time_on_ice", p_period = 1
+    )
+  } else {
+    sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 60), ct = 180)
+    creel_design(
+      cal,
+      date = date, strata = day_type, survey_type = "bus_route", # nolint: object_usage_linter
+      sampling_frame = sf, site = site, circuit = circuit, # nolint: object_usage_linter
+      wait_time = wait, circuit_time = ct, p_period = 1 # nolint: object_usage_linter
+    )
+  }
   n <- 24L
   iv <- data.frame(
     date = rep(cal$date, each = 4), day_type = "weekday",
@@ -365,15 +372,61 @@ test_that("SDC-10 (#664, #669): bus-route TOST adds the variances and counts day
     trip_status = rep(c("complete", "incomplete"), length.out = n),
     n_counted = 1L, n_interviewed = 1L
   )
-  iv$catch <- round(iv$hrs * rep(c(0.8, 1.2, 1, 0.9, 1.1, 1.3), each = 4))
-  d <- sdc_q(add_interviews(des, iv, # nolint: object_usage_linter
-    effort = hrs, catch = catch, trip_status = trip_status, # nolint: object_usage_linter
+  if (survey_type == "ice") iv$site <- iv$circuit <- NULL
+  iv$catch_total <- round(iv$hrs * rep(c(0.8, 1.2, 1, 0.9, 1.1, 1.3), each = 4))
+  iv$hours_fished <- iv$hrs
+  sdc_q(add_interviews(des, iv, # nolint: object_usage_linter
+    effort = hrs, catch = catch_total, trip_status = trip_status, # nolint: object_usage_linter
     trip_duration = hrs, n_counted = n_counted, n_interviewed = n_interviewed, n_anglers = 1 # nolint: object_usage_linter
   ))
-  v <- sdc_q(validate_incomplete_trips(d, catch, hrs))
+}
+
+sdc_br_reference <- function(iv, in_group = rep(TRUE, nrow(iv))) {
+  sc <- sdc_tost_scores(iv, in_group)
+  st <- sdc_day_stratum(iv)
+  v <- sdc_cov(sc$z_c, sc$z_c, iv$date, st) + sdc_cov(sc$z_i, sc$z_i, iv$date, st) -
+    2 * sdc_cov(sc$z_c, sc$z_i, iv$date, st)
+  sqrt(v)
+}
+
+test_that("SDC-10 (#671): bus-route TOST carries the two rates' shared-day covariance", {
+  # Bus-route rates are HT ratios on a survey clustered on the day, so the
+  # complete and incomplete rates covary as on any design. Their variances were
+  # added, as if independent: here more than twice the SE of the difference.
+  d <- sdc_br_design()
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hrs)) # nolint: object_usage_linter
   m <- v$metadata
-  expect_equal(v$overall_test$se_diff, sqrt(m$complete$se^2 + m$incomplete$se^2), tolerance = 1e-12)
+  expect_equal(v$overall_test$se_diff, sdc_br_reference(d$interviews), tolerance = 1e-10)
+  expect_lt(v$overall_test$se_diff, 0.5 * sqrt(m$complete$se^2 + m$incomplete$se^2))
+  # Degrees of freedom are days minus strata, as everywhere (6 - 1).
   expect_equal(v$overall_test$df, 5)
+})
+
+test_that("SDC-17 (#671): ice designs, the degenerate bus route, take the same joint fit", {
+  d <- sdc_br_design("ice")
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hrs)) # nolint: object_usage_linter
+  expect_equal(v$overall_test$se_diff, sdc_br_reference(d$interviews), tolerance = 1e-10)
+})
+
+test_that("SDC-18 (#671): grouped bus-route TOST counts the covariance within each group", {
+  d <- sdc_br_design()
+  iv <- d$interviews
+  iv$zone <- rep(c("n", "n", "s", "s"), length.out = nrow(iv))
+  d$interviews <- iv
+  # Called directly: twelve trips a group, six of each type, is below the
+  # public function's floor of ten per type.
+  joint <- tost_joint_se_diff( # nolint: object_usage_linter
+    d,
+    sdc_q(estimate_catch_rate(d, by = zone)), # nolint: object_usage_linter
+    sdc_q(estimate_catch_rate(d, by = zone, estimator = "mor", use_trips = "incomplete")), # nolint: object_usage_linter
+    "taylor",
+    by_vars = "zone"
+  )
+  for (z in c("n", "s")) {
+    expect_equal(unname(joint[grep(z, names(joint))]), sdc_br_reference(iv, iv$zone == z),
+      tolerance = 1e-10, info = z
+    )
+  }
 })
 
 test_that("SDC-11 (#664): Goodman's floor holds for the row once rates covary", {

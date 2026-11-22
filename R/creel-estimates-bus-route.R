@@ -566,6 +566,11 @@ br_harvest_rate_estimates <- function(
     ids = ~.psu
   )
   svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
+  # The rows the ratio is taken over, for validate_incomplete_trips() to fit
+  # the complete and incomplete rates jointly on one survey (GH #671).
+  rate_rows <- interviews[intersect(c(strata_cols, by_vars, ".psu"), names(interviews))]
+  rate_rows$.br_num <- interviews$.contribution
+  rate_rows$.br_den <- interviews[[denom_col]]
 
   # A zero denominator leaves the rate undefined. Abort rather than return Inf
   # or NaN dressed up as a harvest rate.
@@ -598,6 +603,7 @@ br_harvest_rate_estimates <- function(
       unit = rate_unit(design) # nolint: object_usage_linter
     )
     attr(result, "site_contributions") <- site_table
+    attr(result, "br_rate_rows") <- rate_rows
     return(result)
   }
 
@@ -655,6 +661,7 @@ br_harvest_rate_estimates <- function(
     unit = rate_unit(design) # nolint: object_usage_linter
   )
   attr(result, "site_contributions") <- site_table
+  attr(result, "br_rate_rows") <- rate_rows
   result
 }
 
