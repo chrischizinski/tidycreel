@@ -155,3 +155,53 @@ test_that("BRD-05 (#680): the day is the interviews' own date column, whatever i
   ))
   expect_equal(tot_renamed$estimates$se, tot_same$estimates$se, tolerance = 1e-12)
 })
+
+test_that("BRD-06 (#680): a domain kept on one day of several is refused, not given SE 0", {
+  # Complete trips on day 1 only; days 2-6 were interviewed. The ratio's score
+  # sums to 0 on its one day and is 0 on the padded ones: an SE of 0, which
+  # the standard designs refuse (GH #663).
+  iv <- brd_interviews(drop_complete = 2:6)
+  expect_error(
+    brd_q(estimate_catch_rate(brd_design(iv))), # nolint: object_usage_linter
+    class = "creel_error_single_psu"
+  )
+})
+
+test_that("BRD-07 (#680): grouping a rate by stratum reports no group of padded days", {
+  # The weekend held incomplete trips only: its padded days form no
+  # complete-trip group, which would be a 0/0 rate.
+  iv <- brd_interviews(drop_complete = 4:6, strata = TRUE)
+  r <- brd_q(estimate_catch_rate(brd_design(iv, strata = TRUE), by = day_type)) # nolint: object_usage_linter
+  expect_identical(r$estimates$day_type, "weekday")
+  expect_true(all(is.finite(r$estimates$estimate)))
+})
+
+test_that("BRD-08 (#680): the register's empty days use the interviews' own date column", {
+  # With the date renamed and a day with no complete trip, the register path
+  # wrote the empty day under the calendar's name and rbind() stopped on the
+  # unequal columns.
+  iv <- brd_interviews(drop_complete = 6L)
+  same <- brd_q(estimate_total_catch( # nolint: object_usage_linter
+    brd_design(iv, sampled = TRUE),
+    target = "sampled_days"
+  ))
+  renamed <- brd_q(estimate_total_catch( # nolint: object_usage_linter
+    brd_design(iv, date_name = "fish_day", sampled = TRUE),
+    target = "sampled_days"
+  ))
+  expect_equal(renamed$estimates$se, same$estimates$se, tolerance = 1e-12)
+})
+
+test_that("BRD-09 (#680): a total grouped by the renamed date keeps the zero day", {
+  # A day total of 0 is a day's total, kept when grouping by the day -- under
+  # the interviews' own date name as under the calendar's.
+  iv <- brd_interviews(drop_complete = 6L)
+  same <- brd_q(estimate_total_catch(brd_design(iv), by = date, target = "sampled_days")) # nolint: object_usage_linter
+  renamed <- brd_q(estimate_total_catch( # nolint: object_usage_linter
+    brd_design(iv, date_name = "fish_day"),
+    by = fish_day, target = "sampled_days" # nolint: object_usage_linter
+  ))
+  expect_identical(nrow(same$estimates), 6L)
+  expect_identical(nrow(renamed$estimates), 6L)
+  expect_equal(sort(renamed$estimates$estimate), sort(same$estimates$estimate), tolerance = 1e-12)
+})

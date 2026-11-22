@@ -162,7 +162,11 @@
   the sampled-day total catch SE goes from 3.7 to 11.4 (estimate unchanged).
   The total with a register of sampled days already counted such a day and
   is unchanged. A stratum with trips of the kind on only one of its days
-  used to stop with "Stratum has only one PSU"; it is now estimated. The
+  used to stop with "Stratum has only one PSU"; it is now estimated. A rate
+  whose kept trips all come from one day, or a `by` group met on one day,
+  is refused with `creel_error_single_psu`, as on the standard designs:
+  its standard error would be 0. A rate grouped by stratum or date reports
+  no group made only of days without trips of the kind. The
   day is also now the interviews' own date column: with
   `add_interviews(date_col = )` naming it apart from the calendar's, the
   bus-route survey fell back to one sampling unit per interview row.

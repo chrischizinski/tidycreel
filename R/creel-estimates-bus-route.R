@@ -564,6 +564,17 @@ br_harvest_rate_estimates <- function(
   # A trip filter estimates a domain: every interviewed day stays a sampled
   # day, with nothing from it if no trip of the type was kept (GH #680).
   interviews <- br_pad_interviewed_days(interviews, design, c(".contribution", denom_col), copy_row = TRUE)
+  # Kept on one day in all (or a group met on one day), the ratio's score is
+  # 0 on every day and its SE would be 0: refused, as on the standard path
+  # (GH #661, #663). The padded days are not the domain's interviews.
+  refuse_one_day_groups( # nolint: object_usage_linter
+    list(
+      variables = interviews,
+      prob = ifelse(interviews$.synthetic, Inf, 1),
+      cluster = data.frame(psu = interviews$.psu)
+    ),
+    by_vars, call
+  )
   svy_br <- build_interview_survey( # nolint: object_usage_linter
     interviews,
     strata = strata_formula,
@@ -630,6 +641,12 @@ br_harvest_rate_estimates <- function(
     ci.level = conf_level,
     keep.names = FALSE
   )))
+
+  # A padded day carries its own stratum and date, so grouping by either
+  # can give svyby() a group made only of padded rows, with a 0/0 rate. It
+  # describes no interview and is dropped.
+  real_keys <- group_key(interviews[!interviews$.synthetic, , drop = FALSE], by_vars) # nolint: object_usage_linter
+  svy_result <- svy_result[group_key(svy_result, by_vars) %in% real_keys, , drop = FALSE] # nolint: object_usage_linter
 
   ratio_col <- paste0(".contribution/", denom_col)
   # Counted and matched on the group key. `aggregate(by = )` drops NA groups,
@@ -1570,7 +1587,10 @@ br_complete_trips_only <- function(
 #' @noRd
 br_pad_interviewed_days <- function(rows, design, zero_cols, copy_row = TRUE) {
   if (!".synthetic" %in% names(rows)) rows$.synthetic <- rep(FALSE, nrow(rows))
-  if (nrow(rows) == 0L || is.null(design$interviews)) {
+  # Without a date column br_add_psu_key() keys each row on its own, and row
+  # numbers of the subset and of every interview cannot be matched.
+  no_day <- is.null(interview_psu_col(design, rows)) # nolint: object_usage_linter
+  if (nrow(rows) == 0L || is.null(design$interviews) || no_day) {
     return(rows)
   }
   keys <- intersect(c(design$strata_cols, ".psu"), names(rows))
@@ -1911,9 +1931,11 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
     # An interviewed day with no complete trip is a sampled day whose total is
     # a known 0, as a registered empty day is below (GH #680).
     interviews <- br_pad_interviewed_days(interviews, design, ".contribution", copy_row = FALSE)
-    interviews$.br_weight <- rep(1, nrow(interviews))
+    augmented <- any(interviews$.synthetic)
+    # Read by the overall total only when days were added.
+    if (augmented) interviews$.br_weight <- rep(1, nrow(interviews))
     svy <- build_interview_survey(interviews, strata = strata_formula, ids = ~.psu) # nolint: object_usage_linter
-    return(list(survey = svy, interviews = interviews, augmented = any(interviews$.synthetic)))
+    return(list(survey = svy, interviews = interviews, augmented = augmented))
   }
 
   date_col <- design$date_col
@@ -1955,11 +1977,11 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
   # name apart from the calendar's (GH #680).
   iv_date <- interview_psu_col(design, interviews) %||% date_col # nolint: object_usage_linter
   empty <- worked[!as.character(worked[[date_col]]) %in% as.character(interviews[[iv_date]]), , drop = FALSE]
+  names(empty)[names(empty) == date_col] <- iv_date
   if (nrow(empty) > 0L) {
     zero <- interviews[rep(NA_integer_, nrow(empty)), , drop = FALSE]
     rownames(zero) <- NULL
     for (col in names(empty)) zero[[col]] <- empty[[col]]
-    zero[[iv_date]] <- empty[[date_col]]
     zero$.contribution <- 0
     zero$.synthetic <- TRUE
     interviews <- rbind(interviews, zero)
@@ -2002,7 +2024,10 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
 br_drop_synthetic_groups <- function(svy_result, interviews, by_vars, design) {
   # Grouped by calendar columns alone, an empty day does belong to its group:
   # a stratum whose worked days all came back empty has a total of 0, known.
-  if (all(by_vars %in% c(design$date_col, design$strata_cols))) {
+  # The interviews' own date column is a day key too (GH #680).
+  iv_date <- interview_psu_col(design, interviews) # nolint: object_usage_linter
+  day_cols <- c(design$date_col, iv_date, design$strata_cols)
+  if (all(by_vars %in% day_cols)) {
     return(svy_result)
   }
   real <- group_key(interviews[!interviews$.synthetic, , drop = FALSE], by_vars) # nolint: object_usage_linter
