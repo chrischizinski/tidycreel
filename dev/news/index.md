@@ -1752,6 +1752,32 @@
 
 ### Bug fixes
 
+- `validate_incomplete_trips(by = species)` tests every species in the
+  catch table
+  ([\#681](https://github.com/chrischizinski/tidycreel/issues/681)).
+  With a catch table, each species’ rate is taken over every interview,
+  using that species’ count (0 where none was caught). The test instead
+  grouped the interviews on their own `species` column, which may record
+  the species sought.
+
+  - On standard designs, the joint fit read the design’s catch column
+    rather than the species’ counts. Any species whose counts differed
+    from it stopped the test with an internal error.
+
+  - On every design, a species missing from the interviews’ column, such
+    as perch when every interview records walleye, counted 0 degrees of
+    freedom and was reported untested.
+
+  - `by = species` was looked up in the interviews only, so it stopped
+    with “Column `species` doesn’t exist” unless the interviews also
+    carried a column of that name. The rate estimators already accepted
+    it.
+
+  Each species is now fitted on its own counts, and its degrees of
+  freedom count every interviewed day. `by` is resolved as
+  [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
+  resolves it.
+
 - [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
   [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
   and
