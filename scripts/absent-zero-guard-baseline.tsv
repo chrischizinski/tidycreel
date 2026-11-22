@@ -32,3 +32,8 @@ R/validate-incomplete-trips.R	c_den <- c(comp[[effort_col]], rep(0, n_i))	domain
 R/validate-incomplete-trips.R	c_num <- c(comp[[catch_col]], rep(0, n_i))	domain indicator: an incomplete trip adds nothing to the complete-trip rate's numerator (GH #664)
 R/validate-incomplete-trips.R	i_den <- c(rep(0, n_c), inc_den)	domain indicator: a complete trip adds nothing to the incomplete-trip rate's denominator (GH #664)
 R/validate-incomplete-trips.R	i_num <- c(rep(0, n_c), inc_num)	domain indicator: a complete trip adds nothing to the incomplete-trip rate's numerator (GH #664)
+R/validate-incomplete-trips.R	c_den <- c(rc$den, rep(0, n_i))	domain indicator: an incomplete trip adds nothing to the bus-route complete-trip rate's denominator (GH #671)
+R/validate-incomplete-trips.R	c_num <- c(rc$num, rep(0, n_i))	domain indicator: an incomplete trip adds nothing to the bus-route complete-trip rate's numerator (GH #671)
+R/validate-incomplete-trips.R	i_den <- c(rep(0, n_c), ri$den)	domain indicator: a complete trip adds nothing to the bus-route incomplete-trip rate's denominator (GH #671)
+R/validate-incomplete-trips.R	i_num <- c(rep(0, n_c), ri$num)	domain indicator: a complete trip adds nothing to the bus-route incomplete-trip rate's numerator (GH #671)
+R/validate-incomplete-trips.R	zeros <- rep(0, nrow(missing))	an interviewed day neither rate kept a row from (all trips truncated): it was sampled and contributes nothing to either domain (GH #671, as GH #663)

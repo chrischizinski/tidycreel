@@ -90,10 +90,9 @@
 #' \code{variance} method, and the covariance comes from that fit (GH #664).
 #' The t tests use the design's degrees of freedom, interviewed days minus
 #' strata over the strata a comparison draws on, because that variance is
-#' between days (GH #669). On bus-route and ice designs the two rates'
-#' variances are still added: their rates are clustered on the day as well,
-#' so this overstates the SE of the difference, which makes the test
-#' conservative (GH #671).
+#' between days (GH #669). Bus-route and ice rates, Horvitz-Thompson ratios
+#' clustered on the day, are fitted jointly the same way, on one survey of
+#' both trip sets' contributions (GH #671).
 #'
 #' Sample size requirements: At least 10 complete trips AND 10 incomplete trips
 #' are required for stable variance estimation and TOST. The function errors
@@ -690,39 +689,70 @@ perform_grouped_tost <- function(design, complete_result, incomplete_result, by_
 #' @keywords internal
 #' @noRd
 tost_joint_se_diff <- function(design, complete_result, incomplete_result, variance, by_vars = NULL) {
-  # Bus-route and ice rates are Horvitz-Thompson ratios over their own
-  # day-clustered survey (br_add_psu_key()), which this fit does not model, so
-  # NULL tells perform_tost() to add the two variances. Their rates share days
-  # too, so the sum overstates the SE of the difference -- conservative for an
-  # equivalence test, but not the joint SE (GH #671).
-  if ((design$design_type %||% "instantaneous") %in% c("bus_route", "ice")) {
-    return(NULL)
-  }
-  catch_col <- design$catch_col
-  effort_col <- design$angler_effort_col
-  usable <- function(df) {
-    e <- df[[effort_col]]
-    df[!is.na(e) & e != 0, , drop = FALSE]
-  }
-  comp <- usable(complete_result$design$interviews)
-  inc <- usable(incomplete_result$design$interviews)
-  inc$cpue_ratio <- inc[[catch_col]] / inc[[effort_col]]
-  w <- mor_party_weights(incomplete_result$design, inc, "cpue_ratio") # nolint: object_usage_linter
-  inc_num <- if (w$weighted) w$data$.mor_num else inc$cpue_ratio
-  inc_den <- if (w$weighted) w$data$.mor_n else rep(1, nrow(inc))
+  strata_cols <- design$strata_cols
+  strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
+  bus_route <- (design$design_type %||% "instantaneous") %in% c("bus_route", "ice")
+  if (bus_route) {
+    # Bus-route and ice rates are Horvitz-Thompson ratios over their own
+    # survey clustered on the day (br_add_psu_key()). Both rates' numerator
+    # and denominator contributions are stacked on one such survey, each zero
+    # outside its own trips (GH #671). The zeros are domain indicators, as
+    # below: a trip of the other type adds nothing to this rate.
+    rc <- attr(complete_result, "br_rate_rows")
+    ri <- attr(incomplete_result, "br_rate_rows")
+    cols <- intersect(names(rc$rows), names(ri$rows))
+    joint <- rbind(rc$rows[cols], ri$rows[cols])
+    n_c <- nrow(rc$rows)
+    n_i <- nrow(ri$rows)
+    c_num <- c(rc$num, rep(0, n_i))
+    c_den <- c(rc$den, rep(0, n_i))
+    i_num <- c(rep(0, n_c), ri$num)
+    i_den <- c(rep(0, n_c), ri$den)
+    # Every interviewed day stays a sampled day, as on the standard path
+    # (GH #663): a day whose trips were all truncated, or of neither type
+    # kept, enters with zero contributions, and the degrees of freedom count
+    # it too.
+    all_days <- br_add_psu_key(design$interviews, design) # nolint: object_usage_linter
+    frame <- unique(all_days[intersect(c(strata_cols, ".psu"), names(joint))])
+    day_key <- function(df) do.call(paste, c(lapply(df[names(frame)], as.character), sep = "\u001f"))
+    missing <- frame[!day_key(frame) %in% day_key(joint), , drop = FALSE]
+    if (nrow(missing) > 0L) {
+      filler <- joint[rep(1L, nrow(missing)), , drop = FALSE]
+      for (k in names(frame)) filler[[k]] <- missing[[k]]
+      joint <- rbind(joint, filler)
+      zeros <- rep(0, nrow(missing))
+      c_num <- c(c_num, zeros)
+      c_den <- c(c_den, zeros)
+      i_num <- c(i_num, zeros)
+      i_den <- c(i_den, zeros)
+    }
+  } else {
+    catch_col <- design$catch_col
+    effort_col <- design$angler_effort_col
+    usable <- function(df) {
+      e <- df[[effort_col]]
+      df[!is.na(e) & e != 0, , drop = FALSE]
+    }
+    comp <- usable(complete_result$design$interviews)
+    inc <- usable(incomplete_result$design$interviews)
+    inc$cpue_ratio <- inc[[catch_col]] / inc[[effort_col]]
+    w <- mor_party_weights(incomplete_result$design, inc, "cpue_ratio") # nolint: object_usage_linter
+    inc_num <- if (w$weighted) w$data$.mor_num else inc$cpue_ratio
+    inc_den <- if (w$weighted) w$data$.mor_n else rep(1, nrow(inc))
 
-  cols <- intersect(names(comp), names(inc))
-  joint <- rbind(comp[cols], inc[cols])
-  n_c <- nrow(comp)
-  n_i <- nrow(inc)
-  # Domain variables. A trip outside a rate's domain contributes nothing to
-  # that rate's numerator or denominator: the zero is the domain indicator, not
-  # an unknown value (an incomplete trip's catch is known, and is not this
-  # complete-trip rate's to count).
-  c_num <- c(comp[[catch_col]], rep(0, n_i))
-  c_den <- c(comp[[effort_col]], rep(0, n_i))
-  i_num <- c(rep(0, n_c), inc_num)
-  i_den <- c(rep(0, n_c), inc_den)
+    cols <- intersect(names(comp), names(inc))
+    joint <- rbind(comp[cols], inc[cols])
+    n_c <- nrow(comp)
+    n_i <- nrow(inc)
+    # Domain variables. A trip outside a rate's domain contributes nothing to
+    # that rate's numerator or denominator: the zero is the domain indicator,
+    # not an unknown value (an incomplete trip's catch is known, and is not
+    # this complete-trip rate's to count).
+    c_num <- c(comp[[catch_col]], rep(0, n_i))
+    c_den <- c(comp[[effort_col]], rep(0, n_i))
+    i_num <- c(rep(0, n_c), inc_num)
+    i_den <- c(rep(0, n_c), inc_den)
+  }
 
   # Names no user column can already hold, so a stratum or by= column is
   # never overwritten by a domain variable.
@@ -735,13 +765,15 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
   den_f <- stats::reformulate(c(nm[2], nm[4]))
   ratio_nm <- c(paste0(nm[1], "/", nm[2]), paste0(nm[3], "/", nm[4]))
 
-  strata_cols <- design$strata_cols
-  strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
-  svy <- build_interview_survey( # nolint: object_usage_linter
-    joint,
-    strata = strata_formula,
-    psu = interview_psu_col(design, joint), frame = interview_day_frame(design) # nolint: object_usage_linter
-  )
+  svy <- if (bus_route) {
+    build_interview_survey(joint, strata = strata_formula, ids = ~.psu) # nolint: object_usage_linter
+  } else {
+    build_interview_survey( # nolint: object_usage_linter
+      joint,
+      strata = strata_formula,
+      psu = interview_psu_col(design, joint), frame = interview_day_frame(design) # nolint: object_usage_linter
+    )
+  }
   svy <- get_variance_design(svy, variance) # nolint: object_usage_linter
 
   al <- if (is.null(by_vars)) {
