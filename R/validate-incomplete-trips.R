@@ -687,23 +687,27 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
   strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
   bus_route <- (design$design_type %||% "instantaneous") %in% c("bus_route", "ice")
   sp_col <- tost_species_col(design, by_vars)
-  if (!bus_route && split_species && !is.null(sp_col)) {
+  if (split_species && !is.null(sp_col)) {
     # A species rate's numerator is that species' count on every interview,
     # zero where none was caught (estimate_cpue_species()), not the design's
     # catch column, and its group is the catch table's species, not the
     # interviews' own species column (GH #681). Each species is fitted on its
     # own counts, grouped by the other `by` columns only: the species is not
     # written into the interviews, where a column of that name may be a
-    # stratum. The bus-route rows already carry each species' contributions
-    # (br_rate_rows).
+    # stratum (GH #686). The bus-route species rates keep each species' rate
+    # rows apart (br_rate_rows_species).
     al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
     out <- stats::setNames(rep(NA_real_, length(al$keys)), al$keys)
     inner_vars <- setdiff(by_vars, sp_col)
     if (length(inner_vars) == 0L) inner_vars <- NULL
     for (s in unique(as.character(design$catch[[sp_col]]))) {
       one <- function(res) {
-        res$design$interviews <- make_species_catch_for_interviews(res$design, s, "caught") # nolint: object_usage_linter
-        res$design$catch_col <- ".species_count"
+        if (bus_route) {
+          attr(res, "br_rate_rows") <- attr(res, "br_rate_rows_species")[[s]]
+        } else {
+          res$design$interviews <- make_species_catch_for_interviews(res$design, s, "caught") # nolint: object_usage_linter
+          res$design$catch_col <- ".species_count"
+        }
         keep <- as.character(res$estimates[[sp_col]]) == s
         res$estimates <- res$estimates[keep, , drop = FALSE]
         res

@@ -1306,9 +1306,13 @@
     "Column `species` doesn't exist" unless the interviews also carried a
     column of that name. The rate estimators already accepted it.
 
+  - On bus-route designs, each species' rate rows were labelled by writing
+    the species into a column of that name. A calendar stratum with the same
+    name was overwritten, and the joint fit ran on the wrong strata (#686).
+
   Each species is now fitted on its own counts, and its degrees of freedom
   count every interviewed day. `by` is resolved as `estimate_catch_rate()`
-  resolves it.
+  resolves it. On every design, the species is kept apart from the strata.
 * `add_catch()`, `add_lengths()` and `add_ages()` say which column they
   wanted when the interview ids do not match (#374). `catch_uid`,
   `length_uid` and `age_uid` name the column holding each row's interview id,
