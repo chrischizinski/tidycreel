@@ -1976,7 +1976,10 @@ warn_tier2_interview_issues <- function(design) {
 #' @keywords internal
 #' @noRd
 group_value_labels <- function(vals) {
-  out <- as.character(unlist(vals, use.names = FALSE))
+  # Column by column: unlist() drops each column's class first, so a Date came
+  # out as its day number and a factor beside any non-character column as its
+  # level code (GH #679).
+  out <- vapply(vals, function(x) as.character(x[1L]), character(1), USE.NAMES = FALSE)
   out[is.na(out)] <- "<unknown>"
   out
 }
