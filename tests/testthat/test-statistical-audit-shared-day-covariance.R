@@ -345,10 +345,13 @@ test_that("SDC-09 (#664): a sectioned design is refused, not crashed", {
 
 # A bus-route (or ice) design of six weekdays, two sites a day, one party per
 # visit; each day has its own catch rate, which complete and incomplete trips
-# share. Every inclusion probability is equal, so the HT ratio of means and
-# the Hajek mean of ratios are the plain ones sdc_tost_scores() linearises.
-sdc_br_design <- function(survey_type = "bus_route") {
-  cal <- data.frame(date = as.Date("2024-06-03") + 0:5, day_type = "weekday")
+# share. Site B is waited at twice as long as site A, so its inclusion
+# probability is twice A's and the HT and Hajek weights differ by site. With
+# `short_day`, a seventh weekday holds only incomplete trips shorter than the
+# 0.5-hour truncation: no rate keeps a row from it, but it was interviewed.
+sdc_br_design <- function(survey_type = "bus_route", short_day = FALSE) {
+  n_days <- if (short_day) 7L else 6L
+  cal <- data.frame(date = as.Date("2024-06-03") + seq_len(n_days) - 1L, day_type = "weekday")
   des <- if (survey_type == "ice") {
     creel_design(
       cal,
@@ -356,7 +359,7 @@ sdc_br_design <- function(survey_type = "bus_route") {
       effort_type = "time_on_ice", p_period = 1
     )
   } else {
-    sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 60), ct = 180)
+    sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 120), ct = 180)
     creel_design(
       cal,
       date = date, strata = day_type, survey_type = "bus_route", # nolint: object_usage_linter
@@ -366,27 +369,46 @@ sdc_br_design <- function(survey_type = "bus_route") {
   }
   n <- 24L
   iv <- data.frame(
-    date = rep(cal$date, each = 4), day_type = "weekday",
+    date = rep(cal$date[1:6], each = 4), day_type = "weekday",
     site = rep(c("A", "B"), length.out = n), circuit = "c",
     hrs = rep(c(2, 3, 1.5, 2.5), length.out = n),
     trip_status = rep(c("complete", "incomplete"), length.out = n),
     n_counted = 1L, n_interviewed = 1L
   )
-  if (survey_type == "ice") iv$site <- iv$circuit <- NULL
   iv$catch_total <- round(iv$hrs * rep(c(0.8, 1.2, 1, 0.9, 1.1, 1.3), each = 4))
-  iv$hours_fished <- iv$hrs
+  if (short_day) {
+    extra <- iv[1:2, ]
+    extra$date <- cal$date[7]
+    extra$hrs <- 0.3
+    extra$trip_status <- "incomplete"
+    extra$catch_total <- 0
+    iv <- rbind(iv, extra)
+  }
+  if (survey_type == "ice") iv$site <- iv$circuit <- NULL
+  iv$iid <- seq_len(nrow(iv))
   sdc_q(add_interviews(des, iv, # nolint: object_usage_linter
     effort = hrs, catch = catch_total, trip_status = trip_status, # nolint: object_usage_linter
     trip_duration = hrs, n_counted = n_counted, n_interviewed = n_interviewed, n_anglers = 1 # nolint: object_usage_linter
   ))
 }
 
-sdc_br_reference <- function(iv, in_group = rep(TRUE, nrow(iv))) {
-  sc <- sdc_tost_scores(iv, in_group)
+# The SE of the HT complete-trip ratio of means minus the Hajek incomplete-trip
+# mean of ratios, from the definitions: linearisation scores weighted by
+# 1 / pi (site A pi = 60/180, site B 120/180; 1 on ice), summed by day over
+# every interviewed day.
+sdc_br_reference <- function(iv, in_group = rep(TRUE, nrow(iv)), truncate_at = 0.5) {
+  w <- if ("site" %in% names(iv)) ifelse(iv$site == "A", 3, 1.5) else rep(1, nrow(iv))
+  comp <- iv$trip_status == "complete" & in_group
+  inc <- iv$trip_status == "incomplete" & in_group & iv$hrs >= truncate_at
+  y <- iv$catch_total
+  x <- iv$hrs
+  r_c <- sum(w[comp] * y[comp]) / sum(w[comp] * x[comp])
+  ratio <- y / x
+  r_i <- sum(w[inc] * ratio[inc]) / sum(w[inc])
+  z_c <- ifelse(comp, w * (y - r_c * x) / sum(w[comp] * x[comp]), 0)
+  z_i <- ifelse(inc, w * (ratio - r_i) / sum(w[inc]), 0)
   st <- sdc_day_stratum(iv)
-  v <- sdc_cov(sc$z_c, sc$z_c, iv$date, st) + sdc_cov(sc$z_i, sc$z_i, iv$date, st) -
-    2 * sdc_cov(sc$z_c, sc$z_i, iv$date, st)
-  sqrt(v)
+  sqrt(sdc_cov(z_c, z_c, iv$date, st) + sdc_cov(z_i, z_i, iv$date, st) - 2 * sdc_cov(z_c, z_i, iv$date, st))
 }
 
 test_that("SDC-10 (#671): bus-route TOST carries the two rates' shared-day covariance", {
@@ -413,20 +435,66 @@ test_that("SDC-18 (#671): grouped bus-route TOST counts the covariance within ea
   iv <- d$interviews
   iv$zone <- rep(c("n", "n", "s", "s"), length.out = nrow(iv))
   d$interviews <- iv
-  # Called directly: twelve trips a group, six of each type, is below the
-  # public function's floor of ten per type.
-  joint <- tost_joint_se_diff( # nolint: object_usage_linter
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hrs, by = zone)) # nolint: object_usage_linter
+  g <- v$group_tests
+  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
     d,
-    sdc_q(estimate_catch_rate(d, by = zone)), # nolint: object_usage_linter
-    sdc_q(estimate_catch_rate(d, by = zone, estimator = "mor", use_trips = "incomplete")), # nolint: object_usage_linter
+    estimate_catch_rate(d, by = zone), # nolint: object_usage_linter
+    estimate_catch_rate(d, by = zone, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
     "taylor",
     by_vars = "zone"
-  )
+  ))
   for (z in c("n", "s")) {
-    expect_equal(unname(joint[grep(z, names(joint))]), sdc_br_reference(iv, iv$zone == z),
-      tolerance = 1e-10, info = z
-    )
+    ref <- sdc_br_reference(iv, iv$zone == z)
+    expect_equal(unname(joint[grep(z, names(joint))]), ref, tolerance = 1e-10, info = z)
+    expect_true(is.finite(g$p_lower[g$zone == z]), info = z)
   }
+})
+
+test_that("SDC-19 (#671): an interviewed day no rate keeps is still a sampled day", {
+  # The seventh day's trips are all incomplete and shorter than the 0.5-hour
+  # truncation. It was interviewed, and the degrees of freedom count it
+  # (7 - 1); the joint fit has to count it as a day with nothing, or its SE
+  # would rest on six days while the t test used six degrees of freedom.
+  d <- sdc_br_design(short_day = TRUE)
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hrs)) # nolint: object_usage_linter
+  expect_equal(v$overall_test$df, 6)
+  expect_equal(v$overall_test$se_diff, sdc_br_reference(d$interviews), tolerance = 1e-10)
+})
+
+test_that("SDC-20 (#671): a species-grouped bus-route TOST keeps each species' rows", {
+  d <- sdc_br_design()
+  # A species column on the interviews too routes `by = species` through
+  # validate_incomplete_trips()'s column check to the species rate.
+  d$interviews$species <- "walleye"
+  iv <- d$interviews
+  catch <- rbind(
+    data.frame(iid = iv$iid, species = "walleye", count = iv$catch_total, catch_type = "caught"),
+    data.frame(iid = iv$iid, species = "perch", count = iv$catch_total %/% 2, catch_type = "caught")
+  )
+  d <- sdc_q(add_catch( # nolint: object_usage_linter
+    d, catch,
+    catch_uid = iid, interview_uid = iid, species = species, count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  ))
+  # The species rate rebuilt its result without the rows the joint fit needs,
+  # and the test aborted on it.
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hrs, by = species)) # nolint: object_usage_linter
+  wall <- v$group_tests$species == "walleye"
+  # Walleye's count is every trip's whole catch: the overall reference.
+  expect_equal(
+    sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+      d,
+      estimate_catch_rate(d, by = species), # nolint: object_usage_linter
+      estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
+      "taylor",
+      by_vars = "species"
+    ))[["walleye"]],
+    sdc_br_reference(iv),
+    tolerance = 1e-10
+  )
+  expect_true(any(wall))
+  expect_true(is.finite(v$group_tests$p_lower[wall]))
 })
 
 test_that("SDC-11 (#664): Goodman's floor holds for the row once rates covary", {

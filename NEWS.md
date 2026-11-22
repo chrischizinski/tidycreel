@@ -73,7 +73,9 @@
     contributions are now fitted on one such survey. Their variances used
     to be added, which on a test design gave more than twice the SE of the
     difference: the test failed rates that track each other day by day.
-    A sectioned design is now
+    Every interviewed day is a sampled day in that fit, including one whose
+    trips were all truncated, so the SE and the degrees of freedom count
+    the same days. A sectioned design is now
     refused with `creel_error_tost_sections`; before, it stopped with an
     R condition-length error.
   - A sectioned lake total still treats section rates as independent; that

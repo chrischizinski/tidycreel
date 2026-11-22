@@ -567,10 +567,14 @@ br_harvest_rate_estimates <- function(
   )
   svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
   # The rows the ratio is taken over, for validate_incomplete_trips() to fit
-  # the complete and incomplete rates jointly on one survey (GH #671).
-  rate_rows <- interviews[intersect(c(strata_cols, by_vars, ".psu"), names(interviews))]
-  rate_rows$.br_num <- interviews$.contribution
-  rate_rows$.br_den <- interviews[[denom_col]]
+  # the complete and incomplete rates jointly on one survey (GH #671). The
+  # contributions are kept beside the rows, not in them, so no user column
+  # of the same name is overwritten.
+  rate_rows <- list(
+    rows = interviews[intersect(c(strata_cols, by_vars, ".psu"), names(interviews))],
+    num = interviews$.contribution,
+    den = interviews[[denom_col]]
+  )
 
   # A zero denominator leaves the rate undefined. Abort rather than return Inf
   # or NaN dressed up as a harvest rate.
@@ -1085,6 +1089,7 @@ estimate_rate_species_br <- function(
 
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
+  rows_list <- vector("list", length(all_species))
   method <- NULL
 
   for (i in seq_along(all_species)) {
@@ -1126,9 +1131,13 @@ estimate_rate_species_br <- function(
     sp_df <- res$estimates
     sp_df[[species_col]] <- sp
     results_list[[i]] <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
+    # Each species' rows, labelled, for the joint TOST fit (GH #671).
+    rr <- attr(res, "br_rate_rows")
+    rr$rows[[species_col]] <- rep(sp, nrow(rr$rows))
+    rows_list[[i]] <- rr
   }
 
-  new_creel_estimates( # nolint: object_usage_linter
+  result <- new_creel_estimates( # nolint: object_usage_linter
     # nolint: object_usage_linter
     estimates = tibble::as_tibble(do.call(rbind, results_list)),
     method = method,
@@ -1138,6 +1147,12 @@ estimate_rate_species_br <- function(
     by_vars = c(species_col, interview_by_vars),
     unit = rate_unit(design) # nolint: object_usage_linter
   )
+  attr(result, "br_rate_rows") <- list(
+    rows = do.call(rbind, lapply(rows_list, `[[`, "rows")),
+    num = unlist(lapply(rows_list, `[[`, "num"), use.names = FALSE),
+    den = unlist(lapply(rows_list, `[[`, "den"), use.names = FALSE)
+  )
+  result
 }
 
 # Bus-route total catch estimation ----

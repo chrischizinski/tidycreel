@@ -700,14 +700,32 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     # below: a trip of the other type adds nothing to this rate.
     rc <- attr(complete_result, "br_rate_rows")
     ri <- attr(incomplete_result, "br_rate_rows")
-    cols <- setdiff(intersect(names(rc), names(ri)), c(".br_num", ".br_den"))
-    joint <- rbind(rc[cols], ri[cols])
-    n_c <- nrow(rc)
-    n_i <- nrow(ri)
-    c_num <- c(rc$.br_num, rep(0, n_i))
-    c_den <- c(rc$.br_den, rep(0, n_i))
-    i_num <- c(rep(0, n_c), ri$.br_num)
-    i_den <- c(rep(0, n_c), ri$.br_den)
+    cols <- intersect(names(rc$rows), names(ri$rows))
+    joint <- rbind(rc$rows[cols], ri$rows[cols])
+    n_c <- nrow(rc$rows)
+    n_i <- nrow(ri$rows)
+    c_num <- c(rc$num, rep(0, n_i))
+    c_den <- c(rc$den, rep(0, n_i))
+    i_num <- c(rep(0, n_c), ri$num)
+    i_den <- c(rep(0, n_c), ri$den)
+    # Every interviewed day stays a sampled day, as on the standard path
+    # (GH #663): a day whose trips were all truncated, or of neither type
+    # kept, enters with zero contributions, and the degrees of freedom count
+    # it too.
+    all_days <- br_add_psu_key(design$interviews, design) # nolint: object_usage_linter
+    frame <- unique(all_days[intersect(c(strata_cols, ".psu"), names(joint))])
+    day_key <- function(df) do.call(paste, c(lapply(df[names(frame)], as.character), sep = "\u001f"))
+    missing <- frame[!day_key(frame) %in% day_key(joint), , drop = FALSE]
+    if (nrow(missing) > 0L) {
+      filler <- joint[rep(1L, nrow(missing)), , drop = FALSE]
+      for (k in names(frame)) filler[[k]] <- missing[[k]]
+      joint <- rbind(joint, filler)
+      zeros <- rep(0, nrow(missing))
+      c_num <- c(c_num, zeros)
+      c_den <- c(c_den, zeros)
+      i_num <- c(i_num, zeros)
+      i_den <- c(i_den, zeros)
+    }
   } else {
     catch_col <- design$catch_col
     effort_col <- design$angler_effort_col
