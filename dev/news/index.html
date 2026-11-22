@@ -344,7 +344,8 @@ Record refusals with <code>add_interviews(refused = )</code> and report them wit
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
-<ul><li>
+<ul><li><p>Sample-size refusals name each group by its values (<a href="https://github.com/chrischizinski/tidycreel/issues/679" class="external-link">#679</a>). A <code>Date</code> grouping column was shown as its day number, and a factor beside a numeric, integer, logical or <code>Date</code> column as its level code: “Group gear=1, zone=1” for the group with gear “net”. A value holding braces, such as “net {boat}”, stopped the call with a cli evaluation error instead of the warning or refusal; the estimate now returns with the warning. No estimate value changes.</p></li>
+<li>
 <p><code>validate_incomplete_trips(by = species)</code> tests every species in the catch table (<a href="https://github.com/chrischizinski/tidycreel/issues/681" class="external-link">#681</a>). With a catch table, each species’ rate is taken over every interview, using that species’ count (0 where none was caught). The test instead grouped the interviews on their own <code>species</code> column, which may record the species sought.</p>
 <ul><li><p>On standard designs, the joint fit read the design’s catch column rather than the species’ counts. Any species whose counts differed from it stopped the test with an internal error.</p></li>
 <li><p>On every design, a species missing from the interviews’ column, such as perch when every interview records walleye, counted 0 degrees of freedom and was reported untested.</p></li>

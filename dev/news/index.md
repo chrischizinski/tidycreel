@@ -1752,6 +1752,15 @@
 
 ### Bug fixes
 
+- Sample-size refusals name each group by its values
+  ([\#679](https://github.com/chrischizinski/tidycreel/issues/679)). A
+  `Date` grouping column was shown as its day number, and a factor
+  beside a numeric, integer, logical or `Date` column as its level code:
+  “Group gear=1, zone=1” for the group with gear “net”. A value holding
+  braces, such as “net {boat}”, stopped the call with a cli evaluation
+  error instead of the warning or refusal; the estimate now returns with
+  the warning. No estimate value changes.
+
 - `validate_incomplete_trips(by = species)` tests every species in the
   catch table
   ([\#681](https://github.com/chrischizinski/tidycreel/issues/681)).
