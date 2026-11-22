@@ -110,10 +110,9 @@ estimated jointly, as domains of one survey of every interviewed day,
 under the requested `variance` method, and the covariance comes from
 that fit (GH \#664). The t tests use the design's degrees of freedom,
 interviewed days minus strata over the strata a comparison draws on,
-because that variance is between days (GH \#669). On bus-route and ice
-designs the two rates' variances are still added: their rates are
-clustered on the day as well, so this overstates the SE of the
-difference, which makes the test conservative (GH \#671).
+because that variance is between days (GH \#669). Bus-route and ice
+rates, Horvitz-Thompson ratios clustered on the day, are fitted jointly
+the same way, on one survey of both trip sets' contributions (GH \#671).
 
 Sample size requirements: At least 10 complete trips AND 10 incomplete
 trips are required for stable variance estimation and TOST. The function
