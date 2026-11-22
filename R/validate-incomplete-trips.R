@@ -688,10 +688,40 @@ perform_grouped_tost <- function(design, complete_result, incomplete_result, by_
 #'   holding one trip type.
 #' @keywords internal
 #' @noRd
-tost_joint_se_diff <- function(design, complete_result, incomplete_result, variance, by_vars = NULL) {
+tost_joint_se_diff <- function(design, complete_result, incomplete_result, variance, by_vars = NULL,
+                               split_species = TRUE) {
   strata_cols <- design$strata_cols
   strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
   bus_route <- (design$design_type %||% "instantaneous") %in% c("bus_route", "ice")
+  sp_col <- tost_species_col(design, by_vars)
+  if (!bus_route && split_species && !is.null(sp_col)) {
+    # A species rate's numerator is that species' count on every interview,
+    # zero where none was caught (estimate_cpue_species()), not the design's
+    # catch column, and its group is the catch table's species, not the
+    # interviews' own species column (GH #681). Each species is fitted on its
+    # own counts, labelled with it. The bus-route rows already are
+    # (br_rate_rows).
+    al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
+    out <- stats::setNames(rep(NA_real_, length(al$keys)), al$keys)
+    for (s in unique(as.character(design$catch[[sp_col]]))) {
+      one <- function(res) {
+        res$design$interviews <- make_species_catch_for_interviews(res$design, s, "caught") # nolint: object_usage_linter
+        res$design$interviews[[sp_col]] <- s
+        res$design$catch_col <- ".species_count"
+        keep <- as.character(res$estimates[[sp_col]]) == s
+        res$estimates <- res$estimates[keep, , drop = FALSE]
+        res
+      }
+      c_s <- one(complete_result)
+      i_s <- one(incomplete_result)
+      if (nrow(c_s$estimates) == 0L && nrow(i_s$estimates) == 0L) next
+      d_s <- design
+      d_s$catch_col <- ".species_count"
+      se <- tost_joint_se_diff(d_s, c_s, i_s, variance, by_vars, split_species = FALSE)
+      out[intersect(names(se), names(out))] <- se[intersect(names(se), names(out))]
+    }
+    return(out)
+  }
   if (bus_route) {
     # Bus-route and ice rates are Horvitz-Thompson ratios over their own
     # survey clustered on the day (br_add_psu_key()). Both rates' numerator
@@ -827,6 +857,20 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
   stats::setNames(out, al$keys)
 }
 
+#' The catch-table species column, when the TOST groups by it
+#'
+#' Internal (GH #681). `by = species` on a design with a catch table routes
+#' the rates through the species estimators, as estimate_catch_rate()'s
+#' species split does: each species' rate is over every interview.
+#'
+#' @return The column name, or `NULL`.
+#' @keywords internal
+#' @noRd
+tost_species_col <- function(design, by_vars) {
+  sp <- design$catch_species_col
+  if (is.null(design[["catch"]]) || is.null(sp) || !sp %in% by_vars) NULL else sp
+}
+
 #' Design degrees of freedom of each TOST comparison
 #'
 #' Internal (GH #669). The variance of the difference is between days, so its
@@ -855,6 +899,17 @@ tost_design_df <- function(design, keys, by_vars = NULL) {
   }
   days <- unique(design$interviews[c(strata_cols, design$date_col)])
   day_stratum <- stratum_of(days)
+  sp_col <- tost_species_col(design, by_vars)
+  if (!is.null(sp_col)) {
+    # Every interview enters every species' rate, with that species' count
+    # (zero where none was caught): each species draws on all of them, not on
+    # the rows whose own species column names it (GH #681).
+    species <- unique(as.character(design$catch[[sp_col]]))
+    iv <- do.call(rbind, lapply(species, function(s) {
+      iv[[sp_col]] <- rep(s, nrow(iv))
+      iv
+    }))
+  }
   row_key <- if (is.null(by_vars)) rep("all", nrow(iv)) else group_key(iv, by_vars) # nolint: object_usage_linter
   row_stratum <- stratum_of(iv)
   out <- vapply(keys, function(k) {

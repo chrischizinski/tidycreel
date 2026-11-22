@@ -640,3 +640,75 @@ test_that("SDC-16 (#673): a rate group missed by some bootstrap draws leaves the
   tay <- sdc_q(estimate_total_catch(d, target = "period_total", rate_groups = rg))
   expect_true(is.finite(tay$estimates$se))
 })
+
+# Species rates (GH #681). `by = species` with a catch table routes each rate
+# through the species estimators: every interview counts toward every species,
+# with that species' count, zero where none was caught. The TOST grouped the
+# interviews on their own `species` column instead -- the species sought, here
+# walleye on every trip.
+sdc_add_species <- function(d) {
+  d$interviews$species <- "walleye"
+  if (!"iid" %in% names(d$interviews)) d$interviews$iid <- seq_len(nrow(d$interviews))
+  iv <- d$interviews
+  # Perch is caught on some trips only, so its rate is not walleye's.
+  perch <- iv$catch_total %/% 2 + rep(c(0, 1, 0), length.out = nrow(iv))
+  catch <- rbind(
+    data.frame(iid = iv$iid, species = "walleye", count = iv$catch_total, catch_type = "caught"),
+    data.frame(iid = iv$iid, species = "perch", count = perch, catch_type = "caught")
+  )
+  d <- sdc_q(add_catch( # nolint: object_usage_linter
+    d, catch,
+    catch_uid = iid, interview_uid = iid, species = species, count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  ))
+  attr(d, "perch") <- perch
+  d
+}
+
+test_that("SDC-21 (#681): a species TOST fits each species on its own counts", {
+  d <- sdc_add_species(sdc_tost_design())
+  iv <- d$interviews
+  # The joint fit read the design's catch column, not the species' counts, so
+  # perch's joint rates disagreed with the reported ones and the test stopped
+  # with an internal error.
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hours_fished, by = species)) # nolint: object_usage_linter
+  expect_setequal(v$group_tests$species, c("perch", "walleye"))
+  expect_true(all(is.finite(v$group_tests$p_lower)))
+  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+    d,
+    estimate_catch_rate(d, by = species, use_trips = "complete"), # nolint: object_usage_linter
+    estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
+    "taylor",
+    by_vars = "species"
+  ))
+  ds <- sdc_day_stratum(iv)
+  day <- as.character(iv$date)
+  se_of <- function(y) {
+    iv$catch_total <- y
+    s <- sdc_tost_scores(iv)
+    sqrt(sdc_cov(s$z_c - s$z_i, s$z_c - s$z_i, day, ds))
+  }
+  expect_equal(joint[["perch"]], se_of(attr(d, "perch")), tolerance = 1e-8)
+  expect_equal(joint[["walleye"]], se_of(iv$catch_total), tolerance = 1e-8)
+  # Ten days in two strata, for both species.
+  expect_equal(tost_design_df(d, c("perch", "walleye"), "species"), c(perch = 8L, walleye = 8L)) # nolint: object_usage_linter
+})
+
+test_that("SDC-22 (#681): a species absent from the interviews' species column keeps its days", {
+  d <- sdc_add_species(sdc_br_design())
+  iv <- d$interviews
+  # Perch has no row whose own species column names it: it counted 0 degrees
+  # of freedom and its test was reported untested.
+  expect_equal(tost_design_df(d, c("perch", "walleye"), "species"), c(perch = 5L, walleye = 5L)) # nolint: object_usage_linter
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hrs, by = species)) # nolint: object_usage_linter
+  expect_true(all(is.finite(v$group_tests$p_lower)))
+  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+    d,
+    estimate_catch_rate(d, by = species), # nolint: object_usage_linter
+    estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
+    "taylor",
+    by_vars = "species"
+  ))
+  iv$catch_total <- attr(d, "perch")
+  expect_equal(joint[["perch"]], sdc_br_reference(iv), tolerance = 1e-10)
+})
