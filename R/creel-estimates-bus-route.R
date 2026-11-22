@@ -560,6 +560,10 @@ br_harvest_rate_estimates <- function(
     NULL
   }
   interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
+  n_rows <- nrow(interviews)
+  # A trip filter estimates a domain: every interviewed day stays a sampled
+  # day, with nothing from it if no trip of the type was kept (GH #680).
+  interviews <- br_pad_interviewed_days(interviews, design, c(".contribution", denom_col), copy_row = TRUE)
   svy_br <- build_interview_survey( # nolint: object_usage_linter
     interviews,
     strata = strata_formula,
@@ -594,7 +598,7 @@ br_harvest_rate_estimates <- function(
       # A catch rate is bounded below by zero; the symmetric Wald bound is not.
       ci_lower = pmax(0, ci[1, 1]),
       ci_upper = ci[1, 2],
-      n = nrow(interviews)
+      n = n_rows
     )
     result <- new_creel_estimates( # nolint: object_usage_linter
       # nolint: object_usage_linter
@@ -633,7 +637,7 @@ br_harvest_rate_estimates <- function(
   # the literal string "NA" -- so an unknown group and a group labelled "NA"
   # would have shared a sample size (GH #248, GH #321).
   result_group_keys <- group_key(svy_result, by_vars) # nolint: object_usage_linter
-  n_by_key <- table(group_key(interviews, by_vars))
+  n_by_key <- table(group_key(interviews[!interviews$.synthetic, , drop = FALSE], by_vars))
 
   # See restore_group_types(): the svyby() factor is undone on the way out.
   estimates_df <- tibble::as_tibble(
@@ -1544,6 +1548,48 @@ br_complete_trips_only <- function(
   br_abort_if_no_complete(interviews[is_complete, , drop = FALSE], quantity, call = call)
 }
 
+#' Keep every interviewed day in a trip-filtered bus-route survey
+#'
+#' Internal (GH #680). A trip filter (complete trips for a total, one trip
+#' type for a rate, the short-trip truncation) estimates a domain of the
+#' survey, and the survey's unit is the interviewed day. A day on which no
+#' trip of the kind was kept is still a sampled day: it enters with zero
+#' contributions, flagged `.synthetic`. Dropping it took the variance over
+#' fewer days than were sampled, and a stratum left with one such day stopped
+#' with "Stratum has only one PSU". The standard designs keep the day the same
+#' way (GH #663, `build_interview_survey(frame =)`).
+#'
+#' @param rows The filtered rows, with `.psu` from [br_add_psu_key()].
+#' @param zero_cols The contribution columns a padded day holds as 0.
+#' @param copy_row `TRUE` copies a kept row's other values into the padded
+#'   ones, so `svyby()` makes no group of them (a rate); `FALSE` leaves them
+#'   `NA`, as a registered empty day has (a total, whose synthetic group
+#'   [br_drop_synthetic_groups()] removes).
+#' @return `rows`, with any missing days appended and a `.synthetic` column.
+#' @keywords internal
+#' @noRd
+br_pad_interviewed_days <- function(rows, design, zero_cols, copy_row = TRUE) {
+  if (!".synthetic" %in% names(rows)) rows$.synthetic <- rep(FALSE, nrow(rows))
+  if (nrow(rows) == 0L || is.null(design$interviews)) {
+    return(rows)
+  }
+  keys <- intersect(c(design$strata_cols, ".psu"), names(rows))
+  all_days <- br_add_psu_key(design$interviews, design) # nolint: object_usage_linter
+  day_col <- interview_psu_col(design, all_days) # nolint: object_usage_linter
+  frame <- unique(all_days[intersect(c(keys, day_col), names(all_days))])
+  day_key <- function(df) do.call(paste, c(lapply(df[keys], as.character), sep = "\u001f"))
+  missing <- frame[!day_key(frame) %in% day_key(rows), , drop = FALSE]
+  if (nrow(missing) == 0L) {
+    return(rows)
+  }
+  filler <- rows[rep(if (copy_row) 1L else NA_integer_, nrow(missing)), , drop = FALSE]
+  rownames(filler) <- NULL
+  for (k in names(missing)) filler[[k]] <- missing[[k]]
+  for (k in zero_cols) filler[[k]] <- 0
+  filler$.synthetic <- TRUE
+  rbind(rows, filler)
+}
+
 # A Horvitz-Thompson assembly handed a zero-row frame does not notice: it fails
 # several calls later inside rowSums() with "all arguments must have the same
 # length", which names nothing the caller can act on. The standard designs
@@ -1862,9 +1908,12 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
   sampled_col <- design$sampled_col
   if (identical(target, "sampled_days") && is.null(sampled_col)) {
     interviews <- br_add_psu_key(interviews, design) # nolint: object_usage_linter
-    interviews$.synthetic <- rep(FALSE, nrow(interviews))
+    # An interviewed day with no complete trip is a sampled day whose total is
+    # a known 0, as a registered empty day is below (GH #680).
+    interviews <- br_pad_interviewed_days(interviews, design, ".contribution", copy_row = FALSE)
+    interviews$.br_weight <- rep(1, nrow(interviews))
     svy <- build_interview_survey(interviews, strata = strata_formula, ids = ~.psu) # nolint: object_usage_linter
-    return(list(survey = svy, interviews = interviews, augmented = FALSE))
+    return(list(survey = svy, interviews = interviews, augmented = any(interviews$.synthetic)))
   }
 
   date_col <- design$date_col
@@ -1902,11 +1951,15 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
   }
 
   interviews$.synthetic <- rep(FALSE, nrow(interviews))
-  empty <- worked[!as.character(worked[[date_col]]) %in% as.character(interviews[[date_col]]), , drop = FALSE]
+  # The interviews' own date column, which add_interviews(date_col =) may
+  # name apart from the calendar's (GH #680).
+  iv_date <- interview_psu_col(design, interviews) %||% date_col # nolint: object_usage_linter
+  empty <- worked[!as.character(worked[[date_col]]) %in% as.character(interviews[[iv_date]]), , drop = FALSE]
   if (nrow(empty) > 0L) {
     zero <- interviews[rep(NA_integer_, nrow(empty)), , drop = FALSE]
     rownames(zero) <- NULL
     for (col in names(empty)) zero[[col]] <- empty[[col]]
+    zero[[iv_date]] <- empty[[date_col]]
     zero$.contribution <- 0
     zero$.synthetic <- TRUE
     interviews <- rbind(interviews, zero)

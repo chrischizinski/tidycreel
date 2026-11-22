@@ -152,6 +152,21 @@
     group rates with their SEs combined as if independent, and `print()`
     showed that mean beside a difference taken from the pooled rates.
 
+* Bus-route and ice estimates keep every interviewed day as a sampled day
+  when a trip filter leaves it empty (#680), as the standard designs do since
+  #663. A complete-trip total or rate, an incomplete-trip rate, or a
+  truncated mean of ratios was taken over the subset's days only: a day
+  whose interviews held no trip of the kind dropped out, and the variance
+  assumed every sampled day had one. That day now enters with nothing from
+  it. On a test design with one of six days holding incomplete trips only,
+  the sampled-day total catch SE goes from 3.7 to 11.4 (estimate unchanged).
+  The total with a register of sampled days already counted such a day and
+  is unchanged. A stratum with trips of the kind on only one of its days
+  used to stop with "Stratum has only one PSU"; it is now estimated. The
+  day is also now the interviews' own date column: with
+  `add_interviews(date_col = )` naming it apart from the calendar's, the
+  bus-route survey fell back to one sampling unit per interview row.
+
 * A bootstrap standard error is now `NA` when some bootstrap draws resample
   none of the estimate's interview days (#673). A group or trip type seen on
   only a few days in a stratum is missed entirely by some draws, and its rate
