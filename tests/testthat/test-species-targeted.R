@@ -336,28 +336,63 @@ test_that("SPECIES-TARGETED-09: a non-species request still tests total catch", 
   expect_equal(res_false$estimates$n, res_true$estimates$n)
 })
 
+# 40 incomplete trips over the same four days, two in five of them catching
+# nothing. Not make_species_targeted_design(): that fixture has no zero total
+# catch on purpose (see the header), so a `targeted = FALSE` filter on the
+# total would drop nothing there and could not be seen (GH #675).
+# `drop_zero = TRUE` builds the design such a filter would leave.
+make_zero_catch_regression_design <- function(drop_zero = FALSE) {
+  cal <- data.frame(
+    date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),
+    day_type = c("weekday", "weekday", "weekend", "weekend"),
+    stringsAsFactors = FALSE
+  )
+  n <- 40L
+  hours <- 1 + (seq_len(n) - 1L) * 0.07
+  catch <- rep(c(2L, 0L, 3L, 1L, 4L, 2L, 0L, 1L), length.out = n)
+  catch[seq(5L, n, by = 5L)] <- 0L
+  interviews <- data.frame(
+    date = as.Date(rep(cal$date, length.out = n)),
+    catch_total = catch,
+    hours_fished = hours,
+    trip_status = "incomplete",
+    trip_duration = hours,
+    stringsAsFactors = FALSE
+  )
+  if (drop_zero) interviews <- interviews[interviews$catch_total > 0, , drop = FALSE]
+  design <- suppressMessages(creel_design(cal, date = date, strata = day_type))
+  suppressMessages(suppressWarnings(add_interviews(
+    design,
+    interviews,
+    catch = catch_total,
+    effort = hours_fished,
+    n_anglers = 1,
+    trip_status = trip_status,
+    trip_duration = trip_duration
+  )))
+}
+
 test_that("SPECIES-TARGETED-12: regression without by = species ignores targeted", {
-  design <- make_species_targeted_design()
   # The `targeted` docs enumerate which estimators read the argument. The
   # non-species regression paths (estimate_cpue_regression_total() and
   # estimate_cpue_reg_grouped()) take no `targeted` parameter, so it cannot
   # reach them. Pinned because the docs make that a promise a reader can rely
   # on, and because an earlier draft of those docs claimed the opposite.
-  flat_true <- suppressWarnings(suppressMessages(
-    estimate_catch_rate(design, estimator = "regression", use_trips = "all", targeted = TRUE)
-  ))
-  flat_false <- suppressWarnings(suppressMessages(
-    estimate_catch_rate(design, estimator = "regression", use_trips = "all", targeted = FALSE)
-  ))
-  expect_equal(flat_false$estimates$estimate, flat_true$estimates$estimate)
+  design <- make_zero_catch_regression_design()
+  rate <- function(d, targeted, by = NULL) {
+    suppressWarnings(suppressMessages(estimate_catch_rate(
+      d,
+      by = {{ by }}, estimator = "regression", use_trips = "all", targeted = targeted
+    )))$estimates$estimate
+  }
+  # The test can fail: dropping the zero-catch trips, as a leaked
+  # `targeted = FALSE` would, moves both estimates.
+  dropped <- make_zero_catch_regression_design(drop_zero = TRUE)
+  expect_true(abs(rate(dropped, TRUE) - rate(design, TRUE)) > 0.05)
+  expect_true(all(abs(rate(dropped, TRUE, day_type) - rate(design, TRUE, day_type)) > 0.05))
 
-  grouped_true <- suppressWarnings(suppressMessages(
-    estimate_catch_rate(design, by = day_type, estimator = "regression", use_trips = "all", targeted = TRUE)
-  ))
-  grouped_false <- suppressWarnings(suppressMessages(
-    estimate_catch_rate(design, by = day_type, estimator = "regression", use_trips = "all", targeted = FALSE)
-  ))
-  expect_equal(grouped_false$estimates$estimate, grouped_true$estimates$estimate)
+  expect_equal(rate(design, FALSE), rate(design, TRUE))
+  expect_equal(rate(design, FALSE, day_type), rate(design, TRUE, day_type))
 })
 
 test_that("SPECIES-TARGETED-11: mortr behaves as mor on the species path", {
