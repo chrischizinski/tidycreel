@@ -721,8 +721,10 @@ interview_day_frame <- function(design) {
 #' @keywords internal
 #' @noRd
 br_add_psu_key <- function(interviews, design) {
-  psu_col <- design$date_col
-  if (is.null(psu_col) || !psu_col %in% names(interviews)) {
+  # The interviews' own date column: add_interviews(date_col =) may name it
+  # apart from the calendar's (GH #680).
+  psu_col <- interview_psu_col(design, interviews)
+  if (is.null(psu_col)) {
     # Nothing identifies the sampling unit. Fall back to the row, which is the
     # pre-#198 behaviour, rather than inventing a unit that is not in the data.
     interviews$.psu <- seq_len(nrow(interviews))

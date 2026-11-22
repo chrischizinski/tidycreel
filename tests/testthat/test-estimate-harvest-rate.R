@@ -2279,8 +2279,10 @@ test_that("bus-route incomplete HPUE by-group returns rates with no proportion c
   # As on the complete path: a share-of-total is meaningful for a total and
   # meaningless for a rate.
   d <- make_br_incomplete()
+  # By circuit, which every day shares: sites B and C were each met on one
+  # day, and a group met on one day is refused (its SE would be 0; GH #680).
   result <- suppressMessages(
-    estimate_harvest_rate(d, by = site, use_trips = "incomplete") # nolint: object_usage_linter
+    estimate_harvest_rate(d, by = circuit, use_trips = "incomplete") # nolint: object_usage_linter
   )
 
   expect_identical(result$method, "mean-of-ratios-hpue")
