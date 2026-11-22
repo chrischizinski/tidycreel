@@ -225,6 +225,11 @@ print on every call.
   Tier 2. Some strata have one sampled day, so their variance cannot be
   estimated.
 
+- `creel_warning_bootstrap_undefined_draws`:
+
+  Tier 2. Some bootstrap draws resampled none of a domain's interview
+  days, so its bootstrap SE is `NA`.
+
 - `creel_warning_camera_single_day`:
 
   Tier 2. A stratum has one paired interview/count day, so its camera
