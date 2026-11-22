@@ -14,7 +14,7 @@ NULL
 #' @keywords internal
 #' @noRd
 wrap_survey_call <- function(expr, call = rlang::caller_env()) {
-  tryCatch(
+  with_defined_draws(tryCatch(
     suppressWarnings(expr),
     error = function(e) {
       msg <- conditionMessage(e)
@@ -61,7 +61,107 @@ wrap_survey_call <- function(expr, call = rlang::caller_env()) {
       }
       stop(e)
     }
-  )
+  ), call = call)
+}
+
+# survey::svrVar()'s words when it discards replicates whose estimate is NA.
+.na_draws_msg <- "replicates gave NA results and were discarded"
+
+#' Leave a replicate SE unknown when a draw cannot compute the estimate
+#'
+#' Internal (GH #673). A bootstrap draw that resamples none of a domain's
+#' interview days has no estimate for it: a ratio is 0/0 there. survey's
+#' `svrVar()` drops such draws, with a warning the package suppressed, and
+#' computes the SE from the draws where the domain happened to appear -- a
+#' variance conditional on the domain being sampled, not the one requested. The
+#' SE is reported as unknown instead, and the condition `creel_undefined_draws`
+#' tells [with_defined_draws()] which domain and how many draws.
+#'
+#' Wraps an estimator such as `survey::svyratio`, to call directly or to hand
+#' `svyby()` as `FUN`, which calls it once per group. Taylor and the jackknife
+#' never raise the warning, so they pass through unchanged.
+#'
+#' @param FUN A survey estimator.
+#' @param by_vars Grouping columns, to name the group in the warning.
+#' @return A function with `FUN`'s arguments.
+#' @keywords internal
+#' @noRd
+draws_defined <- function(FUN, by_vars = NULL) {
+  force(FUN)
+  function(formula, design, ...) {
+    n_na <- 0L
+    res <- withCallingHandlers(
+      FUN(formula, design, ...),
+      warning = function(w) {
+        msg <- conditionMessage(w)
+        if (grepl(.na_draws_msg, msg, fixed = TRUE)) {
+          n_na <<- max(n_na, as.integer(sub("^\\s*([0-9]+).*$", "\\1", msg)))
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+    if (n_na == 0L) {
+      return(res)
+    }
+    if (inherits(res, "svyglm")) {
+      res$cov.unscaled[] <- NA_real_
+    } else if (inherits(res, "svyratio")) {
+      res$var[] <- NA_real_
+      # covmat = TRUE keeps the joint matrix here; vcov() reads it first.
+      if (!is.null(res$vcov)) res$vcov[] <- NA_real_
+    } else {
+      attr(res, "var")[] <- NA_real_
+    }
+    signalCondition(structure(
+      class = c("creel_undefined_draws", "condition"),
+      list(
+        message = "undefined replicate draws", call = NULL,
+        label = draws_domain_label(design, by_vars),
+        n_na = n_na, n_draws = length(design$rscales)
+      )
+    ))
+    res
+  }
+}
+
+#' Name the domain a replicate design's rows belong to
+#' @keywords internal
+#' @noRd
+draws_domain_label <- function(design, by_vars) {
+  if (length(by_vars) == 0L) {
+    return("the estimate")
+  }
+  w <- if (inherits(design, "svyrep.design")) stats::weights(design, "sampling") else stats::weights(design)
+  vals <- design$variables[which(w > 0)[1L], by_vars, drop = FALSE]
+  paste(by_vars, "=", group_value_labels(vals), collapse = ", ") # nolint: object_usage_linter
+}
+
+#' Warn once for every domain [draws_defined()] left without an SE
+#' @keywords internal
+#' @noRd
+with_defined_draws <- function(expr, call = rlang::caller_env()) {
+  hits <- list()
+  out <- withCallingHandlers(expr, creel_undefined_draws = function(cnd) {
+    hits[[length(hits) + 1L]] <<- cnd
+  })
+  if (length(hits) > 0L) {
+    labels <- unique(vapply(hits, function(h) h$label, character(1)))
+    n_na <- max(vapply(hits, function(h) h$n_na, integer(1))) # nolint: object_usage_linter
+    n_draws <- hits[[1L]]$n_draws # nolint: object_usage_linter
+    creel_warn( # nolint: object_usage_linter
+      c(
+        "Bootstrap SE unavailable for {.val {labels}}: up to {n_na} of {n_draws} draws \\
+         resampled none of its interview days.",
+        "x" = "The estimate is undefined on those draws, and an SE taken from the \\
+               other draws would be conditional on the domain being sampled.",
+        "i" = "Use {.code variance = \"taylor\"} or {.code \"jackknife\"}, or interview \\
+               the domain on more days in each stratum."
+      ),
+      class = c("creel_warning_bootstrap_undefined_draws", "creel_warning"),
+      call = call
+    )
+  }
+  out
 }
 
 #' Variance of an effort x rate product total
@@ -3693,13 +3793,13 @@ mor_party_weights <- function(design, data, ratio_col) {
 #' @keywords internal
 #' @noRd
 mor_svy_estimate <- function(svy_design, ratio_col, weighted) {
-  suppressWarnings(
+  with_defined_draws(suppressWarnings(
     if (weighted) {
-      survey::svyratio(~.mor_num, ~.mor_n, svy_design)
+      draws_defined(survey::svyratio)(~.mor_num, svy_design, denominator = ~.mor_n)
     } else {
-      survey::svymean(stats::reformulate(ratio_col), svy_design)
+      draws_defined(survey::svymean)(stats::reformulate(ratio_col), svy_design)
     }
-  )
+  ))
 }
 
 #' Grouped mean of ratios, party-size weighted when `mor_party_weights()` says
@@ -3721,12 +3821,13 @@ mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf
       formula = ~.mor_num,
       by = by_formula,
       design = svy_design,
-      FUN = survey::svyratio,
+      FUN = draws_defined(survey::svyratio, all.vars(by_formula)),
       denominator = ~.mor_n,
       vartype = c("se", "ci"),
       ci.level = conf_level,
       keep.names = FALSE,
-      covmat = covmat
+      covmat = covmat,
+      return.replicates = covmat && inherits(svy_design, "svyrep.design")
     ))
     est_col <- ".mor_num/.mor_n"
     se_col <- "se..mor_num/.mor_n"
@@ -3735,11 +3836,12 @@ mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf
       formula = stats::reformulate(ratio_col),
       by = by_formula,
       design = svy_design,
-      FUN = survey::svymean,
+      FUN = draws_defined(survey::svymean, all.vars(by_formula)),
       vartype = c("se", "ci"),
       ci.level = conf_level,
       keep.names = FALSE,
-      covmat = covmat
+      covmat = covmat,
+      return.replicates = covmat && inherits(svy_design, "svyrep.design")
     ))
     est_col <- ratio_col
     se_col <- "se"
@@ -7670,9 +7772,9 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     effort_formula <- stats::reformulate(effort_col)
 
     # Call survey::svyratio (suppress expected survey package warnings)
-    svy_result <- suppressWarnings(
-      survey::svyratio(catch_formula, effort_formula, svy_design)
-    )
+    svy_result <- with_defined_draws(suppressWarnings(
+      draws_defined(survey::svyratio)(catch_formula, svy_design, denominator = effort_formula)
+    ))
 
     method_name <- "ratio-of-means-cpue"
   }
@@ -7829,12 +7931,13 @@ estimate_cpue_grouped <- function(
       formula = catch_formula,
       by = by_formula,
       design = svy_design,
-      FUN = survey::svyratio,
+      FUN = draws_defined(survey::svyratio, by_vars),
       denominator = effort_formula,
       vartype = c("se", "ci"),
       ci.level = conf_level,
       keep.names = FALSE,
-      covmat = covmat
+      covmat = covmat,
+      return.replicates = covmat && inherits(svy_design, "svyrep.design")
     ))
 
     # Extract estimate columns from svyby result
@@ -7922,7 +8025,14 @@ estimate_cpue_grouped <- function(
 #'
 #' `vcov.svyby()` fails on a single group (it cannot set dimnames on the
 #' scalar), whose covariance is its variance.
-#' @param svy_result A `svyby()` result computed with `covmat = TRUE`.
+#'
+#' On a replicate design `svrVar()` drops a draw from the whole matrix when any
+#' one group has no estimate on it, so the covariances of the other groups
+#' would be taken over only the draws where that group appeared (GH #673).
+#' They are recomputed from every draw, and the undefined group's row and
+#' column are `NA`, as its SE is.
+#' @param svy_result A `svyby()` result computed with `covmat = TRUE`, and on a
+#'   replicate design with `return.replicates = TRUE`.
 #' @param se The groups' standard errors, in row order.
 #' @return An unnamed square matrix, one row per group.
 #' @keywords internal
@@ -7931,7 +8041,19 @@ svyby_rate_vcov <- function(svy_result, se) {
   if (length(se) == 1L) {
     return(matrix(se^2, 1L, 1L))
   }
-  unname(as.matrix(stats::vcov(svy_result)))
+  reps <- attr(svy_result, "replicates")
+  if (is.null(reps) || !anyNA(reps)) {
+    return(unname(as.matrix(stats::vcov(svy_result))))
+  }
+  ok <- colSums(is.na(reps)) == 0L & !is.na(se)
+  v <- matrix(NA_real_, length(se), length(se))
+  if (any(ok)) {
+    v[ok, ok] <- unname(as.matrix(survey::svrVar(
+      reps[, ok, drop = FALSE], attr(reps, "scale"), attr(reps, "rscales"),
+      mse = attr(reps, "mse"), coef = stats::coef(svy_result)[ok]
+    )))
+  }
+  v
 }
 
 #' Cells whose effort is a known zero
@@ -9035,9 +9157,9 @@ estimate_harvest_total <- function(
     effort_formula <- stats::reformulate(effort_col)
 
     # Call survey::svyratio (suppress expected survey package warnings)
-    svy_result <- suppressWarnings(
-      survey::svyratio(harvest_formula, effort_formula, svy_design)
-    )
+    svy_result <- with_defined_draws(suppressWarnings(
+      draws_defined(survey::svyratio)(harvest_formula, svy_design, denominator = effort_formula)
+    ))
 
     method_name <- "ratio-of-means-hpue"
   }
@@ -9221,12 +9343,13 @@ estimate_harvest_grouped <- function(
       formula = harvest_formula,
       by = by_formula,
       design = svy_design,
-      FUN = survey::svyratio,
+      FUN = draws_defined(survey::svyratio, by_vars),
       denominator = effort_formula,
       vartype = c("se", "ci"),
       ci.level = conf_level,
       keep.names = FALSE,
-      covmat = covmat
+      covmat = covmat,
+      return.replicates = covmat && inherits(svy_design, "svyrep.design")
     ))
 
     # Extract estimate columns from svyby result

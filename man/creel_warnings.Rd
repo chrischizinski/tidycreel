@@ -149,6 +149,9 @@ durations to give an SE for the mean trip length.}
 have one interview, so their SE is undefined.}
 \item{\code{creel_warning_single_day_strata}}{Tier 2. Some strata have one
 sampled day, so their variance cannot be estimated.}
+\item{\code{creel_warning_bootstrap_undefined_draws}}{Tier 2. Some
+bootstrap draws resampled none of a domain's interview days, so its
+bootstrap SE is \code{NA}.}
 \item{\code{creel_warning_camera_single_day}}{Tier 2. A stratum has one
 paired interview/count day, so its camera calibration SE is \code{NA}.}
 \item{\code{creel_warning_schnabel_ci_upper_unbounded}}{Tier 2. Too few

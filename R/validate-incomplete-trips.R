@@ -380,8 +380,10 @@ validate_incomplete_trips <- function(
         recommendation <- paste0(
           "Validation failed: Use complete trips only.",
           if (any(failed)) paste0(" Groups failed equivalence: ", label_rows(failed), "."),
-          if (any(untested)) paste0(" Groups not tested (one trip type only): ", label_rows(untested), ".")
+          if (any(untested)) paste0(" Groups not tested (one trip type only, or no SE): ", label_rows(untested), ".")
         )
+      } else if (is.na(overall_result$equivalence_passed)) {
+        recommendation <- "Not tested: Use complete trips only (the overall test could not be run)"
       } else {
         recommendation <- "Validation failed: Use complete trips only (overall test failed)"
       }
@@ -452,7 +454,11 @@ validate_incomplete_trips <- function(
     )
 
     # Recommendation
-    if (tost_result$equivalence_passed) {
+    # NA: no test was run (too few df, or no SE -- GH #673), so neither
+    # verdict is reported.
+    if (is.na(tost_result$equivalence_passed)) {
+      recommendation <- "Not tested: Use complete trips only (equivalence could not be tested)"
+    } else if (tost_result$equivalence_passed) {
       recommendation <- "Validation passed: Safe to use incomplete trips for CPUE estimation in this dataset"
     } else {
       recommendation <- "Validation failed: Use complete trips only (estimates not statistically equivalent)"
@@ -760,7 +766,9 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     vars[[nm[4]]] <- vars[[nm[4]]] * g
     svy_k <- svy
     svy_k$variables <- vars
-    fit <- suppressWarnings(survey::svyratio(num_f, den_f, svy_k, covmat = TRUE))
+    fit <- with_defined_draws(suppressWarnings( # nolint: object_usage_linter
+      draws_defined(survey::svyratio)(num_f, svy_k, denominator = den_f, covmat = TRUE) # nolint: object_usage_linter
+    ))
     est <- stats::coef(fit)[ratio_nm]
     v <- stats::vcov(fit)[ratio_nm, ratio_nm]
     reported <- c(al$complete$estimate[i], al$incomplete$estimate[i])
@@ -851,6 +859,21 @@ perform_tost <- function(
     df <- min(n_complete - 1, n_incomplete - 1)
   }
 
+  # An unknown SE -- a bootstrap draw that missed one trip type (GH #673) --
+  # leaves equivalence untested, not passed or failed.
+  if (is.na(se_diff)) {
+    return(list(
+      p_lower = NA_real_,
+      p_upper = NA_real_,
+      equivalence_passed = NA,
+      diff_estimate = diff_estimate,
+      equivalence_lower = equivalence_lower,
+      equivalence_upper = equivalence_upper,
+      se_diff = se_diff,
+      df = df
+    ))
+  }
+
   # Guard: se_diff == 0 (both groups have identical estimates with zero SE)
   # → t-statistics are ±Inf; treat as trivially equivalent if diff is within bounds.
   if (se_diff == 0) {
@@ -930,8 +953,10 @@ format.creel_tost_validation <- function(x, ...) {
       )
 
       # Overall status
-      if (x$passed) {
+      if (isTRUE(x$passed)) {
         cli::cli_alert_success("Validation PASSED")
+      } else if (is.na(x$passed)) {
+        cli::cli_alert_warning("Validation NOT TESTED")
       } else {
         cli::cli_alert_danger("Validation FAILED")
       }
@@ -970,6 +995,8 @@ format.creel_tost_validation <- function(x, ...) {
 
       if (isTRUE(x$overall_test$equivalence_passed)) {
         cli::cli_alert_success("Overall equivalence: PASSED")
+      } else if (is.na(x$overall_test$equivalence_passed)) {
+        cli::cli_alert_warning("Overall equivalence: NOT TESTED")
       } else {
         cli::cli_alert_danger("Overall equivalence: FAILED")
       }
