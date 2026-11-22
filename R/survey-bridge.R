@@ -1971,7 +1971,8 @@ warn_tier2_interview_issues <- function(design) {
 #'
 #' @param vals A one-row data frame of the group's `by=` values.
 #'
-#' @return Character vector of labels, one per `by=` column.
+#' @return Character vector of labels, one per `by=` column, with braces
+#'   escaped for a cli message.
 #'
 #' @keywords internal
 #' @noRd
@@ -1981,6 +1982,9 @@ group_value_labels <- function(vals) {
   # level code (GH #679).
   out <- vapply(vals, function(x) as.character(x[1L]), character(1), USE.NAMES = FALSE)
   out[is.na(out)] <- "<unknown>"
+  # The labels go into cli templates, which would evaluate a value's braces
+  # as code: a level such as "net {boat}" turned the message into an error.
+  out <- gsub("}", "}}", gsub("{", "{{", out, fixed = TRUE), fixed = TRUE)
   out
 }
 
