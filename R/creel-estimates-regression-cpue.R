@@ -88,18 +88,37 @@ regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = N
   if (anyNA(svy$variables[in_domain, vars, drop = FALSE])) {
     return(unavailable)
   }
+  # The caller collects the undefined-draw conditions into one warning
+  # (with_defined_draws()), so several groups are named together.
   if (force_origin) {
-    fit <- with_defined_draws(suppressWarnings(draws_defined(survey::svyratio, by_vars)( # nolint: object_usage_linter
+    fit <- suppressWarnings(draws_defined(survey::svyratio, by_vars)( # nolint: object_usage_linter
       stats::reformulate(vars[3]), svy, denominator = stats::reformulate(vars[4])
-    )))
+    ))
     est <- as.numeric(stats::coef(fit))
     se <- as.numeric(survey::SE(fit))
     ci <- stats::confint(fit, level = conf_level)
   } else {
+    # A bootstrap draw holding none of the domain's days: svyglm() returns a
+    # bare coefficient vector for it, with no warning to catch. The slope is
+    # the full-sample weighted least-squares fit svyglm() would report; its
+    # SE is unknown (GH #673).
+    n_empty <- empty_draws(svy) # nolint: object_usage_linter
+    if (n_empty > 0L) {
+      wls <- stats::lm(
+        stats::reformulate(vars[2], vars[1]),
+        data = svy$variables[in_domain, , drop = FALSE], weights = w[in_domain]
+      )
+      est <- unname(stats::coef(wls)[vars[2]])
+      if (is.na(est)) {
+        return(unavailable)
+      }
+      signal_undefined_draws(svy, by_vars, n_empty) # nolint: object_usage_linter
+      return(list(estimate = est, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_))
+    }
     fit <- tryCatch(
-      with_defined_draws(suppressWarnings( # nolint: object_usage_linter
+      suppressWarnings(
         draws_defined(survey::svyglm, by_vars)(stats::reformulate(vars[2], vars[1]), svy) # nolint: object_usage_linter
-      )),
+      ),
       error = function(e) NULL
     )
     # A slope the data cannot identify (one effort value throughout) has no
@@ -125,7 +144,10 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin, var
                                            call = rlang::caller_env()) {
   prep <- regression_cpue_survey(design, variance_method, call = call)
   n <- nrow(prep$data)
-  fit <- regression_cpue_fit(prep$svy, force_origin, conf_level, prep$vars)
+  fit <- with_defined_draws( # nolint: object_usage_linter
+    regression_cpue_fit(prep$svy, force_origin, conf_level, prep$vars),
+    call = call
+  )
   estimates_df <- tibble::tibble(
     estimate = fit$estimate,
     se = fit$se,
@@ -176,7 +198,7 @@ estimate_cpue_reg_grouped <- function(
   groups <- groups[ord, , drop = FALSE]
   keys <- keys[ord]
 
-  rows <- lapply(seq_along(keys), function(i) {
+  rows <- with_defined_draws(lapply(seq_along(keys), function(i) { # nolint: object_usage_linter
     k <- keys[[i]]
     n_g <- sum(row_key == k)
     if (n_g < 3L) {
@@ -202,7 +224,7 @@ estimate_cpue_reg_grouped <- function(
         n = n_g
       )
     )
-  })
+  }), call = call)
 
   estimates_df <- tibble::as_tibble(do.call(rbind, rows))
 

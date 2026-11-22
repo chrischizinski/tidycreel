@@ -78,15 +78,18 @@ wrap_survey_call <- function(expr, call = rlang::caller_env()) {
 #' tells [with_defined_draws()] which domain and how many draws.
 #'
 #' Wraps an estimator such as `survey::svyratio`, to call directly or to hand
-#' `svyby()` as `FUN`, which calls it once per group. Taylor and the jackknife
-#' never raise the warning, so they pass through unchanged.
+#' `svyby()` as `FUN`, which calls it once per group. A jackknife replicate
+#' can also leave a fit undefined (a regression slope a deleted day leaves
+#' unidentified); the same rule applies to it.
 #'
 #' @param FUN A survey estimator.
 #' @param by_vars Grouping columns, to name the group in the warning.
+#' @param label The domain's name, when the design is not subset to it (a
+#'   domain kept by zeroing the other rows' values).
 #' @return A function with `FUN`'s arguments.
 #' @keywords internal
 #' @noRd
-draws_defined <- function(FUN, by_vars = NULL) {
+draws_defined <- function(FUN, by_vars = NULL, label = NULL) {
   force(FUN)
   function(formula, design, ...) {
     n_na <- 0L
@@ -109,19 +112,45 @@ draws_defined <- function(FUN, by_vars = NULL) {
       res$var[] <- NA_real_
       # covmat = TRUE keeps the joint matrix here; vcov() reads it first.
       if (!is.null(res$vcov)) res$vcov[] <- NA_real_
+    } else if (is.list(res) && !is.null(res$mean)) {
+      # return.replicates = TRUE: svymean() keeps its variance on $mean.
+      attr(res$mean, "var")[] <- NA_real_
     } else {
       attr(res, "var")[] <- NA_real_
     }
-    signalCondition(structure(
-      class = c("creel_undefined_draws", "condition"),
-      list(
-        message = "undefined replicate draws", call = NULL,
-        label = draws_domain_label(design, by_vars),
-        n_na = n_na, n_draws = length(design$rscales)
-      )
-    ))
+    signal_undefined_draws(design, by_vars, n_na, label)
     res
   }
+}
+
+#' Tell [with_defined_draws()] a domain's replicate SE is unknown
+#' @keywords internal
+#' @noRd
+signal_undefined_draws <- function(design, by_vars, n_na, label = NULL) {
+  signalCondition(structure(
+    class = c("creel_undefined_draws", "condition"),
+    list(
+      message = "undefined replicate draws", call = NULL,
+      label = label %||% draws_domain_label(design, by_vars),
+      n_na = as.integer(n_na), n_draws = length(design$rscales),
+      bootstrap = identical(design$type, "bootstrap")
+    )
+  ))
+}
+
+#' Replicates of a (subset) replicate design that hold none of its rows
+#'
+#' svyglm() does not warn on such a draw: it returns a bare coefficient
+#' vector. Counted from the weights instead.
+#' @keywords internal
+#' @noRd
+empty_draws <- function(design) {
+  if (!inherits(design, "svyrep.design")) {
+    return(0L)
+  }
+  rows <- stats::weights(design, "sampling") > 0
+  rw <- stats::weights(design, "analysis")[rows, , drop = FALSE]
+  sum(colSums(rw != 0) == 0L)
 }
 
 #' Name the domain a replicate design's rows belong to
@@ -132,8 +161,8 @@ draws_domain_label <- function(design, by_vars) {
     return("the estimate")
   }
   w <- if (inherits(design, "svyrep.design")) stats::weights(design, "sampling") else stats::weights(design)
-  vals <- design$variables[which(w > 0)[1L], by_vars, drop = FALSE]
-  paste(by_vars, "=", group_value_labels(vals), collapse = ", ") # nolint: object_usage_linter
+  # Column by column: unlist() on the row turned dates and factors into codes.
+  tost_group_label(design$variables, which(w > 0)[1L], by_vars) # nolint: object_usage_linter
 }
 
 #' Warn once for every domain [draws_defined()] left without an SE
@@ -148,7 +177,7 @@ with_defined_draws <- function(expr, call = rlang::caller_env()) {
     labels <- unique(vapply(hits, function(h) h$label, character(1)))
     n_na <- max(vapply(hits, function(h) h$n_na, integer(1))) # nolint: object_usage_linter
     n_draws <- hits[[1L]]$n_draws # nolint: object_usage_linter
-    creel_warn( # nolint: object_usage_linter
+    msg <- if (hits[[1L]]$bootstrap) {
       c(
         "Bootstrap SE unavailable for {.val {labels}}: up to {n_na} of {n_draws} draws \\
          resampled none of its interview days.",
@@ -156,12 +185,36 @@ with_defined_draws <- function(expr, call = rlang::caller_env()) {
                other draws would be conditional on the domain being sampled.",
         "i" = "Use {.code variance = \"taylor\"} or {.code \"jackknife\"}, or interview \\
                the domain on more days in each stratum."
-      ),
+      )
+    } else {
+      c(
+        "Replicate SE unavailable for {.val {labels}}: {n_na} of {n_draws} replicates \\
+         could not compute the estimate.",
+        "x" = "Deleting a day left the estimate undefined, and an SE taken from the \\
+               other replicates would leave those days out.",
+        "i" = "Use {.code variance = \"taylor\"}."
+      )
+    }
+    creel_warn( # nolint: object_usage_linter
+      msg,
       class = c("creel_warning_bootstrap_undefined_draws", "creel_warning"),
       call = call
     )
   }
   out
+}
+
+#' Muffle an internal call's warnings except an undefined-draws one
+#'
+#' Internal (GH #673). A tier-2 warning muffled by `suppressWarnings()` is
+#' still marked printed for the design, so the caller's own copy would never
+#' show. This one is let through.
+#' @keywords internal
+#' @noRd
+keep_undefined_draws_warning <- function(expr) {
+  withCallingHandlers(expr, warning = function(w) {
+    if (!inherits(w, "creel_warning_bootstrap_undefined_draws")) invokeRestart("muffleWarning")
+  })
 }
 
 #' Variance of an effort x rate product total

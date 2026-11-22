@@ -160,10 +160,20 @@
   totals built from them. The covariance between rate groups is now taken
   over every draw; before, it used only the draws in which every group
   appeared. `validate_incomplete_trips()` reports such a test as not tested
-  instead of failed. On the ungrouped path an untested result, which a test
-  with too few degrees of freedom also gives, used to stop with
-  "missing value where TRUE/FALSE needed". Taylor and the jackknife are
-  unchanged: deleting one day never empties a group seen on two or more.
+  instead of failed, in its recommendation, its printed summary and its
+  plot (grey, "NOT TESTED"); a grouped result with nothing failed but a test
+  untested is itself untested (`passed = NA`), where it used to read
+  "Validation failed". On the ungrouped path an untested result, which a
+  test with too few degrees of freedom also gives, used to stop with
+  "missing value where TRUE/FALSE needed". Grouped regression with an
+  intercept under the bootstrap used to stop with "$ operator is invalid for
+  atomic vectors" when a group was missed by a draw; it now reports the slope
+  with an `NA` SE. Taylor is unchanged. The jackknife changes only where
+  deleting a day leaves the estimate undefined, such as a regression slope
+  with no effort contrast left: that SE is now `NA` too, with the same
+  warning, instead of the SE of the other replicates. Deleting one day never
+  empties a group seen on two or more, so jackknife rates are otherwise
+  unchanged.
 
 * `add_counts()` refuses a count timed outside the drawn shift (#426). When the
   design calendar comes from a schedule with shift times (`shift_start`,

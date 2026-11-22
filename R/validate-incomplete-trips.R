@@ -264,7 +264,7 @@ validate_incomplete_trips <- function(
   )
 
   # Estimate CPUE for incomplete trips (mean-of-ratios)
-  incomplete_result <- suppressMessages(suppressWarnings(
+  incomplete_result <- suppressMessages(keep_undefined_draws_warning(
     estimate_catch_rate(
       # nolint: object_usage_linter
       design,
@@ -317,10 +317,11 @@ validate_incomplete_trips <- function(
       joint = tost_joint_se_diff(design, complete_result, incomplete_result, variance, by_vars)
     )
 
-    # Overall passed = overall test passes AND all group tests pass
-    # isTRUE guards NA from degenerate TOST groups (df<=0 or se_diff==0 outside bounds)
-    passed <- isTRUE(overall_result$equivalence_passed) &&
-      all(vapply(group_results$equivalence_passed, isTRUE, logical(1)))
+    # Overall passed = overall test passes AND all group tests pass. A test
+    # that could not be run (NA) is neither: any failure fails the whole, and
+    # otherwise any untested test leaves it untested.
+    all_tests <- c(overall_result$equivalence_passed, group_results$equivalence_passed)
+    passed <- if (any(all_tests %in% FALSE)) FALSE else if (all(all_tests %in% TRUE)) TRUE else NA
 
     # Build plot_data for grouped estimation, paired by group key as the
     # tests are.
@@ -363,7 +364,7 @@ validate_incomplete_trips <- function(
     )
 
     # Recommendation
-    if (passed) {
+    if (isTRUE(passed)) {
       recommendation <- paste(
         "Validation passed: Safe to use incomplete trips for CPUE estimation in this dataset",
         "(overall and all groups passed equivalence)"
@@ -377,8 +378,13 @@ validate_incomplete_trips <- function(
       failed <- group_results$equivalence_passed %in% FALSE
       untested <- is.na(group_results$equivalence_passed)
       if (any(failed) || any(untested)) {
+        lead <- if (any(failed) || overall_result$equivalence_passed %in% FALSE) {
+          "Validation failed: Use complete trips only."
+        } else {
+          "Not tested: Use complete trips only."
+        }
         recommendation <- paste0(
-          "Validation failed: Use complete trips only.",
+          lead,
           if (any(failed)) paste0(" Groups failed equivalence: ", label_rows(failed), "."),
           if (any(untested)) paste0(" Groups not tested (one trip type only, or no SE): ", label_rows(untested), ".")
         )
@@ -508,7 +514,7 @@ perform_overall_tost <- function(
   )
 
   # Estimate ungrouped incomplete CPUE
-  incomplete_overall <- suppressMessages(suppressWarnings(
+  incomplete_overall <- suppressMessages(keep_undefined_draws_warning(
     estimate_catch_rate(
       # nolint: object_usage_linter
       design,
@@ -766,8 +772,14 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     vars[[nm[4]]] <- vars[[nm[4]]] * g
     svy_k <- svy
     svy_k$variables <- vars
+    # The group is kept by zeroing the other rows, not by subsetting, so it is
+    # named here rather than from the design's first row.
+    label <- if (is.null(by_vars)) NULL else tost_group_label(al$groups, i, by_vars) # nolint: object_usage_linter
     fit <- with_defined_draws(suppressWarnings( # nolint: object_usage_linter
-      draws_defined(survey::svyratio)(num_f, svy_k, denominator = den_f, covmat = TRUE) # nolint: object_usage_linter
+      draws_defined(survey::svyratio, label = label)( # nolint: object_usage_linter
+        num_f, svy_k,
+        denominator = den_f, covmat = TRUE
+      )
     ))
     est <- stats::coef(fit)[ratio_nm]
     v <- stats::vcov(fit)[ratio_nm, ratio_nm]
@@ -1010,7 +1022,7 @@ format.creel_tost_validation <- function(x, ...) {
         cli::cli_text("{n_passed}/{n_groups} group{?s} passed equivalence")
         n_untested <- sum(is.na(x$group_tests$equivalence_passed))
         if (n_untested > 0L) {
-          cli::cli_alert_warning("{n_untested} group{?s} could not be tested (one trip type only)")
+          cli::cli_alert_warning("{n_untested} group{?s} could not be tested (one trip type only, or no SE)")
         }
       }
     })
@@ -1067,11 +1079,12 @@ print.creel_tost_validation <- function(x, ...) {
   x_range <- all_range
   y_range <- all_range
 
-  # Create color scheme: blue for passed, red for failed
-  # An untested group (NA) counts as not passing. It has one coordinate
-  # missing, so it has no point to draw; the recommendation names it.
+  # Create color scheme: blue for passed, red for failed, grey for untested.
+  # A group with one trip type has one coordinate missing and no point to
+  # draw; a test with no SE (GH #673) has both and is drawn as untested.
   passed_ok <- vapply(plot_data$passed, isTRUE, logical(1))
-  point_colors <- ifelse(passed_ok, "#0066CC", "#CC0000")
+  untested <- is.na(plot_data$passed)
+  point_colors <- ifelse(passed_ok, "#0066CC", ifelse(untested, "gray40", "#CC0000"))
 
   # Create base plot
   graphics::plot(
@@ -1121,6 +1134,8 @@ print.creel_tost_validation <- function(x, ...) {
     for (i in failed_indices) {
       label_text <- if (!is.null(plot_data$group_labels)) {
         plot_data$group_labels[i]
+      } else if (untested[i]) {
+        "NOT TESTED"
       } else {
         "FAILED"
       }
@@ -1131,7 +1146,7 @@ print.creel_tost_validation <- function(x, ...) {
         y = plot_data$incomplete_est[i],
         labels = label_text,
         pos = 3, # above
-        col = "#CC0000",
+        col = point_colors[i],
         cex = 0.8,
         font = 2 # bold
       )
@@ -1141,11 +1156,11 @@ print.creel_tost_validation <- function(x, ...) {
   # Add legend
   graphics::legend(
     "topleft",
-    legend = c("Passed equivalence", "Failed equivalence", "y=x reference"),
-    col = c("#0066CC", "#CC0000", "gray50"),
-    pch = c(19, 19, NA),
-    lty = c(NA, NA, 2),
-    lwd = c(NA, NA, 2),
+    legend = c("Passed equivalence", "Failed equivalence", "Not tested", "y=x reference"),
+    col = c("#0066CC", "#CC0000", "gray40", "gray50"),
+    pch = c(19, 19, 19, NA),
+    lty = c(NA, NA, NA, 2),
+    lwd = c(NA, NA, NA, 2),
     bty = "n",
     cex = 0.9
   )
