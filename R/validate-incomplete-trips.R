@@ -281,17 +281,10 @@ validate_incomplete_trips <- function(
 
   if (is_grouped) {
     # Grouped validation: perform TOST per group AND overall
-    by_cols <- tidyselect::eval_select(
-      by_quo,
-      data = design$interviews,
-      allow_rename = FALSE,
-      allow_empty = FALSE,
-      error_call = rlang::caller_env()
-    )
-    by_vars <- screen_by_vars(
-      names(by_cols), by_quo, design$interviews, design,
-      error_call = rlang::caller_env()
-    )
+    # Resolved as the rate estimators resolve it: with a catch table, `by`
+    # may name the catch table's species column, which the interviews need
+    # not carry (GH #681).
+    by_vars <- resolve_species_by(by_quo, design)$all_vars # nolint: object_usage_linter
 
     # Overall test (ungrouped data)
     overall_result <- perform_overall_tost(
@@ -689,7 +682,7 @@ perform_grouped_tost <- function(design, complete_result, incomplete_result, by_
 #' @keywords internal
 #' @noRd
 tost_joint_se_diff <- function(design, complete_result, incomplete_result, variance, by_vars = NULL,
-                               split_species = TRUE) {
+                               split_species = TRUE, label_prefix = NULL) {
   strata_cols <- design$strata_cols
   strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
   bus_route <- (design$design_type %||% "instantaneous") %in% c("bus_route", "ice")
@@ -699,14 +692,17 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     # zero where none was caught (estimate_cpue_species()), not the design's
     # catch column, and its group is the catch table's species, not the
     # interviews' own species column (GH #681). Each species is fitted on its
-    # own counts, labelled with it. The bus-route rows already are
+    # own counts, grouped by the other `by` columns only: the species is not
+    # written into the interviews, where a column of that name may be a
+    # stratum. The bus-route rows already carry each species' contributions
     # (br_rate_rows).
     al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
     out <- stats::setNames(rep(NA_real_, length(al$keys)), al$keys)
+    inner_vars <- setdiff(by_vars, sp_col)
+    if (length(inner_vars) == 0L) inner_vars <- NULL
     for (s in unique(as.character(design$catch[[sp_col]]))) {
       one <- function(res) {
         res$design$interviews <- make_species_catch_for_interviews(res$design, s, "caught") # nolint: object_usage_linter
-        res$design$interviews[[sp_col]] <- s
         res$design$catch_col <- ".species_count"
         keep <- as.character(res$estimates[[sp_col]]) == s
         res$estimates <- res$estimates[keep, , drop = FALSE]
@@ -717,8 +713,13 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
       if (nrow(c_s$estimates) == 0L && nrow(i_s$estimates) == 0L) next
       d_s <- design
       d_s$catch_col <- ".species_count"
-      se <- tost_joint_se_diff(d_s, c_s, i_s, variance, by_vars, split_species = FALSE)
-      out[intersect(names(se), names(out))] <- se[intersect(names(se), names(out))]
+      se <- tost_joint_se_diff(
+        d_s, c_s, i_s, variance, inner_vars,
+        split_species = FALSE, label_prefix = paste(sp_col, "=", s)
+      )
+      # Within one species the inner keys and the full keys align the same
+      # rows in the same order.
+      out[align_tost_groups(c_s$estimates, i_s$estimates, by_vars)$keys] <- unname(se)
     }
     return(out)
   }
@@ -837,6 +838,7 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     # The group is kept by zeroing the other rows, not by subsetting, so it is
     # named here rather than from the design's first row.
     label <- if (is.null(by_vars)) NULL else tost_group_label(al$groups, i, by_vars) # nolint: object_usage_linter
+    if (!is.null(label_prefix)) label <- paste(c(label_prefix, label), collapse = ", ")
     fit <- with_defined_draws(suppressWarnings( # nolint: object_usage_linter
       draws_defined(survey::svyratio, label = label)( # nolint: object_usage_linter
         num_f, svy_k,
@@ -899,19 +901,24 @@ tost_design_df <- function(design, keys, by_vars = NULL) {
   }
   days <- unique(design$interviews[c(strata_cols, design$date_col)])
   day_stratum <- stratum_of(days)
+  row_stratum <- stratum_of(iv)
   sp_col <- tost_species_col(design, by_vars)
   if (!is.null(sp_col)) {
     # Every interview enters every species' rate, with that species' count
     # (zero where none was caught): each species draws on all of them, not on
-    # the rows whose own species column names it (GH #681).
+    # the rows whose own species column names it (GH #681). The species is
+    # keyed beside the interviews, not written into them, where a column of
+    # that name may be a stratum.
     species <- unique(as.character(design$catch[[sp_col]]))
-    iv <- do.call(rbind, lapply(species, function(s) {
-      iv[[sp_col]] <- rep(s, nrow(iv))
-      iv
+    row_key <- unlist(lapply(species, function(s) {
+      kf <- iv[setdiff(by_vars, sp_col)]
+      kf[[sp_col]] <- rep(s, nrow(iv))
+      group_key(kf, by_vars) # nolint: object_usage_linter
     }))
+    row_stratum <- rep(row_stratum, length(species))
+  } else {
+    row_key <- if (is.null(by_vars)) rep("all", nrow(iv)) else group_key(iv, by_vars) # nolint: object_usage_linter
   }
-  row_key <- if (is.null(by_vars)) rep("all", nrow(iv)) else group_key(iv, by_vars) # nolint: object_usage_linter
-  row_stratum <- stratum_of(iv)
   out <- vapply(keys, function(k) {
     used <- unique(row_stratum[row_key == k])
     as.integer(sum(day_stratum %in% used) - length(used))
