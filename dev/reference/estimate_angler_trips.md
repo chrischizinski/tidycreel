@@ -73,8 +73,11 @@ A `creel_estimates` object with `method = "angler-trips"` and
   Number of interviews contributing to mean trip length per stratum.
 
 For grouped effort, an `.overall` row is appended with
-`estimate = sum(stratum trips)` and `se` propagated by addition in
-quadrature.
+`estimate = sum(stratum trips)`. Its `se` adds the stratum variances in
+quadrature when the effort rows are independent (ground counts). Aerial
+effort rows share the visibility correction and angler-to-people ratio,
+and GLMM rows also share model coefficients, so for those the covariance
+of the effort rows is used and each shared term enters the total once.
 
 ## References
 

@@ -155,8 +155,12 @@ stratum.</p></dd>
 
 
 </dl><p>For grouped effort, an <code>.overall</code> row is appended with
-<code>estimate = sum(stratum trips)</code> and <code>se</code> propagated by addition
-in quadrature.</p>
+<code>estimate = sum(stratum trips)</code>. Its <code>se</code> adds the stratum
+variances in quadrature when the effort rows are independent (ground
+counts). Aerial effort rows share the visibility correction and
+angler-to-people ratio, and GLMM rows also share model coefficients, so
+for those the covariance of the effort rows is used and each shared term
+enters the total once.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>

@@ -1752,6 +1752,28 @@
 
 ### Bug fixes
 
+- [`estimate_angler_trips()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_angler_trips.md)
+  and
+  [`estimate_effort_per_acre()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort_per_acre.md)
+  accept aerial effort
+  ([\#582](https://github.com/chrischizinski/tidycreel/issues/582)).
+  Pooled aerial effort (`"aerial_total"`) and GLMM aerial effort
+  (`"aerial_glmm_total"`) are angler-hours, but both functions refused
+  them as “not effort”. Trips are effort / mean trip length as on every
+  other design, and the visibility and angler-ratio SEs already in the
+  effort SE carry through.
+
+  - The `.overall` row of grouped trips understated its SE on aerial
+    designs. Grouped aerial effort was already accepted, and each
+    stratum’s SE carries the shared visibility and angler-ratio term,
+    but the rows were summed in quadrature, which treats that one shared
+    multiplier as independent per stratum (the
+    [\#150](https://github.com/chrischizinski/tidycreel/issues/150)
+    trap). On a two-stratum example the `.overall` SE was 110.8; it is
+    now 121.8. The total now uses the covariance of the effort rows:
+    shared terms enter once, and on the GLMM path the reported
+    `strata_vcov` is used. Ground-count trips do not change.
+
 - Sample-size refusals name each group by its values
   ([\#679](https://github.com/chrischizinski/tidycreel/issues/679)). A
   `Date` grouping column was shown as its day number, and a factor
