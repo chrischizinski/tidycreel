@@ -1782,10 +1782,17 @@
     carried a column of that name. The rate estimators already accepted
     it.
 
+  - On bus-route designs, each species’ rate rows were labelled by
+    writing the species into a column of that name. A calendar stratum
+    with the same name was overwritten, and the joint fit ran on the
+    wrong strata
+    ([\#686](https://github.com/chrischizinski/tidycreel/issues/686)).
+
   Each species is now fitted on its own counts, and its degrees of
   freedom count every interviewed day. `by` is resolved as
   [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
-  resolves it.
+  resolves it. On every design, the species is kept apart from the
+  strata.
 
 - [`add_catch()`](https://chrischizinski.com/tidycreel/dev/reference/add_catch.md),
   [`add_lengths()`](https://chrischizinski.com/tidycreel/dev/reference/add_lengths.md)
