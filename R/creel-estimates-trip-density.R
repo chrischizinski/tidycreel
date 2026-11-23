@@ -116,7 +116,7 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 #' }
 #'
 #' On a design with more than one stratum, \code{effort} must be grouped by
-#' every stratum column, and the season total is the \code{.overall} row:
+#' every stratum column, and the total across strata is the \code{.overall} row:
 #' \eqn{\sum_h \hat{E}_h / \hat{L}_h}, built stratum by stratum as Pollock et
 #' al. (1994, sec. 15.3.3.6) build season catch. One trip length pooled across
 #' strata weights each stratum by its share of the \emph{interviewed} trips,
@@ -195,7 +195,7 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status, trip_duration = trip_duration
 #' )
-#' # Effort by stratum: the `.overall` row is the season's trips.
+#' # Effort by stratum: the `.overall` row is the total across strata.
 #' effort <- estimate_effort(design, by = day_type)
 #' estimate_angler_trips(effort, design)
 #'
@@ -454,7 +454,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 # N_h / n_h did not remove it, because the interviews per day still do not
 # follow the day's trips. An ungrouped effort object holds no E_h to weight by,
 # so the call is refused and the user asked for effort by stratum, whose
-# `.overall` row is the season total.
+# `.overall` row is the total across strata.
 #
 # A calendar with one stratum pools nothing and is let through.
 refuse_trips_pooled_across_strata <- function(effort, design, call = rlang::caller_env()) {
@@ -473,6 +473,12 @@ refuse_trips_pooled_across_strata <- function(effort, design, call = rlang::call
   by_now <- effort$by_vars
   by_call <- paste(unique(c(strata, by_now)), collapse = ", ")
   if (length(unique(c(strata, by_now))) > 1L) by_call <- paste0("c(", by_call, ")")
+  # The suggested call keeps the effort's target, or following it would
+  # silently change the quantity estimated.
+  target <- effort$effort_target
+  if (!is.null(target) && !identical(target, "period_total")) {
+    by_call <- paste0(by_call, ", target = \"", target, "\"")
+  }
   cli::cli_abort(
     c(
       "Trips across strata need effort for each stratum.",
@@ -481,7 +487,7 @@ refuse_trips_pooled_across_strata <- function(effort, design, call = rlang::call
       "i" = "A trip length pooled across strata is weighted by interviews, not effort \\
              (Pollock et al. 1994).",
       "i" = "Use {.code estimate_effort(design, by = {by_call})}; the {.val .overall} row \\
-             is the season total. See {.code ?estimate_angler_trips} for why."
+             is the total across strata. See {.code ?estimate_angler_trips} for why."
     ),
     class = c("creel_error_trips_need_strata", "creel_error_invalid_input"),
     call = call

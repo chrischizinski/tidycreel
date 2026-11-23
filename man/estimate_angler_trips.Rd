@@ -84,7 +84,7 @@ effort is.
 }
 
 On a design with more than one stratum, \code{effort} must be grouped by
-every stratum column, and the season total is the \code{.overall} row:
+every stratum column, and the total across strata is the \code{.overall} row:
 \eqn{\sum_h \hat{E}_h / \hat{L}_h}, built stratum by stratum as Pollock et
 al. (1994, sec. 15.3.3.6) build season catch. One trip length pooled across
 strata weights each stratum by its share of the \emph{interviewed} trips,
@@ -110,7 +110,7 @@ design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status, trip_duration = trip_duration
 )
-# Effort by stratum: the `.overall` row is the season's trips.
+# Effort by stratum: the `.overall` row is the total across strata.
 effort <- estimate_effort(design, by = day_type)
 estimate_angler_trips(effort, design)
 

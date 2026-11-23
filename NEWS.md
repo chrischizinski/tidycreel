@@ -13,7 +13,7 @@
 * `estimate_angler_trips()` on a design with more than one stratum now needs
   effort grouped by every stratum column, e.g.
   `estimate_effort(design, by = day_type)`; the `.overall` row is the season
-  total, summed stratum by stratum as Pollock et al. (1994, sec. 15.3.3.6)
+  total across strata, summed stratum by stratum as Pollock et al. (1994, sec. 15.3.3.6)
   build season catch (#691). Ungrouped effort, or effort grouped only by
   other columns, is refused with class `creel_error_trips_need_strata`. It
   used to be divided by one trip length pooled across strata, which weights

@@ -15,10 +15,10 @@
 
 ps_quiet <- function(expr) suppressWarnings(suppressMessages(expr))
 
-# 20 days: 14 weekdays, 6 weekends. Four of each sampled, so weekends are
-# sampled at 4/6 and weekdays at 4/14. Five complete trips interviewed per
-# sampled day however busy it was. Weekday trips are about 2 h, weekend about
-# 5 h, and weekend effort is four times weekday effort.
+# 20 days from a Monday: 15 weekdays, 5 weekend days. Four of each sampled, so
+# weekends are sampled at 4/5 and weekdays at 4/15. Five complete trips are
+# interviewed per sampled day however busy it was. Weekday trips are about 2 h,
+# weekend about 5 h, and weekend effort is four times weekday effort.
 ps_design <- function() {
   dates <- as.Date("2024-06-03") + 0:19
   day_type <- ifelse(format(dates, "%u") %in% c("6", "7"), "weekend", "weekday")
@@ -59,7 +59,7 @@ test_that("#691: season trips are summed per stratum, not effort over a pooled t
   expect_equal(t$estimate[t$day_type == ".overall"], season)
 
   # Why it matters: the pooled trip length counts weekend and weekday trips by
-  # how many were interviewed (20 each), but weekdays hold 14 of the 20 days.
+  # how many were interviewed (20 each), but weekdays hold 15 of the 20 days.
   # Effort over that pooled length -- what an ungrouped call returned before
   # #691 -- is materially off.
   pooled <- sum(E_h) / mean(iv$trip_duration)
@@ -75,4 +75,10 @@ test_that("#691: ungrouped effort on a stratified design is refused, naming the 
   expect_match(msg, "Pollock et al. 1994", fixed = TRUE)
   expect_match(msg, "by = day_type", fixed = TRUE)
   expect_match(msg, "?estimate_angler_trips", fixed = TRUE)
+
+  # The suggested call keeps a non-default target, or following it would
+  # change the quantity estimated.
+  s <- ps_quiet(estimate_effort(d, target = "sampled_days")) # nolint: object_usage_linter
+  msg <- tryCatch(estimate_angler_trips(s, d), error = conditionMessage) # nolint: object_usage_linter
+  expect_match(msg, "target = \"sampled_days\"", fixed = TRUE)
 })

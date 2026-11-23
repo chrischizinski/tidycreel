@@ -162,11 +162,11 @@ effort_by_day <- estimate_effort(design, by = day_type)
 # Trips need a trip length that this design may not give: roving interviews,
 # effort of unknown unit with varying party sizes, or no usable complete trip
 # are refused. The report says why instead of stopping.
-# Trips are summed stratum by stratum, so they take effort by day type; the
-# `.overall` row is the season total (GH #691).
+# Trips are summed stratum by stratum, so they take effort by every stratum
+# column; the `.overall` row is the season total (GH #691).
 trips_refusal <- NULL
 angler_trips <- tryCatch(
-  estimate_angler_trips(effort_by_day, design),
+  estimate_angler_trips(estimate_effort(design, by = dplyr::all_of(design$strata_cols)), design),
   creel_error_roving_trip_length = function(e) {
     trips_refusal <<- conditionMessage(e)
     NULL
@@ -195,7 +195,7 @@ release_rate_by_species <- maybe(
 total_catch <- estimate_total_catch(design)
 total_harvest <- estimate_total_harvest(design)
 total_release <- estimate_total_release(design)
-# Trips are by day type (with a `.overall` row), so they are shown in their
+# Trips are by stratum (with a `.overall` row), so they are shown in their
 # own section rather than in this ungrouped table.
 season_totals <- season_summary(Filter(Negate(is.null), list(
   effort = effort_total,
