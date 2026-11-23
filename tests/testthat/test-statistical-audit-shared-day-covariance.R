@@ -751,3 +751,77 @@ test_that("SDC-23 (#681): a stratum named like the catch species keeps its strat
   expect_equal(joint[["walleye"]], overall$se_diff, tolerance = 1e-10)
   expect_equal(tost_design_df(d, "walleye", "species"), c(walleye = overall$df)) # nolint: object_usage_linter
 })
+
+test_that("SDC-24 (#686): a bus-route stratum named like the catch species keeps its strata", {
+  # As SDC-23, on a bus route. Each species' rate rows were labelled by
+  # writing the species into a column of that name, over the stratum: the
+  # joint fit then ran on one stratum, not two (SE 0.0554 against 0.0616).
+  cal <- data.frame(date = as.Date("2024-06-03") + 0:5, species = rep(c("a", "b"), each = 3))
+  sf <- data.frame(site = c("A", "B"), circuit = "c", wait = c(60, 120), ct = 180)
+  des <- creel_design(
+    cal,
+    date = date, strata = species, survey_type = "bus_route", # nolint: object_usage_linter
+    sampling_frame = sf, site = site, circuit = circuit, # nolint: object_usage_linter
+    wait_time = wait, circuit_time = ct, p_period = 1 # nolint: object_usage_linter
+  )
+  n <- 24L
+  iv <- data.frame(
+    date = rep(cal$date, each = 4), species = rep(c("a", "b"), each = 12),
+    site = rep(c("A", "B"), length.out = n), circuit = "c",
+    hrs = rep(c(2, 3, 1.5, 2.5), length.out = n),
+    trip_status = rep(c("complete", "incomplete"), length.out = n),
+    n_counted = 1L, n_interviewed = 1L, iid = seq_len(n)
+  )
+  iv$catch_total <- round(iv$hrs * rep(c(0.8, 1.2, 1, 0.9, 1.1, 1.3), each = 4))
+  d <- sdc_q(add_interviews(des, iv, # nolint: object_usage_linter
+    effort = hrs, catch = catch_total, trip_status = trip_status, # nolint: object_usage_linter
+    trip_duration = hrs, n_counted = n_counted, n_interviewed = n_interviewed, n_anglers = 1 # nolint: object_usage_linter
+  ))
+  d <- sdc_q(add_catch( # nolint: object_usage_linter
+    d, data.frame(iid = iv$iid, species = "walleye", count = iv$catch_total, catch_type = "caught"),
+    catch_uid = iid, interview_uid = iid, species = species, count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  ))
+  overall <- sdc_q(validate_incomplete_trips(d, catch_total, hrs))$overall_test # nolint: object_usage_linter
+  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+    d,
+    estimate_catch_rate(d, by = species), # nolint: object_usage_linter
+    estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
+    "taylor",
+    by_vars = "species"
+  ))
+  expect_equal(joint[["walleye"]], overall$se_diff, tolerance = 1e-10)
+  # The overall test is the two-stratum weighted reference.
+  expect_equal(overall$se_diff, sdc_br_reference(transform(iv, day_type = species)), tolerance = 1e-10)
+})
+
+test_that("SDC-25 (#686): a blank species label is a species like any other", {
+  # add_catch() accepts "" as a label. The bus-route species rows were looked
+  # up by name, which never matches a blank one, and the test stopped.
+  d <- sdc_br_design()
+  d$interviews$species <- "walleye"
+  iv <- d$interviews
+  catch <- rbind(
+    data.frame(iid = iv$iid, species = "walleye", count = iv$catch_total, catch_type = "caught"),
+    data.frame(iid = iv$iid, species = "", count = iv$catch_total %/% 2, catch_type = "caught")
+  )
+  d <- sdc_q(add_catch( # nolint: object_usage_linter
+    d, catch,
+    catch_uid = iid, interview_uid = iid, species = species, count = count, # nolint: object_usage_linter
+    catch_type = catch_type # nolint: object_usage_linter
+  ))
+  v <- sdc_q(validate_incomplete_trips(d, catch_total, hrs, by = species)) # nolint: object_usage_linter
+  expect_setequal(v$group_tests$species, c("", "walleye"))
+  expect_true(all(is.finite(v$group_tests$p_lower)))
+  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+    d,
+    estimate_catch_rate(d, by = species), # nolint: object_usage_linter
+    estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
+    "taylor",
+    by_vars = "species"
+  ))
+  # Walleye's count is every trip's whole catch: the overall reference.
+  expect_equal(joint[["walleye"]], sdc_br_reference(iv), tolerance = 1e-10)
+  iv$catch_total <- iv$catch_total %/% 2
+  expect_equal(unname(joint[names(joint) == ""]), sdc_br_reference(iv), tolerance = 1e-10)
+})

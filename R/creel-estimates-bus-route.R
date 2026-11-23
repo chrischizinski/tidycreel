@@ -1152,10 +1152,10 @@ estimate_rate_species_br <- function(
     sp_df <- res$estimates
     sp_df[[species_col]] <- sp
     results_list[[i]] <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
-    # Each species' rows, labelled, for the joint TOST fit (GH #671).
-    rr <- attr(res, "br_rate_rows")
-    rr$rows[[species_col]] <- rep(sp, nrow(rr$rows))
-    rows_list[[i]] <- rr
+    # Each species' rows for the joint TOST fit (GH #671), kept apart by
+    # species rather than labelled in a column: a stratum may share the
+    # species column's name (GH #686).
+    rows_list[[i]] <- attr(res, "br_rate_rows")
   }
 
   result <- new_creel_estimates( # nolint: object_usage_linter
@@ -1168,11 +1168,7 @@ estimate_rate_species_br <- function(
     by_vars = c(species_col, interview_by_vars),
     unit = rate_unit(design) # nolint: object_usage_linter
   )
-  attr(result, "br_rate_rows") <- list(
-    rows = do.call(rbind, lapply(rows_list, `[[`, "rows")),
-    num = unlist(lapply(rows_list, `[[`, "num"), use.names = FALSE),
-    den = unlist(lapply(rows_list, `[[`, "den"), use.names = FALSE)
-  )
+  attr(result, "br_rate_rows_species") <- stats::setNames(rows_list, as.character(all_species))
   result
 }
 

@@ -638,8 +638,10 @@ perform_grouped_tost <- function(design, complete_result, incomplete_result, by_
       threshold = threshold,
       n_complete = cdf$n[i],
       n_incomplete = idf$n[i],
-      se_diff = if (is.null(joint)) NULL else unname(joint[al$keys[i]]),
-      df = unname(design_df[al$keys[i]])
+      # By position: name indexing never matches a blank key, the key of a
+      # group labelled "" (GH #686).
+      se_diff = if (is.null(joint)) NULL else unname(joint[match(al$keys[i], names(joint))]),
+      df = unname(design_df[match(al$keys[i], names(design_df))])
     )
 
     group_results$p_lower[i] <- tost_result$p_lower
@@ -687,23 +689,30 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
   strata_formula <- if (length(strata_cols) > 0L) stats::reformulate(strata_cols) else NULL
   bus_route <- (design$design_type %||% "instantaneous") %in% c("bus_route", "ice")
   sp_col <- tost_species_col(design, by_vars)
-  if (!bus_route && split_species && !is.null(sp_col)) {
+  if (split_species && !is.null(sp_col)) {
     # A species rate's numerator is that species' count on every interview,
     # zero where none was caught (estimate_cpue_species()), not the design's
     # catch column, and its group is the catch table's species, not the
     # interviews' own species column (GH #681). Each species is fitted on its
     # own counts, grouped by the other `by` columns only: the species is not
     # written into the interviews, where a column of that name may be a
-    # stratum. The bus-route rows already carry each species' contributions
-    # (br_rate_rows).
+    # stratum (GH #686). The bus-route species rates keep each species' rate
+    # rows apart (br_rate_rows_species).
     al <- align_tost_groups(complete_result$estimates, incomplete_result$estimates, by_vars)
     out <- stats::setNames(rep(NA_real_, length(al$keys)), al$keys)
     inner_vars <- setdiff(by_vars, sp_col)
     if (length(inner_vars) == 0L) inner_vars <- NULL
     for (s in unique(as.character(design$catch[[sp_col]]))) {
       one <- function(res) {
-        res$design$interviews <- make_species_catch_for_interviews(res$design, s, "caught") # nolint: object_usage_linter
-        res$design$catch_col <- ".species_count"
+        if (bus_route) {
+          # By position: `[[` never matches a blank name, and "" is a label
+          # add_catch() accepts.
+          rows_sp <- attr(res, "br_rate_rows_species")
+          attr(res, "br_rate_rows") <- rows_sp[[match(s, names(rows_sp))]]
+        } else {
+          res$design$interviews <- make_species_catch_for_interviews(res$design, s, "caught") # nolint: object_usage_linter
+          res$design$catch_col <- ".species_count"
+        }
         keep <- as.character(res$estimates[[sp_col]]) == s
         res$estimates <- res$estimates[keep, , drop = FALSE]
         res
@@ -719,7 +728,7 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
       )
       # Within one species the inner keys and the full keys align the same
       # rows in the same order.
-      out[align_tost_groups(c_s$estimates, i_s$estimates, by_vars)$keys] <- unname(se)
+      out[match(align_tost_groups(c_s$estimates, i_s$estimates, by_vars)$keys, names(out))] <- unname(se)
     }
     return(out)
   }
