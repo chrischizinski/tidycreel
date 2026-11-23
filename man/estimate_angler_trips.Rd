@@ -34,8 +34,12 @@ length), in the actor the effort was measured in.}
 stratum.}
 }
 For grouped effort, an \code{.overall} row is appended with
-\code{estimate = sum(stratum trips)} and \code{se} propagated by addition
-in quadrature.
+\code{estimate = sum(stratum trips)}. Its \code{se} adds the stratum
+variances in quadrature when the effort rows are independent (ground
+counts). Aerial effort rows share the visibility correction and
+angler-to-people ratio, and GLMM rows also share model coefficients, so
+for those the covariance of the effort rows is used and each shared term
+enters the total once.
 }
 \description{
 Computes estimated trips by dividing extrapolated effort by the mean trip

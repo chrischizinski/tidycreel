@@ -1,12 +1,45 @@
 # Internal: effort-family method allowlist ----
 
-# `estimate_effort()` returns "total" on every design type and "total-sections"
-# when add_sections() was used. Everything else in the package -- CPUE, HPUE,
-# RPUE, the product totals, the bus-route HT totals -- is a different quantity.
-# Consumers check against this set so a rate or a fish-valued total cannot be
-# divided by hours or acres and relabelled as effort.
+# `estimate_effort()` returns "total" on ground, bus-route, ice and camera
+# designs, "total-sections" when add_sections() was used, and "aerial_total"
+# for pooled aerial effort; estimate_effort_aerial_glmm() returns
+# "aerial_glmm_total". All are angler-hours of effort (GH #582). Everything
+# else in the package -- CPUE, HPUE, RPUE, the product totals, the bus-route
+# HT totals -- is a different quantity. Consumers check against this set so a
+# rate or a fish-valued total cannot be divided by hours or acres and
+# relabelled as effort.
 effort_family_methods <- function() {
-  c("total", "total-sections")
+  c("total", "total-sections", "aerial_total", "aerial_glmm_total")
+}
+
+# Covariance of the effort rows a trips total sums over (GH #582).
+#
+# Rows of ground effort are independent strata, so the matrix is diagonal and
+# the total is the familiar sum in quadrature. Aerial rows are not: v and a are
+# single estimates scaling every row, so each row's SE carries a component
+# `E_h * se / value` that is perfectly correlated across rows (GH #135, #150).
+# Those components enter as rank-one terms; the remainder of each row's
+# variance stays on the diagonal. The GLMM path reports the whole matrix,
+# model correlation included, as `strata_vcov`, and that is used as is.
+effort_row_vcov <- function(effort, se_E) {
+  k <- length(se_E)
+  vc <- effort$strata_vcov
+  if (!is.null(vc)) {
+    if (!identical(dim(vc), c(k, k))) {
+      cli::cli_abort(
+        "Internal error: {.code strata_vcov} is not {k} x {k}.",
+        .internal = TRUE
+      )
+    }
+    return(vc)
+  }
+  comps <- effort$se_components
+  shared <- comps[intersect(c("visibility", "angler_ratio"), names(comps))]
+  shared <- Filter(function(x) length(x) == k, shared)
+  own_var <- se_E^2 - Reduce(`+`, lapply(shared, function(x) x^2), 0)
+  vc <- diag(own_var, nrow = k)
+  for (s in shared) vc <- vc + tcrossprod(s)
+  vc
 }
 
 # Shared guard for the composable estimators that consume an effort object.
@@ -79,8 +112,12 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 #'       stratum.}
 #'   }
 #'   For grouped effort, an \code{.overall} row is appended with
-#'   \code{estimate = sum(stratum trips)} and \code{se} propagated by addition
-#'   in quadrature.
+#'   \code{estimate = sum(stratum trips)}. Its \code{se} adds the stratum
+#'   variances in quadrature when the effort rows are independent (ground
+#'   counts). Aerial effort rows share the visibility correction and
+#'   angler-to-people ratio, and GLMM rows also share model coefficients, so
+#'   for those the covariance of the effort rows is used and each shared term
+#'   enters the total once.
 #'
 #' @references Powell, L. A. (2007). Approximating variance of demographic
 #'   parameters using the delta method. \emph{Journal of Wildlife Management},
@@ -275,9 +312,14 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     n = joined$n_interviews
   )
 
-  # .overall row: additive aggregate; df = sum(n) - n_strata
+  # .overall row: additive aggregate; df = sum(n) - n_strata. The effort part
+  # of its variance is g' Sigma_E g with g = 1 / L, so a multiplier shared by
+  # every row (aerial v and a) enters once on the total rather than once per
+  # row in quadrature (GH #582). The trip-length part is independent per
+  # stratum. Ground effort has a diagonal Sigma_E and reduces to sum(var_trips).
   overall_est <- sum(trips)
-  overall_var <- sum(var_trips)
+  vc_E <- effort_row_vcov(effort, se_E)
+  overall_var <- drop(crossprod(1 / L, vc_E %*% (1 / L))) + sum(E^2 * se_L_vec^2 / L^4)
   overall_se <- sqrt(overall_var)
   z_overall <- stats::qt(
     1 - (1 - conf_level) / 2,
