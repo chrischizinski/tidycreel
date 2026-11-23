@@ -82,6 +82,18 @@ angler-hours.
 weights (\code{.expansion / .pi_i}; Jones and Pollock 2012), as their
 effort is.
 }
+
+On a design with more than one stratum, \code{effort} must be grouped by
+every stratum column, and the season total is the \code{.overall} row:
+\eqn{\sum_h \hat{E}_h / \hat{L}_h}, built stratum by stratum as Pollock et
+al. (1994, sec. 15.3.3.6) build season catch. One trip length pooled across
+strata weights each stratum by its share of the \emph{interviewed} trips,
+not of all trips. Sampling weekends more heavily than weekdays, or taking a
+fixed number of interviews per day however busy it is, then biases the
+total. On a simulated season it was off by -16\% and +8\% (GH #691).
+Ungrouped effort carries no per-stratum effort to weight by, so it is
+refused.
+
 The mean is a ratio estimator on the interview survey design, so
 interviews on the same day are not treated as independent, and the
 confidence interval uses that design's degrees of freedom (days less
@@ -98,7 +110,8 @@ design <- add_interviews(design, example_interviews,
   catch = catch_total, effort = hours_fished, harvest = catch_kept,
   trip_status = trip_status, trip_duration = trip_duration
 )
-effort <- estimate_effort(design)
+# Effort by stratum: the `.overall` row is the season's trips.
+effort <- estimate_effort(design, by = day_type)
 estimate_angler_trips(effort, design)
 
 }
@@ -114,7 +127,7 @@ ed., pp. 883-919). American Fisheries Society.
 
 Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). \emph{Angler
 Survey Methods and Their Applications in Fisheries Management}. American
-Fisheries Society Special Publication 25. Chapter 11.
+Fisheries Society Special Publication 25. Chapters 11 and 15.
 
 Powell, L. A. (2007). Approximating variance of demographic
 parameters using the delta method. \emph{Journal of Wildlife Management},

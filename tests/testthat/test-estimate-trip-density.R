@@ -29,6 +29,9 @@ td_design <- function(iv = td_interviews()) {
     date = as.Date("2024-06-03") + 0:6,
     day_type = c(rep("weekday", 5), rep("weekend", 2))
   )
+  # One stratum when the interviews carry one: ungrouped effort is accepted
+  # only where there is nothing to pool across (GH #691).
+  if (length(unique(iv$day_type)) == 1L) cal$day_type <- iv$day_type[1]
   d <- creel_design(cal, date = date, strata = day_type)
   suppressWarnings(suppressMessages(add_interviews(
     d, iv,
@@ -43,9 +46,16 @@ td_ref_svy <- function(iv = td_interviews()) {
   subset(s, trip_status == "complete")
 }
 
-design_ungrouped <- td_design()
-design_grouped <- design_ungrouped
-ref_ungrouped <- survey::svymean(~duration, td_ref_svy())
+# The ungrouped tests run on a one-stratum season: on a stratified one,
+# ungrouped effort is refused (GH #691, tested below).
+td_interviews_one <- function() {
+  iv <- td_interviews()
+  iv$day_type <- "season"
+  iv
+}
+design_ungrouped <- td_design(td_interviews_one())
+design_grouped <- td_design()
+ref_ungrouped <- survey::svymean(~duration, td_ref_svy(td_interviews_one()))
 ref_grouped <- survey::svyby(~duration, ~day_type, td_ref_svy(), survey::svymean)
 ref_L <- function(dt) ref_grouped$duration[ref_grouped$day_type == dt]
 ref_se <- function(dt) survey::SE(ref_grouped)[ref_grouped$day_type == dt]
@@ -110,9 +120,9 @@ test_that("Test B: ungrouped — SE matches Delta Method formula Var(E/L) = Var(
   expected_se <- sqrt(var_trips)
 
   expect_equal(result$estimates$se, expected_se, tolerance = 1e-10)
-  # The CI uses the interview design's df (5 days less 2 strata), not n - 1.
-  t3 <- stats::qt(0.975, df = 3)
-  expect_equal(result$estimates$ci_upper - result$estimates$estimate, t3 * expected_se)
+  # The CI uses the interview design's df (5 days less 1 stratum), not n - 1.
+  t4 <- stats::qt(0.975, df = 4)
+  expect_equal(result$estimates$ci_upper - result$estimates$estimate, t4 * expected_se)
 })
 
 test_that("Test C: ungrouped — CI contains estimate", {
@@ -131,6 +141,31 @@ test_that("Test D: returns creel_estimates with method angler-trips and variance
 test_that("Test E: ungrouped — no .overall row (single observation)", {
   result <- estimate_angler_trips(effort_ungrouped, design_ungrouped)
   expect_equal(nrow(result$estimates), 1L)
+})
+
+test_that("ungrouped effort on a stratified design is refused, not pooled (GH #691)", {
+  # One trip length pooled over weekdays and weekends is weighted by the
+  # interviews each stratum got, not by its share of the trips, so E / L is
+  # biased whenever interviewing is not proportional to effort. Season trips
+  # are sum_h E_h / L_h, which needs effort by stratum.
+  expect_error(
+    estimate_angler_trips(effort_ungrouped, design_grouped),
+    class = "creel_error_trips_need_strata"
+  )
+  expect_error(
+    estimate_angler_trips(effort_ungrouped, design_grouped),
+    "by = day_type"
+  )
+  # Effort grouped by something other than the strata pools them all the same.
+  by_other <- effort_grouped
+  by_other$by_vars <- "angler_type"
+  by_other$estimates <- dplyr::rename(by_other$estimates, angler_type = day_type)
+  iv <- td_interviews()
+  iv$angler_type <- iv$day_type
+  expect_error(
+    estimate_angler_trips(by_other, td_design(iv)),
+    "c\\(day_type, angler_type\\)"
+  )
 })
 
 test_that("Test F: grouped — .overall row present, estimate = sum of stratum trips", {
@@ -317,7 +352,7 @@ test_that("RPT-01b: ungrouped single interview warns and returns NA SE/CI", {
     by_vars = NULL
   )
   # One complete trip; the rest are incomplete and do not count.
-  iv <- td_interviews()
+  iv <- td_interviews_one()
   iv$trip_status <- "incomplete"
   iv$trip_status[1] <- "complete"
   design_one <- td_design(iv)
@@ -419,9 +454,14 @@ test_that("the effort-family guard still admits genuine effort objects (GH #112)
   # unknown and, with varying party sizes, trips refuse it (GH #689). Declaring
   # it here isolates the guard under test.
   fx$effort$unit <- "angler-hours"
+  # Trips need effort by stratum on a stratified design (GH #691).
+  by_stratum <- suppressWarnings(suppressMessages(
+    estimate_effort(fx$design, by = dplyr::all_of(fx$design$strata_cols))
+  ))
+  by_stratum$unit <- "angler-hours"
 
   expect_s3_class(
-    suppressWarnings(estimate_angler_trips(fx$effort, fx$design)),
+    suppressWarnings(estimate_angler_trips(by_stratum, fx$design)),
     "creel_estimates"
   )
   expect_s3_class(

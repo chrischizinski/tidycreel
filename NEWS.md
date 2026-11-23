@@ -10,6 +10,27 @@
 
 ## Breaking changes
 
+* `estimate_angler_trips()` on a design with more than one stratum now needs
+  effort grouped by every stratum column, e.g.
+  `estimate_effort(design, by = day_type)`; the `.overall` row is the season
+  total, summed stratum by stratum as Pollock et al. (1994, sec. 15.3.3.6)
+  build season catch (#691). Ungrouped effort, or effort grouped only by
+  other columns, is refused with class `creel_error_trips_need_strata`. It
+  used to be divided by one trip length pooled across strata, which weights
+  each stratum by how many of its trips were interviewed rather than by how
+  many were taken. Sampling weekends more heavily, or taking the same number
+  of interviews on busy and quiet days, then biased the season total: by
+  -16% and +8% on a simulated season. A one-stratum design is unaffected.
+  The creel report template now estimates trips by day type and shows them
+  in their own section, not in the season-totals table.
+  * Rates pooled across strata (`estimate_catch_rate()`,
+    `estimate_harvest_rate()`, `estimate_release_rate()` ungrouped or grouped
+    by a non-stratum column) share the same pooling and are **not yet
+    changed**: they still weight strata by interviews. They become
+    effort-weighted in follow-up changes under #691. Totals
+    (`estimate_total_*()`) already combine stratum by stratum and are not
+    affected.
+
 * `estimate_angler_trips()` divides effort by the mean length of completed
   trips, matched to the effort's actor (#689). Trips are effort / mean trip
   length (Pollock et al. 1994, p. 175), and the mean used to be the plain
