@@ -28,8 +28,9 @@ allowed <- list(
   `bus-route-surveys` = character(),
   `ice-fishing` = character(),
   # One paired interview/count day in a stratum: the SE is NA, and the text
-  # says why.
-  `camera-surveys` = c("has one paired interview/count day"),
+  # says why. The catch rate by day type rests on 20 trips per day type, and
+  # the text says the warning is about precision (GH #691).
+  `camera-surveys` = c("has one paired interview/count day", "Small sample size in 2 groups"),
   `aerial-surveys` = character(),
   # The page omits n_anglers on purpose to show the party-hour warning
   # (decision on #478), explained in the text. Since #643 one design with

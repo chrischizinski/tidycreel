@@ -302,6 +302,10 @@ catch_rate <- estimate_catch_rate(design_catch, by = day_type)
 print(catch_rate)
 ```
 
+The call warns that each day type rests on 20 trips, a small sample for a
+ratio estimator. The example data are small so the page runs quickly; the
+warning is about precision, and the standard errors already reflect it.
+
 One rate pooled across day types is a different quantity. It is weighted by
 each day type's effort, so a day type that was interviewed heavily but fished
 lightly does not pull it toward its own rate, and on a camera design that
