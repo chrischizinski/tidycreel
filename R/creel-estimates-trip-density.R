@@ -1,12 +1,45 @@
 # Internal: effort-family method allowlist ----
 
-# `estimate_effort()` returns "total" on every design type and "total-sections"
-# when add_sections() was used. Everything else in the package -- CPUE, HPUE,
-# RPUE, the product totals, the bus-route HT totals -- is a different quantity.
-# Consumers check against this set so a rate or a fish-valued total cannot be
-# divided by hours or acres and relabelled as effort.
+# `estimate_effort()` returns "total" on ground, bus-route, ice and camera
+# designs, "total-sections" when add_sections() was used, and "aerial_total"
+# for pooled aerial effort; estimate_effort_aerial_glmm() returns
+# "aerial_glmm_total". All are angler-hours of effort (GH #582). Everything
+# else in the package -- CPUE, HPUE, RPUE, the product totals, the bus-route
+# HT totals -- is a different quantity. Consumers check against this set so a
+# rate or a fish-valued total cannot be divided by hours or acres and
+# relabelled as effort.
 effort_family_methods <- function() {
-  c("total", "total-sections")
+  c("total", "total-sections", "aerial_total", "aerial_glmm_total")
+}
+
+# Variance of sum(w * E) over the effort rows a trips total sums (GH #582).
+#
+# Rows of ground effort are independent strata, so this is sum(w^2 * se^2), the
+# familiar sum in quadrature. Aerial rows are not independent: v and a are
+# single estimates scaling every row, so each row's SE carries a component
+# `E_h * se / value` that is perfectly correlated across rows (GH #135, #150).
+# Each such component c contributes (sum(w * c))^2 rather than sum(w^2 * c^2);
+# the remainder of each row's variance stays independent. The GLMM path
+# reports the whole covariance, model correlation included, as `strata_vcov`,
+# and that is used as is. Computed from vectors so independent rows never
+# allocate a k x k matrix.
+effort_rows_weighted_var <- function(effort, se_E, w) {
+  k <- length(se_E)
+  vc <- effort$strata_vcov
+  if (!is.null(vc)) {
+    if (!identical(dim(vc), c(k, k))) {
+      cli::cli_abort(
+        "Internal error: {.code strata_vcov} is not {k} x {k}.",
+        .internal = TRUE
+      )
+    }
+    return(drop(crossprod(w, vc %*% w)))
+  }
+  comps <- effort$se_components
+  shared <- comps[intersect(c("visibility", "angler_ratio"), names(comps))]
+  shared <- Filter(function(x) length(x) == k, shared)
+  own_var <- se_E^2 - Reduce(`+`, lapply(shared, function(x) x^2), 0)
+  sum(w^2 * own_var) + sum(vapply(shared, function(x) sum(w * x)^2, numeric(1)))
 }
 
 # Shared guard for the composable estimators that consume an effort object.
@@ -30,7 +63,7 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
       c(
         "{.arg {arg}} must hold effort, but carries {.val {method}}.",
         "x" = paste(
-          "Only {.fn estimate_effort} results qualify",
+          "Only effort from {.fn estimate_effort} or {.fn estimate_effort_aerial_glmm} qualifies",
           "({.val {effort_family_methods()}})."
         ),
         "i" = "Dividing a rate or a fish-valued total here would relabel it as effort."
@@ -79,8 +112,12 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 #'       stratum.}
 #'   }
 #'   For grouped effort, an \code{.overall} row is appended with
-#'   \code{estimate = sum(stratum trips)} and \code{se} propagated by addition
-#'   in quadrature.
+#'   \code{estimate = sum(stratum trips)}. Its \code{se} adds the stratum
+#'   variances in quadrature when the effort rows are independent (ground
+#'   counts). Aerial effort rows share the visibility correction and
+#'   angler-to-people ratio, and GLMM rows also share model coefficients, so
+#'   for those the covariance of the effort rows is used and each shared term
+#'   enters the total once.
 #'
 #' @references Powell, L. A. (2007). Approximating variance of demographic
 #'   parameters using the delta method. \emph{Journal of Wildlife Management},
@@ -105,6 +142,23 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # --- input guards ---
   require_effort_estimates(effort)
+
+  # GLMM aerial effort can be one average day (`target = "mean_day"`). Trips
+  # from it would be trips per average day, and the grouped `.overall` row
+  # would add the daily values of different day types as if they were totals
+  # over disjoint days, which is neither a daily nor a season figure. The
+  # result also carries no target label, so a daily figure would read as a
+  # total (GH #582).
+  if (identical(effort$effort_target, "mean_day")) {
+    cli::cli_abort(
+      c(
+        "{.arg effort} is effort on one average day ({.code target = \"mean_day\"}).",
+        "x" = "Trips are a total over days, and summing daily values across groups has no meaning.",
+        "i" = "Estimate effort with {.code target = \"sampled_days\"} instead."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
 
   if (is.null(design$trip_duration_col)) {
     cli::cli_abort(c(
@@ -275,9 +329,13 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     n = joined$n_interviews
   )
 
-  # .overall row: additive aggregate; df = sum(n) - n_strata
+  # .overall row: additive aggregate; df = sum(n) - n_strata. The effort part
+  # of its variance is g' Sigma_E g with g = 1 / L, so a multiplier shared by
+  # every row (aerial v and a) enters once on the total rather than once per
+  # row in quadrature (GH #582). The trip-length part is independent per
+  # stratum. Ground effort has a diagonal Sigma_E and reduces to sum(var_trips).
   overall_est <- sum(trips)
-  overall_var <- sum(var_trips)
+  overall_var <- effort_rows_weighted_var(effort, se_E, 1 / L) + sum(E^2 * se_L_vec^2 / L^4)
   overall_se <- sqrt(overall_var)
   z_overall <- stats::qt(
     1 - (1 - conf_level) / 2,
