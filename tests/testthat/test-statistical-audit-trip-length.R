@@ -166,3 +166,107 @@ test_that("#689: trips keep the effort target", {
   g <- tl_quiet(estimate_effort(d, by = day_type, target = "sampled_days")) # nolint: object_usage_linter
   expect_identical(tl_quiet(estimate_angler_trips(g, d))$effort_target, "sampled_days") # nolint: object_usage_linter
 })
+
+# Review follow-ups ----
+
+tl_iv_design <- function(iv) {
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:6,
+    day_type = c(rep("weekday", 5), rep("weekend", 2))
+  )
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  tl_quiet(add_interviews( # nolint: object_usage_linter
+    d, iv,
+    catch = catch, effort = hours, trip_status = trip_status, trip_duration = duration
+  ))
+}
+
+tl_fake_effort <- function(by = NULL, groups = NULL) {
+  est <- if (is.null(by)) {
+    tibble::tibble(estimate = 600, se = 30, ci_lower = 540, ci_upper = 660, n = 10L)
+  } else {
+    stats::setNames(
+      tibble::tibble(groups, estimate = 300, se = 20, ci_lower = 260, ci_upper = 340, n = 5L),
+      c(by, "estimate", "se", "ci_lower", "ci_upper", "n")
+    )
+  }
+  new_creel_estimates( # nolint: object_usage_linter
+    estimates = est, method = "total", variance_method = "taylor",
+    design = NULL, conf_level = 0.95, by_vars = by
+  )
+}
+
+tl_two_gear_iv <- function() {
+  # Two gears, both fished on every day, so their mean lengths share days.
+  data.frame(
+    date = rep(as.Date("2024-06-03") + c(0, 1, 2, 5, 6), each = 4),
+    day_type = rep(c("weekday", "weekday", "weekday", "weekend", "weekend"), each = 4),
+    gear = rep(c("boat", "bank"), 10),
+    trip_status = "complete",
+    duration = c(2, 1, 2.5, 1.5, 5, 3, 4.5, 3.5, 3, 2, 3.5, 2.5, 6, 4, 5.5, 4.5, 2, 1.5, 2.5, 1),
+    hours = 2, catch = 0L
+  )
+}
+
+test_that("#689: groups sharing days carry the trip-length covariance into .overall", {
+  iv <- tl_two_gear_iv()
+  d <- tl_iv_design(iv)
+  e <- tl_fake_effort("gear", c("bank", "boat"))
+  t <- tl_quiet(estimate_angler_trips(e, d))$estimates # nolint: object_usage_linter
+  rows <- t[t$gear != ".overall", ]
+  ov <- t[t$gear == ".overall", ]
+
+  s <- suppressWarnings(survey::svydesign(ids = ~date, strata = ~day_type, data = iv))
+  r <- survey::svyby(~duration, ~gear, s, survey::svymean, covmat = TRUE)
+  L <- r$duration[match(rows$gear, r$gear)]
+  V <- stats::vcov(r)[match(rows$gear, r$gear), match(rows$gear, r$gear)]
+  g <- 300 / L^2
+  ref <- sum(20^2 / L^2) + drop(t(g) %*% V %*% g)
+  expect_equal(ov$se^2, ref)
+  # Both gears' lengths rise and fall with the day, so the covariance is
+  # positive and the independent sum understates the total.
+  expect_gt(V[1, 2], 0)
+  expect_gt(ov$se^2, sum(rows$se^2))
+})
+
+test_that("#689: a group with complete trips on one day only has an unknown SE, not zero", {
+  iv <- tl_two_gear_iv()
+  iv$trip_status[iv$gear == "bank" & iv$date != as.Date("2024-06-03")] <- "incomplete"
+  d <- tl_iv_design(iv)
+  e <- tl_fake_effort("gear", c("bank", "boat"))
+  expect_warning(
+    t <- suppressMessages(estimate_angler_trips(e, d))$estimates, # nolint: object_usage_linter
+    class = "creel_warning_single_interview_strata"
+  )
+  expect_true(is.finite(t$estimate[t$gear == "bank"]))
+  expect_true(is.na(t$se[t$gear == "bank"]))
+  expect_true(is.finite(t$se[t$gear == "boat"]))
+  expect_true(is.na(t$se[t$gear == ".overall"]))
+})
+
+test_that("#689: an unknown group keeps its own trip length", {
+  iv <- tl_two_gear_iv()
+  iv$gear[iv$gear == "bank"] <- NA
+  d <- tl_iv_design(iv)
+  e <- tl_fake_effort("gear", c(NA, "boat"))
+  t <- tl_quiet(estimate_angler_trips(e, d))$estimates # nolint: object_usage_linter
+  expect_equal(nrow(t), 3L)
+  expect_equal(t$estimate[is.na(t$gear)], 300 / mean(iv$duration[is.na(iv$gear)]))
+})
+
+test_that("#689: a group with no complete trips is named, not called a key mismatch", {
+  iv <- tl_two_gear_iv()
+  iv$trip_status[iv$gear == "bank"] <- "incomplete"
+  d <- tl_iv_design(iv)
+  e <- tl_fake_effort("gear", c("bank", "boat"))
+  err <- tryCatch(estimate_angler_trips(e, d), error = function(e) e) # nolint: object_usage_linter
+  expect_s3_class(err, "creel_error_missing_data")
+  expect_match(conditionMessage(err), "bank")
+})
+
+test_that("#689: missing party sizes on angler-hours are refused, not read as constant", {
+  d <- tl_design()
+  d$interviews$n_anglers[d$interviews$trip_status == "complete"] <- NA
+  e <- tl_quiet(estimate_effort(tl_design())) # nolint: object_usage_linter
+  expect_error(estimate_angler_trips(e, d), class = "creel_error_missing_data") # nolint: object_usage_linter
+})

@@ -160,8 +160,8 @@ length_release_summary <- maybe(
 effort_total <- estimate_effort(design)
 effort_by_day <- estimate_effort(design, by = day_type)
 # Trips need a trip length that this design may not give: roving interviews,
-# or effort of unknown unit with varying party sizes, are refused. The report
-# says why instead of stopping.
+# effort of unknown unit with varying party sizes, or no usable complete trip
+# are refused. The report says why instead of stopping.
 trips_refusal <- NULL
 angler_trips <- tryCatch(
   estimate_angler_trips(effort_total, design),
@@ -170,6 +170,10 @@ angler_trips <- tryCatch(
     NULL
   },
   creel_error_unknown_effort_unit = function(e) {
+    trips_refusal <<- conditionMessage(e)
+    NULL
+  },
+  creel_error_missing_data = function(e) {
     trips_refusal <<- conditionMessage(e)
     NULL
   }

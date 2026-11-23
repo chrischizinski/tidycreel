@@ -32,7 +32,13 @@
   * The mean is a ratio estimator on the interview survey design, so the SE
     no longer treats interviews on one day as independent, and the interval
     uses that design's degrees of freedom (days less strata) rather than the
-    interview count.
+    interview count. The `.overall` row carries the covariance between
+    groups' trip lengths, which share interview days when the groups are not
+    strata. A group whose complete trips all fall on one day reports an
+    unknown (`NA`) SE instead of zero.
+  * A group with no usable complete trip is refused by name, instead of
+    being reported as a stratum key mismatch. An unknown (`NA`) group keeps
+    its own trip length.
   * Trips keep the effort's `effort_target`, so trips over the sampled days
     no longer print like season totals.
   * A grouped result with a numeric, factor, logical or `Date` grouping column

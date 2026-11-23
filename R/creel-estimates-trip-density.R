@@ -239,9 +239,11 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     L <- tl$table$mean_L
     se_L <- tl$table$se_L
     n_int <- tl$table$n_interviews
-    if (n_int < min_n_se) {
+    n_days <- tl$table$n_days
+    if (n_days < min_n_se) {
       creel_warn(c(
-        "!" = "Only {n_int} valid trip duration value{?s}; SE of mean trip length is undefined.",
+        "!" = "Complete trips come from {n_days} day{?s} ({n_int} trip{?s}); \\
+               SE of mean trip length is undefined.",
         "i" = "SE and CI will be {.val NA}. Point estimate (trips) is still returned."
       ),
       class = c("creel_warning_trip_length_se_undefined", "creel_warning")
@@ -294,9 +296,11 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 
   # --- grouped case ---
   summary_df <- tl$table
+  summary_df$.tl_row <- seq_len(nrow(summary_df))
 
-  # Warn about single-interview strata (SD undefined → SE/CI will be NA)
-  singleton <- summary_df$n_interviews < min_n_se
+  # A group whose complete trips all fall on one day has no between-day
+  # variation to estimate its trip length's SE from (GH #689).
+  singleton <- summary_df$n_days < min_n_se
   if (any(singleton)) {
     singleton_strata <- summary_df[singleton, , drop = FALSE]
     summary_df$se_L[singleton] <- NA_real_
@@ -307,7 +311,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
       collapse = " / "
     )
     creel_warn(c(
-      "!" = "{nrow(singleton_strata)} stratum/strata {?has/have} only 1 interview; \\
+      "!" = "{nrow(singleton_strata)} group{?s} {?has/have} complete trips on only one day; \\
              SE of mean trip length is undefined.",
       "i" = "SE and CI will be {.val NA} for: {.val {stratum_labels}}. Point estimates are still returned."
     ),
@@ -325,8 +329,21 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # Join effort estimates with interview summary
   joined <- dplyr::left_join(effort$estimates, summary_df, by = effort$by_vars)
 
-  # Guard against join key mismatches producing NA mean_L
+  # An effort group present among the interviews but with no usable complete
+  # trip has no trip length; say so rather than reporting a key mismatch.
   na_strata <- joined[is.na(joined$mean_L), effort$by_vars, drop = FALSE]
+  in_interviews <- group_key(na_strata, effort$by_vars) %in% # nolint: object_usage_linter
+    group_key(design$interviews, effort$by_vars) # nolint: object_usage_linter
+  if (any(in_interviews)) {
+    cli::cli_abort(
+      c(
+        "Some groups have no complete trip with a usable {.code {dur_col}}.",
+        "x" = "Groups: {.val {apply(na_strata[in_interviews, , drop = FALSE], 1, paste, collapse = ' / ')}}",
+        "i" = "Mean trip length is estimated from complete trips only."
+      ),
+      class = "creel_error_missing_data"
+    )
+  }
   if (nrow(na_strata) > 0) {
     cli::cli_abort(c(
       "Stratum key mismatch: some effort rows did not match any interview group.",
@@ -372,7 +389,16 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # (GH #582). The trip-length part is treated as independent per stratum.
   # Ground effort has a diagonal Sigma_E and reduces to sum(var_trips).
   overall_est <- sum(trips)
-  overall_var <- effort_rows_weighted_var(effort, se_E, 1 / L) + sum(E^2 * se_L_vec^2 / L^4)
+  # The trip-length part uses the covariance of the group means: groups that
+  # are not strata share interview days, so their means move together
+  # (GH #689). A group whose SE is unknown makes the total's unknown too.
+  idx <- joined$.tl_row
+  vc_L <- tl$vcov_L[idx, idx, drop = FALSE]
+  unknown_L <- is.na(se_L_vec)
+  vc_L[unknown_L, ] <- NA_real_
+  vc_L[, unknown_L] <- NA_real_
+  g_L <- E / L^2
+  overall_var <- effort_rows_weighted_var(effort, se_E, 1 / L) + drop(crossprod(g_L, vc_L %*% g_L))
   overall_se <- sqrt(overall_var)
 
   overall_vals <- stats::setNames(
@@ -469,6 +495,18 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
     )
   }
   use <- complete & !bad_dur
+  # A bus-route row with nothing counted and nothing interviewed is a site
+  # visit with no parties, not a trip: it has no inclusion weight and no
+  # length, so it is not part of the trip-length sample.
+  n_counted_col <- design$n_counted_col
+  n_interviewed_col <- design$n_interviewed_col
+  has_site_counts <- !is.null(n_counted_col) && !is.null(n_interviewed_col) &&
+    all(c(n_counted_col, n_interviewed_col) %in% names(iv))
+  if (has_site_counts) {
+    empty_site <- !is.na(iv[[n_counted_col]]) & iv[[n_counted_col]] == 0 &
+      !is.na(iv[[n_interviewed_col]]) & iv[[n_interviewed_col]] == 0
+    use <- use & !empty_site
+  }
   if (!any(use)) {
     cli::cli_abort(
       c(
@@ -484,8 +522,22 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   unit <- effort$unit %||% NA_character_
   n_col <- design$n_anglers_col
   party <- if (!is.null(n_col) && n_col %in% names(iv)) iv[[n_col]] else NULL
-  varies <- !is.null(party) && length(unique(party[use])) > 1L
   per_angler <- !is.na(unit) && startsWith(unit, "angler")
+  # A missing party size is checked before deciding whether sizes vary: an
+  # all-missing column has one unique value and would read as constant, so
+  # angler-hours would silently be divided by hours per party trip.
+  if (per_angler && !is.null(party) && anyNA(party[use])) {
+    cli::cli_abort(
+      c(
+        "{sum(is.na(party[use]))} complete trip{?s} {?has/have} no party size.",
+        "x" = "Hours per angler trip weight each trip by its party size.",
+        "i" = "Supply the missing {.code {n_col}} values."
+      ),
+      class = "creel_error_missing_data",
+      call = call
+    )
+  }
+  varies <- !is.null(party) && length(unique(party[use])) > 1L
   if (varies && is.na(unit)) {
     cli::cli_abort(
       c(
@@ -505,17 +557,6 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
     )
   }
   a <- if (per_angler && varies) party else rep(1, nrow(iv))
-  if (anyNA(a[use])) {
-    cli::cli_abort(
-      c(
-        "{sum(is.na(a[use]))} complete trip{?s} {?has/have} no party size.",
-        "x" = "Hours per angler trip weight each trip by its party size.",
-        "i" = "Supply the missing {.code {n_col}} values."
-      ),
-      class = "creel_error_missing_data",
-      call = call
-    )
-  }
 
   w <- rep(1, nrow(iv))
   ht_weighted <- isTRUE(design$design_type %in% c("bus_route", "ice")) &&
@@ -535,7 +576,9 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   }
 
   svy <- design$interview_survey
-  if (is.null(svy) || nrow(svy$variables) != nrow(iv)) {
+  aligned <- !is.null(svy) && nrow(svy$variables) == nrow(iv) &&
+    identical(svy$variables[[dur_col]], iv[[dur_col]])
+  if (!aligned) {
     cli::cli_abort(
       "Internal error: the interview survey does not match the interviews.",
       .internal = TRUE
@@ -543,30 +586,51 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   }
   svy$variables$.tl_num <- ifelse(use, w * a * dur, 0)
   svy$variables$.tl_den <- ifelse(use, w * a, 0)
-  svy$variables$.tl_use <- use
-  sub <- subset(svy, .tl_use) # nolint: object_usage_linter
-  df <- as.numeric(survey::degf(sub))
+  # Indexing keeps the whole design and zeroes the other rows' weights, so the
+  # variance is the domain variance over every interview day. The df is the
+  # whole interview design's, as the effort estimators use theirs.
+  sub <- svy[use, ]
+  df <- as.numeric(survey::degf(svy))
+
+  # Complete trips on one day only: the ratio's linearised residuals sum to
+  # zero within that day, so the SE would come out as 0 rather than unknown.
+  psu <- interview_psu_col(design, iv) # nolint: object_usage_linter
+  day_of <- if (is.null(psu)) seq_len(nrow(iv)) else iv[[psu]]
 
   if (is.null(by_vars)) {
     r <- survey::svyratio(~.tl_num, ~.tl_den, sub)
     tab <- tibble::tibble(
       mean_L = as.numeric(stats::coef(r)),
       se_L = as.numeric(survey::SE(r)),
-      n_interviews = sum(use)
+      n_interviews = sum(use),
+      n_days = length(unique(day_of[use]))
     )
-    return(list(table = tab, df = df))
+    return(list(table = tab, df = df, vcov_L = NULL))
   }
 
+  # An unknown group keeps its own row, as in estimate_effort(by = ): svyby()
+  # drops NA keys unless they are promoted to a level first.
+  sub <- promote_na_groups(sub, by_vars) # nolint: object_usage_linter
   r <- survey::svyby(
     ~.tl_num, stats::reformulate(by_vars), sub, survey::svyratio,
-    denominator = ~.tl_den
+    denominator = ~.tl_den, covmat = TRUE
   )
   tab <- tibble::as_tibble(restore_group_types(as.data.frame(r)[by_vars], iv, by_vars)) # nolint: object_usage_linter
   tab$mean_L <- as.numeric(stats::coef(r))
   tab$se_L <- as.numeric(survey::SE(r))
-  n_by_key <- table(group_key(iv[use, , drop = FALSE], by_vars)) # nolint: object_usage_linter
-  tab$n_interviews <- as.integer(n_by_key[match(group_key(tab, by_vars), names(n_by_key))]) # nolint: object_usage_linter
-  list(table = tab, df = df)
+  keys_use <- group_key(iv[use, , drop = FALSE], by_vars) # nolint: object_usage_linter
+  tab_keys <- group_key(tab, by_vars) # nolint: object_usage_linter
+  n_by_key <- table(keys_use)
+  tab$n_interviews <- as.integer(n_by_key[match(tab_keys, names(n_by_key))])
+  days_by_key <- tapply(day_of[use], keys_use, function(x) length(unique(x)))
+  tab$n_days <- as.integer(days_by_key[match(tab_keys, names(days_by_key))])
+  # vcov.svyby() cannot shape a single group's variance into a matrix.
+  vcov_L <- if (nrow(tab) == 1L) {
+    matrix(tab$se_L^2)
+  } else {
+    unname(as.matrix(stats::vcov(r)))
+  }
+  list(table = tab, df = df, vcov_L = vcov_L)
 }
 
 
