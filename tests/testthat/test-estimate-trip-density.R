@@ -1,14 +1,54 @@
 # Tests for estimate_angler_trips() — RPT-01
 #
-# Fixture data used throughout:
-#   Ungrouped effort: single-stratum E=1000, se=50, n=20
-#   Ungrouped design: 5 interview durations (3.0, 4.0, 5.0, 3.5, 4.5)
-#   Grouped effort:   day_type in {weekday, weekend}, E={600,400}, se={30,20}
-#   Grouped design:   6 weekday durations, 4 weekend durations
+# Effort objects are hand-built (estimate, se), so the tests isolate the trip
+# length side. Designs are real: since GH #689 the mean trip length is a ratio
+# estimator on the interview survey (interviews clustered within days, complete
+# trips only), and the reference values below come from survey::svydesign()
+# built directly on the interview frame, not from the package.
 
 # -- Shared fixtures ----------------------------------------------------------
 
-dur_ungrouped <- c(3.0, 4.0, 5.0, 3.5, 4.5)
+# Interviews over two day types, two or three days each. Incomplete trips are
+# present on every day and must not reach the trip length.
+td_interviews <- function() {
+  data.frame(
+    date = as.Date("2024-06-03") + c(0, 0, 0, 1, 1, 1, 2, 2, 5, 5, 5, 6, 6, 6),
+    day_type = rep(c("weekday", "weekend"), c(8, 6)),
+    trip_status = c(
+      "complete", "complete", "incomplete", "complete", "complete", "incomplete", "complete", "complete",
+      "complete", "complete", "incomplete", "complete", "complete", "incomplete"
+    ),
+    duration = c(3.0, 4.0, 0.5, 5.0, 3.5, 1.0, 4.5, 3.0, 2.0, 3.0, 0.5, 4.0, 3.5, 1.5),
+    hours = 2,
+    catch = 0L
+  )
+}
+
+td_design <- function(iv = td_interviews()) {
+  cal <- data.frame(
+    date = as.Date("2024-06-03") + 0:6,
+    day_type = c(rep("weekday", 5), rep("weekend", 2))
+  )
+  d <- creel_design(cal, date = date, strata = day_type)
+  suppressWarnings(suppressMessages(add_interviews(
+    d, iv,
+    catch = catch, effort = hours, trip_status = trip_status, trip_duration = duration
+  )))
+}
+
+# Reference trip length from the survey package directly: complete trips,
+# days as PSUs within day-type strata.
+td_ref_svy <- function(iv = td_interviews()) {
+  s <- suppressWarnings(survey::svydesign(ids = ~date, strata = ~day_type, data = iv))
+  subset(s, trip_status == "complete")
+}
+
+design_ungrouped <- td_design()
+design_grouped <- design_ungrouped
+ref_ungrouped <- survey::svymean(~duration, td_ref_svy())
+ref_grouped <- survey::svyby(~duration, ~day_type, td_ref_svy(), survey::svymean)
+ref_L <- function(dt) ref_grouped$duration[ref_grouped$day_type == dt]
+ref_se <- function(dt) survey::SE(ref_grouped)[ref_grouped$day_type == dt]
 
 effort_ungrouped <- new_creel_estimates(
   estimates = tibble::tibble(
@@ -27,14 +67,6 @@ effort_ungrouped <- new_creel_estimates(
   by_vars = NULL
 )
 
-design_ungrouped <- list(
-  trip_duration_col = "duration",
-  interviews = data.frame(duration = dur_ungrouped)
-)
-
-dur_weekday <- c(3.0, 4.0, 5.0, 3.5, 4.5, 3.0)
-dur_weekend <- c(2.0, 3.0, 4.0, 3.5)
-
 effort_grouped <- new_creel_estimates(
   estimates = tibble::tibble(
     day_type = c("weekday", "weekend"),
@@ -51,36 +83,36 @@ effort_grouped <- new_creel_estimates(
   by_vars = "day_type"
 )
 
-design_grouped <- list(
-  trip_duration_col = "duration",
-  interviews = data.frame(
-    day_type = c(rep("weekday", length(dur_weekday)), rep("weekend", length(dur_weekend))),
-    duration = c(dur_weekday, dur_weekend)
-  )
-)
-
 # -- Tests --------------------------------------------------------------------
 
-test_that("Test A: ungrouped — point estimate equals E / mean(duration)", {
+test_that("Test A: ungrouped — point estimate equals E / mean complete-trip length", {
   result <- estimate_angler_trips(effort_ungrouped, design_ungrouped)
-  expected <- 1000 / mean(dur_ungrouped)
+  iv <- td_interviews()
+  expected <- 1000 / mean(iv$duration[iv$trip_status == "complete"])
   expect_equal(result$estimates$estimate, expected, tolerance = 1e-10)
+  # The incomplete trips (0.5-1.5 h elapsed) would pull L down and trips up.
+  expect_lt(result$estimates$estimate, 1000 / mean(iv$duration))
+  expect_equal(result$estimates$n, sum(iv$trip_status == "complete"))
 })
 
 test_that("Test B: ungrouped — SE matches Delta Method formula Var(E/L) = Var(E)/L^2 + E^2*Var(L)/L^4", {
   # This test encodes WHY the SE is what it is: Delta Method ratio variance
-  # for a derived quantity T = E / L where E and L are independently estimated.
+  # for a derived quantity T = E / L where E and L are independently estimated,
+  # with Var(L) from the interview design (days as PSUs), not sd / sqrt(n).
   result <- estimate_angler_trips(effort_ungrouped, design_ungrouped)
 
   E <- 1000
   se_E <- 50
-  L <- mean(dur_ungrouped)
-  se_L <- stats::sd(dur_ungrouped) / sqrt(length(dur_ungrouped))
+  L <- as.numeric(coef(ref_ungrouped))
+  se_L <- as.numeric(survey::SE(ref_ungrouped))
 
   var_trips <- se_E^2 / L^2 + E^2 * se_L^2 / L^4
   expected_se <- sqrt(var_trips)
 
   expect_equal(result$estimates$se, expected_se, tolerance = 1e-10)
+  # The CI uses the interview design's df (5 days less 2 strata), not n - 1.
+  t3 <- stats::qt(0.975, df = 3)
+  expect_equal(result$estimates$ci_upper - result$estimates$estimate, t3 * expected_se)
 })
 
 test_that("Test C: ungrouped — CI contains estimate", {
@@ -107,9 +139,7 @@ test_that("Test F: grouped — .overall row present, estimate = sum of stratum t
   # Must have 3 rows: weekday, weekend, .overall
   expect_equal(nrow(result$estimates), 3L)
 
-  L_wd <- mean(dur_weekday)
-  L_we <- mean(dur_weekend)
-  expected_overall <- 600 / L_wd + 400 / L_we
+  expected_overall <- 600 / ref_L("weekday") + 400 / ref_L("weekend")
 
   overall_est <- result$estimates$estimate[result$estimates$day_type == ".overall"]
   expect_equal(overall_est, expected_overall, tolerance = 1e-10)
@@ -118,13 +148,8 @@ test_that("Test F: grouped — .overall row present, estimate = sum of stratum t
 test_that("Test G: grouped — .overall SE is quadrature sum of stratum variances", {
   result <- estimate_angler_trips(effort_grouped, design_grouped)
 
-  L_wd <- mean(dur_weekday)
-  se_L_wd <- stats::sd(dur_weekday) / sqrt(length(dur_weekday))
-  L_we <- mean(dur_weekend)
-  se_L_we <- stats::sd(dur_weekend) / sqrt(length(dur_weekend))
-
-  var_wd <- 30^2 / L_wd^2 + 600^2 * se_L_wd^2 / L_wd^4
-  var_we <- 20^2 / L_we^2 + 400^2 * se_L_we^2 / L_we^4
+  var_wd <- 30^2 / ref_L("weekday")^2 + 600^2 * ref_se("weekday")^2 / ref_L("weekday")^4
+  var_we <- 20^2 / ref_L("weekend")^2 + 400^2 * ref_se("weekend")^2 / ref_L("weekend")^4
 
   expected_overall_se <- sqrt(var_wd + var_we)
 
@@ -135,12 +160,9 @@ test_that("Test G: grouped — .overall SE is quadrature sum of stratum variance
 test_that("Test H: grouped — per-stratum estimates match E/L per stratum", {
   result <- estimate_angler_trips(effort_grouped, design_grouped)
 
-  L_wd <- mean(dur_weekday)
-  L_we <- mean(dur_weekend)
-
   ests <- result$estimates[result$estimates$day_type != ".overall", ]
-  expect_equal(ests$estimate[ests$day_type == "weekday"], 600 / L_wd, tolerance = 1e-10)
-  expect_equal(ests$estimate[ests$day_type == "weekend"], 400 / L_we, tolerance = 1e-10)
+  expect_equal(ests$estimate[ests$day_type == "weekday"], 600 / ref_L("weekday"), tolerance = 1e-10)
+  expect_equal(ests$estimate[ests$day_type == "weekend"], 400 / ref_L("weekend"), tolerance = 1e-10)
 })
 
 test_that("Test I: NULL trip_duration_col fires cli_abort", {
@@ -294,10 +316,11 @@ test_that("RPT-01b: ungrouped single interview warns and returns NA SE/CI", {
     conf_level = 0.95,
     by_vars = NULL
   )
-  design_one <- list(
-    trip_duration_col = "duration",
-    interviews = data.frame(duration = 4.0)
-  )
+  # One complete trip; the rest are incomplete and do not count.
+  iv <- td_interviews()
+  iv$trip_status <- "incomplete"
+  iv$trip_status[1] <- "complete"
+  design_one <- td_design(iv)
   expect_warning(
     result <- estimate_angler_trips(effort_one, design_one),
     regexp = "SE of mean trip length is undefined"
@@ -324,13 +347,11 @@ test_that("RPT-01b: grouped singleton stratum warns and returns NA SE/CI for tha
     conf_level = 0.95,
     by_vars = "day_type"
   )
-  design_g <- list(
-    trip_duration_col = "duration",
-    interviews = data.frame(
-      day_type = c(rep("weekday", 6), "weekend"),
-      duration = c(3.0, 4.0, 5.0, 3.5, 4.5, 3.0, 2.0)
-    )
-  )
+  # One complete weekend trip; the other weekend interviews are incomplete.
+  iv <- td_interviews()
+  iv$trip_status[iv$day_type == "weekend"] <- "incomplete"
+  iv$trip_status[9] <- "complete"
+  design_g <- td_design(iv)
   expect_warning(
     result <- estimate_angler_trips(effort_g, design_g),
     regexp = "SE of mean trip length is undefined"
@@ -394,6 +415,10 @@ test_that("estimate_angler_trips() rejects a fish-valued total (GH #112)", {
 test_that("the effort-family guard still admits genuine effort objects (GH #112)", {
   # The guard must not reject what these functions exist to consume.
   fx <- make_effort_and_rate()
+  # The fixture's counts carry no period length, so the effort's unit is
+  # unknown and, with varying party sizes, trips refuse it (GH #689). Declaring
+  # it here isolates the guard under test.
+  fx$effort$unit <- "angler-hours"
 
   expect_s3_class(
     suppressWarnings(estimate_angler_trips(fx$effort, fx$design)),
