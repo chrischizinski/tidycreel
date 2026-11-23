@@ -846,7 +846,9 @@
 #'   design, example_camera_interviews,
 #'   catch = walleye, effort = hours_fished, trip_status = trip_status
 #' ))
-#' suppressWarnings(estimate_catch_rate(design))
+#' # By day type: one rate pooled across day types is weighted by each day
+#' # type's effort, which a camera design does not give to estimate_effort().
+#' suppressWarnings(estimate_catch_rate(design, by = day_type))
 #'
 #' @seealso [example_camera_counts], [example_camera_timestamps],
 #'   [add_interviews()], [estimate_catch_rate()], [estimate_total_catch()]

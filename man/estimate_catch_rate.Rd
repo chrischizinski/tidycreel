@@ -274,12 +274,19 @@ calendar <- data.frame(
   day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 design <- creel_design(calendar, date = date, strata = day_type)
+# Counts: a rate across day types is weighted by each day type's effort
+counts <- data.frame(
+  date = calendar$date, day_type = calendar$day_type,
+  effort_hours = c(20, 25, 60, 70)
+)
+design <- add_counts(design, counts)
 
 interviews <- data.frame(
   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 10)),
   catch_total = rpois(40, lambda = 3),
   hours_fished = runif(40, min = 1, max = 6),
-  trip_status = rep(c("complete", "incomplete"), each = 20),
+  # Both trip types on every day, so each day type has a rate from either
+  trip_status = rep(c("complete", "incomplete"), times = 20),
   trip_duration = runif(40, min = 1, max = 6)
 )
 
