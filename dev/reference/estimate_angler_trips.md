@@ -79,11 +79,64 @@ effort rows share the visibility correction and angler-to-people ratio,
 and GLMM rows also share model coefficients, so for those the covariance
 of the effort rows is used and each shared term enters the total once.
 
+Grouping columns that are not character (numeric, factor, `Date`) are
+returned as character, so the `.overall` marker can share them.
+
+## Trip length
+
+Trips are effort divided by mean trip length (Pollock et al. 1994, p.
+175). That divisor has to be the mean length of *completed* trips,
+sampled without regard to how long they were, so:
+
+- Only complete trips (`trip_status == "complete"`) enter it. An
+  incomplete trip records the time fished so far, not a trip length.
+
+- Roving designs (`interview_type = "roving"`) are refused. A roving
+  clerk meets anglers in proportion to how long they fish
+  (length-of-stay bias; Pollock et al. 1994, sec. 11.4; Robson 1961),
+  and the time fished at interview cannot be inverted into a trip count
+  (Hoenig et al. 1997). Pollock et al. (1994, p. 175): "an unbiased
+  estimate of mean trip length cannot be obtained from a roving survey
+  ... and must be achieved by other means."
+
+- Angler-hours are divided by hours per angler trip: every angler in a
+  party of \\n\\ makes one trip, so each trip length is weighted by its
+  party size. Party-hours are divided by hours per party trip,
+  unweighted. When the effort's unit is unknown and party sizes vary,
+  the two divisors differ and nothing says which applies, so the call is
+  refused; give
+  [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+  a period length to make the effort angler-hours.
+
+- Bus-route and ice interviews are weighted by their inclusion weights
+  (`.expansion / .pi_i`; Jones and Pollock 2012), as their effort is.
+
+The mean is a ratio estimator on the interview survey design, so
+interviews on the same day are not treated as independent, and the
+confidence interval uses that design's degrees of freedom (days less
+strata) rather than the number of interviews.
+
 ## References
+
+Hoenig, J. M., Jones, C. M., Pollock, K. H., Robson, D. S., and Wade, D.
+L. (1997). Calculation of catch rate and total catch in roving surveys
+of anglers. *Biometrics*, 53(1), 306-317.
+
+Jones, C. M., and Pollock, K. H. (2012). Recreational angler survey
+methods: estimation of effort, harvest, and released catch. In A. V.
+Zale, D. L. Parrish, and T. M. Sutton (eds.), *Fisheries Techniques*
+(3rd ed., pp. 883-919). American Fisheries Society.
+
+Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). *Angler Survey
+Methods and Their Applications in Fisheries Management*. American
+Fisheries Society Special Publication 25. Chapter 11.
 
 Powell, L. A. (2007). Approximating variance of demographic parameters
 using the delta method. *Journal of Wildlife Management*, 71(3),
 1018-1024.
+
+Robson, D. S. (1961). On the statistical theory of a roving creel census
+of fishermen. *Biometrics*, 17(3), 415-437.
 
 ## See also
 
@@ -125,9 +178,10 @@ estimate_angler_trips(effort, design)
 #> Method: angler-trips
 #> Variance: delta
 #> Confidence level: 95%
+#> Effort target: period_total
 #> 
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     367.  38.4     287.     447.    22
+#> 1     316.  26.1     259.     373.    17
 ```

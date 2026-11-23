@@ -161,12 +161,56 @@ counts). Aerial effort rows share the visibility correction and
 angler-to-people ratio, and GLMM rows also share model coefficients, so
 for those the covariance of the effort rows is used and each shared term
 enters the total once.</p>
+<p>Grouping columns that are not character (numeric, factor, <code>Date</code>)
+are returned as character, so the <code>.overall</code> marker can share them.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="trip-length">Trip length<a class="anchor" aria-label="anchor" href="#trip-length"></a></h2>
+
+
+<p>Trips are effort divided by mean trip length (Pollock et al. 1994, p. 175).
+That divisor has to be the mean length of <em>completed</em> trips, sampled
+without regard to how long they were, so:</p><ul><li><p>Only complete trips (<code>trip_status == "complete"</code>) enter it. An
+incomplete trip records the time fished so far, not a trip length.</p></li>
+<li><p>Roving designs (<code>interview_type = "roving"</code>) are refused. A
+roving clerk meets anglers in proportion to how long they fish
+(length-of-stay bias; Pollock et al. 1994, sec. 11.4; Robson 1961), and
+the time fished at interview cannot be inverted into a trip count
+(Hoenig et al. 1997). Pollock et al. (1994, p. 175): "an unbiased
+estimate of mean trip length cannot be obtained from a roving survey
+... and must be achieved by other means."</p></li>
+<li><p>Angler-hours are divided by hours per angler trip: every angler in
+a party of \(n\) makes one trip, so each trip length is weighted by
+its party size. Party-hours are divided by hours per party trip,
+unweighted. When the effort's unit is unknown and party sizes vary, the
+two divisors differ and nothing says which applies, so the call is
+refused; give <code><a href="add_counts.html">add_counts()</a></code> a period length to make the effort
+angler-hours.</p></li>
+<li><p>Bus-route and ice interviews are weighted by their inclusion
+weights (<code>.expansion / .pi_i</code>; Jones and Pollock 2012), as their
+effort is.</p></li>
+</ul><p>The mean is a ratio estimator on the interview survey design, so
+interviews on the same day are not treated as independent, and the
+confidence interval uses that design's degrees of freedom (days less
+strata) rather than the number of interviews.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Powell, L. A. (2007). Approximating variance of demographic
+    <p>Hoenig, J. M., Jones, C. M., Pollock, K. H., Robson, D. S., and Wade,
+D. L. (1997). Calculation of catch rate and total catch in roving surveys
+of anglers. <em>Biometrics</em>, 53(1), 306-317.</p>
+<p>Jones, C. M., and Pollock, K. H. (2012). Recreational angler survey
+methods: estimation of effort, harvest, and released catch. In A. V. Zale,
+D. L. Parrish, and T. M. Sutton (eds.), <em>Fisheries Techniques</em> (3rd
+ed., pp. 883-919). American Fisheries Society.</p>
+<p>Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). <em>Angler
+Survey Methods and Their Applications in Fisheries Management</em>. American
+Fisheries Society Special Publication 25. Chapter 11.</p>
+<p>Powell, L. A. (2007). Approximating variance of demographic
 parameters using the delta method. <em>Journal of Wildlife Management</em>,
 71(3), 1018-1024.</p>
+<p>Robson, D. S. (1961). On the statistical theory of a roving creel census
+of fishermen. <em>Biometrics</em>, 17(3), 415-437.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -207,11 +251,12 @@ parameters using the delta method. <em>Journal of Wildlife Management</em>,
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: angler-trips</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: delta</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: period_total</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     367.  38.4     287.     447.    22</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     316.  26.1     259.     373.    17</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

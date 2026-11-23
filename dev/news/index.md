@@ -12,6 +12,48 @@
 
 ### Breaking changes
 
+- [`estimate_angler_trips()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_angler_trips.md)
+  divides effort by the mean length of completed trips, matched to the
+  effort’s actor
+  ([\#689](https://github.com/chrischizinski/tidycreel/issues/689)).
+  Trips are effort / mean trip length (Pollock et al. 1994, p. 175), and
+  the mean used to be the plain average of every interview’s
+  `trip_duration`. On the example data with angler-hours effort, trips
+  go from 367 to 291. See the new “Trip length” section of
+  [`?estimate_angler_trips`](https://chrischizinski.com/tidycreel/dev/reference/estimate_angler_trips.md).
+
+  - Only complete trips enter. An incomplete trip records the time
+    fished so far, not a trip length; on the example data these alone
+    raised trips by 16%. A design with no usable complete trip is
+    refused.
+  - Angler-hours are divided by hours per angler trip, each trip
+    weighted by its party size; party-hours by hours per party trip.
+  - **Refused:** effort of unknown unit when party sizes vary, because
+    the two divisors differ and nothing says which applies. Give
+    [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
+    a period length so the effort is angler-hours.
+  - **Refused:** roving designs. A roving clerk meets anglers in
+    proportion to how long they fish (Pollock et al. 1994, sec. 11.4;
+    Robson 1961), so no unbiased mean trip length can come from roving
+    interviews.
+  - Bus-route and ice trip lengths are weighted by their inclusion
+    weights (`.expansion / .pi_i`), as their effort is.
+  - The mean is a ratio estimator on the interview survey design, so the
+    SE no longer treats interviews on one day as independent, and the
+    interval uses that design’s degrees of freedom (days less strata)
+    rather than the interview count. The `.overall` row carries the
+    covariance between groups’ trip lengths, which share interview days
+    when the groups are not strata. A group whose complete trips all
+    fall on one day reports an unknown (`NA`) SE instead of zero.
+  - A group with no usable complete trip is refused by name, instead of
+    being reported as a stratum key mismatch. An unknown (`NA`) group
+    keeps its own trip length.
+  - Trips keep the effort’s `effort_target`, so trips over the sampled
+    days no longer print like season totals.
+  - A grouped result with a numeric, factor, logical or `Date` grouping
+    column no longer fails when the `.overall` row is added. The
+    grouping column is returned as character.
+
 - Interview-based variances are now taken between survey days
   ([\#661](https://github.com/chrischizinski/tidycreel/issues/661)).
   Days are drawn and every party met on a day shares its weather, water
