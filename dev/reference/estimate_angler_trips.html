@@ -189,7 +189,17 @@ angler-hours.</p></li>
 <li><p>Bus-route and ice interviews are weighted by their inclusion
 weights (<code>.expansion / .pi_i</code>; Jones and Pollock 2012), as their
 effort is.</p></li>
-</ul><p>The mean is a ratio estimator on the interview survey design, so
+</ul><p>On a design with more than one stratum, <code>effort</code> must be grouped by
+every stratum column, and the total across strata is the <code>.overall</code> row:
+\(\sum_h \hat{E}_h / \hat{L}_h\), built stratum by stratum as Pollock et
+al. (1994, sec. 15.3.3.6) build season catch. One trip length pooled across
+strata weights each stratum by its share of the <em>interviewed</em> trips,
+not of all trips. Sampling weekends more heavily than weekdays, or taking a
+fixed number of interviews per day however busy it is, then biases the
+total. On a simulated season it was off by -16% and +8% (GH #691).
+Ungrouped effort carries no per-stratum effort to weight by, so it is
+refused.</p>
+<p>The mean is a ratio estimator on the interview survey design, so
 interviews on the same day are not treated as independent, and the
 confidence interval uses that design's degrees of freedom (days less
 strata) rather than the number of interviews.</p>
@@ -205,7 +215,7 @@ D. L. Parrish, and T. M. Sutton (eds.), <em>Fisheries Techniques</em> (3rd
 ed., pp. 883-919). American Fisheries Society.</p>
 <p>Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). <em>Angler
 Survey Methods and Their Applications in Fisheries Management</em>. American
-Fisheries Society Special Publication 25. Chapter 11.</p>
+Fisheries Society Special Publication 25. Chapters 11 and 15.</p>
 <p>Powell, L. A. (2007). Approximating variance of demographic
 parameters using the delta method. <em>Journal of Wildlife Management</em>,
 71(3), 1018-1024.</p>
@@ -234,7 +244,8 @@ of fishermen. <em>Biometrics</em>, 17(3), 415-437.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the interviews really are one angler each, pass `n_anglers = 1` to state</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   that and silence this warning.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 22 interviews: 17 complete (77%), 5 incomplete (23%)</span>
-<span class="r-in"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Effort by stratum: the `.overall` row is the total across strata.</span></span></span>
+<span class="r-in"><span><span class="va">effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="estimate_effort.html">estimate_effort</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
@@ -251,12 +262,15 @@ of fishermen. <em>Biometrics</em>, 17(3), 415-437.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: angler-trips</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: delta</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Grouped by: day_type</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Effort target: period_total</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     316.  26.1     259.     373.    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday      129.  15.6     94.5     163.    10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend      186.  20.1    142.      230.     7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> .overall     315.  25.4    259.      371.    17</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
