@@ -586,9 +586,13 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   }
   svy$variables$.tl_num <- ifelse(use, w * a * dur, 0)
   svy$variables$.tl_den <- ifelse(use, w * a, 0)
-  # Indexing keeps the whole design and zeroes the other rows' weights, so the
-  # variance is the domain variance over every interview day. The df is the
-  # whole interview design's, as the effort estimators use theirs.
+  # A domain of the interview design: the default drop = TRUE removes the other
+  # rows' data but keeps the design's PSU and stratum counts, which is all a
+  # Taylor variance needs, and the interview survey is always Taylor. (It is
+  # replicate designs that need drop = FALSE; see build_interview_survey().)
+  # With drop = FALSE, svyby() would also visit groups that have no complete
+  # trip and fail on them. The df is the whole interview design's, as the
+  # effort estimators use theirs.
   sub <- svy[use, ]
   df <- as.numeric(survey::degf(svy))
 
