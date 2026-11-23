@@ -323,7 +323,7 @@ test_that("SPECIES-TARGETED-08: ratio-of-means still ignores targeted", {
 })
 
 test_that("SPECIES-TARGETED-09: a non-species request still tests total catch", {
-  design <- make_species_targeted_design()
+  design <- add_rate_counts(make_species_targeted_design()) # rates pooled across strata need each stratum's effort (GH #691)
   res_true <- suppressWarnings(
     estimate_catch_rate(design, estimator = "mor", targeted = TRUE)
   )

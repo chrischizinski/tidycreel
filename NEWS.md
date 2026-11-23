@@ -23,13 +23,40 @@
   -16% and +8% on a simulated season. A one-stratum design is unaffected.
   The creel report template now estimates trips by day type and shows them
   in their own section, not in the season-totals table.
-  * Rates pooled across strata (`estimate_catch_rate()`,
-    `estimate_harvest_rate()`, `estimate_release_rate()` ungrouped or grouped
-    by a non-stratum column) share the same pooling and are **not yet
-    changed**: they still weight strata by interviews. They become
-    effort-weighted in follow-up changes under #691. Totals
-    (`estimate_total_*()`) already combine stratum by stratum and are not
-    affected.
+
+* `estimate_catch_rate()`, `estimate_harvest_rate()` and
+  `estimate_release_rate()` weight a rate pooled across strata by each
+  stratum's effort (#691). With no `by`, or `by` columns that are not all
+  strata, the rate is total catch over total effort built stratum by stratum,
+  `sum_h E_h R_h / sum_h E_h` with `E_h` from
+  `estimate_effort(design, by = <strata>)`; a non-stratum group is weighted by
+  its own effort in each stratum. It used to pool the interviews, weighting
+  each stratum by how heavily it was interviewed rather than how much it was
+  fished: +22% and -11% on a simulated season, with N_h / n_h day weights no
+  better (-12%). The new rate was within 1% there, with interval coverage of
+  0.93-0.94. The SE adds the effort estimate's variance. See the new "Rates
+  across strata" section of `?estimate_catch_rate`.
+  * Applies to the ratio-of-means and mean-of-ratios estimators on the
+    standard (non-species, unsectioned) route. Rates by the strata, and
+    designs with one stratum, are unchanged. Totals (`estimate_total_*()`)
+    already combined stratum by stratum and are unchanged.
+  * **Refused:** such a rate on a design without counts, or whose effort
+    `estimate_effort()` cannot give (camera designs), with class
+    `creel_error_rate_needs_effort`. Estimate it `by` the strata instead.
+  * **Refused:** such a rate when a stratum was fished but none of its trips
+    are among those used (`use_trips`), named in the error. Its rate is
+    unknown; it used to be left out silently, which reported a rate over the
+    other strata as the season's.
+  * `validate_incomplete_trips()`, `use_trips = "diagnostic"` and
+    `compare_cpue_estimators()` compare rates on the same interviews and
+    still pool them unweighted, so they need no counts.
+  * **Not yet changed, so temporarily inconsistent:** species-level,
+    sectioned, regression and bus-route/ice rates still weight strata by
+    interviews. Until they follow (#691, part 3), species rates no longer sum
+    to the overall rate, and a section's rate differs from the same
+    interviews' rate on an unsectioned design.
+  * `compare_variance()` treats a Taylor SE that is zero to rounding error,
+    not only exactly zero, as having no divergence ratio.
 
 * `estimate_angler_trips()` divides effort by the mean length of completed
   trips, matched to the effort's actor (#689). Trips are effort / mean trip

@@ -153,7 +153,7 @@ test_that("REG-05 (#665): a stratum interviewed on one day is refused, as for ev
   # refused it; the regression returned an interview-level SE.
   cal <- reg_calendar()
   iv <- reg_interviews(cal$date[1:6])
-  d <- reg_design(iv)
+  d <- add_rate_counts(reg_design(iv)) # rates pooled across strata need each stratum's effort (GH #691)
   for (vm in c("taylor", "bootstrap", "jackknife")) {
     expect_error(
       reg_q(estimate_catch_rate(d, estimator = "regression", variance = vm)),

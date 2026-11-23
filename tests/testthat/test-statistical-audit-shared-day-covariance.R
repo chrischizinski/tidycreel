@@ -593,8 +593,10 @@ test_that("SDC-15 (#669): grouped metadata reports the overall test's own rates"
     trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
   ))
   v <- sdc_q(validate_incomplete_trips(d, catch_total, hours_fished, by = day_type))
-  c_all <- sdc_q(estimate_catch_rate(d, estimator = "ratio-of-means", use_trips = "complete"))$estimates
-  i_all <- sdc_q(estimate_catch_rate(d, estimator = "mor", use_trips = "incomplete"))$estimates
+  # The TOST compares the two rates on the same interviews, so its rates are
+  # not effort-weighted across strata (GH #691); the reference is the same.
+  c_all <- without_rate_pooling(sdc_q(estimate_catch_rate(d, estimator = "ratio-of-means", use_trips = "complete")))$estimates
+  i_all <- without_rate_pooling(sdc_q(estimate_catch_rate(d, estimator = "mor", use_trips = "incomplete")))$estimates
   m <- v$metadata$overall
   expect_equal(m$complete$estimate, c_all$estimate, tolerance = 1e-12)
   expect_equal(m$complete$se, c_all$se, tolerance = 1e-12)

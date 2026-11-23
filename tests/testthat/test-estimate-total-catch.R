@@ -1725,14 +1725,18 @@ test_that("CAM-04: the camera refusal reaches the totals, which bypass estimate_
   )
 })
 
-test_that("CAM-04: a catch rate is still estimable on a camera design", {
-  # The refusal is scoped to the product, not to the interviews. A rate comes
-  # from the interview data and never touches the camera counts, so refusing it
-  # would remove something correct.
+test_that("CAM-04: a camera catch rate pooled across day types is refused for want of effort", {
+  # The product refusal is scoped to the product. A rate within one stratum
+  # comes from the interviews alone and is still estimated (see the
+  # one-stratum CAM-04 tests in test-estimate-catch-rate.R). A rate pooled
+  # across day types is weighted by each day type's effort (GH #691), which
+  # estimate_effort() does not give on a camera design, so it is refused
+  # rather than weighted by the interviews.
   design <- make_camera_total_catch_design() # nolint: object_usage_linter
-  rate <- suppressWarnings(estimate_catch_rate(design)) # nolint: object_usage_linter
-  expect_s3_class(rate, "creel_estimates")
-  expect_true(is.finite(rate$estimates$estimate))
+  expect_error(
+    suppressWarnings(estimate_catch_rate(design)), # nolint: object_usage_linter
+    class = "creel_error_rate_needs_effort"
+  )
 })
 
 # Phase 47: Aerial interview pipeline (AIR-05) — estimate_total_catch() ----

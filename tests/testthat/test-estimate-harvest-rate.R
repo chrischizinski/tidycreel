@@ -698,6 +698,7 @@ make_test_interviews_harvest <- function() {
 make_harvest_design <- function() {
   cal <- make_test_calendar_harvest()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
   interviews <- make_test_interviews_harvest()
   add_interviews(
     design,
@@ -714,6 +715,7 @@ make_harvest_design <- function() {
 make_design_without_harvest <- function() {
   cal <- make_test_calendar_harvest()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
   interviews <- make_test_interviews_harvest()
   # Omit harvest parameter
   add_interviews(
@@ -735,6 +737,7 @@ make_small_harvest_design <- function(n) {
     stringsAsFactors = FALSE
   )
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # Generate exactly n interviews
   interviews <- data.frame(
@@ -774,6 +777,7 @@ make_unbalanced_harvest_design <- function() {
     stringsAsFactors = FALSE
   )
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # 15 weekday interviews, only 5 weekend interviews
   interviews <- data.frame(
@@ -873,6 +877,7 @@ test_that("estimate_harvest_rate errors when design is not creel_design", {
 test_that("estimate_harvest_rate errors when design has no interview_survey", {
   cal <- make_test_calendar_harvest()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   expect_error(
     estimate_harvest_rate(design), # nolint: object_usage_linter
@@ -892,6 +897,7 @@ test_that("estimate_harvest_rate errors for invalid variance method", {
 test_that("estimate_harvest_rate errors when design missing effort_col", {
   cal <- make_test_calendar_harvest()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # Manually construct design with interviews but no effort_col
   interviews <- make_test_interviews_harvest()
@@ -1010,24 +1016,40 @@ test_that("estimate_harvest_rate grouped result has n column reflecting per-grou
 
 # Reference tests ----
 
-test_that("ungrouped HPUE matches manual svyratio calculation", {
+# An ungrouped rate on a stratified design is sum_h E_h R_h / sum_h E_h, each
+# stratum weighted by its estimated effort rather than its share of the
+# interviews (GH #691). Reference built independently from the survey package:
+# all interviews (use_trips = "all"), weighted E_h / D_h, D_h = hours in h.
+hpue_pooled_reference <- function(design) {
+  iv <- design$interviews
+  E <- suppressWarnings(suppressMessages(estimate_effort(design, by = day_type)))$estimates # nolint: object_usage_linter
+  E_h <- stats::setNames(E$estimate, E$day_type)
+  se_E <- stats::setNames(E$se, E$day_type)
+  D_h <- tapply(iv$hours_fished, iv$day_type, sum)
+  iv$w <- as.numeric(E_h[iv$day_type] / D_h[iv$day_type])
+  svy_w <- survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, weights = ~w, data = iv)
+  r <- survey::svyratio(~catch_kept, ~hours_fished, svy_w)
+  R <- as.numeric(coef(r))
+  R_h <- tapply(iv$catch_kept, iv$day_type, sum) / D_h
+  g <- (R_h - R) / sum(E_h[names(R_h)])
+  list(
+    R = R, R_h = R_h, E_h = E_h,
+    var_cond = as.numeric(vcov(r)),
+    var_effort = sum(g^2 * se_E[names(R_h)]^2),
+    ci_cond = confint(r, level = 0.95)
+  )
+}
+
+test_that("ungrouped HPUE is the effort-weighted rate across strata", {
   design <- make_harvest_design()
-
-  # tidycreel estimate (use_trips = "all" so the survey object below — which
-  # spans all 32 interviews — is the correct manual reference)
   result <- estimate_harvest_rate(design, use_trips = "all") # nolint: object_usage_linter
+  ref <- hpue_pooled_reference(design)
 
-  # Manual survey::svyratio calculation
-  svy <- design$interview_survey
-  manual_result <- survey::svyratio(~catch_kept, ~hours_fished, svy)
-  manual_estimate <- as.numeric(coef(manual_result))
-  manual_se <- as.numeric(survey::SE(manual_result))
-  manual_ci <- confint(manual_result, level = 0.95)
-
-  expect_equal(result$estimates$estimate, manual_estimate, tolerance = 1e-10)
-  expect_equal(result$estimates$se, manual_se, tolerance = 1e-10)
-  expect_equal(result$estimates$ci_lower, manual_ci[1, 1], tolerance = 1e-10)
-  expect_equal(result$estimates$ci_upper, manual_ci[1, 2], tolerance = 1e-10)
+  expect_equal(result$estimates$estimate, ref$R, tolerance = 1e-10)
+  expect_equal(ref$R, sum(ref$E_h[names(ref$R_h)] * ref$R_h) / sum(ref$E_h[names(ref$R_h)]))
+  scale <- sqrt(ref$var_cond + ref$var_effort) / sqrt(ref$var_cond)
+  expect_equal(result$estimates$ci_lower, ref$R - (ref$R - ref$ci_cond[1, 1]) * scale, tolerance = 1e-10)
+  expect_equal(result$estimates$ci_upper, ref$R + (ref$ci_cond[1, 2] - ref$R) * scale, tolerance = 1e-10)
 })
 
 test_that("grouped HPUE matches manual svyby+svyratio calculation", {
@@ -1071,19 +1093,13 @@ test_that("grouped HPUE matches manual svyby+svyratio calculation", {
   }
 })
 
-test_that("ungrouped HPUE SE^2 matches variance from manual vcov", {
+test_that("ungrouped HPUE SE^2 is the survey variance plus the effort weights' variance", {
   design <- make_harvest_design()
-
-  # tidycreel estimate (use_trips = "all" to match the all-interview survey
-  # object used for the manual reference below)
   result <- estimate_harvest_rate(design, use_trips = "all") # nolint: object_usage_linter
+  ref <- hpue_pooled_reference(design)
 
-  # Manual survey::svyratio calculation
-  svy <- design$interview_survey
-  manual_result <- survey::svyratio(~catch_kept, ~hours_fished, svy)
-  manual_variance <- as.numeric(vcov(manual_result))
-
-  expect_equal(result$estimates$se^2, manual_variance, tolerance = 1e-10)
+  expect_equal(result$estimates$se^2, ref$var_cond + ref$var_effort, tolerance = 1e-10)
+  expect_gt(ref$var_effort, 0)
 })
 
 # HPUE vs CPUE relationship tests ----
@@ -1146,6 +1162,7 @@ test_that("RATE-69-release: estimate_release_rate defaults to use_trips = 'compl
   data("example_catch", package = "tidycreel")
 
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
   design <- add_interviews(
     design,
     example_interviews, # nolint: object_usage_linter
@@ -1244,6 +1261,7 @@ test_that("estimate_harvest_rate works end-to-end with example_calendar and exam
 
   # Create design
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # Add interviews with harvest = catch_kept
   design <- add_interviews(
@@ -1277,6 +1295,7 @@ test_that("HPUE <= CPUE with example data (harvest is subset of catch)", {
 
   # Create design
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # Add interviews
   design <- add_interviews(
@@ -1304,6 +1323,7 @@ test_that("grouped harvest estimation with example data handles small groups app
 
   # Create design
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # Add interviews
   design <- add_interviews(

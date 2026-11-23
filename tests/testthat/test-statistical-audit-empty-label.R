@@ -56,7 +56,7 @@ test_that("#618: catch and harvest rate n count a group labelled \"\"", {
   mk <- function(label) {
     iv$angler_type[iv$angler_type == "bank"] <- label
     quiet(add_interviews(
-      creel_design(example_calendar, date = date, strata = day_type), # nolint: object_usage_linter
+      add_rate_counts(creel_design(example_calendar, date = date, strata = day_type)), # rates pooled across strata need each stratum's effort (GH #691)
       iv,
       catch = catch_total, effort = hours_fished, harvest = catch_kept, # nolint: object_usage_linter
       trip_status = trip_status # nolint: object_usage_linter

@@ -127,7 +127,9 @@ test_that("each section's rate uses that section's own interviews alone (GH #263
           strata = stats::reformulate(design$strata_cols),
           psu = design$date_col # clustered on the day, as add_interviews() is (#661)
         )
-        reference <- quiet_rate(f, reference_design, use_trips = trips)
+        # Sectioned rates are not yet effort-weighted across strata (GH #691
+        # part 3), so the one-section reference is computed the same way.
+        reference <- without_rate_pooling(quiet_rate(f, reference_design, use_trips = trips))
 
         label <- paste(f, sec, trips)
         expect_equal(sectioned$estimates$estimate[[i]], reference$estimates$estimate, info = label)

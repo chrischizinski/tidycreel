@@ -114,7 +114,7 @@ test_that("DPSU-03 (#661): a stratum interviewed on one day is refused by name",
   )
   # Accepted when attached: no variance is taken there, and effort or another
   # stratum may still be estimable.
-  design <- dpsu_design(iv, cal)
+  design <- add_rate_counts(dpsu_design(iv, cal)) # rates pooled across strata need each stratum's effort (GH #691)
   expect_s3_class(design, "creel_design")
 
   # One day gives no day-to-day variation under any variance method, so the
@@ -131,7 +131,7 @@ test_that("DPSU-03 (#661): a stratum interviewed on one day is refused by name",
 
   # A second weekend day makes it estimable.
   iv2 <- rbind(iv, dpsu_interviews(cal$date[7], rate_by_day = 0.9))
-  expect_no_error(suppressWarnings(estimate_catch_rate(dpsu_design(iv2, cal)))) # nolint: object_usage_linter
+  expect_no_error(suppressWarnings(estimate_catch_rate(add_rate_counts(dpsu_design(iv2, cal))))) # nolint: object_usage_linter
 })
 
 test_that("DPSU-04 (#661): a group met on one day is refused, not given se = 0", {

@@ -81,7 +81,11 @@ test_that("DOM-01 (#663): a complete-trip rate counts the interviewed days with 
     dom_interviews(cal$date[6:7], "complete", c(2.0, 1.1)),
     dom_interviews(cal$date[8], "incomplete", 0.9)
   )
-  result <- suppressMessages(suppressWarnings(estimate_catch_rate(dom_design(iv)))) # nolint: object_usage_linter
+  # The hand reference is the interview survey's domain variance with unit
+  # weights: what is tested is which days enter it. The effort weighting of a
+  # rate pooled across strata (GH #691) sits on top and is tested with this
+  # fixture in test-statistical-audit-pooled-strata.R.
+  result <- without_rate_pooling(suppressMessages(suppressWarnings(estimate_catch_rate(dom_design(iv))))) # nolint: object_usage_linter
 
   cp <- iv[iv$trip_status == "complete", ]
   days <- as.character(cal$date[1:8])
@@ -141,7 +145,11 @@ test_that("DOM-03 (#663): complete trips on one day of a multi-day stratum are a
     dom_interviews(cal$date[6], "complete", 2.0),
     dom_interviews(cal$date[7:8], "incomplete", c(1.1, 0.9))
   )
-  result <- suppressMessages(suppressWarnings(estimate_catch_rate(dom_design(iv)))) # nolint: object_usage_linter
+  # The hand reference is the interview survey's domain variance with unit
+  # weights: what is tested is which days enter it. The effort weighting of a
+  # rate pooled across strata (GH #691) sits on top and is tested with this
+  # fixture in test-statistical-audit-pooled-strata.R.
+  result <- without_rate_pooling(suppressMessages(suppressWarnings(estimate_catch_rate(dom_design(iv))))) # nolint: object_usage_linter
 
   cp <- iv[iv$trip_status == "complete", ]
   days <- as.character(c(cal$date[1:3], cal$date[6:8]))
@@ -242,7 +250,9 @@ test_that("DOM-07 (#663): a section's rate is estimated over that section's own 
       sub$sections <- NULL
       sub$interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
       sub <- rebuild_interview_survey(sub, sub$interviews) # nolint: object_usage_linter
-      reference <- suppressMessages(suppressWarnings(get(f)(sub)))$estimates
+      # Sectioned rates are not yet effort-weighted across strata (GH #691
+      # part 3), so the one-section reference is computed the same way.
+      reference <- without_rate_pooling(suppressMessages(suppressWarnings(get(f)(sub))))$estimates
       got <- sectioned[sectioned[[section_col]] == sec, ]
       expect_equal(got$estimate, reference$estimate, tolerance = 1e-12, info = paste(f, sec))
       expect_equal(got$se, reference$se, tolerance = 1e-12, info = paste(f, sec))

@@ -191,6 +191,36 @@ completed trips is the statistically preferred default. Fish already in the
 livewell at interview time are directly observable, so \code{use_trips =
   "all"} remains available to include incomplete-trip interviews.
 }
+\section{Rates across strata}{
+
+A rate estimated across strata -- with no \code{by}, or with \code{by}
+columns that are not all strata -- is the population rate, total catch over
+total effort, built stratum by stratum (Pollock et al. 1994, sec. 15.3.3.6):
+\deqn{\hat{R} = \sum_h \hat{E}_h \hat{R}_h / \sum_h \hat{E}_h,}
+where \eqn{\hat{E}_h} is the stratum's effort from
+\code{estimate_effort(design, by = <strata>)}. Each interview in stratum
+\eqn{h} is weighted \eqn{\hat{E}_h / D_h}, with \eqn{D_h} the stratum's
+interviewed effort (or, for a mean of ratios, its interviewed anglers), so a
+group that is not a stratum is weighted by its own effort in each stratum.
+The standard error adds the effort estimate's variance to the interview
+survey's, by the delta method.
+
+Pooling the interviews alone would weight each stratum by how heavily it
+was interviewed, not by how much it was fished: sampling weekends more
+often than weekdays, or taking the same number of interviews on quiet and
+busy days, then biases the rate. On a simulated season the
+interview-weighted rate was off by +22 and -11 percent (GH #691).
+
+A design with more than one stratum therefore needs counts for such a rate
+and is refused without them (class \code{creel_error_rate_needs_effort});
+a rate \code{by} the strata needs none. A stratum that was fished but has
+no interviews among the trips used (\code{use_trips}) has no rate, so the
+pooled rate is refused, naming it, rather than reported over the other
+strata as though it covered the season. Within one stratum nothing is
+pooled and nothing changes. Species-level, sectioned, regression and
+bus-route or ice rates are not yet effort-weighted across strata.
+}
+
 \examples{
 # Basic ungrouped HPUE
 calendar <- data.frame(
