@@ -12,16 +12,18 @@ effort_family_methods <- function() {
   c("total", "total-sections", "aerial_total", "aerial_glmm_total")
 }
 
-# Covariance of the effort rows a trips total sums over (GH #582).
+# Variance of sum(w * E) over the effort rows a trips total sums (GH #582).
 #
-# Rows of ground effort are independent strata, so the matrix is diagonal and
-# the total is the familiar sum in quadrature. Aerial rows are not: v and a are
+# Rows of ground effort are independent strata, so this is sum(w^2 * se^2), the
+# familiar sum in quadrature. Aerial rows are not independent: v and a are
 # single estimates scaling every row, so each row's SE carries a component
 # `E_h * se / value` that is perfectly correlated across rows (GH #135, #150).
-# Those components enter as rank-one terms; the remainder of each row's
-# variance stays on the diagonal. The GLMM path reports the whole matrix,
-# model correlation included, as `strata_vcov`, and that is used as is.
-effort_row_vcov <- function(effort, se_E) {
+# Each such component c contributes (sum(w * c))^2 rather than sum(w^2 * c^2);
+# the remainder of each row's variance stays independent. The GLMM path
+# reports the whole covariance, model correlation included, as `strata_vcov`,
+# and that is used as is. Computed from vectors so independent rows never
+# allocate a k x k matrix.
+effort_rows_weighted_var <- function(effort, se_E, w) {
   k <- length(se_E)
   vc <- effort$strata_vcov
   if (!is.null(vc)) {
@@ -31,15 +33,13 @@ effort_row_vcov <- function(effort, se_E) {
         .internal = TRUE
       )
     }
-    return(vc)
+    return(drop(crossprod(w, vc %*% w)))
   }
   comps <- effort$se_components
   shared <- comps[intersect(c("visibility", "angler_ratio"), names(comps))]
   shared <- Filter(function(x) length(x) == k, shared)
   own_var <- se_E^2 - Reduce(`+`, lapply(shared, function(x) x^2), 0)
-  vc <- diag(own_var, nrow = k)
-  for (s in shared) vc <- vc + tcrossprod(s)
-  vc
+  sum(w^2 * own_var) + sum(vapply(shared, function(x) sum(w * x)^2, numeric(1)))
 }
 
 # Shared guard for the composable estimators that consume an effort object.
@@ -63,7 +63,7 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
       c(
         "{.arg {arg}} must hold effort, but carries {.val {method}}.",
         "x" = paste(
-          "Only {.fn estimate_effort} results qualify",
+          "Only effort from {.fn estimate_effort} or {.fn estimate_effort_aerial_glmm} qualifies",
           "({.val {effort_family_methods()}})."
         ),
         "i" = "Dividing a rate or a fish-valued total here would relabel it as effort."
@@ -142,6 +142,23 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # --- input guards ---
   require_effort_estimates(effort)
+
+  # GLMM aerial effort can be one average day (`target = "mean_day"`). Trips
+  # from it would be trips per average day, and the grouped `.overall` row
+  # would add the daily values of different day types as if they were totals
+  # over disjoint days, which is neither a daily nor a season figure. The
+  # result also carries no target label, so a daily figure would read as a
+  # total (GH #582).
+  if (identical(effort$effort_target, "mean_day")) {
+    cli::cli_abort(
+      c(
+        "{.arg effort} is effort on one average day ({.code target = \"mean_day\"}).",
+        "x" = "Trips are a total over days, and summing daily values across groups has no meaning.",
+        "i" = "Estimate effort with {.code target = \"sampled_days\"} instead."
+      ),
+      class = "creel_error_invalid_input"
+    )
+  }
 
   if (is.null(design$trip_duration_col)) {
     cli::cli_abort(c(
@@ -318,8 +335,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # row in quadrature (GH #582). The trip-length part is independent per
   # stratum. Ground effort has a diagonal Sigma_E and reduces to sum(var_trips).
   overall_est <- sum(trips)
-  vc_E <- effort_row_vcov(effort, se_E)
-  overall_var <- drop(crossprod(1 / L, vc_E %*% (1 / L))) + sum(E^2 * se_L_vec^2 / L^4)
+  overall_var <- effort_rows_weighted_var(effort, se_E, 1 / L) + sum(E^2 * se_L_vec^2 / L^4)
   overall_se <- sqrt(overall_var)
   z_overall <- stats::qt(
     1 - (1 - conf_level) / 2,

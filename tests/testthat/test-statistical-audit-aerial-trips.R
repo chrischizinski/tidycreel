@@ -155,3 +155,32 @@ test_that("#582: GLMM aerial trips use the effort rows' full covariance", {
   p <- atr_quiet(estimate_effort_aerial_glmm(d, time_col = time_of_flight)) # nolint: object_usage_linter
   expect_true(is.finite(atr_quiet(estimate_angler_trips(p, d))$estimates$estimate))
 })
+
+test_that("#582: mean-day GLMM effort is refused, not summed across day types", {
+  skip_if_not_installed("lme4")
+  # Why: one average weekday plus one average weekend day is neither a daily
+  # nor a season figure, and the trips result carries no target label.
+  data("example_aerial_glmm_counts", envir = environment())
+  counts <- example_aerial_glmm_counts # nolint: object_usage_linter
+  cal <- unique(counts[, c("date", "day_type")])
+  d <- creel_design( # nolint: object_usage_linter
+    cal,
+    date = date, strata = day_type, survey_type = "aerial",
+    visibility_correction = "none", angler_ratio = 1, angler_ratio_se = 0, h_open = 14
+  )
+  d <- atr_quiet(add_counts(d, counts, count_col = n_anglers)) # nolint: object_usage_linter
+  iv <- data.frame(
+    date = rep(cal$date, each = 3), day_type = rep(cal$day_type, each = 3),
+    trip_status = "complete", hours_fished = 2, dur = rep(c(2, 3, 4), nrow(cal)), catch = 0L
+  )
+  d <- atr_quiet(add_interviews( # nolint: object_usage_linter
+    d, iv,
+    catch = catch, effort = hours_fished, trip_status = trip_status,
+    trip_duration = dur, n_anglers = 1
+  ))
+  g <- atr_quiet(estimate_effort_aerial_glmm( # nolint: object_usage_linter
+    d,
+    time_col = time_of_flight, by = day_type, target = "mean_day"
+  ))
+  expect_error(estimate_angler_trips(g, d), class = "creel_error_invalid_input") # nolint: object_usage_linter
+})
