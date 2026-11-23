@@ -823,16 +823,32 @@ test_that("trips are unknown when the effort they came from was unknown", {
     creel_design(example_calendar, date = date, strata = day_type),
     example_counts
   ))
-  d <- suppressWarnings(suppressMessages(add_interviews(
+  # No party size: the trip length is per interview whatever the actor, so the
+  # quotient is computable and its unit stays unknown.
+  d0 <- suppressWarnings(suppressMessages(add_interviews(
+    d, example_interviews,
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  )))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d0)))
+  trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d0)))
+
+  expect_true(is.na(e$unit))
+  expect_true(is.na(trips$unit))
+
+  # With varying party sizes, hours per angler trip and per party trip differ
+  # and an unknown unit cannot say which divides it, so the call is refused
+  # rather than guessed (GH #689).
+  d1 <- suppressWarnings(suppressMessages(add_interviews(
     d, example_interviews,
     catch = catch_total, harvest = catch_kept, effort = hours_fished,
     n_anglers = n_anglers, trip_status = trip_status, trip_duration = trip_duration
   )))
-  e <- suppressWarnings(suppressMessages(estimate_effort(d)))
-  trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d)))
-
-  expect_true(is.na(e$unit))
-  expect_true(is.na(trips$unit))
+  e1 <- suppressWarnings(suppressMessages(estimate_effort(d1)))
+  expect_error(
+    suppressWarnings(estimate_angler_trips(e1, d1)),
+    class = "creel_error_unknown_effort_unit"
+  )
 })
 
 test_that("grouped trips agree with ungrouped", {

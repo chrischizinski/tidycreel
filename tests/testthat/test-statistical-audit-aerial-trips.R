@@ -52,9 +52,10 @@ test_that("#582: pooled aerial effort gives trips, with the calibration SE carri
   expect_identical(e$method, "aerial_total")
   t <- atr_quiet(estimate_angler_trips(e, d))$estimates # nolint: object_usage_linter
 
-  dur <- d$interviews$dur
-  L <- mean(dur)
-  se_L <- stats::sd(dur) / sqrt(length(dur))
+  # Trip length from the interview design: days are PSUs (GH #689).
+  ref <- survey::svymean(~dur, suppressWarnings(survey::svydesign(ids = ~date, strata = ~day_type, data = d$interviews)))
+  L <- as.numeric(coef(ref))
+  se_L <- as.numeric(survey::SE(ref))
   E <- e$estimates$estimate
   expect_equal(t$estimate, E / L)
   expect_equal(t$se^2, e$estimates$se^2 / L^2 + E^2 * se_L^2 / L^4)
@@ -141,9 +142,12 @@ test_that("#582: GLMM aerial trips use the effort rows' full covariance", {
   ov <- t[t$day_type == ".overall", ]
 
   E <- g$estimates$estimate
-  lens <- split(iv$dur, iv$day_type)[as.character(g$estimates$day_type)]
-  L <- vapply(lens, mean, numeric(1))
-  se_L <- vapply(lens, function(x) stats::sd(x) / sqrt(length(x)), numeric(1))
+  ref <- survey::svyby(
+    ~dur, ~day_type, suppressWarnings(survey::svydesign(ids = ~date, strata = ~day_type, data = iv)), survey::svymean
+  )
+  ref <- ref[match(as.character(g$estimates$day_type), ref$day_type), ]
+  L <- ref$dur
+  se_L <- as.numeric(survey::SE(ref))
   gvec <- 1 / L
   ref_var <- drop(t(gvec) %*% g$strata_vcov %*% gvec) + sum(E^2 * se_L^2 / L^4)
   expect_equal(ov$se^2, ref_var)

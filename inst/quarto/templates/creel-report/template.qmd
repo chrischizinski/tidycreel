@@ -159,7 +159,25 @@ length_release_summary <- maybe(
 
 effort_total <- estimate_effort(design)
 effort_by_day <- estimate_effort(design, by = day_type)
-angler_trips <- estimate_angler_trips(effort_total, design)
+# Trips need a trip length that this design may not give: roving interviews,
+# effort of unknown unit with varying party sizes, or no usable complete trip
+# are refused. The report says why instead of stopping.
+trips_refusal <- NULL
+angler_trips <- tryCatch(
+  estimate_angler_trips(effort_total, design),
+  creel_error_roving_trip_length = function(e) {
+    trips_refusal <<- conditionMessage(e)
+    NULL
+  },
+  creel_error_unknown_effort_unit = function(e) {
+    trips_refusal <<- conditionMessage(e)
+    NULL
+  },
+  creel_error_missing_data = function(e) {
+    trips_refusal <<- conditionMessage(e)
+    NULL
+  }
+)
 catch_rate_by_species <- maybe(
   estimate_catch_rate(design, by = species_sought),
   required = "species_sought"
@@ -175,13 +193,13 @@ release_rate_by_species <- maybe(
 total_catch <- estimate_total_catch(design)
 total_harvest <- estimate_total_harvest(design)
 total_release <- estimate_total_release(design)
-season_totals <- season_summary(list(
+season_totals <- season_summary(Filter(Negate(is.null), list(
   effort = effort_total,
   trips = angler_trips,
   catch = total_catch,
   harvest = total_harvest,
   release = total_release
-))
+)))
 ```
 
 ## Design Parameters
@@ -328,11 +346,15 @@ ggplot2::autoplot(
 ### Angler Trips
 
 ```{r angler-trips}
-ggplot2::autoplot(
-  angler_trips,
-  title = "Estimated angler trips",
-  theme = "creel"
-)
+if (is.null(angler_trips)) {
+  cat("Angler trips were not estimated.\n\n", cli::ansi_strip(trips_refusal), "\n")
+} else {
+  ggplot2::autoplot(
+    angler_trips,
+    title = "Estimated angler trips",
+    theme = "creel"
+  )
+}
 ```
 
 ### Catch, Harvest, and Release

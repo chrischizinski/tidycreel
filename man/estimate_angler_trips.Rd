@@ -40,6 +40,9 @@ counts). Aerial effort rows share the visibility correction and
 angler-to-people ratio, and GLMM rows also share model coefficients, so
 for those the covariance of the effort rows is used and each shared term
 enters the total once.
+
+Grouping columns that are not character (numeric, factor, \code{Date})
+are returned as character, so the \code{.overall} marker can share them.
 }
 \description{
 Computes estimated trips by dividing extrapolated effort by the mean trip
@@ -53,6 +56,38 @@ party trips. The returned \code{unit} field records which, and is \code{NA}
 when the effort's own unit was unknown. The method string is
 \code{"angler-trips"} in every case and so is not a guide to the actor.
 }
+\section{Trip length}{
+
+Trips are effort divided by mean trip length (Pollock et al. 1994, p. 175).
+That divisor has to be the mean length of \emph{completed} trips, sampled
+without regard to how long they were, so:
+\itemize{
+\item Only complete trips (\code{trip_status == "complete"}) enter it. An
+incomplete trip records the time fished so far, not a trip length.
+\item Roving designs (\code{interview_type = "roving"}) are refused. A
+roving clerk meets anglers in proportion to how long they fish
+(length-of-stay bias; Pollock et al. 1994, sec. 11.4; Robson 1961), and
+the time fished at interview cannot be inverted into a trip count
+(Hoenig et al. 1997). Pollock et al. (1994, p. 175): "an unbiased
+estimate of mean trip length cannot be obtained from a roving survey
+... and must be achieved by other means."
+\item Angler-hours are divided by hours per angler trip: every angler in
+a party of \eqn{n} makes one trip, so each trip length is weighted by
+its party size. Party-hours are divided by hours per party trip,
+unweighted. When the effort's unit is unknown and party sizes vary, the
+two divisors differ and nothing says which applies, so the call is
+refused; give \code{add_counts()} a period length to make the effort
+angler-hours.
+\item Bus-route and ice interviews are weighted by their inclusion
+weights (\code{.expansion / .pi_i}; Jones and Pollock 2012), as their
+effort is.
+}
+The mean is a ratio estimator on the interview survey design, so
+interviews on the same day are not treated as independent, and the
+confidence interval uses that design's degrees of freedom (days less
+strata) rather than the number of interviews.
+}
+
 \examples{
 data(example_calendar)
 data(example_counts)
@@ -68,9 +103,25 @@ estimate_angler_trips(effort, design)
 
 }
 \references{
+Hoenig, J. M., Jones, C. M., Pollock, K. H., Robson, D. S., and Wade,
+D. L. (1997). Calculation of catch rate and total catch in roving surveys
+of anglers. \emph{Biometrics}, 53(1), 306-317.
+
+Jones, C. M., and Pollock, K. H. (2012). Recreational angler survey
+methods: estimation of effort, harvest, and released catch. In A. V. Zale,
+D. L. Parrish, and T. M. Sutton (eds.), \emph{Fisheries Techniques} (3rd
+ed., pp. 883-919). American Fisheries Society.
+
+Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). \emph{Angler
+Survey Methods and Their Applications in Fisheries Management}. American
+Fisheries Society Special Publication 25. Chapter 11.
+
 Powell, L. A. (2007). Approximating variance of demographic
 parameters using the delta method. \emph{Journal of Wildlife Management},
 71(3), 1018-1024.
+
+Robson, D. S. (1961). On the statistical theory of a roving creel census
+of fishermen. \emph{Biometrics}, 17(3), 415-437.
 }
 \seealso{
 \code{\link{estimate_effort}}, \code{\link{estimate_exploitation_rate}}
