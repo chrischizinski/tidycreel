@@ -17,13 +17,20 @@ tl_quiet <- function(expr) suppressWarnings(suppressMessages(expr))
 
 # The example survey, with counts declared as angler-hours (a period length of
 # 1 on counts that are already effort-hours) so the actor is known.
-tl_design <- function(n_anglers = TRUE, interview_type = "access") {
+# `one_stratum = TRUE` relabels every day "season": ungrouped effort is
+# accepted only where there are no strata to pool across (GH #691).
+tl_design <- function(n_anglers = TRUE, interview_type = "access", one_stratum = FALSE) {
   data(example_calendar, envir = environment())
   data(example_counts, envir = environment())
   data(example_interviews, envir = environment())
+  cal <- example_calendar # nolint: object_usage_linter
   cn <- example_counts # nolint: object_usage_linter
+  if (one_stratum) {
+    cal$day_type <- "season"
+    cn$day_type <- "season"
+  }
   cn$T_d <- 1
-  d <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   d <- tl_quiet(add_counts(d, cn, count_col = effort_hours, period_length_col = T_d)) # nolint: object_usage_linter
   args <- list(
     d, example_interviews, # nolint: object_usage_linter
@@ -36,7 +43,7 @@ tl_design <- function(n_anglers = TRUE, interview_type = "access") {
 }
 
 test_that("#689: angler-hours are divided by hours per angler trip, over complete trips", {
-  d <- tl_design()
+  d <- tl_design(one_stratum = TRUE)
   e <- tl_quiet(estimate_effort(d)) # nolint: object_usage_linter
   expect_identical(e$unit, "angler-hours")
   t <- tl_quiet(estimate_angler_trips(e, d))$estimates # nolint: object_usage_linter
@@ -54,7 +61,7 @@ test_that("#689: angler-hours are divided by hours per angler trip, over complet
 })
 
 test_that("#689: the SE of trip length comes from the interview design, days as PSUs", {
-  d <- tl_design()
+  d <- tl_design(one_stratum = TRUE)
   e <- tl_quiet(estimate_effort(d)) # nolint: object_usage_linter
   t <- tl_quiet(estimate_angler_trips(e, d))$estimates # nolint: object_usage_linter
 
@@ -67,7 +74,7 @@ test_that("#689: the SE of trip length comes from the interview design, days as 
   E <- e$estimates$estimate
   expect_equal(t$se^2, e$estimates$se^2 / L^2 + E^2 * se_L^2 / L^4)
 
-  # df: the interview design's days less strata, not interviews less one.
+  # df: the interview design's days less its stratum, not interviews less one.
   df <- as.numeric(survey::degf(subset(s, trip_status == "complete")))
   expect_lt(df, sum(iv$trip_status == "complete") - 1)
   expect_equal(t$ci_upper - t$estimate, stats::qt(0.975, df) * t$se)
@@ -75,19 +82,31 @@ test_that("#689: the SE of trip length comes from the interview design, days as 
 
 test_that("#689: party-hours are divided by hours per party trip, inclusion-weighted on a bus route", {
   d <- build_br_design_for_tests(n_sites = 4, n_days = 8, n_interviews = 40, seed = 689) # nolint: object_usage_linter
-  e <- tl_quiet(estimate_effort(d, target = "sampled_days")) # nolint: object_usage_linter
+  # By stratum: trips across strata are summed per stratum (GH #691).
+  e <- tl_quiet(estimate_effort(d, by = day_type, target = "sampled_days")) # nolint: object_usage_linter
   t <- tl_quiet(estimate_angler_trips(e, d))$estimates # nolint: object_usage_linter
 
   iv <- d$interviews
   ok <- iv$trip_status == "complete" & !is.na(iv$trip_duration) & iv$trip_duration > 0
   w <- iv$.expansion / iv$.pi_i
   a <- if (identical(e$unit, "angler-hours")) iv$n_anglers else rep(1, nrow(iv))
-  L_ht <- sum((w * a * iv$trip_duration)[ok]) / sum((w * a)[ok])
-  expect_equal(t$estimate, e$estimates$estimate / L_ht)
+  L_ht <- function(h) {
+    k <- ok & iv$day_type == h
+    sum((w * a * iv$trip_duration)[k]) / sum((w * a)[k])
+  }
+  L_plain <- function(h) {
+    k <- ok & iv$day_type == h
+    sum((a * iv$trip_duration)[k]) / sum(a[k])
+  }
+  rows <- t[t$day_type != ".overall", ]
+  E <- e$estimates$estimate[match(rows$day_type, e$estimates$day_type)]
+  L <- vapply(rows$day_type, L_ht, numeric(1))
+  expect_equal(rows$estimate, E / L, ignore_attr = TRUE)
+  expect_equal(t$estimate[t$day_type == ".overall"], sum(E / L))
 
   # The weights matter on this fixture: unequal site probabilities.
-  L_plain <- sum((a * iv$trip_duration)[ok]) / sum(a[ok])
-  expect_gt(abs(L_ht / L_plain - 1), 0.01)
+  L0 <- vapply(rows$day_type, L_plain, numeric(1))
+  expect_gt(max(abs(L / L0 - 1)), 0.01)
 })
 
 test_that("#689: roving designs are refused, citing length-of-stay bias", {
@@ -145,14 +164,18 @@ test_that("#689: a numeric grouping column takes the .overall row", {
   cn$wk <- wk_of(cn$date)
   iv <- example_interviews # nolint: object_usage_linter
   iv$wk <- wk_of(iv$date)
-  d <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  # One stratum, so grouping by `wk` alone pools nothing (GH #691).
+  cal <- example_calendar # nolint: object_usage_linter
+  cal$day_type <- "season"
+  cn$day_type <- "season"
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   d <- tl_quiet(add_counts(d, cn, count_col = effort_hours, period_length_col = T_d)) # nolint: object_usage_linter
   d <- tl_quiet(add_interviews( # nolint: object_usage_linter
     d, iv,
     catch = catch_total, effort = hours_fished, trip_status = trip_status,
     trip_duration = trip_duration, n_anglers = n_anglers
   ))
-  g <- tl_quiet(estimate_effort(d, by = wk)) # nolint: object_usage_linter
+  g <- tl_quiet(estimate_effort(d, by = wk, target = "sampled_days")) # nolint: object_usage_linter
   expect_type(g$estimates$wk, "integer")
   t <- tl_quiet(estimate_angler_trips(g, d))$estimates # nolint: object_usage_linter
   expect_identical(t$wk, c("0", "1", ".overall"))
@@ -160,19 +183,22 @@ test_that("#689: a numeric grouping column takes the .overall row", {
 })
 
 test_that("#689: trips keep the effort target", {
+  d1 <- tl_design(one_stratum = TRUE)
+  e <- tl_quiet(estimate_effort(d1, target = "sampled_days")) # nolint: object_usage_linter
+  expect_identical(tl_quiet(estimate_angler_trips(e, d1))$effort_target, "sampled_days") # nolint: object_usage_linter
   d <- tl_design()
-  e <- tl_quiet(estimate_effort(d, target = "sampled_days")) # nolint: object_usage_linter
-  expect_identical(tl_quiet(estimate_angler_trips(e, d))$effort_target, "sampled_days") # nolint: object_usage_linter
   g <- tl_quiet(estimate_effort(d, by = day_type, target = "sampled_days")) # nolint: object_usage_linter
   expect_identical(tl_quiet(estimate_angler_trips(g, d))$effort_target, "sampled_days") # nolint: object_usage_linter
 })
 
 # Review follow-ups ----
 
+# One stratum ("season"): the gear groups below are not strata, so on a
+# stratified calendar their effort would be refused (GH #691).
 tl_iv_design <- function(iv) {
   cal <- data.frame(
     date = as.Date("2024-06-03") + 0:6,
-    day_type = c(rep("weekday", 5), rep("weekend", 2))
+    day_type = "season"
   )
   d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
   tl_quiet(add_interviews( # nolint: object_usage_linter
@@ -200,7 +226,7 @@ tl_two_gear_iv <- function() {
   # Two gears, both fished on every day, so their mean lengths share days.
   data.frame(
     date = rep(as.Date("2024-06-03") + c(0, 1, 2, 5, 6), each = 4),
-    day_type = rep(c("weekday", "weekday", "weekday", "weekend", "weekend"), each = 4),
+    day_type = "season",
     gear = rep(c("boat", "bank"), 10),
     trip_status = "complete",
     duration = c(2, 1, 2.5, 1.5, 5, 3, 4.5, 3.5, 3, 2, 3.5, 2.5, 6, 4, 5.5, 4.5, 2, 1.5, 2.5, 1),
@@ -265,8 +291,8 @@ test_that("#689: a group with no complete trips is named, not called a key misma
 })
 
 test_that("#689: missing party sizes on angler-hours are refused, not read as constant", {
-  d <- tl_design()
+  d <- tl_design(one_stratum = TRUE)
   d$interviews$n_anglers[d$interviews$trip_status == "complete"] <- NA
-  e <- tl_quiet(estimate_effort(tl_design())) # nolint: object_usage_linter
+  e <- tl_quiet(estimate_effort(tl_design(one_stratum = TRUE))) # nolint: object_usage_linter
   expect_error(estimate_angler_trips(e, d), class = "creel_error_missing_data") # nolint: object_usage_linter
 })

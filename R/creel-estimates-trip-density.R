@@ -114,6 +114,18 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 #'     weights (\code{.expansion / .pi_i}; Jones and Pollock 2012), as their
 #'     effort is.
 #' }
+#'
+#' On a design with more than one stratum, \code{effort} must be grouped by
+#' every stratum column, and the total across strata is the \code{.overall} row:
+#' \eqn{\sum_h \hat{E}_h / \hat{L}_h}, built stratum by stratum as Pollock et
+#' al. (1994, sec. 15.3.3.6) build season catch. One trip length pooled across
+#' strata weights each stratum by its share of the \emph{interviewed} trips,
+#' not of all trips. Sampling weekends more heavily than weekdays, or taking a
+#' fixed number of interviews per day however busy it is, then biases the
+#' total. On a simulated season it was off by -16% and +8% (GH #691).
+#' Ungrouped effort carries no per-stratum effort to weight by, so it is
+#' refused.
+#'
 #' The mean is a ratio estimator on the interview survey design, so
 #' interviews on the same day are not treated as independent, and the
 #' confidence interval uses that design's degrees of freedom (days less
@@ -164,7 +176,7 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 #'
 #'   Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). \emph{Angler
 #'   Survey Methods and Their Applications in Fisheries Management}. American
-#'   Fisheries Society Special Publication 25. Chapter 11.
+#'   Fisheries Society Special Publication 25. Chapters 11 and 15.
 #'
 #'   Powell, L. A. (2007). Approximating variance of demographic
 #'   parameters using the delta method. \emph{Journal of Wildlife Management},
@@ -183,7 +195,8 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 #'   catch = catch_total, effort = hours_fished, harvest = catch_kept,
 #'   trip_status = trip_status, trip_duration = trip_duration
 #' )
-#' effort <- estimate_effort(design)
+#' # Effort by stratum: the `.overall` row is the total across strata.
+#' effort <- estimate_effort(design, by = day_type)
 #' estimate_angler_trips(effort, design)
 #'
 #' @seealso \code{\link{estimate_effort}}, \code{\link{estimate_exploitation_rate}}
@@ -231,6 +244,9 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   }
 
   tl <- trip_length_estimates(design, effort)
+  # After the trip-length refusals (roving, unknown unit, no complete trip):
+  # those say no trip length exists at all, which outranks how to combine one.
+  refuse_trips_pooled_across_strata(effort, design)
   df_L <- tl$df
   min_n_se <- 2L
 
@@ -424,6 +440,57 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     effort_target = effort$effort_target,
     # Same inheritance as the ungrouped branch above.
     unit = trips_unit(effort$unit) # nolint: object_usage_linter
+  )
+}
+
+# Refuse trips from effort that is not grouped by every stratum (GH #691).
+#
+# Season trips are sum_h E_h / L_h (Pollock et al. 1994, sec. 15.3.3.6 and
+# Table 15.20 build the season figure stratum by stratum). A trip length pooled
+# across strata weights each stratum by its share of interviewed trips, not of
+# the population's: weekends interviewed at twice their share of days, or a
+# clerk taking six interviews whether the day is quiet or busy, moves it. On a
+# simulated season that put trips off by -16% and +8%, and weighting days by
+# N_h / n_h did not remove it, because the interviews per day still do not
+# follow the day's trips. An ungrouped effort object holds no E_h to weight by,
+# so the call is refused and the user asked for effort by stratum, whose
+# `.overall` row is the total across strata.
+#
+# A calendar with one stratum pools nothing and is let through.
+refuse_trips_pooled_across_strata <- function(effort, design, call = rlang::caller_env()) {
+  strata <- design$strata_cols %||% character(0)
+  if (length(strata) == 0L) {
+    return(invisible(NULL))
+  }
+  missing <- setdiff(strata, effort$by_vars %||% character(0))
+  if (length(missing) == 0L) {
+    return(invisible(NULL))
+  }
+  n_strata <- nrow(unique(design$calendar[strata]))
+  if (n_strata < 2L) {
+    return(invisible(NULL))
+  }
+  by_now <- effort$by_vars
+  by_call <- paste(unique(c(strata, by_now)), collapse = ", ")
+  if (length(unique(c(strata, by_now))) > 1L) by_call <- paste0("c(", by_call, ")")
+  # The suggested call keeps the effort's target, or following it would
+  # silently change the quantity estimated.
+  target <- effort$effort_target
+  if (!is.null(target) && !identical(target, "period_total")) {
+    by_call <- paste0(by_call, ", target = \"", target, "\"")
+  }
+  cli::cli_abort(
+    c(
+      "Trips across strata need effort for each stratum.",
+      "x" = "{.arg effort} is not grouped by {.field {missing}}, so season trips cannot \\
+             be summed stratum by stratum.",
+      "i" = "A trip length pooled across strata is weighted by interviews, not effort \\
+             (Pollock et al. 1994).",
+      "i" = "Use {.code estimate_effort(design, by = {by_call})}; the {.val .overall} row \\
+             is the total across strata. See {.code ?estimate_angler_trips} for why."
+    ),
+    class = c("creel_error_trips_need_strata", "creel_error_invalid_input"),
+    call = call
   )
 }
 

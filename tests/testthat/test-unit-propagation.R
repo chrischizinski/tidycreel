@@ -763,15 +763,22 @@ test_that("camera effort labels the raw path but not the calibrated one", {
 # input -- and makes a hardcoded label wrong for every caller whose effort was
 # in the other actor.
 
-make_trips_design <- function(with_n_anglers = TRUE) {
+# `one_stratum = TRUE` labels every day "season", where ungrouped effort is
+# accepted; on the two day types trips need effort by stratum (GH #691).
+make_trips_design <- function(with_n_anglers = TRUE, one_stratum = FALSE) {
   data(example_counts, envir = environment())
   data(example_interviews, envir = environment())
   data(example_calendar, envir = environment())
 
+  cal <- example_calendar
   cnt <- example_counts
+  if (one_stratum) {
+    cal$day_type <- "season"
+    cnt$day_type <- "season"
+  }
   cnt$shift_hours <- 8
   d <- suppressWarnings(add_counts(
-    creel_design(example_calendar, date = date, strata = day_type),
+    creel_design(cal, date = date, strata = day_type),
     cnt,
     period_length_col = shift_hours # nolint
   ))
@@ -793,14 +800,16 @@ test_that("trips inherit the actor of the effort they divide", {
   # is not restricted to it: a bus-route design with no n_anglers produces
   # party-hours, and dividing that by a trip length gives party-trips.
   d <- make_trips_design()
-  e <- suppressWarnings(suppressMessages(estimate_effort(d, target = "sampled_days")))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d, by = day_type, target = "sampled_days")))
   trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d)))
 
   expect_identical(e$unit, "angler-hours")
   expect_identical(trips$unit, "angler-trips")
 
   br <- suppressWarnings(suppressMessages(build_br_design_party_hours()))
-  br_effort <- suppressWarnings(suppressMessages(estimate_effort(br, target = "sampled_days")))
+  br_effort <- suppressWarnings(suppressMessages(
+    estimate_effort(br, by = dplyr::all_of(br$strata_cols), target = "sampled_days")
+  ))
   br_trips <- suppressWarnings(suppressMessages(estimate_angler_trips(br_effort, br)))
 
   expect_identical(br_effort$unit, "party-hours")
@@ -830,7 +839,7 @@ test_that("trips are unknown when the effort they came from was unknown", {
     catch = catch_total, harvest = catch_kept, effort = hours_fished,
     trip_status = trip_status, trip_duration = trip_duration
   )))
-  e <- suppressWarnings(suppressMessages(estimate_effort(d0)))
+  e <- suppressWarnings(suppressMessages(estimate_effort(d0, by = day_type)))
   trips <- suppressWarnings(suppressMessages(estimate_angler_trips(e, d0)))
 
   expect_true(is.na(e$unit))
@@ -853,14 +862,16 @@ test_that("trips are unknown when the effort they came from was unknown", {
 
 test_that("grouped trips agree with ungrouped", {
   d <- make_trips_design()
-  ungrouped <- suppressWarnings(suppressMessages(estimate_effort(d)))
+  # The ungrouped branch is reached only on a one-stratum season (GH #691).
+  d1 <- make_trips_design(one_stratum = TRUE)
+  ungrouped <- suppressWarnings(suppressMessages(estimate_effort(d1)))
   grouped <- suppressWarnings(suppressMessages(estimate_effort(d, by = "day_type")))
 
   # Two branches of estimate_angler_trips(); grouping changes which rows are
   # divided, never what the quotient measures.
   expect_identical(
     suppressWarnings(suppressMessages(estimate_angler_trips(grouped, d)))$unit,
-    suppressWarnings(suppressMessages(estimate_angler_trips(ungrouped, d)))$unit
+    suppressWarnings(suppressMessages(estimate_angler_trips(ungrouped, d1)))$unit
   )
 })
 
@@ -897,8 +908,11 @@ test_that("the effort guard checks the quantity, not the actor", {
   expect_no_error(
     suppressWarnings(suppressMessages(estimate_effort_per_acre(br_effort, acres = 500)))
   )
+  br_by_stratum <- suppressWarnings(suppressMessages(
+    estimate_effort(br, by = dplyr::all_of(br$strata_cols), target = "sampled_days")
+  ))
   expect_no_error(
-    suppressWarnings(suppressMessages(estimate_angler_trips(br_effort, br)))
+    suppressWarnings(suppressMessages(estimate_angler_trips(br_by_stratum, br)))
   )
 
   # A rate is still refused: dividing fish/angler-hour by acres would relabel it.

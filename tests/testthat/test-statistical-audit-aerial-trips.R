@@ -13,11 +13,14 @@
 
 atr_quiet <- function(expr) suppressWarnings(suppressMessages(expr))
 
-atr_design <- function(v = 0.8, v_se = 0.05, a = 0.9, a_se = 0.03) {
+# `one_stratum = TRUE` labels every day "season": pooled (ungrouped) effort
+# is accepted only where no strata are pooled (GH #691).
+atr_design <- function(v = 0.8, v_se = 0.05, a = 0.9, a_se = 0.03, one_stratum = FALSE) {
   cal <- data.frame(
     date = as.Date("2024-07-01") + 0:7,
     day_type = rep(c("weekday", "weekday", "weekend", "weekend"), 2)
   )
+  if (one_stratum) cal$day_type <- "season"
   d <- creel_design( # nolint: object_usage_linter
     cal,
     date = date, strata = day_type, survey_type = "aerial",
@@ -47,7 +50,7 @@ atr_design <- function(v = 0.8, v_se = 0.05, a = 0.9, a_se = 0.03) {
 atr_rel <- (0.05 / 0.8)^2 + (0.03 / 0.9)^2
 
 test_that("#582: pooled aerial effort gives trips, with the calibration SE carried through", {
-  d <- atr_quiet(atr_design())
+  d <- atr_quiet(atr_design(one_stratum = TRUE))
   e <- atr_quiet(estimate_effort(d)) # nolint: object_usage_linter
   expect_identical(e$method, "aerial_total")
   t <- atr_quiet(estimate_angler_trips(e, d))$estimates # nolint: object_usage_linter
@@ -62,7 +65,7 @@ test_that("#582: pooled aerial effort gives trips, with the calibration SE carri
 
   # The a and v terms reach the trips SE: same point estimate, and the
   # variance moves by exactly the shared term on the trips scale.
-  d0 <- atr_quiet(atr_design(v_se = 0, a_se = 0))
+  d0 <- atr_quiet(atr_design(v_se = 0, a_se = 0, one_stratum = TRUE))
   t0 <- atr_quiet(estimate_angler_trips(atr_quiet(estimate_effort(d0)), d0))$estimates # nolint: object_usage_linter
   expect_equal(t$estimate, t0$estimate)
   expect_equal(t$se^2, t0$se^2 + t$estimate^2 * atr_rel)
@@ -155,9 +158,10 @@ test_that("#582: GLMM aerial trips use the effort rows' full covariance", {
   # treating them as independent would understate the total.
   expect_gt(ov$se^2, sum(rows$se^2))
 
-  # Pooled GLMM effort is admitted too.
+  # Pooled GLMM effort passes the effort guard (#582), and is then refused
+  # only because this design has two day types to pool across (GH #691).
   p <- atr_quiet(estimate_effort_aerial_glmm(d, time_col = time_of_flight)) # nolint: object_usage_linter
-  expect_true(is.finite(atr_quiet(estimate_angler_trips(p, d))$estimates$estimate))
+  expect_error(atr_quiet(estimate_angler_trips(p, d)), class = "creel_error_trips_need_strata")
 })
 
 test_that("#582: mean-day GLMM effort is refused, not summed across day types", {
