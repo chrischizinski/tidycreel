@@ -27,7 +27,8 @@
 * `estimate_catch_rate()`, `estimate_harvest_rate()` and
   `estimate_release_rate()` weight a rate pooled across strata by each
   stratum's effort (#691). With no `by`, or `by` columns that are not all
-  strata, the rate is total catch over total effort built stratum by stratum,
+  strata, the rate is the season's fish (caught, harvested or released) over
+  its effort, built stratum by stratum,
   `sum_h E_h R_h / sum_h E_h` with `E_h` from
   `estimate_effort(design, by = <strata>)`; a non-stratum group is weighted by
   its own effort in each stratum. It used to pool the interviews, weighting

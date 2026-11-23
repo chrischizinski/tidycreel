@@ -165,8 +165,13 @@ effort_by_day <- estimate_effort(design, by = day_type)
 # Trips are summed stratum by stratum, so they take effort by every stratum
 # column; the `.overall` row is the season total (GH #691).
 trips_refusal <- NULL
+trip_effort <- if (length(design$strata_cols) > 0) {
+  estimate_effort(design, by = dplyr::all_of(design$strata_cols))
+} else {
+  effort_total
+}
 angler_trips <- tryCatch(
-  estimate_angler_trips(estimate_effort(design, by = dplyr::all_of(design$strata_cols)), design),
+  estimate_angler_trips(trip_effort, design),
   creel_error_roving_trip_length = function(e) {
     trips_refusal <<- conditionMessage(e)
     NULL

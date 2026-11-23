@@ -1236,8 +1236,10 @@ estimate_effort <- function(
 #'
 #' @section Rates across strata:
 #' A rate estimated across strata -- with no \code{by}, or with \code{by}
-#' columns that are not all strata -- is the population rate, total catch over
-#' total effort, built stratum by stratum (Pollock et al. 1994, sec. 15.3.3.6):
+#' columns that are not all strata -- is the population rate: the season's
+#' total of the fish counted (caught, harvested or released, as the function
+#' estimates) over its total effort, built stratum by stratum (Pollock et al.
+#' 1994, sec. 15.3.3.6):
 #' \deqn{\hat{R} = \sum_h \hat{E}_h \hat{R}_h / \sum_h \hat{E}_h,}
 #' where \eqn{\hat{E}_h} is the stratum's effort from
 #' \code{estimate_effort(design, by = <strata>)}. Each interview in stratum
