@@ -202,6 +202,7 @@ test_that("n is always a column, NA where the estimator reports no sample size",
   # A result without n must not lose the column that every other result has,
   # or binding results together and reading tbl$n breaks on one estimator.
   est <- new_creel_estimates( # nolint: object_usage_linter
+    ci_df = Inf,
     estimates = tibble::tibble(estimate = 10, se = 1, ci_lower = 8, ci_upper = 12)
   )
   tbl <- tibble::as_tibble(est)
@@ -221,6 +222,7 @@ test_that("a grouping column named like a metadata column is refused, not overwr
   # A user's `by` column called `unit` (a management unit, say) would otherwise
   # be silently replaced by the measurement unit.
   est <- new_creel_estimates( # nolint: object_usage_linter
+    ci_df = Inf,
     estimates = tibble::tibble(
       unit = c("north", "south"), estimate = c(1, 2), se = c(0.1, 0.2),
       ci_lower = c(0.8, 1.6), ci_upper = c(1.2, 2.4), n = c(5L, 6L)

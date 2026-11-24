@@ -147,6 +147,7 @@ test_that("#689: with no complete trip there is no trip length", {
     catch = catch_total, effort = hours_fished, trip_status = trip_status, trip_duration = trip_duration
   ))
   e <- new_creel_estimates( # nolint: object_usage_linter
+    ci_df = Inf,
     estimates = tibble::tibble(estimate = 100, se = 10, ci_lower = 80, ci_upper = 120, n = 5L),
     method = "total", variance_method = "taylor", design = NULL, conf_level = 0.95, by_vars = NULL
   )
@@ -217,6 +218,7 @@ tl_fake_effort <- function(by = NULL, groups = NULL) {
     )
   }
   new_creel_estimates( # nolint: object_usage_linter
+    ci_df = Inf,
     estimates = est, method = "total", variance_method = "taylor",
     design = NULL, conf_level = 0.95, by_vars = by
   )

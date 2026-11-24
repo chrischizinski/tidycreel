@@ -61,6 +61,7 @@ ref_L <- function(dt) ref_grouped$duration[ref_grouped$day_type == dt]
 ref_se <- function(dt) survey::SE(ref_grouped)[ref_grouped$day_type == dt]
 
 effort_ungrouped <- new_creel_estimates(
+  ci_df = Inf,
   estimates = tibble::tibble(
     estimate = 1000,
     se = 50,
@@ -78,6 +79,7 @@ effort_ungrouped <- new_creel_estimates(
 )
 
 effort_grouped <- new_creel_estimates(
+  ci_df = Inf,
   estimates = tibble::tibble(
     day_type = c("weekday", "weekend"),
     estimate = c(600, 400),
@@ -237,6 +239,7 @@ test_that("Test L: smoke — write_estimates() to tempfile succeeds", {
 
 # Fixture: ungrouped effort with se_between/se_within present
 effort_with_decomp <- new_creel_estimates(
+  ci_df = Inf,
   estimates = tibble::tibble(
     estimate = 5000,
     se = 250,
@@ -255,6 +258,7 @@ effort_with_decomp <- new_creel_estimates(
 
 # Fixture: grouped effort without se_between/se_within
 effort_grouped_no_decomp <- new_creel_estimates(
+  ci_df = Inf,
   estimates = tibble::tibble(
     day_type = c("weekday", "weekend"),
     estimate = c(3000, 2000),
@@ -338,6 +342,7 @@ test_that("Test V: smoke — tidy() and write_estimates() succeed", {
 
 test_that("RPT-01b: ungrouped single interview warns and returns NA SE/CI", {
   effort_one <- new_creel_estimates(
+    ci_df = Inf,
     estimates = tibble::tibble(
       estimate = 500,
       se = 25,
@@ -368,6 +373,7 @@ test_that("RPT-01b: ungrouped single interview warns and returns NA SE/CI", {
 
 test_that("RPT-01b: grouped singleton stratum warns and returns NA SE/CI for that row", {
   effort_g <- new_creel_estimates(
+    ci_df = Inf,
     estimates = tibble::tibble(
       day_type = c("weekday", "weekend"),
       estimate = c(600, 400),

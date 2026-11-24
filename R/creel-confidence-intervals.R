@@ -80,6 +80,17 @@
 #' finite df to appeal to. The normal quantile inside Sadinle's logit interval
 #' is part of the method, not a quantile choice.
 #'
+#' @section Recorded degrees of freedom:
+#'
+#' Every estimate records the degrees of freedom its rows' intervals used in
+#' `x$ci_df`, one value per row of `x$estimates`: a finite value for a t
+#' interval, `Inf` for a normal one, and `NA` where the interval is not built
+#' from the standard error at all (Schnabel's Poisson bounds for small
+#' recapture totals) or the row has no interval. The aerial GLMM's bootstrap
+#' path records `Inf`: its percentile interval has no df, but its standard
+#' error is asymptotic. It is what a sum or difference of independent estimates
+#' needs for its own degrees of freedom.
+#'
 #' @references
 #' Sadinle, M. (2009). Transformed logit confidence intervals for small
 #' populations in single capture-recapture estimation.

@@ -652,6 +652,7 @@ estimate_effort_camera <- function(
     # provenance for the same quantity.
     unit = effort_unit_label, # nolint: object_usage_linter
     # Also set per branch: the raw path has no calibration component at all.
-    se_components = se_components # nolint: object_usage_linter
+    se_components = se_components, # nolint: object_usage_linter
+    ci_df = df
   )
 }

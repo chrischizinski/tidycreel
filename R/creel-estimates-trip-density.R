@@ -296,6 +296,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
         estimates = estimates_df,
         method = "angler-trips",
         variance_method = "delta",
+        ci_df = max(1, df_L),
         design = NULL,
         conf_level = conf_level,
         by_vars = NULL,
@@ -434,6 +435,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     estimates = estimates_df,
     method = "angler-trips",
     variance_method = "delta",
+    ci_df = max(1, df_L),
     design = NULL,
     conf_level = conf_level,
     by_vars = effort$by_vars,
@@ -798,6 +800,9 @@ estimate_effort_per_acre <- function(effort, acres, ...) {
     design = NULL,
     conf_level = effort$conf_level,
     by_vars = effort$by_vars,
-    unit = density_unit
+    unit = density_unit,
+    # Dividing by a constant leaves the reference distribution alone. An effort
+    # built before ci_df was recorded has none: unknown, not guessed.
+    ci_df = effort$ci_df %||% NA_real_
   )
 }

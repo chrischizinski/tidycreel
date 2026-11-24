@@ -219,6 +219,7 @@ estimate_effort_aerial <- function(
     expansion_decomposition = expansion_decomposition, # nolint: object_usage_linter
     method = "aerial_total",
     variance_method = variance_method,
+    ci_df = df,
     design = reported_design,
     conf_level = conf_level,
     by_vars = NULL,

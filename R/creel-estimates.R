@@ -290,6 +290,17 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   zero could not be told apart from. `party_size` is reserved: the
 #'   constructor writes it from `se_expansion` so the two cannot
 #'   drift apart, and supplying it here is an error.
+#' @param ci_df Degrees of freedom of the reference distribution the rows'
+#'   confidence intervals were built on: one value, or one per row of
+#'   `estimates`, recorded exactly as the interval used it. `Inf` for a normal
+#'   interval (including survey's `confint()` default and bootstrap-SE
+#'   intervals), and for the aerial GLMM's bootstrap path, whose percentile
+#'   interval has no df but whose SE is asymptotic; a finite value for a t
+#'   interval; `NA` where the interval is not built from the standard error at
+#'   all (Schnabel's Poisson bounds) and on any row with no interval, which the
+#'   constructor sets itself. Required,
+#'   with no default, so an estimator cannot leave it unrecorded; a later sum or
+#'   difference of estimates needs it for its Satterthwaite df (GH #585).
 #'
 #' @return List of class "creel_estimates" with components:
 #'   - estimates: data frame of estimates
@@ -301,6 +312,7 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   - estimator: rate estimator as requested, or NULL
 #'   - se_expansion: party-size expansion SE component, or NULL
 #'   - se_components: named list of SE contributions, or NULL
+#'   - ci_df: numeric, one entry per row of `estimates`
 #'
 #' @keywords internal
 #' @noRd
@@ -316,7 +328,8 @@ new_creel_estimates <- function(
   estimator = NULL,
   se_expansion = NULL,
   expansion_decomposition = NULL,
-  se_components = NULL
+  se_components = NULL,
+  ci_df
 ) {
   # Every entry must be named, because an unnamed component cannot be reported
   # and would reach print() only to fail there.
@@ -346,8 +359,22 @@ new_creel_estimates <- function(
       is.character(effort_target),
     "unit must be NULL or character" = is.null(unit) || is.character(unit),
     "estimator must be NULL or a single string" = is.null(estimator) ||
-      (is.character(estimator) && length(estimator) == 1)
+      (is.character(estimator) && length(estimator) == 1),
+    "ci_df must be numeric, one value or one per row" = is.numeric(ci_df) &&
+      length(ci_df) %in% c(1L, nrow(estimates)),
+    # Zero is allowed: a design with no residual df gives qt() NaN bounds today,
+    # and recording that faithfully is this slot's job, not refusing it.
+    "ci_df must be non-negative, Inf or NA" = all(is.na(ci_df) | ci_df >= 0)
   )
+  # One value per row, so a grouped table can carry a df per group and a
+  # combination of estimates can match rows to their df without re-deriving it.
+  ci_df <- rep_len(as.numeric(ci_df), nrow(estimates))
+  # A row with no interval at all (an unknown estimate) used no reference
+  # distribution, whatever df its estimator would have used: NA, so a later
+  # combination cannot treat an unavailable row as having one.
+  if (all(c("ci_lower", "ci_upper") %in% names(estimates))) {
+    ci_df[is.na(estimates$ci_lower) & is.na(estimates$ci_upper)] <- NA_real_
+  }
 
   # One write point for the party-size component. `se_expansion` is the slot
   # documented since 3.2.0 and is kept; mirroring it here rather than letting
@@ -399,6 +426,10 @@ new_creel_estimates <- function(
       # component, so absence and "unknown" stay distinguishable: an entry that
       # applies but cannot be measured is NA_real_ and still prints (GH #141).
       se_components = se_components,
+      # The df of the reference distribution each row's interval used (Inf =
+      # normal, NA = not SE-based). Not a column of `estimates`, so printing
+      # and the tibble's shape are unchanged (GH #585).
+      ci_df = ci_df,
       # The warnings raised so far in this call, read by get_warnings() (GH
       # #496). Built last in the call, the returned estimate has them all.
       warnings = claim_creel_warnings() # nolint: object_usage_linter
@@ -459,7 +490,8 @@ new_creel_estimates_mor <- function(
   n_total = NULL,
   mor_truncate_at = NULL,
   mor_n_truncated = NULL,
-  use_trips = NULL
+  use_trips = NULL,
+  ci_df
 ) {
   # Call parent constructor. `unit` is forwarded rather than left at its default:
   # the unit is derived from the design and is the same quantity whichever
@@ -474,7 +506,8 @@ new_creel_estimates_mor <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     unit = unit,
-    estimator = estimator
+    estimator = estimator,
+    ci_df = ci_df
   )
 
   # Add MOR-specific metadata
@@ -2158,6 +2191,7 @@ estimate_catch_rate <- function(
       return(new_creel_estimates_mor(
         # nolint: object_usage_linter
         estimates = tibble::as_tibble(estimates_df),
+        ci_df = attr(estimates_df, "ci_df"),
         method = method_label,
         variance_method = variance,
         design = design,
@@ -2180,6 +2214,7 @@ estimate_catch_rate <- function(
     return(new_creel_estimates(
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
+      ci_df = attr(estimates_df, "ci_df"),
       method = method_label,
       variance_method = species_variance_method,
       design = design,
@@ -2794,6 +2829,7 @@ estimate_harvest_rate <- function(
     return(new_creel_estimates(
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
+      ci_df = attr(estimates_df, "ci_df"),
       method = if (mortr_active) {
         "mean-of-ratios-truncated-hpue-species"
       } else if (identical(estimator, "mor")) {
@@ -3278,6 +3314,7 @@ estimate_release_rate <- function(
     return(new_creel_estimates(
       # nolint: object_usage_linter
       estimates = tibble::as_tibble(estimates_df),
+      ci_df = attr(estimates_df, "ci_df"),
       method = if (mortr_active) {
         "mean-of-ratios-truncated-rpue"
       } else if (identical(estimator, "mor")) {
@@ -7106,6 +7143,8 @@ estimate_effort_sections <- function(
   names(sec_expansion_se) <- registered_sections
   sec_decomposition <- vector("list", length(registered_sections))
   names(sec_decomposition) <- registered_sections
+  # Each section row's interval df, in row order (GH #585): its own design's.
+  sec_row_df <- stats::setNames(as.list(rep(NA_real_, length(registered_sections))), registered_sections)
 
   for (sec in registered_sections) {
     if (sec %in% absent_sections) {
@@ -7143,6 +7182,7 @@ estimate_effort_sections <- function(
       # section's own component and decomposition, not only its `se` (GH #230).
       sec_expansion_se[[sec]] <- sec_result$se_expansion
       sec_decomposition[[sec]] <- sec_result$expansion_decomposition
+      sec_row_df[[sec]] <- sec_result$ci_df
       # Ratio and its standard error from one `svyratio()` call, not a bare
       # division reported beside a separately computed SE (GH #231, GH #134).
       # Numerator and denominator are correlated survey estimates over the same
@@ -7178,6 +7218,7 @@ estimate_effort_sections <- function(
 
   # Combine section rows
   result_df <- dplyr::bind_rows(section_rows)
+  row_ci_df <- unlist(sec_row_df[registered_sections], use.names = FALSE)
 
   # Within-day terms as the lake row sees them (GH #599): a stratum the pooled
   # design leaves uncorrected contributes none, from any section.
@@ -7362,6 +7403,7 @@ estimate_effort_sections <- function(
       data_available = TRUE
     )
     result_df <- dplyr::bind_rows(result_df, lake_row)
+    row_ci_df <- c(row_ci_df, if (is.na(lake_est)) NA_real_ else df)
   }
 
   # Return creel_estimates object
@@ -7369,6 +7411,7 @@ estimate_effort_sections <- function(
     # nolint: object_usage_linter
     estimates = result_df,
     method = "total-sections",
+    ci_df = row_ci_df,
     variance_method = variance_method,
     design = design,
     conf_level = conf_level,
@@ -7528,6 +7571,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     # nolint: object_usage_linter
     estimates = estimates_df,
     method = "total",
+    ci_df = df,
     variance_method = variance_method,
     design = reported_design,
     conf_level = conf_level,
@@ -7801,6 +7845,8 @@ estimate_effort_grouped <- function(
   result <- new_creel_estimates(
     # nolint: object_usage_linter
     estimates = estimates_df,
+    # One whole-design df for every group, as the interval above used (GH #705).
+    ci_df = df_val,
     method = "total",
     variance_method = variance_method,
     design = reported_design,
@@ -7949,6 +7995,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -7966,6 +8013,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -8147,6 +8195,7 @@ estimate_cpue_grouped <- function(
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -8164,6 +8213,7 @@ estimate_cpue_grouped <- function(
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -8563,14 +8613,18 @@ compute_stratum_product_sum <- function(
     pv <- add_calibration(product_total_variance(e_est, e_se, r_est, r_se, product_variance), est)
     se_val <- sqrt(pv)
     ci <- .ci(est, se_val, z)
-    return(data.frame(
+    out <- data.frame(
       estimate = est,
       se = se_val,
       ci_lower = ci$lower,
       ci_upper = ci$upper,
       n = rate_df$n,
       stringsAsFactors = FALSE
-    ))
+    )
+    # Same transport as the stratified branch below: every path of this helper
+    # reports the df its interval used, which the caller records (GH #585).
+    attr(out, "ci_df") <- rep_len(as.numeric(df_ci), nrow(out))
+    return(out)
   }
 
   # A known-zero effort cell with no rate row is a zero product, not a missing
@@ -8624,10 +8678,13 @@ compute_stratum_product_sum <- function(
     # reachable under `missing_rate = "exclude"`). sum() over nothing is 0,
     # which would report an unknown catch as none (GH #373).
     if (nrow(merged) == 0L) {
-      return(data.frame(
+      out <- data.frame(
         estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_,
         n = 0L, stringsAsFactors = FALSE
-      ))
+      )
+      # No interval, so no df (GH #585).
+      attr(out, "ci_df") <- NA_real_
+      return(out)
     }
     # Sum all strata to a single total
     est <- sum(merged$.est_sh)
@@ -8668,8 +8725,9 @@ compute_stratum_product_sum <- function(
       decomposition = expansion_decomposition[merged$.expansion_key]
     )
     # The t degrees of freedom the interval used, so a total built from several
-    # of these (the sectioned lake row) can use the matching rule (GH #409).
-    attr(out, "ci_df") <- df_ci
+    # of these (the sectioned lake row) can use the matching rule (GH #409), and
+    # the caller records it on the estimate (GH #585).
+    attr(out, "ci_df") <- rep_len(as.numeric(df_ci), nrow(out))
     out
   } else {
     # Sum strata within each interview_by_vars group; compute per-group df (#94)
@@ -8727,6 +8785,7 @@ compute_stratum_product_sum <- function(
     sp_result$ci_lower <- ci$lower
     sp_result$ci_upper <- ci$upper
     sp_result$n <- as.integer(agg$.n_sh)
+    ci_df_rows <- as.numeric(df_per_group)
     attr(sp_result, "se_expansion") <- vapply(
       seq_along(agg_key),
       function(i) {
@@ -8762,10 +8821,14 @@ compute_stratum_product_sum <- function(
       na_rows$ci_upper <- NA_real_
       na_rows$n <- 0L
       sp_result <- dplyr::bind_rows(sp_result, na_rows)
+      # No interval on an unknown row, so no df either.
+      ci_df_rows <- c(ci_df_rows, rep(NA_real_, nrow(na_rows)))
       if (!is.null(se_exp)) {
         attr(sp_result, "se_expansion") <- c(se_exp, rep(NA_real_, nrow(na_rows)))
       }
     }
+    # Per group: each group's interval used its own n_g - k_g (GH #94, #585).
+    attr(sp_result, "ci_df") <- ci_df_rows
     sp_result
   }
 }
@@ -8932,6 +8995,7 @@ estimate_cpue_species <- function(
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   vcov_list <- vector("list", length(all_species))
+  df_list <- vector("list", length(all_species))
 
   results_list <- vector("list", length(all_species))
 
@@ -9016,9 +9080,12 @@ estimate_cpue_species <- function(
 
     results_list[[i]] <- sp_df
     vcov_list[i] <- list(result$rate_vcov)
+    df_list[[i]] <- result$ci_df
   }
 
   out <- do.call(rbind, results_list)
+  # Each species' rows keep the df their own interval used (GH #585).
+  attr(out, "ci_df") <- unlist(df_list, use.names = FALSE)
   if (covmat) {
     # One matrix per species, over that species' rows (GH #664).
     attr(out, "rate_vcov") <- stats::setNames(vcov_list, all_species)
@@ -9043,6 +9110,7 @@ estimate_release_rate_species <- function(
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   vcov_list <- vector("list", length(all_species))
+  df_list <- vector("list", length(all_species))
 
   results_list <- vector("list", length(all_species))
 
@@ -9108,9 +9176,12 @@ estimate_release_rate_species <- function(
 
     results_list[[i]] <- sp_df
     vcov_list[i] <- list(result$rate_vcov)
+    df_list[[i]] <- result$ci_df
   }
 
   out <- do.call(rbind, results_list)
+  # Each species' rows keep the df their own interval used (GH #585).
+  attr(out, "ci_df") <- unlist(df_list, use.names = FALSE)
   if (covmat) {
     # One matrix per species, over that species' rows (GH #664).
     attr(out, "rate_vcov") <- stats::setNames(vcov_list, all_species)
@@ -9135,6 +9206,7 @@ estimate_hpue_species <- function(
 ) {
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   vcov_list <- vector("list", length(all_species))
+  df_list <- vector("list", length(all_species))
   results_list <- vector("list", length(all_species))
 
   for (i in seq_along(all_species)) {
@@ -9197,9 +9269,12 @@ estimate_hpue_species <- function(
 
     results_list[[i]] <- sp_df
     vcov_list[i] <- list(result$rate_vcov)
+    df_list[[i]] <- result$ci_df
   }
 
   out <- do.call(rbind, results_list)
+  # Each species' rows keep the df their own interval used (GH #585).
+  attr(out, "ci_df") <- unlist(df_list, use.names = FALSE)
   if (covmat) {
     # One matrix per species, over that species' rows (GH #664).
     attr(out, "rate_vcov") <- stats::setNames(vcov_list, all_species)
@@ -9374,6 +9449,7 @@ estimate_harvest_total <- function(
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9391,6 +9467,7 @@ estimate_harvest_total <- function(
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9601,6 +9678,7 @@ estimate_harvest_grouped <- function(
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9618,6 +9696,7 @@ estimate_harvest_grouped <- function(
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
+      ci_df = Inf, # confint()/svyby() default: normal
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9703,6 +9782,7 @@ estimate_catch_rate_sections <- function(
   # estimator it asked for (GH #290).
 
   section_rows <- vector("list", length(registered_sections))
+  sec_row_df <- stats::setNames(vector("list", length(registered_sections)), registered_sections)
   names(section_rows) <- registered_sections
 
   for (sec in registered_sections) {
@@ -9722,6 +9802,7 @@ estimate_catch_rate_sections <- function(
           na_row[[v]] <- NA_character_
         }
       }
+      sec_row_df[[sec]] <- NA_real_
       section_rows[[sec]] <- na_row
     } else {
       # Filter interviews to this section and rebuild survey
@@ -9741,6 +9822,7 @@ estimate_catch_rate_sections <- function(
           force_origin = force_origin,
           targeted = targeted
         )
+        sec_row_df[[sec]] <- attr(sp_df, "ci_df")
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
@@ -9767,6 +9849,7 @@ estimate_catch_rate_sections <- function(
         }
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
+        sec_row_df[[sec]] <- result$ci_df
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped (total) path
@@ -9783,6 +9866,7 @@ estimate_catch_rate_sections <- function(
           )
         }
         row <- result$estimates
+        sec_row_df[[sec]] <- result$ci_df
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
           estimate = row$estimate,
@@ -9801,6 +9885,8 @@ estimate_catch_rate_sections <- function(
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = result_df,
+    # Each row keeps its section estimate's own df (GH #585).
+    ci_df = unlist(sec_row_df, use.names = FALSE),
     # Hardcoded until GH #284: the estimator was passed down and used, so a
     # sectioned mean-of-ratios rate returned MOR numbers under the
     # ratio-of-means name -- and that is the roving default, since the
@@ -9892,6 +9978,7 @@ estimate_harvest_rate_sections <- function(
   )
 
   section_rows <- vector("list", length(registered_sections))
+  sec_row_df <- stats::setNames(vector("list", length(registered_sections)), registered_sections)
   names(section_rows) <- registered_sections
 
   for (sec in registered_sections) {
@@ -9910,6 +9997,7 @@ estimate_harvest_rate_sections <- function(
           na_row[[v]] <- NA_character_
         }
       }
+      sec_row_df[[sec]] <- NA_real_
       section_rows[[sec]] <- na_row
     } else {
       filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
@@ -9928,6 +10016,7 @@ estimate_harvest_rate_sections <- function(
           estimator = estimator,
           targeted = targeted
         )
+        sec_row_df[[sec]] <- attr(sp_df, "ci_df")
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
@@ -9943,6 +10032,7 @@ estimate_harvest_rate_sections <- function(
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
+        sec_row_df[[sec]] <- result$ci_df
         section_rows[[sec]] <- row_df
       } else {
         result <- estimate_harvest_total(
@@ -9954,6 +10044,7 @@ estimate_harvest_rate_sections <- function(
           pool_by_effort = rate_pooling_on()
         )
         row <- result$estimates
+        sec_row_df[[sec]] <- result$ci_df
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
           estimate = row$estimate,
@@ -9972,6 +10063,8 @@ estimate_harvest_rate_sections <- function(
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = result_df,
+    # Each row keeps its section estimate's own df (GH #585).
+    ci_df = unlist(sec_row_df, use.names = FALSE),
     method = if (identical(estimator, "mor")) {
       if (mortr_active) {
         "mean-of-ratios-truncated-hpue-sections"
@@ -10056,6 +10149,7 @@ estimate_release_rate_sections <- function(
   )
 
   section_rows <- vector("list", length(registered_sections))
+  sec_row_df <- stats::setNames(vector("list", length(registered_sections)), registered_sections)
   names(section_rows) <- registered_sections
 
   for (sec in registered_sections) {
@@ -10074,6 +10168,7 @@ estimate_release_rate_sections <- function(
           na_row[[v]] <- NA_character_
         }
       }
+      sec_row_df[[sec]] <- NA_real_
       section_rows[[sec]] <- na_row
     } else {
       filtered <- design$interviews[design$interviews[[section_col]] == sec, ]
@@ -10093,6 +10188,7 @@ estimate_release_rate_sections <- function(
           estimator = estimator,
           targeted = targeted
         )
+        sec_row_df[[sec]] <- attr(sp_df, "ci_df")
         sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
@@ -10135,10 +10231,12 @@ estimate_release_rate_sections <- function(
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
+        sec_row_df[[sec]] <- result$ci_df
         section_rows[[sec]] <- row_df
       } else {
         result <- estimate_cpue_total(design_rel, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
         row <- result$estimates
+        sec_row_df[[sec]] <- result$ci_df
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
           estimate = row$estimate,
@@ -10157,6 +10255,8 @@ estimate_release_rate_sections <- function(
   new_creel_estimates(
     # nolint: object_usage_linter
     estimates = result_df,
+    # Each row keeps its section estimate's own df (GH #585).
+    ci_df = unlist(sec_row_df, use.names = FALSE),
     method = if (identical(estimator, "mor")) {
       if (mortr_active) {
         "mean-of-ratios-truncated-rpue-sections"

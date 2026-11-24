@@ -585,6 +585,7 @@ estimate_total_harvest <- function(
         effort_target = target,
         estimator = reported_estimator(design), # nolint: object_usage_linter
         unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
+        ci_df = attr(estimates_df, "ci_df"),
         se_expansion = attr(estimates_df, "se_expansion")
       ),
       design
@@ -717,6 +718,7 @@ estimate_total_harvest_ungrouped <- function(
     effort_target = target,
     estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
+    ci_df = attr(estimates_df, "ci_df"),
     se_expansion = attr(estimates_df, "se_expansion"),
     # One row, so one entry: the product-scale decomposition a sectioned lake
     # total combines across sections (GH #409).
@@ -726,8 +728,6 @@ estimate_total_harvest_ungrouped <- function(
       list(attr(estimates_df, "expansion_decomposition"))
     }
   )
-  # The interval's degrees of freedom, for a lake row summed from sections (GH #409).
-  attr(result, "ci_df") <- attr(estimates_df, "ci_df")
   # Per-stratum effort and rate, for the sectioned lake row's cross-section
   # covariance (GH #414).
   attr(result, "stratum_cells") <- stratum_cells(effort_df, hpue_df, strata_cols) # nolint: object_usage_linter
@@ -800,6 +800,7 @@ estimate_total_harvest_grouped <- function(
     effort_target = target,
     estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
+    ci_df = attr(estimates_df, "ci_df"),
     se_expansion = attr(estimates_df, "se_expansion")
   )
 }
@@ -865,6 +866,7 @@ estimate_total_harvest_species <- function(
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
   se_exp_list <- vector("list", length(all_species))
+  df_list <- vector("list", length(all_species))
 
   for (i in seq_along(all_species)) {
     sp <- all_species[[i]]
@@ -893,6 +895,7 @@ estimate_total_harvest_species <- function(
     # reorder below silently dropped the component while the standard error it
     # describes stayed inside `se` (GH #259).
     se_exp_list[[i]] <- attr(sp_result, "se_expansion")
+    df_list[[i]] <- attr(sp_result, "ci_df")
 
     sp_result[[species_col]] <- sp
     sp_result <- sp_result[c(species_col, setdiff(names(sp_result), species_col))]
@@ -909,6 +912,8 @@ estimate_total_harvest_species <- function(
   if (!all(vapply(se_exp, is.null, logical(1L)))) {
     attr(out, "se_expansion") <- unlist(se_exp, use.names = FALSE)
   }
+  # Rebuilt from the pieces for the same reason (GH #585).
+  attr(out, "ci_df") <- unlist(df_list, use.names = FALSE)
   out
 }
 
@@ -1038,6 +1043,10 @@ estimate_total_harvest_sections <- function(
   names(sec_decomposition) <- registered_sections
   sec_ci_df <- vector("list", length(registered_sections))
   names(sec_ci_df) <- registered_sections
+  # Every section row's interval df, in row order, for the result's ci_df
+  # (GH #585). sec_ci_df above is the ungrouped subset the lake row sums.
+  sec_row_df <- vector("list", length(registered_sections))
+  names(sec_row_df) <- registered_sections
   sec_cells <- vector("list", length(registered_sections))
   names(sec_cells) <- registered_sections
   # Components for the branches whose sections contribute several rows -- one
@@ -1062,6 +1071,7 @@ estimate_total_harvest_sections <- function(
         data_available = FALSE
       )
       section_rows[[sec]] <- na_row
+      sec_row_df[[sec]] <- NA_real_
     } else {
       # Build per-section designs — dual rebuild for product estimators.
       # Remove sections slot so the sub-design does not re-trigger section dispatch.
@@ -1087,6 +1097,7 @@ estimate_total_harvest_sections <- function(
         row_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         sec_row_expansion[[sec]] <- attr(sp_df, "se_expansion")
+        sec_row_df[[sec]] <- attr(sp_df, "ci_df")
         section_rows[[sec]] <- row_df
       } else if (!is.null(by_vars)) {
         # Grouped path: delegates to existing grouped helper
@@ -1104,6 +1115,7 @@ estimate_total_harvest_sections <- function(
         # only `result$estimates` was being kept -- so a sectioned grouped total
         # reported no component while its `se` carried the term (GH #260).
         sec_row_expansion[[sec]] <- result$se_expansion
+        sec_row_df[[sec]] <- result$ci_df
         section_rows[[sec]] <- row_df
       } else {
         # Ungrouped path: call internal helpers directly to bypass sample-size validation
@@ -1146,7 +1158,8 @@ estimate_total_harvest_sections <- function(
         sec_cells[[sec]] <- attr(sec_result, "stratum_cells")
         sec_expansion_se[[sec]] <- sec_result$se_expansion
         sec_decomposition[[sec]] <- sec_result$expansion_decomposition
-        sec_ci_df[[sec]] <- attr(sec_result, "ci_df")
+        sec_ci_df[[sec]] <- sec_result$ci_df
+        sec_row_df[[sec]] <- sec_result$ci_df
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
           estimate = sec_row$estimate,
@@ -1163,6 +1176,7 @@ estimate_total_harvest_sections <- function(
   }
 
   result_df <- dplyr::bind_rows(section_rows)
+  row_ci_df <- unlist(sec_row_df[registered_sections], use.names = FALSE)
 
   # Compute prop_of_lake_total (ungrouped path only; denominator = sum(TH_i))
   if (!is_grouped) {
@@ -1325,6 +1339,7 @@ estimate_total_harvest_sections <- function(
       data_available = !no_lake
     )
     result_df <- dplyr::bind_rows(result_df, lake_row)
+    row_ci_df <- c(row_ci_df, if (no_lake) NA_real_ else df_lake)
   }
 
   new_creel_estimates( # nolint: object_usage_linter
@@ -1340,6 +1355,7 @@ estimate_total_harvest_sections <- function(
     estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
     se_expansion = se_expansion,
-    expansion_decomposition = expansion_decomposition
+    expansion_decomposition = expansion_decomposition,
+    ci_df = row_ci_df
   )
 }

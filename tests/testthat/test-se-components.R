@@ -200,6 +200,7 @@ test_that("COMP-06: se_expansion is mirrored into se_components", {
   # The defence is that nothing writes the party-size component except the
   # constructor, from se_expansion, so the two representations cannot drift.
   scalar <- new_creel_estimates(
+    ci_df = Inf,
     data.frame(estimate = 1, se = 2),
     se_expansion = 0.5
   )
@@ -209,6 +210,7 @@ test_that("COMP-06: se_expansion is mirrored into se_components", {
   # tell three components apart from one component over three groups, which is
   # why the slot is a list of numeric vectors.
   grouped <- new_creel_estimates(
+    ci_df = Inf,
     data.frame(estimate = c(1, 2), se = c(2, 3)),
     se_expansion = c(0.5, 0.25)
   )
@@ -219,7 +221,7 @@ test_that("COMP-07: no components slot when nothing was propagated", {
   # NULL rather than an empty list, for the same reason a component is absent
   # rather than 0: an empty container invites a `length()` test that reads as
   # "measured nothing".
-  bare <- new_creel_estimates(data.frame(estimate = 1, se = 2))
+  bare <- new_creel_estimates(ci_df = Inf, data.frame(estimate = 1, se = 2))
   expect_null(bare$se_components)
 })
 
@@ -228,6 +230,7 @@ test_that("COMP-08: supplying party_size directly is refused", {
   # constructor owns this name.
   expect_error(
     new_creel_estimates(
+      ci_df = Inf,
       data.frame(estimate = 1, se = 2),
       se_components = list(party_size = 0.5)
     ),
@@ -240,6 +243,7 @@ test_that("COMP-09: malformed component containers are refused", {
   # standard error. Both would otherwise reach print() and fail there instead.
   expect_error(
     new_creel_estimates(
+      ci_df = Inf,
       data.frame(estimate = 1, se = 2),
       se_components = list(0.5)
     ),
@@ -247,6 +251,7 @@ test_that("COMP-09: malformed component containers are refused", {
   )
   expect_error(
     new_creel_estimates(
+      ci_df = Inf,
       data.frame(estimate = 1, se = 2),
       se_components = list(count_sampling = 0.5, calibration = "unknown")
     ),
@@ -275,6 +280,7 @@ test_that("COMP-10: a known component prints as known even when the total is NA"
 
 test_that("COMP-11: a component of a finite standard error prints as included in it", {
   finite <- new_creel_estimates(
+    ci_df = Inf,
     data.frame(estimate = 1, se = 2),
     se_expansion = 0.5
   )
@@ -291,6 +297,7 @@ test_that("COMP-12: a partly measurable grouped component does not claim the who
   # groups and not others. The flat claim "so se is NA" would be false for the
   # groups where it is finite, and groups are the unit the analyst acts on.
   partial <- new_creel_estimates(
+    ci_df = Inf,
     data.frame(estimate = c(1, 2), se = c(2, NA_real_)),
     se_expansion = c(0.5, NA_real_)
   )
@@ -305,6 +312,7 @@ test_that("COMP-13: an unlabelled component prints under its own name", {
   # before it reaches the label table must still be reported: an unlabelled
   # component is information, a silently dropped one is not.
   novel <- new_creel_estimates(
+    ci_df = Inf,
     data.frame(estimate = 1, se = 2),
     se_components = list(future_component = 0.25)
   )
