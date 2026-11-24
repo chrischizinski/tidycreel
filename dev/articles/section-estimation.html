@@ -272,9 +272,16 @@ call <code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()
 registration.</p>
 </div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Lake-wide catch rate: an unsectioned design with the same interviews. A rate</span></span>
-<span><span class="co"># needs only interviews, so no counts are attached.</span></span>
+<code class="sourceCode R"><span><span class="co"># Lake-wide catch rate: an unsectioned design with the same interviews. The</span></span>
+<span><span class="co"># rate pools weekdays and weekends, so it is weighted by each day type's</span></span>
+<span><span class="co"># effort, and the design needs the lake's effort: the sections' daily effort</span></span>
+<span><span class="co"># summed for each day.</span></span>
 <span><span class="va">design_nosections</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">example_sections_calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
+<span><span class="va">lake_effort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">effort_hours</span> <span class="op">~</span> <span class="va">date</span> <span class="op">+</span> <span class="va">day_type</span>, data <span class="op">=</span> <span class="va">example_sections_counts</span>, FUN <span class="op">=</span> <span class="va">sum</span><span class="op">)</span></span>
+<span><span class="va">design_nosections</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_counts.html">add_counts</a></span><span class="op">(</span></span>
+<span>  <span class="va">design_nosections</span>,</span>
+<span>  <span class="fu"><a href="../reference/prep_counts_daily_effort.html">prep_counts_daily_effort</a></span><span class="op">(</span><span class="va">lake_effort</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span>, daily_effort <span class="op">=</span> <span class="va">effort_hours</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span><span class="va">design_nosections</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design_nosections</span>, <span class="va">example_sections_interviews</span>,</span>
 <span>  catch <span class="op">=</span> <span class="va">catch_total</span>, effort <span class="op">=</span> <span class="va">hours_fished</span>, n_anglers <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -291,7 +298,7 @@ registration.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1.77 0.052<span style="text-decoration: underline;">1</span>     1.67     1.87    27</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1.77 0.053<span style="text-decoration: underline;">2</span>     1.67     1.88    27</span></span></code></pre></div>
 <p>This call warns that 27 interviews is a small sample for a ratio
 estimator. It is: the example dataset is small so the page runs quickly.
 The warning is about precision, and the standard error already reflects

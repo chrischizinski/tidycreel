@@ -168,6 +168,10 @@ roving <- add_interviews(design, example_roving_interviews,
 access_rate <- estimate_catch_rate(access)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=222, 74.5% of 298 interviews) [default]
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 roving_rate <- estimate_catch_rate(roving)
 #> ℹ Roving design: using all 212 interviews for CPUE via MOR [auto]
 #>   (0 complete, 212 incomplete)
@@ -177,6 +181,10 @@ roving_rate <- estimate_catch_rate(roving)
 #> ! High truncation rate may indicate data quality issues
 #> ℹ Consider reviewing trip duration data for errors
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 
 c(access = access_rate$method, roving = roving_rate$method)
 #>                access                roving 

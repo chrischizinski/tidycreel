@@ -280,9 +280,9 @@ name, with both the trip set and the estimator:</p>
 <span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.34 0.102     2.14     2.54    50</span></span>
+<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.30 0.096<span style="text-decoration: underline;">2</span>     2.12     2.49    50</span></span>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>, use_trips <span class="op">=</span> <span class="st">"incomplete"</span>, estimator <span class="op">=</span> <span class="st">"mor"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using incomplete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=120, 70.6% of 170 interviews)</span></span>
@@ -307,7 +307,7 @@ name, with both the trip set and the estimator:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.31 0.111     2.09     2.53   115</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.31 0.110     2.10     2.53   115</span></span></code></pre></div>
 <p>Asking for incomplete trips with the ratio of means is refused: the
 length bias of incomplete trips makes that estimator wrong.</p>
 <div class="section level3">
@@ -337,7 +337,7 @@ infinite.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.29 0.095<span style="text-decoration: underline;">7</span>     2.10     2.48    96</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.29 0.095<span style="text-decoration: underline;">0</span>     2.11     2.48    96</span></span>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>,</span>
 <span>  use_trips <span class="op">=</span> <span class="st">"incomplete"</span>, estimator <span class="op">=</span> <span class="st">"mor"</span>,</span>
 <span>  truncate_at <span class="op">=</span> <span class="cn">NULL</span></span>
@@ -351,7 +351,7 @@ infinite.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.27 0.115     2.05     2.49   120</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     2.27 0.114     2.05     2.49   120</span></span></code></pre></div>
 <p>At the default cutoff 5 of the 120 incomplete trips are dropped.
 Raising it to one hour drops 24, a fifth of them, and the package warns:
 when that many trips are short, the cutoff is removing a real part of

@@ -119,7 +119,9 @@ design <- suppressWarnings(add_interviews(
 #> ℹ 14 interviews have zero catch.
 #>   Zero catch is usual; check it is not missing data recorded as 0.
 #> ℹ Added 40 interviews: 40 complete (100%), 0 incomplete (0%)
-suppressWarnings(estimate_catch_rate(design))
+# By day type: one rate pooled across day types is weighted by each day
+# type's effort, which a camera design does not give to estimate_effort().
+suppressWarnings(estimate_catch_rate(design, by = day_type))
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=40, 100% of 40 interviews) [default]
 #> 
@@ -127,10 +129,12 @@ suppressWarnings(estimate_catch_rate(design))
 #> Method: Ratio-of-Means CPUE
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Grouped by: day_type
 #> Unit: fish/party-hour
 #> 
-#> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.453 0.104    0.250    0.656    40
+#> # A tibble: 2 × 6
+#>   day_type estimate    se ci_lower ci_upper     n
+#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1 weekday     0.413 0.172   0.0755    0.751    20
+#> 2 weekend     0.496 0.101   0.297     0.694    20
 ```

@@ -266,6 +266,10 @@ party size, which it does when it is given <code>n_anglers</code>.</p>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">with_party</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=222, 74.5% of 298 interviews) [default]</span></span>
+<span><span class="co">#&gt; Count variable <span style="color: #00BB00;">total_anglers</span> contains 13 zero values.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero values may indicate days with no fishing activity or data collection</span></span>
+<span><span class="co">#&gt;   issues.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider whether zeros are true zeros or missing data.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
@@ -276,7 +280,7 @@ party size, which it does when it is given <code>n_anglers</code>.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.180 0.035<span style="text-decoration: underline;">0</span>    0.111    0.248   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.181 0.036<span style="text-decoration: underline;">0</span>    0.110    0.251   222</span></span></code></pre></div>
 <p>Without <code>n_anglers</code>, the same interviews give a rate per
 party-hour, and <code><a href="../reference/add_interviews.html">add_interviews()</a></code> warns that it has no party
 size:</p>
@@ -296,6 +300,10 @@ size:</p>
 <span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">without_party</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=222, 74.5% of 298 interviews) [default]</span></span>
+<span><span class="co">#&gt; Count variable <span style="color: #00BB00;">total_anglers</span> contains 13 zero values.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero values may indicate days with no fishing activity or data collection</span></span>
+<span><span class="co">#&gt;   issues.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider whether zeros are true zeros or missing data.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
@@ -306,7 +314,7 @@ size:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.306 0.061<span style="text-decoration: underline;">1</span>    0.187    0.426   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.312 0.065<span style="text-decoration: underline;">6</span>    0.183    0.440   222</span></span></code></pre></div>
 <p>The two rates are not interchangeable. The party-hour rate is the
 angler-hour rate times the effort-weighted mean party size of the
 complete trips, 1.71 in these data.</p>

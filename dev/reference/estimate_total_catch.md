@@ -458,7 +458,7 @@ c(
   effort_x_cpue = effort_est$estimates$estimate * cpue_est$estimates$estimate
 )
 #>         total effort_x_cpue 
-#>      829.9579      818.4074 
+#>      829.9579      829.9579 
 
 # Grouped estimation needs at least 10 interviews per group, so check
 # the sample sizes before grouping

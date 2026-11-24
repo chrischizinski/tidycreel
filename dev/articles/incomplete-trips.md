@@ -153,9 +153,9 @@ estimate_catch_rate(design, use_trips = "complete")
 #> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.34 0.102     2.14     2.54    50
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1     2.30 0.0962     2.12     2.49    50
 estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor")
 #> ℹ Using incomplete trips for CPUE estimation
 #>   (n=120, 70.6% of 170 interviews)
@@ -180,7 +180,7 @@ estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.31 0.111     2.09     2.53   115
+#> 1     2.31 0.110     2.10     2.53   115
 ```
 
 Asking for incomplete trips with the ratio of means is refused: the
@@ -213,7 +213,7 @@ estimate_catch_rate(design,
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1     2.29 0.0957     2.10     2.48    96
+#> 1     2.29 0.0950     2.11     2.48    96
 estimate_catch_rate(design,
   use_trips = "incomplete", estimator = "mor",
   truncate_at = NULL
@@ -227,7 +227,7 @@ estimate_catch_rate(design,
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.27 0.115     2.05     2.49   120
+#> 1     2.27 0.114     2.05     2.49   120
 ```
 
 At the default cutoff 5 of the 120 incomplete trips are dropped. Raising

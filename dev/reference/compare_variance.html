@@ -141,7 +141,7 @@ with columns:</p><dl><dt>se_taylor</dt>
 
 <dt>divergence_ratio</dt>
 <dd><p>Ratio <code>se_replicate / se_taylor</code>.
-<code>NA</code> when <code>se_taylor == 0</code>.</p></dd>
+<code>NA</code> when <code>se_taylor</code> is zero to rounding error.</p></dd>
 
 <dt>diverges_flag</dt>
 <dd><p>Logical. <code>TRUE</code> when
@@ -235,7 +235,7 @@ but slower to compute.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 4</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   se_taylor se_replicate divergence_ratio diverges_flag</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     0.122        0.131             1.07 FALSE        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     0.107        0.115             1.08 FALSE        </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

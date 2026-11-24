@@ -279,9 +279,9 @@ print(catch_rate)
 #> Unit: fish/party-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.413 0.0520    0.311    0.515    48
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1    0.410    NA       NA       NA    48
 
 total_catch <- estimate_total_catch(design_int)
 #> Warning in estimate_total_catch(design_int): Rate and effort may be in different units.

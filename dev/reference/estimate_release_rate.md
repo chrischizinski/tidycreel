@@ -189,6 +189,37 @@ the statistically preferred default. Released fish counted at interview
 time are directly observable, so `use_trips = "all"` remains available
 to include incomplete-trip interviews.
 
+## Rates across strata
+
+A rate estimated across strata – with no `by`, or with `by` columns that
+are not all strata – is the population rate: the season's total of the
+fish counted (caught, harvested or released, as the function estimates)
+over its total effort, built stratum by stratum (Pollock et al. 1994,
+sec. 15.3.3.6): \$\$\hat{R} = \sum_h \hat{E}\_h \hat{R}\_h / \sum_h
+\hat{E}\_h,\$\$ where \\\hat{E}\_h\\ is the stratum's effort from
+`estimate_effort(design, by = <strata>)`. Each interview in stratum
+\\h\\ is weighted \\\hat{E}\_h / D_h\\, with \\D_h\\ the stratum's
+interviewed effort (or, for a mean of ratios, its interviewed anglers),
+so a group that is not a stratum is weighted by its own effort in each
+stratum. The standard error adds the effort estimate's variance to the
+interview survey's, by the delta method.
+
+Pooling the interviews alone would weight each stratum by how heavily it
+was interviewed, not by how much it was fished: sampling weekends more
+often than weekdays, or taking the same number of interviews on quiet
+and busy days, then biases the rate. On a simulated season the
+interview-weighted rate was off by +22 and -11 percent (GH \#691).
+
+A design with more than one stratum therefore needs counts for such a
+rate and is refused without them (class
+`creel_error_rate_needs_effort`); a rate `by` the strata needs none. A
+stratum that was fished but has no interviews among the trips used
+(`use_trips`) has no rate, so the pooled rate is refused, naming it,
+rather than reported over the other strata as though it covered the
+season. Within one stratum nothing is pooled and nothing changes.
+Species-level, sectioned, regression and bus-route or ice rates are not
+yet effort-weighted across strata.
+
 ## See also
 
 [`estimate_harvest_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_harvest_rate.md)
@@ -249,6 +280,16 @@ rpue <- estimate_release_rate(design)
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is the anglers
+#>   present at the counted moments, not angler-hours: a count becomes effort only
+#>   when multiplied by its period length. The package cannot tell which unit the
+#>   column is in.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(rpue)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -260,7 +301,7 @@ print(rpue)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.879 0.0535    0.774    0.984    17
+#> 1    0.884 0.0578    0.771    0.997    17
 
 # Per-species release rates
 rpue_by_species <- estimate_release_rate(design, by = species)

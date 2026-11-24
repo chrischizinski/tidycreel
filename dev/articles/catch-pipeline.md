@@ -199,7 +199,7 @@ weights each stratum by its interviews, not by its effort:
 
 estimate_effort(design, target = "period_total")$estimates$estimate *
   estimate_catch_rate(design)$estimates$estimate
-#> [1] 732.914
+#> [1] 736.4413
 ```
 
 Here the difference is about 0.5%, but it grows when strata differ more

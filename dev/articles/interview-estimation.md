@@ -160,9 +160,9 @@ print(cpue_est)
 #> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.967 0.0966    0.778     1.16    17
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1    0.981 0.120    0.745     1.22    17
 ```
 
 The CPUE estimate is the ratio of means: total catch divided by total
@@ -270,7 +270,7 @@ print(hpue_est)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.595 0.0548    0.488    0.703    17
+#> 1    0.606 0.0681    0.472    0.739    17
 
 # Estimate total harvest
 total_harvest_est <- estimate_total_harvest(design)
@@ -334,10 +334,10 @@ cbind(
     tibble::as_tibble(cpue_jk)[, c("estimate", "se")]
   )
 )
-#>      method  estimate         se
-#> 1    taylor 0.9674419 0.09659325
-#> 2 bootstrap 0.9674419 0.09517424
-#> 3 jackknife 0.9674419 0.09787956
+#>      method  estimate        se
+#> 1    taylor 0.9810956 0.1203052
+#> 2 bootstrap 0.9810956 0.1175266
+#> 3 jackknife 0.9810956 0.1208822
 ```
 
 The estimate is the same under all three; only the standard error

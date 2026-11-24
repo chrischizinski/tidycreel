@@ -443,7 +443,7 @@ c(
   effort_x_hpue = effort_est$estimates$estimate * hpue_est$estimates$estimate
 )
 #>         total effort_x_hpue 
-#>      512.5669      503.6353 
+#>      512.5669      512.5669 
 
 # Grouped estimation needs at least 10 interviews per group, so check
 # the sample sizes before grouping

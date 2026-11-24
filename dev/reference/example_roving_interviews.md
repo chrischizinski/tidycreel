@@ -121,6 +121,10 @@ estimate_catch_rate(design)
 #> ! High truncation rate may indicate data quality issues
 #> ℹ Consider reviewing trip duration data for errors
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> ── MOR Estimator (All Trips) ───────────────────────────────────────────────────
 #> Averages per-trip CPUE ratios over 183 interviews (183 incomplete).
 #> Truncation: 29 trips excluded (< 0.5 hours)
@@ -135,5 +139,5 @@ estimate_catch_rate(design)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.191 0.0186    0.155    0.228   183
+#> 1    0.190 0.0193    0.152    0.227   183
 ```

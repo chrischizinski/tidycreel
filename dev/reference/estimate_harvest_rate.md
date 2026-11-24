@@ -228,6 +228,37 @@ the livewell at interview time are directly observable, so
 `use_trips = "all"` remains available to include incomplete-trip
 interviews.
 
+## Rates across strata
+
+A rate estimated across strata – with no `by`, or with `by` columns that
+are not all strata – is the population rate: the season's total of the
+fish counted (caught, harvested or released, as the function estimates)
+over its total effort, built stratum by stratum (Pollock et al. 1994,
+sec. 15.3.3.6): \$\$\hat{R} = \sum_h \hat{E}\_h \hat{R}\_h / \sum_h
+\hat{E}\_h,\$\$ where \\\hat{E}\_h\\ is the stratum's effort from
+`estimate_effort(design, by = <strata>)`. Each interview in stratum
+\\h\\ is weighted \\\hat{E}\_h / D_h\\, with \\D_h\\ the stratum's
+interviewed effort (or, for a mean of ratios, its interviewed anglers),
+so a group that is not a stratum is weighted by its own effort in each
+stratum. The standard error adds the effort estimate's variance to the
+interview survey's, by the delta method.
+
+Pooling the interviews alone would weight each stratum by how heavily it
+was interviewed, not by how much it was fished: sampling weekends more
+often than weekdays, or taking the same number of interviews on quiet
+and busy days, then biases the rate. On a simulated season the
+interview-weighted rate was off by +22 and -11 percent (GH \#691).
+
+A design with more than one stratum therefore needs counts for such a
+rate and is refused without them (class
+`creel_error_rate_needs_effort`); a rate `by` the strata needs none. A
+stratum that was fished but has no interviews among the trips used
+(`use_trips`) has no rate, so the pooled rate is refused, naming it,
+rather than reported over the other strata as though it covered the
+season. Within one stratum nothing is pooled and nothing changes.
+Species-level, sectioned, regression and bus-route or ice rates are not
+yet effort-weighted across strata.
+
 ## See also
 
 [`estimate_catch_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
@@ -259,13 +290,25 @@ calendar <- data.frame(
   day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 design <- creel_design(calendar, date = date, strata = day_type)
+# Counts: a rate across day types is weighted by each day type's effort
+counts <- data.frame(
+  date = calendar$date, day_type = calendar$day_type,
+  effort_hours = c(20, 25, 60, 70)
+)
+design <- add_counts(design, counts)
+#> Warning: Every calendar day has a count: all 4 days of the calendar were sampled.
+#> ! Expanded totals (`target = "period_total"`, the default) are then census
+#>   totals of these days only.
+#> ℹ If the calendar was built from the sampled dates, rebuild it with every day
+#>   of the season, e.g. with `creel_calendar()`.
 
 set.seed(123)
 interviews <- data.frame(
   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 10)),
   catch_total = rpois(40, lambda = 3),
   hours_fished = runif(40, min = 1, max = 6),
-  trip_status = rep(c("complete", "incomplete"), each = 20),
+  # Both trip types on every day, so each day type has a rate from either
+  trip_status = rep(c("complete", "incomplete"), times = 20),
   trip_duration = runif(40, min = 1, max = 6)
 )
 # Harvest is subset of catch (kept fish)
@@ -293,6 +336,28 @@ result <- estimate_harvest_rate(design_with_interviews)
 #> ! Sample size is 20. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is the anglers
+#>   present at the counted moments, not angler-hours: a count becomes effort only
+#>   when multiplied by its period length. The package cannot tell which unit the
+#>   column is in.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Warning: 2 strata have fewer than 3 observations:
+#> • Stratum weekday: 2 observations
+#> • Stratum weekend: 2 observations
+#> ! Sparse strata produce unstable variance estimates.
+#> ℹ Consider combining sparse strata or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Warning: 2 groups have fewer than 3 observations:
+#> • Group day_type=weekday: 2 observations
+#> • Group day_type=weekend: 2 observations
+#> ! Sparse groups produce unstable variance estimates.
+#> ℹ Consider combining sparse groups or collecting more data.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(result)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -302,9 +367,9 @@ print(result)
 #> Unit: fish/party-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.917 0.204    0.517     1.32    20
+#>   estimate     se ci_lower ci_upper     n
+#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1    0.767 0.0993    0.572    0.961    20
 
 # Grouped by day_type
 result_grouped <- estimate_harvest_rate(design_with_interviews, by = day_type)
@@ -319,10 +384,11 @@ print(result_grouped)
 #> Grouped by: day_type
 #> Unit: fish/party-hour
 #> 
-#> # A tibble: 1 × 6
-#>   day_type estimate    se ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     0.917 0.204    0.517     1.32    20
+#> # A tibble: 2 × 6
+#>   day_type estimate     se ci_lower ci_upper     n
+#>   <chr>       <dbl>  <dbl>    <dbl>    <dbl> <int>
+#> 1 weekday     0.852 0.397    0.0729    1.63     10
+#> 2 weekend     0.737 0.0230   0.692     0.782    10
 
 # Custom confidence level
 result_90 <- estimate_harvest_rate(design_with_interviews, conf_level = 0.90)

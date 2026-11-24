@@ -308,6 +308,10 @@ season data, with access and then roving interviews:</p>
 <span><span class="va">access_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">access</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=222, 74.5% of 298 interviews) [default]</span></span>
+<span><span class="co">#&gt; Count variable <span style="color: #00BB00;">total_anglers</span> contains 13 zero values.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero values may indicate days with no fishing activity or data collection</span></span>
+<span><span class="co">#&gt;   issues.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider whether zeros are true zeros or missing data.</span></span>
 <span><span class="va">roving_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">roving</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Roving design: using all 212 interviews for CPUE via MOR [auto]</span></span>
 <span><span class="co">#&gt;   (0 complete, 212 incomplete)</span></span>
@@ -317,6 +321,10 @@ season data, with access and then roving interviews:</p>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> High truncation rate may indicate data quality issues</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider reviewing trip duration data for errors</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
+<span><span class="co">#&gt; Count variable <span style="color: #00BB00;">total_anglers</span> contains 13 zero values.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero values may indicate days with no fishing activity or data collection</span></span>
+<span><span class="co">#&gt;   issues.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider whether zeros are true zeros or missing data.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>access <span class="op">=</span> <span class="va">access_rate</span><span class="op">$</span><span class="va">method</span>, roving <span class="op">=</span> <span class="va">roving_rate</span><span class="op">$</span><span class="va">method</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                access                roving </span></span>

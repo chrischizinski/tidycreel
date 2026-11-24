@@ -308,7 +308,7 @@ cpue$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.606 0.0276    0.552    0.660   120
+#> 1    0.610 0.0292    0.553    0.668   120
 
 total_catch <- estimate_total_catch(design)
 total_catch$estimates
@@ -334,7 +334,7 @@ harvest_rate$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.161 0.0194    0.123    0.199   120
+#> 1    0.161 0.0207    0.120    0.201   120
 
 total_harvest <- estimate_total_harvest(design)
 total_harvest$estimates

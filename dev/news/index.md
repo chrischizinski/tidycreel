@@ -28,16 +28,54 @@
   unaffected. The creel report template now estimates trips by day type
   and shows them in their own section, not in the season-totals table.
 
-  - Rates pooled across strata
-    ([`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
-    [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_harvest_rate.md),
-    [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_release_rate.md)
-    ungrouped or grouped by a non-stratum column) share the same pooling
-    and are **not yet changed**: they still weight strata by interviews.
-    They become effort-weighted in follow-up changes under
-    [\#691](https://github.com/chrischizinski/tidycreel/issues/691).
-    Totals (`estimate_total_*()`) already combine stratum by stratum and
-    are not affected.
+- [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md),
+  [`estimate_harvest_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_harvest_rate.md)
+  and
+  [`estimate_release_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_release_rate.md)
+  weight a rate pooled across strata by each stratum’s effort
+  ([\#691](https://github.com/chrischizinski/tidycreel/issues/691)).
+  With no `by`, or `by` columns that are not all strata, the rate is the
+  season’s fish (caught, harvested or released) over its effort, built
+  stratum by stratum, `sum_h E_h R_h / sum_h E_h` with `E_h` from
+  `estimate_effort(design, by = <strata>)`; a non-stratum group is
+  weighted by its own effort in each stratum. It used to pool the
+  interviews, weighting each stratum by how heavily it was interviewed
+  rather than how much it was fished: +22% and -11% on a simulated
+  season, with N_h / n_h day weights no better (-12%). The new rate was
+  within 1% there, with interval coverage of 0.93-0.94. The SE adds the
+  effort estimate’s variance. See the new “Rates across strata” section
+  of
+  [`?estimate_catch_rate`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md).
+
+  - Applies to the ratio-of-means and mean-of-ratios estimators on the
+    standard (non-species, unsectioned) route. Rates by the strata, and
+    designs with one stratum, are unchanged. Totals
+    (`estimate_total_*()`) already combined stratum by stratum and are
+    unchanged.
+  - **Refused:** such a rate on a design without counts, or whose effort
+    [`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md)
+    cannot give (camera designs), with class
+    `creel_error_rate_needs_effort`. Estimate it `by` the strata
+    instead.
+  - **Refused:** such a rate when a stratum was fished but none of its
+    trips are among those used (`use_trips`), named in the error. Its
+    rate is unknown; it used to be left out silently, which reported a
+    rate over the other strata as the season’s.
+  - [`validate_incomplete_trips()`](https://chrischizinski.com/tidycreel/dev/reference/validate_incomplete_trips.md),
+    `use_trips = "diagnostic"` and
+    [`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/dev/reference/compare_cpue_estimators.md)
+    compare rates on the same interviews and still pool them unweighted,
+    so they need no counts.
+  - **Not yet changed, so temporarily inconsistent:** species-level,
+    sectioned, regression and bus-route/ice rates still weight strata by
+    interviews. Until they follow
+    ([\#691](https://github.com/chrischizinski/tidycreel/issues/691),
+    part 3), species rates no longer sum to the overall rate, and a
+    section’s rate differs from the same interviews’ rate on an
+    unsectioned design.
+  - [`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md)
+    treats a Taylor SE that is zero to rounding error, not only exactly
+    zero, as having no divergence ratio.
 
 - [`estimate_angler_trips()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_angler_trips.md)
   divides effort by the mean length of completed trips, matched to the

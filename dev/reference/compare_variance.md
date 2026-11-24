@@ -61,7 +61,8 @@ columns:
 
 - divergence_ratio:
 
-  Ratio `se_replicate / se_taylor`. `NA` when `se_taylor == 0`.
+  Ratio `se_replicate / se_taylor`. `NA` when `se_taylor` is zero to
+  rounding error.
 
 - diverges_flag:
 
@@ -156,5 +157,5 @@ print(cmp)
 #> # A tibble: 1 × 4
 #>   se_taylor se_replicate divergence_ratio diverges_flag
 #>       <dbl>        <dbl>            <dbl> <lgl>        
-#> 1     0.122        0.131             1.07 FALSE        
+#> 1     0.107        0.115             1.08 FALSE        
 ```

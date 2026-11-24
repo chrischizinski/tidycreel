@@ -180,9 +180,16 @@ on a design without section registration.
 
 ``` r
 
-# Lake-wide catch rate: an unsectioned design with the same interviews. A rate
-# needs only interviews, so no counts are attached.
+# Lake-wide catch rate: an unsectioned design with the same interviews. The
+# rate pools weekdays and weekends, so it is weighted by each day type's
+# effort, and the design needs the lake's effort: the sections' daily effort
+# summed for each day.
 design_nosections <- creel_design(example_sections_calendar, date = date, strata = day_type)
+lake_effort <- aggregate(effort_hours ~ date + day_type, data = example_sections_counts, FUN = sum)
+design_nosections <- add_counts(
+  design_nosections,
+  prep_counts_daily_effort(lake_effort, date = date, strata = day_type, daily_effort = effort_hours)
+)
 design_nosections <- add_interviews(
   design_nosections, example_sections_interviews,
   catch = catch_total, effort = hours_fished, n_anglers = 1,
@@ -199,7 +206,7 @@ estimate_catch_rate(design_nosections)$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1     1.77 0.0521     1.67     1.87    27
+#> 1     1.77 0.0532     1.67     1.88    27
 ```
 
 This call warns that 27 interviews is a small sample for a ratio

@@ -173,6 +173,10 @@ with_party <- add_interviews(with_td, example_season_interviews,
 estimate_catch_rate(with_party)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=222, 74.5% of 298 interviews) [default]
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -183,7 +187,7 @@ estimate_catch_rate(with_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.180 0.0350    0.111    0.248   222
+#> 1    0.181 0.0360    0.110    0.251   222
 ```
 
 Without `n_anglers`, the same interviews give a rate per party-hour, and
@@ -207,6 +211,10 @@ without_party <- add_interviews(with_td, example_season_interviews,
 estimate_catch_rate(without_party)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=222, 74.5% of 298 interviews) [default]
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -217,7 +225,7 @@ estimate_catch_rate(without_party)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.306 0.0611    0.187    0.426   222
+#> 1    0.312 0.0656    0.183    0.440   222
 ```
 
 The two rates are not interchangeable. The party-hour rate is the

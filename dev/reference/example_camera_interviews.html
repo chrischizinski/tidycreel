@@ -187,7 +187,9 @@ interviews.</p></dd>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> 14 interviews have zero catch.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   Zero catch is usual; check it is not missing data recorded as 0.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Added 40 interviews: 40 complete (100%), 0 incomplete (0%)</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># By day type: one rate pooled across day types is weighted by each day</span></span></span>
+<span class="r-in"><span><span class="co"># type's effort, which a camera design does not give to estimate_effort().</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=40, 100% of 40 interviews) [default]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -195,12 +197,14 @@ interviews.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: Ratio-of-Means CPUE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variance: Taylor linearization</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Confidence level: 95%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Grouped by: day_type</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Unit: fish/party-hour</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   estimate    se ci_lower ci_upper     n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.453 0.104    0.250    0.656    40</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     0.413 0.172   0.075<span style="text-decoration: underline;">5</span>    0.751    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     0.496 0.101   0.297     0.694    20</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

@@ -94,6 +94,10 @@ access <- add_interviews(design, example_season_interviews,
 estimate_catch_rate(access)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=222, 74.5% of 298 interviews) [default]
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
@@ -104,7 +108,7 @@ estimate_catch_rate(access)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.180 0.0350    0.111    0.248   222
+#> 1    0.181 0.0360    0.110    0.251   222
 access_catch <- estimate_total_catch(access, target = "period_total")
 access_catch
 #> 
@@ -179,6 +183,10 @@ estimate_catch_rate(roving)
 #> ! High truncation rate may indicate data quality issues
 #> ℹ Consider reviewing trip duration data for errors
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Count variable total_anglers contains 13 zero values.
+#> ℹ Zero values may indicate days with no fishing activity or data collection
+#>   issues.
+#> ℹ Consider whether zeros are true zeros or missing data.
 #> ── MOR Estimator (All Trips) ───────────────────────────────────────────────────
 #> Averages per-trip CPUE ratios over 183 interviews (183 incomplete).
 #> Truncation: 29 trips excluded (< 0.5 hours)
@@ -193,7 +201,7 @@ estimate_catch_rate(roving)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.191 0.0186    0.155    0.228   183
+#> 1    0.190 0.0193    0.152    0.227   183
 ```
 
 With `interview_type = "roving"`, tidycreel uses the mean-of-ratios

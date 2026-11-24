@@ -256,6 +256,37 @@ directly observable, so <code>use_trips = "all"</code> remains available to incl
 incomplete-trip interviews.</p>
     </div>
     <div class="section level2">
+    <h2 id="rates-across-strata">Rates across strata<a class="anchor" aria-label="anchor" href="#rates-across-strata"></a></h2>
+
+
+<p>A rate estimated across strata – with no <code>by</code>, or with <code>by</code>
+columns that are not all strata – is the population rate: the season's
+total of the fish counted (caught, harvested or released, as the function
+estimates) over its total effort, built stratum by stratum (Pollock et al.
+1994, sec. 15.3.3.6):
+$$\hat{R} = \sum_h \hat{E}_h \hat{R}_h / \sum_h \hat{E}_h,$$
+where \(\hat{E}_h\) is the stratum's effort from
+<code>estimate_effort(design, by = &lt;strata&gt;)</code>. Each interview in stratum
+\(h\) is weighted \(\hat{E}_h / D_h\), with \(D_h\) the stratum's
+interviewed effort (or, for a mean of ratios, its interviewed anglers), so a
+group that is not a stratum is weighted by its own effort in each stratum.
+The standard error adds the effort estimate's variance to the interview
+survey's, by the delta method.</p>
+<p>Pooling the interviews alone would weight each stratum by how heavily it
+was interviewed, not by how much it was fished: sampling weekends more
+often than weekdays, or taking the same number of interviews on quiet and
+busy days, then biases the rate. On a simulated season the
+interview-weighted rate was off by +22 and -11 percent (GH #691).</p>
+<p>A design with more than one stratum therefore needs counts for such a rate
+and is refused without them (class <code>creel_error_rate_needs_effort</code>);
+a rate <code>by</code> the strata needs none. A stratum that was fished but has
+no interviews among the trips used (<code>use_trips</code>) has no rate, so the
+pooled rate is refused, naming it, rather than reported over the other
+strata as though it covered the season. Within one stratum nothing is
+pooled and nothing changes. Species-level, sectioned, regression and
+bus-route or ice rates are not yet effort-weighted across strata.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="estimate_harvest_rate.html">estimate_harvest_rate</a></code> for harvest rate, <code><a href="add_catch.html">add_catch</a></code></p>
 <p>Other "Estimation":
@@ -312,6 +343,16 @@ incomplete-trip interviews.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 17. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is the anglers</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   present at the counted moments, not angler-hours: a count becomes effort only</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   when multiplied by its period length. The package cannot tell which unit the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   column is in.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   counts, period_length_col = &lt;col&gt;)`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">rpue</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
@@ -323,7 +364,7 @@ incomplete-trip interviews.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate     se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.879 0.053<span style="text-decoration: underline;">5</span>    0.774    0.984    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.884 0.057<span style="text-decoration: underline;">8</span>    0.771    0.997    17</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Per-species release rates</span></span></span>
 <span class="r-in"><span><span class="va">rpue_by_species</span> <span class="op">&lt;-</span> <span class="fu">estimate_release_rate</span><span class="op">(</span><span class="va">design</span>, by <span class="op">=</span> <span class="va">species</span><span class="op">)</span></span></span>

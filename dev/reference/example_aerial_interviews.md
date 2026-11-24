@@ -144,7 +144,7 @@ estimate_catch_rate(design)
 #> Unit: fish/angler-hour
 #> 
 #> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.217 0.0314    0.156    0.279    48
+#>   estimate    se ci_lower ci_upper     n
+#>      <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1    0.206    NA       NA       NA    48
 ```

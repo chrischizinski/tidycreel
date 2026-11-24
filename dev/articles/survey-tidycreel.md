@@ -170,7 +170,7 @@ rate$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.180 0.0350    0.111    0.248   222
+#> 1    0.181 0.0360    0.110    0.251   222
 rate$unit
 #> [1] "fish/angler-hour"
 ```

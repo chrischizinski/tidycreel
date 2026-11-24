@@ -487,9 +487,9 @@ recovers a standard error.</p>
 <div class="section level2">
 <h2 id="catch-estimation">Catch Estimation<a class="anchor" aria-label="anchor" href="#catch-estimation"></a>
 </h2>
-<p>Camera designs estimate <strong>effort only</strong>.
-<code><a href="../reference/estimate_catch_rate.html">estimate_catch_rate()</a></code> still works — a catch rate comes from
-the interviews and does not involve the camera at all:</p>
+<p>Camera designs estimate <strong>effort only</strong>. A catch rate
+within each day type still works — it comes from that day type’s
+interviews and does not involve the camera at all:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design_catch</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu"><a href="../reference/add_interviews.html">add_interviews</a></span><span class="op">(</span></span>
 <span>  <span class="va">design_counter</span>,</span>
@@ -499,24 +499,60 @@ the interviews and does not involve the camera at all:</p>
 <span>  trip_status <span class="op">=</span> <span class="va">trip_status</span>,</span>
 <span>  n_anglers   <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">catch_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_catch</span><span class="op">)</span></span>
+<span><span class="va">catch_rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_catch</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=40, 100% of 40 interviews) [default]</span></span>
+<span><span class="co">#&gt; Warning: Small sample size in 2 groups:</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Group day_type=weekday: n=20</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Group day_type=weekend: n=20</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Ratio estimates are more stable with n &gt;= 30 per group.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_rate</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
 <span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
 <span><span class="co">#&gt; Variance: Taylor linearization</span></span>
 <span><span class="co">#&gt; Confidence level: 95%</span></span>
+<span><span class="co">#&gt; Grouped by: day_type</span></span>
 <span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.453 0.104    0.250    0.656    40</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
+<span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     0.413 0.172   0.075<span style="text-decoration: underline;">5</span>    0.751    20</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     0.496 0.101   0.297     0.694    20</span></span></code></pre></div>
+<p>The call warns that each day type rests on 20 trips, a small sample
+for a ratio estimator. The example data are small so the page runs
+quickly; the warning is about precision, and the standard errors already
+reflect it.</p>
+<p>One rate pooled across day types is a different quantity. It is
+weighted by each day type’s effort, so a day type that was interviewed
+heavily but fished lightly does not pull it toward its own rate, and on
+a camera design that effort does not come from
+<code><a href="../reference/estimate_effort.html">estimate_effort()</a></code>. The pooled rate is refused rather than
+weighted by the interviews:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_catch_rate.html">estimate_catch_rate</a></span><span class="op">(</span><span class="va">design_catch</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span></span>
+<span><span class="co">#&gt;   (n=40, 100% of 40 interviews) [default]</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `estimate_cpue_total()`:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> A rate pooled across strata is weighted by each stratum's effort,</span></span>
+<span><span class="co">#&gt;   which could not be estimated.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Fix the effort error below, or estimate the rate `by = day_type`.</span></span>
+<span><span class="co">#&gt; <span style="font-weight: bold;">Caused by error in `estimate_effort()`:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `estimate_effort()` does not estimate camera designs.</span></span>
+<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> A camera count is a daily ingress total -- a count of arrivals -- not an</span></span>
+<span><span class="co">#&gt;   instantaneous count of anglers present, so summing it over days gives</span></span>
+<span><span class="co">#&gt;   arrivals rather than effort.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Use `est_effort_camera()`, which calibrates the counts against interview</span></span>
+<span><span class="co">#&gt;   effort and propagates the calibration's uncertainty.</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> To expand the raw counts uncalibrated, pass `calibration = "none"` and</span></span>
+<span><span class="co">#&gt;   `h_open` to that function. The reported standard error is `NA`, because the</span></span>
+<span><span class="co">#&gt;   assumption of one angler-hour per count per hour open is unmeasured.</span></span></code></pre></div>
 <p>A <strong>total</strong> catch is a different matter, and
 <code><a href="../reference/estimate_total_catch.html">estimate_total_catch()</a></code> refuses a camera design:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design_catch</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `estimate_total_catch()`:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `estimate_total_catch()` does not estimate camera designs.</span></span>
@@ -548,7 +584,7 @@ reason.</p>
 </h2>
 <p>Each estimate converts to a tibble with its method, variance method
 and unit as columns, and plots with its confidence interval:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="va">effort_counter</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 12</span></span></span>
 <span><span class="co">#&gt;   estimate    se se_between se_within ci_lower ci_upper     n se_basis    method</span></span>

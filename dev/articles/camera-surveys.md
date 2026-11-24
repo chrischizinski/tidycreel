@@ -418,9 +418,8 @@ that stratum recovers a standard error.
 
 ## Catch Estimation
 
-Camera designs estimate **effort only**.
-[`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md)
-still works — a catch rate comes from the interviews and does not
+Camera designs estimate **effort only**. A catch rate within each day
+type still works — it comes from that day type’s interviews and does not
 involve the camera at all:
 
 ``` r
@@ -433,21 +432,62 @@ design_catch <- suppressMessages(add_interviews(
   trip_status = trip_status,
   n_anglers   = 1
 ))
-catch_rate <- estimate_catch_rate(design_catch)
+catch_rate <- estimate_catch_rate(design_catch, by = day_type)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=40, 100% of 40 interviews) [default]
+#> Warning: Small sample size in 2 groups:
+#> • Group day_type=weekday: n=20
+#> • Group day_type=weekend: n=20
+#> ! Ratio estimates are more stable with n >= 30 per group.
+#> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 print(catch_rate)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
 #> Method: Ratio-of-Means CPUE
 #> Variance: Taylor linearization
 #> Confidence level: 95%
+#> Grouped by: day_type
 #> Unit: fish/angler-hour
 #> 
-#> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.453 0.104    0.250    0.656    40
+#> # A tibble: 2 × 6
+#>   day_type estimate    se ci_lower ci_upper     n
+#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
+#> 1 weekday     0.413 0.172   0.0755    0.751    20
+#> 2 weekend     0.496 0.101   0.297     0.694    20
+```
+
+The call warns that each day type rests on 20 trips, a small sample for
+a ratio estimator. The example data are small so the page runs quickly;
+the warning is about precision, and the standard errors already reflect
+it.
+
+One rate pooled across day types is a different quantity. It is weighted
+by each day type’s effort, so a day type that was interviewed heavily
+but fished lightly does not pull it toward its own rate, and on a camera
+design that effort does not come from
+[`estimate_effort()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_effort.md).
+The pooled rate is refused rather than weighted by the interviews:
+
+``` r
+
+estimate_catch_rate(design_catch)
+#> ℹ Using complete trips for CPUE estimation
+#>   (n=40, 100% of 40 interviews) [default]
+#> Error in `estimate_cpue_total()`:
+#> ! A rate pooled across strata is weighted by each stratum's effort,
+#>   which could not be estimated.
+#> ℹ Fix the effort error below, or estimate the rate `by = day_type`.
+#> Caused by error in `estimate_effort()`:
+#> ! `estimate_effort()` does not estimate camera designs.
+#> ✖ A camera count is a daily ingress total -- a count of arrivals -- not an
+#>   instantaneous count of anglers present, so summing it over days gives
+#>   arrivals rather than effort.
+#> ℹ Use `est_effort_camera()`, which calibrates the counts against interview
+#>   effort and propagates the calibration's uncertainty.
+#> ℹ To expand the raw counts uncalibrated, pass `calibration = "none"` and
+#>   `h_open` to that function. The reported standard error is `NA`, because the
+#>   assumption of one angler-hour per count per hour open is unmeasured.
 ```
 
 A **total** catch is a different matter, and

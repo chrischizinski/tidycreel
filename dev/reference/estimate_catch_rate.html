@@ -309,6 +309,37 @@ that species' catch against the same angler effort, with zero-catch
 interviews retained by default.</p>
     </div>
     <div class="section level2">
+    <h2 id="rates-across-strata">Rates across strata<a class="anchor" aria-label="anchor" href="#rates-across-strata"></a></h2>
+
+
+<p>A rate estimated across strata – with no <code>by</code>, or with <code>by</code>
+columns that are not all strata – is the population rate: the season's
+total of the fish counted (caught, harvested or released, as the function
+estimates) over its total effort, built stratum by stratum (Pollock et al.
+1994, sec. 15.3.3.6):
+$$\hat{R} = \sum_h \hat{E}_h \hat{R}_h / \sum_h \hat{E}_h,$$
+where \(\hat{E}_h\) is the stratum's effort from
+<code>estimate_effort(design, by = &lt;strata&gt;)</code>. Each interview in stratum
+\(h\) is weighted \(\hat{E}_h / D_h\), with \(D_h\) the stratum's
+interviewed effort (or, for a mean of ratios, its interviewed anglers), so a
+group that is not a stratum is weighted by its own effort in each stratum.
+The standard error adds the effort estimate's variance to the interview
+survey's, by the delta method.</p>
+<p>Pooling the interviews alone would weight each stratum by how heavily it
+was interviewed, not by how much it was fished: sampling weekends more
+often than weekdays, or taking the same number of interviews on quiet and
+busy days, then biases the rate. On a simulated season the
+interview-weighted rate was off by +22 and -11 percent (GH #691).</p>
+<p>A design with more than one stratum therefore needs counts for such a rate
+and is refused without them (class <code>creel_error_rate_needs_effort</code>);
+a rate <code>by</code> the strata needs none. A stratum that was fished but has
+no interviews among the trips used (<code>use_trips</code>) has no rate, so the
+pooled rate is refused, naming it, rather than reported over the other
+strata as though it covered the season. Within one stratum nothing is
+pooled and nothing changes. Species-level, sectioned, regression and
+bus-route or ice rates are not yet effort-weighted across strata.</p>
+    </div>
+    <div class="section level2">
     <h2 id="package-options">Package Options<a class="anchor" aria-label="anchor" href="#package-options"></a></h2>
 
 
@@ -324,6 +355,12 @@ scientifically valid estimation. Lowering the threshold is appropriate only
 for special cases with documented justification. Warnings help ensure data
 quality and guide users toward diagnostic validation when complete trip
 samples are insufficient.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). <em>Angler
+Survey Methods and Their Applications in Fisheries Management</em>. American
+Fisheries Society Special Publication 25.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -353,12 +390,24 @@ samples are insufficient.</p>
 <span class="r-in"><span>  day_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"weekday"</span>, <span class="st">"weekday"</span>, <span class="st">"weekend"</span>, <span class="st">"weekend"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Counts: a rate across day types is weighted by each day type's effort</span></span></span>
+<span class="r-in"><span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">date</span>, day_type <span class="op">=</span> <span class="va">calendar</span><span class="op">$</span><span class="va">day_type</span>,</span></span>
+<span class="r-in"><span>  effort_hours <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">25</span>, <span class="fl">60</span>, <span class="fl">70</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="add_counts.html">add_counts</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">counts</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Every calendar day has a count: all 4 days of the calendar were sampled.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Expanded totals (`target = "period_total"`, the default) are then census</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   totals of these days only.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> If the calendar was built from the sampled dates, rebuild it with every day</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   of the season, e.g. with `creel_calendar()`.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">interviews</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-06-01"</span>, <span class="st">"2024-06-02"</span>, <span class="st">"2024-06-03"</span>, <span class="st">"2024-06-04"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  catch_total <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">40</span>, lambda <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  hours_fished <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">40</span>, min <span class="op">=</span> <span class="fl">1</span>, max <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  trip_status <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"complete"</span>, <span class="st">"incomplete"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">20</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  <span class="co"># Both trip types on every day, so each day type has a rate from either</span></span></span>
+<span class="r-in"><span>  trip_status <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"complete"</span>, <span class="st">"incomplete"</span><span class="op">)</span>, times <span class="op">=</span> <span class="fl">20</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  trip_duration <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">40</span>, min <span class="op">=</span> <span class="fl">1</span>, max <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -383,6 +432,28 @@ samples are insufficient.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sample size is 20. Ratio estimates are more stable with n &gt;= 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Variance estimates may be unstable with n &lt; 30.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Instantaneous counts were expanded without a period length.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> No `period_length_col` was supplied to `add_counts()`, so the estimate is the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   count column summed over days.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> If that column holds an instantaneous angler count, the result is the anglers</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   present at the counted moments, not angler-hours: a count becomes effort only</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   when multiplied by its period length. The package cannot tell which unit the</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   column is in.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Supply the period each count was randomised within: `add_counts(design,</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   counts, period_length_col = &lt;col&gt;)`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 strata have fewer than 3 observations:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekday: 2 observations</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Stratum weekend: 2 observations</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sparse strata produce unstable variance estimates.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Consider combining sparse strata or collecting more data.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>2 groups have fewer than 3 observations:</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Group day_type=weekday: 2 observations</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Group day_type=weekend: 2 observations</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> Sparse groups produce unstable variance estimates.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Consider combining sparse groups or collecting more data.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span>
@@ -394,14 +465,10 @@ samples are insufficient.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate     se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>     1.13 0.017<span style="text-decoration: underline;">7</span>     1.10     1.17    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.826 0.090<span style="text-decoration: underline;">8</span>    0.648     1.00    20</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped by day_type</span></span></span>
 <span class="r-in"><span><span class="va">result_grouped</span> <span class="op">&lt;-</span> <span class="fu">estimate_catch_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span><span style="color: #BBBB00;">!</span> Only 0.0% of interviews are complete trips (threshold: 10%)</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Pollock et al. recommends &gt;=10% complete trips for valid estimation</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Consider use_trips='diagnostic' to validate incomplete trip estimates</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Repeats on this design are recorded, not printed: see `get_warnings()`.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Using complete trips for CPUE estimation</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   (n=20, 50% of 40 interviews) [default]</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result_grouped</span><span class="op">)</span></span></span>
@@ -413,10 +480,11 @@ samples are insufficient.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Grouped by: day_type</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Unit: fish/party-hour</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 6</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate     se ci_lower ci_upper     n</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday      1.13 0.017<span style="text-decoration: underline;">7</span>     1.10     1.17    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se ci_lower ci_upper     n</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     1.18  0.221    0.743    1.61     10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     0.704 0.106    0.498    0.911    10</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom confidence level</span></span></span>
 <span class="r-in"><span><span class="va">result_90</span> <span class="op">&lt;-</span> <span class="fu">estimate_catch_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, conf_level <span class="op">=</span> <span class="fl">0.90</span><span class="op">)</span></span></span>
