@@ -644,6 +644,9 @@ prep_counts_boat_party <- function(
     # This function does its own multiplication, so the basis is the derivative
     # of the column it writes, not of a count handed to it later.
     out[["expansion_of"]] <- "daily_effort"
+    out[[expansion_id_col()]] <- party_size_fingerprint( # nolint: object_usage_linter
+      mean_party_size_vals, mean_party_size_se_vals
+    )
   }
 
   mark_counts_as_effort(out) # nolint: object_usage_linter

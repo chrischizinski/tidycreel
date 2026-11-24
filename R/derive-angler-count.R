@@ -269,7 +269,11 @@ se_of_mean <- function(x) {
 #'   `expansion_group` (which rows share one estimated multiplier, and so carry
 #'   perfectly correlated error), and `expansion_of` (the column the basis is
 #'   the derivative of). [add_counts()] recognises all four and excludes them
-#'   from count-column detection.
+#'   from count-column detection. A fifth, `expansion_id`, fingerprints the
+#'   party-size estimate by its value and standard error, so estimates from
+#'   different designs can tell whether they share one (GH #585). It is
+#'   optional: counts without it still attach, and their estimates record the
+#'   party-size identity as unknown.
 #'
 #'   They must travel together and must reach [add_counts()] alongside the
 #'   column named in `expansion_of`. Transforming that column in between --
@@ -423,7 +427,7 @@ derive_angler_count <- function(
       "i" = "It is the standard error of a multiplier that is not being applied here."
     ))
   }
-  carrier_cols <- expansion_carrier_cols()
+  carrier_cols <- c(expansion_carrier_cols(), expansion_id_col())
   clash <- intersect(carrier_cols, names(counts))
   if (has_boat_count && length(clash) > 0L) {
     creel_abort(c(
@@ -492,6 +496,9 @@ derive_angler_count <- function(
         basis = boats,
         se = se_vals,
         group = attr(party, "group") %||% rep("1", nrow(counts)),
+        # Which estimate each row's multiplier is, comparable across designs
+        # (GH #585). The group label above is only unique within one table.
+        id = party_size_fingerprint(as.numeric(party), se_vals),
         # The column the basis is the derivative of. Recorded so add_counts()
         # can tell whether the count it is handed is still the one the basis
         # belongs to; a transformation applied in between scales the count and
@@ -514,6 +521,7 @@ derive_angler_count <- function(
     counts[["expansion_se"]] <- expansion$se
     counts[["expansion_group"]] <- expansion$group
     counts[["expansion_of"]] <- expansion$of
+    counts[[expansion_id_col()]] <- expansion$id
   }
   if (length(drop_cols) > 0L) {
     counts[drop_cols] <- NULL
@@ -570,6 +578,7 @@ derive_angler_count_long <- function(counts, components, expansion, drop_cols, t
     out[["expansion_se"]] <- rep(expansion$se, each = k)
     out[["expansion_group"]] <- rep(expansion$group, each = k)
     out[["expansion_of"]] <- to
+    out[[expansion_id_col()]] <- rep(expansion$id, each = k)
   }
   out
 }
@@ -961,6 +970,53 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
 #' @noRd
 expansion_carrier_cols <- function() {
   c("expansion_basis", "expansion_se", "expansion_group", "expansion_of")
+}
+
+
+#' Name of the party-size provenance column
+#'
+#' Internal helper. `expansion_id` identifies WHICH party-size estimate a count
+#' row was expanded by, so estimates from different designs can be checked for
+#' sharing one (GH #585). It is deliberately not one of
+#' [expansion_carrier_cols()]: a counts table derived before it existed must
+#' still attach, and its estimates then record the party-size provenance as
+#' unknown (`NA`) rather than being refused.
+#'
+#' @return `"expansion_id"`
+#'
+#' @keywords internal
+#' @noRd
+expansion_id_col <- function() {
+  "expansion_id"
+}
+
+
+#' Fingerprint a party-size estimate by its value and standard error
+#'
+#' Internal helper (GH #585). Two estimates built from one `mean_party_size()`
+#' result share a value and a standard error, so they get one fingerprint
+#' wherever they are used; that is what lets a later sum of estimates detect a
+#' shared multiplier. The fingerprint is of the numbers, not of the call
+#' (maintainer decision 2026-11-24): a value retyped by hand still matches, and
+#' two independent estimates that happen to agree in both value and SE are
+#' treated as shared, which refuses rather than understates.
+#'
+#' @param value Numeric multipliers, one per row
+#' @param se Their standard errors, one per row (`NA` allowed)
+#'
+#' @return Character vector of fingerprints, one per row
+#'
+#' @keywords internal
+#' @noRd
+party_size_fingerprint <- function(value, se) {
+  value <- as.numeric(value)
+  se <- rep_len(as.numeric(se), length(value))
+  # sprintf, not format(): format() pads a vector to a common width, so one
+  # value would print, and hash, differently depending on its neighbours.
+  pair <- paste(sprintf("%.17g", value), sprintf("%.17g", se), sep = "\r")
+  uniq <- unique(pair)
+  ids <- vapply(uniq, function(u) rlang::hash(list("party_size", u)), character(1L))
+  unname(ids[match(pair, uniq)])
 }
 
 

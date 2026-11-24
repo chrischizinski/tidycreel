@@ -301,6 +301,9 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   constructor sets itself. Required,
 #'   with no default, so an estimator cannot leave it unrecorded; a later sum or
 #'   difference of estimates needs it for its Satterthwaite df (GH #585).
+#' @param aerial_calibration_rel_var NULL, or the aerial calibration's relative
+#'   variance for a total to add once after summing (GH #150, #470). Passed
+#'   here rather than assigned afterwards, so it is validated.
 #'
 #' @return List of class "creel_estimates" with components:
 #'   - estimates: data frame of estimates
@@ -313,6 +316,11 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   - se_expansion: party-size expansion SE component, or NULL
 #'   - se_components: named list of SE contributions, or NULL
 #'   - ci_df: numeric, one entry per row of `estimates`
+#'   - aerial_calibration_rel_var: numeric or NULL
+#'   - provenance: list of `party_size` and `aerial_calibration`, each NULL
+#'     (no such estimated component entered), a character vector of
+#'     fingerprints, or `NA_character_` (one entered; identity unknown). Derived
+#'     here, never passed in (GH #585).
 #'
 #' @keywords internal
 #' @noRd
@@ -329,42 +337,16 @@ new_creel_estimates <- function(
   se_expansion = NULL,
   expansion_decomposition = NULL,
   se_components = NULL,
-  ci_df
+  ci_df,
+  aerial_calibration_rel_var = NULL
 ) {
-  # Every entry must be named, because an unnamed component cannot be reported
-  # and would reach print() only to fail there.
-  component_names <- names(se_components) %||% character(0)
-  components_named <- if (is.null(se_components)) {
-    TRUE
-  } else {
-    is.list(se_components) &&
-      length(component_names) == length(se_components) &&
-      all(nzchar(component_names))
-  }
-
-  # Input validation
+  # Only what the preprocessing below needs; every rule on the finished object
+  # lives in validate_creel_estimates(), which set_estimate_slots() runs again
+  # after any later change, so the two cannot drift apart.
   stopifnot(
     "estimates must be a data.frame" = is.data.frame(estimates),
-    "se_expansion must be NULL or numeric" = is.null(se_expansion) ||
-      is.numeric(se_expansion),
-    "se_components must be NULL or a fully named list" = components_named,
-    "se_components entries must be numeric" = is.null(se_components) ||
-      all(vapply(se_components, is.numeric, logical(1))),
-    "method must be character" = is.character(method) && length(method) == 1,
-    "variance_method must be character" = is.character(variance_method) &&
-      length(variance_method) == 1,
-    "conf_level must be numeric" = is.numeric(conf_level) && length(conf_level) == 1,
-    "by_vars must be NULL or character" = is.null(by_vars) || is.character(by_vars),
-    "effort_target must be NULL or character" = is.null(effort_target) ||
-      is.character(effort_target),
-    "unit must be NULL or character" = is.null(unit) || is.character(unit),
-    "estimator must be NULL or a single string" = is.null(estimator) ||
-      (is.character(estimator) && length(estimator) == 1),
     "ci_df must be numeric, one value or one per row" = is.numeric(ci_df) &&
-      length(ci_df) %in% c(1L, nrow(estimates)),
-    # Zero is allowed: a design with no residual df gives qt() NaN bounds today,
-    # and recording that faithfully is this slot's job, not refusing it.
-    "ci_df must be non-negative, Inf or NA" = all(is.na(ci_df) | ci_df >= 0)
+      length(ci_df) %in% c(1L, nrow(estimates))
   )
   # One value per row, so a grouped table can carry a df per group and a
   # combination of estimates can match rows to their df without re-deriving it.
@@ -390,10 +372,13 @@ new_creel_estimates <- function(
     )
   }
   if (!is.null(se_expansion)) {
+    if (!is.null(se_components) && !is.list(se_components)) {
+      stopifnot("se_components must be NULL or a fully named list" = FALSE)
+    }
     se_components <- c(se_components %||% list(), list(party_size = se_expansion))
   }
 
-  structure(
+  x <- structure(
     list(
       estimates = estimates,
       method = method,
@@ -432,10 +417,202 @@ new_creel_estimates <- function(
       ci_df = ci_df,
       # The warnings raised so far in this call, read by get_warnings() (GH
       # #496). Built last in the call, the returned estimate has them all.
-      warnings = claim_creel_warnings() # nolint: object_usage_linter
+      warnings = claim_creel_warnings(), # nolint: object_usage_linter
+      # The aerial calibration's relative variance, left for a total to add
+      # once after summing; NULL when it is already inside `se` or does not
+      # apply (GH #150, #470).
+      aerial_calibration_rel_var = aerial_calibration_rel_var,
+      # Which shared estimated components entered this estimate, so a later sum
+      # or difference of estimates can refuse parts that share one (GH #585).
+      # Derived here, at the one write point, rather than passed by each of the
+      # ~60 call sites: an estimator that forgot to pass it would record "none"
+      # -- the silent-absence failure this slot exists to prevent.
+      provenance = list(
+        party_size = party_size_provenance(design, se_expansion),
+        aerial_calibration = if (is.null(effort_target)) NULL else aerial_calibration_fingerprint(design)
+      )
     ),
     class = "creel_estimates"
   )
+  validate_creel_estimates(x)
+}
+
+
+#' Check every invariant of a creel_estimates object
+#'
+#' Internal (GH #585). Run by the constructor and again by
+#' [set_estimate_slots()] after any later change, so a slot written after
+#' construction meets the same rules as one written at it. Before this, the
+#' constructor's checks covered construction only, and slots such as
+#' `aerial_calibration_rel_var` were assigned afterwards unchecked.
+#'
+#' @param x A `creel_estimates` object
+#'
+#' @return `x`, invisibly, or an error
+#'
+#' @keywords internal
+#' @noRd
+validate_creel_estimates <- function(x) {
+  se_components <- x$se_components
+  se_expansion <- x$se_expansion
+  # Every entry must be named, because an unnamed component cannot be reported
+  # and would reach print() only to fail there.
+  component_names <- names(se_components) %||% character(0)
+  components_named <- if (is.null(se_components)) {
+    TRUE
+  } else {
+    is.list(se_components) &&
+      length(component_names) == length(se_components) &&
+      all(nzchar(component_names))
+  }
+  ci_df <- x$ci_df
+  prov <- x$provenance
+  prov_entry_ok <- function(v) is.null(v) || (is.character(v) && length(v) >= 1L)
+  rel_var <- x$aerial_calibration_rel_var
+  # NA is a real value here (the declared-unknown calibration); only a
+  # negative variance is impossible.
+  rel_var_ok <- is.null(rel_var) || (is.numeric(rel_var) && all(is.na(rel_var) | rel_var >= 0))
+  prov_shape_ok <- is.list(prov) && setequal(names(prov), c("party_size", "aerial_calibration"))
+  prov_entries_ok <- prov_shape_ok && prov_entry_ok(prov$party_size) &&
+    prov_entry_ok(prov$aerial_calibration)
+
+  stopifnot(
+    "estimates must be a data.frame" = is.data.frame(x$estimates),
+    "se_expansion must be NULL or numeric" = is.null(se_expansion) ||
+      is.numeric(se_expansion),
+    "se_components must be NULL or a fully named list" = components_named,
+    "se_components entries must be numeric" = is.null(se_components) ||
+      all(vapply(se_components, is.numeric, logical(1))),
+    # One representation of the party-size component, not two that can
+    # disagree (GH #134): present in se_components exactly when se_expansion is.
+    "se_components party_size must mirror se_expansion" = if (is.null(se_expansion)) {
+      !"party_size" %in% component_names
+    } else {
+      identical(se_components[["party_size"]], se_expansion)
+    },
+    "method must be character" = is.character(x$method) && length(x$method) == 1,
+    "variance_method must be character" = is.character(x$variance_method) &&
+      length(x$variance_method) == 1,
+    "conf_level must be numeric" = is.numeric(x$conf_level) && length(x$conf_level) == 1,
+    "by_vars must be NULL or character" = is.null(x$by_vars) || is.character(x$by_vars),
+    "effort_target must be NULL or character" = is.null(x$effort_target) ||
+      is.character(x$effort_target),
+    "unit must be NULL or character" = is.null(x$unit) || is.character(x$unit),
+    "estimator must be NULL or a single string" = is.null(x$estimator) ||
+      (is.character(x$estimator) && length(x$estimator) == 1),
+    "ci_df must have one value per row of estimates" = is.numeric(ci_df) &&
+      length(ci_df) == nrow(x$estimates),
+    # Zero is allowed: a design with no residual df gives qt() NaN bounds today,
+    # and recording that faithfully is this slot's job, not refusing it.
+    "ci_df must be non-negative, Inf or NA" = all(is.na(ci_df) | ci_df >= 0),
+    "aerial_calibration_rel_var must be NULL or a non-negative number" = rel_var_ok,
+    "provenance must be a list of party_size and aerial_calibration" = prov_shape_ok,
+    "provenance entries must be NULL or character" = prov_entries_ok,
+    # A party-size component with no identity, or an identity with no
+    # component, would let a later combination pass or refuse on the wrong
+    # grounds.
+    "provenance party_size must be present exactly when se_expansion is" =
+      is.null(prov$party_size) == is.null(se_expansion)
+  )
+  invisible(x)
+}
+
+
+#' Change slots of a creel_estimates object after construction
+#'
+#' Internal (GH #585). The only sanctioned way to change a governed slot once
+#' an estimate exists. It re-runs [validate_creel_estimates()], so a later
+#' write meets the constructor's rules. Slots that the constructor derives from
+#' one another (`se_expansion`, its `party_size` mirror, `provenance`) are not
+#' settable here at all; they change only by constructing anew.
+#'
+#' @param x A `creel_estimates` object
+#' @param ... Named new values. A `NULL` value sets the slot to `NULL`.
+#'
+#' @return The modified, validated object
+#'
+#' @keywords internal
+#' @noRd
+set_estimate_slots <- function(x, ...) {
+  values <- list(...)
+  settable <- c("estimates", "ci_df", "method", "se_components", "aerial_calibration_rel_var")
+  bad <- setdiff(names(values), settable)
+  if (is.null(names(values)) || !all(nzchar(names(values))) || length(bad) > 0L) {
+    stop("set_estimate_slots(): only ", paste(settable, collapse = ", "), " can be set.", call. = FALSE)
+  }
+  for (nm in names(values)) {
+    # `x[nm] <- list(NULL)` keeps the name; `x[[nm]] <- NULL` would delete it.
+    x[nm] <- list(values[[nm]])
+  }
+  validate_creel_estimates(x)
+  x
+}
+
+
+#' Party-size provenance of an estimate
+#'
+#' Internal (GH #585). `NULL` when no party-size standard error entered the
+#' estimate. Otherwise the sorted fingerprints of every party-size estimate in
+#' the design's counts, or `NA` when they cannot be read -- counts derived
+#' before `expansion_id` existed, the column dropped, or no design. `NA` means
+#' "an estimated multiplier entered and its identity is unknown", never "none".
+#'
+#' Reads all of the design's count rows, not only those a grouped or sectioned
+#' estimate used. A superset can only make a later combination refuse more
+#' often, never less.
+#'
+#' @param design The creel_design behind the estimate, or NULL
+#' @param se_expansion The estimate's party-size SE component, or NULL
+#'
+#' @return NULL, or a character vector
+#'
+#' @keywords internal
+#' @noRd
+party_size_provenance <- function(design, se_expansion) {
+  if (is.null(se_expansion)) {
+    return(NULL)
+  }
+  id_col <- design$expansion$id_col
+  ids <- if (is.null(id_col)) NULL else design$counts[[id_col]]
+  if (is.null(ids) || length(ids) == 0L || anyNA(ids)) {
+    return(NA_character_)
+  }
+  sort(unique(as.character(ids)))
+}
+
+
+#' Fingerprint the aerial calibration behind an estimate
+#'
+#' Internal (GH #585). The visibility correction and angler ratio divide every
+#' count of an aerial design, so two estimates built on one calibration share
+#' its error. `NULL` when the design is not aerial or neither quantity carries
+#' an uncertain standard error: a calibration with no SE, or SEs of exactly 0
+#' (declared known), has no uncertainty to share. An `NA` SE is uncertainty of
+#' unknown size and is stamped. The fingerprint is of the values, as for party
+#' size.
+#'
+#' @param design A creel_design, or NULL
+#'
+#' @return NULL, or a single string
+#'
+#' @keywords internal
+#' @noRd
+aerial_calibration_fingerprint <- function(design) {
+  if (!identical(design$design_type, "aerial")) {
+    return(NULL)
+  }
+  ae <- design$aerial
+  ses <- c(ae$visibility_se, ae$angler_ratio_se)
+  if (length(ses) == 0L || all(!is.na(ses) & ses == 0)) {
+    return(NULL)
+  }
+  rlang::hash(list(
+    "aerial_calibration",
+    visibility_correction = ae$visibility_correction,
+    visibility_se = ae$visibility_se,
+    angler_ratio = ae$angler_ratio,
+    angler_ratio_se = ae$angler_ratio_se
+  ))
 }
 
 #' Display labels for named standard-error components
@@ -3368,14 +3545,13 @@ estimate_release_rate <- function(
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design_rel, NULL, type = "cpue") # nolint: object_usage_linter
     result <- estimate_cpue_total(design_rel, variance, conf_level, dispatch_estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
-    result$method <- if (mortr_active) {
+    set_estimate_slots(result, method = if (mortr_active) { # nolint: return_linter
       "mean-of-ratios-truncated-rpue"
     } else if (identical(estimator, "mor")) {
       "mean-of-ratios-rpue"
     } else {
       "ratio-of-means-rpue"
-    }
-    result # nolint: return_linter
+    })
   } else {
     by_cols <- tidyselect::eval_select(
       by_quo,
@@ -3390,14 +3566,13 @@ estimate_release_rate <- function(
     )
     validate_ratio_sample_size(design_rel, by_vars, type = "cpue") # nolint: object_usage_linter
     result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level, dispatch_estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
-    result$method <- if (mortr_active) {
+    set_estimate_slots(result, method = if (mortr_active) { # nolint: return_linter
       "mean-of-ratios-truncated-rpue"
     } else if (identical(estimator, "mor")) {
       "mean-of-ratios-rpue"
     } else {
       "ratio-of-means-rpue"
-    }
-    result # nolint: return_linter
+    })
   }
 }
 
@@ -6822,14 +6997,12 @@ mask_unidentified_se_split <- function(result) {
     return(result)
   }
   est$se_within[unidentified] <- NA_real_
-  result$estimates <- est
   comps <- result$se_components
   if (all(c("count_sampling", "within_day") %in% names(comps))) {
     comps$count_sampling <- sqrt(comps$count_sampling^2 + comps$within_day^2)
     comps$within_day <- NULL
-    result$se_components <- comps
   }
-  result
+  set_estimate_slots(result, estimates = est, se_components = comps)
 }
 
 effort_se_basis <- function(design, target = "sampled_days", by_vars = NULL, keys = NULL) {
@@ -7604,9 +7777,9 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
     # well so a design attached before then still reports it.
     unit = if (is.null(aerial)) design$effort_unit else "angler-hours",
     se_expansion = se_expansion,
-    expansion_decomposition = expansion_decomposition
+    expansion_decomposition = expansion_decomposition,
+    aerial_calibration_rel_var = aerial$rel_var
   )
-  result$aerial_calibration_rel_var <- aerial$rel_var
   result
 }
 
@@ -7878,10 +8051,10 @@ estimate_effort_grouped <- function(
     unit = if (is.null(aerial)) design$effort_unit else "angler-hours",
     se_expansion = se_expansion,
     expansion_decomposition = expansion_decomposition,
-    se_components = se_components_grouped
+    se_components = se_components_grouped,
+    # Left for a total to add once after summing; NULL once it is already in `se`.
+    aerial_calibration_rel_var = if (include_calibration) NULL else aerial$rel_var
   )
-  # Left for a total to add once after summing; NULL once it is already in `se`.
-  result$aerial_calibration_rel_var <- if (include_calibration) NULL else aerial$rel_var
   result
 }
 

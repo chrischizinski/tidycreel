@@ -59,7 +59,11 @@ which is what the multiplier acts on), \code{expansion_se},
 \code{expansion_group} (which rows share one estimated multiplier, and so carry
 perfectly correlated error), and \code{expansion_of} (the column the basis is
 the derivative of). \code{\link[=add_counts]{add_counts()}} recognises all four and excludes them
-from count-column detection.
+from count-column detection. A fifth, \code{expansion_id}, fingerprints the
+party-size estimate by its value and standard error, so estimates from
+different designs can tell whether they share one (GH #585). It is
+optional: counts without it still attach, and their estimates record the
+party-size identity as unknown.
 
 They must travel together and must reach \code{\link[=add_counts]{add_counts()}} alongside the
 column named in \code{expansion_of}. Transforming that column in between --
