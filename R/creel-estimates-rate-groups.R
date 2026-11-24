@@ -239,6 +239,13 @@ rate_group_key_frame <- function(df, spec, design) {
 #' @keywords internal
 #' @noRd
 rate_group_rates <- function(design, metric, variance_method, conf_level, species_col = NULL) {
+  # A group's rate still pools its strata's interviews unweighted; weighting
+  # them by effort, which the total also multiplies by, is GH #697. Until then
+  # the species path, which weights pooled rates by effort since #691, is
+  # kept to the same rule as the all-species path here.
+  old_pooling <- rate_pooling_state$off # nolint: object_usage_linter
+  rate_pooling_state$off <- TRUE # nolint: object_usage_linter
+  on.exit(rate_pooling_state$off <- old_pooling, add = TRUE) # nolint: object_usage_linter
   by <- ".rate_group"
   estimator <- design$total_estimator %||% "ratio-of-means"
   out <- if (is.null(species_col)) {

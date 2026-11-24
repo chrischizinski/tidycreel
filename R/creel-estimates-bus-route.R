@@ -575,11 +575,18 @@ br_harvest_rate_estimates <- function(
     ),
     by_vars, call
   )
-  svy_br <- build_interview_survey( # nolint: object_usage_linter
-    interviews,
-    strata = strata_formula,
-    ids = ~.psu
-  )
+  # Pooled across strata, each stratum's days are weighted N_h / n_h (GH #691).
+  pooled <- br_pooled_rate_survey(interviews, design, by_vars, c(".contribution", denom_col), call) # nolint: object_usage_linter
+  if (is.null(pooled)) {
+    svy_br <- build_interview_survey( # nolint: object_usage_linter
+      interviews,
+      strata = strata_formula,
+      ids = ~.psu
+    )
+  } else {
+    interviews <- pooled$interviews
+    svy_br <- pooled$survey
+  }
   svy_br <- get_variance_design(svy_br, variance_method) # nolint: object_usage_linter
   # The rows the ratio is taken over, for validate_incomplete_trips() to fit
   # the complete and incomplete rates jointly on one survey (GH #671). The

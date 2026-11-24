@@ -3362,15 +3362,6 @@ make_ice_catch_rate_design <- function() {
     ),
     stringsAsFactors = FALSE
   )
-  design <- creel_design(
-    # nolint: object_usage_linter
-    cal,
-    date = date,
-    strata = day_type, # nolint: object_usage_linter
-    survey_type = "ice",
-    effort_type = "time_on_ice",
-    p_period = 0.5
-  )
   interviews_df <- data.frame(
     date = as.Date(c(
       "2024-01-10",
@@ -3390,6 +3381,19 @@ make_ice_catch_rate_design <- function() {
     walleye_catch = c(1L, 0L, 2L, 1L, 0L, 1L, 0L, 3L, 1L, 2L),
     trip_status = rep("complete", 10L),
     stringsAsFactors = FALSE
+  )
+  # The register of sampled days: the days the interviews fall on, so a rate
+  # pooled across strata has its N_h / n_h day weights (GH #691).
+  cal$.sampled <- cal$date %in% interviews_df$date
+  design <- creel_design(
+    # nolint: object_usage_linter
+    cal,
+    date = date,
+    strata = day_type, # nolint: object_usage_linter
+    survey_type = "ice",
+    effort_type = "time_on_ice",
+    p_period = 0.5,
+    sampled = .sampled
   )
   suppressWarnings(add_interviews(
     # nolint: object_usage_linter

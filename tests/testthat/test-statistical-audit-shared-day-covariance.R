@@ -676,13 +676,14 @@ test_that("SDC-21 (#681): a species TOST fits each species on its own counts", {
   v <- sdc_q(validate_incomplete_trips(d, catch_total, hours_fished, by = species)) # nolint: object_usage_linter
   expect_setequal(v$group_tests$species, c("perch", "walleye"))
   expect_true(all(is.finite(v$group_tests$p_lower)))
-  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+  # The TOST's rates are not effort-weighted (GH #691), so neither are these.
+  joint <- sdc_q(without_rate_pooling(tost_joint_se_diff( # nolint: object_usage_linter
     d,
     estimate_catch_rate(d, by = species, use_trips = "complete"), # nolint: object_usage_linter
     estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
     "taylor",
     by_vars = "species"
-  ))
+  )))
   ds <- sdc_day_stratum(iv)
   day <- as.character(iv$date)
   se_of <- function(y) {
@@ -743,13 +744,14 @@ test_that("SDC-23 (#681): a stratum named like the catch species keeps its strat
     catch_type = catch_type # nolint: object_usage_linter
   ))
   overall <- sdc_q(validate_incomplete_trips(d, catch_total, hours_fished))$overall_test # nolint: object_usage_linter
-  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+  # The TOST's rates are not effort-weighted (GH #691), so neither are these.
+  joint <- sdc_q(without_rate_pooling(tost_joint_se_diff( # nolint: object_usage_linter
     d,
     estimate_catch_rate(d, by = species, use_trips = "complete"), # nolint: object_usage_linter
     estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
     "taylor",
     by_vars = "species"
-  ))
+  )))
   expect_equal(joint[["walleye"]], overall$se_diff, tolerance = 1e-10)
   expect_equal(tost_design_df(d, "walleye", "species"), c(walleye = overall$df)) # nolint: object_usage_linter
 })
@@ -785,13 +787,14 @@ test_that("SDC-24 (#686): a bus-route stratum named like the catch species keeps
     catch_type = catch_type # nolint: object_usage_linter
   ))
   overall <- sdc_q(validate_incomplete_trips(d, catch_total, hrs))$overall_test # nolint: object_usage_linter
-  joint <- sdc_q(tost_joint_se_diff( # nolint: object_usage_linter
+  # The TOST's rates are not effort-weighted (GH #691), so neither are these.
+  joint <- sdc_q(without_rate_pooling(tost_joint_se_diff( # nolint: object_usage_linter
     d,
     estimate_catch_rate(d, by = species), # nolint: object_usage_linter
     estimate_catch_rate(d, by = species, estimator = "mor", use_trips = "incomplete"), # nolint: object_usage_linter
     "taylor",
     by_vars = "species"
-  ))
+  )))
   expect_equal(joint[["walleye"]], overall$se_diff, tolerance = 1e-10)
   # The overall test is the two-stratum weighted reference.
   expect_equal(overall$se_diff, sdc_br_reference(transform(iv, day_type = species)), tolerance = 1e-10)

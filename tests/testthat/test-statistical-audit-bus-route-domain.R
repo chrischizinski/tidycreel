@@ -112,7 +112,9 @@ test_that("BRD-03 (#680): a stratum with complete trips on one day is estimated,
   # were interviewed and held incomplete trips. The subset survey had one PSU
   # in that stratum and stopped.
   iv <- brd_interviews(drop_complete = 5:6, strata = TRUE)
-  r <- brd_q(estimate_catch_rate(brd_design(iv, strata = TRUE))) # nolint: object_usage_linter
+  # The register: a bus-route rate pooled across day types weights each by
+  # N_h / n_h (GH #691).
+  r <- brd_q(estimate_catch_rate(brd_design(iv, strata = TRUE, sampled = TRUE))) # nolint: object_usage_linter
   expect_equal(r$estimates$se, brd_rate_se(iv, strata = TRUE), tolerance = 1e-10)
 })
 

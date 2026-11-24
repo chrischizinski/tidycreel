@@ -195,6 +195,18 @@ build_br_design_for_tests <- function(n_sites, n_days, n_interviews, seed = NULL
     stringsAsFactors = FALSE
   )
 
+  interviews <- build_trip_interviews_for_tests(
+    calendar = calendar,
+    n_interviews = n_interviews,
+    site_ids = site_ids,
+    circuit_id = "C1"
+  )
+
+  # The register of sampled days: the days the interviews fall on. A rate
+  # pooled across strata weights each stratum's days by N_h / n_h, which needs
+  # it (GH #691); no empty worked day is invented.
+  calendar$.sampled <- calendar$date %in% interviews$date
+
   design <- creel_design(
     calendar,
     date = date,
@@ -204,14 +216,8 @@ build_br_design_for_tests <- function(n_sites, n_days, n_interviews, seed = NULL
     site = site,
     circuit = circuit,
     p_site = p_site,
-    p_period = p_period
-  )
-
-  interviews <- build_trip_interviews_for_tests(
-    calendar = calendar,
-    n_interviews = n_interviews,
-    site_ids = site_ids,
-    circuit_id = "C1"
+    p_period = p_period,
+    sampled = .sampled
   )
 
   suppressMessages(
@@ -515,19 +521,23 @@ build_ht_multispecies_design <- function(
 
   if (identical(design_type, "ice")) {
     calendar <- build_property_calendar(n_days, start_date = as.Date("2024-01-10"))
+    interviews <- build_trip_interviews_for_tests(
+      calendar = calendar,
+      n_interviews = n_interviews,
+      catch_total = catch_data$interview_catch_total,
+      catch_kept = catch_data$interview_catch_kept
+    )
+    # The register of sampled days: the days the interviews fall on, so a rate
+    # pooled across strata has its N_h / n_h day weights (GH #691).
+    calendar$.sampled <- calendar$date %in% interviews$date
     design <- creel_design(
       calendar,
       date = date,
       strata = day_type,
       survey_type = "ice",
       effort_type = "time_on_ice",
-      p_period = 0.5
-    )
-    interviews <- build_trip_interviews_for_tests(
-      calendar = calendar,
-      n_interviews = n_interviews,
-      catch_total = catch_data$interview_catch_total,
-      catch_kept = catch_data$interview_catch_kept
+      p_period = 0.5,
+      sampled = .sampled
     )
     design <- suppressMessages(suppressWarnings(add_interviews(
       design,
@@ -551,6 +561,17 @@ build_ht_multispecies_design <- function(
       p_period = 0.8,
       stringsAsFactors = FALSE
     )
+    interviews <- build_trip_interviews_for_tests(
+      calendar = calendar,
+      n_interviews = n_interviews,
+      site_ids = site_ids,
+      circuit_id = "C1",
+      catch_total = catch_data$interview_catch_total,
+      catch_kept = catch_data$interview_catch_kept
+    )
+    # The register of sampled days: the days the interviews fall on, so a rate
+    # pooled across strata has its N_h / n_h day weights (GH #691).
+    calendar$.sampled <- calendar$date %in% interviews$date
     design <- creel_design(
       calendar,
       date = date,
@@ -560,15 +581,8 @@ build_ht_multispecies_design <- function(
       site = site,
       circuit = circuit,
       p_site = p_site,
-      p_period = p_period
-    )
-    interviews <- build_trip_interviews_for_tests(
-      calendar = calendar,
-      n_interviews = n_interviews,
-      site_ids = site_ids,
-      circuit_id = "C1",
-      catch_total = catch_data$interview_catch_total,
-      catch_kept = catch_data$interview_catch_kept
+      p_period = p_period,
+      sampled = .sampled
     )
     design <- suppressMessages(suppressWarnings(add_interviews(
       design,
@@ -635,18 +649,24 @@ build_ice_design <- function(n_days, n_interviews, seed = NULL) {
   n_interviews <- as.integer(n_interviews)
 
   calendar <- build_property_calendar(n_days, start_date = as.Date("2024-01-10"))
+  interviews <- build_trip_interviews_for_tests(
+    calendar = calendar,
+    n_interviews = n_interviews
+  )
+
+  # The register of sampled days: the days the interviews fall on. A rate
+  # pooled across strata weights each stratum's days by N_h / n_h, which needs
+  # it (GH #691); no empty worked day is invented.
+  calendar$.sampled <- calendar$date %in% interviews$date
+
   design <- creel_design(
     calendar,
     date = date,
     strata = day_type,
     survey_type = "ice",
     effort_type = "time_on_ice",
-    p_period = 0.5
-  )
-
-  interviews <- build_trip_interviews_for_tests(
-    calendar = calendar,
-    n_interviews = n_interviews
+    p_period = 0.5,
+    sampled = .sampled
   )
 
   suppressMessages(

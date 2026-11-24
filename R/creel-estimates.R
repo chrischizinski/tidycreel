@@ -8979,7 +8979,7 @@ estimate_cpue_species <- function(
         )
       }
     } else if (is.null(interview_by_vars)) {
-      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
+      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     } else {
       result <- estimate_cpue_grouped(
         design_sp,
@@ -8987,7 +8987,8 @@ estimate_cpue_species <- function(
         variance_method,
         conf_level,
         estimator,
-        covmat = covmat
+        covmat = covmat,
+        pool_by_effort = rate_pooling_on()
       ) # nolint: object_usage_linter
     }
 
@@ -9070,7 +9071,7 @@ estimate_release_rate_species <- function(
     }
 
     if (is.null(interview_by_vars)) {
-      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
+      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     } else {
       result <- estimate_cpue_grouped( # nolint: object_usage_linter
         design_sp,
@@ -9078,7 +9079,8 @@ estimate_release_rate_species <- function(
         variance_method,
         conf_level,
         estimator,
-        covmat = covmat
+        covmat = covmat,
+        pool_by_effort = rate_pooling_on()
       )
     }
 
@@ -9158,7 +9160,7 @@ estimate_hpue_species <- function(
     }
 
     if (is.null(interview_by_vars)) {
-      result <- estimate_harvest_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
+      result <- estimate_harvest_total(design_sp, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     } else {
       result <- estimate_harvest_grouped( # nolint: object_usage_linter
         design_sp,
@@ -9166,7 +9168,8 @@ estimate_hpue_species <- function(
         variance_method,
         conf_level,
         estimator,
-        covmat = covmat
+        covmat = covmat,
+        pool_by_effort = rate_pooling_on()
       )
     }
 
@@ -9740,7 +9743,8 @@ estimate_catch_rate_sections <- function(
             by_vars = by_info$interview_vars,
             variance_method = variance_method,
             conf_level = conf_level,
-            estimator = estimator
+            estimator = estimator,
+            pool_by_effort = rate_pooling_on()
           )
         }
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
@@ -9756,7 +9760,8 @@ estimate_catch_rate_sections <- function(
             sec_design,
             variance_method,
             conf_level,
-            estimator
+            estimator,
+            pool_by_effort = rate_pooling_on()
           )
         }
         row <- result$estimates
@@ -9915,7 +9920,8 @@ estimate_harvest_rate_sections <- function(
           by_info$interview_vars,
           variance_method,
           conf_level,
-          estimator
+          estimator,
+          pool_by_effort = rate_pooling_on()
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
@@ -9926,7 +9932,8 @@ estimate_harvest_rate_sections <- function(
           sec_design,
           variance_method,
           conf_level,
-          estimator
+          estimator,
+          pool_by_effort = rate_pooling_on()
         )
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
@@ -10105,13 +10112,14 @@ estimate_release_rate_sections <- function(
           by_info$interview_vars,
           variance_method,
           conf_level,
-          estimator
+          estimator,
+          pool_by_effort = rate_pooling_on()
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
-        result <- estimate_cpue_total(design_rel, variance_method, conf_level, estimator) # nolint: object_usage_linter
+        result <- estimate_cpue_total(design_rel, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
