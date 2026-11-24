@@ -33,7 +33,7 @@ estimate_effort_br <- function(
 
   # Defensive check: .expansion column must exist
   if (!".expansion" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route effort estimation requires .expansion column.",
         "x" = ".expansion not found in interview data.",
@@ -47,7 +47,7 @@ estimate_effort_br <- function(
 
   # Defensive check: .pi_i column must exist
   if (!".pi_i" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route effort estimation requires .pi_i column.",
         "x" = ".pi_i not found in interview data.",
@@ -68,7 +68,7 @@ estimate_effort_br <- function(
       paste0(site_col, "=", r[[site_col]], ", ", circuit_col, "=", r[[circuit_col]])
     })
     msg_parts <- stats::setNames(combo_strs, rep("*", length(combo_strs)))
-    cli::cli_abort(
+    creel_abort(
       c(
         "Missing inclusion probability (.pi_i) for {n_combos} site+circuit combination{?s}:",
         msg_parts,
@@ -317,7 +317,7 @@ estimate_harvest_br <- function(
     msg <- paste0(
       "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
     )
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route harvest estimation requires .expansion column.",
         "x" = ".expansion not found in interview data.",
@@ -329,7 +329,7 @@ estimate_harvest_br <- function(
 
   # Defensive check: .pi_i column must exist
   if (!".pi_i" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route harvest estimation requires .pi_i column.",
         "x" = ".pi_i not found in interview data.",
@@ -350,7 +350,7 @@ estimate_harvest_br <- function(
       paste0(site_col, "=", r[[site_col]], ", ", circuit_col, "=", r[[circuit_col]])
     })
     msg_parts <- stats::setNames(combo_strs, rep("*", length(combo_strs)))
-    cli::cli_abort(
+    creel_abort(
       c(
         "Missing .pi_i for {n_combos} site+circuit combination{?s}:",
         msg_parts,
@@ -607,7 +607,7 @@ br_harvest_rate_estimates <- function(
   # or NaN dressed up as a harvest rate.
   denom_formula <- stats::reformulate(denom_col)
   if (isTRUE(all.equal(sum(interviews[[denom_col]], na.rm = TRUE), 0))) {
-    cli::cli_abort(zero_denom_msg)
+    creel_abort(zero_denom_msg)
   }
 
   if (is.null(by_vars)) {
@@ -713,7 +713,7 @@ br_harvest_rate_estimates <- function(
 br_require_trip_status <- function(design, interviews, call = rlang::caller_env()) {
   trip_status_col <- design$trip_status_col
   if (is.null(trip_status_col) || !trip_status_col %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code use_trips = \"diagnostic\"} requires a trip status column.",
         "x" = "The design has no trip status column, so the two slots cannot be separated.",
@@ -726,7 +726,7 @@ br_require_trip_status <- function(design, interviews, call = rlang::caller_env(
   n_complete <- sum(status == "complete", na.rm = TRUE) # nolint: object_usage_linter
   n_incomplete <- sum(status == "incomplete", na.rm = TRUE) # nolint: object_usage_linter
   if (n_complete == 0 || n_incomplete == 0) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code use_trips = \"diagnostic\"} needs both complete and incomplete trips.",
         "x" = "Found {n_complete} complete and {n_incomplete} incomplete interview{?s}.",
@@ -829,7 +829,7 @@ br_incomplete_harvest_rate <- function(
          is.na(truncate_at) ||
          truncate_at <= 0)
   ) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Invalid {.arg truncate_at}: {.val {truncate_at}}",
         "x" = "{.arg truncate_at} must be a positive number of hours, or NULL."
@@ -885,7 +885,7 @@ br_incomplete_harvest_rate <- function(
   }
 
   if (nrow(interviews) == 0) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "No incomplete trips remain for mean-of-ratios estimation.",
         "x" = "All incomplete-trip interviews were truncated or had zero effort.",
@@ -1110,7 +1110,7 @@ estimate_rate_species_br <- function(
   # one row per species. Refused rather than silently collapsed to one of them:
   # returning either half under a single label is finding 5's failure mode.
   if (identical(use_trips, "diagnostic")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg use_trips = \"diagnostic\"} is not supported with species grouping.",
         "x" = "The diagnostic pair returns two estimates per species.",
@@ -1228,7 +1228,7 @@ estimate_total_catch_br <- function(
     msg <- paste0(
       "Call {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} parameters."
     )
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route total catch estimation requires .expansion column.",
         "x" = ".expansion not found in interview data.",
@@ -1240,7 +1240,7 @@ estimate_total_catch_br <- function(
 
   # Defensive check: .pi_i column must exist
   if (!".pi_i" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route total catch estimation requires .pi_i column.",
         "x" = ".pi_i not found in interview data.",
@@ -1269,7 +1269,7 @@ estimate_total_catch_br <- function(
       )
     })
     msg_parts <- stats::setNames(combo_strs, rep("*", length(combo_strs)))
-    cli::cli_abort(
+    creel_abort(
       c(
         "Missing .pi_i for {n_combos} site+circuit combination{?s}:",
         msg_parts,
@@ -1367,7 +1367,7 @@ estimate_total_harvest_br <- function(
 
   # Defensive checks
   if (!".expansion" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route total harvest estimation requires .expansion column.",
         "x" = ".expansion not found in interview data.",
@@ -1379,7 +1379,7 @@ estimate_total_harvest_br <- function(
     )
   }
   if (!".pi_i" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route total harvest estimation requires .pi_i column.",
         "x" = ".pi_i not found in interview data.",
@@ -1475,7 +1475,7 @@ estimate_total_release_br <- function(
 
   # Defensive checks
   if (!".expansion" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route total release estimation requires .expansion column.",
         "x" = ".expansion not found in interview data.",
@@ -1487,7 +1487,7 @@ estimate_total_release_br <- function(
     )
   }
   if (!".pi_i" %in% names(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Bus-route total release estimation requires .pi_i column.",
         "x" = ".pi_i not found in interview data.",
@@ -1631,7 +1631,7 @@ br_abort_if_no_complete <- function(interviews, quantity = "estimation", call = 
   if (nrow(interviews) > 0L) {
     return(interviews)
   }
-  cli::cli_abort(
+  creel_abort(
     c(
       "No complete trips available for {quantity}.",
       "x" = "{.arg use_trips} = 'complete' but this design has 0 complete trips.",
@@ -1713,7 +1713,7 @@ br_abort_unknown_contribution <- function(
   shown <- gsub("\\}", "}}", gsub("\\{", "{{", shown))
   design_label <- if (identical(design$design_type, "ice")) "Ice" else "Bus-route" # nolint: object_usage_linter
 
-  cli::cli_abort(
+  creel_abort(
     c(
       "{design_label} {estimate} has {n_bad} interview row{?s} with an unknown contribution:",
       stats::setNames(shown, rep("*", length(shown))),
@@ -1881,7 +1881,7 @@ validate_use_trips_br <- function(use_trips, call = rlang::caller_env()) {
   if (use_trips %in% valid_use_trips_br) {
     return(invisible(use_trips))
   }
-  cli::cli_abort(
+  creel_abort(
     c(
       "Invalid use_trips value: {.val {use_trips}}",
       "x" = "Must be one of: {.val {valid_use_trips_br}}",
@@ -1949,7 +1949,7 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
   date_col <- design$date_col
   cal <- design$calendar
   if (is.null(sampled_col)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code target = \"{target}\"} needs the register of sampled days.",
         "x" = "The design has no {.arg sampled} column.",
@@ -1968,7 +1968,7 @@ br_target_survey <- function(interviews, design, target, call = rlang::caller_en
   unsampled <- is.na(pop$.n_sampled) & !identical(target, "sampled_days")
   if (any(unsampled)) {
     cells <- group_key(pop[unsampled, , drop = FALSE], strata_cols) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(unsampled)} calendar {cli::qty(sum(unsampled))}strat{?um/a} {?has/have} no sampled day.",
         "x" = "Unsampled: {.val {gsub('\u001f', ' / ', cells, fixed = TRUE)}}.",

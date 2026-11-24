@@ -73,14 +73,14 @@ day_length <- function(lat, date, horizon = "sunset") {
   date <- tryCatch(
     as.Date(date),
     error = function(e) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg date} must be a {.cls Date} or coercible to one.",
         "x" = "Got {.cls {class(date)[1]}}."
       ))
     }
   )
   if (length(date) == 0L || anyNA(date)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg date} must be a non-empty vector with no missing values.",
       "x" = "Got {length(date)} value{?s}, {sum(is.na(date))} missing."
     ))
@@ -90,7 +90,7 @@ day_length <- function(lat, date, horizon = "sunset") {
 
   n <- max(length(lat), length(date))
   if (n %% length(lat) != 0L || n %% length(date) != 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg lat} and {.arg date} must be recyclable to a common length.",
       "x" = "Got lengths {length(lat)} and {length(date)}."
     ))
@@ -139,7 +139,7 @@ resolve_horizon <- function(horizon, error_call = rlang::caller_env()) {
   )
 
   if (!is.character(horizon) || length(horizon) != 1L || !horizon %in% names(known)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg horizon} must be {.or {.val {names(known)}}}, or a number of degrees.",
         "x" = "Got {.val {horizon}}."

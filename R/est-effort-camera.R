@@ -221,7 +221,7 @@ est_effort_camera <- function(
   variance <- match.arg(variance)
 
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg design} must be a {.cls creel_design} object."
     )
   }
@@ -234,7 +234,7 @@ est_effort_camera <- function(
     )
   }
   if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg conf_level} must be a number in (0, 1). Got {.val {conf_level}}."
     )
   }

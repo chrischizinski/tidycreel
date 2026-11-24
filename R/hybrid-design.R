@@ -192,7 +192,7 @@ as_hybrid_svydesign <- function(
 ) {
   # ---- Input validation ----------------------------------------------------
   if (missing(frame_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg frame_col} must be provided.",
       "x" = paste(
         "It names the column that partitions {.arg counts} into disjoint count",
@@ -204,17 +204,17 @@ as_hybrid_svydesign <- function(
   for (arg_name in c("date_col", "strata_col", "count_col", "frame_col")) {
     val <- get(arg_name)
     if (!is.character(val) || length(val) != 1L) {
-      cli::cli_abort("{.arg {arg_name}} must be a single character string.")
+      creel_abort("{.arg {arg_name}} must be a single character string.")
     }
   }
   if (!is.data.frame(counts)) {
-    cli::cli_abort("{.arg counts} must be a data frame.")
+    creel_abort("{.arg counts} must be a data frame.")
   }
 
   required_cols <- c(date_col, strata_col, count_col)
   missing_counts <- setdiff(c(required_cols, frame_col), names(counts))
   if (length(missing_counts) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       "Column(s) {.field {missing_counts}} missing from {.arg counts}."
     )
   }
@@ -223,7 +223,7 @@ as_hybrid_svydesign <- function(
   # silently adds an "NA" stratum carrying whatever rows lost their label.
   n_na_frame <- sum(is.na(counts[[frame_col]]))
   if (n_na_frame > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {frame_col}} in {.arg counts} has {n_na_frame} missing \\
        {cli::qty(n_na_frame)}value{?s}.",
       "x" = paste(
@@ -236,7 +236,7 @@ as_hybrid_svydesign <- function(
 
   frames <- unique(as.character(counts[[frame_col]]))
   if (length(frames) < 2L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {frame_col}} must hold at least two distinct frames.",
       "x" = "Found {length(frames)}: {.val {frames}}.",
       "i" = paste(
@@ -252,7 +252,7 @@ as_hybrid_svydesign <- function(
   # population however many frames observed it -- a fraction per frame made the
   # frames imply different calendars for the same stratum (#246).
   if (is.null(calendar)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg calendar} must be provided.",
       "x" = paste(
         "The design expands the frame totals to a population of days,",
@@ -266,11 +266,11 @@ as_hybrid_svydesign <- function(
     ))
   }
   if (!is.data.frame(calendar)) {
-    cli::cli_abort("{.arg calendar} must be a data frame.")
+    creel_abort("{.arg calendar} must be a data frame.")
   }
   missing_calendar <- setdiff(c(date_col, strata_col), names(calendar))
   if (length(missing_calendar) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       "Column(s) {.field {missing_calendar}} missing from {.arg calendar}."
     )
   }
@@ -289,7 +289,7 @@ as_hybrid_svydesign <- function(
   .check_keys <- function(data, name) {
     date_vals <- data[[date_col]]
     if (!inherits(date_vals, "Date")) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.field {date_col}} in {.arg {name}} must be a {.cls Date} column.",
         "x" = "Got class {.cls {class(date_vals)[1]}}."
       ))
@@ -297,7 +297,7 @@ as_hybrid_svydesign <- function(
     for (col in c(date_col, strata_col)) {
       n_na <- sum(is.na(data[[col]]))
       if (n_na > 0L) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "{.field {col}} in {.arg {name}} has {n_na} missing \\
            {cli::qty(n_na)}value{?s}.",
           "x" = paste(
@@ -318,7 +318,7 @@ as_hybrid_svydesign <- function(
   # the frame rather than positional, so an extra frame cannot silently inherit
   # a neighbour's fraction.
   if (is.null(fraction)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg fraction} must be provided.",
       "i" = paste(
         "A named list with one entry per frame, each a named numeric vector",
@@ -327,14 +327,14 @@ as_hybrid_svydesign <- function(
     ))
   }
   if (!is.list(fraction) || is.null(names(fraction)) || anyNA(names(fraction))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg fraction} must be a named list, one entry per frame.",
       "i" = "Names must be the {.field {frame_col}} values: {.val {frames}}."
     ))
   }
   missing_frames <- setdiff(frames, names(fraction))
   if (length(missing_frames) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg fraction} is missing entries for {cli::qty(length(missing_frames))}frame{?s}.",
       "x" = "Missing: {.val {missing_frames}}.",
       "i" = "Every frame needs its own within-day fraction; they are not shared."
@@ -345,7 +345,7 @@ as_hybrid_svydesign <- function(
   # caller ends up believing a fraction was applied that never was.
   extra_frames <- setdiff(names(fraction), frames)
   if (length(extra_frames) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg fraction} has {cli::qty(length(extra_frames))}entr{?y/ies} for \\
        {cli::qty(length(extra_frames))}frame{?s} not in {.field {frame_col}}.",
       "x" = "Unused: {.val {extra_frames}}.",
@@ -354,7 +354,7 @@ as_hybrid_svydesign <- function(
   }
   dup_frames <- unique(names(fraction)[duplicated(names(fraction))])
   if (length(dup_frames) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg fraction} names {cli::qty(length(dup_frames))}frame{?s} more than once.",
       "x" = "Duplicated: {.val {dup_frames}}.",
       "i" = "Only the first entry would be used, so the others are silently lost."
@@ -363,7 +363,7 @@ as_hybrid_svydesign <- function(
   for (fr in frames) {
     frac <- fraction[[match(fr, names(fraction))]]
     if (!is.numeric(frac) || is.null(names(frac))) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg fraction[[\"{fr}\"]]} must be a named numeric vector."
       )
     }
@@ -373,7 +373,7 @@ as_hybrid_svydesign <- function(
     # one level down.
     dup_strata <- unique(names(frac)[duplicated(names(frac))])
     if (length(dup_strata) > 0L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg fraction[[\"{fr}\"]]} has repeated stratum names.",
         "x" = "Duplicated: {.val {dup_strata}}.",
         "i" = "Only the first entry would be used, so the others are silently lost."
@@ -384,7 +384,7 @@ as_hybrid_svydesign <- function(
     ))
     missing_strata <- setdiff(strata_vals, names(frac))
     if (length(missing_strata) > 0L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg fraction[[\"{fr}\"]]} is missing entries for strata.",
         "x" = "Missing: {.val {missing_strata}}."
       ))
@@ -392,7 +392,7 @@ as_hybrid_svydesign <- function(
     bad_vals <- frac[names(frac) %in% strata_vals]
     bad_vals <- bad_vals[bad_vals <= 0 | bad_vals > 1]
     if (length(bad_vals) > 0L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg fraction[[\"{fr}\"]]} values must be in (0, 1].",
         "x" = "Invalid strata: {.val {names(bad_vals)}} = {.val {bad_vals}}."
       ))
@@ -403,7 +403,7 @@ as_hybrid_svydesign <- function(
   # angler trip can be observed by more than one frame. Nothing in
   # date/strata/count can establish that, so the caller has to affirm it (#229).
   if (is.null(trips_disjoint)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg trips_disjoint} must be provided.",
       "x" = paste(
         "Summing the frames assumes each angler trip can be counted by only",
@@ -415,18 +415,18 @@ as_hybrid_svydesign <- function(
   }
   if (!is.logical(trips_disjoint) || length(trips_disjoint) != 1L ||
         is.na(trips_disjoint)) {
-    cli::cli_abort("{.arg trips_disjoint} must be {.code TRUE} or {.code FALSE}.")
+    creel_abort("{.arg trips_disjoint} must be {.code TRUE} or {.code FALSE}.")
   }
   # `fpc` is branched on directly further down. Unvalidated, `NA` reaches
   # `if (fpc)` as base R's "missing value where TRUE/FALSE needed" and a
   # length-2 vector silently uses its first element, so the design is built with
   # a correction the caller did not ask for.
   if (!is.logical(fpc) || length(fpc) != 1L || is.na(fpc)) {
-    cli::cli_abort("{.arg fpc} must be {.code TRUE} or {.code FALSE}.")
+    creel_abort("{.arg fpc} must be {.code TRUE} or {.code FALSE}.")
   }
   fpc_requested <- !missing(fpc) && fpc
   if (!trips_disjoint) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg trips_disjoint} is {.code FALSE}, so the frames may not be summed.",
       "x" = paste(
         "A trip observed by two frames is counted twice, and the",
@@ -449,7 +449,7 @@ as_hybrid_svydesign <- function(
   # would read as repeats of each other.
   n_dup <- n_duplicate_psus(counts, c(frame_col, date_col, strata_col)) # nolint: object_usage_linter
   if (n_dup > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg counts} has {n_dup} repeated sampling \\
          {cli::qty(n_dup)}day{?s}.",
@@ -525,7 +525,7 @@ as_hybrid_svydesign <- function(
   cal_pairs <- unique(data.frame(d = cal_dates, s = cal_strata, stringsAsFactors = FALSE))
   straddling <- unique(cal_pairs$d[duplicated(cal_pairs$d)])
   if (length(straddling) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg calendar} assigns {length(straddling)} \\
        {cli::qty(length(straddling))}date{?s} to more than one stratum.",
       "x" = "{cli::qty(length(straddling))}Affected: {.val {straddling}}.",
@@ -543,7 +543,7 @@ as_hybrid_svydesign <- function(
   )
   unmatched <- setdiff(unique(counts_keys), unique(cal_keys))
   if (length(unmatched) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg counts} sampled {length(unmatched)} date-stratum \\
        {cli::qty(length(unmatched))}combination{?s} absent from \\
        {.arg calendar}.",
@@ -593,7 +593,7 @@ as_hybrid_svydesign <- function(
   ))
   collisions <- unique(key_pairs$k[duplicated(key_pairs$k)])
   if (length(collisions) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{length(collisions)} stratum-by-frame \\
        {cli::qty(length(collisions))}key{?s} {?is/are} ambiguous.",
       "x" = "{cli::qty(length(collisions))}Ambiguous: {.val {collisions}}.",
@@ -677,7 +677,7 @@ as_hybrid_svydesign <- function(
   # is refused rather than quietly dropped.
   whole_day <- all(within_day == 1)
   if (fpc_requested && !whole_day) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code fpc = TRUE} needs every frame to cover the whole of each sampled day.",
         "x" = "Some frame-stratum {.arg fraction} values are below 1.",

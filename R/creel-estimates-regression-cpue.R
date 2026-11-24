@@ -26,7 +26,7 @@ regression_cpue_survey <- function(design, variance_method, by_vars = NULL, min_
   effort_col <- design$angler_effort_col
 
   if (is.null(catch_col) || is.null(effort_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Regression CPUE requires catch and effort columns.",
       "x" = "Design missing {.field catch_col} or {.field angler_effort_col}.",
       "i" = "Call {.fn add_interviews} with {.arg catch_col} and {.arg effort_col}."
@@ -48,7 +48,7 @@ regression_cpue_survey <- function(design, variance_method, by_vars = NULL, min_
   # rather than refused for its days (or, with none left, crashing in svydesign).
   n <- nrow(interviews_data)
   if (n < min_n) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Regression CPUE requires at least {min_n} interview{?s}.",
       "x" = "Only {n} valid interview{?s} available after filtering."
     ), call = call)
@@ -388,7 +388,7 @@ compare_cpue_estimators <- function(
 
   rows <- Filter(Negate(is.null), list(rom_df, mor_df, reg_df))
   if (length(rows) == 0L) {
-    cli::cli_abort("All estimators failed. Check design has valid catch and effort columns.")
+    creel_abort("All estimators failed. Check design has valid catch and effort columns.")
   }
 
   out <- do.call(rbind, rows)
@@ -406,7 +406,7 @@ compare_cpue_estimators <- function(
 autoplot.cpue_comparison <- function(object, ...) {
   # nolint: object_name_linter
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    cli::cli_abort("{.pkg ggplot2} is required for {.fn autoplot.cpue_comparison}.")
+    creel_abort("{.pkg ggplot2} is required for {.fn autoplot.cpue_comparison}.")
   }
   by_cols <- setdiff(names(object), c("cpue_method", "estimate", "se", "ci_lower", "ci_upper", "n"))
   p <- ggplot2::ggplot(

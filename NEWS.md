@@ -700,6 +700,15 @@
 
 ## New features
 
+* Every refusal raised by tidycreel's own checks now carries the condition
+  class `creel_error` (#511), as every warning carries `creel_warning`, so
+  `tryCatch(..., creel_error = ...)` catches them all; 613 of those aborts had
+  no class at all. Specific classes (`creel_error_single_psu`, ...) are
+  unchanged and still come first. No message or behaviour changes. Argument
+  checks delegated to other packages (`checkmate`, `match.arg()`, `rlang`, a
+  missing suggested package, a column `tidyselect` cannot find) still raise
+  those packages' errors (#701).
+
 * `creel_design(interview_sampled = )` declares interview days drawn
   separately from count days (#628), as in aerial-access surveys that fly on
   some days and interview on others. Name a logical calendar column marking the

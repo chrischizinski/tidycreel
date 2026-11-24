@@ -126,7 +126,7 @@ est_length_distribution <- function(
   by_quo <- rlang::enquo(by)
 
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -137,14 +137,14 @@ est_length_distribution <- function(
   check_design_columns(design) # nolint: object_usage_linter
 
   if (is.null(design$interviews) || is.null(design$interview_survey)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interview survey available.",
       "x" = "Attach interviews with {.fn add_interviews} before estimating length distributions."
     ))
   }
 
   if (is.null(design[["lengths"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No length data found in design.",
       "x" = "The design object has no length data.",
       "i" = "Attach length data with {.fn add_lengths}."
@@ -152,7 +152,7 @@ est_length_distribution <- function(
   }
 
   if (!is.numeric(bin_width) || length(bin_width) != 1L || bin_width <= 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg bin_width} must be a single positive number.",
       "x" = "{.arg bin_width} is {.val {bin_width}}."
     ))
@@ -160,7 +160,7 @@ est_length_distribution <- function(
 
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}"
     ))
@@ -168,7 +168,7 @@ est_length_distribution <- function(
 
   if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
     # nolint: indentation_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg conf_level} must be a single number in (0, 1).",
       "x" = "{.arg conf_level} is {.val {conf_level}}."
     ))
@@ -181,10 +181,10 @@ est_length_distribution <- function(
     design$lengths_length_col
   } else {
     if (!is.character(length_col) || length(length_col) != 1L) {
-      cli::cli_abort("{.arg length_col} must be a single column name when provided.")
+      creel_abort("{.arg length_col} must be a single column name when provided.")
     }
     if (!length_col %in% names(lengths_data)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Column {.field {length_col}} not found in attached length data.",
         "i" = "Available columns: {.field {names(lengths_data)}}"
       ))
@@ -223,7 +223,7 @@ est_length_distribution <- function(
   )
 
   if (nrow(records) == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No length data found for {.arg type} = {.val {type}}.",
       "i" = "Check that {.fn add_lengths} included rows of this type."
     ))
@@ -322,7 +322,7 @@ est_length_distribution <- function(
       error_call = rlang::caller_env()
     )
     if (is.null(group_total)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Cannot rescale the length distribution onto the reported catch.",
           "x" = "No reported {type} count is available on this design.",
@@ -515,7 +515,7 @@ build_length_distribution_records <- function(
     }
 
     if (any(is.na(length_values))) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Non-numeric length values found after parsing.",
         "i" = "Check that harvest/release individual lengths are numeric and release bins are parseable."
       ))
@@ -578,7 +578,7 @@ release_bin_midpoints_mm <- function(labels, unit = "mm", width = NULL,
 
   bad <- !(is_range | is_single)
   if (any(bad)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Could not parse {sum(bad)} release length bin label{?s}.",
       "x" = "First unparseable: {.val {utils::head(unique(labels[bad]), 3)}}.",
       "i" = paste(
@@ -588,7 +588,7 @@ release_bin_midpoints_mm <- function(labels, unit = "mm", width = NULL,
     ), class = "creel_error_release_bin_unparseable", call = call)
   }
   if (any(is_single) && is.null(width)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Release length bins given as single values need a bin width.",
       "x" = "{sum(is_single)} label{?s} such as {.val {labels[is_single][1]}} name{?s/} no upper bound.",
       "i" = "Pass {.arg release_bin_width} (and {.arg release_bin_unit}, e.g. {.val inch}) to {.fn add_lengths}."
@@ -606,7 +606,7 @@ release_bin_midpoints_mm <- function(labels, unit = "mm", width = NULL,
     mid[is_single] <- as.numeric(labels[is_single]) + width / 2
   }
   if (anyNA(mid)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Could not read a number from every release length bin label.",
       "i" = "Check the {.arg length} column of the binned release rows."
     ), call = call)
@@ -762,20 +762,20 @@ release_bin_midpoints_mm <- function(labels, unit = "mm", width = NULL,
 #' @export
 est_biomass <- function(ld, a, b, conf_level = NULL, alpha_se = NULL, b_se = NULL, L0 = NULL) { # nolint: object_name_linter, line_length_linter
   if (!inherits(ld, "creel_length_distribution")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg ld} must be a {.cls creel_length_distribution} object.",
       "x" = "{.arg ld} is {.cls {class(ld)[1]}}.",
       "i" = "Create one with {.fn est_length_distribution}."
     ))
   }
   if (!is.numeric(a) || length(a) != 1L || is.na(a) || a <= 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg a} must be a single positive number.",
       "x" = "{.arg a} is {.val {a}}."
     ))
   }
   if (!is.numeric(b) || length(b) != 1L || is.na(b)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg b} must be a single numeric value.",
       "x" = "{.arg b} is {.val {b}}."
     ))
@@ -787,7 +787,7 @@ est_biomass <- function(ld, a, b, conf_level = NULL, alpha_se = NULL, b_se = NUL
   } else {
     if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
       # nolint: indentation_linter
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
       ))
@@ -910,7 +910,7 @@ validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::call
   }
   if (!all(supplied)) {
     missing_args <- c(alpha = "alpha_se", b = "b_se", L0 = "L0")[!supplied] # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg alpha_se}, {.arg b_se} and {.arg L0} must be given together.",
         "x" = "Missing: {.arg {unname(missing_args)}}.",
@@ -925,7 +925,7 @@ validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::call
 
   check_scalar <- function(x, nm, positive) {
     if (!is.numeric(x) || length(x) != 1L || is.na(x) || !is.finite(x)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg {nm}} must be a single finite number.",
           "x" = "{.arg {nm}} is {.val {x}}."
@@ -934,7 +934,7 @@ validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::call
       )
     }
     if (positive && x <= 0) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg {nm}} must be greater than zero.",
           "x" = "{.arg {nm}} is {.val {x}}."
@@ -943,7 +943,7 @@ validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::call
       )
     }
     if (!positive && x < 0) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg {nm}} must not be negative.",
           "x" = "{.arg {nm}} is {.val {x}}."
@@ -1032,7 +1032,7 @@ validate_lw_uncertainty <- function(alpha_se, b_se, L0, error_call = rlang::call
 #' @export
 est_mean_length <- function(ld, conf_level = NULL) {
   if (!inherits(ld, "creel_length_distribution")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg ld} must be a {.cls creel_length_distribution} object.",
       "x" = "{.arg ld} is {.cls {class(ld)[1]}}.",
       "i" = "Create one with {.fn est_length_distribution}."
@@ -1045,7 +1045,7 @@ est_mean_length <- function(ld, conf_level = NULL) {
   } else {
     if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
       # nolint: indentation_linter
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
       ))
@@ -1304,7 +1304,7 @@ weighted_bin_var <- function(w, rows, sigma, what) {
 #' @export
 est_compliance <- function(ld, min_length, conf_level = NULL) {
   if (!inherits(ld, "creel_length_distribution")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg ld} must be a {.cls creel_length_distribution} object.",
       "x" = "{.arg ld} is {.cls {class(ld)[1]}}.",
       "i" = "Create one with {.fn est_length_distribution}."
@@ -1312,7 +1312,7 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
   }
   if (!is.numeric(min_length) || length(min_length) != 1L || is.na(min_length) || min_length <= 0) {
     # nolint: indentation_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg min_length} must be a single positive number.",
       "x" = "{.arg min_length} is {.val {min_length}}."
     ))
@@ -1324,7 +1324,7 @@ est_compliance <- function(ld, min_length, conf_level = NULL) {
   } else {
     if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
       # nolint: indentation_linter
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
       ))

@@ -35,7 +35,7 @@ creel_palette <- function(n = NULL) {
   }
 
   if (!is.numeric(n) || length(n) != 1L || n < 1) {
-    cli::cli_abort("{.arg n} must be a single positive number when provided.")
+    creel_abort("{.arg n} must be a single positive number when provided.")
   }
 
   palette_vals[(seq_len(n) - 1L) %% length(palette_vals) + 1L]

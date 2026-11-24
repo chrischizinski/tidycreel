@@ -344,7 +344,7 @@ simulate_creel_data <- function(
   if (is.null(daylight_fun)) {
     # The counts are now the anglers present at a moment of the fishing day,
     # so the day needs a length (GH #646). There is no honest default.
-    cli::cli_abort(
+    creel_abort(
       c(
         "Supply {.arg lat} or {.arg daylight_hours}: the fishing day needs a length.",
         "i" = "Trips start within the day and counts are taken at times in it (GH #646).",
@@ -825,7 +825,7 @@ simulate_creel_catch <- function(
 # rather than silently ignoring them or reinterpreting them.
 refuse_removed_simulation_inputs <- function(params, p_complete, call = rlang::caller_env()) {
   if (!is.null(params$catch_per_trip)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code params$catch_per_trip} is no longer used.",
         "x" = paste0(
@@ -842,7 +842,7 @@ refuse_removed_simulation_inputs <- function(params, p_complete, call = rlang::c
     )
   }
   if (!is.null(p_complete)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg p_complete} is no longer used.",
         "x" = paste0(
@@ -881,7 +881,7 @@ resolve_daylight_hours <- function(daylight_hours, lat) {
   }
 
   if (!is.null(daylight_hours) && !is.null(lat)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Supply {.arg lat} or {.arg daylight_hours}, not both.",
       "i" = "{.arg lat} derives the daily period with {.fn day_length}.",
       "i" = "{.arg daylight_hours} sets it directly."
@@ -901,7 +901,7 @@ resolve_daylight_hours <- function(daylight_hours, lat) {
   }
 
   if (length(daylight_hours) != 12L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg daylight_hours} must be a single value or a length-12 monthly vector.",
       "x" = "Got length {length(daylight_hours)}."
     ))
@@ -909,7 +909,7 @@ resolve_daylight_hours <- function(daylight_hours, lat) {
 
   nms <- names(daylight_hours)
   if (is.null(nms)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "A length-12 {.arg daylight_hours} must be named by month.",
       "i" = "Use names {.val {as.character(1:12)}} or {.val {month.abb}}."
     ))
@@ -920,7 +920,7 @@ resolve_daylight_hours <- function(daylight_hours, lat) {
     idx <- suppressWarnings(as.integer(nms))
   }
   if (anyNA(idx) || !setequal(idx, 1:12)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Could not match {.arg daylight_hours} names to months.",
       "i" = "Use names {.val {as.character(1:12)}} or {.val {month.abb}}."
     ))

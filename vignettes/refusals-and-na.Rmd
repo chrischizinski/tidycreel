@@ -230,9 +230,13 @@ party-hour times effort in angler-hours returns a total with a warning and
 unit `NA`, because the number may still be what you want if every party is
 one angler; `vignette("unit-rules")` shows it.
 
-A refusal says what was wrong and, where there is a remedy, what to do. Many
-also carry a condition
-class beginning `creel_error_` (`creel_error_unsampled_cell`,
+A refusal says what was wrong and, where there is a remedy, what to do. Every
+refusal from tidycreel's own checks carries the condition class `creel_error`,
+so code can catch them with `tryCatch(..., creel_error = ...)`. (A wrong
+argument type or value caught by `checkmate` or `match.arg()`, a missing
+suggested package, or a column `tidyselect` cannot find raises that package's
+error instead.) Many also carry a
+more specific class beginning `creel_error_` (`creel_error_unsampled_cell`,
 `creel_error_missing_rate_strata`, `creel_error_single_psu`, ...), so that code
 can catch a particular refusal by name. Warnings, which return an estimate
 but say something about it, are listed in `?creel_warnings`.

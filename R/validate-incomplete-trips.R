@@ -167,7 +167,7 @@ validate_incomplete_trips <- function(
 
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -178,7 +178,7 @@ validate_incomplete_trips <- function(
   # single overall test cannot pair; it failed with an R condition-length error
   # before. Refused until a per-section test is designed (GH #669).
   if (!is.null(design[["sections"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.fn validate_incomplete_trips} does not support sectioned designs yet.",
       "i" = "It compares one complete-trip rate with one incomplete-trip rate; a \\
              sectioned design has one of each per section."
@@ -187,7 +187,7 @@ validate_incomplete_trips <- function(
 
   # Validate trip_status field exists
   if (is.null(design$trip_status_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "trip_status required for validation",
       "x" = "Design does not have trip_status field",
       "i" = "Call {.fn add_interviews} with trip_status parameter to distinguish complete from incomplete trips"
@@ -199,7 +199,7 @@ validate_incomplete_trips <- function(
   effort_col <- rlang::as_name(effort_quo)
 
   if (!catch_col %in% names(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Catch column not found",
       "x" = "Column {.field {catch_col}} does not exist in interview data",
       "i" = "Available columns: {.field {names(design$interviews)}}"
@@ -207,7 +207,7 @@ validate_incomplete_trips <- function(
   }
 
   if (!effort_col %in% names(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Effort column not found",
       "x" = "Column {.field {effort_col}} does not exist in interview data",
       "i" = "Available columns: {.field {names(design$interviews)}}"
@@ -220,7 +220,7 @@ validate_incomplete_trips <- function(
   # checked for existence and then ignored, so `catch = <harvest column>`
   # silently tested the catch rate (GH #669).
   if (!identical(catch_col, design$catch_col) || !identical(effort_col, design$effort_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg catch} and {.arg effort} must name the design's catch and effort columns.",
       "i" = "The design's are {.field {design$catch_col}} and {.field {design$effort_col}}; \\
              got {.field {catch_col}} and {.field {effort_col}}.",
@@ -235,7 +235,7 @@ validate_incomplete_trips <- function(
   n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
 
   if (n_complete < 10) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Insufficient complete trips for validation",
       "x" = "Need at least 10 complete trips, found {n_complete}",
       "i" = "TOST requires sufficient sample sizes for stable variance estimation"
@@ -243,7 +243,7 @@ validate_incomplete_trips <- function(
   }
 
   if (n_incomplete < 10) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Insufficient incomplete trips for validation",
       "x" = "Need at least 10 incomplete trips, found {n_incomplete}",
       "i" = "TOST requires sufficient sample sizes for stable variance estimation"
@@ -863,7 +863,7 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
     v <- stats::vcov(fit)[ratio_nm, ratio_nm]
     reported <- c(al$complete$estimate[i], al$incomplete$estimate[i])
     if (!isTRUE(all.equal(unname(est), reported, tolerance = 1e-8))) {
-      cli::cli_abort(
+      creel_abort(
         "Internal error: the joint complete/incomplete rates disagree with the reported ones.",
         .internal = TRUE
       )

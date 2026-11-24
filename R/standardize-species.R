@@ -213,14 +213,14 @@ standardize_species <- function(
   custom_codes = NULL
 ) {
   if (!is.data.frame(data)) {
-    cli::cli_abort("{.arg data} must be a data frame.")
+    creel_abort("{.arg data} must be a data frame.")
   }
   bad_col <- !is.character(species_col) || length(species_col) != 1L
   if (bad_col) {
-    cli::cli_abort("{.arg species_col} must be a single character string.")
+    creel_abort("{.arg species_col} must be a single character string.")
   }
   if (!species_col %in% names(data)) {
-    cli::cli_abort(
+    creel_abort(
       "Column {.field {species_col}} not found in {.arg data}."
     )
   }
@@ -228,7 +228,7 @@ standardize_species <- function(
     length(lookup) != 1L ||
     toupper(lookup) != "AFS"
   if (bad_lookup) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg lookup} must be {.val AFS}; no other code systems are currently supported."
     )
   }
@@ -238,7 +238,7 @@ standardize_species <- function(
       any(is.na(names(custom_codes))) ||
       any(nchar(trimws(names(custom_codes))) == 0L)
     if (bad_custom) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg custom_codes} must be a fully-named character vector.",
         "i" = "Example: {.code c('Wiper' = 'WPR', 'Crappie' = 'CRP-POOL')}"
       ))

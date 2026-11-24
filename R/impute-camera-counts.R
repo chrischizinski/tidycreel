@@ -155,14 +155,14 @@ impute_camera_counts <- function(
   # Check columns exist
   for (col in c(count_col, strata_col, status_col)) {
     if (!col %in% names(data)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Column {.field {col}} not found in {.arg data}.",
         "i" = "Available columns: {.field {names(data)}}"
       ))
     }
   }
   if (!is.null(site_col) && !site_col %in% names(data)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Column {.field {site_col}} not found in {.arg data}.",
       "i" = "Available columns: {.field {names(data)}}"
     ))
@@ -215,7 +215,7 @@ impute_camera_counts <- function(
 
     # All-missing abort (CAMP-05 / D-16)
     if (!any(obs_mask)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Stratum {.val {s}} has no observed counts.",
         "x" = "All {nrow(stratum_data)} rows in stratum {.val {s}} are outages or NA.",
         "i" = "Imputation requires at least one operational observation per stratum."

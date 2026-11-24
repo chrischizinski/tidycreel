@@ -196,7 +196,7 @@ finish_unknown_groups <- function(result, by_vars) {
 summarize_refusals <- function(design) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -205,7 +205,7 @@ summarize_refusals <- function(design) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -214,7 +214,7 @@ summarize_refusals <- function(design) {
 
   # Guard 3: refused column
   if (is.null(design$refused_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No refused column found in design.",
       "x" = "Did you provide {.arg refused} in {.fn add_interviews}?"
     ))
@@ -299,7 +299,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
       length(day_type_col) == 1L &&
       nzchar(day_type_col)
     if (!ok) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg day_type_col} must be a single non-empty column name.",
         call = call
       )
@@ -324,7 +324,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
   }
 
   if (!col %in% names(data)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No {.field {col}} column found in {data_arg}.",
       "x" = "Column {.field {col}} is absent from {.code {data_arg}}.",
       "i" = "Pass {.arg day_type_col} to name the day type column."
@@ -360,7 +360,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
     pairs <- unique(data.frame(v = vals[ok], m = month[ok], stringsAsFactors = FALSE))
     confined <- length(unique(pairs$m)) > 1L && !any(duplicated(pairs$v))
     if (confined && sum(table(pairs$m) > 1L) >= 2L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Stratum {.field {col}} does not look like a day type.",
         "x" = paste(
           "Each of its {length(unique(pairs$v))} values occurs in one month only",
@@ -420,7 +420,7 @@ resolve_day_type_col <- function(design, day_type_col, data, data_arg,
 summarize_by_day_type <- function(design, day_type_col = NULL) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -429,7 +429,7 @@ summarize_by_day_type <- function(design, day_type_col = NULL) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -529,7 +529,7 @@ summarize_by_day_type <- function(design, day_type_col = NULL) {
 summarize_by_angler_type <- function(design) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -538,7 +538,7 @@ summarize_by_angler_type <- function(design) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -547,7 +547,7 @@ summarize_by_angler_type <- function(design) {
 
   # Guard 3: angler_type column
   if (is.null(design$angler_type_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No angler_type column found in design.",
       "x" = "Did you provide {.arg angler_type} in {.fn add_interviews}?"
     ))
@@ -646,7 +646,7 @@ summarize_by_angler_type <- function(design) {
 summarize_by_method <- function(design) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -655,7 +655,7 @@ summarize_by_method <- function(design) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -664,7 +664,7 @@ summarize_by_method <- function(design) {
 
   # Guard 3: angler_method column
   if (is.null(design$angler_method_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No angler_method column found in design.",
       "x" = "Did you provide {.arg angler_method} in {.fn add_interviews}?"
     ))
@@ -763,7 +763,7 @@ summarize_by_method <- function(design) {
 summarize_by_species_sought <- function(design) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -772,7 +772,7 @@ summarize_by_species_sought <- function(design) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -781,7 +781,7 @@ summarize_by_species_sought <- function(design) {
 
   # Guard 3: species_sought column
   if (is.null(design$species_sought_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No species_sought column found in design.",
       "x" = "Did you provide {.arg species_sought} in {.fn add_interviews}?"
     ))
@@ -897,7 +897,7 @@ summarize_by_species_sought <- function(design) {
 summarize_successful_parties <- function(design) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -906,7 +906,7 @@ summarize_successful_parties <- function(design) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -915,7 +915,7 @@ summarize_successful_parties <- function(design) {
 
   # Guard 3a: angler_type column
   if (is.null(design$angler_type_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No angler_type column found in design.",
       "x" = "Did you provide {.arg angler_type} in {.fn add_interviews}?"
     ))
@@ -923,7 +923,7 @@ summarize_successful_parties <- function(design) {
 
   # Guard 3b: species_sought column
   if (is.null(design$species_sought_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No species_sought column found in design.",
       "x" = "Did you provide {.arg species_sought} in {.fn add_interviews}?"
     ))
@@ -931,7 +931,7 @@ summarize_successful_parties <- function(design) {
 
   # Guard 3c: catch data (double-bracket exact match — avoids partial match onto catch_col)
   if (is.null(design[["catch"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No catch data found in design.",
       "i" = "Attach species catch data with {.fn add_catch} before calling this function."
     ))
@@ -1095,7 +1095,7 @@ summarize_successful_parties <- function(design) {
 summarize_by_trip_length <- function(design) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -1104,7 +1104,7 @@ summarize_by_trip_length <- function(design) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -1113,7 +1113,7 @@ summarize_by_trip_length <- function(design) {
 
   # Guard 3: trip_duration column
   if (is.null(design$trip_duration_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No trip_duration column found in design.",
       "x" = "Did you provide {.arg trip_duration} in {.fn add_interviews}?"
     ))
@@ -1683,7 +1683,7 @@ summarize_sought_rates <- function(design, by_quo, catch_type_val, cls, conf_lev
                                    call, fn_env) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -1692,7 +1692,7 @@ summarize_sought_rates <- function(design, by_quo, catch_type_val, cls, conf_lev
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -1701,7 +1701,7 @@ summarize_sought_rates <- function(design, by_quo, catch_type_val, cls, conf_lev
 
   # Guard 3a: angler_effort_col
   if (is.null(design$angler_effort_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No angler_effort column found in design.",
       "x" = "This should be set automatically by {.fn add_interviews}.",
       "i" = "Re-attach interviews with {.fn add_interviews}."
@@ -1710,7 +1710,7 @@ summarize_sought_rates <- function(design, by_quo, catch_type_val, cls, conf_lev
 
   # Guard 3b: species_sought_col
   if (is.null(design$species_sought_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No species_sought column found in design.",
       "x" = "Did you provide {.arg species_sought} in {.fn add_interviews}?"
     ), call = fn_env)
@@ -1718,7 +1718,7 @@ summarize_sought_rates <- function(design, by_quo, catch_type_val, cls, conf_lev
 
   # Guard 3c: catch data (double-bracket, exact match)
   if (is.null(design[["catch"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No catch data found in design.",
       "i" = "Attach species catch data with {.fn add_catch} before calling this function."
     ), call = fn_env)
@@ -1861,7 +1861,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
 
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -1870,7 +1870,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
 
   # Guard 2: lengths attached (double-bracket avoids partial match against lengths_*)
   if (is.null(design[["lengths"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No length data found in design.",
       "x" = "The design object has no length data.",
       "i" = "Attach length data with {.fn add_lengths}."
@@ -1879,7 +1879,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
 
   # Guard 3: bin_width validation
   if (!is.numeric(bin_width) || length(bin_width) != 1L || bin_width <= 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg bin_width} must be a single positive number.",
       "x" = "{.arg bin_width} is {.val {bin_width}}."
     ))
@@ -1922,7 +1922,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
   # type == "catch": use all rows
 
   if (nrow(lengths_data) == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No length data found for {.arg type} = {.val {type}}.",
       "i" = "Check that {.fn add_lengths} included rows of this type."
     ))
@@ -1988,7 +1988,7 @@ summarize_length_freq <- function(design, type = "catch", by = NULL, bin_width =
 
   # Validate all_lengths after parsing
   if (any(is.na(all_lengths))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Non-numeric length values found after parsing.",
       "i" = "Check that harvest lengths are numeric and bin labels are parseable."
     ))
@@ -2265,7 +2265,7 @@ new_creel_summary <- function(table, method, variance_method, conf_level) {
 summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
   # Guard 1: design type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -2274,7 +2274,7 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
 
   # Guard 2: counts attached
   if (is.null(design$counts)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No count data found in design.",
       "x" = "The design object has no count data in the {.field $counts} slot.",
       "i" = "Attach counts with {.fn add_counts}."
@@ -2283,7 +2283,7 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
 
   # Guard 3a: angler_boats_col in schema
   if (is.null(schema$angler_boats_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No {.field angler_boats_col} found in schema.",
       "x" = "{.arg schema} has no {.field angler_boats_col} mapping.",
       "i" = "Set {.code angler_boats_col} in {.fn creel_schema}."
@@ -2292,7 +2292,7 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
 
   # Guard 3b: non_ang_boats_col in schema
   if (is.null(schema$non_ang_boats_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No {.field non_ang_boats_col} found in schema.",
       "x" = "{.arg schema} has no {.field non_ang_boats_col} mapping.",
       "i" = "Set {.code non_ang_boats_col} in {.fn creel_schema}."
@@ -2454,7 +2454,7 @@ summarize_boat_composition <- function(design, schema, day_type_col = NULL) {
 summarize_by_zip <- function(design, zip_col = "zip_code") {
   # Guard 1: design type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -2463,7 +2463,7 @@ summarize_by_zip <- function(design, zip_col = "zip_code") {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found.",
       "x" = "The design object has no interviews in the {.field $interviews} slot.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -2472,10 +2472,10 @@ summarize_by_zip <- function(design, zip_col = "zip_code") {
 
   # Guard 3: the named zip column is present
   if (!is.character(zip_col) || length(zip_col) != 1L || !nzchar(zip_col)) {
-    cli::cli_abort("{.arg zip_col} must be a single non-empty column name.")
+    creel_abort("{.arg zip_col} must be a single non-empty column name.")
   }
   if (!zip_col %in% names(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No {.field {zip_col}} column found in interviews.",
       "x" = "Column {.field {zip_col}} is absent from {.code design$interviews}.",
       "i" = "Name the zip code column with {.arg zip_col}."
@@ -2577,7 +2577,7 @@ summarize_by_zip <- function(design, zip_col = "zip_code") {
 summarize_by_county <- function(design, zip_col = "zip_code", lookup = NULL) {
   # Guard 1: design type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -2586,7 +2586,7 @@ summarize_by_county <- function(design, zip_col = "zip_code", lookup = NULL) {
 
   # Guard 2: interviews attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found.",
       "x" = "The design object has no interviews in the {.field $interviews} slot.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -2595,10 +2595,10 @@ summarize_by_county <- function(design, zip_col = "zip_code", lookup = NULL) {
 
   # Guard 3: the named zip column is present
   if (!is.character(zip_col) || length(zip_col) != 1L || !nzchar(zip_col)) {
-    cli::cli_abort("{.arg zip_col} must be a single non-empty column name.")
+    creel_abort("{.arg zip_col} must be a single non-empty column name.")
   }
   if (!zip_col %in% names(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No {.field {zip_col}} column found in interviews.",
       "x" = "Column {.field {zip_col}} is absent from {.code design$interviews}.",
       "i" = "Name the zip code column with {.arg zip_col}."
@@ -2659,7 +2659,7 @@ zip_key <- function(x, what) {
     # zip, so refuse rather than report it as an unmapped "Unknown".
     bad <- known[known != round(known) | known < 0 | known > 99999]
     if (length(bad) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.field {what}} holds numbers that are not 5-digit zip codes.",
           "x" = "Invalid value{?s}: {.val {utils::head(unique(bad), 5)}}.",
@@ -2682,14 +2682,14 @@ county_lookup <- function(lookup) {
     return(tidycreel::zip_county)
   }
   if (!is.data.frame(lookup)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg lookup} must be a data frame, not {.cls {class(lookup)[1]}}.",
       class = "creel_error_invalid_input"
     )
   }
   missing_cols <- setdiff(c("zip", "county", "state"), names(lookup))
   if (length(missing_cols) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg lookup} must have columns {.field zip}, {.field county} and {.field state}.",
         "x" = "Missing: {.field {missing_cols}}."
@@ -2703,7 +2703,7 @@ county_lookup <- function(lookup) {
   # A missing state would merge same-named counties again (GH #376).
   bad <- is.na(zip) | is.na(county) | !nzchar(county) | is.na(state) | !nzchar(state)
   if (any(bad)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Every {.arg lookup} row needs a zip, a county and a state.",
         "x" = "{sum(bad)} row{?s} {?has/have} a missing zip, county or state."
@@ -2713,7 +2713,7 @@ county_lookup <- function(lookup) {
   }
   dup <- unique(zip[duplicated(zip)])
   if (length(dup) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Each zip must appear once in {.arg lookup}, so it maps to one county.",
         "x" = "{length(dup)} zip{?s} appear{?s/} more than once, e.g. {.val {utils::head(dup, 3)}}."

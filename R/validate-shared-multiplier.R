@@ -43,7 +43,7 @@ validate_shared_multiplier <- function(
   is_none <- is.character(value) && length(value) == 1L && identical(value, "none")
 
   if (is.null(value)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg {value_arg}} is required for an aerial design.",
         required_hint,
@@ -65,7 +65,7 @@ validate_shared_multiplier <- function(
     } else {
       c("i" = "Valid range: 0 < {.arg {value_arg}} <= 1.")
     }
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg {value_arg}} must be a single number in (0, 1], or the string {.val none}.",
       "x" = "Supplied value {.val {value}} is outside the valid range.",
       hint
@@ -74,7 +74,7 @@ validate_shared_multiplier <- function(
 
   if (!is.null(se)) {
     if (is_none) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg {se_arg}} cannot be combined with {.code {value_arg} = \"none\"}.",
           "x" = "There is no correction for the standard error to describe.",
@@ -84,7 +84,7 @@ validate_shared_multiplier <- function(
       )
     }
     if (!is.numeric(se) || length(se) != 1L || is.na(se) || se < 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg {se_arg}} must be a single non-negative number.",
         "x" = "Supplied value {.val {se}} is invalid.",
         se_hint

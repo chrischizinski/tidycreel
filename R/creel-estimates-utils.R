@@ -71,7 +71,7 @@ get_site_contributions <- function(x) {
   # Guard 1: must be creel_estimates
   if (!inherits(x, "creel_estimates")) {
     cls <- class(x)[1] # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg x} must be a {.cls creel_estimates} object.",
       "x" = "{.arg x} is {.cls {cls}}.",
       "i" = "Pass the result of {.fn estimate_effort} for a bus-route design."
@@ -81,7 +81,7 @@ get_site_contributions <- function(x) {
   # Guard 2: site_contributions attribute must be present
   site_tbl <- attr(x, "site_contributions")
   if (is.null(site_tbl)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No site contributions found in this estimate.",
       "x" = "The {.field site_contributions} attribute is absent.",
       "i" = paste(

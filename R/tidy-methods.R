@@ -123,7 +123,7 @@ as_tibble.creel_estimates <- function(x, ..., metadata = TRUE) {
 
   clash <- intersect(names(meta), names(out))
   if (length(clash) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The estimates already have a column named {.field {clash}}.",
         "x" = "Adding the metadata {cli::qty(length(clash))}column{?s} would overwrite {?it/them}.",
@@ -136,7 +136,7 @@ as_tibble.creel_estimates <- function(x, ..., metadata = TRUE) {
   for (nm in names(meta)) {
     value <- meta[[nm]]
     if (!length(value) %in% c(1L, nrow(out))) {
-      cli::cli_abort(
+      creel_abort(
         "Metadata {.field {nm}} has {length(value)} values for {nrow(out)} row{?s}.",
         class = "creel_error_invalid_input"
       )

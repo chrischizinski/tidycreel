@@ -357,7 +357,7 @@ estimate_angler_n <- function(
   # would report a narrower, differently-defined uncertainty under the same
   # column names. Refusing states the gap; inventing one would hide it.
   if (method == "schumacher" && ci_method == "bootstrap") {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code ci_method = \"bootstrap\"} is not available for \
          {.code method = \"schumacher\"}.",
@@ -371,7 +371,7 @@ estimate_angler_n <- function(
     )
   }
   if (!is.logical(bias_adjust) || length(bias_adjust) != 1L || is.na(bias_adjust)) {
-    cli::cli_abort("{.arg bias_adjust} must be a single non-missing logical value.")
+    creel_abort("{.arg bias_adjust} must be a single non-missing logical value.")
   }
 
   # Coerce to numeric before validation to prevent integer overflow in products
@@ -382,16 +382,16 @@ estimate_angler_n <- function(
 
   # --- input validation ---
   if (any(n <= 0)) {
-    cli::cli_abort("{.arg n} must be > 0.")
+    creel_abort("{.arg n} must be > 0.")
   }
   if (any(m < 0)) {
-    cli::cli_abort("{.arg m} must be >= 0.")
+    creel_abort("{.arg m} must be >= 0.")
   }
 
   if (multi_occasion) {
     # Multi-occasion: length checks must come before any per-element guards
     if (!all(lengths(list(M, n, m)) == length(M))) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg M}, {.arg n}, and {.arg m} must be the same length for method = {.val {method}}."
       )
     }
@@ -401,7 +401,7 @@ estimate_angler_n <- function(
     min_occasions <- if (method == "schumacher") 3L else 2L
     label <- if (method == "schumacher") "Schumacher-Eschmeyer" else "Schnabel"
     if (length(M) < min_occasions) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{label} requires >= {min_occasions} occasions.",
         "i" = if (method == "schumacher") {
           "Use {.code method = 'schnabel'} for two occasions."
@@ -412,32 +412,32 @@ estimate_angler_n <- function(
     }
     # M[1] = 0 is valid (no marked fish at large before the first sample)
     if (any(M < 0)) {
-      cli::cli_abort("{.arg M} must be >= 0.")
+      creel_abort("{.arg M} must be >= 0.")
     }
     if (any(m > pmin(M, n))) {
-      cli::cli_abort("{.arg m} cannot exceed {.code min(M, n)} at any occasion.")
+      creel_abort("{.arg m} cannot exceed {.code min(M, n)} at any occasion.")
     }
     if (sum(m) == 0L) {
-      cli::cli_abort(
+      creel_abort(
         "Total recaptures {.code sum(m)} is 0. {label} requires at least one recapture."
       )
     }
   } else {
     # single-occasion guards (Chapman and Petersen)
     if (M <= 0) {
-      cli::cli_abort("{.arg M} must be > 0.")
+      creel_abort("{.arg M} must be > 0.")
     }
     if (m == 0) {
-      cli::cli_abort("{.arg m} = 0: no recaptures makes N_hat undefined. Increase sampling effort.")
+      creel_abort("{.arg m} = 0: no recaptures makes N_hat undefined. Increase sampling effort.")
     }
     if (m > n) {
-      cli::cli_abort("{.arg m} ({m}) cannot exceed {.arg n} ({n}).")
+      creel_abort("{.arg m} ({m}) cannot exceed {.arg n} ({n}).")
     }
     if (m > M) {
-      cli::cli_abort("{.arg m} ({m}) cannot exceed {.arg M} ({M}).")
+      creel_abort("{.arg m} ({m}) cannot exceed {.arg M} ({M}).")
     }
     if (method == "petersen" && m < 7L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg m} = {m} is too small for the Petersen estimator.",
         "i" = "Petersen requires m >= 7 to avoid large positive bias.",
         "i" = "Use {.code method = 'chapman'} instead."
@@ -856,7 +856,7 @@ estimate_mr_harvest <- function(
   ci_method <- match.arg(ci_method)
   # --- input validation ---
   if (!inherits(angler_n, "creel_estimates")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg angler_n} must be a {.cls creel_estimates} object.",
         "i" = "Use {.code estimate_angler_n()} to produce the required input."
@@ -864,7 +864,7 @@ estimate_mr_harvest <- function(
     )
   }
   if (!grepl("^mark-recapture-", angler_n$method)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg angler_n} must come from {.fn estimate_angler_n}.",
         "i" = "Received method: {.val {angler_n$method}}."
@@ -872,13 +872,13 @@ estimate_mr_harvest <- function(
     )
   }
   if (nrow(angler_n$estimates) != 1L) {
-    cli::cli_abort("{.arg angler_n} must be a single-occasion (single-row) estimate.")
+    creel_abort("{.arg angler_n} must be a single-occasion (single-row) estimate.")
   }
   if (!is.numeric(harvest_rate) || length(harvest_rate) != 1L) {
-    cli::cli_abort("{.arg harvest_rate} must be a single numeric value.")
+    creel_abort("{.arg harvest_rate} must be a single numeric value.")
   }
   if (harvest_rate <= 0) {
-    cli::cli_abort("{.arg harvest_rate} must be > 0, not {harvest_rate}.")
+    creel_abort("{.arg harvest_rate} must be > 0, not {harvest_rate}.")
   }
   if (!is.null(harvest_rate_se)) {
     if (
@@ -887,7 +887,7 @@ estimate_mr_harvest <- function(
         is.na(harvest_rate_se) ||
         harvest_rate_se < 0
     ) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg harvest_rate_se} must be a single non-negative number.",
         "x" = "Supplied value {.val {harvest_rate_se}} is invalid.",
         "i" = "It is the standard error of {.arg harvest_rate}, on the same scale."
@@ -989,7 +989,7 @@ estimate_mr_harvest <- function(
   if (ci_method == "bootstrap") {
     boot_samples <- attr(angler_n, "boot_samples")
     if (is.null(boot_samples)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "ci_method = 'bootstrap' requires angler_n computed with ci_method = 'bootstrap'.",
         "i" = "Call estimate_angler_n(..., ci_method = 'bootstrap') first."
       ))

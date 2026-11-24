@@ -43,7 +43,7 @@
 #' @noRd
 resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env()) {
   if (!is.data.frame(rate_groups)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg rate_groups} must be a data frame, not {.cls {class(rate_groups)[1]}}.",
       call = call, class = "creel_error_rate_groups"
     )
@@ -53,7 +53,7 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
   group_col <- setdiff(names(rate_groups), allowed_keys)
   missing_strata <- setdiff(design$strata_cols, key_cols)
   if (length(missing_strata) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg rate_groups} must name every stratum column.",
         "x" = "Missing: {.field {missing_strata}}.",
@@ -66,7 +66,7 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
     )
   }
   if (length(key_cols) == 0L || length(group_col) != 1L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg rate_groups} must have key columns and exactly one group column.",
         "i" = "Key columns are the design's strata ({.field {design$strata_cols}}) \\
@@ -79,7 +79,7 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
   }
   groups <- rate_groups[[group_col]]
   if (anyNA(groups) || any(!nzchar(as.character(groups)))) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg rate_groups}${.field {group_col}} has an empty or missing group label.",
       call = call, class = "creel_error_rate_groups"
     )
@@ -90,7 +90,7 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
   # impossible to place, and so impossible to estimate.
   key <- group_key(rate_groups, key_cols) # nolint: object_usage_linter
   if (anyDuplicated(key)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg rate_groups} maps the same cell more than once.",
         "x" = "A cell can use only one rate."
@@ -100,7 +100,7 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
   }
   if ("angler_type" %in% key_cols) {
     if (!"angler_type" %in% names(design$counts)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg rate_groups} is keyed by {.field angler_type}, but the counts have no \\
            {.field angler_type} column.",
@@ -112,7 +112,7 @@ resolve_rate_groups <- function(design, rate_groups, call = rlang::caller_env())
       )
     }
     if (is.null(design$angler_type_col)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg rate_groups} is keyed by {.field angler_type}, but the interviews \\
            have no angler type.",
@@ -156,7 +156,7 @@ attach_rate_groups <- function(design, spec, call = rlang::caller_env()) {
   count_group <- rate_group_of(design$counts, spec)
   if (anyNA(count_group)) {
     cells <- unique(group_key(design$counts[is.na(count_group), , drop = FALSE], spec$key_cols)) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{length(cells)} effort cell{?s} {?has/have} no rate group.",
         "x" = "Unmapped: {.val {gsub('\u001f', ' / ', cells, fixed = TRUE)}}.",
@@ -174,7 +174,7 @@ attach_rate_groups <- function(design, spec, call = rlang::caller_env()) {
   ))
   unused <- setdiff(group_key(spec$map, spec$key_cols), used) # nolint: object_usage_linter
   if (length(unused) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{length(unused)} row{?s} of {.arg rate_groups} match{?es/} no effort cell.",
         "x" = "Unmatched: {.val {gsub('\u001f', ' / ', unused, fixed = TRUE)}}.",
@@ -191,7 +191,7 @@ attach_rate_groups <- function(design, spec, call = rlang::caller_env()) {
       rate_group_key_frame(design$interviews[is.na(interview_group), , drop = FALSE], spec, design),
       spec$key_cols
     ))
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(is.na(interview_group))} interview{?s} fall{?s/} in no rate group.",
         "x" = "Cells: {.val {gsub('\u001f', ' / ', cells, fixed = TRUE)}}.",
@@ -334,7 +334,7 @@ reweight_counts_by_rate <- function(design, rates) {
 refuse_rate_groups_design <- function(design, missing_rate, call = rlang::caller_env()) {
   type <- design$design_type %||% "instantaneous"
   if (type %in% c("bus_route", "ice")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg rate_groups} does not apply to {.val {type}} designs.",
         "x" = "Their totals are Horvitz-Thompson sums, not effort x rate products, \\
@@ -345,7 +345,7 @@ refuse_rate_groups_design <- function(design, missing_rate, call = rlang::caller
   }
   if (type %in% c("aerial", "camera") || !is.null(design[["sections"]])) {
     what <- if (!is.null(design[["sections"]])) "sectioned" else type # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg rate_groups} is not yet available for {what} designs.",
         "i" = "It covers standard count designs with access or roving interviews (GH #389)."
@@ -354,7 +354,7 @@ refuse_rate_groups_design <- function(design, missing_rate, call = rlang::caller
     )
   }
   if (identical(missing_rate, "exclude")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code missing_rate = \"exclude\"} does not combine with {.arg rate_groups}.",
         "x" = "With rate groups every effort cell must have a rate, so there is no \\
@@ -540,7 +540,7 @@ estimate_total_rate_groups <- function(
 shared_day_rate_vcov <- function(design, rates) {
   v <- attr(rates, "rate_vcov")
   if (!is.matrix(v) || nrow(v) != nrow(rates)) {
-    cli::cli_abort("Internal error: rate-group rates arrived without their covariance.", .internal = TRUE)
+    creel_abort("Internal error: rate-group rates arrived without their covariance.", .internal = TRUE)
   }
   strata_cols <- design$strata_cols %||% character(0)
   if (length(strata_cols) > 0L && nrow(rates) > 1L) {
@@ -620,7 +620,7 @@ rate_group_product <- function(
   # The reweighted effort total is the same sum computed the other way; a
   # disagreement means the two calls saw different cells.
   if (!isTRUE(all.equal(unname(product), w_df$estimate, tolerance = 1e-8))) {
-    cli::cli_abort(
+    creel_abort(
       "Internal error: rate-group product and reweighted effort disagree.",
       .internal = TRUE
     )

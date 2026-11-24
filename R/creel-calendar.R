@@ -105,10 +105,10 @@ creel_calendar <- function(
   start <- calendar_date(start, "start", call)
   end <- calendar_date(end, "end", call)
   if (length(start) != 1L || length(end) != 1L) {
-    cli::cli_abort("{.arg start} and {.arg end} must each be one date.", call = call)
+    creel_abort("{.arg start} and {.arg end} must each be one date.", call = call)
   }
   if (end < start) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg end} ({.val {format(end)}}) is before {.arg start} ({.val {format(start)}}).",
       call = call
     )
@@ -117,7 +117,7 @@ creel_calendar <- function(
   parts <- c("season_block", "month", "week", "day_type")
   if (!is.character(strata) || length(strata) == 0L || anyNA(strata) ||
         !all(strata %in% parts) || anyDuplicated(strata)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg strata} must name each part of the stratum label at most once.",
         "i" = "Parts: {.val {parts}}."
@@ -126,13 +126,13 @@ creel_calendar <- function(
     )
   }
   if ("season_block" %in% strata && is.null(season_blocks)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg strata} includes {.val season_block}, but {.arg season_blocks} is {.code NULL}.",
       call = call
     )
   }
   if (!is.null(season_blocks) && !"season_block" %in% strata) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg season_blocks} is supplied, but {.arg strata} does not use it.",
         "i" = "Add {.val season_block} to {.arg strata}, or leave {.arg season_blocks} out."
@@ -178,7 +178,7 @@ creel_calendar <- function(
   if (!is.null(special_periods)) {
     if (!is.data.frame(special_periods) ||
           !all(c("start_date", "end_date", "label") %in% names(special_periods))) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg special_periods} must be a data frame with {.field start_date}, {.field end_date} and {.field label}.",
         call = call
       )
@@ -192,14 +192,14 @@ creel_calendar <- function(
     special <- resolve_special_periods(date, cal$stratum, special_periods)
     labels <- as.character(special_periods$label)
     if (anyNA(labels) || any(!nzchar(labels))) {
-      cli::cli_abort("{.arg special_periods} has a missing or empty {.field label}.", call = call)
+      creel_abort("{.arg special_periods} has a missing or empty {.field label}.", call = call)
     }
     # Checked against every ordinary label, including ones the period's own
     # days would have had: a period covering all of "06_weekend" must not
     # take that name.
     clash <- intersect(unique(labels), cal$stratum)
     if (length(clash) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg special_periods} label{?s} {.val {clash}} {?is/are} also the label of an ordinary stratum.",
           "i" = "A special period is a stratum of its own; give it a label no other stratum has."
@@ -232,7 +232,7 @@ calendar_date <- function(x, arg, call) {
     out <- as.Date(rep(NA_character_, length(x)))
   }
   if (length(out) == 0L || anyNA(out)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg {arg}} must be dates ({.cls Date} or {.val YYYY-MM-DD}) with no missing values.",
       call = call
     )
@@ -245,7 +245,7 @@ calendar_date <- function(x, arg, call) {
 calendar_refuse_outside <- function(x, start, end, arg, call) {
   outside <- sort(unique(x[x < start | x > end]))
   if (length(outside) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg {arg}} has {length(outside)} date{?s} outside the season \\
          ({.val {format(start)}} to {.val {format(end)}}): {.val {format(outside)}}.",
@@ -264,7 +264,7 @@ calendar_refuse_outside <- function(x, start, end, arg, call) {
 calendar_week <- function(date, wday, weekend_wday, call) {
   last <- weekend_wday[!((weekend_wday %% 7L) + 1L) %in% weekend_wday]
   if (length(last) != 1L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg weekend_days} must be consecutive days, and not the whole week.",
         "i" = "The week of the season starts on the day after the weekend."
@@ -281,7 +281,7 @@ calendar_week <- function(date, wday, weekend_wday, call) {
 # Internal: the season block of each date.
 calendar_blocks <- function(season_blocks, date, call) {
   if (!is.data.frame(season_blocks) || !all(c("start_date", "label") %in% names(season_blocks))) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg season_blocks} must be a data frame with {.field start_date} and {.field label}.",
       call = call
     )
@@ -289,13 +289,13 @@ calendar_blocks <- function(season_blocks, date, call) {
   starts <- calendar_date(season_blocks$start_date, "season_blocks$start_date", call)
   labels <- as.character(season_blocks$label)
   if (anyNA(labels) || any(!nzchar(labels)) || anyDuplicated(labels)) {
-    cli::cli_abort("{.arg season_blocks} labels must be present and unique.", call = call)
+    creel_abort("{.arg season_blocks} labels must be present and unique.", call = call)
   }
   if (is.unsorted(starts, strictly = TRUE)) {
-    cli::cli_abort("{.arg season_blocks} start dates must be in increasing order.", call = call)
+    creel_abort("{.arg season_blocks} start dates must be in increasing order.", call = call)
   }
   if (starts[1L] != date[1L]) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The first season block must start on the season's first day.",
         "x" = "It starts {.val {format(starts[1L])}}; the season starts {.val {format(date[1L])}}."

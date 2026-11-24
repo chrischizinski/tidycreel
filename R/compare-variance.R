@@ -82,7 +82,7 @@ compare_variance <- function(
 
   # Input validation
   if (!inherits(x, "creel_estimates")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg x} must be a {.cls creel_estimates} object.",
       "x" = "{.arg x} is {.cls {class(x)[1]}}.",
       "i" = paste0(
@@ -93,7 +93,7 @@ compare_variance <- function(
   }
 
   if (is.null(x$design)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No design stored in {.arg x}.",
       "x" = "{.field x$design} is NULL.",
       "i" = paste0(
@@ -108,7 +108,7 @@ compare_variance <- function(
       length(divergence_threshold) != 1 || # nolint: indentation_linter
       divergence_threshold <= 0
   ) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg divergence_threshold} must be a positive number.",
       "x" = "Got {.val {divergence_threshold}}."
     ))
@@ -147,7 +147,7 @@ compare_variance <- function(
       }
     },
     error = function(e) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Re-estimation with {.val {replicate_method}} variance failed.",
         "x" = conditionMessage(e),
         "i" = paste0(
@@ -265,7 +265,7 @@ resolve_variance_estimator <- function(method_str) {
     })
   }
   # Fallback: unsupported method — stop with a clear message
-  cli::cli_abort(c(
+  creel_abort(c(
     "Cannot determine estimator from method string {.val {method_str}}.",
     "i" = "Supported method patterns: cpue/hpue/rpue/catch.rate/ratio, effort, product.total."
   ))

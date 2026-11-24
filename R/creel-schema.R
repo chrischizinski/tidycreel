@@ -157,11 +157,11 @@ creel_vocabulary <- function(column = NULL) {
     return(CANONICAL_VOCABULARY)
   }
   if (!is.character(column) || length(column) != 1L) {
-    cli::cli_abort("{.arg column} must be a single column name or {.code NULL}.")
+    creel_abort("{.arg column} must be a single column name or {.code NULL}.")
   }
   known <- names(CANONICAL_VOCABULARY) # nolint: object_name_linter
   if (!column %in% known) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.val {column}} has no canonical vocabulary.",
       "i" = "Columns with one: {.field {known}}."
     ))
@@ -185,7 +185,7 @@ normalize_value_maps <- function(value_maps) {
     return(NULL)
   }
   if (!is.list(value_maps) || length(value_maps) == 0L || is.null(names(value_maps))) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg value_maps} must be a non-empty named list.",
         "i" = paste0(
@@ -200,7 +200,7 @@ normalize_value_maps <- function(value_maps) {
   known <- c(names(CANONICAL_VOCABULARY), FREE_LABEL_COLUMNS) # nolint: object_name_linter
   unknown <- setdiff(names(value_maps), known)
   if (length(unknown) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg value_maps} names {length(unknown)} column{?s} with no canonical vocabulary.",
         "x" = "Unknown: {.field {unknown}}.",
@@ -217,7 +217,7 @@ normalize_value_maps <- function(value_maps) {
     # no source value can ever match -- otherwise passed as "named".
     named <- !is.null(names(map)) && !anyNA(names(map)) && all(nzchar(names(map)))
     if (!is.character(map) || length(map) == 0L || !named) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg value_maps}${.field {col}} must be a fully named character vector.",
           "i" = "Names are the source's own codes, values what each code means."
@@ -227,7 +227,7 @@ normalize_value_maps <- function(value_maps) {
     }
     if (anyDuplicated(names(map))) {
       dupes <- unique(names(map)[duplicated(names(map))]) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg value_maps}${.field {col}} maps the same source code twice.",
           "x" = "Duplicated: {.val {dupes}}."
@@ -239,7 +239,7 @@ normalize_value_maps <- function(value_maps) {
       # No vocabulary to check the targets against, so check only that each one
       # is a label: a code mapped to "" or NA would translate it into nothing.
       if (anyNA(map) || !all(nzchar(map))) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "{.arg value_maps}${.field {col}} maps a source code to an empty or missing label.",
             "i" = "Every code needs a label: {.code c(\"1\" = \"boat\")}."
@@ -251,7 +251,7 @@ normalize_value_maps <- function(value_maps) {
     }
     bad <- setdiff(unname(map), valid)
     if (length(bad) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg value_maps}${.field {col}} maps to {length(bad)} value{?s} outside the vocabulary.",
           "x" = "Not canonical: {.val {bad}}.",
@@ -276,7 +276,7 @@ normalize_value_maps <- function(value_maps) {
     }
     clash <- names(map)[names(map) %in% labels & names(map) != unname(map)]
     if (length(clash) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg value_maps}${.field {col}} has {length(clash)} value{?s} that {?is/are} both a source code and a label.",
           "x" = "{.val {clash}} would be translated to {.val {unname(map[clash])}}, including on rows already labelled {.val {clash}}.",
@@ -337,7 +337,7 @@ normalize_strata_cols <- function(strata_cols) {
     return(NULL)
   }
   if (!is.character(strata_cols) || length(strata_cols) == 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg strata_cols} must be a non-empty character vector.",
         "x" = "{.arg strata_cols} is {.cls {class(strata_cols)[1]}} of length {length(strata_cols)}.",
@@ -351,7 +351,7 @@ normalize_strata_cols <- function(strata_cols) {
     )
   }
   if (anyNA(strata_cols) || !all(nzchar(strata_cols))) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg strata_cols} must not contain {.val NA} or empty source names.",
         "i" = "Every stratum column named must resolve to a column in the source table."
@@ -369,7 +369,7 @@ normalize_strata_cols <- function(strata_cols) {
 
   if (anyDuplicated(nms)) {
     dupes <- unique(nms[duplicated(nms)]) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg strata_cols} maps the same design column more than once.",
         "x" = "Duplicated: {.field {dupes}}.",
@@ -682,7 +682,7 @@ creel_schema <- function(
 #' @export
 validate_creel_schema <- function(schema) {
   if (!inherits(schema, "creel_schema")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg schema} must be a {.cls creel_schema} object.",
         "i" = "Create one with {.fn creel_schema}."
@@ -710,7 +710,7 @@ validate_creel_schema <- function(schema) {
   }
 
   if (length(missing_bullets) > 0) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "creel_schema validation failed for survey_type {.val {schema$survey_type}}:",
         missing_bullets

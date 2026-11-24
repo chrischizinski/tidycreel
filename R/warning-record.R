@@ -428,7 +428,7 @@ get_warnings <- function(x) {
   if (inherits(x, "creel_design") || inherits(x, "creel_estimates")) {
     return(x$warnings %||% empty_warning_table())
   }
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.fn get_warnings} needs a {.cls creel_design} or a {.cls creel_estimates} object.",
       "x" = "{.arg x} is {.cls {class(x)}}."

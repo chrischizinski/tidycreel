@@ -84,7 +84,7 @@ estimate_effort_camera <- function(
   refuse_reserved_effort_names(design) # nolint: object_usage_linter
   counts_data <- design$counts
   if (is.null(counts_data) || nrow(counts_data) == 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Camera effort estimation requires count data.",
       "i" = "Call {.fn add_counts} before estimating camera effort."
     ))
@@ -190,7 +190,7 @@ estimate_effort_camera <- function(
   # ---- Ratio calibration path -----------------------------------------------
   if (!is.null(interviews)) {
     if (!effort_col %in% names(interviews)) {
-      cli::cli_abort(
+      creel_abort(
         "Column {.field {effort_col}} not found in {.arg interviews}."
       )
     }
@@ -222,7 +222,7 @@ estimate_effort_camera <- function(
       as.character(counts_data[[date_col]])[duplicated(day_key)]
     )
     if (length(dup_days) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Camera ratio calibration requires one count row per day.",
           "x" = paste(
@@ -301,7 +301,7 @@ estimate_effort_camera <- function(
 
     missing_strata <- setdiff(strata_cols, names(interviews))
     if (length(missing_strata) > 0L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         paste(
           "{.arg interviews} is missing the stratum",
           "{cli::qty(missing_strata)}column{?s} {.field {missing_strata}}."
@@ -328,7 +328,7 @@ estimate_effort_camera <- function(
       int_sub <- interviews[interview_keys == s, , drop = FALSE]
 
       if (nrow(int_sub) == 0L || all(is.na(int_sub[[effort_col]]))) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No interview effort data for stratum {.val {s_label}}.",
           "x" = "Cannot compute calibration ratio."
         ))
@@ -370,7 +370,7 @@ estimate_effort_camera <- function(
       n_pairs <- length(E_d)
       n_days <- length(unique(int_dates_matched))
       if (n_pairs == 0L || sum(C_d, na.rm = TRUE) == 0) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No matched interview/count days for stratum {.val {s_label}}.",
           "x" = "Cannot compute calibration ratio."
         ))
@@ -523,7 +523,7 @@ estimate_effort_camera <- function(
     # caller to say so. Not supplying calibration is not the same claim as
     # declaring that none applies, and only one of them should be silent.
     if (!identical(calibration, "none")) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Camera effort estimation requires a calibration.",
           "x" = "No {.arg interviews} were supplied, so there is nothing to calibrate the counts against.",
@@ -544,7 +544,7 @@ estimate_effort_camera <- function(
     }
 
     if (is.null(h_open) || !is.numeric(h_open) || h_open <= 0) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg h_open} must be a positive number when no interview data are provided for camera effort estimation."
       )
     }
@@ -558,7 +558,7 @@ estimate_effort_camera <- function(
     # divides by mean(count) before multiplying by count, so a constant T_d
     # cancels and does no harm there.
     if (identical(design$effort_unit %||% NA_character_, "angler-hours")) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Counts already carry the period length, so {.arg h_open} would apply time twice.",
           "x" = "{.fn add_counts} was given {.arg period_length_col}, which converted the counts to angler-hours.",

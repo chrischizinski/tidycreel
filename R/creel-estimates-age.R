@@ -90,7 +90,7 @@ est_age_distribution <- function(
   by_quo <- rlang::enquo(by)
 
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -101,14 +101,14 @@ est_age_distribution <- function(
   check_design_columns(design) # nolint: object_usage_linter
 
   if (is.null(design$interviews) || is.null(design$interview_survey)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interview survey available.",
       "x" = "Attach interviews with {.fn add_interviews} before estimating age distributions."
     ))
   }
 
   if (is.null(design[["ages"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No age data found in design.",
       "x" = "The design object has no age data.",
       "i" = "Attach age data with {.fn add_ages}."
@@ -117,7 +117,7 @@ est_age_distribution <- function(
 
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}"
     ))
@@ -125,7 +125,7 @@ est_age_distribution <- function(
 
   if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
     # nolint: indentation_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg conf_level} must be a single number in (0, 1).",
       "x" = "{.arg conf_level} is {.val {conf_level}}."
     ))
@@ -162,7 +162,7 @@ est_age_distribution <- function(
   )
 
   if (nrow(records) == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No age data found for {.arg type} = {.val {type}}.",
       "i" = "Check that {.fn add_ages} included rows of this type."
     ))
@@ -234,7 +234,7 @@ est_age_distribution <- function(
       error_call = rlang::caller_env()
     )
     if (is.null(group_total)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Cannot rescale the age distribution onto the reported catch.",
           "x" = "No reported {type} count is available on this design.",
@@ -390,7 +390,7 @@ est_age_distribution <- function(
 
   age_values <- suppressWarnings(as.integer(round(as.numeric(ages_data[[age_col]]))))
   if (any(is.na(age_values))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Non-numeric age values found.",
       "i" = "Check that the attached age data are numeric integers."
     ))
@@ -475,7 +475,7 @@ est_age_distribution <- function(
 #' @export
 est_mean_age <- function(ad, conf_level = NULL) {
   if (!inherits(ad, "creel_age_distribution")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg ad} must be a {.cls creel_age_distribution} object.",
       "x" = "{.arg ad} is {.cls {class(ad)[1]}}.",
       "i" = "Create one with {.fn est_age_distribution}."
@@ -488,7 +488,7 @@ est_mean_age <- function(ad, conf_level = NULL) {
   } else {
     if (!is.numeric(conf_level) || length(conf_level) != 1L || conf_level <= 0 || conf_level >= 1) {
       # nolint: indentation_linter
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg conf_level} must be a single number in (0, 1).",
         "x" = "{.arg conf_level} is {.val {conf_level}}."
       ))

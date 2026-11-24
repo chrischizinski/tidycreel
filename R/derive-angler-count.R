@@ -77,12 +77,12 @@ mean_party_size <- function(
   by = NULL
 ) {
   if (!is.data.frame(interviews)) {
-    cli::cli_abort("{.arg interviews} must be a data frame, not {.cls {class(interviews)[1]}}.")
+    creel_abort("{.arg interviews} must be a data frame, not {.cls {class(interviews)[1]}}.")
   }
 
   n_col <- resolve_single_col(rlang::enquo(n_anglers), interviews, "n_anglers")
   if (!is.numeric(interviews[[n_col]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg n_anglers} must select a numeric column.",
       "x" = "{.field {n_col}} is {.cls {class(interviews[[n_col]])[1]}}."
     ))
@@ -94,7 +94,7 @@ mean_party_size <- function(
     type_col <- resolve_single_col(type_quo, interviews, "angler_type")
     keep <- !is.na(rows[[type_col]]) & rows[[type_col]] == boat_value
     if (!any(keep)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "No boat parties found in {.arg interviews}.",
         "x" = "No row has {.field {type_col}} equal to {.val {boat_value}}.",
         "i" = "Observed values: {.val {unique(rows[[type_col]])}}.",
@@ -354,25 +354,25 @@ derive_angler_count <- function(
   by_type = FALSE
 ) {
   if (!is.data.frame(counts)) {
-    cli::cli_abort("{.arg counts} must be a data frame, not {.cls {class(counts)[1]}}.")
+    creel_abort("{.arg counts} must be a data frame, not {.cls {class(counts)[1]}}.")
   }
   if (!is.character(to) || length(to) != 1L || is.na(to)) {
-    cli::cli_abort("{.arg to} must be a single column name.")
+    creel_abort("{.arg to} must be a single column name.")
   }
   if (!rlang::is_bool(by_type)) {
-    cli::cli_abort("{.arg by_type} must be TRUE or FALSE.")
+    creel_abort("{.arg by_type} must be TRUE or FALSE.")
   }
   if (by_type && identical(to, "angler_type")) {
-    cli::cli_abort("{.arg to} cannot be {.val angler_type} when {.code by_type = TRUE}, which writes that column.")
+    creel_abort("{.arg to} cannot be {.val angler_type} when {.code by_type = TRUE}, which writes that column.")
   }
   if (by_type && "angler_type" %in% names(counts)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field angler_type} already exists in {.arg counts}.",
       "i" = "{.code by_type = TRUE} writes {.field angler_type}; drop or rename the existing column first."
     ))
   }
   if (to %in% names(counts)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {to}} already exists in {.arg counts}.",
       "i" = "Choose another name with {.arg to}, or drop the existing column first."
     ))
@@ -391,20 +391,20 @@ derive_angler_count <- function(
   has_party_size_se <- !rlang::quo_is_null(party_size_se_quo)
 
   if (has_boat_anglers && has_boat_count) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Give either {.arg boat_anglers} or {.arg boat_count}, not both.",
       "i" = "{.arg boat_anglers} is a count of people; {.arg boat_count} is a count of boats.",
       "i" = "They are two ways to reach the same quantity, so supplying both would double it."
     ))
   }
   if (!has_bank && !has_boat_anglers && !has_boat_count) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No count components supplied.",
       "i" = "Give at least one of {.arg bank}, {.arg boat_anglers}, or {.arg boat_count}."
     ))
   }
   if (has_boat_count && !has_party_size) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg boat_count} requires {.arg party_size}.",
       "x" = "{.arg boat_count} counts boats, not anglers, so it cannot enter an angler total on its own.",
       "i" = "Supply the mean anglers per boat party, e.g. from {.fn mean_party_size}.",
@@ -412,13 +412,13 @@ derive_angler_count <- function(
     ))
   }
   if (!has_boat_count && has_party_size) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg party_size} was supplied without {.arg boat_count}.",
       "i" = "A party size expands a count of boats; there is nothing here to expand."
     ))
   }
   if (!has_boat_count && has_party_size_se) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg party_size_se} was supplied without {.arg boat_count}.",
       "i" = "It is the standard error of a multiplier that is not being applied here."
     ))
@@ -426,7 +426,7 @@ derive_angler_count <- function(
   carrier_cols <- expansion_carrier_cols()
   clash <- intersect(carrier_cols, names(counts))
   if (has_boat_count && length(clash) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{cli::qty(length(clash))}{.field {clash}} already exist{?s/} in {.arg counts}.",
       "i" = "{.fn derive_angler_count} writes {.field {carrier_cols}} to carry the \\
              party-size variance component.",
@@ -446,7 +446,7 @@ derive_angler_count <- function(
   numeric_component <- function(quo, arg_name) {
     col <- resolve_single_col(quo, counts, arg_name)
     if (!is.numeric(counts[[col]])) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg {arg_name}} must select a numeric column.",
         "x" = "{.field {col}} is {.cls {class(counts[[col]])[1]}}."
       ))
@@ -628,7 +628,7 @@ resolve_party_size_se <- function(
     value_cols <- names(party_size)[vapply(party_size, is.numeric, logical(1L))]
     key_cols <- setdiff(names(party_size), value_cols)
     if (length(se) != nrow(party_size)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The {.val se} attribute on {.arg party_size} does not match its rows.",
           "x" = "{length(se)} standard error{?s} for {nrow(party_size)} lookup row{?s}."
@@ -643,7 +643,7 @@ resolve_party_size_se <- function(
     # One lookup row cannot be reordered against itself, so there is nothing for
     # a positional attribute to go stale against.
     if (is.null(names(se)) && nrow(party_size) > 1L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The {.val se} attribute on {.arg party_size} has no names.",
           "x" = paste(
@@ -667,7 +667,7 @@ resolve_party_size_se <- function(
       match(do.call(paste, c(counts[key_cols], sep = "\r")), names(se))
     }
     if (anyNA(idx)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The {.val se} attribute on {.arg party_size} has no entry for \\
            {sum(is.na(idx))} count{?s}.",
@@ -681,7 +681,7 @@ resolve_party_size_se <- function(
     out <- as.numeric(se)[idx]
   } else {
     if (length(se) != 1L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The {.val se} attribute on a scalar {.arg party_size} must be a single value.",
           "x" = "Got {length(se)}."
@@ -718,7 +718,7 @@ resolve_party_size_se_values <- function(se_quo, counts, error_call = rlang::cal
   if (names_match) {
     col <- rlang::as_name(expr)
     if (!is.numeric(counts[[col]])) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg party_size_se} must select a numeric column.",
           "x" = "{.field {col}} is {.cls {class(counts[[col]])[1]}}."
@@ -734,7 +734,7 @@ resolve_party_size_se_values <- function(se_quo, counts, error_call = rlang::cal
   if (is.data.frame(se)) {
     value_cols <- names(se)[vapply(se, is.numeric, logical(1L))]
     if (length(value_cols) != 1L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "A {.arg party_size_se} lookup must have exactly one numeric column.",
           "x" = "Found {length(value_cols)}: {.field {value_cols}}."
@@ -745,7 +745,7 @@ resolve_party_size_se_values <- function(se_quo, counts, error_call = rlang::cal
     key_cols <- setdiff(names(se), value_cols)
     missing_keys <- setdiff(key_cols, names(counts))
     if (length(missing_keys) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg party_size_se} lookup keys are not in {.arg counts}.",
           "x" = "Missing: {.field {missing_keys}}."
@@ -758,7 +758,7 @@ resolve_party_size_se_values <- function(se_quo, counts, error_call = rlang::cal
       do.call(paste, c(se[key_cols], sep = "\r"))
     )
     if (anyNA(idx)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg party_size_se} lookup has no row for {sum(is.na(idx))} count{?s}.",
           "i" = "Check that the lookup covers every level of {.field {key_cols}}."
@@ -776,7 +776,7 @@ resolve_party_size_se_values <- function(se_quo, counts, error_call = rlang::cal
     if (length(se) == nrow(counts)) {
       return(as.numeric(se))
     }
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg party_size_se} must be length 1 or {nrow(counts)}, not {length(se)}.",
         "i" = "{nrow(counts)} is the number of rows in {.arg counts}."
@@ -785,7 +785,7 @@ resolve_party_size_se_values <- function(se_quo, counts, error_call = rlang::cal
     )
   }
 
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.arg party_size_se} must be a number, a column of {.arg counts}, or a lookup table.",
       "x" = "Got {.cls {class(se)[1]}}."
@@ -812,7 +812,7 @@ resolve_party_size_se_values <- function(se_quo, counts, error_call = rlang::cal
 validate_party_size_se_values <- function(x, error_call = rlang::caller_env()) {
   bad <- !is.na(x) & (!is.finite(x) | x < 0)
   if (any(bad)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg party_size_se} must be finite and not negative.",
         "x" = "Found {sum(bad)} value{?s} that {?is/are} not: {.val {unique(x[bad])}}."
@@ -856,7 +856,7 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
   if (names_match) {
     col <- rlang::as_name(expr)
     if (!is.numeric(counts[[col]])) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg party_size} must select a numeric column.",
           "x" = "{.field {col}} is {.cls {class(counts[[col]])[1]}}."
@@ -873,7 +873,7 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
   if (is.data.frame(party_size)) {
     value_cols <- names(party_size)[vapply(party_size, is.numeric, logical(1L))]
     if (length(value_cols) != 1L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "A {.arg party_size} lookup must have exactly one numeric column.",
           "x" = "Found {length(value_cols)}: {.field {value_cols}}.",
@@ -885,7 +885,7 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
     key_cols <- setdiff(names(party_size), value_cols)
     missing_keys <- setdiff(key_cols, names(counts))
     if (length(missing_keys) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg party_size} lookup keys are not in {.arg counts}.",
           "x" = "Missing: {.field {missing_keys}}."
@@ -898,7 +898,7 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
       do.call(paste, c(party_size[key_cols], sep = "\r"))
     )
     if (anyNA(idx)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg party_size} lookup has no row for {sum(is.na(idx))} count{?s}.",
           "i" = "Every count needs a party size; an unmatched count cannot be expanded.",
@@ -923,7 +923,7 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
       validate_party_size_values(party_size, error_call)
       return(with_expansion_group(as.numeric(party_size), as.character(party_size)))
     }
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg party_size} must be length 1 or {nrow(counts)}, not {length(party_size)}.",
         "i" = "{nrow(counts)} is the number of rows in {.arg counts}."
@@ -932,7 +932,7 @@ resolve_party_size <- function(party_size_quo, counts, error_call = rlang::calle
     )
   }
 
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.arg party_size} must be a number, a column of {.arg counts}, or a lookup table.",
       "x" = "Got {.cls {class(party_size)[1]}}.",
@@ -1005,7 +1005,7 @@ with_expansion_group <- function(values, group) {
 validate_party_size_values <- function(x, error_call = rlang::caller_env()) {
   bad <- !is.na(x) & (!is.finite(x) | x <= 0)
   if (any(bad)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg party_size} must be finite and greater than zero.",
         "x" = "Found {sum(bad)} value{?s} that {?is/are} not: {.val {unique(x[bad])}}.",

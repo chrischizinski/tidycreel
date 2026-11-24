@@ -59,7 +59,7 @@ validation_report <- function(
   date_range = c(as.Date("1970-01-01"), as.Date("2100-12-31"))
 ) {
   if (is.null(counts) && is.null(interviews)) {
-    cli::cli_abort(
+    creel_abort(
       "At least one of {.arg counts} or {.arg interviews} must be provided."
     )
   }

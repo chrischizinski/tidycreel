@@ -59,16 +59,16 @@ design_bundle_version <- 1L
 #' @export
 write_design <- function(design, path, include_data = TRUE, notes = NULL, overwrite = FALSE) {
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
+    creel_abort("{.arg design} must be a {.cls creel_design} object.")
   }
   if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path)) {
-    cli::cli_abort("{.arg path} must be one folder or {.file .zip} file name.")
+    creel_abort("{.arg path} must be one folder or {.file .zip} file name.")
   }
   if (!is.logical(include_data) || length(include_data) != 1L || is.na(include_data)) {
-    cli::cli_abort("{.arg include_data} must be {.code TRUE} or {.code FALSE}.")
+    creel_abort("{.arg include_data} must be {.code TRUE} or {.code FALSE}.")
   }
   if (!is.null(notes) && (!is.list(notes) || is.null(names(notes)) || any(!nzchar(names(notes))))) {
-    cli::cli_abort("{.arg notes} must be a named list.")
+    creel_abort("{.arg notes} must be a named list.")
   }
   check_design_bundleable(design)
   check_design_rebuilds(design)
@@ -76,7 +76,7 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
   as_zip <- grepl("\\.zip$", path, ignore.case = TRUE)
   if (as_zip) rlang::check_installed("zip", reason = "to write a .zip bundle.")
   if (file.exists(path) && !isTRUE(overwrite)) {
-    cli::cli_abort(c("{.path {path}} already exists.", "i" = "Use {.code overwrite = TRUE} to replace it."))
+    creel_abort(c("{.path {path}} already exists.", "i" = "Use {.code overwrite = TRUE} to replace it."))
   }
   # Everything is written and checked in a staging folder; an existing bundle
   # is replaced only once the new one is complete, so a failed write never
@@ -140,7 +140,7 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
     isTRUE(identical(lapply(back$steps[[i]]$args, unlist_scalar), lapply(steps[[i]]$args, unlist_scalar)))
   }, logical(1))
   if (!all(same_args)) {
-    cli::cli_abort("The arguments of step{?s} {which(!same_args)} do not survive being written to the manifest.",
+    creel_abort("The arguments of step{?s} {which(!same_args)} do not survive being written to the manifest.",
                    class = "creel_error_bundle_table_roundtrip")
   }
 
@@ -154,7 +154,7 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
   }
   unlink(path, recursive = TRUE)
   if (!file.rename(ready, path)) {
-    cli::cli_abort("Could not move the new bundle into place at {.path {path}}.")
+    creel_abort("Could not move the new bundle into place at {.path {path}}.")
   }
   invisible(path)
 }
@@ -184,9 +184,9 @@ write_design <- function(design, path, include_data = TRUE, notes = NULL, overwr
 read_design <- function(path, ...) {
   supplied <- list(...)
   if (length(supplied) && (is.null(names(supplied)) || any(!nzchar(names(supplied))))) {
-    cli::cli_abort("Tables in {.arg ...} must be named by their argument, e.g. {.code counts = }.")
+    creel_abort("Tables in {.arg ...} must be named by their argument, e.g. {.code counts = }.")
   }
-  if (!file.exists(path)) cli::cli_abort("No bundle at {.path {path}}.")
+  if (!file.exists(path)) creel_abort("No bundle at {.path {path}}.")
   dir <- path
   if (!dir.exists(path)) {
     dir <- tempfile("tidycreel-bundle-")
@@ -194,7 +194,7 @@ read_design <- function(path, ...) {
     on.exit(unlink(dir, recursive = TRUE), add = TRUE)
   }
   mpath <- file.path(dir, "manifest.yml")
-  if (!file.exists(mpath)) cli::cli_abort("{.path {path}} has no {.file manifest.yml}.")
+  if (!file.exists(mpath)) creel_abort("{.path {path}} has no {.file manifest.yml}.")
   manifest <- check_manifest(yaml::read_yaml(mpath))
 
   design <- NULL
@@ -207,7 +207,7 @@ read_design <- function(path, ...) {
     } else if (!is.null(st[["table"]])) { # `$` would partial-match table_arg
       bundle_table(dir, st, manifest, i)
     } else {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Step {i} ({.fn {st$fn}}) has no table in this bundle.",
         "i" = "It was written with {.code include_data = FALSE}; supply it as \\
                {.code read_design(path, {st$table_arg} = <data frame>)}."
@@ -224,7 +224,7 @@ read_design <- function(path, ...) {
   }
   unused <- setdiff(names(supplied), used)
   if (length(unused)) {
-    cli::cli_abort("{.arg ...} names {.val {unused}}, which no step of this bundle takes.")
+    creel_abort("{.arg ...} names {.val {unused}}, which no step of this bundle takes.")
   }
   design
 }
@@ -245,7 +245,7 @@ write_step_table <- function(df, dir, file, label, effort_mark = FALSE) {
   given <- df
   rownames(given) <- NULL
   if (!isTRUE(all.equal(given, back))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "The {label} table does not survive being written as CSV.",
       "i" = "Check for list columns or other column types a CSV cannot hold."
     ), class = "creel_error_bundle_table_roundtrip")
@@ -278,7 +278,7 @@ bundle_step_fn <- function(fn) {
     add_catch = add_catch,
     add_lengths = add_lengths,
     add_ages = add_ages,
-    cli::cli_abort("The bundle has a step {.fn {fn}}, which this version cannot rebuild.",
+    creel_abort("The bundle has a step {.fn {fn}}, which this version cannot rebuild.",
                    class = "creel_error_bundle_unsupported")
   )
 }
@@ -307,7 +307,7 @@ check_design_bundleable <- function(design) {
   frame_site <- design$bus_route$site_col
   if (identical(design$design_type, "ice") && !is.null(design$site_col) && !is.null(frame_site) &&
         !frame_site %in% c(".ice_site", design$site_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "This design cannot be written as a bundle.",
       "x" = "{.arg site} chose {.field {design$site_col}} in the calendar and \\
              {.field {frame_site}} in the sampling frame.",
@@ -316,7 +316,7 @@ check_design_bundleable <- function(design) {
     ), class = "creel_error_bundle_unsupported")
   }
   if (length(design$steps) == 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "This design has no recorded steps.",
       "i" = "It was built by a version of tidycreel without them; build it again with this version."
     ), class = "creel_error_bundle_no_steps")
@@ -345,7 +345,7 @@ check_design_rebuilds <- function(design) {
   slots <- setdiff(union(names(design), names(rebuilt)), c("warnings", "warning_id"))
   differ <- slots[!vapply(slots, function(s) isTRUE(all.equal(design[[s]], rebuilt[[s]])), logical(1))]
   if (length(differ)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "This design was changed outside {.fn creel_design} and the {.fn add_*} functions.",
       "x" = "Different from a rebuild: {.field {differ}}.",
       "i" = "A bundle rebuilds the design from its steps, so the change would be lost. \\
@@ -369,7 +369,7 @@ column_types <- function(df) {
     if (is.double(x)) return(list(type = "double"))
     if (is.logical(x)) return(list(type = "logical"))
     if (is.character(x)) return(list(type = "character"))
-    cli::cli_abort("Column of class {.cls {class(x)[1]}} cannot be written to a bundle.",
+    creel_abort("Column of class {.cls {class(x)[1]}} cannot be written to a bundle.",
                    class = "creel_error_bundle_table_roundtrip")
   })
 }
@@ -411,7 +411,7 @@ bundle_table_classes <- c("creel_schedule", "tbl_df", "tbl", "data.frame")
 table_class <- function(df) {
   cls <- class(df)
   if (!all(cls %in% bundle_table_classes)) {
-    cli::cli_abort("A table of class {.cls {cls[1]}} cannot be written to a bundle.",
+    creel_abort("A table of class {.cls {cls[1]}} cannot be written to a bundle.",
                    class = "creel_error_bundle_table_roundtrip")
   }
   cls
@@ -434,12 +434,12 @@ read_bundle_table <- function(file, columns, cls = "data.frame", na = "NA") {
       double = as.numeric(x),
       logical = as.logical(x),
       character = x,
-      cli::cli_abort("Unknown column type {.val {ct$type}} for {.field {nm}}.")
+      creel_abort("Unknown column type {.val {ct$type}} for {.field {nm}}.")
     )
   }
   cls <- unlist(cls)
   if (!all(cls %in% bundle_table_classes)) {
-    cli::cli_abort("Unknown table class {.cls {cls}}.", class = "creel_error_bundle_manifest")
+    creel_abort("Unknown table class {.cls {cls}}.", class = "creel_error_bundle_manifest")
   }
   class(raw) <- cls
   raw
@@ -448,14 +448,14 @@ read_bundle_table <- function(file, columns, cls = "data.frame", na = "NA") {
 bundle_table <- function(dir, st, manifest, i, guess_date = TRUE) {
   file <- file.path(dir, st$table)
   if (!file.exists(file)) {
-    cli::cli_abort("The bundle is missing {.file {st$table}} (step {i}, {.fn {st$fn}}).",
+    creel_abort("The bundle is missing {.file {st$table}} (step {i}, {.fn {st$fn}}).",
                    class = "creel_error_bundle_table_missing")
   }
   want <- manifest$tables[[st$table]]
   if (is.null(want)) {
     cli::cli_inform("{.file {st$table}} has no checksum in the manifest; not verified.")
   } else if (!identical(unname(tools::md5sum(file)), want)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.file {st$table}} has changed since the bundle was written.",
       "x" = "Its checksum does not match the manifest.",
       "i" = "Restore the original, or rebuild the design from the changed data and write a new bundle."
@@ -478,29 +478,29 @@ check_manifest <- function(m) {
              "steps", "tables", "notes")
   unknown <- setdiff(names(m), known)
   if (length(unknown)) {
-    cli::cli_abort("The manifest has unknown field{?s} {.field {unknown}}.",
+    creel_abort("The manifest has unknown field{?s} {.field {unknown}}.",
                    class = "creel_error_bundle_manifest")
   }
   if (!identical(m$format, design_bundle_format)) {
-    cli::cli_abort("This is not a tidycreel design bundle (format {.val {m$format}}).",
+    creel_abort("This is not a tidycreel design bundle (format {.val {m$format}}).",
                    class = "creel_error_bundle_manifest")
   }
   v <- m$format_version
   if (!is.numeric(v) || length(v) != 1L || v > design_bundle_version) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "The bundle's format version is {.val {v}}; this tidycreel reads up to {design_bundle_version}.",
       "i" = "Update tidycreel to read it."
     ), class = "creel_error_bundle_manifest")
   }
   if (length(m$steps) == 0L || !identical(m$steps[[1]]$fn, "creel_design")) {
-    cli::cli_abort("The manifest's first step must be {.fn creel_design}.",
+    creel_abort("The manifest's first step must be {.fn creel_design}.",
                    class = "creel_error_bundle_manifest")
   }
   step_fields <- c("fn", "args", "table", "columns", "class", "na", "table_arg", "counts_are_effort", "extra")
   for (i in seq_along(m$steps)) {
     bad <- setdiff(names(m$steps[[i]]), step_fields)
     if (length(bad)) {
-      cli::cli_abort("Step {i} has unknown field{?s} {.field {bad}}.", class = "creel_error_bundle_manifest")
+      creel_abort("Step {i} has unknown field{?s} {.field {bad}}.", class = "creel_error_bundle_manifest")
     }
     # A hand-written manifest may leave it out; each step takes one table.
     if (is.null(m$steps[[i]]$table_arg)) {

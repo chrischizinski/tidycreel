@@ -289,7 +289,7 @@ estimate_total_release <- function(
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}",
       "i" = "Default is {.val taylor} (Taylor linearization)"
@@ -298,7 +298,7 @@ estimate_total_release <- function(
 
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -331,7 +331,7 @@ estimate_total_release <- function(
 
   # Validate catch data (releases come from add_catch)
   if (is.null(design[["catch"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No catch data available.",
       "x" = "Call {.fn add_catch} before estimating total release.",
       "i" = "Release data comes from catch records with catch_type = 'released'."
@@ -354,7 +354,7 @@ estimate_total_release <- function(
     # Horvitz-Thompson total with no per-stratum effort x rate product, so
     # there is no cell to exclude and the argument would be inert.
     if (identical(missing_rate, "exclude")) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.code missing_rate = \"exclude\"} does not apply to {.val {design$design_type}} designs.",
         "x" = "Their totals are Horvitz-Thompson sums, not per-stratum effort x rate products."
       ))
@@ -363,7 +363,7 @@ estimate_total_release <- function(
     # Refused rather than ignored, which is the defect this argument was added to
     # remove (GH #266). Mirrors estimate_total_catch().
     if (identical(use_trips, "all")) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.code use_trips = \"all\"} is not available for {.val {design$design_type}} designs.",
         "x" = paste(
           "{.val {design$design_type}} designs estimate a completed-trip",
@@ -380,7 +380,7 @@ estimate_total_release <- function(
     # Horvitz-Thompson totals and has no mean-of-ratios form, so accepting the
     # argument and estimating something else is the defect class this removes.
     if (!identical(estimator, "ratio-of-means")) {
-      cli::cli_abort(c(
+      creel_abort(c(
         paste0(
           "{.code estimator = \"{estimator_requested}\"} is not available for ",
           "{.val {design$design_type}} designs."
@@ -402,7 +402,7 @@ estimate_total_release <- function(
 
     if (!is.null(by_info_br$species_var)) {
       if (is.null(design[["catch"]])) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "Species-level total release requires catch data.",
           "x" = paste(
             "Call {.fn add_catch} before using species grouping in",
@@ -945,7 +945,7 @@ estimate_total_release_sections <- function(
   if (length(not_found_sections) > 0) {
     n_absent <- length(not_found_sections) # nolint: object_usage_linter
     if (missing_sections == "error") {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{n_absent} missing section(s) in count or interview data.",
         "x" = "Section(s) not found: {.val {not_found_sections}}",
         "i" = "All registered sections must have both count and interview data, or use {.arg missing_sections = 'warn'}." # nolint: line_length_linter

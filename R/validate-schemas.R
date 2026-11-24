@@ -30,7 +30,7 @@ validate_calendar_schema <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(
+    creel_abort(
       c(
         "Calendar data validation failed:",
         stats::setNames(msgs, rep("x", length(msgs))),
@@ -203,7 +203,7 @@ validate_creel_schedule <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(
+    creel_abort(
       c(
         "creel_schedule validation failed:",
         stats::setNames(msgs, rep("x", length(msgs))),
@@ -247,7 +247,7 @@ validate_count_schema <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(
+    creel_abort(
       c(
         "Count data validation failed:",
         stats::setNames(msgs, rep("x", length(msgs))),
@@ -294,7 +294,7 @@ validate_interview_schema <- function(data) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(
+    creel_abort(
       c(
         "Interview data validation failed:",
         stats::setNames(msgs, rep("x", length(msgs))),

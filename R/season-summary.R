@@ -51,7 +51,7 @@ season_summary <- function(estimates, ...) {
   # Input guard: must be a named list
   is_named_list <- is.list(estimates) && !is.null(names(estimates))
   if (!is_named_list) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg estimates} must be a named list of {.cls creel_estimates} objects.",
         "i" = "Provide names via {.code list(effort = ..., cpue = ...)}."
@@ -63,7 +63,7 @@ season_summary <- function(estimates, ...) {
   is_creel <- vapply(estimates, inherits, logical(1), "creel_estimates")
   if (!all(is_creel)) {
     bad <- names(estimates)[!is_creel] # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "All elements of {.arg estimates} must be {.cls creel_estimates} objects.",
         "x" = "Element{?s} {.val {bad}} {?is/are} not {.cls creel_estimates}."
@@ -82,7 +82,7 @@ season_summary <- function(estimates, ...) {
     logical(1)
   ))
   if (!all_consistent) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "All {.arg estimates} must have the same {.field by_vars} grouping structure.",
         "i" = "Pass estimates that were all computed with the same stratification variables."
