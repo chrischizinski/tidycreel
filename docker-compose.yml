@@ -25,7 +25,7 @@ services:
       - _R_CHECK_CRAN_INCOMING_REMOTE_=false
       - R_DEFAULT_INTERNET_TIMEOUT=20
       - LC_ALL=C.UTF-8
-    command: Rscript -e "devtools::test()"
+    command: Rscript -e "devtools::test(stop_on_failure = TRUE)"
 
   # Service for running R CMD check
   tidycreel-check:

@@ -24,7 +24,7 @@ build:
 	Rscript -e "devtools::build()"
 
 test:
-	Rscript -e "devtools::test()"
+	Rscript -e "devtools::test(stop_on_failure = TRUE)"
 
 check:
 	Rscript -e "rcmdcheck::rcmdcheck(args = c('--no-manual', '--as-cran'), error_on='warning')"
@@ -47,7 +47,7 @@ docker-build:
 
 docker-test: docker-build
 	docker run --rm -v $(PWD):/home/tidycreel tidycreel:latest \
-		bash -c "rm -f .Rprofile && Rscript -e 'devtools::test()'"
+		bash -c "rm -f .Rprofile && Rscript -e 'devtools::test(stop_on_failure = TRUE)'"
 
 docker-check: docker-build
 	docker run --rm -v $(PWD):/home/tidycreel tidycreel:latest \
