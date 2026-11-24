@@ -31,7 +31,9 @@ test_that("grouped rates use the requested level, not svyby's fixed 95%", {
   for (lvl in c(0.8, 0.9)) {
     expect_normal_level(quiet(estimate_catch_rate(d, by = day_type, conf_level = lvl)), lvl)
     expect_normal_level(quiet(estimate_harvest_rate(d, by = day_type, conf_level = lvl)), lvl)
-    expect_normal_level(quiet(estimate_catch_rate(d, by = species, conf_level = lvl)), lvl)
+    # species with an interview grouping goes through the grouped helper; species
+    # alone is per-species ungrouped (confint) and was never affected.
+    expect_normal_level(quiet(estimate_catch_rate(d, by = c(species, day_type), conf_level = lvl)), lvl)
     expect_normal_level(quiet(estimate_catch_rate(
       d, by = day_type, estimator = "mor", use_trips = "complete", conf_level = lvl
     )), lvl)
