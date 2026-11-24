@@ -41,7 +41,7 @@ bud_interviews <- function(fly_status = "complete") {
 
 bud_design <- function(iv = bud_interviews()) {
   suppressWarnings(bud_q(add_interviews(
-    creel_design(bud_calendar(), date = date, strata = day_type), # nolint: object_usage_linter
+    add_rate_counts(creel_design(bud_calendar(), date = date, strata = day_type)), # rates pooled across strata need each stratum's effort (GH #691)
     iv,
     catch = catch_total, harvest = catch_kept, effort = hours_fished, # nolint: object_usage_linter
     trip_status = trip_status, trip_duration = trip_duration, n_anglers = 1 # nolint: object_usage_linter
@@ -128,19 +128,27 @@ test_that("BUD-03 (#673): every grouped rate estimator applies the same rule", {
 })
 
 test_that("BUD-04 (#673): mean-of-ratios, grouped and as a lone domain", {
+  # The incomplete trips are on weekdays only, so pooled across day types the
+  # weekend has no rate from them and the call is refused (GH #691). The
+  # bootstrap behaviour under test is the interview survey's, checked with the
+  # pooling switched off.
   d <- bud_design(bud_interviews(fly_status = "incomplete"))
-  grouped <- bud_run(estimate_catch_rate( # nolint: object_usage_linter
+  expect_error(
+    bud_q(estimate_catch_rate(d, estimator = "mor", use_trips = "incomplete")), # nolint: object_usage_linter
+    class = "creel_error_rate_needs_effort"
+  )
+  grouped <- bud_run(without_rate_pooling(estimate_catch_rate( # nolint: object_usage_linter
     d,
     by = gear, variance = "bootstrap", estimator = "mor", use_trips = "incomplete" # nolint: object_usage_linter
-  ))
+  )))
   expect_true(is.na(bud_se(grouped$value, "fly")))
   # The incomplete trips are all fly trips: the domain itself is missed. A
   # fresh design, since a tier-2 warning prints once per design.
   d <- bud_design(bud_interviews(fly_status = "incomplete"))
-  lone <- bud_run(estimate_catch_rate( # nolint: object_usage_linter
+  lone <- bud_run(without_rate_pooling(estimate_catch_rate( # nolint: object_usage_linter
     d,
     variance = "bootstrap", estimator = "mor", use_trips = "incomplete"
-  ))
+  )))
   expect_true(is.na(lone$value$estimates$se))
   expect_length(lone$warnings, 1L)
   expect_match(conditionMessage(lone$warnings[[1]]), "the estimate", fixed = TRUE)
@@ -223,12 +231,17 @@ test_that("BUD-09 (#673): an ungrouped ratio-of-means rate over a sparse trip ty
   iv <- bud_interviews()
   iv$trip_status <- ifelse(iv$gear == "fly", "complete", "incomplete")
   d <- bud_design(iv)
-  cpue <- bud_run(estimate_catch_rate(d, variance = "bootstrap")) # nolint: object_usage_linter
+  # The complete trips are on weekdays only, so pooled across day types the
+  # weekend has no rate from them and the call is refused (GH #691). The
+  # bootstrap behaviour under test is the interview survey's, checked with the
+  # pooling switched off.
+  expect_error(bud_q(estimate_catch_rate(d)), class = "creel_error_rate_needs_effort") # nolint: object_usage_linter
+  cpue <- bud_run(without_rate_pooling(estimate_catch_rate(d, variance = "bootstrap"))) # nolint: object_usage_linter
   expect_true(is.na(cpue$value$estimates$se))
   expect_length(cpue$warnings, 1L)
-  hpue <- bud_run(estimate_harvest_rate(bud_design(iv), variance = "bootstrap")) # nolint: object_usage_linter
+  hpue <- bud_run(without_rate_pooling(estimate_harvest_rate(bud_design(iv), variance = "bootstrap"))) # nolint: object_usage_linter
   expect_true(is.na(hpue$value$estimates$se))
-  taylor <- bud_run(estimate_catch_rate(d, variance = "taylor")) # nolint: object_usage_linter
+  taylor <- bud_run(without_rate_pooling(estimate_catch_rate(d, variance = "taylor"))) # nolint: object_usage_linter
   expect_true(is.finite(taylor$value$estimates$se))
 })
 

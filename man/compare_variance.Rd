@@ -37,7 +37,7 @@ with columns:
 \item{se_taylor}{Taylor linearization SE from the original estimate.}
 \item{se_replicate}{Replicate-weight SE from the re-estimation.}
 \item{divergence_ratio}{Ratio \code{se_replicate / se_taylor}.
-\code{NA} when \code{se_taylor == 0}.}
+\code{NA} when \code{se_taylor} is zero to rounding error.}
 \item{diverges_flag}{Logical. \code{TRUE} when
 \code{|divergence_ratio - 1| > divergence_threshold}.}
 }

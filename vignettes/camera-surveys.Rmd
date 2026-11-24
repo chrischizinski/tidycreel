@@ -285,8 +285,9 @@ interview day in that stratum recovers a standard error.
 
 ## Catch Estimation
 
-Camera designs estimate **effort only**. `estimate_catch_rate()` still works —
-a catch rate comes from the interviews and does not involve the camera at all:
+Camera designs estimate **effort only**. A catch rate within each day type
+still works — it comes from that day type's interviews and does not involve
+the camera at all:
 
 ```{r catch-rate}
 design_catch <- suppressMessages(add_interviews(
@@ -297,8 +298,22 @@ design_catch <- suppressMessages(add_interviews(
   trip_status = trip_status,
   n_anglers   = 1
 ))
-catch_rate <- estimate_catch_rate(design_catch)
+catch_rate <- estimate_catch_rate(design_catch, by = day_type)
 print(catch_rate)
+```
+
+The call warns that each day type rests on 20 trips, a small sample for a
+ratio estimator. The example data are small so the page runs quickly; the
+warning is about precision, and the standard errors already reflect it.
+
+One rate pooled across day types is a different quantity. It is weighted by
+each day type's effort, so a day type that was interviewed heavily but fished
+lightly does not pull it toward its own rate, and on a camera design that
+effort does not come from `estimate_effort()`. The pooled rate is refused
+rather than weighted by the interviews:
+
+```{r catch-rate-pooled-refusal, error = TRUE}
+estimate_catch_rate(design_catch)
 ```
 
 A **total** catch is a different matter, and `estimate_total_catch()` refuses a

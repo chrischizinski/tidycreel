@@ -155,6 +155,11 @@ validate_incomplete_trips <- function(
   conf_level = 0.95,
   truncate_at = 0.5
 ) {
+  # Compares rates on the same interviews, a question effort does not enter:
+  # rates are not effort-weighted here, and no counts are needed (GH #691).
+  old_pooling <- rate_pooling_state$off # nolint: object_usage_linter
+  rate_pooling_state$off <- TRUE # nolint: object_usage_linter
+  on.exit(rate_pooling_state$off <- old_pooling, add = TRUE) # nolint: object_usage_linter
   # Capture bare column names
   catch_quo <- rlang::enquo(catch)
   effort_quo <- rlang::enquo(effort)

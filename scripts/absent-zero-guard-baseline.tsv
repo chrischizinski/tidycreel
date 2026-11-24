@@ -37,3 +37,4 @@ R/validate-incomplete-trips.R	c_num <- c(rc$num, rep(0, n_i))	domain indicator: 
 R/validate-incomplete-trips.R	i_den <- c(rep(0, n_c), ri$den)	domain indicator: a complete trip adds nothing to the bus-route incomplete-trip rate's denominator (GH #671)
 R/validate-incomplete-trips.R	i_num <- c(rep(0, n_c), ri$num)	domain indicator: a complete trip adds nothing to the bus-route incomplete-trip rate's numerator (GH #671)
 R/validate-incomplete-trips.R	zeros <- rep(0, nrow(missing))	an interviewed day neither rate kept a row from (all trips truncated): it was sampled and contributes nothing to either domain (GH #671, as GH #663)
+R/creel-estimates-rate-pooling.R	g_full <- stats::setNames(rep(0, length(e_keys)), e_keys)	A stratum with effort but no interviews is refused before this point; the only strata left without a rate have a known zero effort, so they take no part in the pooled ratio and its derivative in their effort is exactly 0 (GH #691).

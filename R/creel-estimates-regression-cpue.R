@@ -311,6 +311,11 @@ compare_cpue_estimators <- function(
   force_origin = TRUE,
   verbose = FALSE
 ) {
+  # Compares rates on the same interviews, and the regression
+  # estimator is not effort-weighted yet: none are weighted here, and no counts are needed (GH #691).
+  old_pooling <- rate_pooling_state$off # nolint: object_usage_linter
+  rate_pooling_state$off <- TRUE # nolint: object_usage_linter
+  on.exit(rate_pooling_state$off <- old_pooling, add = TRUE) # nolint: object_usage_linter
   checkmate::assert_class(design, "creel_design")
   checkmate::assert_number(conf_level, lower = 0.5, upper = 1.0)
   checkmate::assert_flag(force_origin)

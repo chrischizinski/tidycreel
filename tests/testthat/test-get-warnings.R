@@ -38,15 +38,18 @@ raised <- function(expr) {
 test_that("a warning raised by an estimator is on the estimate, with its tier", {
   design <- roving_design()
   out <- raised(estimate_catch_rate(design))
-  w <- get_warnings(out$value)
-  expect_identical(w$class, out$classes)
-  expect_identical(w$class, "creel_warning_mor_truncation")
+  all_w <- get_warnings(out$value)
+  # The record is what the console showed. The rate is weighted by each day
+  # type's effort (GH #691), so the effort's own conditions are on it too.
+  expect_setequal(all_w$class, out$classes)
+  w <- all_w[all_w$class == "creel_warning_mor_truncation", ]
+  expect_identical(nrow(w), 1L)
   # Truncation is a data-quality fact (tier 2), not a may-be-wrong one.
   expect_identical(w$tier, 2L)
   expect_identical(w$fn, "mor_truncation_message")
   expect_match(w$message, "MOR truncation: 29 trips excluded")
   # Plain text: the record is for reading back, not for the console.
-  expect_false(grepl("\033[", w$message, fixed = TRUE))
+  expect_false(any(grepl("\033[", all_w$message, fixed = TRUE)))
 })
 
 test_that("a total records the warnings of the rate it computes internally", {
@@ -65,7 +68,7 @@ test_that("a warning muffled for one call is still recorded", {
     suppressMessages(estimate_catch_rate(design)),
     creel_warning_mor_truncation = function(w) invokeRestart("muffleWarning")
   )
-  expect_identical(get_warnings(rate)$class, "creel_warning_mor_truncation")
+  expect_true("creel_warning_mor_truncation" %in% get_warnings(rate)$class)
 })
 
 test_that("an estimate holds only its own call's warnings", {
@@ -125,8 +128,11 @@ test_that("finished calls do not accumulate in the session log", {
   # The log only needs the calls in progress; a long season script must not
   # grow it without bound.
   design <- roving_design()
-  for (i in 1:5) raised(estimate_catch_rate(design))
-  expect_lte(length(tidycreel:::creel_warning_log$records), 1L)
+  for (i in 1:5) last <- raised(estimate_catch_rate(design))
+  # At most the last call's own records remain, however many calls ran. That
+  # is what the estimate holds, which can exceed what printed: a repeat on the
+  # same design is recorded but not printed again.
+  expect_lte(length(tidycreel:::creel_warning_log$records), nrow(get_warnings(last$value)))
 })
 
 test_that("a design saved in one session keeps new warnings in the next", {

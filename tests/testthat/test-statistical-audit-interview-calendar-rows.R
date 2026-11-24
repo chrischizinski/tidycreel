@@ -51,7 +51,8 @@ test_that("a two-shift calendar gives the catch rate, SE and n of the one-row ca
   x <- icr_data()
   # A copy of every interview leaves the ratio alone and shrinks the SE by
   # about sqrt(2), so the SE and n are what tell the two apart.
-  expect_equal(icr_rate(icr_design(x$cal2, x$iv)), icr_rate(icr_design(x$cal, x$iv)))
+  # Counts too: the ungrouped rate is weighted by each day type's effort (GH #691).
+  expect_equal(icr_rate(icr_design(x$cal2, x$iv, x$cn)), icr_rate(icr_design(x$cal, x$iv, x$cn)))
 })
 
 test_that("a two-shift calendar gives the total catch and SE of the one-row calendar", {

@@ -25,7 +25,7 @@
 #'     \item{se_taylor}{Taylor linearization SE from the original estimate.}
 #'     \item{se_replicate}{Replicate-weight SE from the re-estimation.}
 #'     \item{divergence_ratio}{Ratio \code{se_replicate / se_taylor}.
-#'       \code{NA} when \code{se_taylor == 0}.}
+#'       \code{NA} when \code{se_taylor} is zero to rounding error.}
 #'     \item{diverges_flag}{Logical. \code{TRUE} when
 #'       \code{|divergence_ratio - 1| > divergence_threshold}.}
 #'   }
@@ -170,14 +170,20 @@ compare_variance <- function(
     joined_est <- dplyr::left_join(est_df, rep_df, by = group_cols)
     se_taylor <- joined_est$se
     se_replicate <- joined_est$se_replicate
+    est_value <- joined_est$estimate
   } else {
     # Ungrouped: single row, positional pairing safe
     se_taylor <- est_df$se
     se_replicate <- replicate_est$estimates$se
+    est_value <- est_df$estimate
   }
 
+  # A Taylor SE that is zero to rounding has no ratio. Exact zero is not the
+  # test: an effort-weighted rate (GH #691) on constant data has an SE of
+  # order 1e-17, and the replicate SE's rounding noise divided by it is noise.
+  se_zero <- se_taylor <= sqrt(.Machine$double.eps) * pmax(abs(est_value), 1)
   divergence_ratio <- ifelse(
-    se_taylor == 0,
+    se_zero,
     NA_real_,
     se_replicate / se_taylor
   )

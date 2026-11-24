@@ -756,9 +756,18 @@ make_test_interviews <- function() {
 }
 
 #' Create test design with interviews (32+)
+#'
+#' Counts on every day: an ungrouped rate on a stratified design is weighted
+#' by each stratum's effort, so it needs counts (GH #691). Weekend effort is
+#' set unlike its share of interviews so the weighting is not a no-op.
 make_cpue_design <- function() {
   cal <- make_test_calendar_cpue()
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  counts <- data.frame(
+    date = cal$date, day_type = cal$day_type,
+    effort_hours = c(12, 15, 11, 14, 60, 55, 70, 65)
+  )
+  design <- suppressWarnings(suppressMessages(add_counts(design, counts))) # nolint: object_usage_linter
   interviews <- make_test_interviews()
   add_interviews(
     design,
@@ -1048,24 +1057,59 @@ test_that("estimate_catch_rate grouped result has n column reflecting per-group 
 
 # Reference tests ----
 
-test_that("ungrouped CPUE matches manual svyratio calculation", {
+# An ungrouped rate on a stratified design is sum_h E_h R_h / sum_h E_h, each
+# stratum weighted by its estimated effort, not by its share of the
+# interviews (GH #691). The reference is built independently: interviews
+# weighted E_h / D_h (D_h = interviewed hours in h) in a survey design, and the
+# closed form from the per-stratum rates.
+cpue_pooled_reference <- function(design) {
+  ci <- design$interviews[design$interviews$trip_status == "complete", ]
+  E <- suppressWarnings(suppressMessages(estimate_effort(design, by = day_type)))$estimates # nolint: object_usage_linter
+  E_h <- stats::setNames(E$estimate, E$day_type)
+  se_E <- stats::setNames(E$se, E$day_type)
+  D_h <- tapply(ci$hours_fished, ci$day_type, sum)
+  ci$w <- as.numeric(E_h[ci$day_type] / D_h[ci$day_type])
+  svy_w <- survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, weights = ~w, data = ci)
+  r <- survey::svyratio(~catch_total, ~hours_fished, svy_w)
+  R <- as.numeric(coef(r))
+  R_h <- tapply(ci$catch_total, ci$day_type, sum) / D_h
+  g <- (R_h - R) / sum(E_h[names(R_h)])
+  list(
+    ci = ci, R = R, R_h = R_h, E_h = E_h,
+    var_cond = as.numeric(vcov(r)),
+    var_effort = sum(g^2 * se_E[names(R_h)]^2),
+    ci_cond = confint(r, level = 0.95),
+    unweighted = as.numeric(coef(survey::svyratio(
+      ~catch_total, ~hours_fished,
+      survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = ci)
+    )))
+  )
+}
+
+test_that("ungrouped CPUE is the effort-weighted rate across strata", {
   design <- make_cpue_design()
-
-  # tidycreel estimate (filters to complete trips by default)
   result <- estimate_catch_rate(design) # nolint: object_usage_linter
+  ref <- cpue_pooled_reference(design)
 
-  # Manual survey::svyratio calculation (filter to complete trips to match)
-  complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
-  svy_complete <- survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = complete_interviews)
-  manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy_complete)
-  manual_estimate <- as.numeric(coef(manual_result))
-  manual_se <- as.numeric(survey::SE(manual_result))
-  manual_ci <- confint(manual_result, level = 0.95)
+  expect_equal(result$estimates$estimate, ref$R, tolerance = 1e-10)
+  # Same number as the closed form from each stratum's own rate.
+  expect_equal(ref$R, sum(ref$E_h[names(ref$R_h)] * ref$R_h) / sum(ref$E_h[names(ref$R_h)]))
+  # And not the interview-weighted ratio this fixture would otherwise give.
+  expect_gt(abs(result$estimates$estimate / ref$unweighted - 1), 0.02)
+})
 
-  expect_equal(result$estimates$estimate, manual_estimate, tolerance = 1e-10)
-  expect_equal(result$estimates$se, manual_se, tolerance = 1e-10)
-  expect_equal(result$estimates$ci_lower, manual_ci[1, 1], tolerance = 1e-10)
-  expect_equal(result$estimates$ci_upper, manual_ci[1, 2], tolerance = 1e-10)
+test_that("ungrouped CPUE SE^2 is the survey variance plus the effort weights' variance", {
+  design <- make_cpue_design()
+  result <- estimate_catch_rate(design) # nolint: object_usage_linter
+  ref <- cpue_pooled_reference(design)
+
+  se_ref <- sqrt(ref$var_cond + ref$var_effort)
+  expect_equal(result$estimates$se, se_ref, tolerance = 1e-10)
+  expect_gt(ref$var_effort, 0)
+  # The interval is the survey's, widened by the same factor as the SE.
+  scale <- se_ref / sqrt(ref$var_cond)
+  expect_equal(result$estimates$ci_upper - ref$R, (ref$ci_cond[1, 2] - ref$R) * scale, tolerance = 1e-10)
+  expect_equal(ref$R - result$estimates$ci_lower, (ref$R - ref$ci_cond[1, 1]) * scale, tolerance = 1e-10)
 })
 
 test_that("grouped CPUE matches manual svyby+svyratio calculation", {
@@ -1107,21 +1151,6 @@ test_that("grouped CPUE matches manual svyby+svyratio calculation", {
 
     expect_equal(tidycreel_se, manual_se, tolerance = 1e-10)
   }
-})
-
-test_that("ungrouped CPUE SE^2 matches variance from manual vcov", {
-  design <- make_cpue_design()
-
-  # tidycreel estimate (filters to complete trips by default)
-  result <- estimate_catch_rate(design) # nolint: object_usage_linter
-
-  # Manual survey::svyratio calculation (filter to complete trips to match)
-  complete_interviews <- design$interviews[design$interviews$trip_status == "complete", ]
-  svy_complete <- survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = complete_interviews)
-  manual_result <- survey::svyratio(~catch_total, ~hours_fished, svy_complete)
-  manual_variance <- as.numeric(vcov(manual_result))
-
-  expect_equal(result$estimates$se^2, manual_variance, tolerance = 1e-10)
 })
 
 # Custom confidence level test ----
@@ -1184,6 +1213,7 @@ test_that("full workflow with example_calendar and example_interviews produces v
 
   # Create design
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # Add interviews
   design <- add_interviews(
@@ -1238,6 +1268,7 @@ test_that("result from example data has reasonable CPUE values", {
 
   # Create design and add interviews
   design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
   design <- add_interviews(
     design,
     example_interviews, # nolint: object_usage_linter
@@ -1260,8 +1291,12 @@ test_that("result from example data has reasonable CPUE values", {
 
 test_that("estimate_catch_rate with zero-effort interviews issues warning and excludes them", {
   # Create design with some zero-effort interviews
+  # Weekdays only: the interviews are all on weekdays, and a weekend stratum
+  # with effort but no interviews would have no rate (GH #691).
   cal <- make_test_calendar_cpue()
+  cal <- cal[cal$day_type == "weekday", ]
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # Create interviews with 2 zero-effort rows
   interviews <- data.frame(
@@ -2525,6 +2560,7 @@ make_grouped_use_trips_design <- function() {
     stringsAsFactors = FALSE
   )
   design <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   # 40 interviews: 20 weekday (10 complete, 10 incomplete), 20 weekend (10 complete, 10 incomplete)
   interviews <- data.frame(
@@ -3379,9 +3415,12 @@ test_that("ICE-04: estimate_catch_rate() on ice design returns valid estimates t
 # Phase 46: Camera interview pipeline (CAM-04) — estimate_catch_rate() ----
 
 #' Build a camera design with counts and interviews, ready for estimation
-make_camera_catch_rate_design <- function() {
+#' `one_stratum = TRUE` labels every day "season": a rate there pools no
+#' strata and needs no effort weights (GH #691).
+make_camera_catch_rate_design <- function(one_stratum = FALSE) {
   data("example_calendar", package = "tidycreel")
   cal <- example_calendar # nolint: object_usage_linter
+  if (one_stratum) cal$day_type <- "season"
   dates <- unique(cal$date)[1:4]
   day_types <- cal$day_type[match(dates, cal$date)]
 
@@ -3420,8 +3459,12 @@ make_camera_catch_rate_design <- function() {
   ))
 }
 
+# A camera design's rate within one stratum needs no pooling. Pooled across
+# day types it would be weighted by each day type's effort, which
+# estimate_effort() does not give on a camera design, so it is refused until
+# camera effort is wired in (GH #691).
 test_that("CAM-04: estimate_catch_rate() on camera design returns valid creel_estimates", {
-  design <- make_camera_catch_rate_design() # nolint: object_usage_linter
+  design <- make_camera_catch_rate_design(one_stratum = TRUE) # nolint: object_usage_linter
   result <- suppressWarnings(estimate_catch_rate(design)) # nolint: object_usage_linter
   expect_s3_class(result, "creel_estimates")
   expect_true("estimate" %in% names(result$estimates))
@@ -3429,11 +3472,19 @@ test_that("CAM-04: estimate_catch_rate() on camera design returns valid creel_es
 })
 
 test_that("CAM-04: estimate_catch_rate() on camera design returns finite numeric estimate", {
-  design <- make_camera_catch_rate_design() # nolint: object_usage_linter
+  design <- make_camera_catch_rate_design(one_stratum = TRUE) # nolint: object_usage_linter
   result <- suppressWarnings(estimate_catch_rate(design)) # nolint: object_usage_linter
   expect_true(is.numeric(result$estimates$estimate))
   expect_true(is.finite(result$estimates$estimate))
   expect_true(is.numeric(result$estimates$se))
+})
+
+test_that("CAM-04: a camera rate pooled across day types is refused, not interview-weighted (GH #691)", {
+  design <- make_camera_catch_rate_design() # nolint: object_usage_linter
+  expect_error(
+    suppressWarnings(estimate_catch_rate(design)), # nolint: object_usage_linter
+    class = "creel_error_rate_needs_effort"
+  )
 })
 
 # Phase 47: Aerial interview pipeline (AIR-05) — estimate_catch_rate() ----
@@ -3562,6 +3613,7 @@ make_mortr_design <- function(n_complete = 20, n_incomplete = 30, zero_catch_fra
   design <- suppressMessages(
     creel_design(cal, date = date, strata = day_type)
   )
+  design <- add_rate_counts(design) # ungrouped rates need each stratum's effort (GH #691)
 
   n_total <- n_complete + n_incomplete
   n_zero <- round(n_incomplete * zero_catch_fraction)

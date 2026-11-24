@@ -14,6 +14,7 @@ make_cv_design <- function(n = 40, grouped = FALSE) {
   design <- suppressMessages(
     creel_design(cal, date = date, strata = day_type)
   )
+  design <- add_rate_counts(design) # rates pooled across strata need each stratum's effort (GH #691)
 
   base_cols <- list(
     date = as.Date(rep(
@@ -101,6 +102,7 @@ test_that("CV-05: diverges_flag = FALSE on uniform toy data", {
     stringsAsFactors = FALSE
   )
   design <- suppressMessages(creel_design(cal, date = date, strata = day_type))
+  design <- add_rate_counts(design) # rates pooled across strata need each stratum's effort (GH #691)
   interviews <- data.frame(
     date = as.Date(rep(
       c(

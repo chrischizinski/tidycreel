@@ -131,8 +131,16 @@ test_that("release rate by mean of ratios weights parties by size", {
   k$released <- unname(rel[as.character(k$interview_id)])
   k$released[is.na(k$released)] <- 0
   r <- k$released / (k$hours_fished * k$n_anglers)
-  expect_equal(got$estimates$estimate, sum(k$n_anglers * r) / sum(k$n_anglers))
-  expect_false(isTRUE(all.equal(got$estimates$estimate, mean(r))))
+  # Within each day type, parties weighted by size; across day types, each
+  # day type's mean weighted by its effort (GH #691).
+  k$day_type <- example_calendar$day_type[match(k$date, example_calendar$date)]
+  M_h <- tapply(k$n_anglers * r, k$day_type, sum) / tapply(k$n_anglers, k$day_type, sum)
+  E <- quiet(estimate_effort(d, by = day_type))$estimates
+  E_h <- stats::setNames(E$estimate, E$day_type)[names(M_h)]
+  expect_equal(got$estimates$estimate, sum(E_h * M_h) / sum(E_h))
+  # Equal party weights within a day type would give a different number.
+  M_eq <- tapply(r, k$day_type, mean)
+  expect_false(isTRUE(all.equal(got$estimates$estimate, sum(E_h * M_eq) / sum(E_h))))
 })
 
 test_that("a missing party size drops that party and keeps the rest weighted", {

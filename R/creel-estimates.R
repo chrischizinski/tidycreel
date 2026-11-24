@@ -1234,6 +1234,41 @@ estimate_effort <- function(
 #'   \code{"mortr"} included, which \code{method} cannot: it reports mandatory
 #'   truncation and the default threshold with the same string.
 #'
+#' @section Rates across strata:
+#' A rate estimated across strata -- with no \code{by}, or with \code{by}
+#' columns that are not all strata -- is the population rate: the season's
+#' total of the fish counted (caught, harvested or released, as the function
+#' estimates) over its total effort, built stratum by stratum (Pollock et al.
+#' 1994, sec. 15.3.3.6):
+#' \deqn{\hat{R} = \sum_h \hat{E}_h \hat{R}_h / \sum_h \hat{E}_h,}
+#' where \eqn{\hat{E}_h} is the stratum's effort from
+#' \code{estimate_effort(design, by = <strata>)}. Each interview in stratum
+#' \eqn{h} is weighted \eqn{\hat{E}_h / D_h}, with \eqn{D_h} the stratum's
+#' interviewed effort (or, for a mean of ratios, its interviewed anglers), so a
+#' group that is not a stratum is weighted by its own effort in each stratum.
+#' The standard error adds the effort estimate's variance to the interview
+#' survey's, by the delta method.
+#'
+#' Pooling the interviews alone would weight each stratum by how heavily it
+#' was interviewed, not by how much it was fished: sampling weekends more
+#' often than weekdays, or taking the same number of interviews on quiet and
+#' busy days, then biases the rate. On a simulated season the
+#' interview-weighted rate was off by +22 and -11 percent (GH #691).
+#'
+#' A design with more than one stratum therefore needs counts for such a rate
+#' and is refused without them (class \code{creel_error_rate_needs_effort});
+#' a rate \code{by} the strata needs none. A stratum that was fished but has
+#' no interviews among the trips used (\code{use_trips}) has no rate, so the
+#' pooled rate is refused, naming it, rather than reported over the other
+#' strata as though it covered the season. Within one stratum nothing is
+#' pooled and nothing changes. Species-level, sectioned, regression and
+#' bus-route or ice rates are not yet effort-weighted across strata.
+#'
+#' @references
+#'   Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). \emph{Angler
+#'   Survey Methods and Their Applications in Fisheries Management}. American
+#'   Fisheries Society Special Publication 25.
+#'
 #' @section Package Options:
 #' \strong{Complete Trip Percentage Threshold:}
 #' The package option \code{tidycreel.min_complete_pct} controls the threshold
@@ -1314,12 +1349,19 @@ estimate_effort <- function(
 #'   day_type = c("weekday", "weekday", "weekend", "weekend")
 #' )
 #' design <- creel_design(calendar, date = date, strata = day_type)
+#' # Counts: a rate across day types is weighted by each day type's effort
+#' counts <- data.frame(
+#'   date = calendar$date, day_type = calendar$day_type,
+#'   effort_hours = c(20, 25, 60, 70)
+#' )
+#' design <- add_counts(design, counts)
 #'
 #' interviews <- data.frame(
 #'   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 10)),
 #'   catch_total = rpois(40, lambda = 3),
 #'   hours_fished = runif(40, min = 1, max = 6),
-#'   trip_status = rep(c("complete", "incomplete"), each = 20),
+#'   # Both trip types on every day, so each day type has a rate from either
+#'   trip_status = rep(c("complete", "incomplete"), times = 20),
 #'   trip_duration = runif(40, min = 1, max = 6)
 #' )
 #'
@@ -1587,7 +1629,11 @@ estimate_catch_rate <- function(
         " " = "Complete trips (n={n_complete}) vs Incomplete trips (n={n_incomplete})"
       ))
 
-      # Call estimate_catch_rate recursively for both trip types
+      # Call estimate_catch_rate recursively for both trip types. A comparison
+      # on the same interviews: neither rate is effort-weighted (GH #691).
+      old_pooling <- rate_pooling_state$off # nolint: object_usage_linter
+      rate_pooling_state$off <- TRUE # nolint: object_usage_linter
+      on.exit(rate_pooling_state$off <- old_pooling, add = TRUE) # nolint: object_usage_linter
       complete_result <- estimate_catch_rate(
         design = design,
         by = !!by_quo,
@@ -2162,7 +2208,7 @@ estimate_catch_rate <- function(
   # Standard (non-species) routing
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design, NULL, type = "cpue") # nolint: object_usage_linter
-    return(estimate_cpue_total(design, variance, conf_level, dispatch_estimator)) # nolint: object_usage_linter
+    return(estimate_cpue_total(design, variance, conf_level, dispatch_estimator, pool_by_effort = rate_pooling_on())) # nolint: object_usage_linter
   } else {
     by_cols <- tidyselect::eval_select(
       by_quo,
@@ -2182,7 +2228,8 @@ estimate_catch_rate <- function(
       by_vars,
       variance,
       conf_level,
-      dispatch_estimator
+      dispatch_estimator,
+      pool_by_effort = rate_pooling_on()
     )
   }
 }
@@ -2309,6 +2356,8 @@ estimate_catch_rate <- function(
 #'   livewell at interview time are directly observable, so \code{use_trips =
 #'   "all"} remains available to include incomplete-trip interviews.
 #'
+#' @inheritSection estimate_catch_rate Rates across strata
+#'
 #' @return A creel_estimates S3 object (list) with components: estimates
 #'   (tibble with estimate, se, ci_lower, ci_upper, n columns, plus grouping
 #'   columns if \code{by} is specified), method (character:
@@ -2359,13 +2408,20 @@ estimate_catch_rate <- function(
 #'   day_type = c("weekday", "weekday", "weekend", "weekend")
 #' )
 #' design <- creel_design(calendar, date = date, strata = day_type)
+#' # Counts: a rate across day types is weighted by each day type's effort
+#' counts <- data.frame(
+#'   date = calendar$date, day_type = calendar$day_type,
+#'   effort_hours = c(20, 25, 60, 70)
+#' )
+#' design <- add_counts(design, counts)
 #'
 #' set.seed(123)
 #' interviews <- data.frame(
 #'   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 10)),
 #'   catch_total = rpois(40, lambda = 3),
 #'   hours_fished = runif(40, min = 1, max = 6),
-#'   trip_status = rep(c("complete", "incomplete"), each = 20),
+#'   # Both trip types on every day, so each day type has a rate from either
+#'   trip_status = rep(c("complete", "incomplete"), times = 20),
 #'   trip_duration = runif(40, min = 1, max = 6)
 #' )
 #' # Harvest is subset of catch (kept fish)
@@ -2741,7 +2797,7 @@ estimate_harvest_rate <- function(
     # Ungrouped estimation
     # Validate sample size
     validate_ratio_sample_size(design, NULL, type = "harvest") # nolint: object_usage_linter
-    return(estimate_harvest_total(design, variance, conf_level, dispatch_estimator)) # nolint: object_usage_linter
+    return(estimate_harvest_total(design, variance, conf_level, dispatch_estimator, pool_by_effort = rate_pooling_on())) # nolint: object_usage_linter
   } else {
     # Grouped estimation
     # Resolve by parameter to column names
@@ -2759,7 +2815,7 @@ estimate_harvest_rate <- function(
 
     # Validate sample size per group
     validate_ratio_sample_size(design, by_vars, type = "harvest") # nolint: object_usage_linter
-    return(estimate_harvest_grouped(design, by_vars, variance, conf_level, dispatch_estimator)) # nolint: object_usage_linter
+    return(estimate_harvest_grouped(design, by_vars, variance, conf_level, dispatch_estimator, pool_by_effort = rate_pooling_on())) # nolint: object_usage_linter
   }
 }
 
@@ -2873,6 +2929,8 @@ estimate_harvest_rate <- function(
 #'   statistically preferred default. Released fish counted at interview time are
 #'   directly observable, so \code{use_trips = "all"} remains available to include
 #'   incomplete-trip interviews.
+#'
+#' @inheritSection estimate_catch_rate Rates across strata
 #'
 #' @return A creel_estimates S3 object whose method is
 #'   \code{"ratio-of-means-rpue"}, \code{"mean-of-ratios-rpue"} or
@@ -3254,7 +3312,7 @@ estimate_release_rate <- function(
 
   if (rlang::quo_is_null(by_quo)) {
     validate_ratio_sample_size(design_rel, NULL, type = "cpue") # nolint: object_usage_linter
-    result <- estimate_cpue_total(design_rel, variance, conf_level, dispatch_estimator) # nolint: object_usage_linter
+    result <- estimate_cpue_total(design_rel, variance, conf_level, dispatch_estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     result$method <- if (mortr_active) {
       "mean-of-ratios-truncated-rpue"
     } else if (identical(estimator, "mor")) {
@@ -3276,7 +3334,7 @@ estimate_release_rate <- function(
       error_call = rlang::caller_env()
     )
     validate_ratio_sample_size(design_rel, by_vars, type = "cpue") # nolint: object_usage_linter
-    result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level, dispatch_estimator) # nolint: object_usage_linter
+    result <- estimate_cpue_grouped(design_rel, by_vars, variance, conf_level, dispatch_estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     result$method <- if (mortr_active) {
       "mean-of-ratios-truncated-rpue"
     } else if (identical(estimator, "mor")) {
@@ -7745,7 +7803,8 @@ estimate_effort_grouped <- function(
 #'
 #' @keywords internal
 #' @noRd
-estimate_cpue_total <- function(design, variance_method, conf_level, estimator = "ratio-of-means") {
+estimate_cpue_total <- function(design, variance_method, conf_level, estimator = "ratio-of-means",
+                                pool_by_effort = FALSE) {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
   effort_col <- design$angler_effort_col
@@ -7785,13 +7844,18 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
-    # Get variance design from temporary survey
-    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+    base_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
   } else {
     # No filtering needed - use original design
-    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+    base_survey <- design$interview_survey
   }
+  # Strata pooled by this rate are weighted by their effort (GH #691).
+  pool <- NULL
+  if (pool_by_effort && !estimator %in% c("mor", "mortr")) {
+    pool <- rate_strata_pooling(design, base_survey, catch_col, effort_col, NULL) # nolint: object_usage_linter
+    if (!is.null(pool)) base_survey <- pool$svy
+  }
+  svy_design <- get_variance_design(base_survey, variance_method) # nolint: object_usage_linter
 
   # Determine method based on estimator
   if (estimator %in% c("mor", "mortr")) {
@@ -7810,6 +7874,15 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
       NULL
     }
     temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
+    if (pool_by_effort) {
+      pool <- rate_strata_pooling( # nolint: object_usage_linter
+        design, temp_survey,
+        if (mor_w$weighted) ".mor_num" else "cpue_ratio",
+        if (mor_w$weighted) ".mor_n" else NULL,
+        NULL
+      )
+      if (!is.null(pool)) temp_survey <- pool$svy
+    }
     svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
 
     svy_result <- mor_svy_estimate(svy_design, "cpue_ratio", mor_w$weighted)
@@ -7848,6 +7921,8 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     ci_upper = ci_upper,
     n = n
   )
+  # The effort weights are estimates too (GH #691).
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL) # nolint: object_usage_linter
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
@@ -7894,7 +7969,8 @@ estimate_cpue_grouped <- function(
   variance_method,
   conf_level,
   estimator = "ratio-of-means",
-  covmat = FALSE
+  covmat = FALSE,
+  pool_by_effort = FALSE
 ) {
   interviews_data <- design$interviews
   catch_col <- design$catch_col
@@ -7950,13 +8026,24 @@ estimate_cpue_grouped <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
-    # Get variance design from temporary survey
-    svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
+    base_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
   } else {
     # No filtering needed - use original design
-    svy_design <- get_variance_design(design$interview_survey, variance_method, by = by_vars) # nolint: object_usage_linter
+    base_survey <- design$interview_survey
   }
+  # Strata pooled by this rate are weighted by their effort (GH #691).
+  pool <- NULL
+  if (pool_by_effort) {
+    mor <- estimator %in% c("mor", "mortr")
+    pool <- rate_strata_pooling( # nolint: object_usage_linter
+      design, base_survey,
+      if (!mor) catch_col else if (mor_w$weighted) ".mor_num" else "cpue_ratio",
+      if (!mor) effort_col else if (mor_w$weighted) ".mor_n" else NULL,
+      by_vars
+    )
+    if (!is.null(pool)) base_survey <- pool$svy
+  }
+  svy_design <- get_variance_design(base_survey, variance_method, by = by_vars) # nolint: object_usage_linter
 
   # Build formulas for svyby
   by_formula <- stats::reformulate(by_vars)
@@ -8027,6 +8114,8 @@ estimate_cpue_grouped <- function(
   estimates_df$ci_upper <- ci_upper
 
   estimates_df$n <- group_n
+  # The effort weights are estimates too (GH #691).
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars) # nolint: object_usage_linter
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
@@ -9105,7 +9194,8 @@ estimate_harvest_total <- function(
   design,
   variance_method,
   conf_level,
-  estimator = "ratio-of-means"
+  estimator = "ratio-of-means",
+  pool_by_effort = FALSE
 ) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
@@ -9168,11 +9258,17 @@ estimate_harvest_total <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
-    svy_design <- get_variance_design(temp_survey, variance_method) # nolint: object_usage_linter
+    base_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
   } else {
-    svy_design <- get_variance_design(design$interview_survey, variance_method) # nolint: object_usage_linter
+    base_survey <- design$interview_survey
   }
+  # Strata pooled by this rate are weighted by their effort (GH #691).
+  pool <- NULL
+  if (pool_by_effort && !estimator %in% c("mor", "mortr")) {
+    pool <- rate_strata_pooling(design, base_survey, harvest_col, effort_col, NULL) # nolint: object_usage_linter
+    if (!is.null(pool)) base_survey <- pool$svy
+  }
+  svy_design <- get_variance_design(base_survey, variance_method) # nolint: object_usage_linter
 
   # Determine method based on estimator. Mirrors estimate_cpue_total(): a roving
   # clerk records harvest-so-far against effort-so-far, and the two do not scale
@@ -9195,6 +9291,15 @@ estimate_harvest_total <- function(
       NULL
     }
     temp_survey_mor <- build_interview_survey(interviews_data, strata = strata_formula_mor, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
+    if (pool_by_effort) {
+      pool <- rate_strata_pooling( # nolint: object_usage_linter
+        design, temp_survey_mor,
+        if (mor_w$weighted) ".mor_num" else "hpue_ratio",
+        if (mor_w$weighted) ".mor_n" else NULL,
+        NULL
+      )
+      if (!is.null(pool)) temp_survey_mor <- pool$svy
+    }
     svy_design <- get_variance_design(temp_survey_mor, variance_method) # nolint: object_usage_linter
 
     svy_result <- mor_svy_estimate(svy_design, "hpue_ratio", mor_w$weighted)
@@ -9233,6 +9338,8 @@ estimate_harvest_total <- function(
     ci_upper = ci_upper,
     n = n
   )
+  # The effort weights are estimates too (GH #691).
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL) # nolint: object_usage_linter
 
   # Return the MOR-classed object on the mean-of-ratios branch, exactly as
   # estimate_cpue_total() and estimate_cpue_grouped() do. HPUE was the one metric
@@ -9284,7 +9391,8 @@ estimate_harvest_grouped <- function(
   variance_method,
   conf_level,
   estimator = "ratio-of-means",
-  covmat = FALSE
+  covmat = FALSE,
+  pool_by_effort = FALSE
 ) {
   interviews_data <- design$interviews
   harvest_col <- design$harvest_col
@@ -9364,11 +9472,23 @@ estimate_harvest_grouped <- function(
     } else {
       NULL
     }
-    temp_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
-    svy_design <- get_variance_design(temp_survey, variance_method, by = by_vars) # nolint: object_usage_linter
+    base_survey <- build_interview_survey(interviews_data, strata = strata_formula, psu = interview_psu_col(design, interviews_data), frame = interview_day_frame(design)) # nolint: object_usage_linter
   } else {
-    svy_design <- get_variance_design(design$interview_survey, variance_method, by = by_vars) # nolint: object_usage_linter
+    base_survey <- design$interview_survey
   }
+  # Strata pooled by this rate are weighted by their effort (GH #691).
+  pool <- NULL
+  if (pool_by_effort) {
+    mor <- estimator %in% c("mor", "mortr")
+    pool <- rate_strata_pooling( # nolint: object_usage_linter
+      design, base_survey,
+      if (!mor) harvest_col else if (mor_w$weighted) ".mor_num" else "hpue_ratio",
+      if (!mor) effort_col else if (mor_w$weighted) ".mor_n" else NULL,
+      by_vars
+    )
+    if (!is.null(pool)) base_survey <- pool$svy
+  }
+  svy_design <- get_variance_design(base_survey, variance_method, by = by_vars) # nolint: object_usage_linter
 
   # Build formulas for svyby
   by_formula <- stats::reformulate(by_vars)
@@ -9439,6 +9559,8 @@ estimate_harvest_grouped <- function(
   estimates_df$ci_upper <- ci_upper
 
   estimates_df$n <- group_n
+  # The effort weights are estimates too (GH #691).
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars) # nolint: object_usage_linter
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)

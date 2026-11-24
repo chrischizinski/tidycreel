@@ -191,6 +191,38 @@ completed trips is the statistically preferred default. Fish already in the
 livewell at interview time are directly observable, so \code{use_trips =
   "all"} remains available to include incomplete-trip interviews.
 }
+\section{Rates across strata}{
+
+A rate estimated across strata -- with no \code{by}, or with \code{by}
+columns that are not all strata -- is the population rate: the season's
+total of the fish counted (caught, harvested or released, as the function
+estimates) over its total effort, built stratum by stratum (Pollock et al.
+1994, sec. 15.3.3.6):
+\deqn{\hat{R} = \sum_h \hat{E}_h \hat{R}_h / \sum_h \hat{E}_h,}
+where \eqn{\hat{E}_h} is the stratum's effort from
+\code{estimate_effort(design, by = <strata>)}. Each interview in stratum
+\eqn{h} is weighted \eqn{\hat{E}_h / D_h}, with \eqn{D_h} the stratum's
+interviewed effort (or, for a mean of ratios, its interviewed anglers), so a
+group that is not a stratum is weighted by its own effort in each stratum.
+The standard error adds the effort estimate's variance to the interview
+survey's, by the delta method.
+
+Pooling the interviews alone would weight each stratum by how heavily it
+was interviewed, not by how much it was fished: sampling weekends more
+often than weekdays, or taking the same number of interviews on quiet and
+busy days, then biases the rate. On a simulated season the
+interview-weighted rate was off by +22 and -11 percent (GH #691).
+
+A design with more than one stratum therefore needs counts for such a rate
+and is refused without them (class \code{creel_error_rate_needs_effort});
+a rate \code{by} the strata needs none. A stratum that was fished but has
+no interviews among the trips used (\code{use_trips}) has no rate, so the
+pooled rate is refused, naming it, rather than reported over the other
+strata as though it covered the season. Within one stratum nothing is
+pooled and nothing changes. Species-level, sectioned, regression and
+bus-route or ice rates are not yet effort-weighted across strata.
+}
+
 \examples{
 # Basic ungrouped HPUE
 calendar <- data.frame(
@@ -198,13 +230,20 @@ calendar <- data.frame(
   day_type = c("weekday", "weekday", "weekend", "weekend")
 )
 design <- creel_design(calendar, date = date, strata = day_type)
+# Counts: a rate across day types is weighted by each day type's effort
+counts <- data.frame(
+  date = calendar$date, day_type = calendar$day_type,
+  effort_hours = c(20, 25, 60, 70)
+)
+design <- add_counts(design, counts)
 
 set.seed(123)
 interviews <- data.frame(
   date = as.Date(rep(c("2024-06-01", "2024-06-02", "2024-06-03", "2024-06-04"), each = 10)),
   catch_total = rpois(40, lambda = 3),
   hours_fished = runif(40, min = 1, max = 6),
-  trip_status = rep(c("complete", "incomplete"), each = 20),
+  # Both trip types on every day, so each day type has a rate from either
+  trip_status = rep(c("complete", "incomplete"), times = 20),
   trip_duration = runif(40, min = 1, max = 6)
 )
 # Harvest is subset of catch (kept fish)
