@@ -1398,6 +1398,15 @@
 
 ## Bug fixes
 
+* Grouped intervals now use the `conf_level` asked for (#703). With `by =`,
+  `estimate_catch_rate()`, `estimate_harvest_rate()` and
+  `estimate_release_rate()` (ratio-of-means and mean-of-ratios, including
+  species and sectioned rows), and bus-route and ice effort, rates and totals,
+  always reported the 95% interval, whatever `conf_level` was: `survey::svyby()`
+  ignores its `ci.level` argument, and those paths read its interval columns.
+  The same call without `by` was right. Estimates and standard errors are
+  unchanged, and so is every interval at the default `conf_level = 0.95`.
+
 * `estimate_angler_trips()` and `estimate_effort_per_acre()` accept aerial
   effort (#582). Pooled aerial effort (`"aerial_total"`) and GLMM aerial
   effort (`"aerial_glmm_total"`) are angler-hours, but both functions refused

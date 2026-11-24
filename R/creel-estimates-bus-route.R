@@ -197,8 +197,10 @@ estimate_effort_br <- function(
     estimate <- svy_result[[".contribution"]]
     se <- svy_result[["se"]]
     # Effort is bounded below by zero; the symmetric Wald bound is not.
-    ci_lower <- pmax(0, svy_result[["ci_l"]])
-    ci_upper <- svy_result[["ci_u"]]
+    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
+    ci <- svyby_normal_ci(estimate, se, conf_level) # nolint: object_usage_linter
+    ci_lower <- pmax(0, ci$lower)
+    ci_upper <- ci$upper
 
     # Compute proportion of overall total for each group
     overall_total <- if (target_svy$augmented) {
@@ -678,8 +680,10 @@ br_harvest_rate_estimates <- function(
   estimates_df$estimate <- svy_result[[ratio_col]]
   estimates_df$se <- svy_result[[paste0("se.", ratio_col)]]
   # A catch rate is bounded below by zero; the symmetric Wald bound is not.
-  estimates_df$ci_lower <- pmax(0, svy_result[["ci_l"]])
-  estimates_df$ci_upper <- svy_result[["ci_u"]]
+  # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
+  ci <- svyby_normal_ci(estimates_df$estimate, estimates_df$se, conf_level) # nolint: object_usage_linter
+  estimates_df$ci_lower <- pmax(0, ci$lower)
+  estimates_df$ci_upper <- ci$upper
   estimates_df$n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
   # Testing the KEY, not the value. An absent key means svyby reported a group
   # the interviews do not contain, so it has no sampled units -- a count of
@@ -2168,8 +2172,10 @@ br_build_estimates <- function(
     estimate <- svy_result[[".contribution"]]
     se <- svy_result[["se"]]
     # A catch total is bounded below by zero; the symmetric Wald bound is not.
-    ci_lower <- pmax(0, svy_result[["ci_l"]])
-    ci_upper <- svy_result[["ci_u"]]
+    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
+    ci <- svyby_normal_ci(estimate, se, conf_level) # nolint: object_usage_linter
+    ci_lower <- pmax(0, ci$lower)
+    ci_upper <- ci$upper
 
     overall_total <- if (target_svy$augmented) {
       sum(interviews$.contribution * interviews$.br_weight)
@@ -2221,8 +2227,12 @@ br_build_estimates <- function(
       if (target_svy$augmented) {
         svy_boot_by <- br_drop_synthetic_groups(svy_boot_by, target_svy$interviews, by_vars, design)
       }
-      estimates_df$ci_lo_boot <- pmax(0, svy_boot_by[["ci_l"]])
-      estimates_df$ci_hi_boot <- svy_boot_by[["ci_u"]]
+      # Normal on the bootstrap SE at the requested level (GH #703).
+      ci_boot <- svyby_normal_ci( # nolint: object_usage_linter
+        svy_boot_by[[".contribution"]], svy_boot_by[["se"]], conf_level
+      )
+      estimates_df$ci_lo_boot <- pmax(0, ci_boot$lower)
+      estimates_df$ci_hi_boot <- ci_boot$upper
     }
 
     result <- new_creel_estimates( # nolint: object_usage_linter
