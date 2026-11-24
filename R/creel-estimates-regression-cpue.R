@@ -311,7 +311,9 @@ estimate_cpue_reg_grouped <- function(
 #' 70: 483–491. \doi{10.1590/S1519-69842010005000010}
 #'
 #' @examples
+#' # Counts too: each estimator weights the day types by their effort.
 #' design <- creel_design(example_calendar, date = date, strata = day_type) |>
+#'   add_counts(example_counts) |>
 #'   add_interviews(example_interviews,
 #'     catch = catch_total, effort = hours_fished,
 #'     trip_status = trip_status, n_anglers = n_anglers

@@ -10,6 +10,16 @@
 #
 # References are computed in base R from the definitions, sharing no tidycreel
 # or survey code.
+#
+# They are the interview survey's slope with equal interview weights. Across
+# strata a regression rate is now each stratum's slope weighted by its effort
+# (GH #691), which sits on top of these mechanics and is tested in
+# test-statistical-audit-pooled-strata.R, so this file runs with that
+# weighting switched off.
+# File-scoped: testthat runs a top-level defer at the end of this file.
+old_rate_pooling <- rate_pooling_state$off
+rate_pooling_state$off <- TRUE
+withr::defer(rate_pooling_state$off <- old_rate_pooling)
 
 reg_q <- function(x) suppressWarnings(suppressMessages(x))
 

@@ -50,11 +50,13 @@ bud_design <- function(iv = bud_interviews()) {
 
 # Runs `expr` under a fixed seed and returns its value with the classed
 # warnings it raised (the rest -- small-sample and the like -- are muffled).
-bud_run <- function(expr, seed = 1) {
+# `unpooled = TRUE` for a regression grouped by gear: across day types that is
+# refused (GH #691), and what is tested here is the interview survey's draws.
+bud_run <- function(expr, seed = 1, unpooled = FALSE) {
   set.seed(seed)
   hits <- list()
   value <- withCallingHandlers(
-    bud_q(expr),
+    if (unpooled) without_rate_pooling(bud_q(expr)) else bud_q(expr),
     creel_warning_bootstrap_undefined_draws = function(w) {
       hits[[length(hits) + 1L]] <<- w
       invokeRestart("muffleWarning")
@@ -113,17 +115,17 @@ test_that("BUD-03 (#673): every grouped rate estimator applies the same rule", {
     }
   )
   for (nm in names(fits)) {
-    out <- bud_run(fits[[nm]](bud_design()))
+    out <- bud_run(fits[[nm]](bud_design()), unpooled = TRUE)
     expect_true(is.na(bud_se(out$value, "fly")), info = nm)
     expect_true(is.finite(bud_se(out$value, "bait")), info = nm)
     expect_length(out$warnings, 1L)
   }
   # The slope itself is the full-sample fit, the one Taylor reports.
-  boot <- bud_run(fits$intercept(bud_design()))$value$estimates
+  boot <- bud_run(fits$intercept(bud_design()), unpooled = TRUE)$value$estimates
   taylor <- bud_run(estimate_catch_rate( # nolint: object_usage_linter
     bud_design(),
     by = gear, variance = "taylor", estimator = "regression", force_origin = FALSE
-  ))$value$estimates
+  ), unpooled = TRUE)$value$estimates
   expect_equal(boot$estimate, taylor$estimate, tolerance = 1e-10)
 })
 
@@ -254,7 +256,7 @@ test_that("BUD-10 (#673): grouped regression names every group left without an S
   out <- bud_run(estimate_catch_rate( # nolint: object_usage_linter
     bud_design(iv),
     by = gear, variance = "bootstrap", estimator = "regression"
-  ))
+  ), unpooled = TRUE)
   expect_true(all(is.na(out$value$estimates$se[out$value$estimates$gear != "bait"])))
   # One warning for the call, naming both: each group used to warn on its own,
   # and the once-per-design rule muffled every group after the first.
@@ -301,7 +303,7 @@ test_that("BUD-13 (#673): a jackknife replicate that cannot fit leaves the SE un
   out <- bud_run(estimate_catch_rate( # nolint: object_usage_linter
     bud_design(iv),
     by = gear, variance = "jackknife", estimator = "regression", force_origin = FALSE
-  ))
+  ), unpooled = TRUE)
   expect_true(is.na(bud_se(out$value, "fly")))
   expect_true(is.finite(bud_se(out$value, "bait")))
   expect_length(out$warnings, 1L)

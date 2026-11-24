@@ -221,10 +221,12 @@ test_that("DOM-06 (#663): a species' targeted rate counts the days no trip caugh
     catch_uid = interview_id, interview_uid = interview_id, # nolint: object_usage_linter
     species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
   )))
-  result <- suppressMessages(suppressWarnings(estimate_catch_rate( # nolint: object_usage_linter
+  # Hand reference: the interview survey's domain variance, unit weights;
+  # the effort weighting across strata (GH #691) is tested elsewhere.
+  result <- without_rate_pooling(suppressMessages(suppressWarnings(estimate_catch_rate( # nolint: object_usage_linter
     design,
     by = species, estimator = "mor", use_trips = "incomplete", targeted = FALSE
-  )))$estimates
+  ))))$estimates
   got <- result[result$species == "bass", ]
 
   r <- bass[caught] / hours[caught]
@@ -249,10 +251,11 @@ test_that("DOM-07 (#663): a section's rate is estimated over that section's own 
       sub <- design
       sub$sections <- NULL
       sub$interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
+      # The section's own counts: across day types a section's rate is
+      # weighted by that section's effort (GH #691).
+      sub$counts <- design$counts[design$counts[[section_col]] == sec, ]
       sub <- rebuild_interview_survey(sub, sub$interviews) # nolint: object_usage_linter
-      # Sectioned rates are not yet effort-weighted across strata (GH #691
-      # part 3), so the one-section reference is computed the same way.
-      reference <- without_rate_pooling(suppressMessages(suppressWarnings(get(f)(sub))))$estimates
+      reference <- suppressMessages(suppressWarnings(get(f)(sub)))$estimates
       got <- sectioned[sectioned[[section_col]] == sec, ]
       expect_equal(got$estimate, reference$estimate, tolerance = 1e-12, info = paste(f, sec))
       expect_equal(got$se, reference$se, tolerance = 1e-12, info = paste(f, sec))
@@ -292,10 +295,12 @@ test_that("DOM-08 (#663): a species filter that comes first still keeps every in
   # species' targeted filter, so nothing had recorded the design's days, and
   # the MOR build downstream re-read them from the filtered rows.
   fx <- dom_species_design()
-  result <- suppressMessages(suppressWarnings(estimate_catch_rate( # nolint: object_usage_linter
+  # Hand reference: the interview survey's domain variance, unit weights;
+  # the effort weighting across strata (GH #691) is tested elsewhere.
+  result <- without_rate_pooling(suppressMessages(suppressWarnings(estimate_catch_rate( # nolint: object_usage_linter
     fx$design,
     by = species, estimator = "mor", use_trips = "all", targeted = FALSE
-  )))$estimates
+  ))))$estimates
   got <- result[result$species == "bass", ]
   caught <- fx$bass > 0
   r <- fx$bass[caught] / fx$hours[caught]

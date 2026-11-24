@@ -48,14 +48,26 @@
     are among those used (`use_trips`), named in the error. Its rate is
     unknown; it used to be left out silently, which reported a rate over the
     other strata as the season's.
-  * `validate_incomplete_trips()`, `use_trips = "diagnostic"` and
-    `compare_cpue_estimators()` compare rates on the same interviews and
-    still pool them unweighted, so they need no counts.
-  * **Not yet changed, so temporarily inconsistent:** species-level,
-    sectioned, regression and bus-route/ice rates still weight strata by
-    interviews. Until they follow (#691, part 3), species rates no longer sum
-    to the overall rate, and a section's rate differs from the same
-    interviews' rate on an unsectioned design.
+  * `validate_incomplete_trips()` and `use_trips = "diagnostic"` compare
+    rates on the same interviews and still pool them unweighted, so they need
+    no counts.
+  * Every route now follows (#691, part 3), so species rates again sum to
+    the overall rate:
+    * `by = species`: each species' rate is weighted by the strata's effort.
+    * Sectioned designs: each section's rate is weighted by that section's own
+      effort in each stratum.
+    * `estimator = "regression"`: each stratum's slope, combined as
+      `sum_h E_h b_h / sum_h E_h`, with the slopes' and the effort's variance.
+      **Refused:** a regression grouped by a column that is not a stratum
+      (`creel_error_regression_pooled_group`), which has no effort of its own.
+      `compare_cpue_estimators()` now compares the weighted estimators.
+    * Bus-route and ice: each stratum's days are weighted by its calendar days
+      over its sampled days, so the rate is the expanded catch over the
+      expanded effort. **Refused** without the register of sampled days
+      (`creel_design(sampled = )`), since the days nobody fished cannot
+      otherwise be counted; estimate such a rate `by` the strata instead.
+  * Rate groups (#389) still pool the strata within a group by interviews;
+    that is #697.
   * `compare_variance()` treats a Taylor SE that is zero to rounding error,
     not only exactly zero, as having no divergence ratio.
 

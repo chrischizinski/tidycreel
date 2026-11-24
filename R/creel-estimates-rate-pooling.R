@@ -314,6 +314,9 @@ rate_pooling_on <- function() {
 regression_pooled_total <- function(design, strata, conf_level, force_origin, variance_method,
                                     call = rlang::caller_env()) {
   by_call <- pooling_by_call(strata, NULL)
+  # The ungrouped rate's own floor (3 interviews) still applies; the per-stratum
+  # fits below only warn below it.
+  regression_cpue_survey(design, variance_method, call = call) # nolint: object_usage_linter
   pe <- pooling_effort(design, strata, by_call, call)
   per <- estimate_cpue_reg_grouped( # nolint: object_usage_linter
     design, strata, conf_level, force_origin, variance_method,

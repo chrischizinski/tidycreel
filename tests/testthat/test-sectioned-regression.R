@@ -40,6 +40,9 @@ flatten_to_section <- function(design, section) {
   keep <- design$interviews[[section_col]] == section
   flat <- design
   flat[["sections"]] <- NULL
+  # The section's own counts: across day types a section's rate is weighted by
+  # that section's effort (GH #691).
+  if (!is.null(design$counts)) flat$counts <- design$counts[design$counts[[section_col]] == section, ]
   rebuild_interview_survey(flat, design$interviews[keep, , drop = FALSE])
 }
 
@@ -126,7 +129,9 @@ test_that("grouping within sections runs regression per group per section", {
       cell <- design
       cell[["sections"]] <- NULL
       cell <- rebuild_interview_survey(cell, design$interviews[keep, , drop = FALSE])
-      standalone <- quiet_reg(estimate_catch_rate, cell, estimator = "regression")
+      # By day type: the cell holds one day type, so nothing is pooled across
+      # strata and the fit is the cell's own (GH #691).
+      standalone <- quiet_reg(estimate_catch_rate, cell, by = day_type, estimator = "regression")
 
       row <- grouped$estimates[
         grouped$estimates$section == sec & grouped$estimates$day_type == dt,
@@ -191,7 +196,9 @@ test_that("the species regression is Petrere eq. 3 on the trips actually used (#
   flat <- design
   flat[["sections"]] <- NULL
 
-  reg <- quiet_reg(estimate_catch_rate, flat, by = species, estimator = "regression")
+  # Within each day type: across day types the slopes are combined by effort
+  # (GH #691), and the formula is the per-stratum slope.
+  reg <- quiet_reg(estimate_catch_rate, flat, by = c(species, day_type), estimator = "regression")
 
   used <- flat
   status_col <- flat$trip_status_col
@@ -202,13 +209,15 @@ test_that("the species regression is Petrere eq. 3 on the trips actually used (#
     )
   }
 
-  for (sp in reg$estimates$species) {
+  for (i in seq_len(nrow(reg$estimates))) {
+    sp <- reg$estimates$species[i]
+    dt <- reg$estimates$day_type[i]
     sp_data <- tidycreel:::make_species_catch_for_interviews(used, sp, "caught")
     catch <- sp_data[[".species_count"]]
     effort <- sp_data[[used$angler_effort_col]]
-    keep <- effort > 0
+    keep <- effort > 0 & sp_data$day_type == dt
     expect_equal(
-      reg$estimates$estimate[reg$estimates$species == sp],
+      reg$estimates$estimate[i],
       sum(catch[keep] * effort[keep]) / sum(effort[keep]^2),
       tolerance = 1e-8
     )
@@ -318,10 +327,13 @@ test_that("the species regression is not held to the ratio-estimation floor (#29
   flat <- design
   flat[["sections"]] <- NULL
   small <- rebuild_interview_survey(flat, flat$interviews[1:5, , drop = FALSE])
+  # By day type as well: five interviews do not cover every day type, and a
+  # rate pooled across them would be refused for that (GH #691), not for the
+  # sample size this test is about.
 
   reg <- quiet_reg(
     estimate_catch_rate, small,
-    by = species, estimator = "regression", use_trips = "all"
+    by = c(species, day_type), estimator = "regression", use_trips = "all"
   )
   expect_identical(reg$method, "regression-cpue-species")
   expect_true(all(is.finite(reg$estimates$se)))

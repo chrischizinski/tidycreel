@@ -54,6 +54,9 @@ test_that("each section's species rate equals the same rate on that section alon
     # the frame: a trip filter inside the estimator then keeps every day the
     # section was interviewed on, exactly as the sectioned path does (GH #663).
     sub$interviews <- design$interviews[design$interviews[[section_col]] == sec, ]
+    # And its own counts: across day types a section's rate is weighted by that
+    # section's effort (GH #691).
+    if (!is.null(design$counts)) sub$counts <- design$counts[design$counts[[section_col]] == sec, ]
     rebuild_interview_survey(sub, sub$interviews)
   }
 

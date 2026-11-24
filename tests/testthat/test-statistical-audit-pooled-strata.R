@@ -249,3 +249,133 @@ test_that("#691: a stratum fished but never interviewed has no rate, so pooling 
   expect_s3_class(err, "creel_error_rate_needs_effort")
   expect_match(conditionMessage(err), "weekend", fixed = TRUE)
 })
+
+# Part 3: the species, sectioned, regression and bus-route/ice routes.
+
+test_that("#691: each species' rate is weighted by the strata's effort, and the species sum to the whole", {
+  d <- ps_rate_design()
+  iv <- d$interviews
+  iv$interview_id <- seq_len(nrow(iv))
+  d$interviews$interview_id <- iv$interview_id
+  # Two species splitting each trip's catch unevenly by day type.
+  share <- ifelse(iv$day_type == "weekend", 0.8, 0.3)
+  a <- round(iv$catch_total * share)
+  catch <- rbind(
+    data.frame(interview_id = iv$interview_id, species = "walleye", count = a, catch_type = "caught"),
+    data.frame(interview_id = iv$interview_id, species = "perch", count = iv$catch_total - a, catch_type = "caught")
+  )
+  catch <- catch[catch$count > 0, ]
+  d <- ps_quiet(add_catch( # nolint: object_usage_linter
+    d, catch,
+    catch_uid = interview_id, interview_uid = interview_id,
+    species = species, count = count, catch_type = catch_type
+  ))
+  r <- ps_quiet(estimate_catch_rate(d, by = species))$estimates # nolint: object_usage_linter
+  all <- ps_quiet(estimate_catch_rate(d))$estimates # nolint: object_usage_linter
+  expect_equal(sum(r$estimate), all$estimate, tolerance = 1e-10)
+
+  E <- ps_quiet(estimate_effort(d, by = day_type))$estimates # nolint: object_usage_linter
+  E_h <- stats::setNames(E$estimate, E$day_type)
+  ok <- iv$trip_status == "complete"
+  D_h <- tapply(iv$hours_fished[ok], iv$day_type[ok], sum)
+  for (sp in c("walleye", "perch")) {
+    y <- if (sp == "walleye") a else iv$catch_total - a
+    R_h <- tapply(y[ok], iv$day_type[ok], sum) / D_h
+    expect_equal(
+      r$estimate[r$species == sp], sum(E_h[names(R_h)] * R_h) / sum(E_h[names(R_h)]),
+      tolerance = 1e-10, info = sp
+    )
+  }
+})
+
+test_that("#691: a section's rate is weighted by that section's own effort in each stratum", {
+  data(example_sections_calendar, envir = environment())
+  data(example_sections_counts, envir = environment())
+  data(example_sections_interviews, envir = environment())
+  cnt <- example_sections_counts # nolint: object_usage_linter
+  cal <- example_sections_calendar # nolint: object_usage_linter
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- ps_quiet(add_sections(d, data.frame(section = unique(cnt$section)), section_col = section)) # nolint: object_usage_linter
+  d <- ps_quiet(add_counts(d, prep_counts_daily_effort( # nolint: object_usage_linter
+    cnt,
+    date = date, strata = day_type, daily_effort = effort_hours, section = section
+  )))
+  d <- ps_quiet(add_interviews( # nolint: object_usage_linter
+    d, example_sections_interviews, # nolint: object_usage_linter
+    catch = catch_total, effort = hours_fished, n_anglers = 1, harvest = catch_kept,
+    trip_status = trip_status, trip_duration = trip_duration
+  ))
+  r <- ps_quiet(estimate_catch_rate(d))$estimates # nolint: object_usage_linter
+  iv <- d$interviews
+  N_h <- table(cal$day_type)
+  for (sec in unique(cnt$section)) {
+    k <- iv$section == sec & iv$trip_status == "complete"
+    cs <- cnt[cnt$section == sec, ]
+    tot <- tapply(cs$effort_hours, cs$day_type, sum)
+    n_h <- tapply(cs$date, cs$day_type, function(x) length(unique(x)))
+    E_h <- tot * as.numeric(N_h[names(tot)]) / n_h
+    R_h <- tapply(iv$catch_total[k], iv$day_type[k], sum) / tapply(iv$hours_fished[k], iv$day_type[k], sum)
+    expect_equal(
+      r$estimate[r$section == sec], sum(E_h[names(R_h)] * R_h) / sum(E_h[names(R_h)]),
+      tolerance = 1e-10, info = sec
+    )
+  }
+})
+
+test_that("#691: a regression rate across strata is each stratum's slope weighted by its effort", {
+  d <- ps_rate_design()
+  for (origin in c(TRUE, FALSE)) {
+    r <- ps_quiet(estimate_catch_rate(d, estimator = "regression", force_origin = origin))$estimates # nolint: object_usage_linter
+    per <- ps_quiet(estimate_catch_rate(d, estimator = "regression", force_origin = origin, by = day_type))$estimates # nolint: object_usage_linter
+    E <- ps_quiet(estimate_effort(d, by = day_type))$estimates # nolint: object_usage_linter
+    E_h <- stats::setNames(E$estimate, E$day_type)[per$day_type]
+    se_E <- stats::setNames(E$se, E$day_type)[per$day_type]
+    R <- sum(E_h * per$estimate) / sum(E_h)
+    expect_equal(r$estimate, R, tolerance = 1e-10, info = origin)
+    v <- sum((E_h / sum(E_h))^2 * per$se^2) + sum(((per$estimate - R) / sum(E_h))^2 * se_E^2)
+    expect_equal(r$se, sqrt(v), tolerance = 1e-10, info = origin)
+  }
+  # The through-origin slope by hand, per stratum: Petrere's sum(c e) / sum(e^2).
+  iv <- d$interviews[d$interviews$trip_status == "complete", ]
+  b_h <- tapply(iv$catch_total * iv$hours_fished, iv$day_type, sum) / tapply(iv$hours_fished^2, iv$day_type, sum)
+  r <- ps_quiet(estimate_catch_rate(d, estimator = "regression"))$estimates # nolint: object_usage_linter
+  E <- ps_quiet(estimate_effort(d, by = day_type))$estimates # nolint: object_usage_linter
+  E_h <- stats::setNames(E$estimate, E$day_type)[names(b_h)]
+  expect_equal(r$estimate, sum(E_h * b_h) / sum(E_h), tolerance = 1e-10)
+
+  # A group that is not a stratum has no effort to weight its slopes by.
+  expect_error(
+    ps_quiet(estimate_catch_rate(d, estimator = "regression", by = gear)), # nolint: object_usage_linter
+    class = "creel_error_regression_pooled_group"
+  )
+  # The ungrouped rate's own three-interview floor still applies.
+  tiny <- rebuild_interview_survey(d, d$interviews[c(1, 2), ]) # nolint: object_usage_linter
+  expect_error(ps_quiet(estimate_catch_rate(tiny, estimator = "regression", use_trips = "all")), "at least 3") # nolint: object_usage_linter
+})
+
+test_that("#691: a bus-route rate across strata is the expanded catch over the expanded effort", {
+  d <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 40, seed = 691) # nolint: object_usage_linter
+  # Two weekdays left unworked, so the day types are sampled unevenly
+  # (N_h / n_h differs between them).
+  wd <- d$calendar$date[d$calendar$day_type == "weekday"]
+  off <- wd[seq_len(2)]
+  d$calendar$.sampled[d$calendar$date %in% off] <- FALSE
+  d <- rebuild_interview_survey(d, d$interviews[!d$interviews$date %in% off, ]) # nolint: object_usage_linter
+  expect_gt(length(unique(tapply(d$calendar$.sampled, d$calendar$day_type, mean))), 1L)
+  r <- ps_quiet(estimate_catch_rate(d))$estimates # nolint: object_usage_linter
+  C <- ps_quiet(estimate_total_catch(d, target = "period_total"))$estimates # nolint: object_usage_linter
+  E <- ps_quiet(estimate_effort(d, target = "period_total"))$estimates # nolint: object_usage_linter
+  expect_equal(r$estimate, C$estimate / E$estimate, tolerance = 1e-10)
+  # Not the ratio of the sampled-day totals, which weights strata by their
+  # sampled days: the fixture samples its day types unevenly.
+  Cs <- ps_quiet(estimate_total_catch(d, target = "sampled_days"))$estimates # nolint: object_usage_linter
+  Es <- ps_quiet(estimate_effort(d, target = "sampled_days"))$estimates # nolint: object_usage_linter
+  expect_false(isTRUE(all.equal(r$estimate, Cs$estimate / Es$estimate)))
+
+  # Without the register of sampled days n_h is unknown, so it is refused.
+  d0 <- d
+  d0$sampled_col <- NULL
+  expect_error(ps_quiet(estimate_catch_rate(d0)), class = "creel_error_sampled_register") # nolint: object_usage_linter
+  # By day type it needs no register.
+  expect_s3_class(ps_quiet(estimate_catch_rate(d0, by = day_type)), "creel_estimates") # nolint: object_usage_linter
+})

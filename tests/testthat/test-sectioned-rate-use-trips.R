@@ -122,14 +122,15 @@ test_that("each section's rate uses that section's own interviews alone (GH #263
         reference_design <- design
         reference_design$sections <- NULL
         reference_design$interviews <- one_section
+        # The section's own counts: across day types a section's rate is
+        # weighted by that section's effort (GH #691).
+        reference_design$counts <- design$counts[design$counts[[design$section_col]] == sec, ]
         reference_design$interview_survey <- build_interview_survey(
           one_section,
           strata = stats::reformulate(design$strata_cols),
           psu = design$date_col # clustered on the day, as add_interviews() is (#661)
         )
-        # Sectioned rates are not yet effort-weighted across strata (GH #691
-        # part 3), so the one-section reference is computed the same way.
-        reference <- without_rate_pooling(quiet_rate(f, reference_design, use_trips = trips))
+        reference <- quiet_rate(f, reference_design, use_trips = trips)
 
         label <- paste(f, sec, trips)
         expect_equal(sectioned$estimates$estimate[[i]], reference$estimates$estimate, info = label)
