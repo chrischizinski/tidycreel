@@ -931,6 +931,19 @@
   raise those packages’ errors
   ([\#701](https://github.com/chrischizinski/tidycreel/issues/701)).
 
+- Every estimate now records, in `x$ci_df`, the degrees of freedom of
+  the reference distribution each row’s confidence interval was built
+  on: a finite value for a t interval, `Inf` for a normal one (and for
+  the aerial GLMM’s bootstrap path, whose percentile interval has no df
+  but whose SE is asymptotic), `NA` where the interval is not built from
+  the standard error (Schnabel’s Poisson bounds) or the row has no
+  interval at all. No interval or printed output changes. It is
+  groundwork for summing or differencing estimates from independent
+  surveys, which needs each part’s df
+  ([\#585](https://github.com/chrischizinski/tidycreel/issues/585)). The
+  rules themselves differ by estimator and are under review in
+  [\#705](https://github.com/chrischizinski/tidycreel/issues/705).
+
 - `creel_design(interview_sampled = )` declares interview days drawn
   separately from count days
   ([\#628](https://github.com/chrischizinski/tidycreel/issues/628)), as
