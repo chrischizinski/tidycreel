@@ -4,9 +4,11 @@ snapshot:
 
 # The absent-to-zero guard runs first: it takes about a second, and until #580
 # it ran only in CI, so a new hit cost a full CI round to find.
+# stop_on_failure: devtools::test() defaults to FALSE, so a failing suite still
+# exited 0 and the gate passed on its exit code alone.
 test:
     scripts/absent-zero-guard.sh
-    Rscript -e 'devtools::test()'
+    Rscript -e 'devtools::test(stop_on_failure = TRUE)'
 
 # Builds the PDF reference manual on purpose. `--no-manual` was here until
 # GH #358, and it is exactly why Win-Builder found a manual that would not
