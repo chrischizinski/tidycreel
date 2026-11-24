@@ -175,6 +175,16 @@ test_that("a night creel's blocks run on the survey-day clock, past midnight", {
   expect_equal(r$summary$fishing_hours_not_interviewable, 7)
 })
 
+test_that("a trip that began before the survey day is clipped at its start, not wrapped to its end", {
+  # Started 23:00 the previous evening, interviewed 01:00: on a day design that
+  # is one hour of fishing in the 00:00 block of the interview's day. Anchoring
+  # on the start would put it at 23:00 and clip it to nothing.
+  d <- ic_design(trip_hours = -1, hours = 2)
+  r <- check_interview_coverage(d)
+  expect_equal(block_row(r$data, "00:00")$interviewed_hours, 4 * 1)
+  expect_equal(block_row(r$data, "23:00")$interviewed_hours, 0)
+})
+
 test_that("designs whose interviews cannot be timed against counts are refused", {
   d <- quiet(build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 1))
   expect_error(check_interview_coverage(d), class = "creel_error_coverage_unsupported")

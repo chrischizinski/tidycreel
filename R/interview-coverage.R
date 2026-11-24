@@ -338,9 +338,13 @@ coverage_data <- function(design, strata, strata_cols, blocks, ds) {
     inherits(iv[[ts_col]], "POSIXt") && inherits(iv[[it_col]], "POSIXt")
   iv$.key <- group_key(iv, strata_cols) # nolint: object_usage_linter
   if (timed) {
-    iv$.s <- survey_min(clock_minutes(iv[[ts_col]]), ds) # nolint: object_usage_linter
-    iv$.e <- iv$.s + as.numeric(difftime(iv[[it_col]], iv[[ts_col]], units = "mins"))
-    iv$.e <- pmin(iv$.e, 1440)
+    # Anchored on the interview, which lies in the record's survey day; a trip
+    # that began before the day did (before midnight, or before a night
+    # creel's day_start) is clipped at the day's start rather than wrapped to
+    # its end. An interview exactly at day_start ends the previous survey day.
+    dur <- as.numeric(difftime(iv[[it_col]], iv[[ts_col]], units = "mins"))
+    iv$.e <- survey_min(clock_minutes(iv[[it_col]]), ds, end = TRUE) # nolint: object_usage_linter
+    iv$.s <- pmax(0, iv$.e - dur)
   } else {
     iv$.s <- NA_real_
     iv$.e <- NA_real_
