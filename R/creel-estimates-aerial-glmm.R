@@ -597,6 +597,7 @@ estimate_effort_aerial_glmm <- function(
       se_components = se_components,
       method = "aerial_glmm_total",
       variance_method = "delta",
+      ci_df = Inf,
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
@@ -781,6 +782,10 @@ estimate_effort_aerial_glmm <- function(
     se_components = se_components,
     method = "aerial_glmm_total",
     variance_method = variance_method_str,
+    # Normal on the delta path; the bootstrap path's interval is a percentile
+    # one with no df, but its SE is asymptotic, so Inf is the honest reference
+    # for SE-based inference (GH #585 decision 2026-11-24).
+    ci_df = Inf,
     design = design,
     conf_level = conf_level,
     by_vars = NULL,

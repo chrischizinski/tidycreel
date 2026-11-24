@@ -2,6 +2,7 @@
 make_est <- function(estimate_val, se_val = 1.0, by_vars = NULL, effort_target = NULL) {
   tbl <- tibble::tibble(estimate = estimate_val, se = se_val)
   tidycreel:::new_creel_estimates(
+    ci_df = Inf,
     estimates = tbl,
     method = "total",
     variance_method = "taylor",

@@ -464,10 +464,12 @@ estimate_angler_n <- function(
     # recapture counts Chapman exists for. See finding 27 in
     # AUDIT-dimensional-seams.md.
     if (ci_method == "delta") {
-      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
+      ci_df <- max(1L, m - 1L)
+      z <- stats::qt(1 - (1 - conf_level) / 2, df = ci_df)
       ci_lo <- N_hat - z * se_N
       ci_hi <- N_hat + z * se_N
     } else {
+      ci_df <- Inf # .mr_logit_ci() uses the normal quantile
       logit_ci <- .mr_logit_ci(M, n, m, conf_level)
       ci_lo <- logit_ci[1]
       ci_hi <- logit_ci[2]
@@ -500,7 +502,8 @@ estimate_angler_n <- function(
       design = NULL,
       conf_level = conf_level,
       by_vars = NULL,
-      unit = NA_character_
+      unit = NA_character_,
+      ci_df = ci_df
     )
     # Carried so estimate_mr_harvest() can rebuild the interval at its own
     # conf_level rather than silently reusing this one.
@@ -521,10 +524,12 @@ estimate_angler_n <- function(
     # Same construction as the Chapman branch: the logit interval is built on
     # the capture table, not on the point estimator, so it serves both.
     if (ci_method == "delta") {
-      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, m - 1L))
+      ci_df <- max(1L, m - 1L)
+      z <- stats::qt(1 - (1 - conf_level) / 2, df = ci_df)
       ci_lo <- N_hat - z * se_N
       ci_hi <- N_hat + z * se_N
     } else {
+      ci_df <- Inf # .mr_logit_ci() uses the normal quantile
       logit_ci <- .mr_logit_ci(M, n, m, conf_level)
       ci_lo <- logit_ci[1]
       ci_hi <- logit_ci[2]
@@ -556,7 +561,8 @@ estimate_angler_n <- function(
       design = NULL,
       conf_level = conf_level,
       by_vars = NULL,
-      unit = NA_character_
+      unit = NA_character_,
+      ci_df = ci_df
     )
     attr(result, "capture_table") <- c(M = M, n = n, m = m)
     if (ci_method == "bootstrap") {
@@ -602,7 +608,8 @@ estimate_angler_n <- function(
     se_inv <- sqrt(max(0, sigma2) / sum_nM2)
     se_N <- N_hat^2 * se_inv
 
-    z <- stats::qt(1 - (1 - conf_level) / 2, df = s_occ - 2L)
+    ci_df <- s_occ - 2L
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = ci_df)
     # 4.17 rearranges to 1/(beta_hat +/- t * se_inv), so this interval is centred
     # on 1/N_hat rather than being an inversion independent of it -- contrast the
     # Schnabel Poisson branch. It therefore has to follow bias_adjust, or the
@@ -631,7 +638,8 @@ estimate_angler_n <- function(
       design = NULL,
       conf_level = conf_level,
       by_vars = NULL,
-      unit = NA_character_
+      unit = NA_character_,
+      ci_df = ci_df
     )
     attr(result, "n_occasions") <- s_occ
     result
@@ -667,6 +675,9 @@ estimate_angler_n <- function(
       # than centring on N_hat, so it is a valid interval for N under either
       # form and is deliberately left unadjusted. N_hat stays strictly inside
       # it: qpois(1 - alpha/2, sum_m) > sum_m + 1 for every sum_m >= 1.
+      # Poisson bounds on sum(m): not built from the SE on any reference
+      # distribution, so no df describes it (GH #585 decision 2026-11-24).
+      ci_df <- NA_real_
       lo_m <- stats::qpois(alpha / 2, lambda = sum_m)
       hi_m <- stats::qpois(1 - alpha / 2, lambda = sum_m)
       # Guard against hi_m == 0 (degenerate Poisson quantile)
@@ -701,7 +712,8 @@ estimate_angler_n <- function(
       # independent observation and understates the interval: on 5 occasions
       # with sum(m) = 52 it returns t = 2.008 where S - 1 gives t = 2.776, a
       # 33% narrower CI. See finding 29 in AUDIT-dimensional-seams.md.
-      z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, length(m) - 1L))
+      ci_df <- max(1L, length(m) - 1L)
+      z <- stats::qt(1 - (1 - conf_level) / 2, df = ci_df)
       # Unlike the Poisson branch, this interval is built around 1/N_hat, so it
       # follows the bias_adjust choice automatically.
       inv_N <- 1 / N_hat
@@ -744,7 +756,8 @@ estimate_angler_n <- function(
       design = NULL,
       conf_level = conf_level,
       by_vars = NULL,
-      unit = NA_character_
+      unit = NA_character_,
+      ci_df = ci_df
     )
     # Schnabel carries no two-sample capture table, but estimate_mr_harvest()
     # needs the occasion count to key its t quantile the same way the CI above
@@ -964,6 +977,7 @@ estimate_mr_harvest <- function(
     )
     ci_lo <- logit_ci[1] * harvest_rate
     ci_hi <- logit_ci[2] * harvest_rate
+    ci_df <- Inf # .mr_logit_ci() uses the normal quantile
   } else {
     # Degrees of freedom must match the branch that produced angler_n. For
     # Chapman and Petersen the n column is the recapture count m, so m - 1 is
@@ -973,7 +987,8 @@ estimate_mr_harvest <- function(
     # that estimate_angler_n() attached instead. See finding 33.
     n_occ <- attr(angler_n, "n_occasions")
     df_h <- if (is.null(n_occ)) n_mr - 1L else n_occ - 1L
-    z <- stats::qt(1 - (1 - conf_level) / 2, df = max(1L, df_h))
+    ci_df <- max(1L, df_h)
+    z <- stats::qt(1 - (1 - conf_level) / 2, df = ci_df)
     ci_lo <- harvest_hat - z * se_H
     ci_hi <- harvest_hat + z * se_H
   }
@@ -1018,6 +1033,7 @@ estimate_mr_harvest <- function(
     design = NULL,
     conf_level = conf_level,
     by_vars = NULL,
-    unit = NA_character_
+    unit = NA_character_,
+    ci_df = ci_df
   )
 }

@@ -142,6 +142,8 @@ est_effort_camera_mi <- function(design, imputations, ..., conf_level = 0.95) {
     method = "camera_mi",
     variance_method = "rubin",
     design = design,
+    # Rubin's df (Inf when the imputations agree), the one the interval used.
+    ci_df = pooled$df,
     conf_level = conf_level,
     by_vars = NULL,
     unit = per_imp[[1L]]$unit %||% NA_character_,

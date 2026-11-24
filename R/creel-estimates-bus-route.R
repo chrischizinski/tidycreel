@@ -155,6 +155,7 @@ estimate_effort_br <- function(
       estimates = estimates_df,
       method = "total",
       variance_method = variance_method,
+      ci_df = Inf, # confint()/svyby() default: normal
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
@@ -243,6 +244,7 @@ estimate_effort_br <- function(
       estimates = estimates_df,
       method = "total",
       variance_method = variance_method,
+      ci_df = Inf, # confint()/svyby() default: normal
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
@@ -628,6 +630,7 @@ br_harvest_rate_estimates <- function(
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
+      ci_df = Inf, # confint()/svyby() default: normal
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
@@ -692,6 +695,7 @@ br_harvest_rate_estimates <- function(
     estimates = estimates_df,
     method = method,
     variance_method = variance_method,
+    ci_df = Inf, # confint()/svyby() default: normal
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
@@ -1123,6 +1127,7 @@ estimate_rate_species_br <- function(
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
   rows_list <- vector("list", length(all_species))
+  df_list <- vector("list", length(all_species))
   method <- NULL
 
   for (i in seq_along(all_species)) {
@@ -1168,6 +1173,7 @@ estimate_rate_species_br <- function(
     # species rather than labelled in a column: a stratum may share the
     # species column's name (GH #686).
     rows_list[[i]] <- attr(res, "br_rate_rows")
+    df_list[[i]] <- res$ci_df
   }
 
   result <- new_creel_estimates( # nolint: object_usage_linter
@@ -1178,7 +1184,9 @@ estimate_rate_species_br <- function(
     design = design,
     conf_level = conf_level,
     by_vars = c(species_col, interview_by_vars),
-    unit = rate_unit(design) # nolint: object_usage_linter
+    unit = rate_unit(design), # nolint: object_usage_linter
+    # Each species' rows keep the df their own interval used.
+    ci_df = unlist(df_list, use.names = FALSE)
   )
   attr(result, "br_rate_rows_species") <- stats::setNames(rows_list, as.character(all_species))
   result
@@ -1796,6 +1804,7 @@ estimate_total_species_br <- function(
 
   all_species <- sort(unique(design[["catch"]][[species_col]]))
   results_list <- vector("list", length(all_species))
+  df_list <- vector("list", length(all_species))
 
   for (i in seq_along(all_species)) {
     sp <- all_species[[i]]
@@ -1840,6 +1849,7 @@ estimate_total_species_br <- function(
     sp_df <- res$estimates
     sp_df[[species_col]] <- sp
     results_list[[i]] <- sp_df[c(species_col, setdiff(names(sp_df), species_col))]
+    df_list[[i]] <- res$ci_df
   }
 
   new_creel_estimates( # nolint: object_usage_linter
@@ -1847,6 +1857,8 @@ estimate_total_species_br <- function(
     estimates = tibble::as_tibble(do.call(rbind, results_list)),
     method = paste0("ht-total-", quantity, "-species"),
     variance_method = variance_method,
+    # Each species' rows keep the df their own interval used.
+    ci_df = unlist(df_list, use.names = FALSE),
     design = design,
     conf_level = conf_level,
     by_vars = c(species_col, interview_by_vars),
@@ -2119,6 +2131,7 @@ br_build_estimates <- function(
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
+      ci_df = Inf, # confint()/svyby() default: normal
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
@@ -2217,6 +2230,7 @@ br_build_estimates <- function(
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
+      ci_df = Inf, # confint()/svyby() default: normal
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,

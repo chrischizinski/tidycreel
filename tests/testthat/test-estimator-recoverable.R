@@ -251,6 +251,7 @@ test_that("a path with no estimator choice records no estimator", {
 test_that("the constructor refuses a non-string estimator", {
   expect_error(
     new_creel_estimates(
+      ci_df = Inf,
       estimates = data.frame(estimate = 1, se = 1, ci_lower = 0, ci_upper = 2, n = 1L),
       estimator = c("mor", "mortr")
     ),

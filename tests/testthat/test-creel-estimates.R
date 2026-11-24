@@ -67,7 +67,7 @@ test_that("estimate_effort target='period_total' works on schedule-defined speci
 # Constructor tests ----
 test_that("new_creel_estimates() creates creel_estimates S3 object", {
   est_df <- test_estimates_df()
-  result <- new_creel_estimates(est_df)
+  result <- new_creel_estimates(ci_df = Inf, est_df)
 
   expect_s3_class(result, "creel_estimates")
   expect_type(result, "list")
@@ -76,7 +76,7 @@ test_that("new_creel_estimates() creates creel_estimates S3 object", {
     c(
       "estimates", "method", "variance_method", "design", "conf_level",
       "by_vars", "effort_target", "unit", "estimator", "se_expansion",
-      "expansion_decomposition", "se_components", "warnings"
+      "expansion_decomposition", "se_components", "ci_df", "warnings"
     )
   )
   # Both fields are always present but NULL until a standard-error component is
@@ -88,7 +88,7 @@ test_that("new_creel_estimates() creates creel_estimates S3 object", {
 
 test_that("new_creel_estimates() uses correct defaults", {
   est_df <- test_estimates_df()
-  result <- new_creel_estimates(est_df)
+  result <- new_creel_estimates(ci_df = Inf, est_df)
 
   expect_equal(result$method, "total")
   expect_equal(result$variance_method, "taylor")
@@ -98,7 +98,7 @@ test_that("new_creel_estimates() uses correct defaults", {
 
 test_that("new_creel_estimates() stores estimates data frame correctly", {
   est_df <- test_estimates_df()
-  result <- new_creel_estimates(est_df)
+  result <- new_creel_estimates(ci_df = Inf, est_df)
 
   expect_identical(result$estimates, est_df)
   expect_s3_class(result$estimates, "data.frame")
@@ -106,7 +106,7 @@ test_that("new_creel_estimates() stores estimates data frame correctly", {
 
 test_that("new_creel_estimates() has NULL design when not provided", {
   est_df <- test_estimates_df()
-  result <- new_creel_estimates(est_df)
+  result <- new_creel_estimates(ci_df = Inf, est_df)
 
   expect_null(result$design)
 })
@@ -114,6 +114,7 @@ test_that("new_creel_estimates() has NULL design when not provided", {
 test_that("new_creel_estimates() accepts custom parameters", {
   est_df <- test_estimates_df()
   result <- new_creel_estimates(
+    ci_df = Inf,
     est_df,
     method = "mean",
     variance_method = "bootstrap",
@@ -128,7 +129,7 @@ test_that("new_creel_estimates() accepts custom parameters", {
 # Format and print tests ----
 test_that("format.creel_estimates() returns character vector", {
   est_df <- test_estimates_df()
-  result <- new_creel_estimates(est_df)
+  result <- new_creel_estimates(ci_df = Inf, est_df)
 
   formatted <- format(result)
   expect_type(formatted, "character")
@@ -137,7 +138,7 @@ test_that("format.creel_estimates() returns character vector", {
 
 test_that("print.creel_estimates() returns invisibly", {
   est_df <- test_estimates_df()
-  result <- new_creel_estimates(est_df)
+  result <- new_creel_estimates(ci_df = Inf, est_df)
 
   expect_invisible(print(result))
 })
@@ -145,6 +146,7 @@ test_that("print.creel_estimates() returns invisibly", {
 test_that("format.creel_estimates() contains method and variance info", {
   est_df <- test_estimates_df()
   result <- new_creel_estimates(
+    ci_df = Inf,
     est_df,
     method = "total",
     variance_method = "taylor"
@@ -161,12 +163,12 @@ test_that("format.creel_estimates() contains method and variance info", {
 # Input validation tests ----
 test_that("new_creel_estimates() rejects non-data.frame estimates", {
   expect_error(
-    new_creel_estimates(list(a = 1)),
+    new_creel_estimates(ci_df = Inf, list(a = 1)),
     "data.frame"
   )
 
   expect_error(
-    new_creel_estimates(matrix(1:4, nrow = 2)),
+    new_creel_estimates(ci_df = Inf, matrix(1:4, nrow = 2)),
     "data.frame"
   )
 })
@@ -175,7 +177,7 @@ test_that("new_creel_estimates() rejects non-character method", {
   est_df <- test_estimates_df()
 
   expect_error(
-    new_creel_estimates(est_df, method = 123),
+    new_creel_estimates(ci_df = Inf, est_df, method = 123),
     "character"
   )
 })
@@ -184,7 +186,7 @@ test_that("new_creel_estimates() rejects non-numeric conf_level", {
   est_df <- test_estimates_df()
 
   expect_error(
-    new_creel_estimates(est_df, conf_level = "0.95"),
+    new_creel_estimates(ci_df = Inf, est_df, conf_level = "0.95"),
     "numeric"
   )
 })

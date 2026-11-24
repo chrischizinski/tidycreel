@@ -153,6 +153,9 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin, var
       conf_level = conf_level,
       by_vars = NULL,
       estimator = "regression",
+    # Normal throughout: confint(ddf = Inf), the ratio's confint() default, and
+    # regression_pooled_total()'s qnorm.
+    ci_df = Inf,
       unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
@@ -178,6 +181,9 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin, var
     conf_level = conf_level,
     by_vars = NULL,
     estimator = "regression",
+    # Normal throughout: confint(ddf = Inf), the ratio's confint() default, and
+    # regression_pooled_total()'s qnorm.
+    ci_df = Inf,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -254,6 +260,9 @@ estimate_cpue_reg_grouped <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     estimator = "regression",
+    # Normal throughout: confint(ddf = Inf), the ratio's confint() default, and
+    # regression_pooled_total()'s qnorm.
+    ci_df = Inf,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }

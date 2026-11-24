@@ -483,6 +483,7 @@ estimate_total_rate_groups <- function(
     )
     out <- res$estimates
     se_expansion <- res$se_expansion
+    ci_df <- res$ci_df
   } else {
     all_species <- sort(unique(rates[[species_col]]))
     pieces <- lapply(all_species, function(sp) {
@@ -494,9 +495,13 @@ estimate_total_rate_groups <- function(
       )
       est <- res$estimates
       est[[species_col]] <- rep(sp, nrow(est))
-      list(estimates = est[c(species_col, setdiff(names(est), species_col))], se_expansion = res$se_expansion)
+      list(
+        estimates = est[c(species_col, setdiff(names(est), species_col))],
+        se_expansion = res$se_expansion, ci_df = res$ci_df
+      )
     })
     out <- dplyr::bind_rows(lapply(pieces, `[[`, "estimates"))
+    ci_df <- unlist(lapply(pieces, `[[`, "ci_df"), use.names = FALSE)
     se_exp <- lapply(pieces, `[[`, "se_expansion")
     se_expansion <- if (all(vapply(se_exp, is.null, logical(1L)))) NULL else unlist(se_exp, use.names = FALSE)
     by_vars <- c(species_col, by_vars)
@@ -512,7 +517,8 @@ estimate_total_rate_groups <- function(
     effort_target = target,
     estimator = reported_estimator(design), # nolint: object_usage_linter
     unit = product_total_unit(rate_unit(design), design$effort_unit), # nolint: object_usage_linter
-    se_expansion = se_expansion
+    se_expansion = se_expansion,
+    ci_df = ci_df
   )
   # The pooling, visible: which cells used which group's rate.
   attr(rates, "rate_vcov") <- NULL
@@ -674,5 +680,5 @@ rate_group_product <- function(
   out$ci_lower <- lower
   out$ci_upper <- upper
   out$n <- as.integer(n_row)
-  list(estimates = out, se_expansion = w_result$se_expansion)
+  list(estimates = out, se_expansion = w_result$se_expansion, ci_df = rep_len(as.numeric(df_row), nrow(out)))
 }
