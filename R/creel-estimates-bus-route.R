@@ -369,6 +369,11 @@ estimate_harvest_br <- function(
     # complete trips, truncated mean of ratios for incomplete ones -- because
     # each is the estimator its trip type supports.
     br_require_trip_status(design, interviews, call)
+    # A comparison on the same interviews: neither rate is weighted across
+    # strata (GH #691), so the register is not needed here.
+    old_pooling <- rate_pooling_state$off # nolint: object_usage_linter
+    rate_pooling_state$off <- TRUE # nolint: object_usage_linter
+    on.exit(rate_pooling_state$off <- old_pooling, add = TRUE) # nolint: object_usage_linter
     complete_result <- estimate_harvest_br(
       design,
       by_vars,

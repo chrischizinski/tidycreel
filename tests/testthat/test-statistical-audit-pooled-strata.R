@@ -379,3 +379,74 @@ test_that("#691: a bus-route rate across strata is the expanded catch over the e
   # By day type it needs no register.
   expect_s3_class(ps_quiet(estimate_catch_rate(d0, by = day_type)), "creel_estimates") # nolint: object_usage_linter
 })
+
+# Review follow-ups (part 3).
+
+test_that("#691: a survey SE of exactly zero still gets an interval from the effort term", {
+  # Every trip's catch is exactly its hours times its day type's rate, so the
+  # survey's ratio variance is 0; the effort weights still vary.
+  d <- ps_rate_design()
+  iv <- d$interviews
+  iv$catch_total <- iv$hours_fished * ifelse(iv$day_type == "weekend", 3, 1)
+  iv$catch_kept <- iv$catch_total
+  d2 <- creel_design(d$calendar[c("date", "day_type")], date = date, strata = day_type) # nolint: object_usage_linter
+  d2 <- ps_quiet(add_counts(d2, d$counts[c("date", "day_type", "effort_hours")], count_col = effort_hours)) # nolint: object_usage_linter
+  d2 <- ps_quiet(add_interviews( # nolint: object_usage_linter
+    d2, iv[c("date", "hours_fished", "trip_duration", "trip_status", "catch_total", "catch_kept", "gear")],
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  ))
+  r <- ps_quiet(estimate_catch_rate(d2))$estimates # nolint: object_usage_linter
+  expect_gt(r$se, 0)
+  expect_true(is.finite(r$ci_lower) && is.finite(r$ci_upper))
+  expect_equal(r$ci_upper - r$estimate, stats::qnorm(0.975) * r$se)
+})
+
+test_that("#691: a stratum whose regression slope cannot be identified is refused, not NA", {
+  d <- ps_rate_design()
+  iv <- d$interviews
+  # Every weekend trip the same length: no slope with an intercept there.
+  iv$hours_fished[iv$day_type == "weekend"] <- 3
+  iv$trip_duration <- iv$hours_fished
+  d2 <- creel_design(d$calendar[c("date", "day_type")], date = date, strata = day_type) # nolint: object_usage_linter
+  d2 <- ps_quiet(add_counts(d2, d$counts[c("date", "day_type", "effort_hours")], count_col = effort_hours)) # nolint: object_usage_linter
+  d2 <- ps_quiet(add_interviews( # nolint: object_usage_linter
+    d2, iv[c("date", "hours_fished", "trip_duration", "trip_status", "catch_total", "catch_kept", "gear")],
+    catch = catch_total, harvest = catch_kept, effort = hours_fished,
+    trip_status = trip_status, trip_duration = trip_duration
+  ))
+  expect_true(is.na(ps_quiet(estimate_catch_rate( # nolint: object_usage_linter
+    d2,
+    estimator = "regression", force_origin = FALSE, by = day_type
+  ))$estimates$estimate[2]))
+  expect_error(
+    ps_quiet(estimate_catch_rate(d2, estimator = "regression", force_origin = FALSE)), # nolint: object_usage_linter
+    class = "creel_error_rate_needs_effort"
+  )
+})
+
+test_that("#691: bus-route pooling refuses a stratum the trip filter emptied, and a one-day stratum by name", {
+  d <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 40, seed = 691) # nolint: object_usage_linter
+  # Incomplete trips on weekdays only: the weekend has no rate from them.
+  d$interviews$trip_status <- ifelse(d$interviews$day_type == "weekday" & seq_len(nrow(d$interviews)) %% 2 == 0,
+    "incomplete", "complete"
+  )
+  d <- rebuild_interview_survey(d, d$interviews) # nolint: object_usage_linter
+  expect_error(
+    ps_quiet(estimate_catch_rate(d, use_trips = "incomplete")), # nolint: object_usage_linter
+    class = "creel_error_rate_needs_effort"
+  )
+  # The diagnostic compares the two trip types on the same interviews and
+  # needs no register.
+  d0 <- d
+  d0$sampled_col <- NULL
+  expect_no_error(ps_quiet(estimate_catch_rate(d0, use_trips = "diagnostic"))) # nolint: object_usage_linter
+
+  # One sampled weekend day: refused by name, not survey's unclassed error.
+  d1 <- build_br_design_for_tests(n_sites = 3, n_days = 8, n_interviews = 40, seed = 691) # nolint: object_usage_linter
+  we <- d1$calendar$date[d1$calendar$day_type == "weekend"]
+  off <- we[-1]
+  d1$calendar$.sampled[d1$calendar$date %in% off] <- FALSE
+  d1 <- rebuild_interview_survey(d1, d1$interviews[!d1$interviews$date %in% off, ]) # nolint: object_usage_linter
+  expect_error(ps_quiet(estimate_catch_rate(d1)), class = "creel_error_single_psu") # nolint: object_usage_linter
+})

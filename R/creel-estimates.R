@@ -7940,7 +7940,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     n = n
   )
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level) # nolint: object_usage_linter
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
@@ -8133,7 +8133,7 @@ estimate_cpue_grouped <- function(
 
   estimates_df$n <- group_n
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level) # nolint: object_usage_linter
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
@@ -9360,7 +9360,7 @@ estimate_harvest_total <- function(
     n = n
   )
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level) # nolint: object_usage_linter
 
   # Return the MOR-classed object on the mean-of-ratios branch, exactly as
   # estimate_cpue_total() and estimate_cpue_grouped() do. HPUE was the one metric
@@ -9581,7 +9581,7 @@ estimate_harvest_grouped <- function(
 
   estimates_df$n <- group_n
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level) # nolint: object_usage_linter
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)

@@ -217,10 +217,11 @@ refuse_unrated_strata <- function(E, rated, by_call, call) {
 #' @param estimates Data frame of rate rows.
 #' @param pool The list from `rate_strata_pooling()`.
 #' @param by_vars Grouping columns, or `NULL`.
+#' @param conf_level Confidence level, for an interval built from the SE alone.
 #' @return `estimates` with `se`, `ci_lower`, `ci_upper` updated.
 #' @keywords internal
 #' @noRd
-rate_pooling_add_effort_var <- function(estimates, pool, by_vars) {
+rate_pooling_add_effort_var <- function(estimates, pool, by_vars, conf_level = 0.95) {
   if (is.null(pool)) {
     return(estimates)
   }
@@ -261,8 +262,16 @@ rate_pooling_add_effort_var <- function(estimates, pool, by_vars) {
   se_new <- sqrt(se_old^2 + var_E)
   scale <- ifelse(is.finite(se_old) & se_old > 0, se_new / se_old, NA_real_)
   est <- estimates$estimate
-  estimates$ci_lower <- est - (est - estimates$ci_lower) * scale
-  estimates$ci_upper <- est + (estimates$ci_upper - est) * scale
+  lower <- est - (est - estimates$ci_lower) * scale
+  upper <- est + (estimates$ci_upper - est) * scale
+  # A survey SE of exactly 0 (constant ratios) leaves no interval to widen;
+  # the effort term alone then gives a normal interval on the new SE.
+  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  flat <- is.finite(se_old) & se_old == 0 & is.finite(se_new)
+  lower[flat] <- est[flat] - z * se_new[flat]
+  upper[flat] <- est[flat] + z * se_new[flat]
+  estimates$ci_lower <- lower
+  estimates$ci_upper <- upper
   estimates$se <- se_new
   estimates
 }
@@ -314,16 +323,38 @@ rate_pooling_on <- function() {
 regression_pooled_total <- function(design, strata, conf_level, force_origin, variance_method,
                                     call = rlang::caller_env()) {
   by_call <- pooling_by_call(strata, NULL)
-  # The ungrouped rate's own floor (3 interviews) still applies; the per-stratum
-  # fits below only warn below it.
-  regression_cpue_survey(design, variance_method, call = call) # nolint: object_usage_linter
+  # The ungrouped rate's own floor (3 interviews, zero-effort trips not
+  # counted) still applies; the per-stratum fits below only warn below it.
+  eff <- design$interviews[[design$angler_effort_col]]
+  n_valid <- sum(is.na(eff) | eff != 0)
+  if (n_valid < 3L) {
+    cli::cli_abort(c(
+      "Regression CPUE requires at least 3 interviews.",
+      "x" = "Only {n_valid} valid interview{?s} available after filtering."
+    ), call = call)
+  }
   pe <- pooling_effort(design, strata, by_call, call)
   per <- estimate_cpue_reg_grouped( # nolint: object_usage_linter
     design, strata, conf_level, force_origin, variance_method,
     call = call
   )$estimates
+  # A stratum whose slope cannot be identified has no rate, like one with no
+  # interviews; one with an unknown effort cannot be weighted.
+  per <- per[!is.na(per$estimate), , drop = FALSE]
   key <- group_key(per, strata) # nolint: object_usage_linter
   refuse_unrated_strata(pe$E, key, by_call, call)
+  if (anyNA(pe$E[key])) {
+    cli::cli_abort(
+      c(
+        "A rate pooled across strata is weighted by each stratum's effort, \\
+         and some strata's effort is unknown.",
+        "x" = "Unknown effort in: {.val {key[is.na(pe$E[key])]}}.",
+        "i" = "Estimate the rate {.code by = {by_call}} instead."
+      ),
+      class = c("creel_error_rate_needs_effort", "creel_error_invalid_input"),
+      call = call
+    )
+  }
   E <- unname(pe$E[key])
   b <- per$estimate
   E_tot <- sum(E)
@@ -443,6 +474,25 @@ br_pooled_rate_survey <- function(interviews, design, by_vars, zero_cols, call =
     filler$.psu <- as.character(filler[[iv_date]])
     interviews <- rbind(interviews, filler)
   }
+  # A stratum interviewed but with no trip of the kind used (a trip filter
+  # left only padded days) has no rate; leaving it in as zeros would report
+  # the other strata's rate as the season's.
+  real <- if (".synthetic" %in% names(interviews)) !interviews$.synthetic else rep(TRUE, nrow(interviews))
+  interviewed <- unique(group_key(design$interviews, strata)) # nolint: object_usage_linter
+  rated <- unique(group_key(interviews[real, , drop = FALSE], strata)) # nolint: object_usage_linter
+  unrated <- setdiff(interviewed, rated)
+  if (length(unrated) > 0L) {
+    cli::cli_abort(
+      c(
+        "A rate pooled across strata needs a rate in every stratum that was fished.",
+        "x" = "No trips of the kind used in: {.val {gsub('\u001f', ' / ', unrated, fixed = TRUE)}}.",
+        "i" = "Estimate the rate {.code by = {by_call}} instead. \\
+               See {.code ?estimate_catch_rate} for why."
+      ),
+      class = c("creel_error_rate_needs_effort", "creel_error_invalid_input"),
+      call = call
+    )
+  }
   refuse_reserved_join_columns(interviews, c(".N_avail", ".n_sampled"), "interviews") # nolint: object_usage_linter
   interviews <- dplyr::left_join(interviews, pop, by = strata)
   interviews$.br_pool_w <- interviews$.N_avail / interviews$.n_sampled
@@ -451,5 +501,8 @@ br_pooled_rate_survey <- function(interviews, design, by_vars, zero_cols, call =
     ids = ~.psu, strata = key$strata, weights = ~.br_pool_w,
     data = key$data, nest = TRUE
   )
+  # Day-clustered, so a stratum with one sampled day is refused by name
+  # (get_variance_design()), not left to survey's unclassed error.
+  attr(svy, "interview_day_psu") <- TRUE
   list(interviews = interviews, survey = svy)
 }
