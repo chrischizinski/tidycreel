@@ -15,6 +15,16 @@
 # The totals are deliberately excluded; see the "Why there is no `targeted`
 # argument" section in their documentation, and SIBLING-TARGETED-08 below.
 
+# These tests pin which trips the `targeted` filter admits, against hand
+# means with equal interview weights. Across strata a rate is now weighted by
+# each stratum's effort (GH #691), which sits on top of the trip filter and is
+# tested in test-statistical-audit-pooled-strata.R, so this file runs with that
+# weighting switched off.
+# File-scoped: testthat runs a top-level defer at the end of this file.
+old_rate_pooling <- rate_pooling_state$off
+rate_pooling_state$off <- TRUE
+withr::defer(rate_pooling_state$off <- old_rate_pooling)
+
 make_sibling_targeted_design <- function() {
   cal <- data.frame(
     date = as.Date(c("2024-06-01", "2024-06-02", "2024-06-08", "2024-06-09")),

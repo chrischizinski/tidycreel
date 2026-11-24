@@ -618,6 +618,15 @@ build_br_design_party_hours <- function(seed = 42) {
     p_period = rep(0.8, 3L),
     stringsAsFactors = FALSE
   )
+  interviews <- build_trip_interviews_for_tests(
+    calendar = calendar,
+    n_interviews = 30L,
+    site_ids = site_ids,
+    circuit_id = "C1"
+  )
+  # The register of sampled days: the days the interviews fall on, so a rate
+  # pooled across strata has its N_h / n_h day weights (GH #691).
+  calendar$.sampled <- calendar$date %in% interviews$date
   design <- creel_design(
     calendar,
     date = date,
@@ -627,13 +636,8 @@ build_br_design_party_hours <- function(seed = 42) {
     site = site, # nolint
     circuit = circuit, # nolint
     p_site = p_site, # nolint
-    p_period = p_period # nolint
-  )
-  interviews <- build_trip_interviews_for_tests(
-    calendar = calendar,
-    n_interviews = 30L,
-    site_ids = site_ids,
-    circuit_id = "C1"
+    p_period = p_period, # nolint
+    sampled = .sampled
   )
   suppressMessages(suppressWarnings(add_interviews(
     design, interviews,

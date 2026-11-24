@@ -110,17 +110,10 @@ test_that("species estimates on the example data sum to the overall estimates (#
     catch_uid = interview_id, interview_uid = interview_id, # nolint: object_usage_linter
     species = species, count = count, catch_type = catch_type # nolint: object_usage_linter
   ))
-  for (f in list(estimate_total_catch, estimate_total_harvest)) {
+  # Rates too: overall and species rates are both weighted by each day type's
+  # effort (GH #691), and the weights do not depend on the species.
+  for (f in list(estimate_catch_rate, estimate_total_catch, estimate_harvest_rate, estimate_total_harvest)) {
     overall <- q(f(d))$estimates$estimate
-    by_species <- q(f(d, by = species))$estimates$estimate # nolint: object_usage_linter
-    expect_equal(sum(by_species), overall, tolerance = 1e-10)
-  }
-  # Rates: the overall rate is weighted by each day type's effort (GH #691),
-  # and the species rates are not yet (part 3). Until they are, the species
-  # rates sum to the interview-weighted overall rate, which is what this
-  # coverage check is about; part 3 removes the without_rate_pooling().
-  for (f in list(estimate_catch_rate, estimate_harvest_rate)) {
-    overall <- without_rate_pooling(q(f(d)))$estimates$estimate
     by_species <- q(f(d, by = species))$estimates$estimate # nolint: object_usage_linter
     expect_equal(sum(by_species), overall, tolerance = 1e-10)
   }

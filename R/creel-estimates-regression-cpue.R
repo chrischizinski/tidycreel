@@ -142,6 +142,20 @@ regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = N
 #' @noRd
 estimate_cpue_regression_total <- function(design, conf_level, force_origin, variance_method = "taylor",
                                            call = rlang::caller_env()) {
+  # Across strata, each stratum's slope weighted by its effort (GH #691).
+  strata <- if (rate_pooling_on()) pooled_strata(design, NULL) else NULL # nolint: object_usage_linter
+  if (!is.null(strata)) {
+    return(new_creel_estimates( # nolint: object_usage_linter
+      estimates = regression_pooled_total(design, strata, conf_level, force_origin, variance_method, call), # nolint: object_usage_linter
+      method = "regression-cpue",
+      variance_method = variance_method,
+      design = design,
+      conf_level = conf_level,
+      by_vars = NULL,
+      estimator = "regression",
+      unit = rate_unit(design) # nolint: object_usage_linter
+    ))
+  }
   prep <- regression_cpue_survey(design, variance_method, call = call)
   n <- nrow(prep$data)
   fit <- with_defined_draws( # nolint: object_usage_linter
@@ -181,6 +195,10 @@ estimate_cpue_reg_grouped <- function(
   variance_method = "taylor",
   call = rlang::caller_env()
 ) {
+  # A group that is not a stratum, across strata, has no effort of its own to
+  # weight its strata's slopes by (GH #691).
+  strata <- if (rate_pooling_on()) pooled_strata(design, by_vars) else NULL # nolint: object_usage_linter
+  if (!is.null(strata)) refuse_pooled_grouped_regression(strata, by_vars, call) # nolint: object_usage_linter
   # Groups take the small-group warning below, not the 3-interview floor; an
   # empty frame is still refused.
   prep <- regression_cpue_survey(design, variance_method, by_vars = by_vars, min_n = 1L, call = call)
@@ -293,7 +311,9 @@ estimate_cpue_reg_grouped <- function(
 #' 70: 483–491. \doi{10.1590/S1519-69842010005000010}
 #'
 #' @examples
+#' # Counts too: each estimator weights the day types by their effort.
 #' design <- creel_design(example_calendar, date = date, strata = day_type) |>
+#'   add_counts(example_counts) |>
 #'   add_interviews(example_interviews,
 #'     catch = catch_total, effort = hours_fished,
 #'     trip_status = trip_status, n_anglers = n_anglers
@@ -311,11 +331,6 @@ compare_cpue_estimators <- function(
   force_origin = TRUE,
   verbose = FALSE
 ) {
-  # Compares rates on the same interviews, and the regression
-  # estimator is not effort-weighted yet: none are weighted here, and no counts are needed (GH #691).
-  old_pooling <- rate_pooling_state$off # nolint: object_usage_linter
-  rate_pooling_state$off <- TRUE # nolint: object_usage_linter
-  on.exit(rate_pooling_state$off <- old_pooling, add = TRUE) # nolint: object_usage_linter
   checkmate::assert_class(design, "creel_design")
   checkmate::assert_number(conf_level, lower = 0.5, upper = 1.0)
   checkmate::assert_flag(force_origin)

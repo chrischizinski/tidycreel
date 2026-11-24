@@ -219,8 +219,26 @@ a rate \code{by} the strata needs none. A stratum that was fished but has
 no interviews among the trips used (\code{use_trips}) has no rate, so the
 pooled rate is refused, naming it, rather than reported over the other
 strata as though it covered the season. Within one stratum nothing is
-pooled and nothing changes. Species-level, sectioned, regression and
-bus-route or ice rates are not yet effort-weighted across strata.
+pooled and nothing changes.
+
+The same combination applies on every route:
+\itemize{
+\item \code{by = species}: each species' rate is weighted by the strata's
+effort, so the species rates sum to the all-species rate.
+\item Sectioned designs: each section's rate is weighted by that section's
+own effort in each stratum, from its own counts.
+\item \code{estimator = "regression"}: each stratum's slope is estimated
+on its own and \eqn{\hat{R} = \sum_h \hat{E}_h \hat{b}_h / \sum_h
+    \hat{E}_h}, with the variance of the slopes and of the effort. A
+regression grouped by a column that is not a stratum is refused (class
+\code{creel_error_regression_pooled_group}): such a group has no effort
+of its own to weight its slopes by.
+\item Bus-route and ice designs: each stratum's days are weighted by its
+calendar days over its sampled days, so the rate is the expanded catch
+over the expanded effort. The sampled days must include days nobody
+fished, so the design's register (\code{creel_design(sampled = )}) is
+required, and the call is refused without it.
+}
 }
 
 \examples{

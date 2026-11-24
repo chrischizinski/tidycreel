@@ -15,7 +15,10 @@ make_simple_design <- function(n = 30L, seed = 42L) {
   )
   # Each interview takes its day's stratum from the calendar (GH #449).
   ints$day_type <- cal$day_type[match(ints$date, cal$date)]
+  # Counts: across day types a regression rate is each day type's slope
+  # weighted by its effort (GH #691).
   creel_design(cal, date = date, strata = day_type) |>
+    add_rate_counts() |>
     add_interviews(ints, catch = catch_total, effort = hours_fished, trip_status = trip_status)
 }
 
@@ -71,9 +74,17 @@ test_that("regression slope matches manual OLS (force_origin = TRUE)", {
   ints <- d$interviews
   catch <- as.numeric(ints[[d$catch_col]])
   effort <- as.numeric(ints[[d$angler_effort_col]])
-  manual_beta <- sum(catch * effort) / sum(effort^2)
+  # Each day type's own through-origin OLS slope, combined by the day types'
+  # effort (GH #691).
+  b_h <- tapply(catch * effort, ints$day_type, sum) / tapply(effort^2, ints$day_type, sum)
+  E <- suppressWarnings(suppressMessages(estimate_effort(d, by = day_type)))$estimates
+  E_h <- stats::setNames(E$estimate, E$day_type)[names(b_h)]
+  manual_beta <- sum(E_h * b_h) / sum(E_h)
 
   expect_equal(r$estimates$estimate, manual_beta, tolerance = 1e-9)
+  # Not the single slope over every interview, which weights the day types by
+  # their interviews.
+  expect_false(isTRUE(all.equal(r$estimates$estimate, sum(catch * effort) / sum(effort^2))))
 })
 
 test_that("regression grouped by day_type returns rows per group", {

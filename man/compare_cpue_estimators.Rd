@@ -63,7 +63,9 @@ Most robust when proportionality is violated (non-zero intercept).}
 }
 }
 \examples{
+# Counts too: each estimator weights the day types by their effort.
 design <- creel_design(example_calendar, date = date, strata = day_type) |>
+  add_counts(example_counts) |>
   add_interviews(example_interviews,
     catch = catch_total, effort = hours_fished,
     trip_status = trip_status, n_anglers = n_anglers

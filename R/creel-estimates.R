@@ -1261,8 +1261,26 @@ estimate_effort <- function(
 #' no interviews among the trips used (\code{use_trips}) has no rate, so the
 #' pooled rate is refused, naming it, rather than reported over the other
 #' strata as though it covered the season. Within one stratum nothing is
-#' pooled and nothing changes. Species-level, sectioned, regression and
-#' bus-route or ice rates are not yet effort-weighted across strata.
+#' pooled and nothing changes.
+#'
+#' The same combination applies on every route:
+#' \itemize{
+#'   \item \code{by = species}: each species' rate is weighted by the strata's
+#'     effort, so the species rates sum to the all-species rate.
+#'   \item Sectioned designs: each section's rate is weighted by that section's
+#'     own effort in each stratum, from its own counts.
+#'   \item \code{estimator = "regression"}: each stratum's slope is estimated
+#'     on its own and \eqn{\hat{R} = \sum_h \hat{E}_h \hat{b}_h / \sum_h
+#'     \hat{E}_h}, with the variance of the slopes and of the effort. A
+#'     regression grouped by a column that is not a stratum is refused (class
+#'     \code{creel_error_regression_pooled_group}): such a group has no effort
+#'     of its own to weight its slopes by.
+#'   \item Bus-route and ice designs: each stratum's days are weighted by its
+#'     calendar days over its sampled days, so the rate is the expanded catch
+#'     over the expanded effort. The sampled days must include days nobody
+#'     fished, so the design's register (\code{creel_design(sampled = )}) is
+#'     required, and the call is refused without it.
+#' }
 #'
 #' @references
 #'   Pollock, K. H., Jones, C. M., and Brown, T. L. (1994). \emph{Angler
@@ -7922,7 +7940,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     n = n
   )
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level) # nolint: object_usage_linter
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
@@ -8115,7 +8133,7 @@ estimate_cpue_grouped <- function(
 
   estimates_df$n <- group_n
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level) # nolint: object_usage_linter
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
@@ -8979,7 +8997,7 @@ estimate_cpue_species <- function(
         )
       }
     } else if (is.null(interview_by_vars)) {
-      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
+      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     } else {
       result <- estimate_cpue_grouped(
         design_sp,
@@ -8987,7 +9005,8 @@ estimate_cpue_species <- function(
         variance_method,
         conf_level,
         estimator,
-        covmat = covmat
+        covmat = covmat,
+        pool_by_effort = rate_pooling_on()
       ) # nolint: object_usage_linter
     }
 
@@ -9070,7 +9089,7 @@ estimate_release_rate_species <- function(
     }
 
     if (is.null(interview_by_vars)) {
-      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
+      result <- estimate_cpue_total(design_sp, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     } else {
       result <- estimate_cpue_grouped( # nolint: object_usage_linter
         design_sp,
@@ -9078,7 +9097,8 @@ estimate_release_rate_species <- function(
         variance_method,
         conf_level,
         estimator,
-        covmat = covmat
+        covmat = covmat,
+        pool_by_effort = rate_pooling_on()
       )
     }
 
@@ -9158,7 +9178,7 @@ estimate_hpue_species <- function(
     }
 
     if (is.null(interview_by_vars)) {
-      result <- estimate_harvest_total(design_sp, variance_method, conf_level, estimator) # nolint: object_usage_linter
+      result <- estimate_harvest_total(design_sp, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
     } else {
       result <- estimate_harvest_grouped( # nolint: object_usage_linter
         design_sp,
@@ -9166,7 +9186,8 @@ estimate_hpue_species <- function(
         variance_method,
         conf_level,
         estimator,
-        covmat = covmat
+        covmat = covmat,
+        pool_by_effort = rate_pooling_on()
       )
     }
 
@@ -9339,7 +9360,7 @@ estimate_harvest_total <- function(
     n = n
   )
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level) # nolint: object_usage_linter
 
   # Return the MOR-classed object on the mean-of-ratios branch, exactly as
   # estimate_cpue_total() and estimate_cpue_grouped() do. HPUE was the one metric
@@ -9560,7 +9581,7 @@ estimate_harvest_grouped <- function(
 
   estimates_df$n <- group_n
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level) # nolint: object_usage_linter
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
@@ -9740,7 +9761,8 @@ estimate_catch_rate_sections <- function(
             by_vars = by_info$interview_vars,
             variance_method = variance_method,
             conf_level = conf_level,
-            estimator = estimator
+            estimator = estimator,
+            pool_by_effort = rate_pooling_on()
           )
         }
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
@@ -9756,7 +9778,8 @@ estimate_catch_rate_sections <- function(
             sec_design,
             variance_method,
             conf_level,
-            estimator
+            estimator,
+            pool_by_effort = rate_pooling_on()
           )
         }
         row <- result$estimates
@@ -9915,7 +9938,8 @@ estimate_harvest_rate_sections <- function(
           by_info$interview_vars,
           variance_method,
           conf_level,
-          estimator
+          estimator,
+          pool_by_effort = rate_pooling_on()
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
@@ -9926,7 +9950,8 @@ estimate_harvest_rate_sections <- function(
           sec_design,
           variance_method,
           conf_level,
-          estimator
+          estimator,
+          pool_by_effort = rate_pooling_on()
         )
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
@@ -10105,13 +10130,14 @@ estimate_release_rate_sections <- function(
           by_info$interview_vars,
           variance_method,
           conf_level,
-          estimator
+          estimator,
+          pool_by_effort = rate_pooling_on()
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         section_rows[[sec]] <- row_df
       } else {
-        result <- estimate_cpue_total(design_rel, variance_method, conf_level, estimator) # nolint: object_usage_linter
+        result <- estimate_cpue_total(design_rel, variance_method, conf_level, estimator, pool_by_effort = rate_pooling_on()) # nolint: object_usage_linter
         row <- result$estimates
         section_rows[[sec]] <- tibble::tibble(
           !!section_col := sec,
