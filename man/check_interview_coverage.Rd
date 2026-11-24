@@ -8,7 +8,8 @@ check_interview_coverage(
   design,
   periods = NULL,
   fishing_hours = NULL,
-  block = 60
+  block = 60,
+  use_trips = c("complete", "incomplete", "all")
 )
 }
 \arguments{
@@ -18,17 +19,25 @@ interviews are the effort data. Aerial and camera designs are refused: the
 counts there have no link to interview times.}
 
 \item{periods}{\code{NULL}, or a data frame of the periods clerks interview in,
-with \code{start} and \code{end} as \code{"HH:MM"}. It may carry any of the design's
-strata columns to give each stratum its own periods; rows without them
-apply to every stratum. This is the \code{periods} table given to
-\code{\link[=generate_schedule]{generate_schedule()}}: every period that can be drawn has a positive
-probability of being worked.}
+with \code{start_time} and \code{end_time} as \code{"HH:MM"}: the \code{periods} table given
+to \code{\link[=generate_schedule]{generate_schedule()}}, whose every period has a positive probability
+of being worked. \code{period_id} and \code{hours} columns are allowed and ignored.
+It may carry any of the design's strata columns to give each stratum its
+own periods; rows without them apply to every stratum. Any other column
+is refused, so a misspelt stratum cannot quietly apply a row to every
+stratum. Periods that vary by date (a \code{date} column, as from
+\code{\link[=daylight_shifts]{daylight_shifts()}}) are not supported yet.}
 
 \item{fishing_hours}{\code{NULL}, a character vector \code{c(start, end)} as \code{"HH:MM"}
-applying to every stratum, or a data frame with \code{start}, \code{end} and
-optionally strata columns, as for \code{periods}.}
+applying to every stratum, or a data frame with \code{start_time}, \code{end_time}
+and optionally strata columns, as for \code{periods}.}
 
 \item{block}{Block length in minutes. Default 60.}
+
+\item{use_trips}{Which interviewed trips the data layer compares:
+\code{"complete"} (default, the trips \code{\link[=estimate_catch_rate]{estimate_catch_rate()}} uses by
+default), \code{"incomplete"}, or \code{"all"}. A block fished only by trips the
+rate does not use is not covered for that rate.}
 }
 \value{
 A \code{creel_coverage_report}, a list with:
@@ -40,10 +49,12 @@ A \code{creel_coverage_report}, a list with:
 \item{data}{One row per stratum and block: \code{mean_count}, \code{n_count_obs},
 \code{interviewed_hours}, \code{n_interviews}, \code{effort_share},
 \code{interviewed_share} and \code{gap}.}
-\item{summary}{One row per stratum: \code{n_interviews}, \code{n_no_clock_time},
-\code{effort_share_in_data_gaps}, \code{fishing_hours_not_interviewable} and
-\code{effort_share_not_interviewable}.}
+\item{summary}{One row per stratum: \code{n_interviews} (of the trips in
+\code{use_trips}), \code{n_no_clock_time}, \code{effort_share_in_data_gaps},
+\code{fishing_hours_not_interviewable} (minutes inside the fishing day
+only) and \code{effort_share_not_interviewable}.}
 \item{block}{The block length in minutes.}
+\item{use_trips}{The trips the data layer compared.}
 }
 }
 \description{
@@ -134,7 +145,7 @@ design <- add_interviews(design, interviews,
 )
 check_interview_coverage(
   design,
-  periods = data.frame(start = "06:00", end = "12:00"),
+  periods = data.frame(period_id = 1, start_time = "06:00", end_time = "12:00"),
   fishing_hours = c("06:00", "21:00")
 )
 

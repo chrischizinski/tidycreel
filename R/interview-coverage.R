@@ -63,15 +63,22 @@
 #'   interviews are the effort data. Aerial and camera designs are refused: the
 #'   counts there have no link to interview times.
 #' @param periods `NULL`, or a data frame of the periods clerks interview in,
-#'   with `start` and `end` as `"HH:MM"`. It may carry any of the design's
-#'   strata columns to give each stratum its own periods; rows without them
-#'   apply to every stratum. This is the `periods` table given to
-#'   [generate_schedule()]: every period that can be drawn has a positive
-#'   probability of being worked.
+#'   with `start_time` and `end_time` as `"HH:MM"`: the `periods` table given
+#'   to [generate_schedule()], whose every period has a positive probability
+#'   of being worked. `period_id` and `hours` columns are allowed and ignored.
+#'   It may carry any of the design's strata columns to give each stratum its
+#'   own periods; rows without them apply to every stratum. Any other column
+#'   is refused, so a misspelt stratum cannot quietly apply a row to every
+#'   stratum. Periods that vary by date (a `date` column, as from
+#'   [daylight_shifts()]) are not supported yet.
 #' @param fishing_hours `NULL`, a character vector `c(start, end)` as `"HH:MM"`
-#'   applying to every stratum, or a data frame with `start`, `end` and
-#'   optionally strata columns, as for `periods`.
+#'   applying to every stratum, or a data frame with `start_time`, `end_time`
+#'   and optionally strata columns, as for `periods`.
 #' @param block Block length in minutes. Default 60.
+#' @param use_trips Which interviewed trips the data layer compares:
+#'   `"complete"` (default, the trips [estimate_catch_rate()] uses by
+#'   default), `"incomplete"`, or `"all"`. A block fished only by trips the
+#'   rate does not use is not covered for that rate.
 #'
 #' @return A `creel_coverage_report`, a list with:
 #'   \describe{
@@ -82,10 +89,12 @@
 #'     \item{data}{One row per stratum and block: `mean_count`, `n_count_obs`,
 #'       `interviewed_hours`, `n_interviews`, `effort_share`,
 #'       `interviewed_share` and `gap`.}
-#'     \item{summary}{One row per stratum: `n_interviews`, `n_no_clock_time`,
-#'       `effort_share_in_data_gaps`, `fishing_hours_not_interviewable` and
-#'       `effort_share_not_interviewable`.}
+#'     \item{summary}{One row per stratum: `n_interviews` (of the trips in
+#'       `use_trips`), `n_no_clock_time`, `effort_share_in_data_gaps`,
+#'       `fishing_hours_not_interviewable` (minutes inside the fishing day
+#'       only) and `effort_share_not_interviewable`.}
 #'     \item{block}{The block length in minutes.}
+#'     \item{use_trips}{The trips the data layer compared.}
 #'   }
 #'
 #' @references
@@ -131,13 +140,15 @@
 #' )
 #' check_interview_coverage(
 #'   design,
-#'   periods = data.frame(start = "06:00", end = "12:00"),
+#'   periods = data.frame(period_id = 1, start_time = "06:00", end_time = "12:00"),
 #'   fishing_hours = c("06:00", "21:00")
 #' )
 #'
 #' @family "Reporting & Diagnostics"
 #' @export
-check_interview_coverage <- function(design, periods = NULL, fishing_hours = NULL, block = 60) {
+check_interview_coverage <- function(design, periods = NULL, fishing_hours = NULL, block = 60,
+                                     use_trips = c("complete", "incomplete", "all")) {
+  use_trips <- match.arg(use_trips)
   if (!inherits(design, "creel_design")) {
     creel_abort(
       c(
@@ -187,16 +198,25 @@ check_interview_coverage <- function(design, periods = NULL, fishing_hours = NUL
     .hi = edges[-1L]
   )
 
-  plan <- coverage_plan(strata, strata_cols, blocks, periods, fishing_hours, ds)
-  data <- coverage_data(design, strata, strata_cols, blocks, ds)
-  summary <- coverage_summary(plan, data, strata, strata_cols, design, ds)
+  # Each plan input is checked when given, alone or together, so a malformed
+  # table is refused rather than read as "no plan".
+  win_p <- if (is.null(periods)) NULL else coverage_windows(periods, "periods", strata, strata_cols, ds)
+  win_f <- if (is.null(fishing_hours)) {
+    NULL
+  } else {
+    coverage_windows(fishing_hours, "fishing_hours", strata, strata_cols, ds)
+  }
+  plan <- coverage_plan(strata, blocks, win_p, win_f)
+  data <- coverage_data(design, strata, strata_cols, blocks, ds, use_trips)
+  summary <- coverage_summary(plan, data, strata, strata_cols, design, use_trips)
 
   structure(
     list(
       plan = coverage_finish(plan, strata_cols, ds),
       data = coverage_finish(data, strata_cols, ds),
       summary = summary,
-      block = block
+      block = block,
+      use_trips = use_trips
     ),
     class = "creel_coverage_report"
   )
@@ -216,20 +236,44 @@ coverage_strata <- function(design, strata_cols) {
 #' @keywords internal
 #' @noRd
 coverage_windows <- function(tbl, arg, strata, strata_cols, ds) {
-  if (is.character(tbl) && length(tbl) == 2L) {
-    tbl <- data.frame(start = tbl[1], end = tbl[2])
+  if (identical(arg, "fishing_hours") && is.character(tbl) && length(tbl) == 2L) {
+    tbl <- data.frame(start_time = tbl[1], end_time = tbl[2])
   }
-  if (!is.data.frame(tbl) || !all(c("start", "end") %in% names(tbl)) || nrow(tbl) == 0L) {
+  if (!is.data.frame(tbl) || !all(c("start_time", "end_time") %in% names(tbl)) || nrow(tbl) == 0L) {
     creel_abort(
       c(
-        "{.arg {arg}} must be a data frame with {.field start} and {.field end} columns.",
-        "i" = "Times are {.val HH:MM}; strata columns are optional."
+        "{.arg {arg}} must be a data frame with {.field start_time} and {.field end_time} columns.",
+        "i" = "Times are {.val HH:MM}, as in the {.arg periods} table of {.fn generate_schedule}; \
+               strata columns are optional."
       ),
       class = c("creel_error_coverage_input", "creel_error_invalid_input")
     )
   }
-  s <- clock_minutes(tbl$start, strict = FALSE) # nolint: object_usage_linter
-  e <- clock_minutes(tbl$end, strict = FALSE) # nolint: object_usage_linter
+  if ("date" %in% names(tbl)) {
+    creel_abort(
+      c(
+        "{.arg {arg}} with times that vary by date is not supported yet.",
+        "i" = "Give one row per period (per stratum if they differ). See {.code ?check_interview_coverage}."
+      ),
+      class = c("creel_error_coverage_input", "creel_error_invalid_input")
+    )
+  }
+  # A column that is neither a time, a generate_schedule() period column nor a
+  # stratum of the design is most likely a misspelt stratum, which would
+  # otherwise apply the row to every stratum without a word.
+  extra <- setdiff(names(tbl), c("start_time", "end_time", "period_id", "hours", strata_cols))
+  if (length(extra) > 0L) {
+    creel_abort(
+      c(
+        "{.arg {arg}} has columns that are not times, period ids or strata of the design.",
+        "x" = "Unknown: {.field {extra}}.",
+        "i" = "Strata columns: {.field {strata_cols}}."
+      ),
+      class = c("creel_error_coverage_input", "creel_error_invalid_input")
+    )
+  }
+  s <- clock_minutes(tbl$start_time, strict = FALSE) # nolint: object_usage_linter
+  e <- clock_minutes(tbl$end_time, strict = FALSE) # nolint: object_usage_linter
   bad <- is.na(s) | is.na(e)
   if (any(bad)) {
     creel_abort(
@@ -276,36 +320,36 @@ coverage_windows <- function(tbl, arg, strata, strata_cols, ds) {
   out
 }
 
-#' Minutes of [lo, hi) covered by the union of intervals
-#' @keywords internal
-#' @noRd
-coverage_overlap <- function(lo, hi, s, e) {
-  sum(pmax(0, pmin(hi, e) - pmax(lo, s)))
-}
-
 #' Plan layer: which blocks of the fishing day an interview period overlaps
 #' @keywords internal
 #' @noRd
-coverage_plan <- function(strata, strata_cols, blocks, periods, fishing_hours, ds) {
-  known <- !is.null(periods) && !is.null(fishing_hours)
-  win_p <- if (known) coverage_windows(periods, "periods", strata, strata_cols, ds) else NULL
-  win_f <- if (known) coverage_windows(fishing_hours, "fishing_hours", strata, strata_cols, ds) else NULL
+coverage_plan <- function(strata, blocks, win_p, win_f) {
+  known <- !is.null(win_p) && !is.null(win_f)
   rows <- lapply(seq_len(nrow(strata)), function(i) {
     out <- cbind(strata[rep(i, nrow(blocks)), , drop = FALSE], blocks)
     if (!known) {
       out$in_fishing_day <- NA
       out$interviewable <- NA
+      out$.in_min <- NA_real_
       return(out)
     }
     k <- strata$.key[i]
     f <- win_f[[k]]
     p <- win_p[[k]]
-    out$in_fishing_day <- mapply(
-      function(lo, hi) any(pmin(hi, f$.e) > pmax(lo, f$.s)), out$.lo, out$.hi
-    )
-    out$interviewable <- mapply(
-      function(lo, hi) any(pmin(hi, p$.e) > pmax(lo, p$.s)), out$.lo, out$.hi
-    )
+    # The part of each block inside the fishing day, and the part of that an
+    # interview period overlaps: a period that only touches the block outside
+    # the fishing day covers no trip.
+    in_day <- lapply(seq_len(nrow(out)), function(b) {
+      lo <- pmax(out$.lo[b], f$.s)
+      hi <- pmin(out$.hi[b], f$.e)
+      keep <- hi > lo
+      list(lo = lo[keep], hi = hi[keep])
+    })
+    out$.in_min <- vapply(in_day, function(w) sum(w$hi - w$lo), numeric(1))
+    out$in_fishing_day <- out$.in_min > 0
+    out$interviewable <- vapply(in_day, function(w) {
+      any(outer(w$hi, p$.e, pmin) > outer(w$lo, p$.s, pmax))
+    }, logical(1))
     # Outside the fishing day there is no trip to cover.
     out$interviewable[!out$in_fishing_day] <- NA
     out
@@ -316,7 +360,7 @@ coverage_plan <- function(strata, strata_cols, blocks, periods, fishing_hours, d
 #' Data layer: counted effort vs interviewed fishing time, per block
 #' @keywords internal
 #' @noRd
-coverage_data <- function(design, strata, strata_cols, blocks, ds) {
+coverage_data <- function(design, strata, strata_cols, blocks, ds, use_trips) {
   date_col <- design$date_col
   day_strata <- unique(design$calendar[c(date_col, strata_cols)])
   day_strata$.key <- group_key(day_strata, strata_cols) # nolint: object_usage_linter
@@ -331,7 +375,7 @@ coverage_data <- function(design, strata, strata_cols, blocks, ds) {
   }
 
   # Interviews: the interval each trip fished, on the survey-day clock.
-  iv <- design$interviews
+  iv <- coverage_trips(design, use_trips)
   ts_col <- design$trip_start_col
   it_col <- design$interview_time_col
   timed <- !is.null(ts_col) && !is.null(it_col) &&
@@ -400,12 +444,28 @@ coverage_data <- function(design, strata, strata_cols, blocks, ds) {
   out
 }
 
+#' The interviews a rate would use
+#'
+#' The default rate uses complete trips only, so a block fished only by
+#' incomplete trips gives that rate nothing; `use_trips` names the trips to
+#' compare, as `estimate_catch_rate(use_trips = )` does.
+#' @keywords internal
+#' @noRd
+coverage_trips <- function(design, use_trips) {
+  iv <- design$interviews
+  status_col <- design$trip_status_col
+  if (identical(use_trips, "all") || is.null(status_col) || !status_col %in% names(iv)) {
+    return(iv)
+  }
+  iv[tolower(as.character(iv[[status_col]])) == use_trips, , drop = FALSE]
+}
+
 #' One row per stratum: the shares of counted effort in each kind of gap
 #' @keywords internal
 #' @noRd
-coverage_summary <- function(plan, data, strata, strata_cols, design, ds) {
+coverage_summary <- function(plan, data, strata, strata_cols, design, use_trips) {
   n_untimed <- attr(data, "n_untimed")
-  iv_key <- group_key(design$interviews, strata_cols) # nolint: object_usage_linter
+  iv_key <- group_key(coverage_trips(design, use_trips), strata_cols) # nolint: object_usage_linter
   rows <- lapply(seq_len(nrow(strata)), function(i) {
     k <- strata$.key[i]
     d <- data[data$.key == k, , drop = FALSE]
@@ -424,7 +484,9 @@ coverage_summary <- function(plan, data, strata, strata_cols, design, ds) {
     out$n_interviews <- sum(iv_key == k)
     out$n_no_clock_time <- unname(n_untimed[k])
     out$effort_share_in_data_gaps <- data_gap_share
-    out$fishing_hours_not_interviewable <- if (plan_known) sum((p$.hi - p$.lo)[not_iv]) / 60 else NA_real_
+    # Only the minutes inside the fishing day: a block straddling its end is
+    # not a whole block of fishing.
+    out$fishing_hours_not_interviewable <- if (plan_known) sum(p$.in_min[not_iv]) / 60 else NA_real_
     out$effort_share_not_interviewable <- plan_gap_share
     out
   })
@@ -443,7 +505,7 @@ coverage_finish <- function(x, strata_cols, ds) {
   }
   x$block_start <- hhmm(x$.lo)
   x$block_end <- hhmm(x$.hi)
-  internal <- c(strata_cols, ".key", ".b", ".lo", ".hi", "block_start", "block_end")
+  internal <- c(strata_cols, ".key", ".b", ".lo", ".hi", ".in_min", "block_start", "block_end")
   keep <- c(strata_cols, "block_start", "block_end", setdiff(names(x), internal))
   out <- x[keep]
   rownames(out) <- NULL
@@ -461,7 +523,7 @@ format.creel_coverage_report <- function(x, ...) {
   pct <- function(v) ifelse(is.na(v), "unknown", sprintf("%.0f%%", 100 * v))
   lines <- c(
     cli::rule(left = "Interview coverage by time of day", width = 60),
-    sprintf("Blocks of %s minutes, per stratum.", format(x$block)),
+    sprintf("Blocks of %s minutes, per stratum; %s trips.", format(x$block), x$use_trips %||% "complete"),
     ""
   )
   for (i in seq_len(nrow(s))) {

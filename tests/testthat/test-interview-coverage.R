@@ -78,7 +78,7 @@ test_that("interviewed fishing is measured in hours fished in each block, not in
 test_that("a morning-only interview plan makes the rest of the fishing day not interviewable", {
   r <- check_interview_coverage(
     ic_design(),
-    periods = data.frame(start = "06:00", end = "12:00"),
+    periods = data.frame(start_time = "06:00", end_time = "12:00"),
     fishing_hours = c("06:00", "21:00")
   )
   p <- r$plan
@@ -93,7 +93,7 @@ test_that("a morning-only interview plan makes the rest of the fishing day not i
 
   full <- check_interview_coverage(
     ic_design(),
-    periods = data.frame(start = c("06:00", "13:30"), end = c("13:30", "21:00")),
+    periods = data.frame(start_time = c("06:00", "13:30"), end_time = c("13:30", "21:00")),
     fishing_hours = c("06:00", "21:00")
   )
   expect_equal(full$summary$fishing_hours_not_interviewable, 0)
@@ -121,7 +121,7 @@ test_that("without periods and fishing hours the plan layer is NA, never covered
   expect_true(is.na(r$summary$fishing_hours_not_interviewable))
   expect_true(is.na(r$summary$effort_share_not_interviewable))
   # One without the other is still no plan.
-  r2 <- check_interview_coverage(ic_design(), periods = data.frame(start = "06:00", end = "12:00"))
+  r2 <- check_interview_coverage(ic_design(), periods = data.frame(start_time = "06:00", end_time = "12:00"))
   expect_true(all(is.na(r2$plan$interviewable)))
 })
 
@@ -163,7 +163,7 @@ test_that("a night creel's blocks run on the survey-day clock, past midnight", {
   ))
   r <- check_interview_coverage(
     d,
-    periods = data.frame(start = "18:00", end = "23:00"),
+    periods = data.frame(start_time = "18:00", end_time = "23:00"),
     fishing_hours = c("18:00", "06:00")
   )
   # The survey day starts at 12:00, so its blocks start there.
@@ -195,7 +195,7 @@ test_that("designs whose interviews cannot be timed against counts are refused",
 
 test_that("plan inputs are checked, not guessed", {
   expect_error(
-    check_interview_coverage(ic_design(), periods = data.frame(start = "6am", end = "12:00"), fishing_hours = c("06:00", "21:00")),
+    check_interview_coverage(ic_design(), periods = data.frame(start_time = "6am", end_time = "12:00"), fishing_hours = c("06:00", "21:00")),
     class = "creel_error_coverage_input"
   )
   expect_error(
@@ -206,11 +206,80 @@ test_that("plan inputs are checked, not guessed", {
   expect_error(
     check_interview_coverage(
       ic_design(),
-      periods = data.frame(day_type = "weekend", start = "06:00", end = "12:00"),
+      periods = data.frame(day_type = "weekend", start_time = "06:00", end_time = "12:00"),
       fishing_hours = c("06:00", "21:00")
     ),
     class = "creel_error_coverage_input"
   )
+})
+
+test_that("the periods table generate_schedule() takes is accepted as it is", {
+  per <- data.frame(
+    period_id = 1:2, start_time = c("06:00", "14:00"), end_time = c("14:00", "21:00"), hours = c(8, 7)
+  )
+  r <- check_interview_coverage(ic_design(), periods = per, fishing_hours = c("06:00", "21:00"))
+  expect_equal(r$summary$fishing_hours_not_interviewable, 0)
+  # Date-varying periods need per-date logic: refused, not averaged over.
+  expect_error(
+    check_interview_coverage(
+      ic_design(),
+      periods = cbind(per, date = as.Date("2024-06-03")), fishing_hours = c("06:00", "21:00")
+    ),
+    class = "creel_error_coverage_input"
+  )
+})
+
+test_that("a misspelt stratum column is refused, not applied to every stratum", {
+  expect_error(
+    check_interview_coverage(
+      ic_design(),
+      periods = data.frame(daytype = "weekday", start_time = "06:00", end_time = "12:00"),
+      fishing_hours = c("06:00", "21:00")
+    ),
+    class = "creel_error_coverage_input"
+  )
+  # The bare c(start, end) form is for fishing_hours only.
+  expect_error(
+    check_interview_coverage(ic_design(), periods = c("06:00", "12:00"), fishing_hours = c("06:00", "21:00")),
+    class = "creel_error_coverage_input"
+  )
+})
+
+test_that("a malformed plan input is refused even when the other is missing", {
+  expect_error(
+    check_interview_coverage(ic_design(), periods = data.frame(start_time = "6am", end_time = "12:00")),
+    class = "creel_error_coverage_input"
+  )
+  expect_error(
+    check_interview_coverage(ic_design(), fishing_hours = c("21:00", "06:00x")),
+    class = "creel_error_coverage_input"
+  )
+})
+
+test_that("a period touching a block only outside the fishing day covers nothing; edge blocks count in-day minutes", {
+  # Fishing 06:00-21:30; a clerk only 21:30-23:00. The 21:00 block holds 30
+  # minutes of fishing, none of it overlapped by the period.
+  r <- check_interview_coverage(
+    ic_design(),
+    periods = data.frame(start_time = "21:30", end_time = "23:00"),
+    fishing_hours = c("06:00", "21:30")
+  )
+  expect_false(block_row(r$plan, "21:00")$interviewable)
+  expect_true(block_row(r$plan, "21:00")$in_fishing_day)
+  # 15 whole hours plus the half hour of the 21:00 block, not 16.
+  expect_equal(r$summary$fishing_hours_not_interviewable, 15.5)
+})
+
+test_that("use_trips: a block fished only by incomplete trips is a gap for the complete-trip rate", {
+  d <- ic_design(trip_hours = c(6.5, 15), hours = 3)
+  late <- as.numeric(format(d$interviews[[d$trip_start_col]], "%H")) >= 12
+  d$interviews[[d$trip_status_col]][late] <- "incomplete"
+  complete <- check_interview_coverage(d)
+  all <- check_interview_coverage(d, use_trips = "all")
+  expect_true(block_row(complete$data, "16:00")$gap)
+  expect_false(block_row(all$data, "16:00")$gap)
+  expect_identical(complete$summary$n_interviews, 4L)
+  expect_identical(all$summary$n_interviews, 8L)
 })
 
 test_that("the printed report names both layers and says unknown, not covered", {
