@@ -81,7 +81,7 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
       # The reported total is recorded per interview. A grouping variable that
       # lives only in the length/age table cannot restrict it, and scaling such
       # a group by the whole total would silently overstate it.
-      cli::cli_abort(
+      creel_abort(
         c(
           "Cannot scale a distribution grouped by {.field {not_interview}}.",
           "x" = "The reported total is recorded per interview, and
@@ -171,7 +171,7 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
       # is contradictory data, and scaling them by a total of 0 reports "no fish
       # here" with the same confidence as a real estimate -- the
       # silent-wrong-number failure this issue exists to remove.
-      cli::cli_abort(
+      creel_abort(
         c(
           "No reported {type} is recorded for {.val {species_val}}{group_label}.",
           "x" = "Its length or age records cannot be scaled onto a total that
@@ -204,7 +204,7 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
     # Only this group's interviews are judged. See the mask above.
     in_group <- implied[keep]
     if (anyNA(in_group)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{sum(is.na(in_group))} interview{?s} {?has/have} no usable release count.",
           "x" = "{.field {catch_col}} or {.field {harvest_col}} is {.val {NA}}, so
@@ -217,7 +217,7 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
       )
     }
     if (any(in_group < 0, na.rm = TRUE)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Implied release count is negative for
            {sum(in_group < 0, na.rm = TRUE)} interview{?s}.",
@@ -245,7 +245,7 @@ reported_total_per_interview <- function(design, type, group_info, by_vars,
     # see the mask above.
     in_group <- vals[keep]
     if (anyNA(in_group)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{sum(is.na(in_group))} interview{?s} {?has/have} a missing {.field {col}}.",
           "x" = "The reported total is the scale factor for every bin, so an

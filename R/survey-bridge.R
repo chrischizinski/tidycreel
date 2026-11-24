@@ -56,7 +56,7 @@
 as_creel_svydesign <- function(design) {
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -65,7 +65,7 @@ as_creel_svydesign <- function(design) {
 
   # Check counts/survey exist
   if (is.null(design$counts) || is.null(design$survey)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No survey design available.",
       "x" = "Call {.fn add_counts} before extracting survey design.",
       "i" = "Example: {.code design <- add_counts(design, counts)}"
@@ -203,7 +203,7 @@ get_variance_design <- function(design, variance_method, call = rlang::caller_en
           } else {
             "unknown"
           }
-          cli::cli_abort(
+          creel_abort(
             c(
               paste0(
                 "Stratum {.val {strat_label}} has only 1 PSU \u2014 ",
@@ -268,7 +268,7 @@ refuse_single_psu_bootstrap <- function(design, call = rlang::caller_env()) {
     return(invisible(NULL))
   }
   labels <- gsub("\u001f", " / ", one, fixed = TRUE) # nolint: object_usage_linter
-  cli::cli_abort(
+  creel_abort(
     c(
       paste0(
         "Strat{?um/a} {.val {labels}} {?has/have} only 1 PSU \u2014 ",
@@ -550,7 +550,7 @@ refuse_one_day_interviews <- function(design, by = NULL, call = rlang::caller_en
     return(invisible(NULL))
   }
   labels <- gsub("\u001f", " / ", one, fixed = TRUE) # nolint: object_usage_linter
-  cli::cli_abort(
+  creel_abort(
     c(
       paste0(
         "Strat{?um/a} {.val {labels}} {?has/have} interviews from only one ",
@@ -577,7 +577,7 @@ refuse_one_day_groups <- function(design, by, call) {
     # stay in the design, so the stratum check counts them. Met on one day in
     # all, its ratio score is 0 on every day and its SE would be 0.
     if (!all(live) && length(unique(as.character(design$cluster[live, 1]))) == 1L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           paste0(
             "The interviews this estimate uses all come from one day ",
@@ -612,7 +612,7 @@ refuse_one_day_groups <- function(design, by, call) {
   if (length(one) == 0L) {
     return(invisible(NULL))
   }
-  cli::cli_abort(
+  creel_abort(
     c(
       paste0(
         "{cli::qty(length(one))}Group{?s} {.val {one}} {?has/have} interviews from only one day ",
@@ -828,7 +828,7 @@ validate_counts_tier1 <- function(counts, design, psu, allow_invalid = FALSE) {
     )
 
     if (!allow_invalid) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Count data validation failed (Tier 1):",
         stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
         "i" = "Count data must have all design columns with no NA values."
@@ -972,7 +972,7 @@ refuse_duplicate_psus <- function(counts, key_cols, call = rlang::caller_env()) 
     return(invisible(NULL))
   }
   key_list <- paste0('"', key_cols, '"', collapse = ", ") # nolint: object_usage_linter
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.arg counts} has {n_dup} repeated sampling {cli::qty(n_dup)}unit{?s}, \\
        with no count time to tell them apart.",
@@ -1047,7 +1047,7 @@ detect_duplicate_rows <- function(counts, call = rlang::caller_env()) {
     "{.arg counts}", n_dup, if (n_dup == 1L) "row" else "rows"
   )
   it_them <- if (n_dup == 1L) "it" else "them"
-  cli::cli_abort(
+  creel_abort(
     c(
       headline,
       "x" = paste(
@@ -1139,7 +1139,7 @@ aggregate_within_day <- function(
       bad <- checkable[varies] # nolint: object_usage_linter
       n_bad <- length(bad) # nolint: object_usage_linter
       suggested <- paste0('"', c(key_cols, bad), '"', collapse = ", ") # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{cli::qty(n_bad)}{.field {bad}} var{?ies/y} within a single sampling unit.",
           "x" = "Aggregating would average across {cli::qty(n_bad)}{?it/them} and keep \\
@@ -1325,7 +1325,7 @@ construct_survey_design <- function(design) {
 
       if (grepl("Stratum.*has only one PSU", err_msg, ignore.case = TRUE)) {
         # Lonely PSU error
-        cli::cli_abort(
+        creel_abort(
           c(
             "Survey design construction failed: lonely PSU detected.",
             "x" = paste(
@@ -1342,14 +1342,14 @@ construct_survey_design <- function(design) {
       } else if (grepl("variable.*not found", err_msg, ignore.case = TRUE)) {
         # Column not found
         required_cols <- c(psu_col, strata_cols) # nolint: object_usage_linter
-        cli::cli_abort(c(
+        creel_abort(c(
           "Survey design construction failed: missing column.",
           "x" = err_msg,
           "i" = "Required columns: {.field {required_cols}}"
         ))
       } else {
         # Generic survey error - wrap with guidance
-        cli::cli_abort(c(
+        creel_abort(c(
           "Survey design construction failed.",
           "x" = err_msg,
           "i" = paste(
@@ -1562,7 +1562,7 @@ check_product_units <- function(design, call = rlang::caller_env()) {
   }
 
   if (!is.na(denom) && !identical(effort, denom)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Effort and rate are in different units.",
         "x" = "Effort is {.val {effort}} but the rate is per {.val {denom}}.",
@@ -2013,7 +2013,7 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
     n <- nrow(interviews)
 
     if (n < 10) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Insufficient sample size for {estimation_type} estimation.",
         "x" = "Sample size is {n}, but ratio estimation requires n >= 10.",
         "i" = "Collect more interview observations before estimating {estimation_type}."
@@ -2065,7 +2065,7 @@ validate_ratio_sample_size <- function(design, by_vars, type = "cpue") {
       }
       names(bullet_items) <- rep("*", length(bullet_items))
 
-      cli::cli_abort(c(
+      creel_abort(c(
         "Insufficient sample size in {nrow(small_groups)} group{?s}:",
         bullet_items,
         "x" = "Ratio estimation requires n >= 10 per group.",
@@ -2222,7 +2222,7 @@ warn_thin_rate_cells <- function(design, stratum_by_vars, context, floor = 10L) 
 validate_mor_availability <- function(design) {
   # Check trip_status_col exists
   if (is.null(design$trip_status_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "MOR estimator requires trip_status field.",
       "x" = "Design has no trip_status_col set.",
       "i" = "Call {.fn add_interviews} with {.arg trip_status} parameter.",
@@ -2232,7 +2232,7 @@ validate_mor_availability <- function(design) {
 
   # Check trip_status column exists in data
   if (!design$trip_status_col %in% names(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "trip_status column missing from interview data.",
       "x" = "Expected column: {.val {design$trip_status_col}}",
       "i" = "This is an internal error - please report."
@@ -2246,7 +2246,7 @@ validate_mor_availability <- function(design) {
 
   # Error if no incomplete trips
   if (n_incomplete == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "MOR estimator requires incomplete trips.",
       "x" = "All {n_total} interviews are complete trips.",
       "i" = "Use {.code estimator = 'ratio-of-means'} for complete trips.",
@@ -2416,7 +2416,7 @@ validate_interviews_tier1 <- function(
     )
 
     if (!allow_invalid) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Interview data validation failed (Tier 1):",
         stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
         "i" = "Interview data must have all design columns with no NA values."
@@ -2743,7 +2743,7 @@ validate_trip_metadata <- function(
   # Abort if any validation errors
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages()
-    cli::cli_abort(c(
+    creel_abort(c(
       "Trip metadata validation failed:",
       stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs)))
     ))
@@ -2793,7 +2793,7 @@ construct_interview_survey <- function(design) {
 
       if (grepl("Stratum.*has only one PSU", err_msg, ignore.case = TRUE)) {
         # Lonely PSU error (less likely for interviews but handle it)
-        cli::cli_abort(
+        creel_abort(
           c(
             "Interview survey construction failed: lonely PSU detected.",
             "x" = paste(
@@ -2810,14 +2810,14 @@ construct_interview_survey <- function(design) {
       } else if (grepl("variable.*not found", err_msg, ignore.case = TRUE)) {
         # Column not found
         required_cols <- strata_cols # nolint: object_usage_linter
-        cli::cli_abort(c(
+        creel_abort(c(
           "Interview survey construction failed: missing column.",
           "x" = err_msg,
           "i" = "Required columns: {.field {required_cols}}"
         ))
       } else {
         # Generic survey error - wrap with guidance
-        cli::cli_abort(c(
+        creel_abort(c(
           "Interview survey construction failed.",
           "x" = err_msg,
           "i" = paste(
@@ -2844,7 +2844,7 @@ construct_interview_survey <- function(design) {
 validate_design_compatibility <- function(design) {
   # Check count data exists
   if (is.null(design$counts) || is.null(design$survey)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No count data available for effort estimation.",
       "x" = "Total catch/harvest requires both effort (from counts) and catch rates (from interviews).",
       "i" = "Call {.fn add_counts} before estimating total catch or harvest:",
@@ -2854,7 +2854,7 @@ validate_design_compatibility <- function(design) {
 
   # Check interview data exists
   if (is.null(design$interviews) || is.null(design$interview_survey)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interview data available for catch rate estimation.",
       "x" = "Total catch/harvest requires both effort (from counts) and catch rates (from interviews).",
       "i" = "Call {.fn add_interviews} before estimating total catch or harvest:",
@@ -2908,7 +2908,7 @@ validate_by_vars_in_interviews <- function(design, by_vars, error_call = rlang::
     # refusal in `abort_count_unobservable_names()`. The two halves of the same
     # requirement were not catchable the same way: one had a class and a caller
     # call, the other had neither, so only one of them could be handled.
-    cli::cli_abort(
+    creel_abort(
       c(
         "{n_missing_interviews} grouping variable{?s} not found in interview data:",
         "x" = "Missing: {.val {missing_in_interviews}}",
@@ -3198,7 +3198,7 @@ refuse_section_in_by <- function(by_vars, design, error_call = rlang::caller_env
     return(invisible(NULL))
   }
 
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.arg by} cannot name the section column on a sectioned design.",
       "x" = "{.field {section_col}} is already how the result is split.",
@@ -3332,7 +3332,7 @@ abort_count_unobservable_names <- function(interview_only, design, species_route
     )
   }
 
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.arg by} can only group by columns present in the count data.",
       "x" = "{.field {interview_only}} {?is/are} in the interview data but not the count data.",
@@ -3508,7 +3508,7 @@ refuse_camera_design <- function(design, fn, call = rlang::caller_env()) {
     )
   }
 
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.fn {fn}} does not estimate camera designs.",
       "x" = paste(
@@ -3552,7 +3552,7 @@ refuse_unexpandable_target <- function(design, target, call = rlang::caller_env(
   if (expandable || identical(target, "sampled_days")) {
     return(invisible(NULL))
   }
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.code target = \"{target}\"} on a {.val {design$design_type}} design needs \\
        the register of sampled days.",

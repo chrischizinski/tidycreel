@@ -86,18 +86,18 @@
 daylight_shifts <- function(date, lat, lon, tz, cutoffs = if (night) character(0) else "13:30",
                             horizon = "sunset", night = FALSE) {
   if (!isTRUE(night) && !isFALSE(night)) {
-    cli::cli_abort("{.arg night} must be {.code TRUE} or {.code FALSE}.")
+    creel_abort("{.arg night} must be {.code TRUE} or {.code FALSE}.")
   }
   date <- tryCatch(as.Date(date), error = function(e) {
-    cli::cli_abort("{.arg date} must be dates.")
+    creel_abort("{.arg date} must be dates.")
   })
   if (length(date) == 0L || anyNA(date)) {
-    cli::cli_abort("{.arg date} must be a non-empty vector with no missing values.")
+    creel_abort("{.arg date} must be a non-empty vector with no missing values.")
   }
   checkmate::assert_number(lat, lower = -90, upper = 90)
   checkmate::assert_number(lon, lower = -180, upper = 180)
   if (!is.character(tz) || length(tz) != 1L || !tz %in% OlsonNames()) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg tz} must be one time zone name from {.fn OlsonNames}.",
       "x" = "Got {.val {tz}}."
     ))
@@ -105,14 +105,14 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = if (night) character(0
   hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
   if (!is.character(cutoffs) || (!night && length(cutoffs) == 0L) || anyNA(cutoffs) ||
         !all(grepl(hhmm, cutoffs))) {
-    cli::cli_abort("{.arg cutoffs} must be clock times as {.val HH:MM}.")
+    creel_abort("{.arg cutoffs} must be clock times as {.val HH:MM}.")
   }
   cut_min <- vapply(cutoffs, parse_hhmm_to_min, integer(1), USE.NAMES = FALSE) # nolint: object_usage_linter
   # A night's cutoffs run from evening to morning, so they are ordered on a
   # clock that starts at noon: "22:00" before "01:00" (GH #407).
   order_key <- if (night) (cut_min - 720L) %% 1440L else cut_min
   if (is.unsorted(order_key, strictly = TRUE)) {
-    cli::cli_abort(if (night) {
+    creel_abort(if (night) {
       "{.arg cutoffs} must run in order from evening to morning with no repeats."
     } else {
       "{.arg cutoffs} must be in increasing order with no repeats."
@@ -128,7 +128,7 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = if (night) character(0
   late <- !is.na(st$sunset) & st$sunset >= 1440L
   if (any(late)) {
     bad <- as.character(date[late]) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "Sunset falls at or after midnight on {length(bad)} date{?s}: {.val {bad}}.",
       "x" = "A daylight shift would end on the next calendar day.",
       "i" = "Use {.code night = TRUE} for shifts from sunset to sunrise."
@@ -136,7 +136,7 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = if (night) character(0
   }
   if (anyNA(st$sunrise) || anyNA(st$sunset)) {
     bad <- as.character(date[is.na(st$sunrise) | is.na(st$sunset)]) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "The sun does not rise or set on {length(bad)} date{?s} at this latitude: {.val {bad}}.",
       "i" = "Daylight shifts need a sunrise and a sunset."
     ))
@@ -147,7 +147,7 @@ daylight_shifts <- function(date, lat, lon, tz, cutoffs = if (night) character(0
   len <- bounds[, -1, drop = FALSE] - bounds[, -ncol(bounds), drop = FALSE]
   if (any(len <= 0)) {
     bad <- as.character(date[apply(len <= 0, 1, any)]) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "A cutoff falls outside daylight on {length(bad)} date{?s}: {.val {bad}}.",
       "x" = "A shift from sunrise to a cutoff before sunrise (or from a cutoff after sunset) \\
              has no length.",
@@ -181,7 +181,7 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
   never <- is.na(st$sunset) | is.na(nx$sunrise)
   if (any(never)) {
     bad <- as.character(date[never]) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "The sun does not set, or rise the next morning, on {length(bad)} night{?s} at this latitude: \\
        {.val {bad}}.",
       "i" = "Night shifts need a sunset and the next sunrise."
@@ -192,7 +192,7 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
   off_day <- st$sunset < 720L | st$sunset >= 1440L
   if (any(off_day)) {
     bad <- as.character(date[off_day]) # nolint: object_usage_linter
-    cli::cli_abort("Sunset does not fall between noon and midnight on {length(bad)} date{?s}: {.val {bad}}.")
+    creel_abort("Sunset does not fall between noon and midnight on {length(bad)} date{?s}: {.val {bad}}.")
   }
   noon <- 720L
   set_off <- st$sunset - noon
@@ -203,7 +203,7 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
   len <- bounds[, -1, drop = FALSE] - bounds[, -ncol(bounds), drop = FALSE]
   if (any(len <= 0)) {
     bad <- as.character(date[apply(len <= 0, 1, any)]) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "A cutoff falls outside the night on {length(bad)} date{?s}: {.val {bad}}.",
       "x" = "Every cutoff must fall between sunset and the next sunrise.",
       "i" = "Check {.arg cutoffs}, {.arg lon} and {.arg tz}."
@@ -219,7 +219,7 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
   skipped <- matrix(inst$n == 0L, nrow = length(date))
   if (any(skipped)) {
     bad <- as.character(date[apply(skipped, 1, any)]) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "A cutoff falls in the hour skipped by a daylight-saving change on {length(bad)} night{?s}: \\
        {.val {bad}}.",
       "i" = "Move the cutoff outside 02:00-03:00 local time."
@@ -231,7 +231,7 @@ night_shifts <- function(date, lat, lon, tz, cut_min, depression) {
   folded <- matrix(inst$n > 1L, nrow = length(date))
   if (any(folded)) {
     bad <- as.character(date[apply(folded, 1, any)]) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "A shift bound falls in the hour repeated by a daylight-saving change on {length(bad)} night{?s}: \\
        {.val {bad}}.",
       "x" = "That clock time happens twice, so the shift lengths on either side are ambiguous.",

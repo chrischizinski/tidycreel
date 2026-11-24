@@ -53,18 +53,18 @@
 #' @export
 compare_designs <- function(designs, metric = "estimate") {
   if (!is.list(designs) || length(designs) < 2L) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg designs} must be a named list of at least 2 {.cls creel_estimates}."
     )
   }
   if (is.null(names(designs)) || any(names(designs) == "")) {
-    cli::cli_abort(
+    creel_abort(
       "All elements of {.arg designs} must be named."
     )
   }
   for (nm in names(designs)) {
     if (!inherits(designs[[nm]], "creel_estimates")) {
-      cli::cli_abort(
+      creel_abort(
         "Element {.val {nm}} must be a {.cls creel_estimates} object."
       )
     }
@@ -73,7 +73,7 @@ compare_designs <- function(designs, metric = "estimate") {
   rows <- lapply(names(designs), function(nm) {
     est <- designs[[nm]]$estimates
     if (!metric %in% names(est)) {
-      cli::cli_abort(
+      creel_abort(
         "Column {.field {metric}} not found in estimates for design {.val {nm}}."
       )
     }

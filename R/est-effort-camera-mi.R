@@ -99,7 +99,7 @@
 #' @export
 est_effort_camera_mi <- function(design, imputations, ..., conf_level = 0.95) {
   if (!inherits(imputations, "camera_imputations")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg imputations} must be a {.cls camera_imputations} object.",
       "i" = "Produce one with {.code impute_camera_counts(..., m = 5)}.",
       "x" = "Got {.cls {class(imputations)[1]}}."
@@ -107,7 +107,7 @@ est_effort_camera_mi <- function(design, imputations, ..., conf_level = 0.95) {
   }
   n_imp <- length(imputations)
   if (n_imp < 2L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Pooling requires at least 2 completed data sets, not {n_imp}.",
       "i" = "The between-imputation variance is undefined for a single one -- which is the defect being fixed."
     ))

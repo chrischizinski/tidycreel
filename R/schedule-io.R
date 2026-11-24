@@ -143,7 +143,7 @@ resolve_write_format <- function(path, format, call = rlang::caller_env()) {
   implied <- switch(ext, csv = "csv", xlsx = "xlsx", xls = "xls", NA_character_)
   if (identical(format, "auto")) {
     if (!implied %in% c("csv", "xlsx")) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Cannot infer the file format from {.path {path}}.",
         "i" = "Use a {.val .csv} or {.val .xlsx} extension, or set {.arg format}."
       ), class = c("creel_error_write_format", "creel_error"), call = call)
@@ -156,7 +156,7 @@ resolve_write_format <- function(path, format, call = rlang::caller_env()) {
     } else {
       "Change the extension, or drop {.arg format} to use the one the name implies."
     }
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg format} is {.val {format}}, but {.path {path}} names an {.val {implied}} file.",
       "x" = "The file would hold {format} content under a .{ext} name.",
       "i" = hint
@@ -200,7 +200,7 @@ resolve_write_format <- function(path, format, call = rlang::caller_env()) {
 #' @export
 write_schedule <- function(schedule, path, format = c("auto", "csv", "xlsx"), overwrite = FALSE) {
   if (!overwrite && file.exists(path)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "File already exists: {.path {path}}",
       "i" = "Set {.code overwrite = TRUE} to replace it."
     ))
@@ -306,7 +306,7 @@ infer_census_p_period <- function(df, path, call = rlang::caller_env()) {
   common <- names(which.max(table(sets)))
   odd_days <- names(sets)[sets != common]
   if (length(odd_days) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.path {basename(path)}} has periods but no {.col p_period} column, and the periods differ between days.",
         "x" = "{length(odd_days)} sampled day{?s} carr{?ies/y} a different set of periods than the rest \\

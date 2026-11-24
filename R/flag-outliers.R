@@ -49,13 +49,13 @@
 flag_outliers <- function(data, col, k = 1.5, na.rm = TRUE) {
   # nolint: object_name_linter
   if (!is.data.frame(data)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg data} must be a {.cls data.frame}.",
       "i" = "Provide a data frame of interview records."
     ))
   }
   if (!is.numeric(k) || length(k) != 1L || k <= 0) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg k} must be a single positive number, not {.val {k}}."
     )
   }
@@ -63,7 +63,7 @@ flag_outliers <- function(data, col, k = 1.5, na.rm = TRUE) {
   # Resolve tidy-eval column name to a string
   col_name <- deparse(substitute(col))
   if (!col_name %in% names(data)) {
-    cli::cli_abort(
+    creel_abort(
       "Column {.field {col_name}} not found in {.arg data}."
     )
   }
@@ -71,7 +71,7 @@ flag_outliers <- function(data, col, k = 1.5, na.rm = TRUE) {
   vals <- data[[col_name]]
 
   if (!is.numeric(vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Column {.field {col_name}} must be numeric.",
       "i" = "Got {.cls {class(vals)}}."
     ))

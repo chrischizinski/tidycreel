@@ -69,7 +69,7 @@ select_sampled_days <- function(
   if (!is.null(n_days)) {
     bad <- setdiff(names(n_days), valid_strata)
     if (length(bad) > 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Names in {.arg n_days} do not match day types in the season.",
         "x" = "Unmatched names: {.val {bad}}",
         "i" = "Season has day types: {.val {valid_strata}}"
@@ -79,7 +79,7 @@ select_sampled_days <- function(
   if (!is.null(sampling_rate)) {
     bad <- setdiff(names(sampling_rate), valid_strata)
     if (length(bad) > 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Names in {.arg sampling_rate} do not match day types in the season.",
         "x" = "Unmatched names: {.val {bad}}",
         "i" = "Season has day types: {.val {valid_strata}}"
@@ -123,7 +123,7 @@ select_sampled_days <- function(
 #' @noRd
 expand_periods_impl <- function(base_df, n_periods, period_labels = NULL, ordered_periods = FALSE) {
   if (!is.null(period_labels) && length(period_labels) != n_periods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Length of {.arg period_labels} must equal {.arg n_periods}.",
       "x" = "{.arg period_labels} has {length(period_labels)} elements;",
       " {.arg n_periods} is {n_periods}."
@@ -174,7 +174,7 @@ validate_periods_per_day <- function(periods_per_day, n_periods, expand_periods,
     !is.na(periods_per_day) && periods_per_day == round(periods_per_day) &&
     periods_per_day >= 1 && periods_per_day <= n_periods
   if (!ok) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg periods_per_day} must be a whole number from 1 to {.arg n_periods} ({n_periods}).",
         "x" = "Got {.val {periods_per_day}}."
@@ -183,7 +183,7 @@ validate_periods_per_day <- function(periods_per_day, n_periods, expand_periods,
     )
   }
   if (periods_per_day < n_periods && !expand_periods) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg periods_per_day} below {.arg n_periods} needs {.code expand_periods = TRUE}.",
         "x" = "The drawn shifts are recorded as {.col period_id} rows, which {.code expand_periods = FALSE} drops.",
@@ -283,7 +283,7 @@ expand_drawn_periods <- function(base, shifts, sampled, all_dates, n_periods, pe
 validate_periods_table <- function(periods, n_periods, period_labels, ds = 0L, call = rlang::caller_env()) {
   needed <- c("period_id", "start_time", "end_time")
   if (!is.data.frame(periods) || !all(needed %in% names(periods))) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg periods} must be a data frame with columns {.val {needed}}.",
         "x" = "Missing: {.val {setdiff(needed, names(periods))}}."
@@ -299,10 +299,10 @@ validate_periods_table <- function(periods, n_periods, period_labels, ds = 0L, c
   if (by_date) {
     pdate <- tryCatch(as.Date(periods$date), error = function(e) rep(as.Date(NA), nrow(periods)))
     if (anyNA(pdate)) {
-      cli::cli_abort("{.field date} in {.arg periods} must be dates with no missing values.", call = call)
+      creel_abort("{.field date} in {.arg periods} must be dates with no missing values.", call = call)
     }
     if (!all(key %in% expected)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg periods} has periods the schedule does not.",
           "x" = "Expected {.val {expected}}; got {.val {unique(key[!key %in% expected])}}."
@@ -312,13 +312,13 @@ validate_periods_table <- function(periods, n_periods, period_labels, ds = 0L, c
     }
     full_key <- paste(pdate, key)
     if (anyDuplicated(full_key)) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg periods} must have one row per date and period; {.val {full_key[duplicated(full_key)]}} repeat{?s}.",
         call = call
       )
     }
   } else if (anyDuplicated(key) || !setequal(key, expected)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg periods} must have exactly one row per period.",
         "x" = "Expected {.val {expected}}; got {.val {key}}."
@@ -332,7 +332,7 @@ validate_periods_table <- function(periods, n_periods, period_labels, ds = 0L, c
   end <- as.character(periods$end_time)
   bad_fmt <- !grepl(hhmm, start) | !grepl(hhmm, end)
   if (any(bad_fmt)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Shift times in {.arg periods} must be \"HH:MM\" (00:00 to 23:59).",
         "x" = "Period{?s} {.val {label[bad_fmt]}} {?has/have} an unreadable time."
@@ -344,7 +344,7 @@ validate_periods_table <- function(periods, n_periods, period_labels, ds = 0L, c
   end_min <- survey_min(vapply(end, parse_hhmm_to_min, integer(1)), ds, end = TRUE)
   wraps <- end_min <= start_min
   if (any(wraps)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Shift{?s} {.val {label[wraps]}} end{?s/} at or before {?its/their} start on the survey day.",
         "x" = "With {.code day_start = \"{format_min_to_hhmm(ds)}\"} a survey day runs from \\
@@ -367,7 +367,7 @@ validate_periods_table <- function(periods, n_periods, period_labels, ds = 0L, c
     # change (one hour); anything else is a table that disagrees with itself.
     bad <- is.na(hrs) | hrs <= 0 | abs(hrs - clock) > 1 + 1e-8
     if (any(bad)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.field hours} in {.arg periods} must be the shift's length.",
           "x" = "Period{?s} {.val {label[bad]}} {?has/have} {.field hours} missing, not positive, \\
@@ -401,7 +401,7 @@ attach_shift_times <- function(base, periods, call = rlang::caller_env()) {
   missing <- worked & is.na(i)
   if (any(missing)) {
     bad <- unique(as.character(base$date[missing])) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg periods} has no shift times for {length(bad)} worked date{?s}: {.val {bad}}.",
         "i" = "A date-specific {.arg periods} table (e.g. from {.fn daylight_shifts}) must cover every \\
@@ -440,7 +440,7 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
   }
 
   if (!is.data.frame(special_periods)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg special_periods} must be a data frame or NULL.",
       "x" = "Received {.cls {class(special_periods)}}."
     ))
@@ -449,7 +449,7 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
   required_cols <- c("start_date", "end_date", "label")
   missing_cols <- setdiff(required_cols, names(special_periods))
   if (length(missing_cols) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg special_periods} is missing required columns.",
       "x" = "Missing: {.val {missing_cols}}"
     ))
@@ -462,7 +462,7 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
   starts <- as.Date(special_periods$start_date)
   ends <- as.Date(special_periods$end_date)
   if (any(is.na(starts)) || any(is.na(ends))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg special_periods} contains invalid dates.",
       "x" = "All {.col start_date} and {.col end_date} values must coerce to Date."
     ))
@@ -471,7 +471,7 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
   bad_range <- which(ends < starts)
   if (length(bad_range) > 0) {
     i <- bad_range[[1]] # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "Special period end_date must be on or after start_date.",
       "x" = "Row {i}: {.val {starts[[i]]}} to {.val {ends[[i]]}} is invalid."
     ))
@@ -521,7 +521,7 @@ resolve_special_periods <- function(all_dates, day_types, special_periods = NULL
     for (dup_date in dup_dates) {
       rows <- expanded[expanded$date == dup_date, , drop = FALSE]
       if (length(unique(rows$label)) > 1) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "Special periods overlap on the same civil date.",
           "x" = "Date {.val {dup_date}} resolves to multiple labels: {.val {unique(rows$label)}}.",
           "i" = "Each civil date must resolve to exactly one final stratum label."
@@ -761,7 +761,7 @@ generate_schedule <- function(
   weekend_wday <- resolve_weekend_days(weekend_days, ds)
   # Validate mutually-exclusive intensity args
   if (!is.null(n_days) && !is.null(sampling_rate)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Supply {.arg n_days} or {.arg sampling_rate}, not both.",
       "x" = "Both arguments were non-NULL."
     ))
@@ -769,7 +769,7 @@ generate_schedule <- function(
 
   # Validate at least one intensity arg supplied
   if (is.null(n_days) && is.null(sampling_rate)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Supply either {.arg n_days} or {.arg sampling_rate}.",
       "x" = "Both arguments were NULL."
     ))
@@ -777,7 +777,7 @@ generate_schedule <- function(
 
   # period_intensity not yet implemented
   if (!is.null(period_intensity)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg period_intensity} is not yet implemented.",
       "i" = "Leave {.arg period_intensity} as NULL for now."
     ))
@@ -785,7 +785,7 @@ generate_schedule <- function(
 
   if (!is.numeric(n_periods) || length(n_periods) != 1L || is.na(n_periods) ||
         n_periods < 1 || n_periods != round(n_periods)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg n_periods} must be a whole number of at least 1.",
       "x" = "Got {.val {n_periods}}."
     ))
@@ -794,7 +794,7 @@ generate_schedule <- function(
   periods_per_day <- validate_periods_per_day(periods_per_day, n_periods, expand_periods)
   if (!is.null(periods)) {
     if (!expand_periods) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg periods} needs {.code expand_periods = TRUE}.",
         "x" = "Shift times are attached per period, and {.code expand_periods = FALSE} drops periods."
       ))
@@ -845,7 +845,7 @@ generate_schedule <- function(
     ]
     if (nrow(blocking) > 0L) {
       b1 <- blocking[1, , drop = FALSE]
-      cli::cli_abort(c(
+      creel_abort(c(
         "Special-period declarations consumed a baseline stratum still requested for sampling.",
         "x" = paste0(
           "Stratum ",
@@ -1002,7 +1002,7 @@ resolve_weekend_days <- function(weekend_days, ds, call = rlang::caller_env()) {
   full <- c("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
   if (is.null(weekend_days)) {
     if (ds != 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg weekend_days} is required when {.arg day_start} is not {.val 00:00}.",
           "x" = "A survey day is dated by the date it starts, so a Friday night is dated Friday, \\
@@ -1015,14 +1015,14 @@ resolve_weekend_days <- function(weekend_days, ds, call = rlang::caller_env()) {
     return(c(6L, 7L))
   }
   if (!is.character(weekend_days) || anyNA(weekend_days)) {
-    cli::cli_abort("{.arg weekend_days} must be day names, e.g. {.val Saturday}.", call = call)
+    creel_abort("{.arg weekend_days} must be day names, e.g. {.val Saturday}.", call = call)
   }
   key <- tolower(weekend_days)
   idx <- match(key, full)
   short <- is.na(idx) & nchar(key) == 3L
   idx[short] <- match(key[short], substr(full, 1L, 3L))
   if (anyNA(idx)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg weekend_days} must be English day names (full or three letters).",
         "x" = "Not recognised: {.val {weekend_days[is.na(idx)]}}."
@@ -1068,7 +1068,7 @@ parse_day_start <- function(day_start, call = rlang::caller_env()) {
   hhmm <- "^([01][0-9]|2[0-3]):[0-5][0-9]$"
   if (!is.character(day_start) || length(day_start) != 1L || is.na(day_start) ||
         !grepl(hhmm, day_start)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg day_start} must be one clock time as {.val HH:MM}.",
         "x" = "Got {.val {day_start}}."
@@ -1112,7 +1112,7 @@ schedule_day_start <- function(schedule, call = rlang::caller_env()) {
   }
   ds <- unique(as.character(schedule$day_start))
   if (length(ds) != 1L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The schedule's {.field day_start} must be one clock time for every row.",
         "x" = "Got {.val {ds}}."
@@ -1232,14 +1232,14 @@ generate_count_times <- function(
   # Validate strategy
   valid_strategies <- c("random", "systematic", "fixed")
   if (missing(strategy)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Unknown strategy.",
       "x" = "{.arg strategy} is required.",
       "i" = "Must be one of: {.val {valid_strategies}}"
     ))
   }
   if (!strategy %in% valid_strategies) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Unknown strategy.",
       "x" = "{.val {strategy}} is not a valid strategy.",
       "i" = "Must be one of: {.val {valid_strategies}}"
@@ -1249,14 +1249,14 @@ generate_count_times <- function(
   # Fixed strategy path
   if (strategy == "fixed") {
     if (is.null(fixed_windows) || !is.data.frame(fixed_windows)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg fixed_windows} must be a data frame when {.arg strategy} is {.val fixed}.",
         "x" = "{.arg fixed_windows} is {.cls {class(fixed_windows)}}."
       ))
     }
     missing_cols <- setdiff(c("start_time", "end_time"), names(fixed_windows))
     if (length(missing_cols) > 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg fixed_windows} is missing required columns.",
         "x" = "Missing: {.val {missing_cols}}"
       ))
@@ -1276,7 +1276,7 @@ generate_count_times <- function(
       overlap_idx <- which(fw_ends[-length(fw_ends)] > fw_starts[-1])
       if (length(overlap_idx) > 0) {
         i1 <- overlap_idx[1] # nolint: object_usage_linter
-        cli::cli_abort(c(
+        creel_abort(c(
           "Windows in {.arg fixed_windows} must not overlap.",
           "x" = "Overlap between window {i1} and window {i1 + 1L}.",
           "i" = "Window {i1}: {fw_sorted$start_time[i1]}--{fw_sorted$end_time[i1]}",
@@ -1297,7 +1297,7 @@ generate_count_times <- function(
   # Random / systematic -- validate time inputs
   hhmm_re <- "^[0-2][0-9]:[0-5][0-9]$"
   if (!grepl(hhmm_re, start_time) || !grepl(hhmm_re, end_time)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "start_time and end_time must be in HH:MM format.",
       "x" = "Received start_time={.val {start_time}}, end_time={.val {end_time}}."
     ))
@@ -1310,7 +1310,7 @@ generate_count_times <- function(
   # with day_start (GH #407), where the crossing is declared; here an end at
   # or before the start stays an error, so swapped times are caught.
   if (end_min <= start_min) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "end_time must be after start_time.",
       "x" = "{.val {end_time}} is not after {.val {start_time}}.",
       "i" = "For a night that crosses midnight, use {.fn attach_count_times} on a schedule \\
@@ -1322,7 +1322,7 @@ generate_count_times <- function(
   for (arg_name in c("n_windows", "window_size", "min_gap")) {
     val <- get(arg_name)
     if (is.null(val)) {
-      cli::cli_abort(
+      creel_abort(
         c("{.arg {arg_name}} is required for strategy {.val {strategy}}."),
         call = rlang::caller_env()
       )
@@ -1359,7 +1359,7 @@ check_window_spacing <- function(start_min, end_min, n_windows, window_size, min
                                  where = NULL, require_even = TRUE, call = rlang::caller_env()) {
   bad_arg <- function(x, min) length(x) != 1L || is.na(x) || x < min
   if (bad_arg(n_windows, 1L) || bad_arg(window_size, 1L) || bad_arg(min_gap, 0L)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Count windows need {.arg n_windows} >= 1, {.arg window_size} >= 1 and {.arg min_gap} >= 0.",
       "x" = "Got n_windows = {n_windows}, window_size = {window_size}, min_gap = {min_gap}."
     ), call = call)
@@ -1369,7 +1369,7 @@ check_window_spacing <- function(start_min, end_min, n_windows, window_size, min
   # draws inside a shift do not, because a shift bounded by sunrise or sunset
   # has an arbitrary length (#368): its strata then differ by at most a minute.
   if (require_even && total_min %% n_windows != 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Span must divide evenly by n_windows{where}.",
       "x" = "{total_min} min / {n_windows} = {total_min / n_windows} -- must be a whole number.",
       "i" = "Adjust n_windows or start/end time so the span divides evenly."
@@ -1379,7 +1379,7 @@ check_window_spacing <- function(start_min, end_min, n_windows, window_size, min
   # The gap separates windows; a single window needs only to fit.
   gap <- if (n_windows > 1L) min_gap else 0L
   if (window_size + gap > k) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "window_size + min_gap exceeds stratum length{where}.",
       "x" = "Stratum is {round(k, 1)} min, but window_size + min_gap = {window_size + min_gap} min.",
       "i" = "Reduce n_windows, window_size, or min_gap."
@@ -1482,7 +1482,7 @@ draw_day_starts <- function(span_start, span_end, strategy, n_windows, window_si
       return(to_minutes(st))
     }
   }
-  cli::cli_abort(c(
+  creel_abort(c(
     "Could not draw count times that one crew can make without overlapping slots.",
     "x" = "No feasible draw found: two counts always fell within {window_size} minutes of each other.",
     "i" = "Check that the day's shifts do not overlap, shorten {.arg window_size}, or use fewer windows."
@@ -1542,7 +1542,7 @@ check_slots_before_midnight <- function(starts, day, window_size, limit = 1440L,
   past <- vapply(starts, function(st) any(st + window_size > limit), logical(1))
   if (any(past)) {
     n_days <- length(unique(day[past])) # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "A count slot would run past the end of the survey day on {n_days} day{?s}.",
       "x" = "A slot running into the next survey day would count that day.",
       "i" = "Shorten {.arg window_size}, or end the counting span earlier."
@@ -1627,7 +1627,7 @@ generate_progressive_start <- function(
 
   hhmm_re <- "^[0-2][0-9]:[0-5][0-9]$"
   if (!grepl(hhmm_re, open_start) || !grepl(hhmm_re, open_end)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg open_start} and {.arg open_end} must be in HH:MM format.",
       "x" = "Received open_start={.val {open_start}}, open_end={.val {open_end}}."
     ))
@@ -1638,14 +1638,14 @@ generate_progressive_start <- function(
   T_min     <- end_min - start_min
 
   if (T_min <= 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg open_end} must be later than {.arg open_start}.",
       "x" = "open_start={.val {open_start}}, open_end={.val {open_end}}."
     ))
   }
 
   if (!is.numeric(circuit_time) || length(circuit_time) != 1L || circuit_time <= 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg circuit_time} must be a single positive number (hours).",
       "x" = "Got {.val {circuit_time}}."
     ))
@@ -1653,7 +1653,7 @@ generate_progressive_start <- function(
   tau_min <- circuit_time * 60
 
   if (tau_min >= T_min) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg circuit_time} must be shorter than the survey period.",
       "x" = "circuit_time = {circuit_time} h; T = {T_min / 60} h.",
       "i" = "The circuit must complete within (or wrap within) the survey day."
@@ -1661,7 +1661,7 @@ generate_progressive_start <- function(
   }
 
   if (!is.numeric(n) || length(n) != 1L || n < 1L || n != round(n)) {
-    cli::cli_abort("{.arg n} must be a single positive integer.")
+    creel_abort("{.arg n} must be a single positive integer.")
   }
   n <- as.integer(n)
 
@@ -1669,7 +1669,7 @@ generate_progressive_start <- function(
     if (strategy == "discrete") {
       k_raw <- T_min / tau_min
       if (abs(k_raw - round(k_raw)) > 0.001) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "For {.val discrete} strategy, T must be an integer multiple of {.arg circuit_time}.",
           "x" = "T = {T_min / 60} h, circuit_time = {circuit_time} h, T/tau = {round(k_raw, 3)}.",
           "i" = "Adjust {.arg open_start}/{.arg open_end}/{.arg circuit_time} so T/tau is a whole number.",
@@ -1790,7 +1790,7 @@ generate_bus_schedule <- function(
   violating <- names(circuit_sums[abs(circuit_sums - 1.0) > 1e-6])
 
   if (length(violating) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg p_site} values must sum to 1.0 within each circuit (tolerance 1e-6).",
       "x" = "{length(violating)} circuit{?s} with invalid sums: {.val {violating}}.",
       "i" = "Sums: {paste(paste0(violating, '=', round(circuit_sums[violating], 6)), collapse = ', ')}"
@@ -1808,7 +1808,7 @@ generate_bus_schedule <- function(
 
   bad_sites <- which(inclusion_probs > 1)
   if (length(bad_sites) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Inclusion probabilities exceed 1 for {length(bad_sites)} site{?s}.",
       "x" = "crew={crew}, n_circuits={n_circuits}, p_period={p_period}; max p_site={max(p_site_vals[bad_sites])}.",
       "i" = "Reduce {.arg crew} or increase circuits so that p_site * (crew / n_circuits) <= 1 for all sites."
@@ -1916,13 +1916,13 @@ attach_count_times <- function(
 ) {
   # Validate schedule
   if (!is.data.frame(schedule) || !"date" %in% names(schedule)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg schedule} must be a data frame with a {.col date} column.",
       "i" = "Use {.fn generate_schedule} to produce a valid schedule."
     ))
   }
   if (any(c("window_id", "start_time", "end_time") %in% names(schedule))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg schedule} already has count windows.",
       "i" = "Attach count times to the schedule from {.fn generate_schedule}, once."
     ))
@@ -1934,7 +1934,7 @@ attach_count_times <- function(
 
   if (!is.null(count_times)) {
     if (drawing) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Give {.arg count_times} or the arguments to draw windows, not both.",
         "i" = "{.arg count_times} copies one template to every day; {.arg n_windows} etc. \\
                draw new windows for each day."
@@ -1943,7 +1943,7 @@ attach_count_times <- function(
     return(attach_count_template(schedule, count_times, has_shift_times))
   }
   if (!drawing) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Nothing to attach.",
       "i" = "Draw windows for each day with {.arg n_windows}, {.arg window_size} and {.arg min_gap}, \\
              or copy one template with {.arg count_times}."
@@ -1953,7 +1953,7 @@ attach_count_times <- function(
   samples_shifts <- "p_period" %in% names(schedule) && any(schedule$p_period < 1, na.rm = TRUE)
   if (!has_shift_times) {
     if (samples_shifts) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "The schedule draws shifts but has no shift times.",
         "x" = "Count windows must fall inside each day's shift, and the schedule does not say \\
                when its shifts are.",
@@ -1962,13 +1962,13 @@ attach_count_times <- function(
       ))
     }
     if (strategy != "fixed" && (is.null(start_time) || is.null(end_time))) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg start_time} and {.arg end_time} are required: the schedule has no shift times.",
         "i" = "They give the span each day's windows are drawn in."
       ))
     }
   } else if (!is.null(start_time) || !is.null(end_time)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg start_time} / {.arg end_time} cannot be used: the schedule has shift times.",
       "i" = "Each day's windows are drawn inside that day's shift."
     ))
@@ -1981,7 +1981,7 @@ attach_count_times <- function(
     ok <- !is.na(x) & grepl(hhmm_re, x)
     out[ok] <- vapply(x[ok], parse_hhmm_to_min, integer(1), USE.NAMES = FALSE)
     if (any(!is.na(x) & !ok)) {
-      cli::cli_abort("Times must be {.val HH:MM} (00:00 to 23:59).", call = rlang::caller_env(2))
+      creel_abort("Times must be {.val HH:MM} (00:00 to 23:59).", call = rlang::caller_env(2))
     }
     out
   }
@@ -2005,7 +2005,7 @@ attach_count_times <- function(
   span_end[idle] <- NA_integer_
   crosses <- !is.na(span_start) & !is.na(span_end) & span_end <= span_start
   if (any(crosses)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "A counting span ends at or before it starts on {sum(crosses)} row{?s}.",
       "x" = "Each span must fall inside one survey day, which starts at \\
              {.val {format_min_to_hhmm(ds)}}.",
@@ -2029,7 +2029,7 @@ attach_count_times <- function(
     })
     if (any(clash)) {
       bad <- names(clash)[clash] # nolint: object_usage_linter
-      cli::cli_abort(c(
+      creel_abort(c(
         "Fixed count windows overlap across shifts on {length(bad)} day{?s}: {.val {bad}}.",
         "x" = "One crew cannot run two counts at once.",
         "i" = "Move a window so each ends before the next one starts."
@@ -2038,7 +2038,7 @@ attach_count_times <- function(
   } else {
     for (arg_name in c("n_windows", "window_size", "min_gap")) {
       if (is.null(get(arg_name))) {
-        cli::cli_abort("{.arg {arg_name}} is required to draw count windows.")
+        creel_abort("{.arg {arg_name}} is required to draw count windows.")
       }
     }
     n_windows <- as.integer(n_windows)
@@ -2108,7 +2108,7 @@ attach_count_template <- function(schedule, count_times, has_shift_times, call =
   required_ct <- c("start_time", "end_time", "window_id")
   missing_ct <- setdiff(required_ct, names(count_times))
   if (!is.data.frame(count_times) || length(missing_ct) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg count_times} must be a data frame with columns {.val {required_ct}}.",
       "x" = "Missing: {.val {missing_ct}}",
       "i" = "Use {.fn generate_count_times} to produce a valid count-time template."
@@ -2127,7 +2127,7 @@ attach_count_template <- function(schedule, count_times, has_shift_times, call =
     }, logical(1))
     if (any(outside)) {
       bad <- unique(as.character(schedule$date[which(worked)[outside]])) # nolint: object_usage_linter
-      cli::cli_abort(c(
+      creel_abort(c(
         "Template count times fall outside the shift on {length(bad)} day{?s}: {.val {bad}}.",
         "x" = "A count outside the shift worked that day is not a count of that shift.",
         "i" = "Draw windows inside each day's shift with {.arg n_windows}, {.arg window_size} \\
@@ -2160,13 +2160,13 @@ attach_count_template <- function(schedule, count_times, has_shift_times, call =
 fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_start, span_end,
                                  idle, to_min, ds = 0L, call = rlang::caller_env()) {
   if (!is.data.frame(fixed_windows) || !all(c("start_time", "end_time") %in% names(fixed_windows))) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg fixed_windows} must be a data frame with {.field start_time} and {.field end_time}.",
       call = call
     )
   }
   if (has_shift_times && !"period_id" %in% names(fixed_windows)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg fixed_windows} needs a {.field period_id} column: the schedule has shifts.",
       "i" = "Give each shift its own clock times, e.g. the AM shift counts at 08:00 and 11:00."
     ), call = call)
@@ -2175,7 +2175,7 @@ fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_
   fw_start <- survey_min(to_min(fixed_windows$start_time), ds)
   fw_end <- survey_min(to_min(fixed_windows$end_time), ds, end = TRUE)
   if (anyNA(fw_start) || anyNA(fw_end) || any(fw_end <= fw_start)) {
-    cli::cli_abort("Every fixed window needs a start before its end.", call = call)
+    creel_abort("Every fixed window needs a start before its end.", call = call)
   }
   group <- if (has_shift_times) as.character(fixed_windows$period_id) else rep("all", nrow(fixed_windows))
   for (g in unique(group)) {
@@ -2183,7 +2183,7 @@ fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_
     st <- fw_start[group == g][o]
     en <- fw_end[group == g][o]
     if (length(st) > 1L && any(en[-length(en)] > st[-1])) {
-      cli::cli_abort("Windows in {.arg fixed_windows} must not overlap.", call = call)
+      creel_abort("Windows in {.arg fixed_windows} must not overlap.", call = call)
     }
   }
   lapply(seq_len(nrow(schedule)), function(i) {
@@ -2195,19 +2195,19 @@ fixed_windows_by_row <- function(schedule, fixed_windows, has_shift_times, span_
     w <- w[order(w$start), , drop = FALSE]
     if (!has_shift_times && !is.na(span_start[i]) &&
           any(w$start < span_start[i] | w$start >= span_end[i])) {
-      cli::cli_abort(
+      creel_abort(
         "A fixed window falls outside {.arg start_time} -- {.arg end_time}.",
         call = call
       )
     }
     if (nrow(w) == 0L) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg fixed_windows} has no windows for shift {.val {schedule$period_id[i]}}.",
         call = call
       )
     }
     if (has_shift_times && any(w$start < span_start[i] | w$start >= span_end[i])) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "A fixed window for shift {.val {schedule$period_id[i]}} falls outside the shift.",
         "x" = "The shift runs {schedule$shift_start[i]} to {schedule$shift_end[i]}."
       ), call = call)

@@ -26,7 +26,7 @@ resolve_night_design <- function(calendar, design_type, night_date, tz,
   }
   ds <- format_min_to_hhmm(ds_min) # nolint: object_usage_linter
   if (identical(night_date, "end")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code night_date = \"end\"} is not supported.",
         "x" = "A night schedule dates each night by the day it starts, and so does \\
@@ -38,7 +38,7 @@ resolve_night_design <- function(calendar, design_type, night_date, tz,
     )
   }
   if (!identical(design_type, "instantaneous")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Night survey days (day_start {.val {ds}}) are only supported for roving and \\
          access designs ({.code survey_type = \"instantaneous\"}).",
@@ -72,7 +72,7 @@ apply_day_start_arg <- function(calendar, day_start, call = rlang::caller_env())
   if ("day_start" %in% names(calendar)) {
     cal_min <- schedule_day_start(calendar, call = call) # nolint: object_usage_linter
     if (cal_min != ds_min) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg day_start} disagrees with the calendar's {.field day_start} column.",
           "x" = "The argument is {.val {day_start}}; the calendar says \\
@@ -100,7 +100,7 @@ apply_day_start_arg <- function(calendar, day_start, call = rlang::caller_env())
 resolve_design_tz <- function(tz, call = rlang::caller_env()) {
   if (is.null(tz)) tz <- getOption("tidycreel.tz")
   if (is.null(tz)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A night design needs a time zone.",
         "x" = "Neither {.arg tz} nor the {.field tidycreel.tz} option is set.",
@@ -114,7 +114,7 @@ resolve_design_tz <- function(tz, call = rlang::caller_env()) {
     )
   }
   if (!is.character(tz) || length(tz) != 1L || is.na(tz) || !tz %in% OlsonNames()) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg tz} must be one time zone name from {.fn OlsonNames}.",
         "x" = "Got {.val {tz}}."
@@ -140,7 +140,7 @@ resolve_design_tz <- function(tz, call = rlang::caller_env()) {
 #' @noRd
 night_survey_dates <- function(dates, times, night, what, time_arg, call = rlang::caller_env()) {
   if (is.null(times)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "On a night design every {what} needs a clock time.",
         "x" = "{.arg {time_arg}} was not given.",
@@ -158,7 +158,7 @@ night_survey_dates <- function(dates, times, night, what, time_arg, call = rlang
     # A POSIXct with no zone is read in the computer's zone, which is not the
     # water's: refused rather than read in either.
     if (!nzchar(zone)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The {what} times are POSIXct with no time zone.",
           "x" = "Their clock would be read in this computer's zone, not the design's \\
@@ -170,7 +170,7 @@ night_survey_dates <- function(dates, times, night, what, time_arg, call = rlang
       )
     }
     if (!identical(zone, night$tz)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The {what} times are in time zone {.val {zone}}, the design's is {.val {night$tz}}.",
           "i" = "Convert them, e.g. {.code lubridate::with_tz()}, or check the design's {.arg tz}."
@@ -184,7 +184,7 @@ night_survey_dates <- function(dates, times, night, what, time_arg, call = rlang
       local_date <- as.Date(format(times, "%Y-%m-%d", tz = zone))
       off <- local_date != dates
       if (any(off)) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "{sum(off)} {what} time{?s} fall{?s/} on a different date from {?its/their} \\
              record's date.",
@@ -207,7 +207,7 @@ night_survey_dates <- function(dates, times, night, what, time_arg, call = rlang
     bad <- rep(TRUE, length(times))
   }
   if (any(bad)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(bad)} {what} time{?s} in {.arg {time_arg}} cannot be read as a clock time.",
         "x" = "First: {.val {as.character(times[which(bad)[1]])}}.",
@@ -270,7 +270,7 @@ check_night_records_worked <- function(records, design, date_col, what, call = r
   sampled <- rec_day %in% format(cal[[cal_date]][worked])
   if (!all(sampled)) {
     bad <- unique(rec_day[!sampled]) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(!sampled)} {what}{?s} map{?s/} to {length(bad)} night{?s} the schedule did not \\
          sample: {.val {bad}}.",
@@ -287,7 +287,7 @@ check_night_records_worked <- function(records, design, date_col, what, call = r
     off <- !is.na(records$period_id) & !rec_key %in% cal_key
     if (any(off)) {
       bad <- unique(rec_key[off]) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{sum(off)} {what}{?s} map{?s/} to a shift the schedule did not work that night: \\
            {.val {bad}} (night / period).",
@@ -335,7 +335,7 @@ check_day_records_worked <- function(records, design, date_col, what, call = rla
     } else {
       "each is counted in the {what} table by its date, and the design did not select that date."
     }
-    cli::cli_abort(
+    creel_abort(
       c(
         "{n_rec} {what}{cli::qty(n_rec)}{?s} {?is/are} dated on {length(bad)} \
          day{?s} the schedule did not sample: {.val {shown}}{more}.",
@@ -419,7 +419,7 @@ shift_window_outside <- function(records, times, design, date_col, what, time_ar
   }
   unread <- !is.na(times) & is.na(clock)
   if (any(unread)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(unread)} {what} time{?s} in {.arg {time_arg}} cannot be read as a clock time.",
         "x" = "First: {.val {as.character(times[which(unread)[1]])}}.",
@@ -540,7 +540,7 @@ check_interview_register <- function(records, design, date_col, what, call = rla
     } else {
       "Each is counted in the {what} table by its date, and the design did not select that date."
     }
-    cli::cli_abort(
+    creel_abort(
       c(
         "{n_rec} {what}{cli::qty(n_rec)}{?s} {?is/are} dated on {n_day} {cli::qty(n_day)}day{?s} \\
          the calendar's {.field {col}} column does not mark as an interview day: \\
@@ -588,7 +588,7 @@ night_shift_hours <- function(cal, date_col, night, call = rlang::caller_env()) 
   leaves <- ok & e_off <= s_off
   if (any(leaves)) {
     bad <- unique(format(cal[[date_col]][leaves])) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "A shift does not fit inside one survey day on {length(bad)} night{?s}: {.val {bad}}.",
         "x" = "Survey days start at {night$day_start}; a shift must end after it starts \\
@@ -608,7 +608,7 @@ night_shift_hours <- function(cal, date_col, night, call = rlang::caller_env()) 
     if ("shift_hours" %in% names(cal)) amb <- amb & is.na(cal$shift_hours[ok])
     if (any(amb)) {
       bad <- unique(format(cal[[date_col]][ok][amb])) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "A shift starts or ends in an hour a daylight-saving change skipped or repeated \\
            on {length(bad)} night{?s}: {.val {bad}}.",

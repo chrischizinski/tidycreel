@@ -76,7 +76,7 @@ write_estimates <- function(
 ) {
   # ---- Input validation -------------------------------------------------------
   if (!inherits(x, c("creel_estimates", "creel_summary"))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg x} must be a {.cls creel_estimates} or {.cls creel_summary}.",
       "x" = "Got {.cls {class(x)[1]}}.",
       "i" = paste0(
@@ -86,10 +86,10 @@ write_estimates <- function(
     ))
   }
   if (!is.character(path) || length(path) != 1L || !nzchar(path)) {
-    cli::cli_abort("{.arg path} must be a single non-empty character string.")
+    creel_abort("{.arg path} must be a single non-empty character string.")
   }
   if (!overwrite && file.exists(path)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "File already exists: {.path {path}}",
       "i" = "Set {.code overwrite = TRUE} to replace it."
     ))

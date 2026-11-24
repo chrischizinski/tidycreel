@@ -158,18 +158,18 @@ power_creel <- function(
 .power_creel_effort_n <- function(target_rse, strata, N_h, ybar_h, s2_h) {
   # nolint
   if (is.null(target_rse)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg target_rse} is required for {.code mode = \"effort_n\"}."
     )
   }
   if (is.null(strata) || is.null(N_h) || is.null(ybar_h) || is.null(s2_h)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg strata}, {.arg N_h}, {.arg ybar_h}, and {.arg s2_h} are ",
       "all required for {.code mode = \"effort_n\"}."
     )
   }
   if (length(strata) != length(N_h)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg strata} and {.arg N_h} must have the same length."
     )
   }
@@ -199,12 +199,12 @@ power_creel <- function(
 
 .power_creel_cpue_n <- function(target_rse, cv_catch, cv_effort, rho) {
   if (is.null(target_rse)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg target_rse} is required for {.code mode = \"cpue_n\"}."
     )
   }
   if (is.null(cv_catch) || is.null(cv_effort)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg cv_catch} and {.arg cv_effort} are required for ",
       "{.code mode = \"cpue_n\"}."
     )
@@ -237,16 +237,16 @@ power_creel <- function(
   alternative
 ) {
   if (is.null(n)) {
-    cli::cli_abort("{.arg n} is required for {.code mode = \"power\"}.")
+    creel_abort("{.arg n} is required for {.code mode = \"power\"}.")
   }
   if (is.null(delta_pct)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg delta_pct} is required for {.code mode = \"power\"}."
     )
   }
   cv_hist <- cv_historical %||% cv_catch # nolint: object_name_linter
   if (is.null(cv_hist)) {
-    cli::cli_abort(
+    creel_abort(
       "Provide {.arg cv_historical} (or {.arg cv_catch} as a proxy) ",
       "for {.code mode = \"power\"}."
     )

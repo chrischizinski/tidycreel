@@ -65,7 +65,7 @@ check_design_field <- function(name, call) {
   } else {
     creel_design_fields[utils::adist(name, creel_design_fields) <= 2]
   }
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.val {name}} is not a field of a {.cls creel_design}.",
       if (length(close) > 0L) c("i" = "Did you mean {.or {.val {close}}}?"),

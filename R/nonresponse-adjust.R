@@ -122,7 +122,7 @@ adjust_nonresponse <- function(
 
   # Input validation -----------------------------------------------------------
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -130,7 +130,7 @@ adjust_nonresponse <- function(
   }
 
   if (!is.data.frame(response_rates)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg response_rates} must be a data frame or tibble.",
       "x" = "{.arg response_rates} is {.cls {class(response_rates)[1]}}."
     ))
@@ -139,7 +139,7 @@ adjust_nonresponse <- function(
   required_cols <- c(stratum_col, "n_sampled", "n_responded")
   missing_cols <- setdiff(required_cols, names(response_rates))
   if (length(missing_cols) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg response_rates} is missing required columns.",
       "x" = "Missing: {.field {missing_cols}}.",
       "i" = paste0(
@@ -152,7 +152,7 @@ adjust_nonresponse <- function(
   # Validate n_responded <= n_sampled
   bad_rows <- response_rates$n_responded > response_rates$n_sampled
   if (any(bad_rows, na.rm = TRUE)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field n_responded} must be <= {.field n_sampled} for all strata.",
       "x" = paste0(
         "Strata with invalid values: ",
@@ -169,7 +169,7 @@ adjust_nonresponse <- function(
   # Abort on zero-response strata
   zero_resp <- n_responded == 0L
   if (any(zero_resp, na.rm = TRUE)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Zero-response strata detected: adjustment is undefined.",
       "x" = paste0(
         "Strata with zero responses: ",
@@ -267,7 +267,7 @@ apply_nonresponse_weights <- function(svy, strata_cols, diagnostics, method) {
   # "calibrate" requires population totals not available here; it must be
   # called directly via survey::calibrate() with a suitable population frame.
   if (method == "calibrate") {
-    cli::cli_abort(c(
+    creel_abort(c(
       '{.val "calibrate"} method is not yet implemented in {.fn adjust_nonresponse}.',
       "i" = paste0(
         'Use {.val "postStratify"} (the default), which applies the ',

@@ -96,7 +96,7 @@ prep_interviews_trips <- function(
   resolve_one <- function(quo, arg_name) {
     cols <- names(tidyselect::eval_select(quo, data))
     if (length(cols) != 1L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg {arg_name}} must select exactly one column.",
         "x" = "Selected {length(cols)} columns."
       ))
@@ -110,7 +110,7 @@ prep_interviews_trips <- function(
     }
     cols <- names(tidyselect::eval_select(quo, data))
     if (length(cols) != 1L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg {arg_name}} must select exactly one column when supplied.",
         "x" = "Selected {length(cols)} columns."
       ))
@@ -140,7 +140,7 @@ prep_interviews_trips <- function(
 
   date_vals <- data[[date_col]]
   if (!inherits(date_vals, "Date")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {date_col}} must be a {.cls Date} column.",
       "x" = "Got class {.cls {class(date_vals)[1]}}."
     ))
@@ -148,7 +148,7 @@ prep_interviews_trips <- function(
 
   if (is.null(effort_hours_col)) {
     if (is.null(trip_start_col) || is.null(interview_time_col)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Provide either {.arg effort_hours} or both {.arg trip_start} and {.arg interview_time}.",
         "x" = "Cannot compute effort hours from the supplied columns."
       ))
@@ -160,7 +160,7 @@ prep_interviews_trips <- function(
   }
 
   if (!is.numeric(effort_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field effort_hours} must resolve to a numeric column.",
       "x" = "Got class {.cls {class(effort_vals)[1]}}."
     ))
@@ -173,7 +173,7 @@ prep_interviews_trips <- function(
   }
 
   if (!is.numeric(trip_duration_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field trip_duration} must resolve to a numeric column.",
       "x" = "Got class {.cls {class(trip_duration_vals)[1]}}."
     ))
@@ -183,7 +183,7 @@ prep_interviews_trips <- function(
   valid_status <- c("complete", "incomplete")
   bad_status <- unique(stats::na.omit(trip_status_vals[!trip_status_vals %in% valid_status]))
   if (length(bad_status) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {trip_status_col}} contains invalid trip-status values.",
       "x" = "Invalid value{?s}: {.val {bad_status}}.",
       "i" = "Valid values are {.val complete} and {.val incomplete}."
@@ -197,7 +197,7 @@ prep_interviews_trips <- function(
   }
 
   if (!is.numeric(n_anglers_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field n_anglers} must resolve to a numeric column.",
       "x" = "Got class {.cls {class(n_anglers_vals)[1]}}."
     ))
@@ -286,7 +286,7 @@ prep_interview_catch <- function(data, interview_uid, species, count, catch_type
   resolve_one <- function(quo, arg_name) {
     cols <- names(tidyselect::eval_select(quo, data))
     if (length(cols) != 1L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg {arg_name}} must select exactly one column.",
         "x" = "Selected {length(cols)} columns."
       ))
@@ -301,7 +301,7 @@ prep_interview_catch <- function(data, interview_uid, species, count, catch_type
 
   count_vals <- data[[count_col]]
   if (!is.numeric(count_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {count_col}} must be numeric.",
       "x" = "Got class {.cls {class(count_vals)[1]}}."
     ))
@@ -309,7 +309,7 @@ prep_interview_catch <- function(data, interview_uid, species, count, catch_type
 
   species_vals <- data[[species_col]]
   if (!(is.character(species_vals) || is.factor(species_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {species_col}} must be character or factor.",
       "x" = "Got class {.cls {class(species_vals)[1]}}."
     ))
@@ -379,7 +379,7 @@ prep_interview_catch <- function(data, interview_uid, species, count, catch_type
 prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, species,
                                   count, catch_type, absent) {
   if (missing(absent)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg absent} must be given: what does an interview with no catch rows mean?",
       "i" = "{.val zero} if the sheet records a row for every species caught;
              {.val unknown} if a missing row can mean the catch was not recorded."
@@ -389,7 +389,7 @@ prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, s
   one <- function(quo, data, arg) {
     cols <- names(tidyselect::eval_select(quo, data))
     if (length(cols) != 1L) {
-      cli::cli_abort("{.arg {arg}} must select exactly one column; it selected {length(cols)}.")
+      creel_abort("{.arg {arg}} must select exactly one column; it selected {length(cols)}.")
     }
     cols
   }
@@ -401,13 +401,13 @@ prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, s
 
   taken <- intersect(c("catch_total", "harvest_total", "release_total"), names(interviews))
   if (length(taken)) {
-    cli::cli_abort("{.arg interviews} already has {.field {taken}}; rename or drop {?it/them} first.")
+    creel_abort("{.arg interviews} already has {.field {taken}}; rename or drop {?it/them} first.")
   }
   if (!is.numeric(catch[[n_col]])) {
-    cli::cli_abort("{.field {n_col}} must be numeric, not {.cls {class(catch[[n_col]])[1]}}.")
+    creel_abort("{.field {n_col}} must be numeric, not {.cls {class(catch[[n_col]])[1]}}.")
   }
   if (anyNA(catch[[n_col]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{sum(is.na(catch[[n_col]]))} catch row{?s} {?has/have} an {.val {NA}} count.",
       "i" = "An unknown count is not a zero; fill or remove those rows first."
     ))
@@ -415,7 +415,7 @@ prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, s
   type <- tolower(as.character(catch[[type_col]]))
   bad <- setdiff(unique(type), c("caught", "harvested", "released"))
   if (length(bad)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {type_col}} holds value{?s} other than caught, harvested or released: {.val {bad}}.",
       "i" = "Map them with {.fn creel_schema} {.arg value_maps}, or recode them first."
     ))
@@ -426,14 +426,14 @@ prep_interview_totals <- function(interviews, catch, interview_uid, catch_uid, s
   # counted once per copy downstream.
   dup <- unique(iv_ids[duplicated(iv_ids)])
   if (length(dup)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{length(dup)} interview id{?s} appear{?s/} more than once in {.arg interviews}: {.val {utils::head(dup, 5)}}.",
       "i" = "Totals are per interview; collapse to one row per interview first."
     ))
   }
   orphan <- setdiff(unique(ct_ids), iv_ids)
   if (length(orphan)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{length(orphan)} interview id{?s} in {.arg catch} {?is/are} not in {.arg interviews}:
        {.val {utils::head(orphan, 5)}}.",
       "i" = "Every catch row must belong to an interview."

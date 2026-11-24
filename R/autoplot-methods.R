@@ -551,7 +551,7 @@ autoplot.creel_schedule <- function(object, title = "Creel Schedule", ...) {
 plot_design <- function(design, title = NULL, ...) {
   # nolint: object_usage_linter
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."

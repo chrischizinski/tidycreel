@@ -30,7 +30,7 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
   checkmate::assert_number(rse_target, lower = 1e-6, upper = 1.0)
 
   if (is.null(design$counts)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Design has no count data.",
       "x" = "{.arg x} must have counts attached via {.fn add_counts} before auditing strata.",
       "i" = "Call {.code add_counts(design, counts_df)} first."
@@ -55,7 +55,7 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
     anyNA(design$calendar[[col]]) || anyNA(design$counts[[col]])
   }, logical(1))]
   if (length(na_strata) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Strata must be known on every calendar day and count row.",
         "x" = "Missing values in {.field {na_strata}}.",
@@ -124,7 +124,7 @@ audit_strata.creel_design <- function(x, rse_target = 0.20, ...) {
   # must never share one, as ("a / b", "c") and ("a", "b / c") would.
   if (anyDuplicated(strata_labels)) {
     dup <- unique(strata_labels[duplicated(strata_labels)]) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "Two different strata would share the label {.val {dup}}.",
         "x" = "Their values contain {.code /} between spaces, which joins multi-column strata labels.",
@@ -317,7 +317,7 @@ audit_strata.default <- function(x, n_h, ybar_h, s2_h, rse_target = 0.20, ...) {
 #' simulate_strata_collapse(audit, merge_strata = c("early_season", "mid_season"))
 simulate_strata_collapse <- function(audit, merge_strata) {
   if (!inherits(audit, "creel_strata_audit")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg audit} must be a {.cls creel_strata_audit} object.",
       "x" = "Got class: {.cls {class(audit)}}"
     ))
@@ -326,7 +326,7 @@ simulate_strata_collapse <- function(audit, merge_strata) {
 
   bad <- setdiff(merge_strata, audit$strata$stratum)
   if (length(bad) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Unknown stratum name in {.arg merge_strata}.",
       "x" = "Not found: {.val {bad}}",
       "i" = "Valid strata: {.val {audit$strata$stratum}}"
@@ -465,7 +465,7 @@ reallocate_strata <- function(n_total, N_h, s2_h, min_n = 2L) {
   if (anyNA(s2_h) || any(!is.finite(s2_h))) {
     # audit_strata() reports NA for a stratum with one sampled day: its
     # variance is unknown, and choosing a value for it is the caller's call.
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg s2_h} has a missing or infinite variance for {.val {names(N_h)[!is.finite(s2_h)]}}.",
         "i" = "A stratum with one sampled day has no variance estimate; supply a pilot value or merge the stratum."
@@ -480,7 +480,7 @@ reallocate_strata <- function(n_total, N_h, s2_h, min_n = 2L) {
 
   floor_h <- pmin(min_n, N_h)
   if (n_total > sum(N_h) || n_total < sum(floor_h)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg n_total} = {n_total} cannot be allocated across these strata.",
         "x" = if (n_total > sum(N_h)) {
@@ -527,7 +527,7 @@ reallocate_strata <- function(n_total, N_h, s2_h, min_n = 2L) {
   names(n_h) <- names(N_h)
   # The plan must be feasible; anything else is a bug here, never a result.
   if (sum(n_h) != n_total || any(n_h > N_h) || any(n_h < floor_h)) {
-    cli::cli_abort(
+    creel_abort(
       "Internal error: the allocation broke its bounds or its total.",
       class = "creel_error_internal"
     )

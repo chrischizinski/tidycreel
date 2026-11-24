@@ -24,7 +24,7 @@ wrap_survey_call <- function(expr, call = rlang::caller_env()) {
         # A multi-column stratum key carries the \u001f separator (GH #422).
         strat <- gsub("\u001f", " / ", strat, fixed = TRUE)
         strat_label <- if (length(strat) > 0L && nzchar(strat)) strat else "unknown" # nolint: object_usage_linter
-        cli::cli_abort(
+        creel_abort(
           c(
             "Stratum {.val {strat_label}} has only 1 PSU \u2014 \\
           variance cannot be estimated.",
@@ -45,7 +45,7 @@ wrap_survey_call <- function(expr, call = rlang::caller_env()) {
       # #505 it is reached by a census stratum of one day with one count, which
       # the correction used to report with an SE of 0.
       if (grepl("contains only one PSU at stage", msg, fixed = TRUE)) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "A stratum has only 1 PSU \u2014 variance cannot be estimated.",
             "x" = "A stratum must have at least 2 PSUs (e.g., 2 sampled days) \\
@@ -354,7 +354,7 @@ new_creel_estimates <- function(
   # callers set both is what stops the two representations from disagreeing,
   # which is the defect #134 was.
   if ("party_size" %in% names(se_components)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg se_components} must not contain {.val party_size}.",
         "i" = "Supply it as {.arg se_expansion}; the constructor mirrors it into {.arg se_components}."
@@ -877,7 +877,7 @@ estimate_effort <- function(
   # Validate variance parameter
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}",
       "i" = "Default is {.val taylor} (Taylor linearization)"
@@ -886,7 +886,7 @@ estimate_effort <- function(
 
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -904,7 +904,7 @@ estimate_effort <- function(
 
   # Validate design$survey exists (skip for bus-route, ice, and aerial: custom dispatch below)
   if (!design$design_type %in% c("bus_route", "ice", "aerial") && is.null(design$survey)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "No survey design available.",
         "x" = "Call {.fn add_counts} before estimating effort.",
@@ -941,7 +941,7 @@ estimate_effort <- function(
 
     # Validate interview data exists
     if (is.null(design$interviews)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Bus-route effort estimation requires interview data.",
           "x" = "No interview data found in design.",
@@ -1006,7 +1006,7 @@ estimate_effort <- function(
   if (!is.null(design$design_type) && identical(design$design_type, "aerial")) {
     refuse_unexpandable_target(design, target) # nolint: object_usage_linter
     if (is.null(design$counts)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Aerial effort estimation requires count data.",
           "x" = "No count data found in design.",
@@ -1040,7 +1040,7 @@ estimate_effort <- function(
   # a word, so a per-day-type request came back as per-section rows (GH #366).
   # Refused before the period-length warning, which would otherwise come first.
   if (!is.null(design[["sections"]]) && !rlang::quo_is_null(by_quo)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg by} is not supported for sectioned designs.",
         "x" = "Sectioned effort is estimated per section, with a lake total.",
@@ -1465,7 +1465,7 @@ estimate_catch_rate <- function(
 
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}",
       "i" = "Default is {.val taylor} (Taylor linearization)"
@@ -1475,7 +1475,7 @@ estimate_catch_rate <- function(
   # Validate estimator parameter
   valid_estimators <- c("ratio-of-means", "mor", "mortr", "regression")
   if (!estimator %in% valid_estimators) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid estimator: {.val {estimator}}",
       "x" = "Must be one of: {.val {valid_estimators}}",
       "i" = paste(
@@ -1506,7 +1506,7 @@ estimate_catch_rate <- function(
          is.na(truncate_at) ||
          truncate_at <= 0)
   ) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid truncate_at: {.val {truncate_at}}",
       "x" = "truncate_at must be positive or NULL",
       "i" = "Default is 0.5 hours (30 minutes) per Hoenig et al. (1997)"
@@ -1515,7 +1515,7 @@ estimate_catch_rate <- function(
 
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -1527,7 +1527,7 @@ estimate_catch_rate <- function(
 
   # Validate design$interview_survey exists
   if (is.null(design$interview_survey)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating CPUE.",
       "i" = "Example: {.code design <- add_interviews(design, interviews, catch = catch_total, effort = hours_fished)}"
@@ -1536,7 +1536,7 @@ estimate_catch_rate <- function(
 
   # Validate design$catch_col and design$effort_col exist
   if (is.null(design$catch_col) || is.null(design$effort_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No catch or effort column available.",
       "x" = "Design must have catch_col and effort_col set.",
       "i" = "Call {.fn add_interviews} with catch and effort parameters."
@@ -1577,7 +1577,7 @@ estimate_catch_rate <- function(
     }
 
     if (is.null(design[["catch"]])) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Species-level CPUE requires catch data.",
         "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
         "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_catch_rate}."
@@ -1604,7 +1604,7 @@ estimate_catch_rate <- function(
     # Validate use_trips parameter
     valid_use_trips <- c("complete", "incomplete", "all", "diagnostic")
     if (!use_trips %in% valid_use_trips) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Invalid use_trips value: {.val {use_trips}}",
         "x" = "Must be one of: {.val {valid_use_trips}}",
         "i" = paste(
@@ -1624,7 +1624,7 @@ estimate_catch_rate <- function(
       n_incomplete <- sum(design$interviews[[trip_status_col]] == "incomplete", na.rm = TRUE)
 
       if (n_complete == 0) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "Diagnostic mode requires complete trips",
           "x" = "Dataset has 0 complete trips",
           "i" = "Diagnostic mode compares complete vs incomplete trip estimates",
@@ -1633,7 +1633,7 @@ estimate_catch_rate <- function(
       }
 
       if (n_incomplete == 0) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "Diagnostic mode requires incomplete trips",
           "x" = "Dataset has 0 incomplete trips",
           "i" = "Diagnostic mode compares complete vs incomplete trip estimates",
@@ -1747,7 +1747,7 @@ estimate_catch_rate <- function(
 
     # Validate use_trips + estimator combination
     if (use_trips == "incomplete" && estimator == "ratio-of-means") {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Invalid combination: use_trips='incomplete' with estimator='ratio-of-means'",
         "x" = "Incomplete trips require mean-of-ratios (MOR) estimator",
         "i" = "Incomplete trips have length-of-stay bias (Pollock et al.)",
@@ -1809,7 +1809,7 @@ estimate_catch_rate <- function(
     if (use_trips == "complete") {
       # Check complete trips available
       if (n_complete == 0) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No complete trips available for estimation",
           "x" = "use_trips='complete' but dataset has 0 complete trips",
           "i" = "Use {.code use_trips = 'incomplete'} if incomplete trips are available",
@@ -1819,7 +1819,7 @@ estimate_catch_rate <- function(
 
       # Check sample size for complete trips
       if (n_complete < 10) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "Insufficient complete trips for estimation",
           "x" = "use_trips='complete' but only {n_complete} complete trip{?s} available",
           "i" = "Need at least 10 complete trips for stable estimates",
@@ -1848,7 +1848,7 @@ estimate_catch_rate <- function(
     } else if (use_trips == "incomplete") {
       # Check incomplete trips available
       if (n_incomplete == 0) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No incomplete trips available for estimation",
           "x" = "use_trips='incomplete' but dataset has 0 incomplete trips",
           "i" = "Use {.code use_trips = 'complete'} (default) for complete trips",
@@ -1873,7 +1873,7 @@ estimate_catch_rate <- function(
       # Roving design (or explicit use_trips="all"): use all interviews with MOR.
       # No filtering — MOR computes catch/effort per interview regardless of trip status.
       if (n_total == 0) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No interviews available for estimation",
           "x" = "use_trips='all' but dataset has 0 interviews",
           "i" = "Check that interviews were added with {.fn add_interviews}"
@@ -1994,7 +1994,7 @@ estimate_catch_rate <- function(
         )
       }
       if (nrow(incomplete_interviews) == 0) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No trips remain after zero-catch exclusion.",
           "x" = "All trips had zero catch with {.code targeted = FALSE}.",
           "i" = "Set {.code targeted = TRUE} or check catch data."
@@ -2127,7 +2127,7 @@ estimate_catch_rate <- function(
   if (!is.null(by_info$species_var)) {
     # Species-level CPUE: requires design$catch
     if (is.null(design[["catch"]])) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Species-level CPUE requires catch data.",
         "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
         "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_catch_rate}."
@@ -2492,7 +2492,7 @@ estimate_harvest_rate <- function(
 
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}",
       "i" = "Default is {.val taylor} (Taylor linearization)"
@@ -2501,7 +2501,7 @@ estimate_harvest_rate <- function(
 
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -2516,7 +2516,7 @@ estimate_harvest_rate <- function(
   if (
     !design$design_type %in% c("bus_route", "ice") && is.null(design$interview_survey)
   ) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating harvest.",
       "i" = paste(
@@ -2542,7 +2542,7 @@ estimate_harvest_rate <- function(
 
     if (!is.null(by_info_br$species_var)) {
       if (is.null(design[["catch"]])) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "Species-level HPUE requires catch data.",
           "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
           "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_harvest_rate}."
@@ -2588,7 +2588,7 @@ estimate_harvest_rate <- function(
 
   # Validate design$harvest_col exists
   if (is.null(design$harvest_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No harvest column available.",
       "x" = "Design must have harvest_col set.",
       "i" = "Call {.fn add_interviews} with the harvest parameter.",
@@ -2601,7 +2601,7 @@ estimate_harvest_rate <- function(
 
   # Validate design$effort_col exists
   if (is.null(design$effort_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No effort column available.",
       "x" = "Design must have effort_col set.",
       "i" = "Call {.fn add_interviews} with effort parameter."
@@ -2622,7 +2622,7 @@ estimate_harvest_rate <- function(
 
   valid_estimators_std <- c("ratio-of-means", "mor", "mortr")
   if (!estimator %in% valid_estimators_std) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid estimator value: {.val {estimator}}",
       "x" = "Must be one of: {.val {valid_estimators_std}}",
       "i" = paste(
@@ -2668,7 +2668,7 @@ estimate_harvest_rate <- function(
 
   valid_use_trips_std <- c("all", "complete")
   if (!use_trips %in% valid_use_trips_std) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid use_trips value: {.val {use_trips}}",
       "x" = "Must be one of: {.val {valid_use_trips_std}}",
       "i" = "Use {.val complete} (default) for completed trips only or {.val all} for all interviews."
@@ -2700,7 +2700,7 @@ estimate_harvest_rate <- function(
       ))
     } else {
       if (n_complete == 0L) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No complete trips available for HPUE estimation",
           "x" = "{.arg use_trips} = 'complete' but dataset has 0 complete trips",
           "i" = "Use {.code use_trips = 'all'} to include all interviews"
@@ -2737,7 +2737,7 @@ estimate_harvest_rate <- function(
   # package has never estimated for harvest. Refused rather than silently
   # ignored: an argument that quietly does nothing is what GH #304 was (GH #307).
   if (!isTRUE(targeted) && is.null(by_info$species_var)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.code targeted = FALSE} needs {.code by = species}.",
       "x" = "Without a species there is no per-species count to test.",
       "i" = "Use {.code estimate_harvest_rate(by = species, targeted = FALSE)}."
@@ -2775,7 +2775,7 @@ estimate_harvest_rate <- function(
   # Species-level dispatch
   if (!is.null(by_info$species_var)) {
     if (is.null(design[["catch"]])) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Species-level HPUE requires catch data.",
         "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
         "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_harvest_rate}."
@@ -3019,7 +3019,7 @@ estimate_release_rate <- function(
 
   valid_methods <- c("taylor", "bootstrap", "jackknife")
   if (!variance %in% valid_methods) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid variance method: {.val {variance}}",
       "x" = "Must be one of: {.val {valid_methods}}",
       "i" = "Default is {.val taylor} (Taylor linearization)"
@@ -3028,7 +3028,7 @@ estimate_release_rate <- function(
 
   # Validate input is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -3040,7 +3040,7 @@ estimate_release_rate <- function(
 
   # Validate catch data exists
   if (is.null(design[["catch"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No catch data available.",
       "x" = "Call {.fn add_catch} before estimating release rate.",
       "i" = "Release data comes from catch records with catch_type = 'released'."
@@ -3049,7 +3049,7 @@ estimate_release_rate <- function(
 
   # Validate interview survey exists
   if (is.null(design$interview_survey)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interview survey design available.",
       "x" = "Call {.fn add_interviews} before estimating release rate.",
       "i" = "Release rate requires effort data from interviews."
@@ -3068,7 +3068,7 @@ estimate_release_rate <- function(
 
     if (!is.null(by_info_br$species_var)) {
       if (is.null(design[["catch"]])) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "Species-level RPUE requires catch data.",
           "x" = "{.field species} found in {.arg by} but {.fn add_catch} has not been called.",
           "i" = "Call {.fn add_catch} before using species grouping in {.fn estimate_release_rate}."
@@ -3113,7 +3113,7 @@ estimate_release_rate <- function(
 
   valid_estimators_std <- c("ratio-of-means", "mor", "mortr")
   if (!estimator %in% valid_estimators_std) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid estimator value: {.val {estimator}}",
       "x" = "Must be one of: {.val {valid_estimators_std}}",
       "i" = paste(
@@ -3159,7 +3159,7 @@ estimate_release_rate <- function(
 
   valid_use_trips_std <- c("all", "complete")
   if (!use_trips %in% valid_use_trips_std) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid use_trips value: {.val {use_trips}}",
       "x" = "Must be one of: {.val {valid_use_trips_std}}",
       "i" = "Use {.val complete} (default) for completed trips only or {.val all} for all interviews."
@@ -3191,7 +3191,7 @@ estimate_release_rate <- function(
       ))
     } else {
       if (n_complete == 0L) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "No complete trips available for RPUE estimation",
           "x" = "{.arg use_trips} = 'complete' but dataset has 0 complete trips",
           "i" = "Use {.code use_trips = 'all'} to include all interviews"
@@ -3228,7 +3228,7 @@ estimate_release_rate <- function(
   # package has never estimated for releases. Refused rather than silently
   # ignored: an argument that quietly does nothing is what GH #304 was (GH #307).
   if (!isTRUE(targeted) && is.null(by_info$species_var)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.code targeted = FALSE} needs {.code by = species}.",
       "x" = "Without a species there is no per-species count to test.",
       "i" = "Use {.code estimate_release_rate(by = species, targeted = FALSE)}."
@@ -3462,7 +3462,7 @@ filter_interviews_use_trips <- function(design, use_trips, metric = NULL, call =
   if (!any(keep)) {
     what <- if (is.null(metric)) "rate" else paste("total", metric, "estimation") # nolint: object_usage_linter
     built <- if (is.null(metric)) "the rate" else "the rate a total multiplies" # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "No {use_trips} trips available for {what}.",
         "x" = "{.arg use_trips} = {.val {use_trips}} but this design has 0 {use_trips} trips, \\
@@ -3556,7 +3556,7 @@ resolve_total_rate_spec <- function(
       length(use_trips) != 1L ||
       !use_trips %in% valid_use_trips
   ) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.arg use_trips} value: {.val {use_trips}}",
       "x" = "Must be one of: {.val {valid_use_trips}}",
       "i" = paste(
@@ -3572,7 +3572,7 @@ resolve_total_rate_spec <- function(
       length(estimator) != 1L ||
       !estimator %in% valid_estimators
   ) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.arg estimator} value: {.val {estimator}}",
       "x" = "Must be one of: {.val {valid_estimators}}",
       "i" = paste(
@@ -3599,7 +3599,7 @@ resolve_total_rate_spec <- function(
          is.na(truncate_at) ||
          truncate_at <= 0)
   ) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.arg truncate_at} value: {.val {truncate_at}}",
       "x" = "{.arg truncate_at} must be a positive number or NULL.",
       "i" = "Default is 0.5 hours (30 minutes) per Hoenig et al. (1997)."
@@ -3802,7 +3802,7 @@ apply_mor_truncation <- function(interviews, duration_col, truncate_at) {
   # aborts inside rowSums() with "all arguments must have the same length",
   # which names neither the threshold nor the duration column.
   if (sum(keep) == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No trips remain for mean-of-ratios estimation.",
       "x" = paste(
         "All {n_total} trip{?s} were shorter than the threshold or had no",
@@ -3896,7 +3896,7 @@ mor_party_weights <- function(design, data, ratio_col) {
   # that filter; falling back to equal weights would bring the bias back
   # silently, so it is an error instead.
   if (anyNA(n)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "A missing party size reached the mean-of-ratios estimator.",
       "i" = "This is an internal error - please report."
     ))
@@ -4209,7 +4209,7 @@ screen_by_vars <- function(vars, by_quo, data, design, extra_key_cols = characte
       error = function(e) FALSE
     )
     if (!still_resolves) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg by} names {cli::qty(length(derived))}{?a column/columns} the package derived: {.field {derived}}.",
           "x" = "{cli::qty(length(derived))}{?It is/They are} computed by {.fn add_interviews}, not data you supplied.",
@@ -4234,7 +4234,7 @@ screen_by_vars <- function(vars, by_quo, data, design, extra_key_cols = characte
   ))
   key_col <- intersect(key_col, vars)
   if (length(key_col) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg by} names the interview key {.field {key_col}}.",
         "x" = "It holds one value per interview, so every group would be a single
@@ -5968,7 +5968,7 @@ within_day_stratum_var <- function(rows, design, key_cols, grain_cols, n_avail, 
 
   occ <- design$within_day_counts
   if (is.null(occ)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Within-day variance cannot be combined across {.field {extra_cols}}.",
         "x" = "A sampled day carries more than one {.field {extra_cols}} unit, and the \\
@@ -6158,7 +6158,7 @@ refuse_unsampled_cells <- function(design, cell_cols) {
   labels <- gsub("([{}])", "\\1\\1", labels)
   names(labels) <- rep("*", length(labels))
   is_stratum_level <- setequal(cell_cols, design$strata_cols)
-  cli::cli_abort(
+  creel_abort(
     c(
       "Expanded effort cannot be estimated: {nrow(empty)} calendar \\
        {cli::qty(nrow(empty))}cell{?s} {?has/have} no sampled day.",
@@ -6222,7 +6222,7 @@ refuse_psu_finer_than_day <- function(design) {
   }
   n_dates <- sum(per_date > 1L) # nolint: object_usage_linter
   max_psu <- max(per_date) # nolint: object_usage_linter
-  cli::cli_abort(
+  creel_abort(
     c(
       "Expanded effort cannot be estimated with a PSU finer than a day.",
       "x" = "{n_dates} sampled {cli::qty(n_dates)}date{?s} {?carries/carry} more than one \\
@@ -6322,7 +6322,7 @@ refuse_partial_unit_coverage <- function(design) {
   # The labels carry user data; a brace must not be read as cli markup.
   shown <- gsub("([{}])", "\\1\\1", shown)
   names(shown) <- rep("*", length(shown))
-  cli::cli_abort(
+  creel_abort(
     c(
       "Expanded effort cannot be estimated: {n_days} sampled \\
        {cli::qty(n_days)}day{?s} {?lacks/lack} a unit ({.field {within_day}}) \\
@@ -6360,7 +6360,7 @@ get_effort_target_design <- function(design, target) {
   calendar <- design$calendar
 
   if (is.null(strata_cols) || length(strata_cols) == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Expanded effort targets require stratified calendar information.",
       "x" = "The design has no registered strata columns.",
       "i" = "Use {.code target = 'sampled_days'} or create the design with {.arg strata}."
@@ -6398,7 +6398,7 @@ get_effort_target_design <- function(design, target) {
     dplyr::left_join(sampled_by_strata, by = strata_cols)
 
   if (any(is.na(expanded_counts$.N_avail)) || any(is.na(expanded_counts$.n_sampled))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Could not compute stratum expansion weights.",
       "x" = "Some count rows could not be matched to calendar strata.",
       "i" = "Check that count strata match the design calendar exactly."
@@ -6406,7 +6406,7 @@ get_effort_target_design <- function(design, target) {
   }
 
   if (any(expanded_counts$.n_sampled <= 0)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Expanded effort targets require at least one sampled day in each observed stratum.",
       "x" = "Found strata with zero sampled days."
     ))
@@ -6593,7 +6593,7 @@ refuse_single_day_strata <- function(available_by_strata, sampled_by_strata, ide
              day{?s} {?was/were} counted once."
     )
   }
-  cli::cli_abort(bullets, class = "creel_error_single_psu")
+  creel_abort(bullets, class = "creel_error_single_psu")
 }
 
 # The population size that means "no finite-population correction" for one
@@ -6650,7 +6650,7 @@ refuse_reserved_effort_names <- function(design, by_vars = NULL) {
     if (!is.null(design$section_col)) stats::setNames("the section column", design$section_col)
   )
   if ("se_basis" %in% names(used_as)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.field se_basis} cannot be {used_as[['se_basis']]}.",
         "i" = "Effort results carry a column of that name; rename yours."
@@ -6659,7 +6659,7 @@ refuse_reserved_effort_names <- function(design, by_vars = NULL) {
     )
   }
   if (".fpc_days" %in% names(design$counts)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The counts have a column named {.field .fpc_days}.",
         "i" = "Effort estimation uses that name internally; rename the column."
@@ -6686,7 +6686,7 @@ refuse_reserved_effort_names <- function(design, by_vars = NULL) {
 refuse_reserved_join_columns <- function(data, reserved, what) {
   hit <- intersect(reserved, names(data))
   if (length(hit) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The {what} have {cli::qty(length(hit))}{?a column/columns} named {.field {hit}}.",
         "i" = "Estimation adds {cli::qty(length(hit))}{?that name/those names} \\
@@ -6967,7 +6967,7 @@ shared_times_lake_se_within <- function(design, result_df, target) {
 #' @noRd
 check_shared_count_times <- function(design) {
   if (is.null(design$within_day_counts)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code shared_count_times = TRUE} cannot be honoured: the counts carry no per-occasion values.",
         "x" = "Sections can only be paired at each occasion when the raw counts are kept.",
@@ -6983,7 +6983,7 @@ check_shared_count_times <- function(design) {
   # strata are sampled independently, so each section would have its own sampled
   # days rather than a day counted in both. Refused rather than ignored.
   if (design$section_col %in% design$strata_cols) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code shared_count_times = TRUE} is not supported when the section is also a stratum.",
         "x" = "{.field {design$section_col}} is among the design strata ({.field {design$strata_cols}}).",
@@ -7003,7 +7003,7 @@ check_shared_count_times <- function(design) {
   key_cols <- within_day_key_cols(design$within_day_var) # nolint: object_usage_linter
   finer <- setdiff(key_cols, c(design$psu_col, design$strata_cols, design$section_col))
   if (length(finer) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code shared_count_times = TRUE} is not supported with count units finer than the section.",
         "x" = "The counts are keyed by {.field {finer}} as well as the section.",
@@ -7058,7 +7058,7 @@ estimate_effort_sections <- function(
   if (length(absent_sections) > 0) {
     n_absent <- length(absent_sections) # nolint: object_usage_linter
     if (missing_sections == "error") {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{n_absent} missing section(s) in count data.",
         "x" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "All registered sections must have count observations, or use {.arg missing_sections = 'warn'}."
@@ -7435,7 +7435,7 @@ estimate_effort_total <- function(design, variance_method, conf_level, target = 
 
   # Detect degenerate bootstrap replicate design (single-PSU strata)
   if (is.nan(se_between) && variance_method == "bootstrap") {
-    cli::cli_abort(
+    creel_abort(
       c(
         paste0(
           "Bootstrap variance is {.val NaN} \u2014 one or more strata have ",
@@ -8300,7 +8300,7 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
 
   policy <- design$total_missing_rate %||% "error"
   if (identical(policy, "error")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{n_cells} effort cell{?s} {cli::qty(n_cells)}{?has/have} no rate in {.val {context}}.",
         "x" = "No usable interviews for: {cells}.",
@@ -8333,7 +8333,7 @@ check_missing_rate_strata <- function(design, effort_df, rate_df, stratum_by_var
   meta_cols <- c("effort_excluded", "excluded_from")
   clash <- intersect(meta_cols, names(excluded)) # nolint: object_usage_linter
   if (length(clash) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Cannot record excluded cells: a grouping column is named {.field {clash}}.",
       "i" = "Rename that column before estimating with {.code missing_rate = \"exclude\"}."
     ))
@@ -8409,7 +8409,7 @@ check_section_stratum_coverage <- function(sec_design, rate_fun, variance_method
       lapply(strata_cols, function(v) paste0(v, " = ", uncovered[[v]])),
       sep = ", "
     ))
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.code missing_rate = \"exclude\"} cannot exclude a stratum from an ungrouped sectioned total.",
         "x" = "Section {.val {section}} has effort and no usable interviews for: {cells}.",
@@ -8788,7 +8788,7 @@ compute_stratum_product_sum <- function(
 #' @noRd
 validate_targeted <- function(targeted, call = rlang::caller_env()) {
   if (!is.logical(targeted) || length(targeted) != 1L || is.na(targeted)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg targeted} must be {.code TRUE} or {.code FALSE}.",
         "x" = "Got {.obj_type_friendly {targeted}} of length {length(targeted)}.",
@@ -8873,7 +8873,7 @@ apply_species_targeted_filter <- function(
       )
     }
     if (nrow(sp_data) == 0L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "No trips remain for {.val {sp}} after zero-{label} exclusion.",
         "x" = "No interview {verb} {.val {sp}} with {.code targeted = FALSE}.",
         "i" = "Set {.code targeted = TRUE} or check the data."
@@ -9263,7 +9263,7 @@ estimate_harvest_total <- function(
 
   # Check if any data remains after filtering
   if (nrow(interviews_data) == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No valid interviews remaining after filtering.",
       "x" = "All interviews were excluded (zero effort or missing harvest).",
       "i" = "Harvest estimation requires at least 10 interviews with non-zero effort and non-NA harvest."
@@ -9460,7 +9460,7 @@ estimate_harvest_grouped <- function(
 
   # Check if any data remains after filtering
   if (nrow(interviews_data) == 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No valid interviews remaining after filtering.",
       "x" = "All interviews were excluded (zero effort or missing harvest).",
       "i" = "Harvest estimation requires at least 10 interviews with non-zero effort and non-NA harvest."
@@ -9668,7 +9668,7 @@ estimate_catch_rate_sections <- function(
   if (length(absent_sections) > 0) {
     n_absent <- length(absent_sections) # nolint: object_usage_linter
     if (missing_sections == "error") {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{n_absent} missing section(s) in interview data.",
         "x" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
@@ -9856,7 +9856,7 @@ estimate_harvest_rate_sections <- function(
   if (length(absent_sections) > 0) {
     n_absent <- length(absent_sections) # nolint: object_usage_linter
     if (missing_sections == "error") {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{n_absent} missing section(s) in interview data.",
         "x" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."
@@ -10020,7 +10020,7 @@ estimate_release_rate_sections <- function(
   if (length(absent_sections) > 0) {
     n_absent <- length(absent_sections) # nolint: object_usage_linter
     if (missing_sections == "error") {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{n_absent} missing section(s) in interview data.",
         "x" = "Section(s) not found: {.val {absent_sections}}",
         "i" = "All registered sections must have interview data, or use {.arg missing_sections = 'warn'}."

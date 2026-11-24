@@ -234,7 +234,7 @@ optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) {
   if (!is.null(names(cost_ratio))) {
     cost_ratio <- cost_ratio[names(N_h)] # nolint: object_name_linter
     if (anyNA(cost_ratio)) {
-      cli::cli_abort(
+      creel_abort(
         "{.arg cost_ratio} names must match strata names in {.arg N_h}."
       )
     }
@@ -243,12 +243,12 @@ optimal_n <- function(cv_target, N_h, ybar_h, s2_h, cost_ratio = 1) {
   # nolint start: object_name_linter
   E_total <- sum(N_h * ybar_h)
   if (E_total <= 0) {
-    cli::cli_abort(
+    creel_abort(
       "sum(N_h * ybar_h) must be > 0; CV of a zero total is undefined."
     )
   }
   if (sum(s2_h) == 0) {
-    cli::cli_abort(
+    creel_abort(
       "All {.arg s2_h} are zero; no variance to allocate. Provide at least one s2_h > 0."
     )
   }

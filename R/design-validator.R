@@ -267,7 +267,7 @@ scheduled_days <- function(design, schedule, call = rlang::caller_env()) {
   cal <- design$calendar
   keep_cols <- intersect(c(date_col, design$strata_cols), names(cal))
   refuse <- function(msg) {
-    cli::cli_abort(msg, class = "creel_error_schedule_invalid", call = call)
+    creel_abort(msg, class = "creel_error_schedule_invalid", call = call)
   }
   if (!is.null(schedule)) {
     if (!is.data.frame(schedule)) {
@@ -492,7 +492,7 @@ find_low_n_strata <- function(design, n_min) {
 check_completeness <- function(design, n_min = 10L, schedule = NULL) {
   # Guard 1: type check
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg design} must be a {.cls creel_design} object.",
         "x" = "{.arg design} is {.cls {class(design)[1]}}.",

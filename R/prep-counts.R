@@ -109,7 +109,7 @@ prep_counts_daily_effort <- function(
 
   date_col <- names(tidyselect::eval_select(date_quo, data))
   if (length(date_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg date} must select exactly one column.",
       "x" = "Selected {length(date_col)} columns."
     ))
@@ -127,7 +127,7 @@ prep_counts_daily_effort <- function(
     names(tidyselect::eval_select(effort_type_quo, data))
   }
   if (!is.null(effort_type_col) && length(effort_type_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg effort_type} must select exactly one column.",
       "x" = "Selected {length(effort_type_col)} columns."
     ))
@@ -135,7 +135,7 @@ prep_counts_daily_effort <- function(
 
   daily_effort_col <- names(tidyselect::eval_select(daily_effort_quo, data))
   if (length(daily_effort_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg daily_effort} must select exactly one column.",
       "x" = "Selected {length(daily_effort_col)} columns."
     ))
@@ -147,7 +147,7 @@ prep_counts_daily_effort <- function(
     names(tidyselect::eval_select(psu_quo, data))
   }
   if (length(psu_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg psu} must select exactly one column when supplied.",
       "x" = "Selected {length(psu_col)} columns."
     ))
@@ -175,7 +175,7 @@ prep_counts_daily_effort <- function(
 
   date_vals <- data[[date_col]]
   if (!inherits(date_vals, "Date")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {date_col}} must be a {.cls Date} column.",
       "x" = "Got class {.cls {class(date_vals)[1]}}."
     ))
@@ -183,14 +183,14 @@ prep_counts_daily_effort <- function(
 
   base_daily_effort_vals <- data[[daily_effort_col]]
   if (!is.numeric(base_daily_effort_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {daily_effort_col}} must be numeric.",
       "x" = "Got class {.cls {class(base_daily_effort_vals)[1]}}."
     ))
   }
 
   if (any(!is.finite(base_daily_effort_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {daily_effort_col}} must contain finite values.",
       "x" = "Found {sum(!is.finite(base_daily_effort_vals))} non-finite value(s)."
     ))
@@ -202,7 +202,7 @@ prep_counts_daily_effort <- function(
     data[[effort_type_col]]
   }
   if (!(is.character(effort_type_vals) || is.factor(effort_type_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {effort_type_col}} must be character or factor.",
       "x" = "Got class {.cls {class(effort_type_vals)[1]}}."
     ))
@@ -214,28 +214,28 @@ prep_counts_daily_effort <- function(
   }
 
   if (!is.numeric(correction_factor_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must be numeric.",
       "x" = "Got class {.cls {class(correction_factor_vals)[1]}}."
     ))
   }
 
   if (length(correction_factor_vals) != nrow(data)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must be length 1 or match the number of rows in {.arg data}.",
       "x" = "Got length {length(correction_factor_vals)} for {nrow(data)} row(s)."
     ))
   }
 
   if (any(!is.finite(correction_factor_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must contain finite values.",
       "x" = "Found {sum(!is.finite(correction_factor_vals))} non-finite value(s)."
     ))
   }
 
   if (any(correction_factor_vals <= 0)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must be strictly positive.",
       "x" = "Found {sum(correction_factor_vals <= 0)} non-positive value(s)."
     ))
@@ -394,7 +394,7 @@ prep_counts_boat_party <- function(
 
   date_col <- names(tidyselect::eval_select(date_quo, data))
   if (length(date_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg date} must select exactly one column.",
       "x" = "Selected {length(date_col)} columns."
     ))
@@ -408,7 +408,7 @@ prep_counts_boat_party <- function(
 
   boat_count_col <- names(tidyselect::eval_select(boat_count_quo, data))
   if (length(boat_count_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg boat_count} must select exactly one column.",
       "x" = "Selected {length(boat_count_col)} columns."
     ))
@@ -416,7 +416,7 @@ prep_counts_boat_party <- function(
 
   mean_party_size_col <- names(tidyselect::eval_select(mean_party_size_quo, data))
   if (length(mean_party_size_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg mean_party_size} must select exactly one column.",
       "x" = "Selected {length(mean_party_size_col)} columns."
     ))
@@ -428,7 +428,7 @@ prep_counts_boat_party <- function(
     names(tidyselect::eval_select(psu_quo, data))
   }
   if (length(psu_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg psu} must select exactly one column when supplied.",
       "x" = "Selected {length(psu_col)} columns."
     ))
@@ -450,7 +450,7 @@ prep_counts_boat_party <- function(
 
   date_vals <- data[[date_col]]
   if (!inherits(date_vals, "Date")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {date_col}} must be a {.cls Date} column.",
       "x" = "Got class {.cls {class(date_vals)[1]}}."
     ))
@@ -458,19 +458,19 @@ prep_counts_boat_party <- function(
 
   boat_count_vals <- data[[boat_count_col]]
   if (!is.numeric(boat_count_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {boat_count_col}} must be numeric.",
       "x" = "Got class {.cls {class(boat_count_vals)[1]}}."
     ))
   }
   if (any(!is.finite(boat_count_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {boat_count_col}} must contain finite values.",
       "x" = "Found {sum(!is.finite(boat_count_vals))} non-finite value(s)."
     ))
   }
   if (any(boat_count_vals < 0)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {boat_count_col}} must be non-negative.",
       "x" = "Found {sum(boat_count_vals < 0)} negative value(s)."
     ))
@@ -478,19 +478,19 @@ prep_counts_boat_party <- function(
 
   mean_party_size_vals <- data[[mean_party_size_col]]
   if (!is.numeric(mean_party_size_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {mean_party_size_col}} must be numeric.",
       "x" = "Got class {.cls {class(mean_party_size_vals)[1]}}."
     ))
   }
   if (any(!is.finite(mean_party_size_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {mean_party_size_col}} must contain finite values.",
       "x" = "Found {sum(!is.finite(mean_party_size_vals))} non-finite value(s)."
     ))
   }
   if (any(mean_party_size_vals <= 0)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {mean_party_size_col}} must be strictly positive.",
       "x" = "Found {sum(mean_party_size_vals <= 0)} non-positive value(s)."
     ))
@@ -501,25 +501,25 @@ prep_counts_boat_party <- function(
     correction_factor_vals <- rep(correction_factor_vals, nrow(data))
   }
   if (!is.numeric(correction_factor_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must be numeric.",
       "x" = "Got class {.cls {class(correction_factor_vals)[1]}}."
     ))
   }
   if (length(correction_factor_vals) != nrow(data)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must be length 1 or match the number of rows in {.arg data}.",
       "x" = "Got length {length(correction_factor_vals)} for {nrow(data)} row(s)."
     ))
   }
   if (any(!is.finite(correction_factor_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must contain finite values.",
       "x" = "Found {sum(!is.finite(correction_factor_vals))} non-finite value(s)."
     ))
   }
   if (any(correction_factor_vals <= 0)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg correction_factor} must be strictly positive.",
       "x" = "Found {sum(correction_factor_vals <= 0)} non-positive value(s)."
     ))
@@ -536,13 +536,13 @@ prep_counts_boat_party <- function(
       se_vals <- rep(se_vals, nrow(data))
     }
     if (!is.numeric(se_vals)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg mean_party_size_se} must be numeric.",
         "x" = "Got class {.cls {class(se_vals)[1]}}."
       ))
     }
     if (length(se_vals) != nrow(data)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg mean_party_size_se} must be length 1 or match the number of rows in {.arg data}.",
         "x" = "Got length {length(se_vals)} for {nrow(data)} row(s)."
       ))
@@ -551,7 +551,7 @@ prep_counts_boat_party <- function(
     # not be estimated gives an unknown component, not a smaller one. Negative
     # is not a standard error.
     if (any(se_vals < 0, na.rm = TRUE)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg mean_party_size_se} must not be negative.",
         "x" = "Found {sum(se_vals < 0, na.rm = TRUE)} negative value(s)."
       ))
@@ -564,13 +564,13 @@ prep_counts_boat_party <- function(
     effort_type_vals <- rep(effort_type_vals, nrow(data))
   }
   if (length(effort_type_vals) != nrow(data)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg effort_type} must be length 1 or match the number of rows in {.arg data}.",
       "x" = "Got length {length(effort_type_vals)} for {nrow(data)} row(s)."
     ))
   }
   if (!(is.character(effort_type_vals) || is.factor(effort_type_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg effort_type} must evaluate to character or factor values.",
       "x" = "Got class {.cls {class(effort_type_vals)[1]}}."
     ))
@@ -581,13 +581,13 @@ prep_counts_boat_party <- function(
     source_method_vals <- rep(source_method_vals, nrow(data))
   }
   if (length(source_method_vals) != nrow(data)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg source_method} must be length 1 or match the number of rows in {.arg data}.",
       "x" = "Got length {length(source_method_vals)} for {nrow(data)} row(s)."
     ))
   }
   if (!(is.character(source_method_vals) || is.factor(source_method_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg source_method} must evaluate to character or factor values.",
       "x" = "Got class {.cls {class(source_method_vals)[1]}}."
     ))
@@ -679,7 +679,7 @@ validate_within_day_inputs <- function(
   }
 
   if (is.null(n_counts_col)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg within_day_var} requires {.arg n_counts}.",
         "x" = "The within-day variance component needs the number of counts per \\
@@ -696,7 +696,7 @@ validate_within_day_inputs <- function(
   k_vals <- data[[n_counts_col]]
 
   if (!is.numeric(ss_vals)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg within_day_var} must be numeric.",
         "x" = "Column {.val {within_day_var_col}} is {.cls {class(ss_vals)[1]}}."
@@ -705,7 +705,7 @@ validate_within_day_inputs <- function(
     )
   }
   if (!is.numeric(k_vals)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg n_counts} must be numeric.",
         "x" = "Column {.val {n_counts_col}} is {.cls {class(k_vals)[1]}}."
@@ -716,7 +716,7 @@ validate_within_day_inputs <- function(
 
   bad_ss <- !is.na(ss_vals) & ss_vals < 0
   if (any(bad_ss)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg within_day_var} must not be negative.",
         "x" = "Found {sum(bad_ss)} negative value{?s} in {.val {within_day_var_col}}.",
@@ -728,7 +728,7 @@ validate_within_day_inputs <- function(
 
   bad_k <- !is.na(k_vals) & k_vals < 1
   if (any(bad_k)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg n_counts} must be at least 1.",
         "x" = "Found {sum(bad_k)} value{?s} below 1 in {.val {n_counts_col}}."
@@ -741,7 +741,7 @@ validate_within_day_inputs <- function(
   # be zero. A non-zero value means the two columns describe different things.
   single <- !is.na(k_vals) & k_vals == 1 & !is.na(ss_vals) & ss_vals != 0
   if (any(single)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg within_day_var} is non-zero where {.arg n_counts} is 1.",
         "x" = "Found {sum(single)} such row{?s}.",
@@ -770,7 +770,7 @@ prep_counts_section_col <- function(section_quo, data, strata_cols) {
   }
   section_col <- names(tidyselect::eval_select(section_quo, data))
   if (length(section_col) != 1L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg section} must select exactly one column.",
       "x" = "Selected {length(section_col)} columns."
     ))
@@ -781,7 +781,7 @@ prep_counts_section_col <- function(section_quo, data, strata_cols) {
   )
   # prep_counts_boat_party() writes the expansion_* carriers after this column.
   if (section_col %in% reserved || startsWith(section_col, "expansion_")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg section} column {.field {section_col}} clashes with an output column.",
       "i" = "Rename it before preparing the counts."
     ))

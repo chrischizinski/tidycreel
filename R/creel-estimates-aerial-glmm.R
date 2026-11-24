@@ -226,7 +226,7 @@ estimate_effort_aerial_glmm <- function(
 
   # 2. Guard: design_type must be "aerial"
   if (!identical(design$design_type, "aerial")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.fn estimate_effort_aerial_glmm} requires an aerial survey design.",
       "x" = "Found {.field design_type} = {.val {design$design_type}}.",
       "i" = "Use {.fn estimate_effort} for {.val {design$design_type}} surveys."
@@ -243,7 +243,7 @@ estimate_effort_aerial_glmm <- function(
     rlang::as_name(time_col_quo)
   }
   if (is.null(time_col_name)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg time_col} is required: the design has no {.arg count_time_col}.",
       "i" = "Name the column holding each flight's hour."
     ))
@@ -259,7 +259,7 @@ estimate_effort_aerial_glmm <- function(
   } else if (identical(time_col_name, design$count_time_col) && !is.null(design$within_day_counts)) {
     glmm_flight_counts(design, time_col_name)
   } else {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Column {.field {time_col_name}} not found in {.code design$counts}.",
       "i" = "Available columns: {.field {names(design$counts)}}",
       "i" = if (!is.null(design$count_time_col)) {
@@ -270,7 +270,7 @@ estimate_effort_aerial_glmm <- function(
   # A diurnal curve needs hours. Checked here so both routes -- the per-flight
   # table and a time column kept in design$counts -- refuse the same way.
   if (!is.numeric(counts_data[[time_col_name]])) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.field {time_col_name}} must be numeric hours to fit the diurnal curve.",
         "x" = "It holds {.cls {class(counts_data[[time_col_name]])[1]}} values, e.g. {.val {utils::head(unique(counts_data[[time_col_name]]), 3)}}."
@@ -300,7 +300,7 @@ estimate_effort_aerial_glmm <- function(
     # costs nothing and no fitting failure can mask it. bootMer can return a
     # vector statistic, so this is a gap rather than an impossibility.
     if (isTRUE(boot)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Grouped estimation does not support the bootstrap.",
           "x" = "Got {.code by} together with {.code boot = TRUE}.",
@@ -375,7 +375,7 @@ estimate_effort_aerial_glmm <- function(
       character(0)
     }
     if (length(missing_terms) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg formula} must contain every {.arg by} column as a fixed effect.",
           "x" = "Not in the fixed effects: {.field {missing_terms}}.",
@@ -503,7 +503,7 @@ estimate_effort_aerial_glmm <- function(
   vc <- as.data.frame(lme4::VarCorr(model))
   intercept_rows <- is.na(vc$var2) & vc$var1 == "(Intercept)"
   if (nrow(vc) != 1L || !all(intercept_rows)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Expanding to a total needs a single random intercept.",
         "x" = "The fitted model has {nrow(vc)} random-effect term{?s}.",
@@ -686,7 +686,7 @@ estimate_effort_aerial_glmm <- function(
       # report a narrower SE than the supplied uncertainty implies.
       bad_draws <- sum(v_draws <= 0 | v_draws > 1)
       if (bad_draws > 0.001 * length(v_draws)) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "{.arg visibility_se} is too large for a normal approximation on the bootstrap path.",
             "x" = paste0(
@@ -711,7 +711,7 @@ estimate_effort_aerial_glmm <- function(
       a_draws <- stats::rnorm(length(boot_t), mean = a, sd = se_a)
       bad_a <- sum(a_draws <= 0 | a_draws > 1)
       if (bad_a > 0.001 * length(a_draws)) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "{.arg angler_ratio_se} is too large for a normal approximation on the bootstrap path.",
             "x" = "{bad_a} of {length(a_draws)} draws of the angler-to-people ratio fell outside (0, 1].",

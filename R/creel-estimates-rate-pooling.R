@@ -67,7 +67,7 @@ rate_strata_pooling <- function(design, svy, y, x, by_vars, call = rlang::caller
 
   missing_E <- setdiff(names(D), names(E))
   if (length(missing_E) > 0L || anyNA(E[names(D)])) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A rate pooled across strata is weighted by each stratum's effort, \\
          and some interviewed strata have none.",
@@ -141,7 +141,7 @@ pooling_by_call <- function(strata, by_vars) {
 #' @noRd
 pooling_effort <- function(design, strata, by_call, call) {
   if (is.null(design$counts)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A rate pooled across strata needs each stratum's effort, and this design has no counts.",
         "x" = "Pooling interviews alone weights each stratum by how heavily it was interviewed, \\
@@ -165,7 +165,7 @@ pooling_effort <- function(design, strata, by_call, call) {
   effort <- tryCatch(
     estimate_effort(effort_design, by = dplyr::all_of(strata)), # nolint: object_usage_linter
     error = function(e) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "A rate pooled across strata is weighted by each stratum's effort, \\
            which could not be estimated.",
@@ -192,7 +192,7 @@ refuse_unrated_strata <- function(E, rated, by_call, call) {
   unseen <- setdiff(names(E), rated)
   unseen <- unseen[is.na(E[unseen]) | E[unseen] > 0]
   if (length(unseen) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A rate pooled across strata needs a rate in every stratum that was fished.",
         "x" = "Effort but no usable interviews in: {.val {unseen}}.",
@@ -328,7 +328,7 @@ regression_pooled_total <- function(design, strata, conf_level, force_origin, va
   eff <- design$interviews[[design$angler_effort_col]]
   n_valid <- sum(is.na(eff) | eff != 0)
   if (n_valid < 3L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Regression CPUE requires at least 3 interviews.",
       "x" = "Only {n_valid} valid interview{?s} available after filtering."
     ), call = call)
@@ -344,7 +344,7 @@ regression_pooled_total <- function(design, strata, conf_level, force_origin, va
   key <- group_key(per, strata) # nolint: object_usage_linter
   refuse_unrated_strata(pe$E, key, by_call, call)
   if (anyNA(pe$E[key])) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A rate pooled across strata is weighted by each stratum's effort, \\
          and some strata's effort is unknown.",
@@ -380,7 +380,7 @@ regression_pooled_total <- function(design, strata, conf_level, force_origin, va
 #' @keywords internal
 #' @noRd
 refuse_pooled_grouped_regression <- function(strata, by_vars, call) {
-  cli::cli_abort(
+  creel_abort(
     c(
       "A regression catch rate grouped by {.field {by_vars}} cannot be pooled across strata.",
       "x" = "Across strata each stratum's slope is weighted by its effort, and a group \\
@@ -425,7 +425,7 @@ br_pooled_rate_survey <- function(interviews, design, by_vars, zero_cols, call =
   by_call <- pooling_by_call(strata, by_vars)
   sampled_col <- design$sampled_col
   if (is.null(sampled_col)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A bus-route rate pooled across strata needs the register of sampled days.",
         "x" = "Each stratum is weighted by its calendar days over its sampled days, and \\
@@ -447,7 +447,7 @@ br_pooled_rate_survey <- function(interviews, design, by_vars, zero_cols, call =
   pop <- dplyr::left_join(pop, smp, by = strata)
   if (anyNA(pop$.n_sampled)) {
     cells <- group_key(pop[is.na(pop$.n_sampled), , drop = FALSE], strata) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "A rate pooled across strata needs a rate in every stratum that was fished.",
         "x" = "No sampled day in: {.val {gsub('\u001f', ' / ', cells, fixed = TRUE)}}.",
@@ -482,7 +482,7 @@ br_pooled_rate_survey <- function(interviews, design, by_vars, zero_cols, call =
   rated <- unique(group_key(interviews[real, , drop = FALSE], strata)) # nolint: object_usage_linter
   unrated <- setdiff(interviewed, rated)
   if (length(unrated) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A rate pooled across strata needs a rate in every stratum that was fished.",
         "x" = "No trips of the kind used in: {.val {gsub('\u001f', ' / ', unrated, fixed = TRUE)}}.",

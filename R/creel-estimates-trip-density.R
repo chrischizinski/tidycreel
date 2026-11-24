@@ -28,7 +28,7 @@ effort_rows_weighted_var <- function(effort, se_E, w) {
   vc <- effort$strata_vcov
   if (!is.null(vc)) {
     if (!identical(dim(vc), c(k, k))) {
-      cli::cli_abort(
+      creel_abort(
         "Internal error: {.code strata_vcov} is not {k} x {k}.",
         .internal = TRUE
       )
@@ -51,7 +51,7 @@ effort_rows_weighted_var <- function(effort, se_E, w) {
 # it never did -- see finding 12c.
 require_effort_estimates <- function(effort, arg = "effort", call = rlang::caller_env()) {
   if (!inherits(effort, "creel_estimates")) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg {arg}} must be a {.cls creel_estimates} object from {.fn estimate_effort}.",
       call = call
     )
@@ -59,7 +59,7 @@ require_effort_estimates <- function(effort, arg = "effort", call = rlang::calle
 
   method <- effort$method %||% NA_character_
   if (!method %in% effort_family_methods()) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg {arg}} must hold effort, but carries {.val {method}}.",
         "x" = paste(
@@ -213,7 +213,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   # result also carries no target label, so a daily figure would read as a
   # total (GH #582).
   if (identical(effort$effort_target, "mean_day")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg effort} is effort on one average day ({.code target = \"mean_day\"}).",
         "x" = "Trips are a total over days, and summing daily values across groups has no meaning.",
@@ -224,7 +224,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   }
 
   if (is.null(design$trip_duration_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} has no {.code trip_duration_col}.",
       "i" = "Set it via {.code add_interviews(trip_duration = <col>)}."
     ))
@@ -236,7 +236,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   if (!is.null(effort$by_vars)) {
     missing_bv <- setdiff(effort$by_vars, names(design$interviews))
     if (length(missing_bv) > 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Grouping column(s) from {.arg effort} are absent from {.code design$interviews}.",
         "x" = "Missing: {.val {missing_bv}}"
       ))
@@ -268,7 +268,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     }
 
     if (L <= 0) {
-      cli::cli_abort(
+      creel_abort(
         "Mean trip length is zero or negative; check {.code {dur_col}} values."
       )
     }
@@ -337,7 +337,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
 
   # Guard against zero mean trip length
   if (any(summary_df$mean_L <= 0, na.rm = TRUE)) {
-    cli::cli_abort(
+    creel_abort(
       "Mean trip length is zero or negative in at least one stratum; check {.code {dur_col}} values."
     )
   }
@@ -351,7 +351,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
   in_interviews <- group_key(na_strata, effort$by_vars) %in% # nolint: object_usage_linter
     group_key(design$interviews, effort$by_vars) # nolint: object_usage_linter
   if (any(in_interviews)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Some groups have no complete trip with a usable {.code {dur_col}}.",
         "x" = "Groups: {.val {apply(na_strata[in_interviews, , drop = FALSE], 1, paste, collapse = ' / ')}}",
@@ -361,7 +361,7 @@ estimate_angler_trips <- function(effort, design, conf_level = 0.95, ...) {
     )
   }
   if (nrow(na_strata) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Stratum key mismatch: some effort rows did not match any interview group.",
       "x" = "Unmatched strata: {.val {apply(na_strata, 1, paste, collapse = ' / ')}}"
     ))
@@ -479,7 +479,7 @@ refuse_trips_pooled_across_strata <- function(effort, design, call = rlang::call
   if (!is.null(target) && !identical(target, "period_total")) {
     by_call <- paste0(by_call, ", target = \"", target, "\"")
   }
-  cli::cli_abort(
+  creel_abort(
     c(
       "Trips across strata need effort for each stratum.",
       "x" = "{.arg effort} is not grouped by {.field {missing}}, so season trips cannot \\
@@ -523,7 +523,7 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   by_vars <- effort$by_vars
 
   if (identical(design$interview_type, "roving")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Mean trip length cannot be estimated from roving interviews.",
         "x" = paste(
@@ -575,7 +575,7 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
     use <- use & !empty_site
   }
   if (!any(use)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "No complete trip has a usable {.code {dur_col}}.",
         "x" = "Mean trip length is estimated from complete trips only.",
@@ -594,7 +594,7 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   # all-missing column has one unique value and would read as constant, so
   # angler-hours would silently be divided by hours per party trip.
   if (per_angler && !is.null(party) && anyNA(party[use])) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(is.na(party[use]))} complete trip{?s} {?has/have} no party size.",
         "x" = "Hours per angler trip weight each trip by its party size.",
@@ -606,7 +606,7 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   }
   varies <- !is.null(party) && length(unique(party[use])) > 1L
   if (varies && is.na(unit)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The effort's unit is unknown, and party sizes vary.",
         "x" = paste(
@@ -631,7 +631,7 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   if (ht_weighted) {
     w <- iv$.expansion / iv$.pi_i
     if (anyNA(w[use])) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "A complete trip has no inclusion weight.",
           "x" = "Bus-route trip lengths are weighted by {.code .expansion / .pi_i}."
@@ -646,7 +646,7 @@ trip_length_estimates <- function(design, effort, call = rlang::caller_env()) {
   aligned <- !is.null(svy) && nrow(svy$variables) == nrow(iv) &&
     identical(svy$variables[[dur_col]], iv[[dur_col]])
   if (!aligned) {
-    cli::cli_abort(
+    creel_abort(
       "Internal error: the interview survey does not match the interviews.",
       .internal = TRUE
     )
@@ -758,7 +758,7 @@ estimate_effort_per_acre <- function(effort, acres, ...) {
   require_effort_estimates(effort)
 
   if (!is.numeric(acres) || length(acres) != 1 || acres <= 0) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg acres} must be a single positive number."
     )
   }

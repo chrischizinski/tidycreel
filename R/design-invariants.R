@@ -97,7 +97,7 @@ check_design_sections <- function(design, call) {
   }
   section_col <- design[["section_col"]]
   if (!is.character(section_col) || length(section_col) != 1L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The design has sections but no section column.",
         "x" = "{.field design$section_col} is missing, though {.code design$sections} is set.",
@@ -118,7 +118,7 @@ check_design_sections <- function(design, call) {
       next
     }
     if (!section_col %in% names(data)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The design has sections, but its {.field {table}} table has no section column.",
           "x" = "{.code design${table}} has no column {.val {section_col}}.",
@@ -133,7 +133,7 @@ check_design_sections <- function(design, call) {
     }
     unregistered <- setdiff(unique(data[[section_col]]), registered)
     if (length(unregistered) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The design's {.field {table}} table has a section it does not register.",
           "x" = "Not in {.code design$sections}: {.val {unregistered}}.",
@@ -164,7 +164,7 @@ check_table_columns <- function(design, table, fields, call) {
     }
     missing <- setdiff(cols, names(data))
     if (length(missing) > 0L) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "The design names a column its {.field {table}} table does not have.",
           "x" = paste(

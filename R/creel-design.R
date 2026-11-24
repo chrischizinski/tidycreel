@@ -130,7 +130,7 @@ resolve_n_anglers <- function(quo, data, call = rlang::caller_env()) {
     evaluated <- tryCatch(rlang::eval_tidy(quo), error = function(e) e)
     if (is.numeric(evaluated)) {
       if (length(evaluated) != 1L) {
-        cli::cli_abort(c(
+        creel_abort(c(
           "{.arg n_anglers} must be a column or a single number.",
           "x" = "Got a numeric vector of length {length(evaluated)}.",
           "i" = "A number is a party size for every interview, never a column position."
@@ -159,7 +159,7 @@ resolve_n_anglers <- function(quo, data, call = rlang::caller_env()) {
 validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
                                 allow_missing = TRUE) {
   if (!is.numeric(x)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg {arg_name}} must be numeric, not {.cls {class(x)[1]}}.",
         "i" = "Pass a bare column name, or a single number for a constant party size."
@@ -171,14 +171,14 @@ validate_party_size <- function(x, arg_name, call = rlang::caller_env(),
   missing_vals <- is.na(x)
   if (any(missing_vals) && !allow_missing) {
     # A column may legitimately have gaps; a stated constant may not.
-    cli::cli_abort(
+    creel_abort(
       "{.arg {arg_name}} must be a positive party size, not {.val {NA}}.",
       call = call
     )
   }
   invalid <- !missing_vals & (!is.finite(x) | x <= 0)
   if (any(invalid)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg {arg_name}} must be a positive party size.",
         "x" = "Found {sum(invalid)} value{?s} that {?is/are} zero, negative, or non-finite.",
@@ -637,7 +637,7 @@ creel_design <- function(
 
   # --- Enum guard: reject unknown survey types ---
   if (!survey_type %in% VALID_SURVEY_TYPES) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg survey_type} {.val {survey_type}} is not recognized.",
         "x" = "Unknown survey type: {.val {survey_type}}.",
@@ -657,7 +657,7 @@ creel_design <- function(
   circuit_time_quo <- rlang::enquo(circuit_time)
   if (!identical(survey_type, "bus_route") &&
         (!rlang::quo_is_null(wait_quo) || !rlang::quo_is_null(circuit_time_quo))) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg wait_time} and {.arg circuit_time} apply only when {.arg survey_type} is {.val bus_route}.",
         "x" = "{.arg survey_type} is {.val {survey_type}}."
@@ -670,7 +670,7 @@ creel_design <- function(
   bus_route <- NULL
   if (identical(survey_type, "bus_route")) {
     if (is.null(sampling_frame) || !is.data.frame(sampling_frame)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg sampling_frame} must be a data frame when {.arg survey_type} is {.val bus_route}.",
           "i" = "Provide a data frame with site, probability, and optional circuit columns."
@@ -687,7 +687,7 @@ creel_design <- function(
     p_site_quo <- rlang::enquo(p_site)
     by_wait <- !rlang::quo_is_null(wait_quo) || !rlang::quo_is_null(circuit_time_quo)
     if (by_wait && !rlang::quo_is_null(p_site_quo)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Supply either {.arg p_site} or {.arg wait_time} and {.arg circuit_time}, not both.",
           "i" = "With {.arg wait_time} and {.arg circuit_time}, the site's weight is wait / circuit time."
@@ -696,7 +696,7 @@ creel_design <- function(
       )
     }
     if (by_wait && (rlang::quo_is_null(wait_quo) || rlang::quo_is_null(circuit_time_quo))) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg wait_time} and {.arg circuit_time} must be supplied together.",
           "i" = "The site's weight is wait / circuit time; one without the other has no weight."
@@ -705,7 +705,7 @@ creel_design <- function(
       )
     }
     if (!by_wait && rlang::quo_is_null(p_site_quo)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg p_site} is required when {.arg survey_type} is {.val bus_route}.",
           "i" = "Specify the column in {.arg sampling_frame} that holds site sampling probabilities.",
@@ -734,7 +734,7 @@ creel_design <- function(
     if (!rlang::quo_is_null(site_quo)) {
       site_frame_col <- resolve_single_col(site_quo, sampling_frame, "site", rlang::caller_env())
     } else {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg site} is required when {.arg survey_type} is {.val bus_route}.",
           "i" = "Specify the column in {.arg sampling_frame} that identifies sites."
@@ -757,7 +757,7 @@ creel_design <- function(
       p_period_col <- pp$col
       p_period_scalar <- pp$value
     } else {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg p_period} is required when {.arg survey_type} is {.val bus_route}.",
           "i" = "Supply a column name from {.arg sampling_frame} or a scalar numeric in (0, 1]."
@@ -820,7 +820,7 @@ creel_design <- function(
     # (a) Validate effort_type: required, must be one of the two valid values
     valid_ice_effort_types <- c("time_on_ice", "active_fishing_time")
     if (is.null(effort_type) || !effort_type %in% valid_ice_effort_types) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg effort_type} is required for {.val ice} survey designs.",
         "x" = if (is.null(effort_type)) {
           "No {.arg effort_type} supplied."
@@ -851,7 +851,7 @@ creel_design <- function(
         p_site_vals_ice <- sampling_frame[[p_site_col_ice]]
         bad <- which(abs(p_site_vals_ice - 1.0) > 1e-9) # nolint: object_usage_linter
         if (length(bad) > 0) {
-          cli::cli_abort(c(
+          creel_abort(c(
             "All {.field p_site} values must equal 1.0 for ice surveys (p_site is fixed at 1).",
             "x" = "{length(bad)} value{?s} not equal to 1.0 at row{?s} {bad}.",
             "i" = "Ice surveys assume all sites are sampled with certainty (p_site = 1.0)."
@@ -955,7 +955,7 @@ creel_design <- function(
   if (identical(survey_type, "camera")) {
     valid_camera_modes <- c("counter", "ingress_egress")
     if (is.null(camera_mode) || !camera_mode %in% valid_camera_modes) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg camera_mode} is required for {.val camera} survey designs.",
         "x" = if (is.null(camera_mode)) {
           "No {.arg camera_mode} supplied."
@@ -973,7 +973,7 @@ creel_design <- function(
   if (identical(survey_type, "aerial")) {
     # h_open validation: required positive numeric scalar
     if (is.null(h_open) || !is.numeric(h_open) || length(h_open) != 1L || h_open <= 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg h_open} is required for {.val aerial} survey designs.",
         "x" = if (is.null(h_open)) {
           "No {.arg h_open} supplied."
@@ -1043,7 +1043,7 @@ creel_design <- function(
       !is.null(open_start) &&
         (!is.numeric(open_start) || length(open_start) != 1L || open_start < 0)
     ) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg open_start} must be a single non-negative number (decimal hours).",
         "x" = "Supplied value {.val {open_start}} is invalid.",
         "i" = "Example: {.code open_start = 5.5} means fishing begins at 5:30 AM."
@@ -1130,7 +1130,7 @@ resolve_interview_register <- function(quo, calendar, survey_type, call) {
     return(NULL)
   }
   if (survey_type %in% c("bus_route", "ice")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg interview_sampled} does not apply to {.val {survey_type}} designs.",
         "i" = "Their interviews are the effort data, so interview days are the sampled \\
@@ -1144,7 +1144,7 @@ resolve_interview_register <- function(quo, calendar, survey_type, call) {
   # These names already mark the COUNT days (calendar_worked_rows()), so the
   # interview register would be read as the count register too.
   if (col %in% c("sampled", "p_period", "period_id")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg interview_sampled} cannot be the {.field {col}} column.",
         "x" = "{.field {col}} already marks the days counts were taken.",
@@ -1156,7 +1156,7 @@ resolve_interview_register <- function(quo, calendar, survey_type, call) {
   }
   x <- calendar[[col]]
   if (!is.logical(x) || anyNA(x)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg interview_sampled} must name a logical calendar column with no missing values.",
         "x" = "{.field {col}} is {.cls {class(x)[1]}}{if (anyNA(x)) ' with missing values' else ''}.",
@@ -1168,7 +1168,7 @@ resolve_interview_register <- function(quo, calendar, survey_type, call) {
     )
   }
   if (!any(x)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg interview_sampled} marks no calendar day as an interview day.",
       class = "creel_error_interview_register",
       call = call
@@ -1194,7 +1194,7 @@ resolve_sampled_register <- function(sampled_quo, calendar, survey_type, call) {
     return(NULL)
   }
   if (!survey_type %in% c("bus_route", "ice")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg sampled} applies to bus-route and ice designs only.",
         "i" = "Other designs take their sampled days from the counts \\
@@ -1207,7 +1207,7 @@ resolve_sampled_register <- function(sampled_quo, calendar, survey_type, call) {
   col <- resolve_single_col(sampled_quo, calendar, "sampled", call)
   x <- calendar[[col]]
   if (!is.logical(x) || anyNA(x)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg sampled} must name a logical calendar column with no missing values.",
         "x" = "{.field {col}} is {.cls {class(x)[1]}}{if (anyNA(x)) ' with missing values' else ''}.",
@@ -1219,7 +1219,7 @@ resolve_sampled_register <- function(sampled_quo, calendar, survey_type, call) {
     )
   }
   if (!any(x)) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg sampled} marks no calendar day as sampled.",
       class = "creel_error_sampled_register",
       call = call
@@ -1251,7 +1251,7 @@ check_sections_registered <- function(data, sections, section_col, what, hint) {
   valid_sections <- sections[[section_col]]
   bad_vals <- setdiff(unique(data[[section_col]]), valid_sections)
   if (length(bad_vals) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{what} contains {length(bad_vals)} unregistered section value{?s}.",
       "x" = "{length(bad_vals)} unknown section{?s}: {.val {bad_vals}}.",
       "i" = "Registered sections: {.val {valid_sections}}.",
@@ -1338,7 +1338,7 @@ validate_creel_design <- function(x) {
 
   # Tier 1: Date column is actually Date class
   if (!inherits(cal[[x$date_col]], "Date")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Column {.var {x$date_col}} must be of class {.cls Date}.",
       "x" = "Column {.var {x$date_col}} is {.cls {class(cal[[x$date_col]])[1]}}.",
       "i" = "Convert with {.code as.Date()}."
@@ -1347,7 +1347,7 @@ validate_creel_design <- function(x) {
 
   # Tier 1: Date column has no NA values
   if (anyNA(cal[[x$date_col]])) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Column {.var {x$date_col}} must not contain {.val NA} values.",
         "i" = "Remove or impute missing dates before creating a design."
@@ -1359,7 +1359,7 @@ validate_creel_design <- function(x) {
   # Tier 1: Strata columns exist and are character/factor
   for (col in x$strata_cols) {
     if (!is.character(cal[[col]]) && !is.factor(cal[[col]])) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Strata column {.var {col}} must be character or factor.",
         "x" = "Column {.var {col}} is {.cls {class(cal[[col]])[1]}}."
       ))
@@ -1375,7 +1375,7 @@ validate_creel_design <- function(x) {
     na_days <- unique(cal[[x$date_col]][Reduce(`|`, lapply(na_strata, function(col) is.na(cal[[col]])))])
     n_na <- length(na_days) # nolint: object_usage_linter
     shown <- format(utils::head(sort(na_days), 5)) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "Every calendar day must have a known stratum.",
         "x" = "{n_na} calendar {cli::qty(n_na)}day{?s} {?has/have} a missing value in \\
@@ -1390,7 +1390,7 @@ validate_creel_design <- function(x) {
   # Tier 1: Site column (if provided) is character/factor
   if (!is.null(x$site_col)) {
     if (!is.character(cal[[x$site_col]]) && !is.factor(cal[[x$site_col]])) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Site column {.var {x$site_col}} must be character or factor.",
         "x" = "Column {.var {x$site_col}} is {.cls {class(cal[[x$site_col]])[1]}}."
       ))
@@ -1414,7 +1414,7 @@ validate_creel_design <- function(x) {
         vals <- br[[col]]
         if (!is.numeric(vals) || any(is.na(vals) | vals <= 0)) {
           bad <- if (is.numeric(vals)) which(is.na(vals) | vals <= 0) else seq_along(vals) # nolint: object_usage_linter
-          cli::cli_abort(
+          creel_abort(
             c(
               "{.field {col}} must hold positive numbers.",
               "x" = "{length(bad)} value{?s} not a positive number at row{?s} {bad}.",
@@ -1428,7 +1428,7 @@ validate_creel_design <- function(x) {
         circ_rows <- br[[circuit_col]] == circ
         ct <- br[[circuit_time_col]][circ_rows]
         if (max(ct) - min(ct) > 1e-10) {
-          cli::cli_abort(
+          creel_abort(
             c(
               "{.field {circuit_time_col}} must be constant within each circuit.",
               "x" = "Circuit {.val {circ}} has circuit times {.val {unique(ct)}}.",
@@ -1439,7 +1439,7 @@ validate_creel_design <- function(x) {
         }
         total_wait <- sum(br[[wait_time_col]][circ_rows])
         if (total_wait > ct[[1]] * (1 + 1e-6)) {
-          cli::cli_abort(
+          creel_abort(
             c(
               "The waits in a circuit cannot add up to more than its circuit time.",
               "x" = "Circuit {.val {circ}}: total wait {total_wait}, circuit time {ct[[1]]}.",
@@ -1455,7 +1455,7 @@ validate_creel_design <- function(x) {
     p_site_vals <- br[[p_site_col]]
     if (any(is.na(p_site_vals)) || any(p_site_vals <= 0) || any(p_site_vals > 1)) {
       bad <- which(is.na(p_site_vals) | p_site_vals <= 0 | p_site_vals > 1) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "All {.field p_site} values must be in the range (0, 1].",
           "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
@@ -1469,7 +1469,7 @@ validate_creel_design <- function(x) {
     p_period_vals <- br[[p_period_col]]
     if (any(is.na(p_period_vals)) || any(p_period_vals <= 0) || any(p_period_vals > 1)) {
       bad <- which(is.na(p_period_vals) | p_period_vals <= 0 | p_period_vals > 1) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "All {.field p_period} values must be in the range (0, 1].",
           "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
@@ -1487,7 +1487,7 @@ validate_creel_design <- function(x) {
       circ_rows <- br[[circuit_col]] == circ
       circ_sum <- sum(br[[p_site_col]][circ_rows])
       if (abs(circ_sum - 1.0) > 1e-6) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "{.field p_site} values must sum to 1.0 within each circuit.",
             "x" = "Circuit {.val {circ}}: sum = {round(circ_sum, 8)} (tolerance 1e-6).",
@@ -1506,7 +1506,7 @@ validate_creel_design <- function(x) {
       if (circ_range > 1e-10) {
         p_min <- round(min(circ_p_period), 8) # nolint: object_usage_linter
         p_max <- round(max(circ_p_period), 8) # nolint: object_usage_linter
-        cli::cli_abort(
+        creel_abort(
           c(
             "p_period must be constant within each circuit.",
             "x" = "Circuit {.val {circ}} has differing {.field p_period} values (min={p_min}, max={p_max}).",
@@ -1522,7 +1522,7 @@ validate_creel_design <- function(x) {
     pi_i_vals <- br[[pi_i_col]]
     if (any(is.na(pi_i_vals)) || any(pi_i_vals <= 0) || any(pi_i_vals > 1)) {
       bad <- which(is.na(pi_i_vals) | pi_i_vals <= 0 | pi_i_vals > 1) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "Computed inclusion probabilities ({.field .pi_i}) must be in the range (0, 1].",
           "x" = "{length(bad)} value{?s} out of range at row{?s} {bad}.",
@@ -1581,7 +1581,7 @@ refuse_nonsyntactic_names <- function(x, arg, call = rlang::caller_env()) {
   # UTF-8, say) makes make.names() itself fail; say what happened instead.
   undecodable <- !validEnc(nms)
   if (any(undecodable)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg {arg}} has {cli::qty(sum(undecodable))}{?a column name/column names} that {?is/are} not valid text in this locale's encoding.",
         "i" = "Re-read the file with its encoding declared, for example \\
@@ -1601,7 +1601,7 @@ refuse_nonsyntactic_names <- function(x, arg, call = rlang::caller_env()) {
   bad <- nms[is_bad]
   shown <- ifelse(bad == "", "<empty>", bad) # nolint: object_usage_linter
   suggested <- repaired[is_bad] # nolint: object_usage_linter
-  cli::cli_abort(
+  creel_abort(
     c(
       "{.arg {arg}} has {cli::qty(length(bad))}{?a column name/column names} that {?is/are} not {?a/} syntactic R name{?s}: {.val {shown}}.",
       "x" = "tidycreel builds model formulas from column names, and such a name does not parse in one.",
@@ -1682,7 +1682,7 @@ abort_unmatched_uid <- function(unmatched, ids, arg, col, what, call = rlang::ca
   n <- length(unmatched)
   shown <- utils::head(unmatched, 5L)
   per_row <- length(ids) > 1L && !anyDuplicated(ids)
-  cli::cli_abort(
+  creel_abort(
     c(
       "{n} interview ID{?s} in {what} data not found in design interviews:",
       # Each id referenced by index, never pasted into the template: an id
@@ -1715,7 +1715,7 @@ resolve_single_col <- function(expr, data, arg_name, error_call = rlang::caller_
     error_call = error_call
   )
   if (length(loc) != 1) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg {arg_name}} must select exactly one column, not {length(loc)}.",
       call = error_call
     )
@@ -1795,7 +1795,7 @@ resolve_count_col <- function(
 
   if (!is.null(count_col)) {
     if (!count_col %in% names(counts)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Count column {.field {count_col}} not found in count data.",
           "i" = "Available columns: {.field {names(counts)}}"
@@ -1804,7 +1804,7 @@ resolve_count_col <- function(
       )
     }
     if (!count_col %in% numeric_cols) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Count column {.field {count_col}} must be numeric.",
           "x" = "{.field {count_col}} is {.cls {class(counts[[count_col]])[1]}}."
@@ -1818,7 +1818,7 @@ resolve_count_col <- function(
   candidates <- setdiff(numeric_cols, excluded)
 
   if (length(candidates) == 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "No count variable found in count data.",
         "x" = "Count data must have at least one numeric column.",
@@ -1830,7 +1830,7 @@ resolve_count_col <- function(
   }
 
   if (length(candidates) > 1L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Cannot tell which column holds the angler counts.",
         "x" = "{length(candidates)} numeric columns are candidates: {.field {candidates}}.",
@@ -1878,7 +1878,7 @@ read_supplied_within_day_var <- function(
   }
 
   if (!has_k) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "A {.field within_day_var} column requires an {.field n_counts} column.",
         "x" = "The within-day variance component needs the per-PSU count as well \\
@@ -1892,7 +1892,7 @@ read_supplied_within_day_var <- function(
 
   # Two sources for one component would double-count it.
   if (!is.null(count_time_col_name)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Within-day variance supplied twice.",
         "x" = "{.arg count_time_col} computes it from the raw counts, and the \\
@@ -1906,7 +1906,7 @@ read_supplied_within_day_var <- function(
 
   missing_keys <- setdiff(key_cols, names(counts))
   if (length(missing_keys) > 0) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Cannot key the supplied within-day variance.",
         "x" = "Column{?s} {.val {missing_keys}} {?is/are} not in the counts table."
@@ -1927,7 +1927,7 @@ read_supplied_within_day_var <- function(
   bad_ss <- which(is.na(counts[["within_day_var"]]))
   bad_k <- which(is.na(counts[["n_counts"]]))
   if (length(bad_ss) > 0L || length(bad_k) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Supplied within-day variance has missing values.",
         # Only the columns that actually carry an NA are named. Reporting both
@@ -2045,7 +2045,7 @@ check_expansion_constant_per_psu <- function(counts, key_cols, call = rlang::cal
     n_distinct <- tapply(counts[[col]], key, function(x) length(unique(x)))
     if (any(n_distinct > 1L, na.rm = TRUE)) {
       bad <- names(n_distinct)[!is.na(n_distinct) & n_distinct > 1L] # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.field {col}} varies within a single PSU.",
           "x" = "{length(bad)} PSU{?s} carr{?ies/y} more than one value.",
@@ -2076,7 +2076,7 @@ resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class,
     tryCatch(
       resolve_single_col(p_period_quo, table, "p_period", call),
       error = function(e) {
-        cli::cli_abort(
+        creel_abort(
           "{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1].",
           class = error_class, call = call, parent = e
         )
@@ -2100,7 +2100,7 @@ resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class,
   if (is.numeric(evaluated)) {
     # Any number, of any length, is a probability and never a position.
     if (length(evaluated) != 1L) {
-      cli::cli_abort(
+      creel_abort(
         c("{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1].",
           "x" = "Got a numeric vector of length {length(evaluated)}."),
         class = error_class, call = call
@@ -2111,7 +2111,7 @@ resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class,
   if (is.character(evaluated) && length(evaluated) == 1L) {
     # A variable holding a column name.
     if (is.null(table) || !evaluated %in% names(table)) {
-      cli::cli_abort(
+      creel_abort(
         c("{.arg p_period} must be a column of {.arg {table_arg}} or a single number in (0, 1].",
           "x" = "{.val {evaluated}} is not a column of {.arg {table_arg}}."),
         class = error_class, call = call
@@ -2125,7 +2125,7 @@ resolve_p_period_source <- function(p_period_quo, table, table_arg, error_class,
     # Never reached by a number, so a number is never a column position.
     return(list(col = select_col(), value = NULL))
   }
-  cli::cli_abort(
+  creel_abort(
     c(if (is.null(table)) {
       "{.arg p_period} must be a single number in (0, 1] when there is no {.arg {table_arg}}."
     } else {
@@ -2146,7 +2146,7 @@ resolve_frame_p_period <- function(p_period_quo, frame, call) {
   value <- src$value
   vals <- if (is.null(col)) value else frame[[col]]
   if (!is.numeric(vals) || any(is.na(vals) | vals <= 0 | vals > 1)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg p_period} must be in (0, 1].",
         "x" = if (is.null(col)) "Got {.val {value}}." else "Column {.field {col}} has values outside (0, 1].",
@@ -2188,7 +2188,7 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
                                    period_vals, call))
   }
   if (identical(design$design_type, "bus_route")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg p_period} cannot be given to {.fn add_counts} on a bus-route design.",
         "i" = "A bus-route design declares {.arg p_period} in {.fn creel_design}."
@@ -2198,7 +2198,7 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
     )
   }
   if (identical(design$design_type, "aerial")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg p_period} cannot be used with an aerial design.",
         "i" = "An aerial design expands by {.field h_open}, not a period length."
@@ -2208,7 +2208,7 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
     )
   }
   if (is.null(period_length_col_name)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg p_period} needs {.arg period_length_col}.",
         "x" = "Daily effort is the mean count x the period length / {.arg p_period}; \\
@@ -2238,7 +2238,7 @@ resolve_count_p_period <- function(p_period_quo, counts, design, period_length_c
 
   bad <- !is.numeric(vals) | is.na(vals) | !is.finite(vals) | vals <= 0 | vals > 1
   if (any(bad)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg p_period} must be in (0, 1] for every count.",
         "x" = "{sum(bad)} count{?s} {?has/have} a missing or out-of-range probability.",
@@ -2274,7 +2274,7 @@ p_period_checks <- function(vals, col, counts, design, period_length_col_name, c
   # shift window to be caught (#426).
   long <- counts[[period_length_col_name]] > 24
   if (any(long, na.rm = TRUE)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.field {period_length_col_name}} is longer than 24 hours on {sum(long, na.rm = TRUE)} \\
          count{?s}, with {.arg p_period} supplied.",
@@ -2296,7 +2296,7 @@ p_period_checks <- function(vals, col, counts, design, period_length_col_name, c
     n_p <- tapply(vals, interaction(counts[day_cols], drop = TRUE, sep = "\u001f"),
                   function(v) length(unique(v)))
     if (any(n_p > 1L)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg p_period} varies within {sum(n_p > 1L)} sampled day{?s}.",
           "x" = "The counts on one day come from one drawn period, so they share its probability.",
@@ -2384,7 +2384,7 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
   p_cal <- cal$p_period
   bad_p <- !is.numeric(p_cal) | !is.finite(p_cal) | p_cal <= 0 | p_cal > 1
   if (any(bad_p)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The schedule's {.field p_period} must be in (0, 1] on every worked shift.",
         "x" = "{sum(bad_p)} worked row{?s} {?has/have} an out-of-range probability."
@@ -2413,7 +2413,7 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
   n_p <- tapply(cal$p_period, day, function(v) length(unique(v)))
   if (any(n_p > 1L)) {
     bad <- names(n_p)[n_p > 1L] # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "The schedule gives more than one {.field p_period} on {length(bad)} day{?s}: {.val {bad}}.",
         "x" = "The counts on one day are expanded by one probability, the chance that \\
@@ -2444,7 +2444,7 @@ schedule_shift_lookup <- function(design, counts, call = rlang::caller_env()) {
     crosses <- !is.na(start) & !is.na(end) & end <= start
     if (any(crosses)) {
       bad <- unique(day[crosses]) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "The schedule has a shift that crosses midnight on {length(bad)} day{?s}: {.val {bad}}.",
           "x" = "Shifts that end at or before they start cross midnight, and this design's \\
@@ -2501,7 +2501,7 @@ interview_day_calendar <- function(design, key_cols, call = rlang::caller_env())
   varying <- names(constant)[!constant]
   bad_strata <- intersect(design$strata_cols, varying)
   if (length(bad_strata) > 0L) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "The calendar gives more than one value of {.field {bad_strata}} for the same \\
          {.field {key_cols}}, and the interviews do not say which.",
@@ -2551,7 +2551,7 @@ check_records_against_calendar <- function(records, design, date_col, what,
   outside <- known & !rec_date %in% cal_date
   if (any(outside)) {
     bad <- unique(rec_date[outside]) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(outside)} {what} {cli::qty(sum(outside))}row{?s} {?is/are} dated outside the \\
          design calendar: \\
@@ -2574,7 +2574,7 @@ check_records_against_calendar <- function(records, design, date_col, what,
     unworked <- known & !rec_date %in% worked
     if (any(unworked)) {
       bad <- unique(rec_date[unworked]) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{sum(unworked)} {what} {cli::qty(sum(unworked))}row{?s} {?is/are} dated on a day \\
            the calendar's {.field {sampled_col}} column marks as not sampled: \\
@@ -2616,7 +2616,7 @@ check_records_against_calendar <- function(records, design, date_col, what,
     }, character(1))
     # Labels are data: braces in them would be read as cli markup.
     lines <- gsub("}", "}}", gsub("{", "{{", lines, fixed = TRUE), fixed = TRUE)
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(mismatch)} {what} {cli::qty(sum(mismatch))}row{?s} {?has/have} a stratum \\
          the calendar does not give {?its/their} date.",
@@ -2647,7 +2647,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
 
   if (anyNA(vals)) {
     bad <- unique(count_day[is.na(vals)]) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "Counts on {length(bad)} day{?s} the schedule did not sample: {.val {bad}}.",
         "x" = "The schedule declares shift sampling, but gives no shift or {.field p_period} \\
@@ -2663,7 +2663,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
     differ <- abs(as.numeric(user_vals) - vals) > 1e-8
     if (any(differ)) {
       bad <- unique(count_day[differ]) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg p_period} disagrees with the schedule on {length(bad)} day{?s}: {.val {bad}}.",
           "x" = "The schedule in the design calendar already gives each day's \\
@@ -2680,7 +2680,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
     if (all(vals == 1)) {
       return(NULL)
     }
-    cli::cli_abort(
+    creel_abort(
       c(
         "The schedule samples shifts, so {.fn add_counts} needs {.arg period_length_col}.",
         "x" = "Daily effort is the mean count x the period length / {.field p_period}; \\
@@ -2703,7 +2703,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
       twice <- off & vals < 1 & abs(period_vals - window / vals) <= 0.01
       bad <- unique(count_day[off]) # nolint: object_usage_linter
       if (any(twice)) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "{.field {period_length_col_name}} is the shift window / {.field p_period} \\
              on {length(bad)} day{?s}: {.val {bad}}.",
@@ -2716,7 +2716,7 @@ apply_schedule_p_period <- function(sched, user_vals, counts, design, period_len
         )
       }
       first <- which(off)[1] # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.field {period_length_col_name}} disagrees with the schedule's shift window \\
            on {length(bad)} day{?s}: {.val {bad}}.",
@@ -3034,7 +3034,7 @@ add_counts <- function(
   step_counts <- counts
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -3043,7 +3043,7 @@ add_counts <- function(
 
   # Check counts not already attached
   if (!is.null(design$counts)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Counts already attached to design.",
       "x" = "The design object already has count data in the {.field $counts} slot.",
       "i" = "Create a new design with {.fn creel_design} to attach different counts.",
@@ -3078,7 +3078,7 @@ add_counts <- function(
   count_calendar_dates <- NULL
   if (!is.null(design$night)) {
     if (!identical(psu, design$date_col)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "On a night design the PSU must be the survey day ({.field {design$date_col}}).",
           "x" = "{.arg psu} is {.field {psu}}, which the mapping to nights does not move."
@@ -3087,7 +3087,7 @@ add_counts <- function(
       )
     }
     if (counts_from_prep_seam) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "Prepared daily effort cannot be added to a night design.",
           "x" = "Its days were formed before the counts were mapped to nights."
@@ -3120,7 +3120,7 @@ add_counts <- function(
   # Validate count_type
   valid_count_types <- c("instantaneous", "progressive")
   if (!count_type %in% valid_count_types) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg count_type} must be {.or {.val {valid_count_types}}}.",
       "x" = "Got {.val {count_type}}."
     ))
@@ -3150,7 +3150,7 @@ add_counts <- function(
     counts[[period_length_col_name]]
   }
   if (!is.null(period_vals) && (any(!is.finite(period_vals)) || any(period_vals <= 0))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field {period_length_col_name}} must contain positive finite values (hours).",
       "x" = "Found {sum(period_vals <= 0 | !is.finite(period_vals))} non-positive or non-finite value(s)."
     ))
@@ -3164,7 +3164,7 @@ add_counts <- function(
   # than silently pick one — a caller who supplied both has a wrong model of
   # which term the estimator applies, and a silent choice would preserve it.
   if (!is.null(period_length_col_name) && identical(design$design_type, "aerial")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg period_length_col} cannot be used with an aerial design.",
         "x" = "{.field h_open} already supplies the period length, so time would apply twice.",
@@ -3203,21 +3203,21 @@ add_counts <- function(
   if (count_type == "progressive") {
     # Guard: circuit_time required (CNT-05)
     if (is.null(circuit_time)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg circuit_time} is required when {.code count_type = 'progressive'}.",
         "i" = "{.arg circuit_time} (\u03c4) is the time in hours to complete one circuit.",
         "i" = "Example: {.code add_counts(design, counts, count_type = 'progressive', circuit_time = 2, ...)}"
       ))
     }
     if (!is.numeric(circuit_time) || length(circuit_time) != 1L || circuit_time <= 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg circuit_time} must be a single positive number (hours).",
         "x" = "Got {.val {circuit_time}}."
       ))
     }
     # Guard: period_length_col required (CNT-05)
     if (is.null(period_length_col_name)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg period_length_col} is required when {.code count_type = 'progressive'}.",
         "i" = "{.arg period_length_col} identifies the column with shift duration T_d (hours).",
         "i" = "Example: add_counts(design, counts, count_type = 'progressive', circuit_time = 2, period_length_col = <col>)" # nolint: line_length_linter
@@ -3231,7 +3231,7 @@ add_counts <- function(
     # reach here is a hand-built schedule -- the case with no other guard in front of it.
     if (any(period_vals < circuit_time)) {
       n_short <- sum(period_vals < circuit_time) # nolint: object_usage_linter
-      cli::cli_abort(
+      creel_abort(
         c(
           "{n_short} day{?s} {?has/have} a shift shorter than {.arg circuit_time} ({circuit_time} hours).",
           "x" = "No full circuit fits the shift, so the count is not a progressive count of it.",
@@ -3318,7 +3318,7 @@ add_counts <- function(
     if (isTRUE(allow_invalid)) {
       creel_warn(msg, class = c("creel_warning_count_outside_shift", "creel_warning")) # nolint: object_usage_linter
     } else {
-      cli::cli_abort(
+      creel_abort(
         c(msg, "i" = "{.code allow_invalid = TRUE} attaches them with a warning."),
         class = c("creel_error_count_outside_shift", "creel_error_invalid_input")
       )
@@ -3347,14 +3347,14 @@ add_counts <- function(
   # then `effort_type` (#162).
   if (!is.null(unit_cols)) {
     if (!is.character(unit_cols) || length(unit_cols) == 0L || anyNA(unit_cols)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg unit_cols} must be a non-empty character vector of column names.",
         "x" = "Got {.cls {class(unit_cols)[1]}} of length {length(unit_cols)}."
       ))
     }
     missing_unit <- setdiff(unit_cols, names(counts)) # nolint: object_usage_linter
     if (length(missing_unit) > 0L) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg unit_cols} names {cli::qty(length(missing_unit))}{?a column/columns} \\
          not present in {.arg counts}.",
         "x" = "Missing: {.field {missing_unit}}.",
@@ -3364,7 +3364,7 @@ add_counts <- function(
     # A sampling unit lies inside a PSU, so its key must name the PSU. Without
     # it, the same site on two different days reads as one unit (GH #442).
     if (!psu %in% unit_cols) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg unit_cols} must include the PSU column {.field {psu}}.",
           "x" = "Got {.field {unit_cols}}: the same unit on two different days \\
@@ -3418,7 +3418,7 @@ add_counts <- function(
   # component silently goes missing (#132).
   if (length(present_carriers) > 0L && !has_expansion) {
     missing_carriers <- setdiff(expansion_carriers, present_carriers)
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg counts} carries an incomplete party-size expansion set.",
         "x" = "Present: {.field {present_carriers}}.",
@@ -3450,7 +3450,7 @@ add_counts <- function(
   if (has_expansion) {
     derived_for <- unique(as.character(counts[["expansion_of"]]))
     if (length(derived_for) != 1L || !identical(derived_for, count_col_name)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg counts} carries a party-size expansion derived for a different column.",
           "x" = "{.field expansion_basis} was derived for \\
@@ -3793,7 +3793,7 @@ add_sections <- function(
   step_sections <- sections
   # Guard: design must be creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -3802,7 +3802,7 @@ add_sections <- function(
 
   # Guard: sections not already registered (immutability)
   if (!is.null(design[["sections"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Sections already registered on this design.",
       "x" = "The design object already has sections in the {.field $sections} slot.",
       "i" = "Create a new design with {.fn creel_design} to register different sections.",
@@ -3815,7 +3815,7 @@ add_sections <- function(
   # totals estimated each section and summed their visibility and angler-ratio
   # terms as if independent, though one a and v scale every section (GH #470).
   if (identical(design$design_type, "aerial")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Sections are not supported on aerial designs.",
         "x" = "Aerial effort is estimated for the whole water body; no estimator \\
@@ -3832,7 +3832,7 @@ add_sections <- function(
   # estimate with no message: the user asked for sections and got lake totals.
   if (isTRUE(design$design_type %in% c("bus_route", "ice"))) {
     design_label <- if (identical(design$design_type, "ice")) "ice" else "bus-route" # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "Sections are not supported on {design_label} designs.",
         "x" = "The {design_label} estimators work by site; none splits the \\
@@ -3845,7 +3845,7 @@ add_sections <- function(
 
   # Guard: sections must be a data frame
   if (!is.data.frame(sections)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg sections} must be a data frame.",
       "x" = "{.arg sections} is {.cls {class(sections)[1]}}.",
       "i" = "Supply a data frame with one row per section."
@@ -3863,7 +3863,7 @@ add_sections <- function(
   # Validate section_col is character or factor
   sec_vals <- sections[[section_col_name]]
   if (!is.character(sec_vals) && !is.factor(sec_vals)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Section column {.field {section_col_name}} must be character or factor.",
       "x" = "Got {.cls {class(sec_vals)[1]}}."
     ))
@@ -3872,7 +3872,7 @@ add_sections <- function(
   # Validate no duplicate section names
   dupes <- unique(sec_vals[duplicated(sec_vals)])
   if (length(dupes) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Section names must be unique; found {length(dupes)} duplicate value{?s}.",
       "x" = "{length(dupes)} duplicate{?s}: {.val {dupes}}.",
       "i" = "Each section must appear exactly once in {.arg sections}."
@@ -3895,7 +3895,7 @@ add_sections <- function(
     col <- resolve_single_col(area_col_quo, sections, "area_col", rlang::caller_env())
     vals <- sections[[col]]
     if (!is.numeric(vals) || any(!is.finite(vals)) || any(vals <= 0)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.field {col}} must contain positive finite numeric values (ha).",
         "x" = "Found {sum(!is.finite(vals) | vals <= 0)} non-positive or non-finite value(s)."
       ))
@@ -3916,7 +3916,7 @@ add_sections <- function(
     )
     vals <- sections[[col]]
     if (!is.numeric(vals) || any(!is.finite(vals)) || any(vals <= 0)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.field {col}} must contain positive finite numeric values (km).",
         "x" = "Found {sum(!is.finite(vals) | vals <= 0)} non-positive or non-finite value(s)."
       ))
@@ -3926,7 +3926,7 @@ add_sections <- function(
 
   # The declaration changes a variance, so it must be a plain yes or no.
   if (!is.logical(shared_count_times) || length(shared_count_times) != 1L || is.na(shared_count_times)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg shared_count_times} must be {.code TRUE} or {.code FALSE}.",
       "x" = "Got {.obj_type_friendly {shared_count_times}}."
     ))
@@ -4249,7 +4249,7 @@ add_interviews <- function(
 
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -4258,7 +4258,7 @@ add_interviews <- function(
 
   # Check interviews not already attached
   if (!is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Interviews already attached to design.",
       "x" = "The design object already has interview data in the {.field $interviews} slot.",
       "i" = "Create a new design with {.fn creel_design} to attach different interviews.",
@@ -4483,7 +4483,7 @@ add_interviews <- function(
   # calendar. The calendar date is kept beside it.
   if (!is.null(design$night)) {
     if ("calendar_date" %in% names(interviews)) {
-      cli::cli_abort(
+      creel_abort(
         c(
           "{.arg interviews} already has a {.field calendar_date} column.",
           "i" = "On a night design it is written by {.fn add_interviews}; rename the existing one."
@@ -4518,7 +4518,7 @@ add_interviews <- function(
     # refusal tables.
     if (nrow(refused_rows) > 0L) {
       if (anyNA(refused_rows[[date_col]])) {
-        cli::cli_abort(
+        creel_abort(
           c(
             "{sum(is.na(refused_rows[[date_col]]))} refused interview{?s} {?has/have} no {.field {date_col}}.",
             "i" = "A refusal is counted by date in {.fn summarize_refusals}; record its date."
@@ -4692,7 +4692,7 @@ add_interviews <- function(
       if (any(unmatched)) {
         bad_rows <- interviews_joined[unmatched, c(site_col, circuit_col), drop = FALSE]
         bad_combos <- unique(paste0(bad_rows[[site_col]], " / ", bad_rows[[circuit_col]])) # nolint: object_usage_linter
-        cli::cli_abort(c(
+        creel_abort(c(
           "Interview site+circuit combinations not found in sampling frame:",
           stats::setNames(paste0("{.val ", bad_combos, "}"), rep("x", length(bad_combos))),
           "i" = "Check that interview site and circuit values match the sampling frame exactly.",
@@ -5230,7 +5230,7 @@ print.creel_design <- function(x, ...) {
 #' @export
 get_sampling_frame <- function(design) {
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg design} must be a {.cls creel_design} object.",
         "x" = "{.arg design} is {.cls {class(design)[1]}}.",
@@ -5240,7 +5240,7 @@ get_sampling_frame <- function(design) {
     )
   }
   if (is.null(design$bus_route)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.fn get_sampling_frame} is only available for bus-route designs.",
         "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
@@ -5304,7 +5304,7 @@ get_sampling_frame <- function(design) {
 #' @export
 get_inclusion_probs <- function(design) {
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg design} must be a {.cls creel_design} object.",
         "x" = "{.arg design} is {.cls {class(design)[1]}}.",
@@ -5314,7 +5314,7 @@ get_inclusion_probs <- function(design) {
     )
   }
   if (is.null(design$bus_route)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.fn get_inclusion_probs} is only available for bus-route designs.",
         "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
@@ -5394,14 +5394,14 @@ get_inclusion_probs <- function(design) {
 #' @export
 get_enumeration_counts <- function(design) {
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
     ))
   }
   if (is.null(design$bus_route)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.fn get_enumeration_counts} is only available for bus-route designs.",
       "x" = "This design has {.field design_type} = {.val {design$design_type}}.",
       "i" = "Create a bus-route design with {.code creel_design(..., survey_type = 'bus_route')}."
@@ -5409,14 +5409,14 @@ get_enumeration_counts <- function(design) {
   }
   if (is.null(design$interviews)) {
     hint_msg <- "Call {.fn add_interviews} with {.arg n_counted}" # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.fn get_enumeration_counts} requires interview data.",
       "x" = "No interviews found in design.",
       "i" = "{hint_msg} and {.arg n_interviewed} before accessing enumeration counts."
     ))
   }
   if (is.null(design$n_counted_col) || is.null(design$n_interviewed_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.fn get_enumeration_counts} requires enumeration columns.",
       "x" = "Interviews were attached without {.arg n_counted} or {.arg n_interviewed}.",
       "i" = "Re-attach interviews using {.fn add_interviews} with {.arg n_counted} and {.arg n_interviewed} specified."
@@ -5488,7 +5488,7 @@ summary.creel_design <- function(object, ...) {
 summarize_trips <- function(design) {
   # Validate design is creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg design} must be a {.cls creel_design} object.",
       "x" = "{.arg design} is {.cls {class(design)[1]}}.",
       "i" = "Create a design with {.fn creel_design}."
@@ -5497,7 +5497,7 @@ summarize_trips <- function(design) {
 
   # Validate interviews are attached
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No interviews found in design.",
       "x" = "The design object has no interview data.",
       "i" = "Attach interviews with {.fn add_interviews}."
@@ -5506,7 +5506,7 @@ summarize_trips <- function(design) {
 
   # Validate trip metadata exists
   if (is.null(design$trip_status_col)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "No trip metadata found.",
       "x" = "Did you provide {.arg trip_status} in {.fn add_interviews}?"
     ))
@@ -5673,7 +5673,7 @@ validate_br_interviews_tier3 <- function(interviews, design, n_counted_col, n_in
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages() # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "Bus-route interview validation failed (Tier 3):",
       stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
       "i" = "Bus-route designs require enumeration counts and join key columns."
@@ -5687,13 +5687,13 @@ validate_br_interviews_tier3 <- function(interviews, design, n_counted_col, n_in
 
     # Check both are numeric/integer
     if (!is.numeric(nc)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "n_counted column must be numeric.",
         "x" = "Column {.field {n_counted_col}} is {.cls {class(nc)[1]}}."
       ))
     }
     if (!is.numeric(ni)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "n_interviewed column must be numeric.",
         "x" = "Column {.field {n_interviewed_col}} is {.cls {class(ni)[1]}}."
       ))
@@ -5702,7 +5702,7 @@ validate_br_interviews_tier3 <- function(interviews, design, n_counted_col, n_in
     # Check no negative values
     n_neg_counted <- sum(nc < 0, na.rm = TRUE)
     if (n_neg_counted > 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "n_counted contains negative values.",
         "x" = "{n_neg_counted} row{?s} ha{?s/ve} n_counted < 0.",
         "i" = "Count of observed anglers must be non-negative."
@@ -5710,7 +5710,7 @@ validate_br_interviews_tier3 <- function(interviews, design, n_counted_col, n_in
     }
     n_neg_interviewed <- sum(ni < 0, na.rm = TRUE)
     if (n_neg_interviewed > 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "n_interviewed contains negative values.",
         "x" = "{n_neg_interviewed} row{?s} ha{?s/ve} n_interviewed < 0.",
         "i" = "Count of interviewed anglers must be non-negative."
@@ -5721,7 +5721,7 @@ validate_br_interviews_tier3 <- function(interviews, design, n_counted_col, n_in
     valid_rows <- !is.na(nc) & !is.na(ni)
     violations <- sum(nc[valid_rows] < ni[valid_rows])
     if (violations > 0) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "n_counted must be >= n_interviewed for all rows.",
         "x" = "{violations} row{?s} ha{?s/ve} n_counted < n_interviewed.",
         "i" = "Cannot interview more anglers than were counted at the site.",
@@ -5769,7 +5769,7 @@ validate_ice_interviews_tier3 <- function(n_counted_col, n_interviewed_col) {
 
   if (!collection$isEmpty()) {
     msgs <- collection$getMessages() # nolint: object_usage_linter
-    cli::cli_abort(c(
+    creel_abort(c(
       "Ice design interview validation failed (Tier 3):",
       stats::setNames(paste0("{.var ", msgs, "}"), rep("x", length(msgs))),
       "i" = "Ice designs require enumeration counts to compute the expansion factor."
@@ -5869,7 +5869,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   step_data <- data
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort(
+    creel_abort(
       "{.arg design} must be a {.cls creel_design} object."
     )
   }
@@ -5877,7 +5877,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   # Guard: immutability — catch already attached
   # Use [[ for exact matching (avoids partial match of $catch against $catch_col etc.)
   if (!is.null(design[["catch"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "This design already has catch data attached.",
       "i" = "Use immutable workflow: {.code design2 <- add_catch(design, data, ...)}"
     ))
@@ -5885,7 +5885,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
 
   # Guard: interviews must exist before catch
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Interviews must be attached before catch data.",
       "i" = "Call {.fn add_interviews} first, then {.fn add_catch}."
     ))
@@ -5931,7 +5931,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   valid_types <- c("caught", "harvested", "released")
   bad_types <- setdiff(unique(data[[catch_type_col]]), valid_types)
   if (length(bad_types) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.field catch_type} value{?s}: {.val {bad_types}}",
       "i" = "Accepted values: {.val {valid_types}}"
     ))
@@ -5964,7 +5964,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     bad_pairs <- unique(paste0( # nolint: object_usage_linter
       data[[catch_uid_col]][bad_counts], "/", data[[species_col]][bad_counts]
     ))
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.field {count_col}} has missing values.",
         "x" = "{.val {NA}} in {length(bad_counts)} catch row{?s}
@@ -5991,7 +5991,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
   bad_species <- which(is.na(data[[species_col]]))
   if (length(bad_species) > 0L) {
     bad_ids <- unique(data[[catch_uid_col]][bad_species]) # nolint: object_usage_linter
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.field {species_col}} has missing values.",
         "x" = "{.val {NA}} in {length(bad_species)} catch row{?s}
@@ -6059,7 +6059,7 @@ add_catch <- function(design, data, catch_uid, interview_uid, species, count, ca
     violations <- combined[combined$caught_total < combined$sub_total, ]
     if (nrow(violations) > 0) {
       bad_pairs <- paste0(violations$uid, "/", violations$species) # nolint: object_usage_linter
-      cli::cli_abort(c(
+      creel_abort(c(
         "Harvest + release exceeds catch for {nrow(violations)} species-interview pair{?s}:",
         stats::setNames(
           paste0("{.val ", bad_pairs, "}"),
@@ -6270,12 +6270,12 @@ add_lengths <- function(
   step_data <- data
   # Guard: must be a creel_design
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
+    creel_abort("{.arg design} must be a {.cls creel_design} object.")
   }
 
   # Guard: immutability — use [[ to avoid partial matching $lengths_uid_col etc.
   if (!is.null(design[["lengths"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "This design already has length data attached.",
       "i" = "Use immutable workflow: {.code design2 <- add_lengths(design, data, ...)}"
     ))
@@ -6283,7 +6283,7 @@ add_lengths <- function(
 
   # Guard: interviews must exist first
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Interviews must be attached before length data.",
       "i" = "Call {.fn add_interviews} before {.fn add_lengths}."
     ))
@@ -6292,7 +6292,7 @@ add_lengths <- function(
   # Validate release_format
   valid_formats <- c("individual", "binned")
   if (!release_format %in% valid_formats) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.arg release_format}: {.val {release_format}}",
       "i" = "Accepted values: {.val {valid_formats}}"
     ))
@@ -6307,7 +6307,7 @@ add_lengths <- function(
   unit_ok <- is.character(release_bin_unit) && base::length(release_bin_unit) == 1L &&
     release_bin_unit %in% valid_units
   if (!unit_ok) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.arg release_bin_unit}: {.val {release_bin_unit}}",
       "i" = "Accepted values: {.val {valid_units}}"
     ))
@@ -6316,13 +6316,13 @@ add_lengths <- function(
     (is.numeric(release_bin_width) && base::length(release_bin_width) == 1L &&
        is.finite(release_bin_width) && release_bin_width > 0)
   if (!width_ok) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg release_bin_width} must be a single finite positive number.",
       "x" = "Got {.val {release_bin_width}}."
     ))
   }
   if (release_format != "binned" && (release_bin_unit != "mm" || !is.null(release_bin_width))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg release_bin_unit} and {.arg release_bin_width} describe binned release lengths.",
       "x" = "{.arg release_format} is {.val {release_format}}.",
       "i" = "Use {.code release_format = \"binned\"}, or drop these arguments."
@@ -6383,7 +6383,7 @@ add_lengths <- function(
   valid_types <- c("harvest", "release")
   bad_types <- setdiff(unique(data[[type_col]]), valid_types)
   if (base::length(bad_types) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.field length_type} value{?s}: {.val {bad_types}}",
       "i" = "Accepted values: {.val {valid_types}}"
     ))
@@ -6411,13 +6411,13 @@ add_lengths <- function(
   if (nrow(harvest_rows) > 0) {
     harvest_lengths <- suppressWarnings(as.numeric(harvest_rows[[length_col]]))
     if (any(is.na(harvest_lengths))) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Harvest {.field length} values must be numeric (mm).",
         "i" = "Non-numeric or NA length found in harvest rows."
       ))
     }
     if (any(harvest_lengths <= 0)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Harvest {.field length} values must be positive.",
         "i" = "All harvest lengths must be > 0 mm."
       ))
@@ -6428,20 +6428,20 @@ add_lengths <- function(
   release_rows <- data[data[[type_col]] == "release", ]
   if (nrow(release_rows) > 0 && release_format == "binned") {
     if (is.null(count_col)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "{.arg count} is required when {.arg release_format} is {.val \"binned\"} and release rows are present.",
         "i" = "Supply the column containing per-bin fish counts."
       ))
     }
     release_counts <- release_rows[[count_col]]
     if (any(is.na(release_counts))) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Release {.field count} values must not be NA.",
         "i" = "Every release row must have a positive count; non-integer values warn."
       ))
     }
     if (any(as.numeric(release_counts) <= 0)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Release {.field count} values must be positive.",
         "i" = "All release row counts must be > 0."
       ))
@@ -6465,13 +6465,13 @@ add_lengths <- function(
   if (nrow(release_rows) > 0 && release_format == "individual") {
     release_lengths <- suppressWarnings(as.numeric(release_rows[[length_col]]))
     if (any(is.na(release_lengths))) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Release {.field length} values must be numeric when {.arg release_format} is {.val \"individual\"}.",
         "i" = "Non-numeric or NA length found in release rows."
       ))
     }
     if (any(release_lengths <= 0)) {
-      cli::cli_abort(c(
+      creel_abort(c(
         "Release {.field length} values must be positive when {.arg release_format} is {.val \"individual\"}.",
         "i" = "All release lengths must be > 0 mm."
       ))
@@ -6555,16 +6555,16 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
   step_supplied <- supplied_arg_names(match.call(), c("design", "data")) # nolint: object_usage_linter
   step_data <- data
   if (!inherits(design, "creel_design")) {
-    cli::cli_abort("{.arg design} must be a {.cls creel_design} object.")
+    creel_abort("{.arg design} must be a {.cls creel_design} object.")
   }
   if (!is.null(design[["ages"]])) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "This design already has age data attached.",
       "i" = "Use immutable workflow: {.code design2 <- add_ages(design, data, ...)}"
     ))
   }
   if (is.null(design$interviews)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Interviews must be attached before age data.",
       "i" = "Call {.fn add_interviews} before {.fn add_ages}."
     ))
@@ -6606,7 +6606,7 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
   valid_types <- c("harvest", "release")
   bad_types <- setdiff(unique(data[[type_col]]), valid_types)
   if (length(bad_types) > 0) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Invalid {.field age_type} value{?s}: {.val {bad_types}}",
       "i" = "Accepted values: {.val {valid_types}}"
     ))
@@ -6629,13 +6629,13 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
 
   age_vals <- suppressWarnings(as.numeric(data[[age_col]]))
   if (any(is.na(age_vals))) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field age} values must be numeric.",
       "i" = "Non-numeric or NA age found in age data."
     ))
   }
   if (any(age_vals < 0)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.field age} values must be non-negative.",
       "i" = "Negative age found in age data."
     ))
@@ -6703,7 +6703,7 @@ add_ages <- function(design, data, age_uid, interview_uid, species, age, age_typ
 #' @export
 preprocess_camera_timestamps <- function(timestamps, date_col, ingress_col, egress_col) {
   if (!is.data.frame(timestamps)) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "{.arg timestamps} must be a data frame.",
       "x" = "Got {.cls {class(timestamps)[1]}}."
     ))
@@ -6718,7 +6718,7 @@ preprocess_camera_timestamps <- function(timestamps, date_col, ingress_col, egre
     names(timestamps)
   )
   if (length(missing_cols) > 0L) {
-    cli::cli_abort(c(
+    creel_abort(c(
       "Required columns not found in {.arg timestamps}.",
       "x" = "Missing: {.field {missing_cols}}."
     ))
@@ -6819,7 +6819,7 @@ split_refused_interviews <- function(interviews, refused_col, design, call = rla
   }
   bad <- !is.na(raw) & is.na(flag)
   if (any(bad)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg refused} column {.field {refused_col}} holds values that are not TRUE/FALSE:
          {.val {unique(raw[bad])}}.",
@@ -6830,7 +6830,7 @@ split_refused_interviews <- function(interviews, refused_col, design, call = rla
     )
   }
   if (anyNA(flag)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{.arg refused} column {.field {refused_col}} is {.val {NA}} on {sum(is.na(flag))} interview{?s}.",
         "x" = "Whether these parties refused is unknown, so neither their catch nor their absence can be assumed.",
@@ -6842,7 +6842,7 @@ split_refused_interviews <- function(interviews, refused_col, design, call = rla
   }
   interviews[[refused_col]] <- flag
   if (any(flag) && !is.null(design$bus_route)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(flag)} interview{?s} {?is/are} marked refused on a {design$design_type} design.",
         "x" = "On a bus-route or ice design a refused party is counted but not interviewed,
@@ -6855,7 +6855,7 @@ split_refused_interviews <- function(interviews, refused_col, design, call = rla
     )
   }
   if (all(flag)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Every interview ({length(flag)}) is marked refused.",
         "i" = "A refused interview has unknown catch and effort, so nothing is left to estimate from."
@@ -6920,7 +6920,7 @@ drop_refused_records <- function(data, uid_col, design, interview_uid_col, what)
     drop <- drop | hit
   }
   if (length(drop) && all(drop)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "Every {what} row ({length(drop)}) belongs to an interview that was set aside.",
         "i" = "Refused interviews and interviews with no trip status are not used, so there is nothing to attach."
@@ -6947,7 +6947,7 @@ split_no_trip_status <- function(interviews, trip_status_col, design, call = rla
     return(list(kept = interviews, excluded = NULL))
   }
   if (!is.null(design$bus_route)) {
-    cli::cli_abort(
+    creel_abort(
       c(
         "{sum(none)} interview{?s} {?has/have} no trip status on a {design$design_type} design.",
         "x" = "On a bus-route or ice design an interview row may carry the site's count, so it
@@ -6960,7 +6960,7 @@ split_no_trip_status <- function(interviews, trip_status_col, design, call = rla
     )
   }
   if (all(none)) {
-    cli::cli_abort(
+    creel_abort(
       "Every interview ({length(none)}) has no trip status; nothing is left to estimate from.",
       class = "creel_error_all_no_trip_status",
       call = call
