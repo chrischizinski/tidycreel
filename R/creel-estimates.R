@@ -5965,8 +5965,10 @@ estimate_cpue_grouped <- function(
     # svymean uses simpler column names: cpue_ratio, se, ci_l, ci_u
     estimate <- svy_result[["cpue_ratio"]]
     se <- svy_result[["se"]]
-    ci_lower <- svy_result[["ci_l"]]
-    ci_upper <- svy_result[["ci_u"]]
+    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
+    ci <- svyby_normal_ci(estimate, se, conf_level)
+    ci_lower <- ci$lower
+    ci_upper <- ci$upper
   } else {
     # Ratio-of-means: use svyby with svyratio
     catch_formula <- stats::reformulate(catch_col)
@@ -5989,8 +5991,10 @@ estimate_cpue_grouped <- function(
     se_col <- paste0("se.", ratio_col)
     estimate <- svy_result[[ratio_col]]
     se <- svy_result[[se_col]]
-    ci_lower <- svy_result[["ci_l"]]
-    ci_upper <- svy_result[["ci_u"]]
+    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
+    ci <- svyby_normal_ci(estimate, se, conf_level)
+    ci_lower <- ci$lower
+    ci_upper <- ci$upper
   }
 
   # Per-group sample sizes, counted on the same key the estimates are reported
@@ -7010,8 +7014,10 @@ estimate_harvest_grouped <- function(
     # svymean uses simpler column names: hpue_ratio, se, ci_l, ci_u
     estimate <- svy_result[["hpue_ratio"]]
     se <- svy_result[["se"]]
-    ci_lower <- svy_result[["ci_l"]]
-    ci_upper <- svy_result[["ci_u"]]
+    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
+    ci <- svyby_normal_ci(estimate, se, conf_level)
+    ci_lower <- ci$lower
+    ci_upper <- ci$upper
   } else {
     harvest_formula <- stats::reformulate(harvest_col)
     effort_formula <- stats::reformulate(effort_col)
@@ -7034,8 +7040,10 @@ estimate_harvest_grouped <- function(
     se_col <- paste0("se.", ratio_col)
     estimate <- svy_result[[ratio_col]]
     se <- svy_result[[se_col]]
-    ci_lower <- svy_result[["ci_l"]]
-    ci_upper <- svy_result[["ci_u"]]
+    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
+    ci <- svyby_normal_ci(estimate, se, conf_level)
+    ci_lower <- ci$lower
+    ci_upper <- ci$upper
   }
 
   # Per-group sample sizes, counted on the same key the estimates are reported
@@ -7635,4 +7643,24 @@ estimate_release_rate_sections <- function(
     estimator = if (mortr_active) "mortr" else estimator,
     unit = rate_unit(design) # nolint: object_usage_linter
   )
+}
+
+#' Normal confidence bounds for `svyby()` rows at the requested level
+#'
+#' Internal (GH #703). `survey::svyby(vartype = "ci", ci.level = )` ignores
+#' `ci.level`: its `ci_l`/`ci_u` columns are always the 95% normal interval, so
+#' every grouped rate and bus-route path reported 95% bounds whatever
+#' `conf_level` the caller asked for, while the ungrouped paths, which call
+#' `confint(level = conf_level)`, honoured it. Built here from the rows' own
+#' estimates and standard errors on the same normal quantile `confint()` uses
+#' for an `svyby`/`svystat` object (df = Inf), so grouped and ungrouped agree.
+#'
+#' @param estimate,se Numeric vectors, one entry per `svyby()` row.
+#' @param conf_level Confidence level.
+#' @return List with `lower` and `upper`.
+#' @keywords internal
+#' @noRd
+svyby_normal_ci <- function(estimate, se, conf_level) {
+  z <- stats::qnorm(1 - (1 - conf_level) / 2)
+  list(lower = estimate - z * se, upper = estimate + z * se)
 }
