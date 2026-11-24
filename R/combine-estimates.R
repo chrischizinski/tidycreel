@@ -115,7 +115,7 @@ combine_estimates <- function(...) {
   comps <- combine_se_components(parts, aligned)
   estimators <- unique(unlist(lapply(parts, `[[`, "estimator")))
 
-  new_creel_estimates( # nolint: object_usage_linter
+  result <- new_creel_estimates( # nolint: object_usage_linter
     estimates = out,
     method = paste0("combined-", quantity),
     variance_method = "sum-of-independent",
@@ -130,6 +130,10 @@ combine_estimates <- function(...) {
     ci_df = ci_df,
     provenance = union_provenance(parts)
   )
+  # No single design, but every part's: a later combination checks its rows
+  # against each of them, as it would against the parts themselves.
+  result$combined_designs <- unlist(lapply(parts, part_designs), recursive = FALSE)
+  result
 }
 
 
@@ -269,7 +273,14 @@ combine_rate_quantities <- function(q) grepl("-rate", q, fixed = TRUE)
 #' Which data a quantity is estimated from
 #' @keywords internal
 #' @noRd
-combine_data_used <- function(quantity) {
+combine_data_used <- function(quantity, parts) {
+  # Bus-route and ice effort is estimated from the interviews (Jones & Pollock
+  # 2012, Eq. 19.4), not from a counts table, so its shared data is there.
+  interview_effort <- any(vapply(
+    unlist(lapply(parts, part_designs), recursive = FALSE),
+    function(d) isTRUE(d$design_type %in% c("bus_route", "ice")), logical(1)
+  ))
+  if (quantity == "effort" && interview_effort) return(c("counts", "interviews"))
   if (quantity == "effort") return("counts")
   if (combine_rate_quantities(quantity)) return("interviews")
   c("counts", "interviews")
@@ -372,7 +383,7 @@ check_combinable <- function(parts, op, call = rlang::caller_env()) {
   }
 
   check_shared_provenance(parts, call)
-  check_shared_rows(parts, combine_data_used(quantity), call)
+  check_shared_rows(parts, combine_data_used(quantity, parts), call)
   quantity
 }
 
@@ -457,8 +468,8 @@ combine_row_ids <- function(df, cols) {
 #' @keywords internal
 #' @noRd
 check_shared_rows <- function(parts, tables, call) {
-  designs <- lapply(parts, `[[`, "design")
-  no_design <- which(vapply(designs, is.null, logical(1)))
+  designs <- lapply(parts, part_designs)
+  no_design <- which(vapply(designs, function(ds) any(vapply(ds, is.null, logical(1))), logical(1)))
   if (length(no_design) > 0L) {
     creel_abort( # nolint: object_usage_linter
       c(
@@ -471,41 +482,61 @@ check_shared_rows <- function(parts, tables, call) {
   for (tbl in tables) {
     for (i in seq_along(parts)[-length(parts)]) {
       for (j in (i + 1L):length(parts)) {
-        a <- designs[[i]][[tbl]]
-        b <- designs[[j]][[tbl]]
-        if (is.null(a) || is.null(b)) next
-        cols <- setdiff(intersect(names(a), names(b)), grep("^[.]", names(a), value = TRUE))
-        ra <- unique(combine_row_ids(a, cols))
-        rb <- unique(combine_row_ids(b, cols))
-        shared <- intersect(ra, rb)
-        if (length(shared) == 0L) next
-        if (all(ra %in% rb) || all(rb %in% ra)) {
-          creel_abort( # nolint: object_usage_linter
-            c(
-              "Parts {i} and {j} were estimated from the same {tbl}.",
-              "x" = paste(
-                "Every {sub('s$', '', tbl)} row of one part is in the other, so their errors",
-                "are correlated and summed variances would understate the SE."
-              ),
-              "i" = "Use each part's own {tbl}, or estimate both parts in one design."
-            ),
-            class = paste0("creel_error_combine_shared_", tbl), call = call
-          )
+        # A combined part brings every design it was built from.
+        for (da in designs[[i]]) {
+          for (db in designs[[j]]) {
+            check_shared_table(da[[tbl]], db[[tbl]], tbl, i, j, call)
+          }
         }
-        creel_warn( # nolint: object_usage_linter
-          c(
-            paste0("Parts {i} and {j} have {length(shared)} identical ", tbl, " row{?s}."),
-            "i" = paste(
-              "Coincidental matches are possible between independent surveys;",
-              "shared data would make the combined SE too small."
-            )
-          ),
-          class = c("creel_warning_combine_partial_overlap", "creel_warning")
-        )
       }
     }
   }
   invisible(NULL)
+}
+
+check_shared_table <- function(a, b, tbl, i, j, call) {
+  if (is.null(a) || is.null(b)) {
+    return(invisible(NULL))
+  }
+  cols <- setdiff(intersect(names(a), names(b)), grep("^[.]", names(a), value = TRUE))
+  ra <- unique(combine_row_ids(a, cols))
+  rb <- unique(combine_row_ids(b, cols))
+  shared <- intersect(ra, rb)
+  if (length(shared) == 0L) {
+    return(invisible(NULL))
+  }
+  if (all(ra %in% rb) || all(rb %in% ra)) {
+    creel_abort( # nolint: object_usage_linter
+      c(
+        "Parts {i} and {j} were estimated from the same {tbl}.",
+        "x" = paste(
+          "Every {sub('s$', '', tbl)} row of one part is in the other, so their errors",
+          "are correlated and summed variances would understate the SE."
+        ),
+        "i" = "Use each part's own {tbl}, or estimate both parts in one design."
+      ),
+      class = paste0("creel_error_combine_shared_", tbl), call = call
+    )
+  }
+  creel_warn( # nolint: object_usage_linter
+    c(
+      paste0("Parts {i} and {j} have {length(shared)} identical ", tbl, " row{?s}."),
+      "i" = paste(
+        "Coincidental matches are possible between independent surveys;",
+        "shared data would make the combined SE too small."
+      )
+    ),
+    class = c("creel_warning_combine_partial_overlap", "creel_warning")
+  )
+  invisible(NULL)
+}
+
+#' The designs behind a part: its own, or every design a combined part was
+#' built from. A part with neither yields `list(NULL)`, which is refused.
+#' @keywords internal
+#' @noRd
+part_designs <- function(p) {
+  p$combined_designs %||% list(p$design)
 }
 
 #' Align the parts' rows by group
@@ -575,7 +606,10 @@ satterthwaite_df <- function(v, df) {
   denom <- rowSums(terms)
   num <- rowSums(v)^2
   out <- num / denom
-  out[!is.na(denom) & denom == 0] <- Inf
+  # Every part known exactly: 0/0, but a sum with no variance needs no
+  # small-sample correction. Only when the variance is KNOWN to be zero -- an
+  # unknown variance stays unknown however its df terms came out.
+  out[!is.na(num) & num == 0] <- Inf
   out
 }
 

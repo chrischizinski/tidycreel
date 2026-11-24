@@ -93,6 +93,13 @@ test_that("an unknown estimate makes the sum unknown", {
   expect_true(is.na(combine_estimates(north(), b_na)$estimates$estimate)) # nolint: object_usage_linter
 })
 
+test_that("an unknown variance never gets a known df", {
+  # Unknown SE on a normal-interval part beside a zero-variance part: the df
+  # terms are all zero, but the variance is unknown, so the df is too.
+  expect_true(is.na(satterthwaite_df(cbind(NA_real_, 0), cbind(Inf, 4)))) # nolint: object_usage_linter
+  expect_identical(satterthwaite_df(cbind(0, 0), cbind(4, 4)), Inf) # nolint: object_usage_linter
+})
+
 test_that("parts with no variance at all give a normal (Inf df) reference", {
   zero <- function(x) {
     est <- x$estimates
@@ -275,6 +282,14 @@ test_that("the same counts behind both parts are refused", {
   expect_error(compare_estimates(a, a), class = "creel_error_combine_shared_counts") # nolint: object_usage_linter
 })
 
+test_that("bus-route effort on the same interviews is refused", {
+  # Bus-route effort comes from the interviews, not a counts table; checking
+  # counts only would pass two parts built on one set of interviews.
+  d <- build_br_design_for_tests(n_sites = 3, n_days = 6, n_interviews = 30, seed = 1) # nolint: object_usage_linter
+  e <- q(estimate_effort(d)) # nolint: object_usage_linter
+  expect_error(combine_estimates(e, e), class = "creel_error_combine_shared_interviews") # nolint: object_usage_linter
+})
+
 test_that("one pooled set of interviews behind two rates is refused", {
   # The most likely misuse of a comparison: the same interviews on both sides
   # give a difference of exactly 0 with a positive SE, which reads as "no
@@ -358,6 +373,20 @@ test_that("one aerial calibration component behind both parts is refused", {
   c_exact <- aerial(c(12, 8, 20, 25, 18, 21), 0, 0)
   a_exact <- aerial(c(22, 18, 30, 45, 38, 51), 0, 0)
   expect_s3_class(combine_estimates(a_exact, c_exact), "creel_estimates") # nolint: object_usage_linter
+})
+
+test_that("a combined estimate can be combined again, and is still checked", {
+  third <- q(estimate_effort(ce_design(c(7, 19, 5, 21, 8, 16)))) # nolint: object_usage_linter
+  ab <- combine_estimates(north(), south()) # nolint: object_usage_linter
+  abc <- combine_estimates(ab, third) # nolint: object_usage_linter
+  expect_equal(
+    abc$estimates$estimate,
+    north()$estimates$estimate + south()$estimates$estimate + third$estimates$estimate
+  )
+  expect_equal(abc$estimates$se, sqrt(north()$estimates$se^2 + south()$estimates$se^2 + third$estimates$se^2))
+  # The rows of the parts it was built from are still compared.
+  expect_error(combine_estimates(ab, south()), class = "creel_error_combine_shared_counts") # nolint: object_usage_linter
+  expect_s3_class(compare_estimates(ab, third), "tbl_df") # nolint: object_usage_linter
 })
 
 test_that("a part with no design cannot be checked and is refused", {
