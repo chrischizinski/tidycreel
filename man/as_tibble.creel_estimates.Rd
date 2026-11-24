@@ -76,6 +76,7 @@ as.data.frame(est, metadata = FALSE)
 Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
 \code{\link{check_completeness}()},
+\code{\link{check_interview_coverage}()},
 \code{\link{compare_variance}()},
 \code{\link{flag_outliers}()},
 \code{\link{season_summary}()},

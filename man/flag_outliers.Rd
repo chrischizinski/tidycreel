@@ -58,6 +58,7 @@ Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
 \code{\link{as_tibble.creel_estimates}()},
 \code{\link{check_completeness}()},
+\code{\link{check_interview_coverage}()},
 \code{\link{compare_variance}()},
 \code{\link{season_summary}()},
 \code{\link{standardize_species}()},

@@ -117,6 +117,7 @@ Bethesda, MD.
 Other "Reporting & Diagnostics":
 \code{\link{as_tibble.creel_estimates}()},
 \code{\link{check_completeness}()},
+\code{\link{check_interview_coverage}()},
 \code{\link{compare_variance}()},
 \code{\link{flag_outliers}()},
 \code{\link{season_summary}()},

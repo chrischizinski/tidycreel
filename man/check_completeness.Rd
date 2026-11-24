@@ -63,6 +63,7 @@ check_completeness(design, schedule = sched)
 Other "Reporting & Diagnostics":
 \code{\link{adjust_nonresponse}()},
 \code{\link{as_tibble.creel_estimates}()},
+\code{\link{check_interview_coverage}()},
 \code{\link{compare_variance}()},
 \code{\link{flag_outliers}()},
 \code{\link{season_summary}()},
