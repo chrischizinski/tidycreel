@@ -719,8 +719,12 @@ tost_joint_se_diff <- function(design, complete_result, incomplete_result, varia
           res$design$catch_col <- ".species_count"
         }
         keep <- as.character(res$estimates[[sp_col]]) == s
-        res$estimates <- res$estimates[keep, , drop = FALSE]
-        res
+        # Rows and their per-row df travel together (GH #585).
+        set_estimate_slots( # nolint: object_usage_linter
+          res,
+          estimates = res$estimates[keep, , drop = FALSE],
+          ci_df = res$ci_df[keep]
+        )
       }
       c_s <- one(complete_result)
       i_s <- one(incomplete_result)

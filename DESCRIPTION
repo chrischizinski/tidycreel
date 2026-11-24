@@ -28,7 +28,7 @@ Imports:
     generics,
     ggplot2,
     lifecycle,
-    rlang,
+    rlang (>= 0.4.10),
     stats,
     survey,
     tibble,

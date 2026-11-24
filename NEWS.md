@@ -734,6 +734,20 @@
   (#585). The rules themselves differ by estimator and are under review in
   #705.
 
+* Every estimate now records, in `x$provenance`, which shared estimated
+  components entered it: the party-size estimate that expanded its counts and
+  the aerial calibration (visibility correction, angler ratio) that divided
+  them. Each is `NULL` when none entered, or fingerprints of the estimate's
+  value and standard error when one did; the visibility correction and angler
+  ratio are fingerprinted separately, so sharing either one is visible. A
+  party size whose identity cannot be read is `NA`, never `NULL`.
+  `derive_angler_count()` and `prep_counts_boat_party()` write the
+  party-size fingerprint to a new `expansion_id` count column. Counts derived
+  without it still attach, and record the party size as unknown (`NA`), never
+  as "none". No estimate, interval or printed output changes. It is
+  groundwork for summing or differencing estimates from independent surveys,
+  which must refuse parts that share one of these estimates (#585).
+
 * `creel_design(interview_sampled = )` declares interview days drawn
   separately from count days (#628), as in aerial-access surveys that fly on
   some days and interview on others. Name a logical calendar column marking the

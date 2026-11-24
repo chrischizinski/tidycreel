@@ -650,12 +650,11 @@ rpue_for_stratum_product <- function(design, by_vars, variance_method, conf_leve
       covmat = covmat
     )
   }
-  result$method <- if (identical(design$total_estimator, "mor")) {
+  set_estimate_slots(result, method = if (identical(design$total_estimator, "mor")) { # nolint: object_usage_linter
     "mean-of-ratios-rpue"
   } else {
     "ratio-of-means-rpue"
-  }
-  result
+  })
 }
 
 #' @keywords internal

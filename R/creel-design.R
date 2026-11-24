@@ -3612,7 +3612,11 @@ add_counts <- function(
     list(
       basis_col = "expansion_basis",
       se_col = "expansion_se",
-      group_col = "expansion_group"
+      group_col = "expansion_group",
+      # Which party-size estimate the counts were expanded by (GH #585). NULL
+      # when the counts predate the column or it was dropped: the estimates then
+      # record that provenance as unknown, never as "no shared estimate".
+      id_col = if (expansion_id_col() %in% names(counts)) expansion_id_col() else NULL # nolint: object_usage_linter
     )
   } else {
     NULL
