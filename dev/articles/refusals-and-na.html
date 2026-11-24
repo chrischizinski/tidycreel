@@ -492,8 +492,14 @@ warning and unit <code>NA</code>, because the number may still be what
 you want if every party is one angler;
 <code><a href="../articles/unit-rules.html">vignette("unit-rules")</a></code> shows it.</p>
 <p>A refusal says what was wrong and, where there is a remedy, what to
-do. Many also carry a condition class beginning
-<code>creel_error_</code> (<code>creel_error_unsampled_cell</code>,
+do. Every refusal from tidycreel’s own checks carries the condition
+class <code>creel_error</code>, so code can catch them with
+<code>tryCatch(..., creel_error = ...)</code>. (A wrong argument type or
+value caught by <code>checkmate</code> or <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code>, a
+missing suggested package, or a column <code>tidyselect</code> cannot
+find raises that package’s error instead.) Many also carry a more
+specific class beginning <code>creel_error_</code>
+(<code>creel_error_unsampled_cell</code>,
 <code>creel_error_missing_rate_strata</code>,
 <code>creel_error_single_psu</code>, …), so that code can catch a
 particular refusal by name. Warnings, which return an estimate but say

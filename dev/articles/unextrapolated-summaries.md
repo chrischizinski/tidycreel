@@ -401,9 +401,9 @@ estimate_catch_rate(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass       0.298 0.0828   0.135     0.460    17
-#> 2 panfish    0.158 0.0734   0.0142    0.302    17
-#> 3 walleye    0.512 0.110    0.296     0.728    17
+#> 1 bass       0.233 0.0771   0.0819    0.384    17
+#> 2 panfish    0.165 0.0616   0.0442    0.286    17
+#> 3 walleye    0.583 0.143    0.303     0.864    17
 ```
 
 ### Total Catch by Species
@@ -472,9 +472,9 @@ estimate_release_rate(design, by = species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.140  0.0378  0.0655     0.214    17
-#> 2 panfish   0.0744 0.0350  0.00575    0.143    17
-#> 3 walleye   0.158  0.0521  0.0560     0.260    17
+#> 1 bass      0.117  0.0388   0.0411    0.193    17
+#> 2 panfish   0.0722 0.0271   0.0190    0.125    17
+#> 3 walleye   0.186  0.0722   0.0443    0.327    17
 estimate_total_release(design, by = species)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

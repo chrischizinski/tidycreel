@@ -110,7 +110,9 @@ Other "Estimation":
 ## Examples
 
 ``` r
+# Counts too: each estimator weights the day types by their effort.
 design <- creel_design(example_calendar, date = date, strata = day_type) |>
+  add_counts(example_counts) |>
   add_interviews(example_interviews,
     catch = catch_total, effort = hours_fished,
     trip_status = trip_status, n_anglers = n_anglers
@@ -123,6 +125,16 @@ compare_cpue_estimators(design)
 #> Warning: Small sample size for CPUE estimation.
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
+#> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
+#> Warning: Instantaneous counts were expanded without a period length.
+#> ℹ No `period_length_col` was supplied to `add_counts()`, so the estimate is the
+#>   count column summed over days.
+#> ! If that column holds an instantaneous angler count, the result is the anglers
+#>   present at the counted moments, not angler-hours: a count becomes effort only
+#>   when multiplied by its period length. The package cannot tell which unit the
+#>   column is in.
+#> ℹ Supply the period each count was randomised within: `add_counts(design,
+#>   counts, period_length_col = <col>)`.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=17, 77.3% of 22 interviews)
@@ -138,7 +150,7 @@ compare_cpue_estimators(design)
 #> # A tibble: 3 × 6
 #>   cpue_method estimate     se ci_lower ci_upper     n
 #> * <chr>          <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 rom            0.967 0.0966    0.778    1.16     17
-#> 2 mor            0.991 0.104     0.787    1.20     17
-#> 3 regression     0.804 0.0537    0.698    0.909    17
+#> 1 rom            0.981 0.120     0.745    1.22     17
+#> 2 mor            0.995 0.126     0.748    1.24     17
+#> 3 regression     0.810 0.0704    0.672    0.948    17
 ```

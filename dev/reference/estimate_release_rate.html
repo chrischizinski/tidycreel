@@ -283,9 +283,23 @@ a rate <code>by</code> the strata needs none. A stratum that was fished but has
 no interviews among the trips used (<code>use_trips</code>) has no rate, so the
 pooled rate is refused, naming it, rather than reported over the other
 strata as though it covered the season. Within one stratum nothing is
-pooled and nothing changes. Species-level, sectioned, regression and
-bus-route or ice rates are not yet effort-weighted across strata.</p>
-    </div>
+pooled and nothing changes.</p>
+<p>The same combination applies on every route:</p><ul><li><p><code>by = species</code>: each species' rate is weighted by the strata's
+effort, so the species rates sum to the all-species rate.</p></li>
+<li><p>Sectioned designs: each section's rate is weighted by that section's
+own effort in each stratum, from its own counts.</p></li>
+<li><p><code>estimator = "regression"</code>: each stratum's slope is estimated
+on its own and \(\hat{R} = \sum_h \hat{E}_h \hat{b}_h / \sum_h
+    \hat{E}_h\), with the variance of the slopes and of the effort. A
+regression grouped by a column that is not a stratum is refused (class
+<code>creel_error_regression_pooled_group</code>): such a group has no effort
+of its own to weight its slopes by.</p></li>
+<li><p>Bus-route and ice designs: each stratum's days are weighted by its
+calendar days over its sampled days, so the rate is the expanded catch
+over the expanded effort. The sampled days must include days nobody
+fished, so the design's register (<code>creel_design(sampled = )</code>) is
+required, and the call is refused without it.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="estimate_harvest_rate.html">estimate_harvest_rate</a></code> for harvest rate, <code><a href="add_catch.html">add_catch</a></code></p>
@@ -382,9 +396,9 @@ bus-route or ice rates are not yet effort-weighted across strata.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 6</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   species estimate     se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> bass       0.330 0.096<span style="text-decoration: underline;">5</span>   0.141     0.519    17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> panfish    0.176 0.077<span style="text-decoration: underline;">1</span>   0.024<span style="text-decoration: underline;">7</span>    0.327    17</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> walleye    0.374 0.101    0.175     0.572    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> bass       0.277 0.091<span style="text-decoration: underline;">9</span>   0.096<span style="text-decoration: underline;">7</span>    0.457    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> panfish    0.170 0.070<span style="text-decoration: underline;">1</span>   0.032<span style="text-decoration: underline;">9</span>    0.308    17</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> walleye    0.437 0.132    0.178     0.696    17</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -166,9 +166,9 @@ print(cpue_est$estimates)
 #> # A tibble: 3 × 7
 #>   section estimate     se ci_lower ci_upper     n data_available
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int> <lgl>         
-#> 1 North       1.06 0.0549    0.954     1.17     9 TRUE          
-#> 2 Central     1.51 0.0181    1.47      1.54     9 TRUE          
-#> 3 South       2.45 0.0273    2.40      2.50     9 TRUE
+#> 1 North       1.06 0.0572    0.950     1.17     9 TRUE          
+#> 2 Central     1.50 0.0181    1.47      1.54     9 TRUE          
+#> 3 South       2.45 0.0276    2.39      2.50     9 TRUE
 ```
 
 **Notice there is no `.lake_total` row.** Catch rate is a ratio

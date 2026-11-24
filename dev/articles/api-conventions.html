@@ -396,12 +396,16 @@ back to a different estimator silently.</p>
 <h2 id="messages">Messages<a class="anchor" aria-label="anchor" href="#messages"></a>
 </h2>
 <ul>
-<li>Errors, warnings and messages use cli
-(<code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_abort()</a></code>, <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_warn()</a></code>,
-<code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_inform()</a></code>), with the argument or column named in
+<li>Errors, warnings and messages use cli (<code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_warn()</a></code>,
+<code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_inform()</a></code>, and for errors the internal
+<code>creel_abort()</code>, which is <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_abort()</a></code> with
+the parent class added), with the argument or column named in
 <code>{.arg}</code> / <code>{.field}</code> markup.</li>
-<li>Errors a caller may want to catch carry a class from the
-<code>creel_error_*</code> family
+<li>Every error from the package’s own checks carries the parent class
+<code>creel_error</code>; argument checks delegated to
+<code>checkmate</code>, <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg()</a></code> or <code>rlang</code>
+raise those packages’ errors. Errors a caller may want to catch by name
+also carry a class from the <code>creel_error_*</code> family
 (<code>creel_error_invalid_input</code>,
 <code>creel_error_schema_validation</code>, …).</li>
 <li>Every warning carries a class,

@@ -217,8 +217,27 @@ stratum that was fished but has no interviews among the trips used
 (`use_trips`) has no rate, so the pooled rate is refused, naming it,
 rather than reported over the other strata as though it covered the
 season. Within one stratum nothing is pooled and nothing changes.
-Species-level, sectioned, regression and bus-route or ice rates are not
-yet effort-weighted across strata.
+
+The same combination applies on every route:
+
+- `by = species`: each species' rate is weighted by the strata's effort,
+  so the species rates sum to the all-species rate.
+
+- Sectioned designs: each section's rate is weighted by that section's
+  own effort in each stratum, from its own counts.
+
+- `estimator = "regression"`: each stratum's slope is estimated on its
+  own and \\\hat{R} = \sum_h \hat{E}\_h \hat{b}\_h / \sum_h
+  \hat{E}\_h\\, with the variance of the slopes and of the effort. A
+  regression grouped by a column that is not a stratum is refused (class
+  `creel_error_regression_pooled_group`): such a group has no effort of
+  its own to weight its slopes by.
+
+- Bus-route and ice designs: each stratum's days are weighted by its
+  calendar days over its sampled days, so the rate is the expanded catch
+  over the expanded effort. The sampled days must include days nobody
+  fished, so the design's register (`creel_design(sampled = )`) is
+  required, and the call is refused without it.
 
 ## See also
 
@@ -319,7 +338,7 @@ print(rpue_by_species)
 #> # A tibble: 3 × 6
 #>   species estimate     se ci_lower ci_upper     n
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass       0.330 0.0965   0.141     0.519    17
-#> 2 panfish    0.176 0.0771   0.0247    0.327    17
-#> 3 walleye    0.374 0.101    0.175     0.572    17
+#> 1 bass       0.277 0.0919   0.0967    0.457    17
+#> 2 panfish    0.170 0.0701   0.0329    0.308    17
+#> 3 walleye    0.437 0.132    0.178     0.696    17
 ```

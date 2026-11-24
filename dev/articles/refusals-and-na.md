@@ -353,11 +353,17 @@ party is one angler;
 shows it.
 
 A refusal says what was wrong and, where there is a remedy, what to do.
-Many also carry a condition class beginning `creel_error_`
-(`creel_error_unsampled_cell`, `creel_error_missing_rate_strata`,
-`creel_error_single_psu`, …), so that code can catch a particular
-refusal by name. Warnings, which return an estimate but say something
-about it, are listed in
+Every refusal from tidycreel’s own checks carries the condition class
+`creel_error`, so code can catch them with
+`tryCatch(..., creel_error = ...)`. (A wrong argument type or value
+caught by `checkmate` or
+[`match.arg()`](https://rdrr.io/r/base/match.arg.html), a missing
+suggested package, or a column `tidyselect` cannot find raises that
+package’s error instead.) Many also carry a more specific class
+beginning `creel_error_` (`creel_error_unsampled_cell`,
+`creel_error_missing_rate_strata`, `creel_error_single_psu`, …), so that
+code can catch a particular refusal by name. Warnings, which return an
+estimate but say something about it, are listed in
 [`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md).
 
 ## Why refuse rather than warn

@@ -177,13 +177,18 @@ estimator silently.
 ## Messages
 
 - Errors, warnings and messages use cli
-  ([`cli::cli_abort()`](https://cli.r-lib.org/reference/cli_abort.html),
-  [`cli::cli_warn()`](https://cli.r-lib.org/reference/cli_abort.html),
-  [`cli::cli_inform()`](https://cli.r-lib.org/reference/cli_abort.html)),
-  with the argument or column named in `{.arg}` / `{.field}` markup.
-- Errors a caller may want to catch carry a class from the
-  `creel_error_*` family (`creel_error_invalid_input`,
-  `creel_error_schema_validation`, …).
+  ([`cli::cli_warn()`](https://cli.r-lib.org/reference/cli_abort.html),
+  [`cli::cli_inform()`](https://cli.r-lib.org/reference/cli_abort.html),
+  and for errors the internal `creel_abort()`, which is
+  [`cli::cli_abort()`](https://cli.r-lib.org/reference/cli_abort.html)
+  with the parent class added), with the argument or column named in
+  `{.arg}` / `{.field}` markup.
+- Every error from the package’s own checks carries the parent class
+  `creel_error`; argument checks delegated to `checkmate`,
+  [`match.arg()`](https://rdrr.io/r/base/match.arg.html) or `rlang`
+  raise those packages’ errors. Errors a caller may want to catch by
+  name also carry a class from the `creel_error_*` family
+  (`creel_error_invalid_input`, `creel_error_schema_validation`, …).
 - Every warning carries a class, `creel_warning_<fact>`, and the parent
   `creel_warning`, so a caller can handle one warning for one call
   ([`?creel_warnings`](https://chrischizinski.com/tidycreel/dev/reference/creel_warnings.md)
