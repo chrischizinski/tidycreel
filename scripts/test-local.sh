@@ -47,7 +47,7 @@ fi
 # Run tests
 print_status "Running tests..."
 if docker run --rm -v $(pwd):/home/tidycreel tidycreel:test \
-    Rscript -e "devtools::test()"; then
+    Rscript -e "devtools::test(stop_on_failure = TRUE)"; then
     print_status "✅ Tests passed"
 else
     print_error "❌ Tests failed"
