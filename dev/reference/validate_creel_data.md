@@ -88,6 +88,7 @@ Other "Reporting & Diagnostics":
 [`adjust_nonresponse()`](https://chrischizinski.com/tidycreel/dev/reference/adjust_nonresponse.md),
 [`as_tibble.creel_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/as_tibble.creel_estimates.md),
 [`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md),
+[`check_interview_coverage()`](https://chrischizinski.com/tidycreel/dev/reference/check_interview_coverage.md),
 [`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md),
 [`flag_outliers()`](https://chrischizinski.com/tidycreel/dev/reference/flag_outliers.md),
 [`season_summary()`](https://chrischizinski.com/tidycreel/dev/reference/season_summary.md),

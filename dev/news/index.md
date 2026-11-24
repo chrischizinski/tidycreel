@@ -917,6 +917,23 @@
 
 ### New features
 
+- [`check_interview_coverage()`](https://chrischizinski.com/tidycreel/dev/reference/check_interview_coverage.md)
+  reports, stratum by stratum and in blocks of the day, whether the
+  interviews can represent the fishing the counts measured
+  ([\#709](https://github.com/chrischizinski/tidycreel/issues/709)). A
+  catch total multiplies counted effort by an interview rate; the
+  estimators already refuse a stratum with effort and no rate, but
+  nothing looked within a stratum, so morning-only interviews on a lake
+  with an evening bite passed every check. Its plan layer, given the
+  interview `periods` and the `fishing_hours`, marks the parts of the
+  fishing day no clerk could interview in – a gap no weighting repairs.
+  Its data layer compares the counted anglers in each block with the
+  hours interviewed trips fished there, and gives the share of counted
+  effort in blocks with no interviewed fishing. A block it cannot judge
+  (no count, or interviews without clock times) is reported as unknown,
+  never as covered. It is a report only: no estimate changes.
+  Instantaneous designs only.
+
 - Every refusal raised by tidycreel’s own checks now carries the
   condition class `creel_error`
   ([\#511](https://github.com/chrischizinski/tidycreel/issues/511)), as

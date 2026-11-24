@@ -629,6 +629,9 @@ check data completeness, and inspect estimate output.
   : Validate a proposed creel survey design against sample size targets
 - [`check_completeness()`](https://chrischizinski.com/tidycreel/dev/reference/check_completeness.md)
   : Check post-season data completeness for a creel design
+- [`check_interview_coverage()`](https://chrischizinski.com/tidycreel/dev/reference/check_interview_coverage.md)
+  : Check whether the interviews can represent the fishing the counts
+  measured
 - [`compare_variance()`](https://chrischizinski.com/tidycreel/dev/reference/compare_variance.md)
   : Compare Taylor linearization vs. replicate variance for creel
   estimates
