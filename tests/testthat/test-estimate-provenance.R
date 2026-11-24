@@ -249,6 +249,22 @@ test_that("a different calibration gives a different stamp", {
   expect_false(identical(base, other_se))
 })
 
+test_that("sharing either calibration component alone is visible", {
+  # One visibility study used by two designs whose angler ratios were
+  # estimated separately: the visibility error is common to both. A single
+  # hash over both components made them look independent.
+  shared_v_1 <- pv_aerial(v = 0.9, v_se = 0.05, a = 1, a_se = 0.02)
+  shared_v_2 <- pv_aerial(v = 0.9, v_se = 0.05, a = 0.95, a_se = 0.03)
+  p1 <- pv_aerial_estimates(shared_v_1)$effort$provenance$aerial_calibration
+  p2 <- pv_aerial_estimates(shared_v_2)$effort$provenance$aerial_calibration
+  expect_length(p1, 2L)
+  expect_length(intersect(p1, p2), 1L)
+
+  # And the mirror case: a shared angler ratio, separate visibility studies.
+  p3 <- pv_aerial_estimates(pv_aerial(v = 0.8, v_se = 0.04, a = 1, a_se = 0.02))$effort$provenance$aerial_calibration
+  expect_length(intersect(p1, p3), 1L)
+})
+
 test_that("an exact calibration records no aerial provenance; an unknown SE does", {
   # SEs of exactly 0 declare the calibration known: nothing to share.
   exact <- pv_aerial_estimates(pv_aerial(v_se = 0, a_se = 0))
@@ -272,6 +288,8 @@ pv_est <- function() pv_effort(pv_design(pv_derive()))
 test_that("a slot changed after construction is validated like one set at it", {
   x <- pv_est()
   expect_error(set_estimate_slots(x, aerial_calibration_rel_var = -1), "non-negative") # nolint: object_usage_linter
+  # One number added once after summing; a vector would recycle across rows.
+  expect_error(set_estimate_slots(x, aerial_calibration_rel_var = c(0.01, 0.02)), "one non-negative") # nolint: object_usage_linter
   expect_error(set_estimate_slots(x, ci_df = c(1, 2, 3)), "one value per row") # nolint: object_usage_linter
   expect_error(set_estimate_slots(x, method = 1), "method must be character") # nolint: object_usage_linter
   ok <- set_estimate_slots(x, aerial_calibration_rel_var = 0.01) # nolint: object_usage_linter
@@ -282,8 +300,8 @@ test_that("derived slots cannot be set after construction", {
   # se_expansion, its party_size mirror and provenance are derived from one
   # another at construction; setting one alone is how they would disagree.
   x <- pv_est()
-  expect_error(set_estimate_slots(x, se_expansion = 0), "can be set") # nolint: object_usage_linter
-  expect_error(set_estimate_slots(x, provenance = list()), "can be set") # nolint: object_usage_linter
+  expect_error(set_estimate_slots(x, se_expansion = 0), class = "creel_error_slot_not_settable") # nolint: object_usage_linter
+  expect_error(set_estimate_slots(x, provenance = list()), class = "creel_error_slot_not_settable") # nolint: object_usage_linter
   comps <- x$se_components
   comps$party_size <- 0
   expect_error(set_estimate_slots(x, se_components = comps), "mirror se_expansion") # nolint: object_usage_linter
@@ -293,6 +311,43 @@ test_that("setting a slot to NULL keeps the slot", {
   x <- set_estimate_slots(pv_est(), aerial_calibration_rel_var = NULL) # nolint: object_usage_linter
   expect_true("aerial_calibration_rel_var" %in% names(x))
   expect_null(x$aerial_calibration_rel_var)
+})
+
+governed_slot_writes <- function(r_dir, slot_write) {
+  offenders <- character()
+  for (f in list.files(r_dir, pattern = "[.]R$", full.names = TRUE)) {
+    data <- utils::getParseData(parse(f, keep.source = TRUE))
+    assign_ids <- unique(data$parent[data$token %in% c("LEFT_ASSIGN", "EQ_ASSIGN")])
+    for (id in assign_ids) {
+      kids <- data[data$parent == id & data$token != "COMMENT", ]
+      lhs <- kids[order(kids$line1, kids$col1), ][1, ]
+      if (lhs$token != "expr") next
+      lhs_text <- utils::getParseText(data, lhs$id)
+      if (grepl(slot_write, lhs_text)) {
+        offenders <- c(offenders, paste0(basename(f), ":", lhs$line1, ": ", lhs_text))
+      }
+    }
+  }
+  offenders
+}
+
+test_that("the slot-write guard sees every assignment form", {
+  # The guard below is only as good as its pattern. Each of these is a write
+  # the validator would never see.
+  dir <- withr::local_tempdir()
+  writeLines(c(
+    "f <- function(x) {",
+    "  x$ci_df <- 1",
+    "  x[[\"provenance\"]] <- NULL",
+    "  x$se_components = list()",
+    "  x$ci_df[2] <- 3",
+    "  x$se_components$within_day <- NULL",
+    "  x$design$ci_df_note <- 1",
+    "  x",
+    "}"
+  ), file.path(dir, "probe.R"))
+  hits <- governed_slot_writes(dir, "(\\$|\\[\\[\")(ci_df|provenance|se_components)\"?\\]?\\]?(\\[|\\$|$)")
+  expect_length(hits, 5L)
 })
 
 test_that("no code writes a governed slot except through the setter", {
@@ -308,21 +363,11 @@ test_that("no code writes a governed slot except through the setter", {
   )
   r_dir <- test_path("..", "..", "R")
   skip_if_not(dir.exists(r_dir), "package R/ sources not available")
-  offenders <- character()
-  for (f in list.files(r_dir, pattern = "[.]R$", full.names = TRUE)) {
-    exprs <- parse(f, keep.source = TRUE)
-    data <- utils::getParseData(exprs)
-    assign_ids <- data$parent[data$token %in% c("LEFT_ASSIGN", "EQ_ASSIGN") & data$text != "="]
-    for (id in unique(assign_ids)) {
-      kids <- data[data$parent == id & !data$token %in% c("COMMENT"), ]
-      lhs <- kids[order(kids$line1, kids$col1), ][1, ]
-      if (lhs$token != "expr") next
-      lhs_text <- utils::getParseText(data, lhs$id)
-      m <- regmatches(lhs_text, regexec("(\\$|\\[\\[\")([A-Za-z_.]+)\"?\\]?\\]?$", lhs_text))[[1]]
-      if (length(m) == 3L && m[[3]] %in% governed) {
-        offenders <- c(offenders, paste0(basename(f), ":", lhs$line1, ": ", lhs_text))
-      }
-    }
-  }
+  # Whole-slot and partial writes alike, `<-` and top-level `=`:
+  # `x$ci_df <-`, `x[["ci_df"]] =`, `x$ci_df[keep] <-`.
+  slot_write <- paste0(
+    "(\\$|\\[\\[\")(", paste(governed, collapse = "|"), ")\"?\\]?\\]?(\\[|\\$|$)"
+  )
+  offenders <- governed_slot_writes(r_dir, slot_write)
   expect_identical(offenders, character())
 })

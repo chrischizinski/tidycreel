@@ -737,9 +737,11 @@
 * Every estimate now records, in `x$provenance`, which shared estimated
   components entered it: the party-size estimate that expanded its counts and
   the aerial calibration (visibility correction, angler ratio) that divided
-  them. Each is `NULL` when none entered, a fingerprint of the estimate's
-  value and standard error when one did, or `NA` when one did and cannot be
-  identified. `derive_angler_count()` and the prep-counts pipeline write the
+  them. Each is `NULL` when none entered, or fingerprints of the estimate's
+  value and standard error when one did; the visibility correction and angler
+  ratio are fingerprinted separately, so sharing either one is visible. A
+  party size whose identity cannot be read is `NA`, never `NULL`.
+  `derive_angler_count()` and `prep_counts_boat_party()` write the
   party-size fingerprint to a new `expansion_id` count column. Counts derived
   without it still attach, and record the party size as unknown (`NA`), never
   as "none". No estimate, interval or printed output changes. It is

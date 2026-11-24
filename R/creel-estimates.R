@@ -471,7 +471,10 @@ validate_creel_estimates <- function(x) {
   rel_var <- x$aerial_calibration_rel_var
   # NA is a real value here (the declared-unknown calibration); only a
   # negative variance is impossible.
-  rel_var_ok <- is.null(rel_var) || (is.numeric(rel_var) && all(is.na(rel_var) | rel_var >= 0))
+  # One number, added once to each reported quantity after summing (GH #150);
+  # a vector would be recycled across rows.
+  rel_var_ok <- is.null(rel_var) ||
+    (is.numeric(rel_var) && length(rel_var) == 1L && (is.na(rel_var) || rel_var >= 0))
   prov_shape_ok <- is.list(prov) && setequal(names(prov), c("party_size", "aerial_calibration"))
   prov_entries_ok <- prov_shape_ok && prov_entry_ok(prov$party_size) &&
     prov_entry_ok(prov$aerial_calibration)
@@ -505,7 +508,7 @@ validate_creel_estimates <- function(x) {
     # Zero is allowed: a design with no residual df gives qt() NaN bounds today,
     # and recording that faithfully is this slot's job, not refusing it.
     "ci_df must be non-negative, Inf or NA" = all(is.na(ci_df) | ci_df >= 0),
-    "aerial_calibration_rel_var must be NULL or a non-negative number" = rel_var_ok,
+    "aerial_calibration_rel_var must be NULL or one non-negative number" = rel_var_ok,
     "provenance must be a list of party_size and aerial_calibration" = prov_shape_ok,
     "provenance entries must be NULL or character" = prov_entries_ok,
     # A party-size component with no identity, or an identity with no
@@ -538,7 +541,13 @@ set_estimate_slots <- function(x, ...) {
   settable <- c("estimates", "ci_df", "method", "se_components", "aerial_calibration_rel_var")
   bad <- setdiff(names(values), settable)
   if (is.null(names(values)) || !all(nzchar(names(values))) || length(bad) > 0L) {
-    stop("set_estimate_slots(): only ", paste(settable, collapse = ", "), " can be set.", call. = FALSE)
+    creel_abort( # nolint: object_usage_linter
+      c(
+        "Only {.field {settable}} can be set after construction.",
+        "i" = "Derived slots change only by constructing the estimate anew."
+      ),
+      class = "creel_error_slot_not_settable"
+    )
   }
   for (nm in names(values)) {
     # `x[nm] <- list(NULL)` keeps the name; `x[[nm]] <- NULL` would delete it.
@@ -585,15 +594,18 @@ party_size_provenance <- function(design, se_expansion) {
 #'
 #' Internal (GH #585). The visibility correction and angler ratio divide every
 #' count of an aerial design, so two estimates built on one calibration share
-#' its error. `NULL` when the design is not aerial or neither quantity carries
-#' an uncertain standard error: a calibration with no SE, or SEs of exactly 0
-#' (declared known), has no uncertainty to share. An `NA` SE is uncertainty of
-#' unknown size and is stamped. The fingerprint is of the values, as for party
-#' size.
+#' its error. Each component is fingerprinted on its own: two designs that
+#' share a visibility study but not an angler-ratio estimate still share the
+#' visibility error, and one hash over both would make them look independent.
+#'
+#' A component is stamped only when it carries uncertainty: an SE of exactly 0
+#' (declared known) or no SE at all has nothing to share. An `NA` SE -- the
+#' `visibility_correction = "none"` case -- is uncertainty of unknown size and
+#' is stamped. The fingerprint is of the values, as for party size.
 #'
 #' @param design A creel_design, or NULL
 #'
-#' @return NULL, or a single string
+#' @return NULL, or a character vector of one or two fingerprints
 #'
 #' @keywords internal
 #' @noRd
@@ -602,17 +614,17 @@ aerial_calibration_fingerprint <- function(design) {
     return(NULL)
   }
   ae <- design$aerial
-  ses <- c(ae$visibility_se, ae$angler_ratio_se)
-  if (length(ses) == 0L || all(!is.na(ses) & ses == 0)) {
-    return(NULL)
+  stamp <- function(name, value, se) {
+    if (is.null(se) || (!is.na(se) && se == 0)) {
+      return(NULL)
+    }
+    rlang::hash(list("aerial_calibration", name, value, se))
   }
-  rlang::hash(list(
-    "aerial_calibration",
-    visibility_correction = ae$visibility_correction,
-    visibility_se = ae$visibility_se,
-    angler_ratio = ae$angler_ratio,
-    angler_ratio_se = ae$angler_ratio_se
-  ))
+  out <- c(
+    stamp("visibility", ae$visibility_correction, ae$visibility_se),
+    stamp("angler_ratio", ae$angler_ratio, ae$angler_ratio_se)
+  )
+  if (length(out) == 0L) NULL else sort(out)
 }
 
 #' Display labels for named standard-error components
