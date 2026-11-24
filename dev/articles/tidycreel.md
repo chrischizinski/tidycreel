@@ -266,17 +266,6 @@ estimate_catch_rate(design)
 #> ℹ Zero values may indicate days with no fishing activity or data collection
 #>   issues.
 #> ℹ Consider whether zeros are true zeros or missing data.
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Ratio-of-Means CPUE
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Unit: fish/angler-hour
-#> 
-#> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.181 0.0360    0.110    0.251   222
 estimate_harvest_rate(design)
 #> ℹ Filtering to complete trips for HPUE estimation
 #>   (n=222, 74.5% of 298 interviews) [default]
@@ -284,17 +273,6 @@ estimate_harvest_rate(design)
 #> ℹ Zero values may indicate days with no fishing activity or data collection
 #>   issues.
 #> ℹ Consider whether zeros are true zeros or missing data.
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Ratio-of-Means HPUE
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Unit: fish/angler-hour
-#> 
-#> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1   0.0596 0.0151   0.0299   0.0892   222
 ```
 
 The catch rate is about 0.18 fish per angler-hour, and the harvest rate

@@ -390,20 +390,6 @@ estimate_catch_rate(design, by = species)
 #> ! Sample size is 17. Ratio estimates are more stable with n >= 30.
 #> ℹ Variance estimates may be unstable with n < 30.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: ratio-of-means-cpue-species
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Grouped by: species
-#> Unit: fish/angler-hour
-#> 
-#> # A tibble: 3 × 6
-#>   species estimate     se ci_lower ci_upper     n
-#>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass       0.233 0.0771   0.0819    0.384    17
-#> 2 panfish    0.165 0.0616   0.0442    0.286    17
-#> 3 walleye    0.583 0.143    0.303     0.864    17
 ```
 
 ### Total Catch by Species
@@ -461,20 +447,6 @@ estimate_total_harvest(design, by = species)
 ``` r
 
 estimate_release_rate(design, by = species)
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: ratio-of-means-rpue
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Grouped by: species
-#> Unit: fish/angler-hour
-#> 
-#> # A tibble: 3 × 6
-#>   species estimate     se ci_lower ci_upper     n
-#>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 bass      0.117  0.0388   0.0411    0.193    17
-#> 2 panfish   0.0722 0.0271   0.0190    0.125    17
-#> 3 walleye   0.186  0.0722   0.0443    0.327    17
 estimate_total_release(design, by = species)
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────

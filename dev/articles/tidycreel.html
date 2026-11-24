@@ -353,35 +353,13 @@ party-hour, which cannot be multiplied by effort in angler-hours.</p>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero values may indicate days with no fishing activity or data collection</span></span>
 <span><span class="co">#&gt;   issues.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider whether zeros are true zeros or missing data.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Ratio-of-Means CPUE</span></span>
-<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.181 0.036<span style="text-decoration: underline;">0</span>    0.110    0.251   222</span></span>
 <span><span class="fu"><a href="../reference/estimate_harvest_rate.html">estimate_harvest_rate</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Filtering to complete trips for HPUE estimation</span></span>
 <span><span class="co">#&gt;   (n=222, 74.5% of 298 interviews) [default]</span></span>
 <span><span class="co">#&gt; Count variable <span style="color: #00BB00;">total_anglers</span> contains 13 zero values.</span></span>
 <span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Zero values may indicate days with no fishing activity or data collection</span></span>
 <span><span class="co">#&gt;   issues.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider whether zeros are true zeros or missing data.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">──</span> <span style="font-weight: bold;">Creel Survey Estimates</span> <span style="color: #00BBBB;">──────────────────────────────────────────────────────</span></span></span>
-<span><span class="co">#&gt; Method: Ratio-of-Means HPUE</span></span>
-<span><span class="co">#&gt; Variance: Taylor linearization</span></span>
-<span><span class="co">#&gt; Confidence level: 95%</span></span>
-<span><span class="co">#&gt; Unit: fish/angler-hour</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
-<span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
-<span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.059<span style="text-decoration: underline;">6</span> 0.015<span style="text-decoration: underline;">1</span>   0.029<span style="text-decoration: underline;">9</span>   0.089<span style="text-decoration: underline;">2</span>   222</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> Consider whether zeros are true zeros or missing data.</span></span></code></pre></div>
 <p>The catch rate is about 0.18 fish per angler-hour, and the harvest
 rate about 0.06. Both are ratio-of-means estimates, total catch divided
 by total effort across the interviews. These data were simulated with a

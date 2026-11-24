@@ -98,17 +98,6 @@ estimate_catch_rate(access)
 #> ℹ Zero values may indicate days with no fishing activity or data collection
 #>   issues.
 #> ℹ Consider whether zeros are true zeros or missing data.
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Ratio-of-Means CPUE
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Unit: fish/angler-hour
-#> 
-#> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.181 0.0360    0.110    0.251   222
 access_catch <- estimate_total_catch(access, target = "period_total")
 access_catch
 #> 

@@ -183,14 +183,18 @@ which is what the multiplier acts on), <code>expansion_se</code>,
 <code>expansion_group</code> (which rows share one estimated multiplier, and so carry
 perfectly correlated error), and <code>expansion_of</code> (the column the basis is
 the derivative of). <code><a href="add_counts.html">add_counts()</a></code> recognises all four and excludes them
-from count-column detection.</p>
+from count-column detection. A fifth, <code>expansion_id</code>, fingerprints the
+party-size estimate by its value and standard error, so estimates from
+different designs can tell whether they share one (GH #585). It is
+optional: counts without it still attach, and their estimates record the
+party-size identity as unknown.</p>
 <p>They must travel together and must reach <code><a href="add_counts.html">add_counts()</a></code> alongside the
 column named in <code>expansion_of</code>. Transforming that column in between –
 multiplying a count by a shift length, say – scales the count but not its
 derivative, and <code><a href="add_counts.html">add_counts()</a></code> refuses rather than propagate a component
 that is understated by exactly the scale factor. Pass the per-day count and
 let <code>period_length_col</code> do the multiplication instead.</p>
-<p>All four are written by the package and are not user inputs. In particular,
+<p>All five are written by the package and are not user inputs. In particular,
 editing <code>expansion_of</code> to name a transformed column silences that refusal
 whether or not the basis was actually rescaled, which re-enables the very
 defect the check exists to catch. Rescale through <code>period_length_col</code>,
@@ -343,15 +347,15 @@ returned table carries no expansion columns in that case, and
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6 2024-06-03  weekday          4.8        boat               2          0.2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7 2024-06-04  weekend         11.0        bank               0          0.2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8 2024-06-04  weekend         19.2        boat               8          0.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   expansion_group expansion_of</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1               1 angler_count</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2               1 angler_count</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3               1 angler_count</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4               1 angler_count</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5               1 angler_count</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6               1 angler_count</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7               1 angler_count</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8               1 angler_count</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   expansion_group expansion_of                     expansion_id</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">calendar</span> <span class="op">&lt;-</span> <span class="va">season</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"date"</span>, <span class="st">"day_type"</span><span class="op">)</span><span class="op">]</span></span></span>
 <span class="r-in"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="creel_design.html">creel_design</a></span><span class="op">(</span><span class="va">calendar</span>, date <span class="op">=</span> <span class="va">date</span>, strata <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>

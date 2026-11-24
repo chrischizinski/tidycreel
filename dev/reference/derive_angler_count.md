@@ -99,7 +99,11 @@ which is what the multiplier acts on), `expansion_se`, `expansion_group`
 correlated error), and `expansion_of` (the column the basis is the
 derivative of).
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
-recognises all four and excludes them from count-column detection.
+recognises all four and excludes them from count-column detection. A
+fifth, `expansion_id`, fingerprints the party-size estimate by its value
+and standard error, so estimates from different designs can tell whether
+they share one (GH \#585). It is optional: counts without it still
+attach, and their estimates record the party-size identity as unknown.
 
 They must travel together and must reach
 [`add_counts()`](https://chrischizinski.com/tidycreel/dev/reference/add_counts.md)
@@ -111,7 +115,7 @@ refuses rather than propagate a component that is understated by exactly
 the scale factor. Pass the per-day count and let `period_length_col` do
 the multiplication instead.
 
-All four are written by the package and are not user inputs. In
+All five are written by the package and are not user inputs. In
 particular, editing `expansion_of` to name a transformed column silences
 that refusal whether or not the basis was actually rescaled, which
 re-enables the very defect the check exists to catch. Rescale through
@@ -277,15 +281,15 @@ long
 #> 6 2024-06-03  weekday          4.8        boat               2          0.2
 #> 7 2024-06-04  weekend         11.0        bank               0          0.2
 #> 8 2024-06-04  weekend         19.2        boat               8          0.2
-#>   expansion_group expansion_of
-#> 1               1 angler_count
-#> 2               1 angler_count
-#> 3               1 angler_count
-#> 4               1 angler_count
-#> 5               1 angler_count
-#> 6               1 angler_count
-#> 7               1 angler_count
-#> 8               1 angler_count
+#>   expansion_group expansion_of                     expansion_id
+#> 1               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
+#> 2               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
+#> 3               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
+#> 4               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
+#> 5               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
+#> 6               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
+#> 7               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
+#> 8               1 angler_count 585bc70c7b9b7a530ac4808f6e06d30d
 
 calendar <- season[c("date", "day_type")]
 design <- creel_design(calendar, date = date, strata = day_type)

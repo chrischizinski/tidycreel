@@ -185,18 +185,4 @@ effort <- estimate_effort(design, by = day_type)
 #>   counts, period_length_col = <col>)`.
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 estimate_angler_trips(effort, design)
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: angler-trips
-#> Variance: delta
-#> Confidence level: 95%
-#> Grouped by: day_type
-#> Effort target: period_total
-#> 
-#> # A tibble: 3 × 6
-#>   day_type estimate    se ci_lower ci_upper     n
-#>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday      129.  15.6     94.5     163.    10
-#> 2 weekend      186.  20.1    142.      230.     7
-#> 3 .overall     315.  25.4    259.      371.    17
 ```

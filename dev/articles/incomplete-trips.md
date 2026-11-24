@@ -145,17 +145,6 @@ name, with both the trip set and the estimator:
 estimate_catch_rate(design, use_trips = "complete")
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=50, 29.4% of 170 interviews)
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Ratio-of-Means CPUE
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Unit: fish/angler-hour
-#> 
-#> # A tibble: 1 × 5
-#>   estimate     se ci_lower ci_upper     n
-#>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1     2.30 0.0962     2.12     2.49    50
 estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor")
 #> ℹ Using incomplete trips for CPUE estimation
 #>   (n=120, 70.6% of 170 interviews)

@@ -136,15 +136,4 @@ design <- add_interviews(
 estimate_catch_rate(design)
 #> ℹ Using complete trips for CPUE estimation
 #>   (n=48, 100% of 48 interviews) [default]
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: Ratio-of-Means CPUE
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> Unit: fish/angler-hour
-#> 
-#> # A tibble: 1 × 5
-#>   estimate    se ci_lower ci_upper     n
-#>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.206    NA       NA       NA    48
 ```

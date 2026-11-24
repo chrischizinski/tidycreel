@@ -84,14 +84,4 @@ effort <- estimate_effort(design)
 #> ℹ Repeats on this design are recorded, not printed: see `get_warnings()`.
 # Surface area of the water body, in acres.
 estimate_effort_per_acre(effort, acres = 120)
-#> 
-#> ── Creel Survey Estimates ──────────────────────────────────────────────────────
-#> Method: effort-per-acre
-#> Variance: Taylor linearization
-#> Confidence level: 95%
-#> 
-#> # A tibble: 1 × 8
-#>   estimate    se se_between se_within ci_lower ci_upper     n se_basis          
-#>      <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>             
-#> 1     7.05 0.246      0.246        NA     6.51     7.59    14 between_day_upper…
 ```
