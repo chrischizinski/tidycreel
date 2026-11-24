@@ -146,6 +146,7 @@ reference:
       - validate_incomplete_trips
       - validate_design
       - check_completeness
+      - check_interview_coverage
       - compare_variance
       - adjust_nonresponse
       - validate_creel_data
