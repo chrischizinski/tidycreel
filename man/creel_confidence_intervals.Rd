@@ -97,7 +97,9 @@ Every estimate records the degrees of freedom its rows' intervals used in
 \code{x$ci_df}, one value per row of \code{x$estimates}: a finite value for a t
 interval, \code{Inf} for a normal one, and \code{NA} where the interval is not built
 from the standard error at all (Schnabel's Poisson bounds for small
-recapture totals). It is what a sum or difference of independent estimates
+recapture totals) or the row has no interval. The aerial GLMM's bootstrap
+path records \code{Inf}: its percentile interval has no df, but its standard
+error is asymptotic. It is what a sum or difference of independent estimates
 needs for its own degrees of freedom.
 }
 

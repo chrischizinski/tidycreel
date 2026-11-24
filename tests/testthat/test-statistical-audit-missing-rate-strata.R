@@ -218,6 +218,9 @@ test_that("#373: a product sum with no covered stratum is NA, not zero", {
   )
   expect_true(is.na(out$estimate))
   expect_identical(out$n, 0L)
+  # No interval, so no df: the caller passes this to the estimate's
+  # constructor, which requires one (GH #585).
+  expect_identical(attr(out, "ci_df"), NA_real_)
 })
 
 test_that("#373: an ungrouped sectioned total refuses an uncovered stratum, under either setting", {

@@ -711,8 +711,10 @@
 
 * Every estimate now records, in `x$ci_df`, the degrees of freedom of the
   reference distribution each row's confidence interval was built on: a
-  finite value for a t interval, `Inf` for a normal one, `NA` where the
-  interval is not built from the standard error (Schnabel's Poisson bounds).
+  finite value for a t interval, `Inf` for a normal one (and for the aerial
+  GLMM's bootstrap path, whose percentile interval has no df but whose SE is
+  asymptotic), `NA` where the interval is not built from the standard error
+  (Schnabel's Poisson bounds) or the row has no interval at all.
   No interval or printed output changes. It is groundwork for summing or
   differencing estimates from independent surveys, which needs each part's df
   (#585). The rules themselves differ by estimator and are under review in

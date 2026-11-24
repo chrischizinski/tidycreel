@@ -292,10 +292,13 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   drift apart, and supplying it here is an error.
 #' @param ci_df Degrees of freedom of the reference distribution the rows'
 #'   confidence intervals were built on: one value, or one per row of
-#'   `estimates`, recorded exactly as the interval used it. `Inf` for a normal interval (including survey's `confint()`
-#'   default and asymptotic or bootstrap-SE intervals), a finite value for a
-#'   t interval, `NA` where the interval is not built from the standard error
-#'   on any reference distribution (e.g. Schnabel's Poisson bounds). Required,
+#'   `estimates`, recorded exactly as the interval used it. `Inf` for a normal
+#'   interval (including survey's `confint()` default and bootstrap-SE
+#'   intervals), and for the aerial GLMM's bootstrap path, whose percentile
+#'   interval has no df but whose SE is asymptotic; a finite value for a t
+#'   interval; `NA` where the interval is not built from the standard error at
+#'   all (Schnabel's Poisson bounds) and on any row with no interval, which the
+#'   constructor sets itself. Required,
 #'   with no default, so an estimator cannot leave it unrecorded; a later sum or
 #'   difference of estimates needs it for its Satterthwaite df (GH #585).
 #'
@@ -366,6 +369,12 @@ new_creel_estimates <- function(
   # One value per row, so a grouped table can carry a df per group and a
   # combination of estimates can match rows to their df without re-deriving it.
   ci_df <- rep_len(as.numeric(ci_df), nrow(estimates))
+  # A row with no interval at all (an unknown estimate) used no reference
+  # distribution, whatever df its estimator would have used: NA, so a later
+  # combination cannot treat an unavailable row as having one.
+  if (all(c("ci_lower", "ci_upper") %in% names(estimates))) {
+    ci_df[is.na(estimates$ci_lower) & is.na(estimates$ci_upper)] <- NA_real_
+  }
 
   # One write point for the party-size component. `se_expansion` is the slot
   # documented since 3.2.0 and is kept; mirroring it here rather than letting
@@ -8669,10 +8678,13 @@ compute_stratum_product_sum <- function(
     # reachable under `missing_rate = "exclude"`). sum() over nothing is 0,
     # which would report an unknown catch as none (GH #373).
     if (nrow(merged) == 0L) {
-      return(data.frame(
+      out <- data.frame(
         estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_,
         n = 0L, stringsAsFactors = FALSE
-      ))
+      )
+      # No interval, so no df (GH #585).
+      attr(out, "ci_df") <- NA_real_
+      return(out)
     }
     # Sum all strata to a single total
     est <- sum(merged$.est_sh)

@@ -55,6 +55,15 @@ test_that("one df is recycled to every row; Inf, NA and 0 are kept as given", {
   expect_false("ci_df" %in% names(x$estimates))
 })
 
+test_that("a row with no interval records no df, whatever its estimator uses", {
+  # An unknown estimate has NA bounds; a finite df beside it would let a later
+  # combination treat the unavailable row as having a reference distribution.
+  est <- tibble::tibble(
+    estimate = c(1, NA), se = c(0.1, NA), ci_lower = c(0.8, NA), ci_upper = c(1.2, NA), n = 10L
+  )
+  expect_identical(new_creel_estimates(est, ci_df = 9)$ci_df, c(9, NA_real_))
+})
+
 # --- instantaneous design: effort, rates, totals ------------------------------
 
 test_that("effort records the design df its t interval used, ungrouped and grouped", {
