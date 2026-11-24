@@ -83,6 +83,8 @@ Catch-per-unit-effort: which estimator is best? \emph{Braz. J. Biol.}
 \code{\link{estimate_catch_rate}}
 
 Other "Estimation":
+\code{\link{combine_estimates}()},
+\code{\link{compare_estimates}()},
 \code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},

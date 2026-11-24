@@ -304,7 +304,9 @@ print(total_rel_sp)
 \code{\link{add_catch}}
 
 Other "Estimation":
+\code{\link{combine_estimates}()},
 \code{\link{compare_cpue_estimators}()},
+\code{\link{compare_estimates}()},
 \code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},

@@ -304,6 +304,9 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #' @param aerial_calibration_rel_var NULL, or the aerial calibration's relative
 #'   variance for a total to add once after summing (GH #150, #470). Passed
 #'   here rather than assigned afterwards, so it is validated.
+#' @param provenance NULL to derive the provenance from `design` (every
+#'   estimator), or a ready list for a result with no single design -- only
+#'   [combine_estimates()], which passes the union of its parts' stamps.
 #'
 #' @return List of class "creel_estimates" with components:
 #'   - estimates: data frame of estimates
@@ -338,7 +341,8 @@ new_creel_estimates <- function(
   expansion_decomposition = NULL,
   se_components = NULL,
   ci_df,
-  aerial_calibration_rel_var = NULL
+  aerial_calibration_rel_var = NULL,
+  provenance = NULL
 ) {
   # Only what the preprocessing below needs; every rule on the finished object
   # lives in validate_creel_estimates(), which set_estimate_slots() runs again
@@ -427,7 +431,10 @@ new_creel_estimates <- function(
       # Derived here, at the one write point, rather than passed by each of the
       # ~60 call sites: an estimator that forgot to pass it would record "none"
       # -- the silent-absence failure this slot exists to prevent.
-      provenance = list(
+      #
+      # Supplied only by combine_estimates(), whose result has no single design
+      # and carries the union of its parts' stamps instead.
+      provenance = provenance %||% list(
         party_size = party_size_provenance(design, se_expansion),
         aerial_calibration = if (is.null(effort_target)) NULL else aerial_calibration_fingerprint(design)
       )

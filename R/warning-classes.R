@@ -84,6 +84,10 @@
 #'     no catch rate were left out of a total.}
 #'   \item{\code{creel_warning_pooled_domain_mix}}{Tier 1. A total pools over
 #'     domains the counts do not classify.}
+#'   \item{\code{creel_warning_combine_partial_overlap}}{Tier 1. Parts passed
+#'     to [combine_estimates()] or [compare_estimates()] share some identical
+#'     interview or count rows; shared data would make the result's SE too
+#'     small.}
 #'   \item{\code{creel_warning_zero_catch_excluded}}{Tier 1. Trips that caught
 #'     none of a species were left out, so the rate is among trips that caught
 #'     it.}
@@ -324,6 +328,7 @@ creel_warning_tiers <- c(
   creel_warning_count_outside_shift = 1L,
   creel_warning_p_period_inferred = 1L,
   creel_warning_pooled_domain_mix = 1L,
+  creel_warning_combine_partial_overlap = 1L,
   creel_warning_repeated_sampling_units = 1L,
   creel_warning_section_covariance_invalid = 1L,
   creel_warning_two_phase_rescale = 1L,

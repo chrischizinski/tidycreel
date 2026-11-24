@@ -74,7 +74,9 @@ family_exceptions <- c(
   audit_strata = "diagnostics",
   validation_report = "diagnostics",
   season_summary = "reporting",
-  plot_design = "plotting"
+  plot_design = "plotting",
+  # #585: sums finished estimates; the name was set in the issue (2026-10-29).
+  combine_estimates = "combines estimates"
 )
 
 # Members of design-first families whose first argument is not `design`.

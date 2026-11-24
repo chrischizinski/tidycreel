@@ -238,7 +238,9 @@ American Journal of Fisheries Management, 30, 1051-1061.
 }
 \seealso{
 Other "Estimation":
+\code{\link{combine_estimates}()},
 \code{\link{compare_cpue_estimators}()},
+\code{\link{compare_estimates}()},
 \code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},

@@ -91,6 +91,10 @@ estimate.}
 no catch rate were left out of a total.}
 \item{\code{creel_warning_pooled_domain_mix}}{Tier 1. A total pools over
 domains the counts do not classify.}
+\item{\code{creel_warning_combine_partial_overlap}}{Tier 1. Parts passed
+to \code{\link[=combine_estimates]{combine_estimates()}} or \code{\link[=compare_estimates]{compare_estimates()}} share some identical
+interview or count rows; shared data would make the result's SE too
+small.}
 \item{\code{creel_warning_zero_catch_excluded}}{Tier 1. Trips that caught
 none of a species were left out, so the rate is among trips that caught
 it.}

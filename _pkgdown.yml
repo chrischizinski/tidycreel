@@ -103,6 +103,8 @@ reference:
       - estimate_angler_trips
       - estimate_effort_per_acre
       - compare_cpue_estimators
+      - combine_estimates
+      - compare_estimates
       - creel_confidence_intervals
       - derive_angler_count
       - mean_party_size

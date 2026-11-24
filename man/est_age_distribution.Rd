@@ -99,7 +99,9 @@ est_age_distribution(design, by = species)
 }
 \seealso{
 Other "Estimation":
+\code{\link{combine_estimates}()},
 \code{\link{compare_cpue_estimators}()},
+\code{\link{compare_estimates}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},
 \code{\link{est_effort_camera_mi}()},
