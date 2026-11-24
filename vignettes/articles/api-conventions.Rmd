@@ -157,7 +157,9 @@ Do not drop records, impute, or fall back to a different estimator silently.
   `cli::cli_inform()`, and for errors the internal `creel_abort()`, which is
   `cli::cli_abort()` with the parent class added), with the argument or column
   named in `{.arg}` / `{.field}` markup.
-- Every error carries the parent class `creel_error`. Errors a caller may want
+- Every error from the package's own checks carries the parent class
+  `creel_error`; argument checks delegated to `checkmate`, `match.arg()` or
+  `rlang` raise those packages' errors. Errors a caller may want
   to catch by name also carry a class from the `creel_error_*` family
   (`creel_error_invalid_input`, `creel_error_schema_validation`, ...).
 - Every warning carries a class, `creel_warning_<fact>`, and the parent
