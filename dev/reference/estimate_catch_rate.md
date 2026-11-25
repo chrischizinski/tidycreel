@@ -424,7 +424,7 @@ print(result)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.826 0.0908    0.648     1.00    20
+#> 1    0.826 0.0908    0.448     1.20    20
 
 # Grouped by day_type
 result_grouped <- estimate_catch_rate(design_with_interviews, by = day_type)
@@ -442,8 +442,8 @@ print(result_grouped)
 #> # A tibble: 2 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     1.18  0.221    0.743    1.61     10
-#> 2 weekend     0.704 0.106    0.498    0.911    10
+#> 1 weekday     1.18  0.221   -1.63      3.98    10
+#> 2 weekend     0.704 0.106   -0.636     2.05    10
 
 # Custom confidence level
 result_90 <- estimate_catch_rate(design_with_interviews, conf_level = 0.90)

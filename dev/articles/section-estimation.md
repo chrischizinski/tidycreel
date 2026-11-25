@@ -166,9 +166,9 @@ print(cpue_est$estimates)
 #> # A tibble: 3 × 7
 #>   section estimate     se ci_lower ci_upper     n data_available
 #>   <chr>      <dbl>  <dbl>    <dbl>    <dbl> <int> <lgl>         
-#> 1 North       1.06 0.0572    0.950     1.17     9 TRUE          
-#> 2 Central     1.50 0.0181    1.47      1.54     9 TRUE          
-#> 3 South       2.45 0.0276    2.39      2.50     9 TRUE
+#> 1 North       1.06 0.0572    0.922     1.20     9 TRUE          
+#> 2 Central     1.50 0.0181    1.46      1.55     9 TRUE          
+#> 3 South       2.45 0.0276    2.38      2.51     9 TRUE
 ```
 
 **Notice there is no `.lake_total` row.** Catch rate is a ratio
@@ -206,7 +206,7 @@ estimate_catch_rate(design_nosections)$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1     1.77 0.0532     1.67     1.88    27
+#> 1     1.77 0.0532     1.65     1.89    27
 ```
 
 This call warns that 27 interviews is a small sample for a ratio

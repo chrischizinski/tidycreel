@@ -463,7 +463,7 @@ and computes
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis               </span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">1</span>695  248.    <span style="text-decoration: underline;">1</span>208.    <span style="text-decoration: underline;">2</span>182.    15 between_day_upper_bound</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     <span style="text-decoration: underline;">1</span>695  248.     904.    <span style="text-decoration: underline;">2</span>486.    15 between_day_upper_bound</span></span>
 <span></span>
 <span><span class="co"># Inspect per-site contributions to the total</span></span>
 <span><span class="va">site_contribs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_site_contributions.html">get_site_contributions</a></span><span class="op">(</span><span class="va">effort_est</span><span class="op">)</span></span>
@@ -521,7 +521,7 @@ each party’s fish by its inclusion probability and summing.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.058<span style="text-decoration: underline;">2</span> 0.016<span style="text-decoration: underline;">0</span>   0.026<span style="text-decoration: underline;">9</span>   0.089<span style="text-decoration: underline;">6</span>    15</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   0.058<span style="text-decoration: underline;">2</span> 0.016<span style="text-decoration: underline;">0</span>  0.007<span style="text-decoration: underline;">30</span>    0.109    15</span></span>
 <span></span>
 <span><span class="co"># Total fish kept (harvest) and total fish caught (kept + released)</span></span>
 <span><span class="va">harvest_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
@@ -537,7 +537,7 @@ each party’s fish by its inclusion probability and summing.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     98.7  35.7     28.8     169.    15</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     98.7  35.7        0     212.    15</span></span>
 <span></span>
 <span><span class="va">catch_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_catch.html">estimate_total_catch</a></span><span class="op">(</span><span class="va">design</span>, target <span class="op">=</span> <span class="st">"sampled_days"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span>
@@ -552,7 +552,7 @@ each party’s fish by its inclusion probability and summing.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     361.  59.9     243.     478.    15</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     361.  59.9     170.     551.    15</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-5-results-as-data">Step 5: Results as Data<a class="anchor" aria-label="anchor" href="#step-5-results-as-data"></a>
@@ -565,7 +565,7 @@ plots with its confidence interval:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 10</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n method       variance_method conf_level</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     361.  59.9     243.     478.    15 ht-total-ca… taylor                0.95</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     361.  59.9     170.     551.    15 ht-total-ca… taylor                0.95</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
 <span></span>
 <span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">catch_est</span><span class="op">)</span></span></code></pre></div>

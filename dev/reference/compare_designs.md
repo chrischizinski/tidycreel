@@ -125,8 +125,8 @@ compare_designs(list(overall = est_all, by_day_type = est_grp))
 #> 
 #>        design estimate   se    rse ci_lower ci_upper ci_width  n
 #> 1     overall      846 29.6 0.0350      782      910    128.9 14
-#> 2 by_day_type      341 19.3 0.0567      299      383     84.3 10
-#> 3 by_day_type      505 22.4 0.0443      456      553     97.5  4
+#> 2 by_day_type      341 19.3 0.0567      297      385     87.5 10
+#> 3 by_day_type      505 22.4 0.0443      434      576    142.4  4
 #>                  se_basis day_type
 #> 1 between_day_upper_bound       NA
 #> 2 between_day_upper_bound  weekday

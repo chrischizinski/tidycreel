@@ -190,7 +190,7 @@ estimate_catch_rate(roving)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.190 0.0193    0.152    0.227   183
+#> 1    0.190 0.0193    0.151    0.229   183
 ```
 
 With `interview_type = "roving"`, tidycreel uses the mean-of-ratios

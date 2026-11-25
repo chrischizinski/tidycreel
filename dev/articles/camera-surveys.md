@@ -453,8 +453,8 @@ print(catch_rate)
 #> # A tibble: 2 × 6
 #>   day_type estimate    se ci_lower ci_upper     n
 #>   <chr>       <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     0.413 0.172   0.0755    0.751    20
-#> 2 weekend     0.496 0.101   0.297     0.694    20
+#> 1 weekday     0.413 0.172   -0.135    0.962    20
+#> 2 weekend     0.496 0.101    0.173    0.818    20
 ```
 
 The call warns that each day type rests on 20 trips, a small sample for

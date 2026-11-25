@@ -53,11 +53,50 @@ the wrong repair.
 
 ## Quantile choice
 
-Where an estimator has a finite sample size of its own to appeal to, it
-uses [`stats::qt()`](https://rdrr.io/r/stats/TDist.html) on an explicit
-degrees-of-freedom rule. The product-total paths use total interviews
-minus the number of strata; the section paths use the number of sections
-minus one; mark-recapture uses the number of occasions.
+The rule (GH \#705): an interval is Student's t on the design degrees of
+freedom of the data that drives its variance – sampled days, the primary
+sampling units, minus strata, which is
+[`survey::degf()`](https://rdrr.io/pkg/survey/man/svychisq.html) (Lumley
+2010, sec. 5.2). A quantity built from independently estimated parts
+takes Satterthwaite's effective df over them (Cochran 1977, eq. 5.16),
+which lies between the smallest part's df and their sum. Pollock et al.
+(1994, sec. 3.3) use the normal quantile as a large-sample
+approximation; on the few dozen days a creel survey samples, Cochran
+(1977, sec. 5.4) reads the multiplier from Student's t instead.
+
+Following the rule now:
+
+- effort – instantaneous, aerial, camera and bus-route – on the count
+  design's df.
+
+- catch, harvest and release rates (ratio-of-means, mean-of-ratios,
+  regression, species, sections, bus-route) on the interview design's
+  df, which is clustered on the survey day. A rate pooled across strata
+  adds the variance of its effort weights, so it takes Satterthwaite's
+  df over the interview and effort terms.
+
+- bus-route catch, harvest and release totals, which are direct
+  Horvitz-Thompson totals on the bus-route design.
+
+A grouped row is a domain and counts only its own sampled days and
+strata: a row for weekdays takes the weekdays' df, as
+`survey::degf(subset(design, ...))` reports, not the whole design's. A
+group seen on few days gets a wide multiplier, which is the point. This
+holds for grouped effort, rates and bus-route rows, under Taylor,
+bootstrap and jackknife alike: the df is the design's, whatever
+estimates the variance. A rate pooled across strata sums one effort term
+per stratum, so its Satterthwaite df runs over every stratum's term.
+
+A group sampled on no more days than it has strata – one day in each of
+two, say – has 0 df and no t distribution to read. Its estimate and SE
+are reported, its bounds are `NA` and `x$ci_df` is `NA`, and a
+`creel_warning_zero_df_interval` names it.
+
+Not yet (GH \#705): the effort x rate product totals still use total
+interviews minus strata (per group, the group's interviews minus its
+strata; a sectioned lake row, the sum of its sections'), angler trips
+the interview design's df, and mark-recapture and exploitation their own
+occasion- and stratum-count rules.
 
 Six estimators use
 [`stats::qnorm()`](https://rdrr.io/r/stats/Normal.html) instead —
@@ -116,6 +155,15 @@ standard error is asymptotic. It is what a sum or difference of
 independent estimates needs for its own degrees of freedom.
 
 ## References
+
+Cochran, W. G. (1977). *Sampling Techniques* (3rd ed.). Wiley.
+
+Lumley, T. (2010). *Complex Surveys: A Guide to Analysis Using R*.
+Wiley.
+
+Pollock, K. H., Jones, C. M., & Brown, T. L. (1994). *Angler Survey
+Methods and Their Applications in Fisheries Management*. American
+Fisheries Society Special Publication 25.
 
 Sadinle, M. (2009). Transformed logit confidence intervals for small
 populations in single capture-recapture estimation. *Communications in

@@ -261,7 +261,7 @@ equally:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.181 0.036<span style="text-decoration: underline;">0</span>    0.110    0.251   222</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.181 0.036<span style="text-decoration: underline;">0</span>    0.107    0.254   222</span></span>
 <span><span class="va">rate</span><span class="op">$</span><span class="va">unit</span></span>
 <span><span class="co">#&gt; [1] "fish/angler-hour"</span></span></code></pre></div>
 <p>This is the ratio of means (total catch over total effort), the
@@ -374,11 +374,16 @@ Goodman variance</td>
 </tr>
 <tr class="odd">
 <td>Confidence interval</td>
-<td>effort and total catch:
-<code>confint(..., df = degf(design))</code>; catch rate:
-<code>confint(...)</code>, the normal interval</td>
+<td>effort and catch rate: <code>confint(..., df = degf(design))</code>
+on their own designs; a grouped row takes its own days’ df, as
+<code>degf(subset(...))</code>; a rate pooled across strata takes
+Satterthwaite’s df over its interview and per-stratum effort terms;
+total catch: a
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
+on interviews less strata, for now (#705)</td>
 <td>
-<code>ci_lower</code>, <code>ci_upper</code>
+<code>ci_lower</code>, <code>ci_upper</code>; the df in
+<code>x$ci_df</code>
 </td>
 </tr>
 </tbody>

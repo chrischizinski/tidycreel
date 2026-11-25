@@ -445,7 +445,7 @@ required, and the call is refused without it.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate     se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.767 0.099<span style="text-decoration: underline;">3</span>    0.572    0.961    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.767 0.099<span style="text-decoration: underline;">3</span>    0.340     1.19    20</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped by day_type</span></span></span>
 <span class="r-in"><span><span class="va">result_grouped</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
@@ -463,8 +463,8 @@ required, and the call is refused without it.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 6</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate     se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     0.852 0.397    0.072<span style="text-decoration: underline;">9</span>    1.63     10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     0.737 0.023<span style="text-decoration: underline;">0</span>   0.692     0.782    10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     0.852 0.397    -<span style="color: #BB0000;">4.20</span>      5.90    10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     0.737 0.023<span style="text-decoration: underline;">0</span>    0.445     1.03    10</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom confidence level</span></span></span>
 <span class="r-in"><span><span class="va">result_90</span> <span class="op">&lt;-</span> <span class="fu">estimate_harvest_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, conf_level <span class="op">=</span> <span class="fl">0.90</span><span class="op">)</span></span></span>

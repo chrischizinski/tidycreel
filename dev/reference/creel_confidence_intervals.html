@@ -126,10 +126,41 @@ the smallest occupied bin, so a clamp at zero would be the wrong repair.</p>
 
 
 
-<p>Where an estimator has a finite sample size of its own to appeal to, it uses
-<code><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">stats::qt()</a></code> on an explicit degrees-of-freedom rule. The product-total paths
-use total interviews minus the number of strata; the section paths use the
-number of sections minus one; mark-recapture uses the number of occasions.</p>
+<p>The rule (GH #705): an interval is Student's t on the design degrees of
+freedom of the data that drives its variance – sampled days, the primary
+sampling units, minus strata, which is <code><a href="https://rdrr.io/pkg/survey/man/svychisq.html" class="external-link">survey::degf()</a></code> (Lumley 2010, sec.
+5.2). A quantity built from independently estimated parts takes
+Satterthwaite's effective df over them (Cochran 1977, eq. 5.16), which lies
+between the smallest part's df and their sum. Pollock et al. (1994, sec.
+3.3) use the normal quantile as a large-sample approximation; on the few
+dozen days a creel survey samples, Cochran (1977, sec. 5.4) reads the
+multiplier from Student's t instead.</p>
+<p>Following the rule now:</p><ul><li><p>effort – instantaneous, aerial, camera and bus-route – on the count
+design's df.</p></li>
+<li><p>catch, harvest and release rates (ratio-of-means, mean-of-ratios,
+regression, species, sections, bus-route) on the interview design's df,
+which is clustered on the survey day. A rate pooled across strata adds the
+variance of its effort weights, so it takes Satterthwaite's df over the
+interview and effort terms.</p></li>
+<li><p>bus-route catch, harvest and release totals, which are direct
+Horvitz-Thompson totals on the bus-route design.</p></li>
+</ul><p>A grouped row is a domain and counts only its own sampled days and strata:
+a row for weekdays takes the weekdays' df, as
+<code>survey::degf(subset(design, ...))</code> reports, not the whole design's. A
+group seen on few days gets a wide multiplier, which is the point. This
+holds for grouped effort, rates and bus-route rows, under Taylor, bootstrap
+and jackknife alike: the df is the design's, whatever estimates the
+variance. A rate pooled across strata sums one effort term per stratum, so
+its Satterthwaite df runs over every stratum's term.</p>
+<p>A group sampled on no more days than it has strata – one day in each of
+two, say – has 0 df and no t distribution to read. Its estimate and SE are
+reported, its bounds are <code>NA</code> and <code>x$ci_df</code> is <code>NA</code>, and a
+<code>creel_warning_zero_df_interval</code> names it.</p>
+<p>Not yet (GH #705): the effort x rate product totals still use total
+interviews minus strata (per group, the group's interviews minus its strata;
+a sectioned lake row, the sum of its sections'), angler trips the interview
+design's df, and mark-recapture and exploitation their own occasion- and
+stratum-count rules.</p>
 <p>Six estimators use <code><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">stats::qnorm()</a></code> instead — <code><a href="est_biomass.html">est_biomass()</a></code>,
 <code><a href="est_mean_length.html">est_mean_length()</a></code>, <code><a href="est_compliance.html">est_compliance()</a></code>, <code><a href="est_mean_age.html">est_mean_age()</a></code>, and since #310
 <code><a href="est_length_distribution.html">est_length_distribution()</a></code> and <code><a href="est_age_distribution.html">est_age_distribution()</a></code> themselves. This is
@@ -172,7 +203,12 @@ needs for its own degrees of freedom.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Sadinle, M. (2009). Transformed logit confidence intervals for small
+    <p>Cochran, W. G. (1977). <em>Sampling Techniques</em> (3rd ed.). Wiley.</p>
+<p>Lumley, T. (2010). <em>Complex Surveys: A Guide to Analysis Using R</em>. Wiley.</p>
+<p>Pollock, K. H., Jones, C. M., &amp; Brown, T. L. (1994). <em>Angler Survey Methods
+and Their Applications in Fisheries Management</em>. American Fisheries Society
+Special Publication 25.</p>
+<p>Sadinle, M. (2009). Transformed logit confidence intervals for small
 populations in single capture-recapture estimation.
 <em>Communications in Statistics - Simulation and Computation</em>, 38(9),
 1909-1924.</p>

@@ -307,7 +307,7 @@ with <code>effort_type = "time_on_ice"</code>.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_on_ice</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>819.  261.    <span style="text-decoration: underline;">3</span>308.    <span style="text-decoration: underline;">4</span>330.    72 between_day_upp…                  <span style="text-decoration: underline;">3</span>819.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>819.  261.    <span style="text-decoration: underline;">3</span>245.    <span style="text-decoration: underline;">4</span>392.    72 between_day_upp…                  <span style="text-decoration: underline;">3</span>819.</span></span></code></pre></div>
 <p>This is the total over the days worked, named with
 <code>target = "sampled_days"</code> because the default target is the
 season total, <code>"period_total"</code>, which this design cannot
@@ -358,7 +358,7 @@ effort-type column is then labeled <code>total_effort_hr_active</code>;
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 7</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n se_basis         total_effort_hr_active</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>148.  216.    <span style="text-decoration: underline;">2</span>725.    <span style="text-decoration: underline;">3</span>571.    72 between_day_upp…                  <span style="text-decoration: underline;">3</span>148.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    <span style="text-decoration: underline;">3</span>148.  216.    <span style="text-decoration: underline;">2</span>673.    <span style="text-decoration: underline;">3</span>623.    72 between_day_upp…                  <span style="text-decoration: underline;">3</span>148.</span></span></code></pre></div>
 <p>Active fishing hours are shorter than time-on-ice because they
 exclude travel, setup, and breaks. The difference between the two
 estimates reflects the non-fishing portion of each trip.</p>
@@ -385,8 +385,8 @@ interview data split by the grouping variable.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
 <span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n se_basis       </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36 between_day_up…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36 between_day_up…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>598.    <span style="text-decoration: underline;">2</span>136.      0.489    36 between_day_up…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>477.    <span style="text-decoration: underline;">2</span>427.      0.511    36 between_day_up…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: total_effort_hr_on_ice &lt;dbl&gt;</span></span></span></code></pre></div>
 <p>The <code>proportion</code> column shows each shelter group’s share
 of total effort. Dark-house anglers tend to fish longer hours on
@@ -414,7 +414,7 @@ rates.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate      se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.121 0.008<span style="text-decoration: underline;">28</span>    0.104    0.137    60</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.121 0.008<span style="text-decoration: underline;">28</span>    0.102    0.139    60</span></span></code></pre></div>
 <p>The <code>estimate</code> column is walleye per angler-hour on the
 ice, with a standard error and 95% confidence interval. The
 <code>n</code> column counts the number of complete interviews used in
@@ -455,7 +455,7 @@ total.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     398.  20.6     358.     439.    60</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     398.  20.6     353.     444.    60</span></span></code></pre></div>
 <p>The <code>estimate</code> column is the total walleye catch over the
 days worked. In this example every calendar day was worked, so it is
 also the season total. The standard error and 95% confidence interval
@@ -473,8 +473,8 @@ and unit as columns, and plots with its confidence interval:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 14</span></span></span>
 <span><span class="co">#&gt;   shelter_mode estimate    se ci_lower ci_upper proportion     n se_basis       </span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>627.    <span style="text-decoration: underline;">2</span>106.      0.489    36 between_day_up…</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>529.    <span style="text-decoration: underline;">2</span>375.      0.511    36 between_day_up…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> dark_house      <span style="text-decoration: underline;">1</span>867.  122.    <span style="text-decoration: underline;">1</span>598.    <span style="text-decoration: underline;">2</span>136.      0.489    36 between_day_up…</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> open            <span style="text-decoration: underline;">1</span>952.  216.    <span style="text-decoration: underline;">1</span>477.    <span style="text-decoration: underline;">2</span>427.      0.511    36 between_day_up…</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 6 more variables: total_effort_hr_on_ice &lt;dbl&gt;, method &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   variance_method &lt;chr&gt;, conf_level &lt;dbl&gt;, effort_target &lt;chr&gt;, unit &lt;chr&gt;</span></span></span>
 <span></span>

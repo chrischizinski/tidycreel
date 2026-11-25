@@ -142,8 +142,8 @@ effort
 #> # A tibble: 2 × 9
 #>   day_type estimate    se se_between se_within ci_lower ci_upper     n se_basis 
 #>   <chr>       <dbl> <dbl>      <dbl>     <dbl>    <dbl>    <dbl> <int> <chr>    
-#> 1 weekday     2809.  616.       616.        NA    1557.    4062.    27 between_…
-#> 2 weekend     1269.  805.       805.        NA    -367.    2906.     9 between_…
+#> 1 weekday     2809.  616.       616.        NA    1542.    4076.    27 between_…
+#> 2 weekend     1269.  805.       805.        NA    -587.    3126.     9 between_…
 rate
 #> 
 #> ── Creel Survey Estimates ──────────────────────────────────────────────────────
@@ -156,8 +156,8 @@ rate
 #> # A tibble: 2 × 6
 #>   day_type estimate     se ci_lower ci_upper     n
 #>   <chr>       <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1 weekday     0.193 0.0475   0.100     0.286   152
-#> 2 weekend     0.153 0.0398   0.0749    0.231    70
+#> 1 weekday     0.193 0.0475   0.0953    0.291   152
+#> 2 weekend     0.153 0.0398   0.0555    0.250    70
 ```
 
 Weekend parties caught fish faster than weekday parties, and weekdays

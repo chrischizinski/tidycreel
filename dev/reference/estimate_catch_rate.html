@@ -481,7 +481,7 @@ Fisheries Society Special Publication 25.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 5</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimate     se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.826 0.090<span style="text-decoration: underline;">8</span>    0.648     1.00    20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>    0.826 0.090<span style="text-decoration: underline;">8</span>    0.448     1.20    20</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped by day_type</span></span></span>
 <span class="r-in"><span><span class="va">result_grouped</span> <span class="op">&lt;-</span> <span class="fu">estimate_catch_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, by <span class="op">=</span> <span class="va">day_type</span><span class="op">)</span></span></span>
@@ -499,8 +499,8 @@ Fisheries Society Special Publication 25.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 6</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   day_type estimate    se ci_lower ci_upper     n</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     1.18  0.221    0.743    1.61     10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     0.704 0.106    0.498    0.911    10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> weekday     1.18  0.221   -<span style="color: #BB0000;">1.63</span>      3.98    10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> weekend     0.704 0.106   -<span style="color: #BB0000;">0.636</span>     2.05    10</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Custom confidence level</span></span></span>
 <span class="r-in"><span><span class="va">result_90</span> <span class="op">&lt;-</span> <span class="fu">estimate_catch_rate</span><span class="op">(</span><span class="va">design_with_interviews</span>, conf_level <span class="op">=</span> <span class="fl">0.90</span><span class="op">)</span></span></span>

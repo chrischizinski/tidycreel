@@ -365,7 +365,7 @@ print(effort_est)
 #> # A tibble: 1 × 6
 #>   estimate    se ci_lower ci_upper     n se_basis               
 #>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>                  
-#> 1     1695  248.    1208.    2182.    15 between_day_upper_bound
+#> 1     1695  248.     904.    2486.    15 between_day_upper_bound
 
 # Inspect per-site contributions to the total
 site_contribs <- get_site_contributions(effort_est)
@@ -427,7 +427,7 @@ print(harvest_rate)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1   0.0582 0.0160   0.0269   0.0896    15
+#> 1   0.0582 0.0160  0.00730    0.109    15
 
 # Total fish kept (harvest) and total fish caught (kept + released)
 harvest_est <- estimate_total_harvest(design, target = "sampled_days")
@@ -443,7 +443,7 @@ print(harvest_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     98.7  35.7     28.8     169.    15
+#> 1     98.7  35.7        0     212.    15
 
 catch_est <- estimate_total_catch(design, target = "sampled_days")
 print(catch_est)
@@ -458,7 +458,7 @@ print(catch_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     361.  59.9     243.     478.    15
+#> 1     361.  59.9     170.     551.    15
 ```
 
 ### Step 5: Results as Data
@@ -473,7 +473,7 @@ tibble::as_tibble(catch_est)
 #> # A tibble: 1 × 10
 #>   estimate    se ci_lower ci_upper     n method       variance_method conf_level
 #>      <dbl> <dbl>    <dbl>    <dbl> <int> <chr>        <chr>                <dbl>
-#> 1     361.  59.9     243.     478.    15 ht-total-ca… taylor                0.95
+#> 1     361.  59.9     170.     551.    15 ht-total-ca… taylor                0.95
 #> # ℹ 2 more variables: effort_target <chr>, unit <chr>
 
 ggplot2::autoplot(catch_est)

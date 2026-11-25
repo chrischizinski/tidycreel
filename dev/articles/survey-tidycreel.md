@@ -170,7 +170,7 @@ rate$estimates
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.181 0.0360    0.110    0.251   222
+#> 1    0.181 0.0360    0.107    0.254   222
 rate$unit
 #> [1] "fish/angler-hour"
 ```
@@ -242,7 +242,7 @@ derives the formula and discusses that assumption.
 | Interview design | complete trips; `svydesign(ids = ~1, strata = ~day_type, weights = ~1)` | [`add_interviews()`](https://chrischizinski.com/tidycreel/dev/reference/add_interviews.md) |
 | Catch rate | `svyratio(~catch, ~angler_hours, ...)` | [`estimate_catch_rate()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_catch_rate.md) |
 | Total catch | [`svyby()`](https://rdrr.io/pkg/survey/man/svyby.html) per stratum; $`\sum_h \hat{E}_h \hat{R}_h`$; Goodman variance | `estimate_total_catch(target = "period_total")` |
-| Confidence interval | effort and total catch: `confint(..., df = degf(design))`; catch rate: `confint(...)`, the normal interval | `ci_lower`, `ci_upper` |
+| Confidence interval | effort and catch rate: `confint(..., df = degf(design))` on their own designs; a grouped row takes its own days’ df, as `degf(subset(...))`; a rate pooled across strata takes Satterthwaite’s df over its interview and per-stratum effort terms; total catch: a $`t`$ on interviews less strata, for now (#705) | `ci_lower`, `ci_upper`; the df in `x$ci_df` |
 
 What tidycreel adds on top of these calls is the bookkeeping: the unit
 of each result, the strata a total must be built within, the refusals

@@ -271,7 +271,7 @@ effort:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.981 0.120    0.745     1.22    17</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.981 0.120    0.716     1.25    17</span></span></code></pre></div>
 <p>The CPUE estimate is the ratio of means: total catch divided by total
 effort over the 17 complete trips. Its variance is a Taylor
 linearization of the ratio, which carries the covariance between catch
@@ -374,7 +374,7 @@ total harvest:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 5</span></span></span>
 <span><span class="co">#&gt;   estimate     se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.606 0.068<span style="text-decoration: underline;">1</span>    0.472    0.739    17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>    0.606 0.068<span style="text-decoration: underline;">1</span>    0.456    0.756    17</span></span>
 <span></span>
 <span><span class="co"># Estimate total harvest</span></span>
 <span><span class="va">total_harvest_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/estimate_total_harvest.html">estimate_total_harvest</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>

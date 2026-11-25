@@ -169,7 +169,7 @@ estimate_catch_rate(design, use_trips = "incomplete", estimator = "mor")
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.31 0.110     2.10     2.53   115
+#> 1     2.31 0.110     2.07     2.55   115
 ```
 
 Asking for incomplete trips with the ratio of means is refused: the
@@ -202,7 +202,7 @@ estimate_catch_rate(design,
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1     2.29 0.0950     2.11     2.48    96
+#> 1     2.29 0.0950     2.09     2.50    96
 estimate_catch_rate(design,
   use_trips = "incomplete", estimator = "mor",
   truncate_at = NULL
@@ -216,7 +216,7 @@ estimate_catch_rate(design,
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1     2.27 0.114     2.05     2.49   120
+#> 1     2.27 0.114     2.02     2.52   120
 ```
 
 At the default cutoff 5 of the 120 incomplete trips are dropped. Raising
@@ -254,8 +254,8 @@ estimate_catch_rate(design, use_trips = "diagnostic")
 #> Complete trips vs Incomplete trips
 #> 
 #>    trip_type estimate        se ci_lower ci_upper   n
-#> 1   complete 2.343039 0.1018237 2.143469 2.542610  50
-#> 2 incomplete 2.311713 0.1113125 2.093545 2.529882 115
+#> 1   complete 2.343039 0.1018237 2.121185 2.564894  50
+#> 2 incomplete 2.311713 0.1113125 2.069184 2.554242 115
 #> 
 #> 
 #> ── Difference Metrics ──

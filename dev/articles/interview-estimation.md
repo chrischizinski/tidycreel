@@ -162,7 +162,7 @@ print(cpue_est)
 #> # A tibble: 1 × 5
 #>   estimate    se ci_lower ci_upper     n
 #>      <dbl> <dbl>    <dbl>    <dbl> <int>
-#> 1    0.981 0.120    0.745     1.22    17
+#> 1    0.981 0.120    0.716     1.25    17
 ```
 
 The CPUE estimate is the ratio of means: total catch divided by total
@@ -270,7 +270,7 @@ print(hpue_est)
 #> # A tibble: 1 × 5
 #>   estimate     se ci_lower ci_upper     n
 #>      <dbl>  <dbl>    <dbl>    <dbl> <int>
-#> 1    0.606 0.0681    0.472    0.739    17
+#> 1    0.606 0.0681    0.456    0.756    17
 
 # Estimate total harvest
 total_harvest_est <- estimate_total_harvest(design)

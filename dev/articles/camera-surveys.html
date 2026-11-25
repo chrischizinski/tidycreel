@@ -520,8 +520,8 @@ interviews and does not involve the camera at all:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   day_type estimate    se ci_lower ci_upper     n</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     0.413 0.172   0.075<span style="text-decoration: underline;">5</span>    0.751    20</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     0.496 0.101   0.297     0.694    20</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> weekday     0.413 0.172   -<span style="color: #BB0000;">0.135</span>    0.962    20</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> weekend     0.496 0.101    0.173    0.818    20</span></span></code></pre></div>
 <p>The call warns that each day type rests on 20 trips, a small sample
 for a ratio estimator. The example data are small so the page runs
 quickly; the warning is about precision, and the standard errors already

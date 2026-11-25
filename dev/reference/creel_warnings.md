@@ -138,6 +138,12 @@ print on every call.
   Tier 1. Trips that caught none of a species were left out, so the rate
   is among trips that caught it.
 
+- `creel_warning_zero_df_interval`:
+
+  Tier 1. A group was sampled on no more days than it has strata, so its
+  degrees of freedom are 0 and it has no interval; its estimate and SE
+  are reported, its bounds are NA.
+
 - `creel_warning_effort_excluded`:
 
   Tier 2. Interviews with missing or zero effort were left out of a
