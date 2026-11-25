@@ -77,7 +77,7 @@
       # A tibble: 1 x 5
         estimate     se ci_lower ci_upper     n
            <dbl>  <dbl>    <dbl>    <dbl> <int>
-      1     1.34 0.0726     1.20     1.49    10
+      1     1.34 0.0726     1.11     1.57    10
 
 # print.creel_schedule snapshot
 

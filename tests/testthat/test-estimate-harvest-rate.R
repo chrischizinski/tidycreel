@@ -1036,7 +1036,15 @@ hpue_pooled_reference <- function(design) {
     R = R, R_h = R_h, E_h = E_h,
     var_cond = as.numeric(vcov(r)),
     var_effort = sum(g^2 * se_E[names(R_h)]^2),
-    ci_cond = confint(r, level = 0.95)
+    ci_cond = confint(r, level = 0.95),
+    # Each term's design df: interview days minus strata, and sampled count
+    # days minus strata (GH #705).
+    df_cond = as.numeric(survey::degf(svy_w)),
+    # One effort term per stratum, on that stratum's own count days.
+    var_effort_h = g^2 * se_E[names(R_h)]^2,
+    df_effort_h = vapply(names(R_h), function(h) {
+      as.numeric(survey::degf(subset(design$survey, day_type == h)))
+    }, numeric(1))
   )
 }
 
@@ -1047,9 +1055,15 @@ test_that("ungrouped HPUE is the effort-weighted rate across strata", {
 
   expect_equal(result$estimates$estimate, ref$R, tolerance = 1e-10)
   expect_equal(ref$R, sum(ref$E_h[names(ref$R_h)] * ref$R_h) / sum(ref$E_h[names(ref$R_h)]))
-  scale <- sqrt(ref$var_cond + ref$var_effort) / sqrt(ref$var_cond)
-  expect_equal(result$estimates$ci_lower, ref$R - (ref$R - ref$ci_cond[1, 1]) * scale, tolerance = 1e-10)
-  expect_equal(result$estimates$ci_upper, ref$R + (ref$ci_cond[1, 2] - ref$R) * scale, tolerance = 1e-10)
+  # Student's t on Satterthwaite's df over the survey term and each
+  # stratum's effort term (GH #705).
+  se_ref <- sqrt(ref$var_cond + ref$var_effort)
+  nu <- (ref$var_cond + sum(ref$var_effort_h))^2 /
+    (ref$var_cond^2 / ref$df_cond + sum(ref$var_effort_h^2 / ref$df_effort_h))
+  expect_equal(result$ci_df, nu, tolerance = 1e-10)
+  q <- stats::qt(0.975, nu)
+  expect_equal(result$estimates$ci_lower, ref$R - q * se_ref, tolerance = 1e-10)
+  expect_equal(result$estimates$ci_upper, ref$R + q * se_ref, tolerance = 1e-10)
 })
 
 test_that("grouped HPUE matches manual svyby+svyratio calculation", {

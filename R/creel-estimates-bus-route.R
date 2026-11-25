@@ -134,10 +134,13 @@ estimate_effort_br <- function(
       sum(interviews$.contribution)
     }
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
-    ci <- confint(svy_result, level = conf_level)
+    br_df <- design_df(svy_br) # nolint: object_usage_linter
+    ci <- design_t_ci( # nolint: object_usage_linter
+      as.numeric(stats::coef(svy_result)), as.numeric(survey::SE(svy_result)), conf_level, br_df
+    )
     # Effort is bounded below by zero; the symmetric Wald bound is not.
-    ci_lower <- pmax(0, ci[1, 1]) # nolint: object_usage_linter
-    ci_upper <- ci[1, 2] # nolint: object_usage_linter
+    ci_lower <- pmax(0, ci$lower) # nolint: object_usage_linter
+    ci_upper <- ci$upper # nolint: object_usage_linter
 
     estimates_df <- tibble::tibble(
       estimate = total_estimate,
@@ -155,7 +158,7 @@ estimate_effort_br <- function(
       estimates = estimates_df,
       method = "total",
       variance_method = variance_method,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = br_df, # t on sampled days minus strata (GH #705)
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
@@ -198,7 +201,9 @@ estimate_effort_br <- function(
     se <- svy_result[["se"]]
     # Effort is bounded below by zero; the symmetric Wald bound is not.
     # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
-    ci <- svyby_normal_ci(estimate, se, conf_level) # nolint: object_usage_linter
+    # Each row its own domain's df: its sampled days minus its strata (GH #705).
+    br_df <- design_df(svy_br, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
+    ci <- design_t_ci(estimate, se, conf_level, br_df) # nolint: object_usage_linter
     ci_lower <- pmax(0, ci$lower)
     ci_upper <- ci$upper
 
@@ -246,7 +251,7 @@ estimate_effort_br <- function(
       estimates = estimates_df,
       method = "total",
       variance_method = variance_method,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = br_df, # t on sampled days minus strata (GH #705)
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,
@@ -618,13 +623,16 @@ br_harvest_rate_estimates <- function(
     svy_result <- with_defined_draws(suppressWarnings( # nolint: object_usage_linter
       draws_defined(survey::svyratio)(~.contribution, svy_br, denominator = denom_formula) # nolint: object_usage_linter
     ))
-    ci <- confint(svy_result, level = conf_level)
+    br_df <- design_df(svy_br) # nolint: object_usage_linter
+    ci <- design_t_ci( # nolint: object_usage_linter
+      as.numeric(stats::coef(svy_result)), as.numeric(survey::SE(svy_result)), conf_level, br_df
+    )
     estimates_df <- tibble::tibble(
       estimate = as.numeric(coef(svy_result)),
       se = as.numeric(survey::SE(svy_result)),
       # A catch rate is bounded below by zero; the symmetric Wald bound is not.
-      ci_lower = pmax(0, ci[1, 1]),
-      ci_upper = ci[1, 2],
+      ci_lower = pmax(0, ci$lower),
+      ci_upper = ci$upper,
       n = n_rows
     )
     result <- new_creel_estimates( # nolint: object_usage_linter
@@ -632,7 +640,7 @@ br_harvest_rate_estimates <- function(
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = br_df, # t on sampled days minus strata (GH #705)
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
@@ -681,7 +689,9 @@ br_harvest_rate_estimates <- function(
   estimates_df$se <- svy_result[[paste0("se.", ratio_col)]]
   # A catch rate is bounded below by zero; the symmetric Wald bound is not.
   # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
-  ci <- svyby_normal_ci(estimates_df$estimate, estimates_df$se, conf_level) # nolint: object_usage_linter
+  # Each row its own domain's df (GH #705).
+  br_df <- design_df(svy_br, by_vars, group_key(estimates_df, by_vars)) # nolint: object_usage_linter
+  ci <- design_t_ci(estimates_df$estimate, estimates_df$se, conf_level, br_df) # nolint: object_usage_linter
   estimates_df$ci_lower <- pmax(0, ci$lower)
   estimates_df$ci_upper <- ci$upper
   estimates_df$n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
@@ -699,7 +709,7 @@ br_harvest_rate_estimates <- function(
     estimates = estimates_df,
     method = method,
     variance_method = variance_method,
-    ci_df = Inf, # confint()/svyby() default: normal
+    ci_df = br_df, # t on sampled days minus strata (GH #705)
     design = design,
     conf_level = conf_level,
     by_vars = by_vars,
@@ -2109,10 +2119,13 @@ br_build_estimates <- function(
       sum(interviews$.contribution)
     }
     se <- as.numeric(survey::SE(svy_result)) # nolint: object_usage_linter
-    ci <- confint(svy_result, level = conf_level)
+    br_df <- design_df(svy_br_taylor) # nolint: object_usage_linter
+    ci <- design_t_ci( # nolint: object_usage_linter
+      as.numeric(stats::coef(svy_result)), as.numeric(survey::SE(svy_result)), conf_level, br_df
+    )
     # A catch total is bounded below by zero; the symmetric Wald bound is not.
-    ci_lower <- pmax(0, ci[1, 1]) # nolint: object_usage_linter
-    ci_upper <- ci[1, 2] # nolint: object_usage_linter
+    ci_lower <- pmax(0, ci$lower) # nolint: object_usage_linter
+    ci_upper <- ci$upper # nolint: object_usage_linter
 
     estimates_df <- tibble::tibble(
       estimate = total_estimate,
@@ -2125,9 +2138,12 @@ br_build_estimates <- function(
     if (ci_method == "bootstrap") {
       svy_br_boot <- get_variance_design(svy_br_base, "bootstrap")
       svy_boot_res <- suppressWarnings(survey::svytotal(~.contribution, svy_br_boot))
-      ci_boot <- confint(svy_boot_res, level = conf_level)
-      estimates_df$ci_lo_boot <- pmax(0, ci_boot[1, 1])
-      estimates_df$ci_hi_boot <- ci_boot[1, 2]
+      br_boot_df <- design_df(svy_br_boot) # nolint: object_usage_linter
+      ci_boot <- design_t_ci( # nolint: object_usage_linter
+        as.numeric(stats::coef(svy_boot_res)), as.numeric(survey::SE(svy_boot_res)), conf_level, br_boot_df
+      )
+      estimates_df$ci_lo_boot <- pmax(0, ci_boot$lower)
+      estimates_df$ci_hi_boot <- ci_boot$upper
     }
 
     result <- new_creel_estimates( # nolint: object_usage_linter
@@ -2135,7 +2151,7 @@ br_build_estimates <- function(
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = br_df, # t on sampled days minus strata (GH #705)
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
@@ -2173,7 +2189,9 @@ br_build_estimates <- function(
     se <- svy_result[["se"]]
     # A catch total is bounded below by zero; the symmetric Wald bound is not.
     # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
-    ci <- svyby_normal_ci(estimate, se, conf_level) # nolint: object_usage_linter
+    # Each row its own domain's df (GH #705).
+    br_df <- design_df(svy_br_taylor, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
+    ci <- design_t_ci(estimate, se, conf_level, br_df) # nolint: object_usage_linter
     ci_lower <- pmax(0, ci$lower)
     ci_upper <- ci$upper
 
@@ -2228,8 +2246,9 @@ br_build_estimates <- function(
         svy_boot_by <- br_drop_synthetic_groups(svy_boot_by, target_svy$interviews, by_vars, design)
       }
       # Normal on the bootstrap SE at the requested level (GH #703).
-      ci_boot <- svyby_normal_ci( # nolint: object_usage_linter
-        svy_boot_by[[".contribution"]], svy_boot_by[["se"]], conf_level
+      br_boot_df <- design_df(svy_br_boot, by_vars, group_key(svy_boot_by, by_vars)) # nolint: object_usage_linter
+      ci_boot <- design_t_ci( # nolint: object_usage_linter
+        svy_boot_by[[".contribution"]], svy_boot_by[["se"]], conf_level, br_boot_df
       )
       estimates_df$ci_lo_boot <- pmax(0, ci_boot$lower)
       estimates_df$ci_hi_boot <- ci_boot$upper
@@ -2240,7 +2259,7 @@ br_build_estimates <- function(
       estimates = estimates_df,
       method = method,
       variance_method = variance_method,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = br_df, # t on sampled days minus strata (GH #705)
       design = design,
       conf_level = conf_level,
       by_vars = by_vars,

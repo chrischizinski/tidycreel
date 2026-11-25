@@ -73,23 +73,62 @@ test_that("effort records the design df its t interval used, ungrouped and group
   expect_true(is.finite(e$ci_df))
   g <- quiet(estimate_effort(d, by = day_type))
   expect_interval_uses_ci_df(g)
-  # Grouped effort keys every group to the whole design's df (#705 item 6).
-  expect_identical(unique(g$ci_df), e$ci_df)
+  # Each group is a domain with fewer days than the design (#705 item 6,
+  # decided 2026-11-25); the exact values are pinned in the rate test below.
+  expect_true(all(g$ci_df < e$ci_df))
 })
 
-test_that("rates record Inf: survey's confint() and svyby() intervals are normal", {
+test_that("rates use t on the interview design's df, or Satterthwaite when pooled (GH #705)", {
+  # Interviews come from a few dozen days, so a rate's interval is Student's t
+  # on interview days minus strata (Cochran 1977, sec. 5.4; Lumley 2010,
+  # sec. 5.2), not the normal quantile it used to be. A grouped row is a
+  # domain and counts only its own days and strata, as
+  # survey::degf(subset(...)) does (decision on #705, 2026-11-25).
   d <- ms_design()
+  isvy <- d$interview_survey
+  df_int <- as.numeric(survey::degf(isvy))
+  types <- c("weekday", "weekend")
+  df_int_h <- vapply(types, function(h) as.numeric(survey::degf(subset(isvy, day_type == h))), numeric(1))
+  df_eff_h <- vapply(types, function(h) as.numeric(survey::degf(subset(d$survey, day_type == h))), numeric(1))
+  expect_true(all(df_int_h < df_int)) # the rule has to bite on this fixture
+
+  # Grouped by the stratum: nothing pooled, so each row its stratum's
+  # interview df -- for the regression slope too, which is not svyglm()'s
+  # residual df.
+  for (by_stratum in list(
+    quiet(estimate_catch_rate(d, by = day_type)),
+    quiet(estimate_catch_rate(d, by = day_type, estimator = "regression")),
+    quiet(estimate_catch_rate(d, by = day_type, estimator = "mor", use_trips = "complete")),
+    quiet(estimate_catch_rate(d, by = day_type, variance = "bootstrap"))
+  )) {
+    expect_interval_uses_ci_df(by_stratum)
+    expect_identical(by_stratum$ci_df, unname(df_int_h[as.character(by_stratum$estimates$day_type)]))
+  }
+
+  # Grouped effort is the same rule on the count design (row 6).
+  eff <- quiet(estimate_effort(d, by = day_type))
+  expect_interval_uses_ci_df(eff)
+  expect_identical(eff$ci_df, unname(df_eff_h[as.character(eff$estimates$day_type)]))
+
+  # Pooled across strata, each stratum's effort weight adds a term with that
+  # stratum's count df; Satterthwaite's df lies between the smallest term's df
+  # and their sum (Cochran 1977, eq. 5.16).
   for (x in list(
     quiet(estimate_catch_rate(d)),
-    quiet(estimate_catch_rate(d, by = day_type)),
     quiet(estimate_catch_rate(d, by = species)),
     quiet(estimate_harvest_rate(d)),
     # The fixture has complete trips only; MOR runs on them when asked, and
     # reaches the separate creel_estimates_mor constructor.
-    quiet(estimate_catch_rate(d, estimator = "mor", use_trips = "complete"))
+    quiet(estimate_catch_rate(d, estimator = "mor", use_trips = "complete")),
+    quiet(estimate_catch_rate(d, estimator = "regression"))
   )) {
     expect_interval_uses_ci_df(x)
-    expect_true(all(x$ci_df == Inf))
+    # The df lives in the slot only. An attribute left on the table made two
+    # tables with equal columns compare unequal once the dfs differed.
+    expect_null(attr(x$estimates, "ci_df"))
+    expect_true(all(is.finite(x$ci_df)))
+    expect_true(all(x$ci_df >= min(df_int_h, df_eff_h) - 1e-8))
+    expect_true(all(x$ci_df <= sum(df_int_h) + df_int + sum(df_eff_h) + 1e-8))
   }
 })
 
@@ -139,16 +178,28 @@ test_that("sectioned effort and totals record each section's df and the lake row
 
 # --- bus-route --------------------------------------------------------------
 
-test_that("bus-route effort, rates and totals record Inf (survey confint)", {
+test_that("bus-route effort, rates and totals use t on sampled days minus strata (GH #705)", {
   d <- quiet(add_br_register(build_br_design_for_tests(n_sites = 4, n_days = 12, n_interviews = 80, seed = 3)))
+  # 12 sampled days (the PSUs) in 2 day-type strata.
   for (x in list(
     quiet(estimate_effort(d)),
     quiet(estimate_catch_rate(d)),
     quiet(estimate_total_catch(d))
   )) {
-    est <- x$estimates
-    expect_length(x$ci_df, nrow(est))
-    expect_true(all(x$ci_df == Inf))
+    expect_interval_uses_ci_df(x)
+    expect_identical(x$ci_df, rep(10, nrow(x$estimates)))
+  }
+  # Grouped by day type, each row is its own domain: that type's sampled days
+  # minus its one stratum.
+  days <- unique(d$interviews[c(d$date_col, "day_type")])
+  per_type <- table(days$day_type) - 1
+  for (x in list(
+    quiet(estimate_effort(d, by = day_type)),
+    quiet(estimate_catch_rate(d, by = day_type)),
+    quiet(estimate_total_catch(d, by = day_type))
+  )) {
+    expect_interval_uses_ci_df(x)
+    expect_identical(x$ci_df, as.numeric(per_type[as.character(x$estimates$day_type)]))
   }
 })
 
@@ -202,4 +253,22 @@ test_that("every constructor call in R/ passes ci_df", {
     }
   }
   expect_identical(missing, character(0))
+})
+
+test_that("no estimate carries its df on the table as well as in the slot (GH #705)", {
+  # Species rows record their df as an attribute until the constructor takes
+  # it. Left on the table, it made a harvest and a catch table with equal
+  # columns compare unequal once rates had different dfs.
+  d <- make_sectioned_species_design()
+  for (x in list(
+    quiet(estimate_catch_rate(d, by = species)),
+    quiet(estimate_harvest_rate(d, by = species)),
+    quiet(estimate_total_catch(d, by = species)),
+    quiet(estimate_total_harvest(d, by = species)),
+    quiet(estimate_total_release(d, by = species)),
+    quiet(estimate_catch_rate(ms_design(), by = species)),
+    quiet(estimate_catch_rate(ms_design(), by = species, estimator = "mor", use_trips = "complete"))
+  )) {
+    expect_null(attr(x$estimates, "ci_df"))
+  }
 })

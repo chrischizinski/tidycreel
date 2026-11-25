@@ -8,17 +8,20 @@
 # numbers looked ordinary.
 #
 # The check is on the interval itself: for a symmetric, unclamped row the
-# critical value (ci_upper - estimate) / se must be the normal quantile of the
-# requested level, exactly as the ungrouped confint() interval's is.
+# critical value (ci_upper - estimate) / se must be the requested level's
+# quantile on the row's recorded df. Since GH #705 that is Student's t on the
+# design df, so the df must also be finite: a normal interval would pass the
+# level check while ignoring how few days the interviews came from.
 
 quiet <- function(expr) suppressWarnings(suppressMessages(expr))
 
-expect_normal_level <- function(x, conf_level) {
+expect_level <- function(x, conf_level) {
   est <- x$estimates
   ok <- !is.na(est$se) & est$se > 0 & is.finite(est$ci_upper) & is.finite(est$estimate)
   expect_true(any(ok), label = "at least one row with a checkable interval")
+  expect_true(all(is.finite(x$ci_df[ok])))
   z <- (est$ci_upper[ok] - est$estimate[ok]) / est$se[ok]
-  expect_equal(z, rep(stats::qnorm(1 - (1 - conf_level) / 2), sum(ok)), tolerance = 1e-8)
+  expect_equal(z, stats::qt(1 - (1 - conf_level) / 2, df = x$ci_df[ok]), tolerance = 1e-8)
   invisible(x)
 }
 
@@ -29,12 +32,12 @@ ms_design <- function() {
 test_that("grouped rates use the requested level, not svyby's fixed 95%", {
   d <- ms_design()
   for (lvl in c(0.8, 0.9)) {
-    expect_normal_level(quiet(estimate_catch_rate(d, by = day_type, conf_level = lvl)), lvl)
-    expect_normal_level(quiet(estimate_harvest_rate(d, by = day_type, conf_level = lvl)), lvl)
+    expect_level(quiet(estimate_catch_rate(d, by = day_type, conf_level = lvl)), lvl)
+    expect_level(quiet(estimate_harvest_rate(d, by = day_type, conf_level = lvl)), lvl)
     # species with an interview grouping goes through the grouped helper; species
     # alone is per-species ungrouped (confint) and was never affected.
-    expect_normal_level(quiet(estimate_catch_rate(d, by = c(species, day_type), conf_level = lvl)), lvl)
-    expect_normal_level(quiet(estimate_catch_rate(
+    expect_level(quiet(estimate_catch_rate(d, by = c(species, day_type), conf_level = lvl)), lvl)
+    expect_level(quiet(estimate_catch_rate(
       d, by = day_type, estimator = "mor", use_trips = "complete", conf_level = lvl
     )), lvl)
   }
@@ -49,12 +52,12 @@ test_that("a grouped rate's interval narrows with the level, as the ungrouped on
   expect_equal(g80$estimates$estimate, g95$estimates$estimate)
   expect_equal(g80$estimates$se, g95$estimates$se)
   expect_true(all(width(g80) < width(g95)))
-  expect_equal(width(g80) / width(g95), rep(stats::qnorm(0.9) / stats::qnorm(0.975), 2L), tolerance = 1e-8)
+  expect_equal(width(g80) / width(g95), stats::qt(0.9, g95$ci_df) / stats::qt(0.975, g95$ci_df), tolerance = 1e-8)
 })
 
 test_that("the 95% default is unchanged", {
   d <- ms_design()
-  expect_normal_level(quiet(estimate_catch_rate(d, by = day_type)), 0.95)
+  expect_level(quiet(estimate_catch_rate(d, by = day_type)), 0.95)
 })
 
 test_that("grouped bus-route effort, rates and totals use the requested level", {
@@ -68,9 +71,10 @@ test_that("grouped bus-route effort, rates and totals use the requested level", 
     # The lower bound is clamped at zero, so the upper bound carries the level.
     ok <- !is.na(est$se) & est$se > 0
     expect_true(any(ok))
+    expect_true(all(is.finite(x$ci_df[ok])))
     expect_equal(
       (est$ci_upper[ok] - est$estimate[ok]) / est$se[ok],
-      rep(stats::qnorm(0.9), sum(ok)),
+      stats::qt(0.9, df = x$ci_df[ok]),
       tolerance = 1e-8
     )
   }

@@ -857,7 +857,7 @@ test_that("grouped estimate_effort matches manual svyby standard errors", {
   }
 })
 
-test_that("grouped estimate_effort CI bounds use qt() with survey degf", {
+test_that("grouped estimate_effort CI bounds use qt() on each group's own degf", {
   design <- make_test_design_with_groups()
 
   # tidycreel grouped estimate
@@ -872,12 +872,11 @@ test_that("grouped estimate_effort CI bounds use qt() with survey degf", {
     survey::svytotal,
     vartype = "se"
   )
-  df <- as.numeric(survey::degf(svy))
-  t_crit <- qt(0.975, df = df)
-
-  # Match CI bounds for each group
+  # Match CI bounds for each group. A group is a domain: its df counts only its
+  # own sampled days and strata, as degf(subset(...)) does (GH #705).
   for (i in seq_len(nrow(result$estimates))) {
     day <- result$estimates$day_type[i]
+    t_crit <- qt(0.975, df = as.numeric(survey::degf(subset(svy, day_type == day))))
     tidycreel_ci_lower <- result$estimates$ci_lower[i]
     tidycreel_ci_upper <- result$estimates$ci_upper[i]
     manual_est <- manual_result$effort_hours[manual_result$day_type == day]

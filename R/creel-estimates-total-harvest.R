@@ -1095,7 +1095,8 @@ estimate_total_harvest_sections <- function(
           product_variance = product_variance,
           ci_type = ci_type
         )
-        row_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
+        sp_tbl <- tibble::as_tibble(structure(sp_df, ci_df = NULL)) # the df is in sec_row_df
+        row_df <- tibble::add_column(sp_tbl, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
         sec_row_expansion[[sec]] <- attr(sp_df, "se_expansion")
         sec_row_df[[sec]] <- attr(sp_df, "ci_df")

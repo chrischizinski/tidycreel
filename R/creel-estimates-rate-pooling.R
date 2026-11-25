@@ -210,19 +210,28 @@ refuse_unrated_strata <- function(E, rated, by_call, call) {
 #'
 #' Internal (GH #691). `estimates` holds the rows the survey returned, with
 #' `estimate`, `se`, `ci_lower`, `ci_upper` and the `by_vars` columns. Each
-#' row's variance gains `g' Sigma_E g` with `g_h = (A_h - R B_h) / sum_k E_k B_k`;
-#' the interval is widened by the same factor as the SE, keeping whichever
-#' reference distribution the survey call used.
+#' row's variance gains `g' Sigma_E g` with `g_h = (A_h - R B_h) / sum_k E_k B_k`.
+#'
+#' The terms come from different samples -- the interviews, and each
+#' stratum's counts -- each with its own design df, so the row's interval is
+#' Student's t on Satterthwaite's effective df over them (Cochran 1977, eq.
+#' 5.16; GH #705; see `pooled_rate_df()`). That df lies between the smallest
+#' term's df and their sum.
 #'
 #' @param estimates Data frame of rate rows.
 #' @param pool The list from `rate_strata_pooling()`.
 #' @param by_vars Grouping columns, or `NULL`.
-#' @param conf_level Confidence level, for an interval built from the SE alone.
-#' @return `estimates` with `se`, `ci_lower`, `ci_upper` updated.
+#' @param conf_level Confidence level.
+#' @param df The interview design's df for the survey term: one value, or one
+#'   per row (each row's domain).
+#' @return `estimates` with `se`, `ci_lower`, `ci_upper` updated, and the
+#'   rows' interval df as attribute `"ci_df"` (`df` itself when nothing is
+#'   pooled).
 #' @keywords internal
 #' @noRd
-rate_pooling_add_effort_var <- function(estimates, pool, by_vars, conf_level = 0.95) {
+rate_pooling_add_effort_var <- function(estimates, pool, by_vars, conf_level, df) {
   if (is.null(pool)) {
+    attr(estimates, "ci_df") <- rep_len(df, nrow(estimates))
     return(estimates)
   }
   d <- pool$data
@@ -239,6 +248,10 @@ rate_pooling_add_effort_var <- function(estimates, pool, by_vars, conf_level = 0
   row_key <- if (length(by_vars) == 0L) rep("", nrow(estimates)) else group_key(estimates, by_vars) # nolint: object_usage_linter
   data_key <- if (length(by_vars) == 0L) rep("", nrow(d)) else group_key(d, by_vars) # nolint: object_usage_linter
 
+  # Each stratum's effort comes from its own sampled days, with its own df.
+  effort_df <- stats::setNames(pool$effort$ci_df, e_keys)
+  se_eff_rows <- unname(se_E_all[e_keys])
+  effort_term <- vector("list", nrow(estimates))
   var_E <- vapply(seq_len(nrow(estimates)), function(i) {
     R <- estimates$estimate[i]
     if (!is.finite(R)) {
@@ -255,24 +268,21 @@ rate_pooling_add_effort_var <- function(estimates, pool, by_vars, conf_level = 0
     # have a known zero effort and no part in the ratio, so dR/dE_h = 0.
     g_full <- stats::setNames(rep(0, length(e_keys)), e_keys)
     g_full[strata_keys] <- g
-    effort_rows_weighted_var(pool$effort, unname(se_E_all[e_keys]), unname(g_full)) # nolint: object_usage_linter
+    effort_term[[i]] <<- unname(g_full)^2 * se_eff_rows^2
+    effort_rows_weighted_var(pool$effort, se_eff_rows, unname(g_full)) # nolint: object_usage_linter
   }, numeric(1))
 
   se_old <- estimates$se
   se_new <- sqrt(se_old^2 + var_E)
-  scale <- ifelse(is.finite(se_old) & se_old > 0, se_new / se_old, NA_real_)
-  est <- estimates$estimate
-  lower <- est - (est - estimates$ci_lower) * scale
-  upper <- est + (estimates$ci_upper - est) * scale
-  # A survey SE of exactly 0 (constant ratios) leaves no interval to widen;
-  # the effort term alone then gives a normal interval on the new SE.
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
-  flat <- is.finite(se_old) & se_old == 0 & is.finite(se_new)
-  lower[flat] <- est[flat] - z * se_new[flat]
-  upper[flat] <- est[flat] + z * se_new[flat]
-  estimates$ci_lower <- lower
-  estimates$ci_upper <- upper
+  df <- rep_len(df, nrow(estimates)) # one per row when grouped (domain df)
+  row_df <- vapply(seq_len(nrow(estimates)), function(i) {
+    pooled_rate_df(se_old[i]^2, df[i], effort_term[[i]], var_E[i], unname(effort_df))
+  }, numeric(1))
+  ci <- design_t_ci(estimates$estimate, se_new, conf_level, row_df) # nolint: object_usage_linter
+  estimates$ci_lower <- ci$lower
+  estimates$ci_upper <- ci$upper
   estimates$se <- se_new
+  attr(estimates, "ci_df") <- row_df
   estimates
 }
 
@@ -283,6 +293,28 @@ rate_pooling_add_effort_var <- function(estimates, pool, by_vars, conf_level = 0
 # comparison is like with like and needs no effort (GH #691).
 rate_pooling_state <- new.env(parent = emptyenv())
 rate_pooling_state$off <- FALSE
+
+#' Satterthwaite df of a rate pooled across strata
+#'
+#' Internal (GH #705). The survey terms carry their interview domains' df (one
+#' term, or one per stratum for pooled slopes); each stratum's effort term
+#' `g_h^2 Var(E_h)` its own count-domain df. The effort
+#' terms are scaled to sum to the effort variance actually added, which can
+#' include covariance between strata rows, so the df is weighted by the
+#' variance that enters the interval.
+#' @keywords internal
+#' @noRd
+pooled_rate_df <- function(var_survey, df_survey, terms, var_effort, df_effort) {
+  if (is.null(terms) || is.na(var_effort)) {
+    return(NA_real_)
+  }
+  tot <- sum(terms)
+  terms <- if (tot > 0) terms * var_effort / tot else terms
+  as.numeric(satterthwaite_df( # nolint: object_usage_linter
+    matrix(c(var_survey, terms), nrow = 1L),
+    matrix(c(df_survey, df_effort), nrow = 1L)
+  ))
+}
 
 #' Evaluate `expr` with effort-weighted pooling of rates switched off
 #'
@@ -334,13 +366,16 @@ regression_pooled_total <- function(design, strata, conf_level, force_origin, va
     ), call = call)
   }
   pe <- pooling_effort(design, strata, by_call, call)
-  per <- estimate_cpue_reg_grouped( # nolint: object_usage_linter
+  per_fit <- estimate_cpue_reg_grouped( # nolint: object_usage_linter
     design, strata, conf_level, force_origin, variance_method,
     call = call
-  )$estimates
+  )
+  per <- per_fit$estimates
   # A stratum whose slope cannot be identified has no rate, like one with no
   # interviews; one with an unknown effort cannot be weighted.
-  per <- per[!is.na(per$estimate), , drop = FALSE]
+  identified <- !is.na(per$estimate)
+  per <- per[identified, , drop = FALSE]
+  per_df <- per_fit$ci_df[identified]
   key <- group_key(per, strata) # nolint: object_usage_linter
   refuse_unrated_strata(pe$E, key, by_call, call)
   if (anyNA(pe$E[key])) {
@@ -364,16 +399,21 @@ regression_pooled_total <- function(design, strata, conf_level, force_origin, va
   # known zero effort, take no part in R, and have dR/dE_h = 0.
   g_full <- stats::setNames(rep(0, length(e_keys)), e_keys)
   g_full[key] <- (b - R) / E_tot
-  var_R <- sum((E / E_tot)^2 * per$se^2) +
-    effort_rows_weighted_var(pe$effort, unname(pe$se_E[e_keys]), unname(g_full)) # nolint: object_usage_linter
-  se <- sqrt(var_R)
-  # Normal-scale interval, as the per-stratum regression intervals are.
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
-  tibble::tibble(
+  slope_terms <- (E / E_tot)^2 * per$se^2
+  se_eff_rows <- unname(pe$se_E[e_keys])
+  var_effort <- effort_rows_weighted_var(pe$effort, se_eff_rows, unname(g_full)) # nolint: object_usage_linter
+  se <- sqrt(sum(slope_terms) + var_effort)
+  # Each stratum's slope on its own interview days' df, each stratum's effort
+  # on its own count days'; Satterthwaite over every term (GH #705).
+  df <- pooled_rate_df(slope_terms, per_df, unname(g_full)^2 * se_eff_rows^2, var_effort, pe$effort$ci_df)
+  ci <- design_t_ci(R, se, conf_level, df) # nolint: object_usage_linter
+  out <- tibble::tibble(
     estimate = R, se = se,
-    ci_lower = R - z * se, ci_upper = R + z * se,
+    ci_lower = ci$lower, ci_upper = ci$upper,
     n = sum(per$n)
   )
+  attr(out, "ci_df") <- df
+  out
 }
 
 #' Refuse a regression grouped by a column that is not a stratum, across strata

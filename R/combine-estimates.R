@@ -709,8 +709,7 @@ satterthwaite_df <- function(v, df) {
 }
 
 combined_ci <- function(estimate, se, df, conf_level) {
-  crit <- ifelse(is.na(df), NA_real_, stats::qt(1 - (1 - conf_level) / 2, df = df))
-  list(lower = estimate - crit * se, upper = estimate + crit * se)
+  design_t_ci(estimate, se, conf_level, df) # nolint: object_usage_linter
 }
 
 combined_n <- function(aligned) {

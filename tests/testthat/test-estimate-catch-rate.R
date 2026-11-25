@@ -1079,6 +1079,14 @@ cpue_pooled_reference <- function(design) {
     var_cond = as.numeric(vcov(r)),
     var_effort = sum(g^2 * se_E[names(R_h)]^2),
     ci_cond = confint(r, level = 0.95),
+    # Each term's design df: interview days minus strata, and sampled count
+    # days minus strata (GH #705).
+    df_cond = as.numeric(survey::degf(svy_w)),
+    # One effort term per stratum, on that stratum's own count days.
+    var_effort_h = g^2 * se_E[names(R_h)]^2,
+    df_effort_h = vapply(names(R_h), function(h) {
+      as.numeric(survey::degf(subset(design$survey, day_type == h)))
+    }, numeric(1)),
     unweighted = as.numeric(coef(survey::svyratio(
       ~catch_total, ~hours_fished,
       survey::svydesign(ids = ~date, strata = ~day_type, nest = TRUE, data = ci)
@@ -1106,10 +1114,37 @@ test_that("ungrouped CPUE SE^2 is the survey variance plus the effort weights' v
   se_ref <- sqrt(ref$var_cond + ref$var_effort)
   expect_equal(result$estimates$se, se_ref, tolerance = 1e-10)
   expect_gt(ref$var_effort, 0)
-  # The interval is the survey's, widened by the same factor as the SE.
-  scale <- se_ref / sqrt(ref$var_cond)
-  expect_equal(result$estimates$ci_upper - ref$R, (ref$ci_cond[1, 2] - ref$R) * scale, tolerance = 1e-10)
-  expect_equal(ref$R - result$estimates$ci_lower, (ref$R - ref$ci_cond[1, 1]) * scale, tolerance = 1e-10)
+  # The survey term and one effort term per stratum: Student's t on
+  # Satterthwaite's df over them
+  # (Cochran 1977, eq. 5.16; GH #705), written out here, not called.
+  nu <- (ref$var_cond + sum(ref$var_effort_h))^2 /
+    (ref$var_cond^2 / ref$df_cond + sum(ref$var_effort_h^2 / ref$df_effort_h))
+  expect_equal(result$ci_df, nu, tolerance = 1e-10)
+  q <- stats::qt(0.975, nu)
+  expect_equal(result$estimates$ci_upper - ref$R, q * se_ref, tolerance = 1e-10)
+  expect_equal(ref$R - result$estimates$ci_lower, q * se_ref, tolerance = 1e-10)
+})
+
+test_that("a pooled rate's df gives each stratum's effort term its own df (GH #705)", {
+  # 10 weekday and 4 weekend count days: the two effort terms carry 9 and 3
+  # df. A fixture with equal days per stratum cannot tell this rule from one
+  # df for all effort, so this one is unbalanced on purpose.
+  data("example_calendar", package = "tidycreel")
+  data("example_counts", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  design <- creel_design(example_calendar, date = date, strata = day_type) # nolint: object_usage_linter
+  design <- suppressWarnings(suppressMessages(add_counts(design, example_counts))) # nolint: object_usage_linter
+  design <- suppressWarnings(suppressMessages(add_interviews( # nolint: object_usage_linter
+    design, example_interviews, # nolint: object_usage_linter
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  )))
+  result <- suppressWarnings(suppressMessages(estimate_catch_rate(design))) # nolint: object_usage_linter
+  ref <- cpue_pooled_reference(design)
+  expect_false(isTRUE(all.equal(ref$df_effort_h[[1]], ref$df_effort_h[[2]])))
+  nu <- (ref$var_cond + sum(ref$var_effort_h))^2 /
+    (ref$var_cond^2 / ref$df_cond + sum(ref$var_effort_h^2 / ref$df_effort_h))
+  expect_equal(result$ci_df, nu, tolerance = 1e-10)
 })
 
 test_that("grouped CPUE matches manual svyby+svyratio calculation", {

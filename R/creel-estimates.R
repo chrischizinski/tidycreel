@@ -2387,7 +2387,7 @@ estimate_catch_rate <- function(
     if (estimator == "mor") {
       return(new_creel_estimates_mor(
         # nolint: object_usage_linter
-        estimates = tibble::as_tibble(estimates_df),
+        estimates = tibble::as_tibble(structure(estimates_df, ci_df = NULL)), # the slot holds it
         ci_df = attr(estimates_df, "ci_df"),
         method = method_label,
         variance_method = variance,
@@ -2410,7 +2410,7 @@ estimate_catch_rate <- function(
 
     return(new_creel_estimates(
       # nolint: object_usage_linter
-      estimates = tibble::as_tibble(estimates_df),
+      estimates = tibble::as_tibble(structure(estimates_df, ci_df = NULL)), # the slot holds it
       ci_df = attr(estimates_df, "ci_df"),
       method = method_label,
       variance_method = species_variance_method,
@@ -3025,7 +3025,7 @@ estimate_harvest_rate <- function(
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
-      estimates = tibble::as_tibble(estimates_df),
+      estimates = tibble::as_tibble(structure(estimates_df, ci_df = NULL)), # the slot holds it
       ci_df = attr(estimates_df, "ci_df"),
       method = if (mortr_active) {
         "mean-of-ratios-truncated-hpue-species"
@@ -3510,7 +3510,7 @@ estimate_release_rate <- function(
     )
     return(new_creel_estimates(
       # nolint: object_usage_linter
-      estimates = tibble::as_tibble(estimates_df),
+      estimates = tibble::as_tibble(structure(estimates_df, ci_df = NULL)), # the slot holds it
       ci_df = attr(estimates_df, "ci_df"),
       method = if (mortr_active) {
         "mean-of-ratios-truncated-rpue"
@@ -4163,24 +4163,31 @@ mor_svy_estimate <- function(svy_design, ratio_col, weighted) {
   ))
 }
 
-#' Normal confidence bounds for `svyby()` rows at the requested level
+#' Student-t confidence bounds on a design's degrees of freedom
 #'
-#' Internal (GH #703). `survey::svyby(vartype = "ci", ci.level = )` ignores
-#' `ci.level`: its `ci_l`/`ci_u` columns are always the 95% normal interval, so
-#' every grouped rate and bus-route path reported 95% bounds whatever
-#' `conf_level` the caller asked for, while the ungrouped paths, which call
-#' `confint(level = conf_level)`, honoured it. Built here from the rows' own
-#' estimates and standard errors on the same normal quantile `confint()` uses
-#' for an `svyby`/`svystat` object (df = Inf), so grouped and ungrouped agree.
+#' Internal. Every rate and bus-route interval is built here, grouped or not,
+#' from the rows' own estimates and standard errors.
 #'
-#' @param estimate,se Numeric vectors, one entry per `svyby()` row.
+#' Not `svyby()`'s `ci_l`/`ci_u`: `survey::svyby(vartype = "ci", ci.level = )`
+#' ignores `ci.level` and always reports the 95% normal interval (GH #703).
+#'
+#' Not the normal quantile either (GH #705). Pollock et al. (1994, sec. 3.3)
+#' justify `1.96 SE` as a large-sample approximation; Cochran (1977, sec. 5.4)
+#' reads the multiplier from Student's t when the strata supply few degrees of
+#' freedom, and a creel survey's interviews come from a few dozen days at most.
+#' `df` is the design's `survey::degf()`: sampled days (the PSUs) minus strata
+#' (Lumley 2010, sec. 5.2). An `NA` df gives `NA` bounds: an unknown df is not
+#' a normal one.
+#'
+#' @param estimate,se Numeric vectors, one entry per row.
 #' @param conf_level Confidence level.
+#' @param df Degrees of freedom, recycled to the rows.
 #' @return List with `lower` and `upper`.
 #' @keywords internal
 #' @noRd
-svyby_normal_ci <- function(estimate, se, conf_level) {
-  z <- stats::qnorm(1 - (1 - conf_level) / 2)
-  list(lower = estimate - z * se, upper = estimate + z * se)
+design_t_ci <- function(estimate, se, conf_level, df) {
+  crit <- ifelse(is.na(df), NA_real_, stats::qt(1 - (1 - conf_level) / 2, df = df))
+  list(lower = estimate - crit * se, upper = estimate + crit * se)
 }
 
 #' Grouped mean of ratios, party-size weighted when `mor_party_weights()` says
@@ -4227,10 +4234,13 @@ mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf
     est_col <- ratio_col
     se_col <- "se"
   }
-  # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
-  ci <- svyby_normal_ci(svy_result[[est_col]], svy_result[[se_col]], conf_level)
+  by_vars <- all.vars(by_formula)
+  # Each row its own domain's df (GH #705).
+  df <- design_df(svy_design, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
+  ci <- design_t_ci(svy_result[[est_col]], svy_result[[se_col]], conf_level, df) # GH #703, #705
   list(
     svy_result = svy_result,
+    df = df,
     estimate = svy_result[[est_col]],
     se = svy_result[[se_col]],
     ci_lower = ci$lower,
@@ -8001,8 +8011,9 @@ estimate_effort_grouped <- function(
   se_between <- se_between_vec
   se_within <- sqrt(var_within_vec)
 
-  # Recompute CI from combined variance (not from svyby ci_l/ci_u)
-  df_val <- as.numeric(survey::degf(svy_design))
+  # Recompute CI from combined variance (not from svyby ci_l/ci_u). Each
+  # group its own domain's df: its sampled days minus its strata (GH #705).
+  df_val <- design_df(svy_design, by_vars, result_group_keys) # nolint: object_usage_linter
   alpha <- 1 - conf_level
   t_crit <- qt(1 - alpha / 2, df = df_val)
   ci_lower <- estimate - t_crit * se
@@ -8060,7 +8071,7 @@ estimate_effort_grouped <- function(
   result <- new_creel_estimates(
     # nolint: object_usage_linter
     estimates = estimates_df,
-    # One whole-design df for every group, as the interval above used (GH #705).
+    # Each group its own domain df, as the interval above used (GH #705).
     ci_df = df_val,
     method = "total",
     variance_method = variance_method,
@@ -8187,9 +8198,11 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
   # Extract estimates
   estimate <- as.numeric(coef(svy_result))
   se <- as.numeric(survey::SE(svy_result))
-  ci <- confint(svy_result, level = conf_level)
-  ci_lower <- ci[1, 1]
-  ci_upper <- ci[1, 2]
+  # Interview days minus strata: the interval's t df (GH #705).
+  rate_df <- design_df(svy_design) # nolint: object_usage_linter
+  ci <- design_t_ci(estimate, se, conf_level, rate_df)
+  ci_lower <- ci$lower
+  ci_upper <- ci$upper
   n <- nrow(interviews_data)
 
   # Build estimates tibble
@@ -8201,7 +8214,9 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     n = n
   )
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level, rate_df) # nolint: object_usage_linter
+  row_ci_df <- attr(estimates_df, "ci_df")
+  attr(estimates_df, "ci_df") <- NULL # recorded in the slot, not on the table
 
   # Return appropriate creel_estimates object (MOR or standard)
   if (estimator %in% c("mor", "mortr")) {
@@ -8210,7 +8225,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -8228,7 +8243,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -8343,6 +8358,7 @@ estimate_cpue_grouped <- function(
     se <- mor_fit$se
     ci_lower <- mor_fit$ci_lower
     ci_upper <- mor_fit$ci_upper
+    rate_df <- mor_fit$df
   } else {
     # Ratio-of-means: use svyby with svyratio
     catch_formula <- stats::reformulate(catch_col)
@@ -8367,8 +8383,9 @@ estimate_cpue_grouped <- function(
     se_col <- paste0("se.", ratio_col)
     estimate <- svy_result[[ratio_col]]
     se <- svy_result[[se_col]]
-    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
-    ci <- svyby_normal_ci(estimate, se, conf_level)
+    # Each row its own domain's df: its interview days minus its strata (GH #705).
+    rate_df <- design_df(svy_design, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
+    ci <- design_t_ci(estimate, se, conf_level, rate_df) # GH #703, #705
     ci_lower <- ci$lower
     ci_upper <- ci$upper
   }
@@ -8398,7 +8415,9 @@ estimate_cpue_grouped <- function(
 
   estimates_df$n <- group_n
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level, rate_df) # nolint: object_usage_linter
+  row_ci_df <- attr(estimates_df, "ci_df")
+  attr(estimates_df, "ci_df") <- NULL # recorded in the slot, not on the table
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
@@ -8412,7 +8431,7 @@ estimate_cpue_grouped <- function(
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -8430,7 +8449,7 @@ estimate_cpue_grouped <- function(
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9638,9 +9657,11 @@ estimate_harvest_total <- function(
   # Extract estimates
   estimate <- as.numeric(coef(svy_result))
   se <- as.numeric(survey::SE(svy_result))
-  ci <- confint(svy_result, level = conf_level)
-  ci_lower <- ci[1, 1]
-  ci_upper <- ci[1, 2]
+  # Interview days minus strata: the interval's t df (GH #705).
+  rate_df <- design_df(svy_design) # nolint: object_usage_linter
+  ci <- design_t_ci(estimate, se, conf_level, rate_df)
+  ci_lower <- ci$lower
+  ci_upper <- ci$upper
   n <- nrow(interviews_data)
 
   # Build estimates tibble
@@ -9652,7 +9673,9 @@ estimate_harvest_total <- function(
     n = n
   )
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, NULL, conf_level, rate_df) # nolint: object_usage_linter
+  row_ci_df <- attr(estimates_df, "ci_df")
+  attr(estimates_df, "ci_df") <- NULL # recorded in the slot, not on the table
 
   # Return the MOR-classed object on the mean-of-ratios branch, exactly as
   # estimate_cpue_total() and estimate_cpue_grouped() do. HPUE was the one metric
@@ -9666,7 +9689,7 @@ estimate_harvest_total <- function(
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9684,7 +9707,7 @@ estimate_harvest_total <- function(
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9822,6 +9845,7 @@ estimate_harvest_grouped <- function(
     se <- mor_fit$se
     ci_lower <- mor_fit$ci_lower
     ci_upper <- mor_fit$ci_upper
+    rate_df <- mor_fit$df
   } else {
     harvest_formula <- stats::reformulate(harvest_col)
     effort_formula <- stats::reformulate(effort_col)
@@ -9846,8 +9870,9 @@ estimate_harvest_grouped <- function(
     se_col <- paste0("se.", ratio_col)
     estimate <- svy_result[[ratio_col]]
     se <- svy_result[[se_col]]
-    # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
-    ci <- svyby_normal_ci(estimate, se, conf_level)
+    # Each row its own domain's df: its interview days minus its strata (GH #705).
+    rate_df <- design_df(svy_design, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
+    ci <- design_t_ci(estimate, se, conf_level, rate_df) # GH #703, #705
     ci_lower <- ci$lower
     ci_upper <- ci$upper
   }
@@ -9877,7 +9902,9 @@ estimate_harvest_grouped <- function(
 
   estimates_df$n <- group_n
   # The effort weights are estimates too (GH #691).
-  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level) # nolint: object_usage_linter
+  estimates_df <- rate_pooling_add_effort_var(estimates_df, pool, by_vars, conf_level, rate_df) # nolint: object_usage_linter
+  row_ci_df <- attr(estimates_df, "ci_df")
+  attr(estimates_df, "ci_df") <- NULL # recorded in the slot, not on the table
 
   # Convert to tibble and reorder columns (group cols, then estimate cols, then n)
   estimates_df <- tibble::as_tibble(estimates_df)
@@ -9897,7 +9924,7 @@ estimate_harvest_grouped <- function(
     new_creel_estimates_mor(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -9915,7 +9942,7 @@ estimate_harvest_grouped <- function(
     new_creel_estimates(
       # nolint: object_usage_linter
       estimates = estimates_df,
-      ci_df = Inf, # confint()/svyby() default: normal
+      ci_df = row_ci_df, # t on rate_df, or Satterthwaite when pooled (GH #705)
       method = method_name,
       variance_method = variance_method,
       design = design,
@@ -10042,7 +10069,8 @@ estimate_catch_rate_sections <- function(
           targeted = targeted
         )
         sec_row_df[[sec]] <- attr(sp_df, "ci_df")
-        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
+        sp_tbl <- tibble::as_tibble(structure(sp_df, ci_df = NULL)) # the df is in sec_row_df
+        sp_df <- tibble::add_column(sp_tbl, !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
       } else if (!is.null(by_info$interview_vars)) {
@@ -10236,7 +10264,8 @@ estimate_harvest_rate_sections <- function(
           targeted = targeted
         )
         sec_row_df[[sec]] <- attr(sp_df, "ci_df")
-        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
+        sp_tbl <- tibble::as_tibble(structure(sp_df, ci_df = NULL)) # the df is in sec_row_df
+        sp_df <- tibble::add_column(sp_tbl, !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
       } else if (!is.null(by_info$interview_vars)) {
@@ -10408,7 +10437,8 @@ estimate_release_rate_sections <- function(
           targeted = targeted
         )
         sec_row_df[[sec]] <- attr(sp_df, "ci_df")
-        sp_df <- tibble::add_column(tibble::as_tibble(sp_df), !!section_col := sec, .before = 1)
+        sp_tbl <- tibble::as_tibble(structure(sp_df, ci_df = NULL)) # the df is in sec_row_df
+        sp_df <- tibble::add_column(sp_tbl, !!section_col := sec, .before = 1)
         sp_df$data_available <- TRUE
         section_rows[[sec]] <- sp_df
         next

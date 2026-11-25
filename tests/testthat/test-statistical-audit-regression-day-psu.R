@@ -250,11 +250,14 @@ test_that("REG-09 (#665 review): edge cases fail loud or stay unknown, not wrong
   d_na <- reg_design(iv_na)
   r_na <- reg_q(estimate_catch_rate(d_na, estimator = "regression", force_origin = FALSE, use_trips = "all"))
   expect_true(is.na(r_na$estimates$estimate))
-  # The intercept fit's interval is on the normal scale: finite on two days.
+  # The intercept fit's interval is finite on two days a stratum: its t is on
+  # the design df, not svyglm()'s residual df, which also takes the intercept
+  # off and leaves 0 (GH #705).
   d_two <- reg_design(iv[iv$date %in% cal$date[c(1, 2, 6, 7)], ])
-  r_two <- reg_q(estimate_catch_rate(d_two, estimator = "regression", force_origin = FALSE))$estimates
-  z <- stats::qnorm(0.975)
-  expect_equal(r_two$ci_upper - r_two$estimate, z * r_two$se, tolerance = 1e-8)
+  fit_two <- reg_q(estimate_catch_rate(d_two, estimator = "regression", force_origin = FALSE))
+  r_two <- fit_two$estimates
+  expect_true(is.finite(r_two$ci_upper) && fit_two$ci_df > 0)
+  expect_equal(r_two$ci_upper - r_two$estimate, stats::qt(0.975, fit_two$ci_df) * r_two$se, tolerance = 1e-8)
   # A group whose slope is unidentifiable (one effort value) is unavailable,
   # and the other groups are still estimated.
   iv_c <- iv

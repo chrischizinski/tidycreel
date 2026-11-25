@@ -154,6 +154,49 @@ as_survey_design <- function(design) {
 #' @keywords internal
 #' @noRd
 get_variance_design <- function(design, variance_method, call = rlang::caller_env(), by = NULL) {
+  out <- variance_design_for(design, variance_method, call = call, by = by)
+  # A replicate design keeps no clusters or strata, so the design it came from
+  # rides along for design_df(): the df is the design's, whatever estimates
+  # the variance (GH #705).
+  if (inherits(out, "svyrep.design")) {
+    attr(out, "taylor_design") <- design
+  }
+  out
+}
+
+#' Degrees of freedom of a design, or of each of its domains
+#'
+#' Internal (GH #705). Sampled PSUs (days) minus strata, counted over the rows
+#' with a nonzero sampling weight: `survey:::degf.survey.design2`, applied to
+#' each domain when `by_vars` is given, so a row grouped by weekday gets the
+#' weekdays' df, as `degf(subset(design, weekday))` would report, not the
+#' whole design's (decision on #705, 2026-11-25). A replicate design is
+#' counted on the Taylor design `get_variance_design()` built it from, so
+#' bootstrap and jackknife report the same df as Taylor.
+#'
+#' @param svy A survey design, as returned by `get_variance_design()`.
+#' @param by_vars Grouping columns, or `NULL` for the whole design.
+#' @param keys `group_key()` values of the rows to report, one per row.
+#' @return Numeric df: one value, or one per key.
+#' @keywords internal
+#' @noRd
+design_df <- function(svy, by_vars = NULL, keys = NULL) {
+  base <- attr(svy, "taylor_design") %||% svy
+  if (!inherits(base, "survey.design2")) {
+    return(as.numeric(survey::degf(svy)))
+  }
+  inset <- stats::weights(base, "sampling") != 0
+  count <- function(sel) {
+    as.numeric(length(unique(base$cluster[sel, 1])) - length(unique(base$strata[sel, 1])))
+  }
+  if (is.null(by_vars)) {
+    return(count(inset))
+  }
+  row_key <- group_key(base$variables, by_vars) # nolint: object_usage_linter
+  vapply(keys, function(k) count(inset & row_key == k), numeric(1), USE.NAMES = FALSE)
+}
+
+variance_design_for <- function(design, variance_method, call = rlang::caller_env(), by = NULL) {
   if (isTRUE(attr(design, "interview_day_psu"))) {
     refuse_one_day_interviews(design, by = by, call = call)
   }
