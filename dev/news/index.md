@@ -1957,6 +1957,19 @@
 
 ### Bug fixes
 
+- [`estimate_total_catch()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_catch.md),
+  [`estimate_total_harvest()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_harvest.md)
+  and
+  [`estimate_total_release()`](https://chrischizinski.com/tidycreel/dev/reference/estimate_total_release.md)
+  on a sectioned design with `by` ignored `ci_type` and
+  `product_variance`: every section row got the default symmetric
+  interval and Goodman variance, whatever was asked for, while the same
+  call without `by` honoured both.
+  `estimate_total_harvest(by = species)` likewise ignored `ci_type`.
+  Both arguments now reach every path
+  ([\#704](https://github.com/chrischizinski/tidycreel/issues/704)).
+  Results with the default arguments are unchanged.
+
 - Grouped intervals now use the `conf_level` asked for
   ([\#703](https://github.com/chrischizinski/tidycreel/issues/703)).
   With `by =`,
