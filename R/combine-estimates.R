@@ -33,9 +33,17 @@
 #' Overlapping coverage that the data cannot show -- day and night windows
 #' that overlap, two lakes sharing a section -- is the user's responsibility.
 #'
-#' Supported quantities: effort, total catch, total harvest, total release
-#' and angler trips. Mark-recapture harvest, which carries no design to check
-#' the parts against, is refused.
+#' Supported quantities: effort and total catch, harvest and release,
+#' including per-species tables. Refused, because the estimate does not keep
+#' the data its independence would be checked against: sectioned estimates,
+#' camera effort (its calibration interviews are an argument, not part of the
+#' design), angler trips and mark-recapture harvest.
+#'
+#' Rows are compared by what they record -- date, count, effort, catch,
+#' harvest, time, trip status, as the design maps them -- not by column name.
+#' A rate is also checked against its design's counts and their party-size
+#' and calibration stamps: a rate pooled across strata is weighted by
+#' count-based effort.
 #'
 #' Rows whose estimate or standard error is unknown (`NA`) in any part are
 #' unknown in the result. Named standard-error components are summed as
@@ -248,15 +256,21 @@ estimate_quantity <- function(x) {
   if (startsWith(m, "combined-")) {
     return(sub("^combined-", "", m))
   }
-  effort <- c(
-    "total", "total-sections", "aerial_total", "aerial_glmm_total",
-    "camera_ratio", "camera_raw", "camera_mi"
-  )
+  # Not supported in v1, because their shared data cannot be checked:
+  # sectioned estimates carry section rows and a lake total in one table;
+  # camera effort takes its calibration interviews as an argument the
+  # estimate does not keep (and the imputation path keeps no counts); angler
+  # trips keep no design. Refused as unsupported rather than passed unchecked.
+  if (grepl("sections$", m) || startsWith(m, "camera") || m == "angler-trips") {
+    return(NA_character_)
+  }
+  # A per-species table is the same quantity, one row per species.
+  m <- sub("-species", "", m, fixed = TRUE)
+  effort <- c("total", "aerial_total", "aerial_glmm_total")
   if (m %in% effort) return("effort")
   for (q in c("catch", "harvest", "release")) {
     if (m %in% paste0(c("product-total-", "ht-total-"), q)) return(paste0(q, "-total"))
   }
-  if (m == "angler-trips") return("angler-trips")
   rate_suffix <- c(cpue = "catch-rate", hpue = "harvest-rate", rpue = "release-rate")
   for (s in names(rate_suffix)) {
     if (grepl(paste0("-", s, "(-per-angler)?$"), m)) {
@@ -280,9 +294,11 @@ combine_data_used <- function(quantity, parts) {
     unlist(lapply(parts, part_designs), recursive = FALSE),
     function(d) isTRUE(d$design_type %in% c("bus_route", "ice")), logical(1)
   ))
-  if (quantity == "effort" && interview_effort) return(c("counts", "interviews"))
-  if (quantity == "effort") return("counts")
-  if (combine_rate_quantities(quantity)) return("interviews")
+  if (quantity == "effort" && !interview_effort) return("counts")
+  # Rates too: a rate pooled across strata is weighted by each stratum's
+  # count-based effort and carries that effort's variance (#691), so shared
+  # counts correlate two rates. Checking them for an unpooled rate can only
+  # refuse more often, never less.
   c("counts", "interviews")
 }
 
@@ -312,11 +328,14 @@ check_combinable <- function(parts, op, call = rlang::caller_env()) {
       c(
         "{.fn {fn}} does not support {.val {unique(methods)}} estimates.",
         "i" = paste0(
-          "Supported: effort, total catch, harvest and release, angler trips",
+          "Supported: effort and total catch, harvest and release",
           if (op == "difference") ", and catch, harvest and release rates" else "",
           "."
         ),
-        "i" = "Mark-recapture harvest carries no design to check its independence against. See {.code ?{fn}}."
+        "i" = paste(
+          "Sectioned, camera, angler-trip and mark-recapture estimates do not keep the data",
+          "their independence would be checked against. See {.code ?{fn}}."
+        )
       ),
       class = "creel_error_combine_unsupported", call = call
     )
@@ -409,7 +428,12 @@ check_same_slot <- function(parts, slot, label, class, call, hint = NULL) {
 check_shared_provenance <- function(parts, call) {
   for (component in c("party_size", "aerial_calibration")) {
     label <- if (component == "party_size") "party-size estimate" else "aerial calibration"
-    stamps <- lapply(parts, function(p) p$provenance[[component]])
+    hint <- if (component == "party_size") {
+      "Re-derive the counts with {.fn derive_angler_count}, which records it in {.field expansion_id}."
+    } else {
+      "Re-estimate the part from its design."
+    }
+    stamps <- lapply(parts, function(p) part_provenance(p)[[component]])
     unknown <- which(vapply(stamps, function(s) !is.null(s) && anyNA(s), logical(1)))
     if (length(unknown) > 0L) {
       # The label is pasted in, not interpolated: cli counts every value in a
@@ -418,7 +442,7 @@ check_shared_provenance <- function(parts, call) {
         c(
           paste0("Part{?s} {unknown} used a ", label, " whose identity is unknown."),
           "x" = "Without it, a shared {label} cannot be ruled out, and summed variances would understate the SE.",
-          "i" = "Re-derive the counts with {.fn derive_angler_count}, which records it in {.field expansion_id}."
+          "i" = hint
         ),
         class = "creel_error_combine_provenance_unknown", call = call
       )
@@ -441,19 +465,47 @@ check_shared_provenance <- function(parts, call) {
   invisible(NULL)
 }
 
-#' Row fingerprints of one design table, on the columns two tables share
+#' The columns of a design table, by role
+#'
+#' Internal (GH #585). Two designs name their columns as their users chose:
+#' one lake's count may be `anglers` and another's `n_people`. Compared by
+#' name, only the calendar columns would match, and two lakes counted on the
+#' same dates would look like one table. The design records which column
+#' plays which role, so rows are compared on those roles instead.
 #' @keywords internal
 #' @noRd
-combine_row_ids <- function(df, cols) {
-  if (is.null(df) || nrow(df) == 0L || length(cols) == 0L) {
-    return(character())
+combine_role_frame <- function(design, tbl) {
+  df <- design[[tbl]]
+  if (is.null(df) || nrow(df) == 0L) {
+    return(NULL)
   }
-  vals <- lapply(df[cols], function(x) {
+  roles <- if (tbl == "counts") {
+    c(date = design$date_col, count = design$count_col, time = design$count_time_col)
+  } else {
+    c(
+      date = design$interview_date_col, effort = design$effort_col,
+      catch = design$catch_col, harvest = design$harvest_col,
+      n_anglers = design$n_anglers_col, time = design$interview_time_col,
+      status = design$trip_status_col
+    )
+  }
+  roles <- roles[!is.na(roles) & roles %in% names(df)]
+  out <- lapply(roles, function(col) df[[col]])
+  names(out) <- names(roles)
+  out
+}
+
+#' Row fingerprints on the roles two tables share; NULL when they share no
+#' measured value (a count, effort or catch), which cannot establish reuse.
+#' @keywords internal
+#' @noRd
+combine_row_ids <- function(frame, roles) {
+  vals <- lapply(frame[roles], function(x) {
     x <- as.character(x)
     x[is.na(x)] <- "\u001e"
     x
   })
-  do.call(paste, c(vals, sep = "\u001f"))
+  unique(do.call(paste, c(vals, sep = "\u001f")))
 }
 
 #' Refuse parts estimated from the same interviews or counts
@@ -479,31 +531,59 @@ check_shared_rows <- function(parts, tables, call) {
       class = "creel_error_combine_provenance_unknown", call = call
     )
   }
+  # Every refusal is found before any warning is raised, so a call that is
+  # refused does not also warn about a partial overlap elsewhere.
+  partial <- list()
   for (tbl in tables) {
     for (i in seq_along(parts)[-length(parts)]) {
       for (j in (i + 1L):length(parts)) {
         # A combined part brings every design it was built from.
         for (da in designs[[i]]) {
           for (db in designs[[j]]) {
-            check_shared_table(da[[tbl]], db[[tbl]], tbl, i, j, call)
+            n_shared <- shared_table_rows(da, db, tbl, i, j, call)
+            if (n_shared > 0L) partial[[length(partial) + 1L]] <- list(i = i, j = j, tbl = tbl, n = n_shared)
           }
         }
       }
     }
   }
+  for (w in partial) {
+    i <- w$i # nolint: object_usage_linter
+    j <- w$j # nolint: object_usage_linter
+    n <- w$n # nolint: object_usage_linter
+    creel_warn( # nolint: object_usage_linter
+      c(
+        paste0("Parts {i} and {j} have {n} identical ", w$tbl, " row{?s}."),
+        "i" = paste(
+          "Coincidental matches are possible between independent surveys;",
+          "shared data would make the combined SE too small."
+        )
+      ),
+      class = c("creel_warning_combine_partial_overlap", "creel_warning")
+    )
+  }
   invisible(NULL)
 }
 
-check_shared_table <- function(a, b, tbl, i, j, call) {
-  if (is.null(a) || is.null(b)) {
-    return(invisible(NULL))
+#' Refuse a table one part shares wholly with another; return the number of
+#' rows shared otherwise
+#' @keywords internal
+#' @noRd
+shared_table_rows <- function(da, db, tbl, i, j, call) {
+  fa <- combine_role_frame(da, tbl)
+  fb <- combine_role_frame(db, tbl)
+  if (is.null(fa) || is.null(fb)) {
+    return(0L)
   }
-  cols <- setdiff(intersect(names(a), names(b)), grep("^[.]", names(a), value = TRUE))
-  ra <- unique(combine_row_ids(a, cols))
-  rb <- unique(combine_row_ids(b, cols))
+  roles <- intersect(names(fa), names(fb))
+  if (!any(c("count", "effort", "catch", "harvest") %in% roles)) {
+    return(0L)
+  }
+  ra <- combine_row_ids(fa, roles)
+  rb <- combine_row_ids(fb, roles)
   shared <- intersect(ra, rb)
   if (length(shared) == 0L) {
-    return(invisible(NULL))
+    return(0L)
   }
   if (all(ra %in% rb) || all(rb %in% ra)) {
     creel_abort( # nolint: object_usage_linter
@@ -518,17 +598,7 @@ check_shared_table <- function(a, b, tbl, i, j, call) {
       class = paste0("creel_error_combine_shared_", tbl), call = call
     )
   }
-  creel_warn( # nolint: object_usage_linter
-    c(
-      paste0("Parts {i} and {j} have {length(shared)} identical ", tbl, " row{?s}."),
-      "i" = paste(
-        "Coincidental matches are possible between independent surveys;",
-        "shared data would make the combined SE too small."
-      )
-    ),
-    class = c("creel_warning_combine_partial_overlap", "creel_warning")
-  )
-  invisible(NULL)
+  length(shared)
 }
 
 #' The designs behind a part: its own, or every design a combined part was
@@ -537,6 +607,31 @@ check_shared_table <- function(a, b, tbl, i, j, call) {
 #' @noRd
 part_designs <- function(p) {
   p$combined_designs %||% list(p$design)
+}
+
+#' The shared components behind a part, for the independence check
+#'
+#' Internal. The estimate's own stamps, plus -- for a rate -- those of its
+#' design's counts: a rate pooled across strata is weighted by count-based
+#' effort that may carry a party-size or aerial calibration error (#691),
+#' though the rate's own provenance records neither.
+#' @keywords internal
+#' @noRd
+part_provenance <- function(p) {
+  prov <- p$provenance
+  q <- estimate_quantity(p)
+  if (is.na(q) || !combine_rate_quantities(q) || is.null(p$design)) {
+    return(prov)
+  }
+  d <- p$design
+  if (is.null(d$counts)) {
+    return(prov)
+  }
+  from_counts <- list(
+    party_size = party_size_provenance(d, if (is.null(d$expansion)) NULL else 0), # nolint: object_usage_linter
+    aerial_calibration = aerial_calibration_fingerprint(d) # nolint: object_usage_linter
+  )
+  union_provenance(list(list(provenance = prov), list(provenance = from_counts)))
 }
 
 #' Align the parts' rows by group

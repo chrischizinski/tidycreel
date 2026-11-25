@@ -323,7 +323,8 @@ product_total_variance <- function(e_est, e_se, r_est, r_se, product_variance) {
 #'   - provenance: list of `party_size` and `aerial_calibration`, each NULL
 #'     (no such estimated component entered), a character vector of
 #'     fingerprints, or `NA_character_` (one entered; identity unknown). Derived
-#'     here, never passed in (GH #585).
+#'     here from `design` unless `provenance` is supplied, which only
+#'     [combine_estimates()] does (GH #585).
 #'
 #' @keywords internal
 #' @noRd

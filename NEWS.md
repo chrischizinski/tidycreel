@@ -711,6 +711,9 @@
   new `x$provenance`); different quantity, effort target, unit, grouping or
   confidence level; an unknown unit; and, with `by`, a group missing from one
   part (absent is unknown, not zero). Rates can be compared but not summed.
+  Sectioned, camera, angler-trip and mark-recapture estimates are refused for
+  now: they do not keep the data their independence would be checked
+  against.
   A partial overlap of interview or count rows raises
   `creel_warning_combine_partial_overlap`.
 

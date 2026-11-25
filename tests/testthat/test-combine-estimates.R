@@ -269,9 +269,101 @@ test_that("an unknown unit is refused, never assumed to match", {
 test_that("unsupported estimates and non-estimates are refused", {
   expect_error(combine_estimates(north()), class = "creel_error_combine_too_few") # nolint: object_usage_linter
   expect_error(combine_estimates(north(), data.frame()), class = "creel_error_combine_not_estimate") # nolint: object_usage_linter
-  odd <- north()
-  odd$method <- "petersen"
-  expect_error(combine_estimates(odd, odd), class = "creel_error_combine_unsupported") # nolint: object_usage_linter
+  # Each keeps no data its independence could be checked against.
+  for (m in c("petersen", "angler-trips", "camera_ratio", "camera_mi", "total-sections", "product-total-catch-sections")) {
+    odd <- north()
+    odd$method <- m
+    expect_error(combine_estimates(odd, odd), class = "creel_error_combine_unsupported", info = m) # nolint: object_usage_linter
+  }
+})
+
+test_that("real angler-trip estimates are refused as unsupported, not as missing a design", {
+  d <- creel_design(ce_calendar(), date = date, strata = day_type) # nolint: object_usage_linter
+  d <- add_counts(d, ce_counts(c(12, 30, 9, 25, 14, 33)), period_length_col = shift_hours) # nolint: object_usage_linter
+  d <- q(add_interviews( # nolint: object_usage_linter
+    d, ce_interviews(),
+    catch = catch, effort = hours, harvest = catch, trip_status = status, trip_duration = hours
+  ))
+  effort <- q(estimate_effort(d, by = day_type)) # nolint: object_usage_linter
+  trips <- q(estimate_angler_trips(effort, d)) # nolint: object_usage_linter
+  expect_error(combine_estimates(trips, trips), class = "creel_error_combine_unsupported") # nolint: object_usage_linter
+})
+
+test_that("per-species tables are the same quantity", {
+  x <- north()
+  expect_identical(estimate_quantity(set_estimate_slots(x, method = "ht-total-catch-species")), "catch-total") # nolint: object_usage_linter
+  expect_identical(estimate_quantity(set_estimate_slots(x, method = "ratio-of-means-cpue-species")), "catch-rate") # nolint: object_usage_linter
+})
+
+test_that("two lakes counted on the same dates under different column names are independent", {
+  # Compared by name, only date and day_type would match and every row would
+  # look shared. Rows are compared by role: the count values differ.
+  d <- creel_design(ce_calendar(), date = date, strata = day_type) # nolint: object_usage_linter
+  cc <- ce_counts(c(4, 11, 6, 15, 5, 12))
+  names(cc)[names(cc) == "anglers"] <- "n_people"
+  other <- q(estimate_effort(add_counts(d, cc, period_length_col = shift_hours))) # nolint: object_usage_linter
+  expect_s3_class(combine_estimates(north(), other), "creel_estimates") # nolint: object_usage_linter
+
+  # And the same counts under a different name are still the same counts.
+  renamed <- ce_counts(c(12, 30, 9, 25, 14, 33))
+  names(renamed)[names(renamed) == "anglers"] <- "n_people"
+  same <- q(estimate_effort(add_counts(d, renamed, period_length_col = shift_hours))) # nolint: object_usage_linter
+  expect_error(combine_estimates(north(), same), class = "creel_error_combine_shared_counts") # nolint: object_usage_linter
+})
+
+test_that("tables sharing only calendar roles are not judged shared", {
+  # Same dates in both, but no measured value in common: matching dates alone
+  # cannot show reuse, so neither a refusal nor a warning.
+  a <- north()
+  b <- south()
+  b$design$count_col <- "not_a_column"
+  expect_no_warning(combine_estimates(a, b), class = "creel_warning_combine_partial_overlap") # nolint: object_usage_linter
+  same <- north()
+  same$design$count_col <- "not_a_column"
+  expect_s3_class(combine_estimates(a, same), "creel_estimates") # nolint: object_usage_linter
+})
+
+test_that("rates pooled over one design's counts are refused as sharing them", {
+  # A rate pooled across strata is weighted by count-based effort (#691), so
+  # two rates on one counts table share that effort's error.
+  counts <- c(12, 30, 9, 25, 14, 33)
+  a <- q(estimate_catch_rate(ce_design(counts, ce_interviews()))) # nolint: object_usage_linter
+  b <- q(estimate_catch_rate(ce_design(counts, ce_interviews(0.5)))) # nolint: object_usage_linter
+  expect_error(compare_estimates(a, b), class = "creel_error_combine_shared_counts") # nolint: object_usage_linter
+})
+
+test_that("rates on designs sharing a party-size estimate are refused", {
+  pd <- function(boats, iv) {
+    counts <- derive_angler_count( # nolint: object_usage_linter
+      data.frame(ce_sampled(), boats = boats, shift_hours = 8),
+      boat_count = boats, party_size = 2.5, party_size_se = 0.1
+    )
+    d <- creel_design(ce_calendar(), date = date, strata = day_type) # nolint: object_usage_linter
+    d <- add_counts(d, counts, count_col = "angler_count", period_length_col = shift_hours) # nolint: object_usage_linter
+    d <- q(add_interviews( # nolint: object_usage_linter
+      d, iv,
+      catch = catch, effort = hours, harvest = catch, trip_status = status
+    ))
+    q(estimate_catch_rate(d)) # nolint: object_usage_linter
+  }
+  a <- pd(c(5, 9, 4, 11, 6, 12), ce_interviews())
+  b <- pd(c(2, 4, 3, 6, 2, 5), ce_interviews(0.5))
+  expect_null(a$provenance$party_size)
+  expect_error(compare_estimates(a, b), class = "creel_error_combine_shared_party_size") # nolint: object_usage_linter
+})
+
+test_that("a refusal is not preceded by a partial-overlap warning", {
+  # Counts are checked before interviews. Counts overlapping partly and
+  # interviews wholly must refuse without first warning about the counts.
+  counts_a <- c(12, 30, 9, 25, 14, 33)
+  counts_b <- c(12, 11, 6, 15, 5, 12)
+  iv <- ce_interviews()
+  a <- q(estimate_catch_rate(ce_design(counts_a, iv))) # nolint: object_usage_linter
+  b <- q(estimate_catch_rate(ce_design(counts_b, iv))) # nolint: object_usage_linter
+  expect_no_warning(
+    expect_error(compare_estimates(a, b), class = "creel_error_combine_shared_interviews"), # nolint: object_usage_linter
+    class = "creel_warning_combine_partial_overlap"
+  )
 })
 
 # ---- refusals: shared uncertainty --------------------------------------------

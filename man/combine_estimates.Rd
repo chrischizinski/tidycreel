@@ -50,9 +50,17 @@ absent group is unknown, not zero: supply a zero row if it is a real zero.
 Overlapping coverage that the data cannot show -- day and night windows
 that overlap, two lakes sharing a section -- is the user's responsibility.
 
-Supported quantities: effort, total catch, total harvest, total release
-and angler trips. Mark-recapture harvest, which carries no design to check
-the parts against, is refused.
+Supported quantities: effort and total catch, harvest and release,
+including per-species tables. Refused, because the estimate does not keep
+the data its independence would be checked against: sectioned estimates,
+camera effort (its calibration interviews are an argument, not part of the
+design), angler trips and mark-recapture harvest.
+
+Rows are compared by what they record -- date, count, effort, catch,
+harvest, time, trip status, as the design maps them -- not by column name.
+A rate is also checked against its design's counts and their party-size
+and calibration stamps: a rate pooled across strata is weighted by
+count-based effort.
 
 Rows whose estimate or standard error is unknown (\code{NA}) in any part are
 unknown in the result. Named standard-error components are summed as
