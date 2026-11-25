@@ -167,7 +167,9 @@ est_biomass(ld, a = 0.0088, b = 3.1)
 }
 \seealso{
 Other "Estimation":
+\code{\link{combine_estimates}()},
 \code{\link{compare_cpue_estimators}()},
+\code{\link{compare_estimates}()},
 \code{\link{est_age_distribution}()},
 \code{\link{est_compliance}()},
 \code{\link{est_effort_camera_mi}()},

@@ -350,7 +350,9 @@ result_verbose <- estimate_total_catch(design, verbose = TRUE)
 \code{\link{estimate_effort}}, \code{\link{estimate_catch_rate}}
 
 Other "Estimation":
+\code{\link{combine_estimates}()},
 \code{\link{compare_cpue_estimators}()},
+\code{\link{compare_estimates}()},
 \code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_compliance}()},

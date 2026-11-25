@@ -90,7 +90,9 @@ est_compliance(ld, min_length = 356)  # 14-inch limit in mm
 }
 \seealso{
 Other "Estimation":
+\code{\link{combine_estimates}()},
 \code{\link{compare_cpue_estimators}()},
+\code{\link{compare_estimates}()},
 \code{\link{est_age_distribution}()},
 \code{\link{est_biomass}()},
 \code{\link{est_effort_camera_mi}()},
