@@ -286,6 +286,10 @@ test_that("a group with df 0 has NA bounds and one warning, not NaN or Inf (GH #
   we <- cal$date[cal$day_type == "weekend" & cal$date %in% iv$date][1]
   extra <- iv[rep(1, 12), ]
   extra$date <- rep(c(wd, we), 6)
+  # Catches that vary, so the group's SE is a real one: copies of one trip
+  # gave a constant ratio and an SE of rounding noise, exactly 0 on some
+  # platforms, where Satterthwaite rightly reports Inf df.
+  extra$catch_total <- c(0, 3, 1, 5, 2, 4, 6, 1, 3, 0, 2, 7)
   iv <- rbind(iv, extra)
   iv$gear <- "common"
   iv$gear[(nrow(iv) - 11):nrow(iv)] <- "rare"
@@ -308,7 +312,7 @@ test_that("a group with df 0 has NA bounds and one warning, not NaN or Inf (GH #
   )
   expect_identical(n_warn, 1L)
   rare <- r$estimates$gear == "rare"
-  expect_true(is.finite(r$estimates$estimate[rare]) && is.finite(r$estimates$se[rare]))
+  expect_true(is.finite(r$estimates$estimate[rare]) && r$estimates$se[rare] > 1e-6)
   expect_true(is.na(r$estimates$ci_lower[rare]) && is.na(r$estimates$ci_upper[rare]))
   expect_false(is.nan(r$estimates$ci_lower[rare]))
   # The other group keeps its interval.
