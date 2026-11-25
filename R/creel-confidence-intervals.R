@@ -74,6 +74,11 @@
 #' variance. A rate pooled across strata sums one effort term per stratum, so
 #' its Satterthwaite df runs over every stratum's term.
 #'
+#' A group sampled on no more days than it has strata -- one day in each of
+#' two, say -- has 0 df and no t distribution to read. Its estimate and SE are
+#' reported, its bounds are `NA` and `x$ci_df` is `NA`, and a
+#' `creel_warning_zero_df_interval` names it.
+#'
 #' Not yet (GH #705): the effort x rate product totals still use total
 #' interviews minus strata (per group, the group's interviews minus its strata;
 #' a sectioned lake row, the sum of its sections'), angler trips the interview

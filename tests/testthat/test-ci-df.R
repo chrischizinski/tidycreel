@@ -272,3 +272,45 @@ test_that("no estimate carries its df on the table as well as in the slot (GH #7
     expect_null(attr(x$estimates, "ci_df"))
   }
 })
+
+test_that("a group with df 0 has NA bounds and one warning, not NaN or Inf (GH #705)", {
+  # A gear met on one weekday and one weekend day: 2 days minus 2 strata is 0
+  # df, so there is no t distribution to read. Its estimate and SE stand; its
+  # bounds are NA and a warning names it, once (decision on #705, 2026-11-25).
+  data("example_calendar", package = "tidycreel")
+  data("example_counts", package = "tidycreel")
+  data("example_interviews", package = "tidycreel")
+  iv <- example_interviews
+  cal <- example_calendar
+  wd <- cal$date[cal$day_type == "weekday" & cal$date %in% iv$date][1]
+  we <- cal$date[cal$day_type == "weekend" & cal$date %in% iv$date][1]
+  extra <- iv[rep(1, 12), ]
+  extra$date <- rep(c(wd, we), 6)
+  iv <- rbind(iv, extra)
+  iv$gear <- "common"
+  iv$gear[(nrow(iv) - 11):nrow(iv)] <- "rare"
+  d <- creel_design(cal, date = date, strata = day_type) # nolint: object_usage_linter
+  d <- quiet(add_counts(d, example_counts)) # nolint: object_usage_linter
+  d <- quiet(add_interviews( # nolint: object_usage_linter
+    d, iv,
+    catch = catch_total, effort = hours_fished, # nolint: object_usage_linter
+    trip_status = trip_status, trip_duration = trip_duration # nolint: object_usage_linter
+  ))
+
+  n_warn <- 0L
+  r <- withCallingHandlers(
+    suppressMessages(estimate_catch_rate(d, by = gear, use_trips = "all")),
+    creel_warning_zero_df_interval = function(w) {
+      n_warn <<- n_warn + 1L
+      expect_match(conditionMessage(w), "gear=rare")
+    },
+    warning = function(w) invokeRestart("muffleWarning")
+  )
+  expect_identical(n_warn, 1L)
+  rare <- r$estimates$gear == "rare"
+  expect_true(is.finite(r$estimates$estimate[rare]) && is.finite(r$estimates$se[rare]))
+  expect_true(is.na(r$estimates$ci_lower[rare]) && is.na(r$estimates$ci_upper[rare]))
+  expect_false(is.nan(r$estimates$ci_lower[rare]))
+  # The other group keeps its interval.
+  expect_true(all(is.finite(c(r$estimates$ci_lower[!rare], r$estimates$ci_upper[!rare]))))
+})

@@ -278,7 +278,8 @@ rate_pooling_add_effort_var <- function(estimates, pool, by_vars, conf_level, df
   row_df <- vapply(seq_len(nrow(estimates)), function(i) {
     pooled_rate_df(se_old[i]^2, df[i], effort_term[[i]], var_E[i], unname(effort_df))
   }, numeric(1))
-  ci <- design_t_ci(estimates$estimate, se_new, conf_level, row_df) # nolint: object_usage_linter
+  labels <- if (length(by_vars) == 0L) NULL else group_labels(estimates, by_vars) # nolint: object_usage_linter
+  ci <- design_t_ci(estimates$estimate, se_new, conf_level, row_df, labels) # nolint: object_usage_linter
   estimates$ci_lower <- ci$lower
   estimates$ci_upper <- ci$upper
   estimates$se <- se_new

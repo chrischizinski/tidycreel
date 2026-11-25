@@ -203,7 +203,7 @@ estimate_effort_br <- function(
     # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
     # Each row its own domain's df: its sampled days minus its strata (GH #705).
     br_df <- design_df(svy_br, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
-    ci <- design_t_ci(estimate, se, conf_level, br_df) # nolint: object_usage_linter
+    ci <- design_t_ci(estimate, se, conf_level, br_df, group_labels(svy_result, by_vars)) # nolint: object_usage_linter
     ci_lower <- pmax(0, ci$lower)
     ci_upper <- ci$upper
 
@@ -691,7 +691,9 @@ br_harvest_rate_estimates <- function(
   # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
   # Each row its own domain's df (GH #705).
   br_df <- design_df(svy_br, by_vars, group_key(estimates_df, by_vars)) # nolint: object_usage_linter
-  ci <- design_t_ci(estimates_df$estimate, estimates_df$se, conf_level, br_df) # nolint: object_usage_linter
+  ci <- design_t_ci( # nolint: object_usage_linter
+    estimates_df$estimate, estimates_df$se, conf_level, br_df, group_labels(estimates_df, by_vars) # nolint: object_usage_linter
+  )
   estimates_df$ci_lower <- pmax(0, ci$lower)
   estimates_df$ci_upper <- ci$upper
   estimates_df$n <- as.integer(n_by_key[match(result_group_keys, names(n_by_key))])
@@ -2191,7 +2193,7 @@ br_build_estimates <- function(
     # Not svyby()'s ci_l/ci_u: those are 95% whatever ci.level says (GH #703).
     # Each row its own domain's df (GH #705).
     br_df <- design_df(svy_br_taylor, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
-    ci <- design_t_ci(estimate, se, conf_level, br_df) # nolint: object_usage_linter
+    ci <- design_t_ci(estimate, se, conf_level, br_df, group_labels(svy_result, by_vars)) # nolint: object_usage_linter
     ci_lower <- pmax(0, ci$lower)
     ci_upper <- ci$upper
 
@@ -2248,7 +2250,8 @@ br_build_estimates <- function(
       # Normal on the bootstrap SE at the requested level (GH #703).
       br_boot_df <- design_df(svy_br_boot, by_vars, group_key(svy_boot_by, by_vars)) # nolint: object_usage_linter
       ci_boot <- design_t_ci( # nolint: object_usage_linter
-        svy_boot_by[[".contribution"]], svy_boot_by[["se"]], conf_level, br_boot_df
+        svy_boot_by[[".contribution"]], svy_boot_by[["se"]], conf_level, br_boot_df,
+        group_labels(svy_boot_by, by_vars) # nolint: object_usage_linter
       )
       estimates_df$ci_lo_boot <- pmax(0, ci_boot$lower)
       estimates_df$ci_hi_boot <- ci_boot$upper

@@ -4179,15 +4179,50 @@ mor_svy_estimate <- function(svy_design, ratio_col, weighted) {
 #' (Lumley 2010, sec. 5.2). An `NA` df gives `NA` bounds: an unknown df is not
 #' a normal one.
 #'
+#' A row whose df is 0 -- a group sampled on no more days than it has strata,
+#' 1 day in each of 2, say -- has no t distribution to read: its bounds are
+#' `NA`, never the `NaN` or `Inf` `qt(, 0)` would give, and a warning names it
+#' (decision on #705, 2026-11-25). Its estimate and SE stand.
+#'
 #' @param estimate,se Numeric vectors, one entry per row.
 #' @param conf_level Confidence level.
 #' @param df Degrees of freedom, recycled to the rows.
+#' @param labels Row labels for the warning, e.g. from `group_labels()`.
+#' @param warn `FALSE` for an interval a later step rebuilds (a pooled rate),
+#'   so a df-0 row is named once, by the interval that is reported.
 #' @return List with `lower` and `upper`.
 #' @keywords internal
 #' @noRd
-design_t_ci <- function(estimate, se, conf_level, df) {
-  crit <- ifelse(is.na(df), NA_real_, stats::qt(1 - (1 - conf_level) / 2, df = df))
+design_t_ci <- function(estimate, se, conf_level, df, labels = NULL, warn = TRUE) {
+  df <- rep_len(df, length(estimate))
+  usable <- !is.na(df) & df > 0
+  crit <- rep(NA_real_, length(df))
+  crit[usable] <- stats::qt(1 - (1 - conf_level) / 2, df = df[usable])
+  zero <- !is.na(df) & df <= 0 & !is.na(se)
+  if (warn && any(zero)) {
+    which_rows <- if (is.null(labels)) as.character(which(zero)) else labels[zero] # nolint: object_usage_linter
+    creel_warn(
+      c(
+        "{.val {which_rows}} {?has/have} no degrees of freedom for an interval; {?its/their} bounds are NA.",
+        "x" = "A group sampled on no more days than it has strata has df 0 (sampled days minus strata).",
+        "i" = "The estimate and SE stand. Group more coarsely, or sample the group on more days."
+      ),
+      class = c("creel_warning_zero_df_interval", "creel_warning")
+    )
+  }
   list(lower = estimate - crit * se, upper = estimate + crit * se)
+}
+
+#' One label per row from its grouping columns, for messages
+#' @keywords internal
+#' @noRd
+group_labels <- function(df, by_vars) {
+  vals <- lapply(by_vars, function(v) {
+    x <- as.character(df[[v]])
+    x[is.na(x)] <- "<unknown>"
+    paste0(v, "=", x)
+  })
+  do.call(paste, c(vals, sep = ", "))
 }
 
 #' Grouped mean of ratios, party-size weighted when `mor_party_weights()` says
@@ -4203,7 +4238,7 @@ design_t_ci <- function(estimate, se, conf_level, df) {
 #' @keywords internal
 #' @noRd
 mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf_level,
-                               covmat = FALSE) {
+                               covmat = FALSE, warn = TRUE) {
   if (weighted) {
     svy_result <- wrap_survey_call(survey::svyby( # nolint: object_usage_linter
       formula = ~.mor_num,
@@ -4237,7 +4272,10 @@ mor_svyby_estimate <- function(svy_design, ratio_col, weighted, by_formula, conf
   by_vars <- all.vars(by_formula)
   # Each row its own domain's df (GH #705).
   df <- design_df(svy_design, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
-  ci <- design_t_ci(svy_result[[est_col]], svy_result[[se_col]], conf_level, df) # GH #703, #705
+  ci <- design_t_ci( # GH #703, #705
+    svy_result[[est_col]], svy_result[[se_col]], conf_level, df, group_labels(svy_result, by_vars),
+    warn = warn
+  )
   list(
     svy_result = svy_result,
     df = df,
@@ -8014,10 +8052,9 @@ estimate_effort_grouped <- function(
   # Recompute CI from combined variance (not from svyby ci_l/ci_u). Each
   # group its own domain's df: its sampled days minus its strata (GH #705).
   df_val <- design_df(svy_design, by_vars, result_group_keys) # nolint: object_usage_linter
-  alpha <- 1 - conf_level
-  t_crit <- qt(1 - alpha / 2, df = df_val)
-  ci_lower <- estimate - t_crit * se
-  ci_upper <- estimate + t_crit * se
+  ci <- design_t_ci(estimate, se, conf_level, df_val, group_labels(svy_result, by_vars))
+  ci_lower <- ci$lower
+  ci_upper <- ci$upper
 
   # Per-group sample sizes, counted on the same key the estimates are matched
   # by. `aggregate(.count ~ ., ...)` was used here, and the formula method
@@ -8200,7 +8237,7 @@ estimate_cpue_total <- function(design, variance_method, conf_level, estimator =
   se <- as.numeric(survey::SE(svy_result))
   # Interview days minus strata: the interval's t df (GH #705).
   rate_df <- design_df(svy_design) # nolint: object_usage_linter
-  ci <- design_t_ci(estimate, se, conf_level, rate_df)
+  ci <- design_t_ci(estimate, se, conf_level, rate_df, warn = is.null(pool))
   ci_lower <- ci$lower
   ci_upper <- ci$upper
   n <- nrow(interviews_data)
@@ -8352,7 +8389,10 @@ estimate_cpue_grouped <- function(
   svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
 
   if (estimator %in% c("mor", "mortr")) {
-    mor_fit <- mor_svyby_estimate(svy_design, "cpue_ratio", mor_w$weighted, by_formula, conf_level, covmat)
+    mor_fit <- mor_svyby_estimate(
+      svy_design, "cpue_ratio", mor_w$weighted, by_formula, conf_level, covmat,
+      warn = is.null(pool)
+    )
     svy_result <- mor_fit$svy_result
     estimate <- mor_fit$estimate
     se <- mor_fit$se
@@ -8385,7 +8425,9 @@ estimate_cpue_grouped <- function(
     se <- svy_result[[se_col]]
     # Each row its own domain's df: its interview days minus its strata (GH #705).
     rate_df <- design_df(svy_design, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
-    ci <- design_t_ci(estimate, se, conf_level, rate_df) # GH #703, #705
+    ci <- design_t_ci( # GH #703, #705
+      estimate, se, conf_level, rate_df, group_labels(svy_result, by_vars), warn = is.null(pool)
+    )
     ci_lower <- ci$lower
     ci_upper <- ci$upper
   }
@@ -9659,7 +9701,7 @@ estimate_harvest_total <- function(
   se <- as.numeric(survey::SE(svy_result))
   # Interview days minus strata: the interval's t df (GH #705).
   rate_df <- design_df(svy_design) # nolint: object_usage_linter
-  ci <- design_t_ci(estimate, se, conf_level, rate_df)
+  ci <- design_t_ci(estimate, se, conf_level, rate_df, warn = is.null(pool))
   ci_lower <- ci$lower
   ci_upper <- ci$upper
   n <- nrow(interviews_data)
@@ -9839,7 +9881,10 @@ estimate_harvest_grouped <- function(
   svy_design <- promote_na_groups(svy_design, by_vars) # nolint: object_usage_linter
 
   if (estimator %in% c("mor", "mortr")) {
-    mor_fit <- mor_svyby_estimate(svy_design, "hpue_ratio", mor_w$weighted, by_formula, conf_level, covmat)
+    mor_fit <- mor_svyby_estimate(
+      svy_design, "hpue_ratio", mor_w$weighted, by_formula, conf_level, covmat,
+      warn = is.null(pool)
+    )
     svy_result <- mor_fit$svy_result
     estimate <- mor_fit$estimate
     se <- mor_fit$se
@@ -9872,7 +9917,9 @@ estimate_harvest_grouped <- function(
     se <- svy_result[[se_col]]
     # Each row its own domain's df: its interview days minus its strata (GH #705).
     rate_df <- design_df(svy_design, by_vars, group_key(svy_result, by_vars)) # nolint: object_usage_linter
-    ci <- design_t_ci(estimate, se, conf_level, rate_df) # GH #703, #705
+    ci <- design_t_ci( # GH #703, #705
+      estimate, se, conf_level, rate_df, group_labels(svy_result, by_vars), warn = is.null(pool)
+    )
     ci_lower <- ci$lower
     ci_upper <- ci$upper
   }

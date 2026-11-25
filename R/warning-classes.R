@@ -91,6 +91,10 @@
 #'   \item{\code{creel_warning_zero_catch_excluded}}{Tier 1. Trips that caught
 #'     none of a species were left out, so the rate is among trips that caught
 #'     it.}
+#'   \item{\code{creel_warning_zero_df_interval}}{Tier 1. A group was sampled
+#'     on no more days than it has strata, so its degrees of freedom are 0 and
+#'     it has no interval; its estimate and SE are reported, its bounds are
+#'     NA.}
 #'   \item{\code{creel_warning_effort_excluded}}{Tier 2. Interviews with missing
 #'     or zero effort were left out of a rate.}
 #'   \item{\code{creel_warning_harvest_excluded}}{Tier 2. Interviews with
@@ -335,6 +339,7 @@ creel_warning_tiers <- c(
   creel_warning_unit_mismatch = 1L,
   creel_warning_unknown_label_collision = 1L,
   creel_warning_zero_catch_excluded = 1L,
+  creel_warning_zero_df_interval = 1L,
   creel_warning_zero_fish_total = 1L,
   # Tier 2
   creel_warning_camera_imputed_counts = 2L,

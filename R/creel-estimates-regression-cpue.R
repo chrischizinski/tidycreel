@@ -80,7 +80,7 @@ regression_cpue_survey <- function(design, variance_method, by_vars = NULL, min_
 #' @keywords internal
 #' @noRd
 regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = NULL,
-                                df = design_df(svy)) { # nolint: object_usage_linter
+                                df = design_df(svy), label = NULL) { # nolint: object_usage_linter
   unavailable <- list(estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_, df = NA_real_)
   # Unknown catch or effort in the domain leaves the slope unknown, as it did
   # before: svyglm() would drop those trips silently and fit the rest.
@@ -134,7 +134,7 @@ regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = N
   # intercept: the slope's sampling variance is the days', as the ratio's is.
   # A group is fitted on a subset of a replicate design, which cannot count
   # its own domain, so the caller passes the domain's df.
-  ci <- design_t_ci(est, se, conf_level, df) # nolint: object_usage_linter
+  ci <- design_t_ci(est, se, conf_level, df, label) # nolint: object_usage_linter
   list(estimate = est, se = se, ci_lower = ci$lower, ci_upper = ci$upper, df = df)
 }
 
@@ -238,7 +238,8 @@ estimate_cpue_reg_grouped <- function(
     # A domain: the group's trips on the whole survey, every day kept.
     fit <- regression_cpue_fit(
       svy[svy_key == k, ], force_origin, conf_level, prep$vars, by_vars,
-      df = design_df(svy, by_vars, k) # nolint: object_usage_linter
+      df = design_df(svy, by_vars, k), # nolint: object_usage_linter
+      label = group_labels(groups[i, , drop = FALSE], by_vars) # nolint: object_usage_linter
     )
     grp_vals <- groups[i, , drop = FALSE]
     rownames(grp_vals) <- NULL
