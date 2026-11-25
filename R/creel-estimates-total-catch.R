@@ -1159,7 +1159,10 @@ estimate_total_catch_sections <- function(
           by_vars,
           variance_method,
           conf_level,
-          target = target
+          target = target,
+          # Both were dropped here, so section rows ignored them (GH #704).
+          product_variance = product_variance,
+          ci_type = ci_type
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE

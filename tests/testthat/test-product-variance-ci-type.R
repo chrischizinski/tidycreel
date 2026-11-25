@@ -4,8 +4,9 @@
 # These arguments control two independent statistical choices:
 #
 #   product_variance - whether the variance of the product E x R includes the
-#     Goodman (1960) third term. "goodman" (default) adds var(E) * var(R) to the
-#     two first-order terms; "first_order" drops it. The term is small when both
+#     Goodman (1960) third term. "goodman" (default) subtracts var(E) * var(R)
+#     from the two first-order terms (the unbiased estimator); "first_order"
+#     leaves it out. The term is small when both
 #     components are precise but grows with the product of the two CVs, so
 #     silently dropping or sign-flipping it changes reported uncertainty without
 #     changing the point estimate. The tests below pin the term's magnitude AND
@@ -310,4 +311,92 @@ test_that("product-total defaults are goodman and symmetric", {
   expect_equal(default$estimates$se, explicit$estimates$se)
   expect_equal(default$estimates$ci_lower, explicit$estimates$ci_lower)
   expect_equal(default$estimates$ci_upper, explicit$estimates$ci_upper)
+})
+
+# Every path forwards both arguments (GH #704) ----
+#
+# Sectioned totals with `by =` and species-grouped harvest called their helpers
+# without these arguments, so a user asking for a log interval or a first-order
+# variance silently got the defaults -- a believable number, no warning. The
+# same call without `by` honoured them, so one survey reported two interval
+# shapes depending on grouping.
+
+log_interval <- function(x) {
+  q <- stats::qt(0.975, df = x$ci_df)
+  list(
+    lower = x$estimates$estimate * exp(-q * x$estimates$se / x$estimates$estimate),
+    upper = x$estimates$estimate * exp(q * x$estimates$se / x$estimates$estimate)
+  )
+}
+
+test_that("sectioned grouped totals honour ci_type and product_variance (GH #704)", {
+  design <- make_sectioned_species_design()
+
+  for (fn in list(estimate_total_catch, estimate_total_harvest, estimate_total_release)) {
+    sym <- quiet_estimate(fn(design, by = day_type))
+    logged <- quiet_estimate(fn(design, by = day_type, ci_type = "log"))
+    first <- quiet_estimate(fn(design, by = day_type, product_variance = "first_order"))
+
+    positive <- !is.na(logged$estimates$estimate) & logged$estimates$estimate > 0 &
+      logged$estimates$se > 0
+    expect_true(any(positive))
+
+    # The log interval, rebuilt by hand from each row's own estimate, SE and
+    # recorded df -- not merely "different from symmetric".
+    hand <- log_interval(logged)
+    expect_equal(logged$estimates$ci_lower[positive], hand$lower[positive])
+    expect_equal(logged$estimates$ci_upper[positive], hand$upper[positive])
+    expect_false(isTRUE(all.equal(
+      sym$estimates$ci_lower[positive], logged$estimates$ci_lower[positive]
+    )))
+
+    # Goodman's unbiased estimator subtracts var(E) * var(R) >= 0, so the
+    # first-order SE can only be larger; equality everywhere would mean the
+    # argument never arrived.
+    expect_true(all(first$estimates$se[positive] >= sym$estimates$se[positive]))
+    expect_true(any(first$estimates$se[positive] > sym$estimates$se[positive]))
+  }
+})
+
+test_that("species-grouped harvest honours ci_type (GH #704)", {
+  design <- make_product_arg_release_design()
+
+  sym <- quiet_estimate(estimate_total_harvest(design, by = species))
+  logged <- quiet_estimate(estimate_total_harvest(design, by = species, ci_type = "log"))
+
+  positive <- logged$estimates$estimate > 0 & logged$estimates$se > 0
+  expect_true(any(positive))
+  hand <- log_interval(logged)
+  expect_equal(logged$estimates$ci_lower[positive], hand$lower[positive])
+  expect_false(isTRUE(all.equal(
+    sym$estimates$ci_lower[positive], logged$estimates$ci_lower[positive]
+  )))
+})
+
+test_that("every product-total helper call passes product_variance and ci_type (GH #704)", {
+  # Behaviour tests cover the paths a fixture reaches; this covers every call
+  # site, so a new branch cannot drop either argument unnoticed.
+  helper_re <- "^estimate_total_(catch|harvest|release)_(grouped|species|ungrouped|sections)$"
+  missing_args <- character()
+  n_calls <- 0L
+  walk <- function(e, file) {
+    if (is.call(e)) {
+      fn <- paste(deparse(e[[1]]), collapse = "")
+      if (grepl(helper_re, fn)) {
+        n_calls <<- n_calls + 1L
+        given <- names(as.list(e))
+        for (arg in c("product_variance", "ci_type")) {
+          if (!arg %in% given) missing_args <<- c(missing_args, paste(file, fn, arg))
+        }
+      }
+      for (a in as.list(e)[-1]) if (!missing(a)) walk(a, file)
+    }
+  }
+  files <- test_path("..", "..", "R", sprintf("creel-estimates-total-%s.R", c("catch", "harvest", "release")))
+  skip_if_not(all(file.exists(files)), "package source not available")
+  for (f in files) {
+    for (e in parse(f, keep.source = FALSE)) walk(e, basename(f))
+  }
+  expect_gte(n_calls, 21L) # the walk must actually reach the call sites
+  expect_identical(missing_args, character())
 })

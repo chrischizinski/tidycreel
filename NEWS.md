@@ -1443,6 +1443,14 @@
 
 ## Bug fixes
 
+* `estimate_total_catch()`, `estimate_total_harvest()` and
+  `estimate_total_release()` on a sectioned design with `by` ignored
+  `ci_type` and `product_variance`: every section row got the default
+  symmetric interval and Goodman variance, whatever was asked for, while the
+  same call without `by` honoured both. `estimate_total_harvest(by = species)`
+  likewise ignored `ci_type`. Both arguments now reach every path (#704).
+  Results with the default arguments are unchanged.
+
 * Grouped intervals now use the `conf_level` asked for (#703). With `by =`,
   `estimate_catch_rate()`, `estimate_harvest_rate()` and
   `estimate_release_rate()` (ratio-of-means and mean-of-ratios, including
