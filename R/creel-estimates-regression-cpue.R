@@ -79,8 +79,9 @@ regression_cpue_survey <- function(design, variance_method, by_vars = NULL, min_
 #'
 #' @keywords internal
 #' @noRd
-regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = NULL) {
-  unavailable <- list(estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_)
+regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = NULL,
+                                df = design_df(svy), label = NULL) { # nolint: object_usage_linter
+  unavailable <- list(estimate = NA_real_, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_, df = NA_real_)
   # Unknown catch or effort in the domain leaves the slope unknown, as it did
   # before: svyglm() would drop those trips silently and fit the rest.
   w <- if (inherits(svy, "svyrep.design")) stats::weights(svy, "sampling") else stats::weights(svy)
@@ -96,7 +97,6 @@ regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = N
     ))
     est <- as.numeric(stats::coef(fit))
     se <- as.numeric(survey::SE(fit))
-    ci <- stats::confint(fit, level = conf_level)
   } else {
     # A bootstrap draw holding none of the domain's days: svyglm() returns a
     # bare coefficient vector for it, with no warning to catch. The slope is
@@ -113,7 +113,7 @@ regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = N
         return(unavailable)
       }
       signal_undefined_draws(svy, by_vars, n_empty) # nolint: object_usage_linter
-      return(list(estimate = est, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_))
+      return(list(estimate = est, se = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_, df = NA_real_))
     }
     fit <- tryCatch(
       suppressWarnings(
@@ -128,12 +128,14 @@ regression_cpue_fit <- function(svy, force_origin, conf_level, vars, by_vars = N
     }
     est <- unname(stats::coef(fit)[vars[2]])
     se <- unname(sqrt(stats::vcov(fit)[vars[2], vars[2]]))
-    # On the normal scale like the ratio's interval; confint.svyglm() would use
-    # a t on the residual df, which is 0 on two days and gives an infinite or
-    # NaN interval beside a finite SE.
-    ci <- stats::confint(fit, parm = vars[2], level = conf_level, ddf = Inf)
   }
-  list(estimate = est, se = se, ci_lower = unname(ci[1, 1]), ci_upper = unname(ci[1, 2]))
+  # Student's t on the design df, interview days minus strata, as every rate
+  # (GH #705). Not confint.svyglm()'s residual df, which also subtracts the
+  # intercept: the slope's sampling variance is the days', as the ratio's is.
+  # A group is fitted on a subset of a replicate design, which cannot count
+  # its own domain, so the caller passes the domain's df.
+  ci <- design_t_ci(est, se, conf_level, df, label) # nolint: object_usage_linter
+  list(estimate = est, se = se, ci_lower = ci$lower, ci_upper = ci$upper, df = df)
 }
 
 #' Internal: regression CPUE (ungrouped), day-clustered design-based SE
@@ -145,17 +147,18 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin, var
   # Across strata, each stratum's slope weighted by its effort (GH #691).
   strata <- if (rate_pooling_on()) pooled_strata(design, NULL) else NULL # nolint: object_usage_linter
   if (!is.null(strata)) {
+    pooled <- regression_pooled_total(design, strata, conf_level, force_origin, variance_method, call) # nolint: object_usage_linter
+    pooled_df <- attr(pooled, "ci_df")
+    attr(pooled, "ci_df") <- NULL
     return(new_creel_estimates( # nolint: object_usage_linter
-      estimates = regression_pooled_total(design, strata, conf_level, force_origin, variance_method, call), # nolint: object_usage_linter
+      estimates = pooled,
       method = "regression-cpue",
       variance_method = variance_method,
       design = design,
       conf_level = conf_level,
       by_vars = NULL,
       estimator = "regression",
-    # Normal throughout: confint(ddf = Inf), the ratio's confint() default, and
-    # regression_pooled_total()'s qnorm.
-    ci_df = Inf,
+      ci_df = pooled_df, # Satterthwaite over slopes and effort (GH #705)
       unit = rate_unit(design) # nolint: object_usage_linter
     ))
   }
@@ -181,9 +184,7 @@ estimate_cpue_regression_total <- function(design, conf_level, force_origin, var
     conf_level = conf_level,
     by_vars = NULL,
     estimator = "regression",
-    # Normal throughout: confint(ddf = Inf), the ratio's confint() default, and
-    # regression_pooled_total()'s qnorm.
-    ci_df = Inf,
+    ci_df = fit$df, # t on the design df (GH #705)
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }
@@ -235,7 +236,11 @@ estimate_cpue_reg_grouped <- function(
       )
     }
     # A domain: the group's trips on the whole survey, every day kept.
-    fit <- regression_cpue_fit(svy[svy_key == k, ], force_origin, conf_level, prep$vars, by_vars)
+    fit <- regression_cpue_fit(
+      svy[svy_key == k, ], force_origin, conf_level, prep$vars, by_vars,
+      df = design_df(svy, by_vars, k), # nolint: object_usage_linter
+      label = group_labels(groups[i, , drop = FALSE], by_vars) # nolint: object_usage_linter
+    )
     grp_vals <- groups[i, , drop = FALSE]
     rownames(grp_vals) <- NULL
     cbind(
@@ -245,12 +250,15 @@ estimate_cpue_reg_grouped <- function(
         se = fit$se,
         ci_lower = fit$ci_lower,
         ci_upper = fit$ci_upper,
-        n = n_g
+        n = n_g,
+        .ci_df = fit$df
       )
     )
   }), call = call)
 
   estimates_df <- tibble::as_tibble(do.call(rbind, rows))
+  row_ci_df <- estimates_df$.ci_df
+  estimates_df$.ci_df <- NULL
 
   new_creel_estimates( # nolint: object_usage_linter
     estimates = estimates_df,
@@ -260,9 +268,7 @@ estimate_cpue_reg_grouped <- function(
     conf_level = conf_level,
     by_vars = by_vars,
     estimator = "regression",
-    # Normal throughout: confint(ddf = Inf), the ratio's confint() default, and
-    # regression_pooled_total()'s qnorm.
-    ci_df = Inf,
+    ci_df = row_ci_df, # t on the design df (GH #705)
     unit = rate_unit(design) # nolint: object_usage_linter
   )
 }

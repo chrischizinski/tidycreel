@@ -396,10 +396,18 @@ test_that("#691: a survey SE of exactly zero still gets an interval from the eff
     catch = catch_total, harvest = catch_kept, effort = hours_fished,
     trip_status = trip_status, trip_duration = trip_duration
   ))
-  r <- ps_quiet(estimate_catch_rate(d2))$estimates # nolint: object_usage_linter
+  fit <- ps_quiet(estimate_catch_rate(d2)) # nolint: object_usage_linter
+  r <- fit$estimates
   expect_gt(r$se, 0)
   expect_true(is.finite(r$ci_lower) && is.finite(r$ci_upper))
-  expect_equal(r$ci_upper - r$estimate, stats::qnorm(0.975) * r$se)
+  # With the survey term exactly zero, Satterthwaite's df comes from the
+  # strata's effort terms alone: between the smallest stratum's count df and
+  # their sum (GH #705; Cochran 1977, eq. 5.16).
+  df_h <- vapply(unique(d2$counts$day_type), function(h) {
+    as.numeric(survey::degf(subset(d2$survey, day_type == h)))
+  }, numeric(1))
+  expect_true(fit$ci_df >= min(df_h) - 1e-8 && fit$ci_df <= sum(df_h) + 1e-8)
+  expect_equal(r$ci_upper - r$estimate, stats::qt(0.975, fit$ci_df) * r$se)
 })
 
 test_that("#691: a stratum whose regression slope cannot be identified is refused, not NA", {

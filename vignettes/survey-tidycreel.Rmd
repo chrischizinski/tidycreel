@@ -183,7 +183,7 @@ formula and discusses that assumption.
 | Interview design | complete trips; `svydesign(ids = ~1, strata = ~day_type, weights = ~1)` | `add_interviews()` |
 | Catch rate | `svyratio(~catch, ~angler_hours, ...)` | `estimate_catch_rate()` |
 | Total catch | `svyby()` per stratum; $\sum_h \hat{E}_h \hat{R}_h$; Goodman variance | `estimate_total_catch(target = "period_total")` |
-| Confidence interval | effort and total catch: `confint(..., df = degf(design))`; catch rate: `confint(...)`, the normal interval | `ci_lower`, `ci_upper` |
+| Confidence interval | effort and catch rate: `confint(..., df = degf(design))` on their own designs; a grouped row takes its own days' df, as `degf(subset(...))`; a rate pooled across strata takes Satterthwaite's df over its interview and per-stratum effort terms; total catch: a $t$ on interviews less strata, for now (#705) | `ci_lower`, `ci_upper`; the df in `x$ci_df` |
 
 What tidycreel adds on top of these calls is the bookkeeping: the unit of each
 result, the strata a total must be built within, the refusals when the data

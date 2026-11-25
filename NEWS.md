@@ -10,6 +10,30 @@
 
 ## Breaking changes
 
+* Catch, harvest and release rate intervals, grouped effort intervals and
+  every bus-route interval now use Student's t on the survey's design
+  degrees of freedom -- sampled days minus strata -- instead of the normal
+  quantile (#705). Rates (`estimate_catch_rate()`, `estimate_harvest_rate()`,
+  `estimate_release_rate()`, every estimator, `by`, species and section
+  path) take the interview design's df; bus-route effort, rates and totals
+  the bus-route design's. Estimates and standard errors are unchanged;
+  intervals widen, most on small surveys: with interviews on 13 days in 2
+  strata, a 95% interval is about 12% wider (t on 11 df, 2.20, against
+  1.96). Pollock et al. (1994) justify the normal quantile as a large-sample
+  approximation; Cochran (1977, sec. 5.4) reads it from Student's t when the
+  strata supply few degrees of freedom.
+
+  A grouped row -- effort, rate or bus-route, any `by` -- is a domain and
+  takes its own sampled days minus its own strata, as
+  `survey::degf(subset(...))` does; grouped effort used the whole design's
+  df before. A rate pooled across strata adds each stratum's effort-weight
+  variance and takes Satterthwaite's df over those terms and the survey's
+  (Cochran 1977, eq. 5.16). A group sampled on no more days than it has
+  strata has 0 df: its bounds are `NA` and a
+  `creel_warning_zero_df_interval` names it. `x$ci_df` records each row's
+  df. Product totals, angler trips, mark-recapture and exploitation are
+  still to move (#705); see `?creel_confidence_intervals`.
+
 * `estimate_angler_trips()` on a design with more than one stratum now needs
   effort grouped by every stratum column, e.g.
   `estimate_effort(design, by = day_type)`; the `.overall` row is the season
