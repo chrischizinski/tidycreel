@@ -571,7 +571,8 @@ estimate_total_harvest <- function(
       variance_method = variance,
       conf_level = conf_level,
       target = target,
-      product_variance = product_variance
+      product_variance = product_variance,
+      ci_type = ci_type # dropped before GH #704
     )
     return(attach_excluded_strata( # nolint: object_usage_linter
       new_creel_estimates( # nolint: object_usage_linter
@@ -1107,7 +1108,10 @@ estimate_total_harvest_sections <- function(
           by_vars,
           variance_method,
           conf_level,
-          target = target
+          target = target,
+          # Both were dropped here, so section rows ignored them (GH #704).
+          product_variance = product_variance,
+          ci_type = ci_type
         )
         row_df <- tibble::add_column(result$estimates, !!section_col := sec, .before = 1)
         row_df$data_available <- TRUE
