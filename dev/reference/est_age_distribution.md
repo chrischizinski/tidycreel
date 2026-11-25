@@ -80,7 +80,9 @@ it rescales and aborts when no total is available (GH \#310).
 ## See also
 
 Other "Estimation":
+[`combine_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/combine_estimates.md),
 [`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/dev/reference/compare_cpue_estimators.md),
+[`compare_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/compare_estimates.md),
 [`est_biomass()`](https://chrischizinski.com/tidycreel/dev/reference/est_biomass.md),
 [`est_compliance()`](https://chrischizinski.com/tidycreel/dev/reference/est_compliance.md),
 [`est_effort_camera_mi()`](https://chrischizinski.com/tidycreel/dev/reference/est_effort_camera_mi.md),

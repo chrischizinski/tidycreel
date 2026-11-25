@@ -226,7 +226,9 @@ which build their own effort by this route.
 ## See also
 
 Other "Estimation":
+[`combine_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/combine_estimates.md),
 [`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/dev/reference/compare_cpue_estimators.md),
+[`compare_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/compare_estimates.md),
 [`est_age_distribution()`](https://chrischizinski.com/tidycreel/dev/reference/est_age_distribution.md),
 [`est_biomass()`](https://chrischizinski.com/tidycreel/dev/reference/est_biomass.md),
 [`est_compliance()`](https://chrischizinski.com/tidycreel/dev/reference/est_compliance.md),

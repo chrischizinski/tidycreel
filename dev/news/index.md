@@ -917,6 +917,26 @@
 
 ### New features
 
+- [`combine_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/combine_estimates.md)
+  sums totals from independently sampled surveys – two lakes, two
+  seasons, day and night shifts run as separate designs – and
+  [`compare_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/compare_estimates.md)
+  gives the difference of two estimates with a t test
+  ([\#585](https://github.com/chrischizinski/tidycreel/issues/585)).
+  Variances add, and intervals use Satterthwaite degrees of freedom over
+  each part’s own df. Because a hand-made sum is plausible and too
+  precise whenever the parts are not independent, both refuse, with
+  classed errors: parts estimated from the same interviews or counts;
+  parts sharing one party-size estimate or aerial calibration component
+  (from the new `x$provenance`); different quantity, effort target,
+  unit, grouping or confidence level; an unknown unit; and, with `by`, a
+  group missing from one part (absent is unknown, not zero). Rates can
+  be compared but not summed. Sectioned, camera, angler-trip and
+  mark-recapture estimates are refused for now: they do not keep the
+  data their independence would be checked against. A partial overlap of
+  interview or count rows raises
+  `creel_warning_combine_partial_overlap`.
+
 - [`check_interview_coverage()`](https://chrischizinski.com/tidycreel/dev/reference/check_interview_coverage.md)
   reports, stratum by stratum and in blocks of the day, whether the
   interviews can represent the fishing the counts measured

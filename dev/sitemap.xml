@@ -60,8 +60,10 @@
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/autoplot.creel_schedule.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/check_completeness.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/check_interview_coverage.html</loc></url>
+<url><loc>https://chrischizinski.com/tidycreel/dev/reference/combine_estimates.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/compare_cpue_estimators.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/compare_designs.html</loc></url>
+<url><loc>https://chrischizinski.com/tidycreel/dev/reference/compare_estimates.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/compare_variance.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/compute_angler_effort.html</loc></url>
 <url><loc>https://chrischizinski.com/tidycreel/dev/reference/compute_effort.html</loc></url>

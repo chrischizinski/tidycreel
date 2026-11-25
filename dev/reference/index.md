@@ -109,6 +109,10 @@ dispatch automatically on survey type.
   : Compute effort density as effort per acre
 - [`compare_cpue_estimators()`](https://chrischizinski.com/tidycreel/dev/reference/compare_cpue_estimators.md)
   : Compare CPUE estimators (ROM, MOR, Regression)
+- [`combine_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/combine_estimates.md)
+  : Combine estimates from independent surveys
+- [`compare_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/compare_estimates.md)
+  : Compare two estimates from independent surveys
 - [`creel_confidence_intervals`](https://chrischizinski.com/tidycreel/dev/reference/creel_confidence_intervals.md)
   : Confidence interval conventions in tidycreel
 - [`derive_angler_count()`](https://chrischizinski.com/tidycreel/dev/reference/derive_angler_count.md)

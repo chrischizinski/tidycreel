@@ -124,6 +124,15 @@ print on every call.
 
   Tier 1. A total pools over domains the counts do not classify.
 
+- `creel_warning_combine_partial_overlap`:
+
+  Tier 1. Parts passed to
+  [`combine_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/combine_estimates.md)
+  or
+  [`compare_estimates()`](https://chrischizinski.com/tidycreel/dev/reference/compare_estimates.md)
+  share some identical interview or count rows; shared data would make
+  the result's SE too small.
+
 - `creel_warning_zero_catch_excluded`:
 
   Tier 1. Trips that caught none of a species were left out, so the rate
